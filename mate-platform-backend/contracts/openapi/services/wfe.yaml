@@ -12,10 +12,14 @@ servers:
 tags:
 - name: wfe
   description: wfe domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+
+  - bearerAuth: []
+
+    tenantHeader: []
+
+    oidcScopes: [platform.read]
+
 paths:
   /api/v1/wfe/flows/test:
     post:
@@ -56,7 +60,7 @@ paths:
       x-mate-permission: wfe.post
       x-mate-requirements:
       - FR-WFE-WFEPOSTWFEFLOWSTEST
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/wfe/flows/validate:
     get:
       security:
@@ -92,7 +96,7 @@ paths:
       x-mate-permission: wfe.get
       x-mate-requirements:
       - FR-WFE-WFEGETWFEFLOWSVALIDATE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:

@@ -12,10 +12,14 @@ servers:
 tags:
 - name: copilot
   description: copilot domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+
+  - bearerAuth: []
+
+    tenantHeader: []
+
+    oidcScopes: [platform.read]
+
 paths:
   /api/v1/copilot:
     get:
@@ -52,7 +56,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOT
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/a2a/delegate:
     post:
       security:
@@ -92,7 +96,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTA2ADELEGATE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/a2a/external:
     get:
       security:
@@ -128,7 +132,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTA2AEXTERNAL
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/actions:
     get:
       security:
@@ -164,7 +168,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTACTIONS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/actions/execute:
     post:
       security:
@@ -204,7 +208,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/actions/match:
     post:
       security:
@@ -244,7 +248,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/audit-sql:
     post:
       security:
@@ -284,7 +288,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISAUDITSQL
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/execute-sql:
     post:
       security:
@@ -324,7 +328,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISEXECUTESQL
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/explain-sql:
     get:
       security:
@@ -360,7 +364,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTANALYSISEXPLAINSQL
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/generate-sql:
     post:
       security:
@@ -400,7 +404,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISGENERATESQL
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/auth/login:
     post:
       security:
@@ -440,7 +444,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTAUTHLOGIN
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/chat/multimodal/upload:
     post:
       security:
@@ -480,7 +484,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTCHATMULTIMODALUPLOAD
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/code:
     get:
       security:
@@ -516,7 +520,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTCODE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/conversations:
     get:
       security:
@@ -552,7 +556,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTCONVERSATIONS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/datasources:
     get:
       security:
@@ -588,7 +592,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTDATASOURCES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/generate/dashboard:
     post:
       security:
@@ -628,7 +632,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEDASHBOARD
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/generate/explain-code:
     post:
       security:
@@ -668,7 +672,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEEXPLAINCODE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/generate/form:
     post:
       security:
@@ -708,7 +712,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEFORM
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/generate/process:
     get:
       security:
@@ -744,7 +748,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/generate/review-code:
     post:
       security:
@@ -784,7 +788,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEREVIEWCODE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/knowledge-bases:
     get:
       security:
@@ -820,7 +824,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTKNOWLEDGEBASES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/models/multimodal:
     get:
       security:
@@ -856,7 +860,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTMODELSMULTIMODAL
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/ontology/concepts/search:
     get:
       security:
@@ -892,7 +896,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYCONCEPTSSEARCH
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/ontology/graph/expand:
     get:
       security:
@@ -928,7 +932,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHEXPAND
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/ontology/graph/query:
     get:
       security:
@@ -964,7 +968,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHQUERY
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/plans:
     get:
       security:
@@ -1000,7 +1004,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTPLANS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/queries/execute:
     post:
       security:
@@ -1040,7 +1044,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTQUERIESEXECUTE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/queries/history:
     get:
       security:
@@ -1076,7 +1080,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTQUERIESHISTORY
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/employees/match:
     get:
       security:
@@ -1112,7 +1116,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGEMPLOYEESMATCH
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/execution/start:
     post:
       security:
@@ -1152,7 +1156,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGEXECUTIONSTART
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/intent/detect:
     post:
       security:
@@ -1192,7 +1196,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGINTENTDETECT
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/intents:
     get:
       security:
@@ -1228,7 +1232,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGINTENTS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/plan/generate:
     post:
       security:
@@ -1268,7 +1272,7 @@ paths:
       x-mate-permission: copilot.post
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGPLANGENERATE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/templates:
     get:
       security:
@@ -1304,7 +1308,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/copilot/search:
     get:
       security:
@@ -1340,7 +1344,7 @@ paths:
       x-mate-permission: copilot.get
       x-mate-requirements:
       - FR-COPILOT-COPILOTGETCOPILOTSEARCH
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:

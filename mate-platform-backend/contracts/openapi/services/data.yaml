@@ -12,10 +12,14 @@ servers:
 tags:
 - name: data
   description: data domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+
+  - bearerAuth: []
+
+    tenantHeader: []
+
+    oidcScopes: [platform.read]
+
 paths:
   /api/v1/data/sources:
     get:
@@ -46,7 +50,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETDATASOURCES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     post:
       security:
       - bearerAuth: []
@@ -75,7 +79,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTDATASOURCES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}:
     get:
       security:
@@ -110,7 +114,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETDATASOURCESID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     put:
       security:
       - bearerAuth: []
@@ -144,7 +148,7 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTDATASOURCESID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     delete:
       security:
       - bearerAuth: []
@@ -178,7 +182,7 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETEDATASOURCESID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}/test:
     post:
       security:
@@ -213,7 +217,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTDATASOURCESIDTEST
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/sources/{id}/schema:
     get:
       security:
@@ -248,7 +252,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETDATASOURCESIDSCHEMA
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks:
     get:
       security:
@@ -278,7 +282,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETDATACDCTASKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     post:
       security:
       - bearerAuth: []
@@ -307,7 +311,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTDATACDCTASKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}:
     get:
       security:
@@ -342,7 +346,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETDATACDCTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     put:
       security:
       - bearerAuth: []
@@ -376,7 +380,7 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTDATACDCTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     delete:
       security:
       - bearerAuth: []
@@ -410,7 +414,7 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETEDATACDCTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}/status:
     get:
       security:
@@ -445,7 +449,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETDATACDCTASKSIDSTATUS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}/pause:
     post:
       security:
@@ -480,7 +484,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/data/cdc-tasks/{id}/resume:
     post:
       security:
@@ -515,7 +519,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTDATACDCTASKSIDRESUME
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/etl/tasks:
     get:
       security:
@@ -545,7 +549,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETETLTASKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     post:
       security:
       - bearerAuth: []
@@ -574,7 +578,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTETLTASKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/etl/tasks/{id}:
     get:
       security:
@@ -609,7 +613,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETETLTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     put:
       security:
       - bearerAuth: []
@@ -643,7 +647,7 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTETLTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     delete:
       security:
       - bearerAuth: []
@@ -677,7 +681,7 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETEETLTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/etl/tasks/{id}/run:
     post:
       security:
@@ -712,7 +716,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTETLTASKSIDRUN
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/etl/tasks/{id}/stop:
     post:
       security:
@@ -747,7 +751,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTETLTASKSIDSTOP
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/etl/tasks/{id}/status:
     get:
       security:
@@ -782,7 +786,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETETLTASKSIDSTATUS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/scheduler/tasks:
     get:
       security:
@@ -812,7 +816,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETSCHEDULERTASKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     post:
       security:
       - bearerAuth: []
@@ -841,7 +845,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTSCHEDULERTASKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/scheduler/tasks/{id}:
     get:
       security:
@@ -876,7 +880,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETSCHEDULERTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     put:
       security:
       - bearerAuth: []
@@ -910,7 +914,7 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTSCHEDULERTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     delete:
       security:
       - bearerAuth: []
@@ -944,7 +948,7 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETESCHEDULERTASKSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/scheduler/tasks/{id}/trigger:
     post:
       security:
@@ -979,7 +983,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTSCHEDULERTASKSIDTRIGGER
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/scheduler/tasks/{id}/pause:
     post:
       security:
@@ -1014,7 +1018,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTSCHEDULERTASKSIDPAUSE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/scheduler/dag:
     get:
       security:
@@ -1044,7 +1048,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETSCHEDULERDAG
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/metrics:
     get:
       security:
@@ -1074,7 +1078,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     post:
       security:
       - bearerAuth: []
@@ -1103,7 +1107,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTMETRICS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/metrics/{id}:
     get:
       security:
@@ -1138,7 +1142,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     put:
       security:
       - bearerAuth: []
@@ -1172,7 +1176,7 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTMETRICSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
     delete:
       security:
       - bearerAuth: []
@@ -1206,7 +1210,7 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETEMETRICSID
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/metrics/{id}/values:
     get:
       security:
@@ -1241,7 +1245,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICSIDVALUES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/metrics/{id}/lineage:
     get:
       security:
@@ -1276,7 +1280,7 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICSIDLINEAGE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/metrics/{id}/compute:
     post:
       security:
@@ -1311,7 +1315,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTMETRICSIDCOMPUTE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:

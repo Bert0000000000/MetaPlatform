@@ -12,10 +12,14 @@ servers:
 tags:
 - name: a2a
   description: a2a domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+
+  - bearerAuth: []
+
+    tenantHeader: []
+
+    oidcScopes: [platform.read]
+
 paths:
   /api/v1/a2a/agent-cards/search:
     get:
@@ -52,7 +56,7 @@ paths:
       x-mate-permission: a2a.get
       x-mate-requirements:
       - FR-A2A-A2AGETA2AAGENTCARDSSEARCH
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/a2a/delegations:
     get:
       security:
@@ -88,7 +92,7 @@ paths:
       x-mate-permission: a2a.get
       x-mate-requirements:
       - FR-A2A-A2AGETA2ADELEGATIONS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:

@@ -12,10 +12,14 @@ servers:
 tags:
 - name: arch
   description: arch domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+
+  - bearerAuth: []
+
+    tenantHeader: []
+
+    oidcScopes: [platform.read]
+
 paths:
   /api/v1/arch/applications:
     get:
@@ -52,7 +56,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHAPPLICATIONS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/business-processes:
     get:
       security:
@@ -88,7 +92,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHBUSINESSPROCESSES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/capabilities:
     get:
       security:
@@ -124,7 +128,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHCAPABILITIES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/capabilities/tree:
     get:
       security:
@@ -160,7 +164,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHCAPABILITIESTREE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/capability-mappings:
     get:
       security:
@@ -196,7 +200,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/data-assets:
     get:
       security:
@@ -232,7 +236,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHDATAASSETS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/data-assets/catalog:
     get:
       security:
@@ -268,7 +272,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHDATAASSETSCATALOG
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/data-entities:
     get:
       security:
@@ -304,7 +308,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHDATAENTITIES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/data-flows:
     get:
       security:
@@ -340,7 +344,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHDATAFLOWS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/data-standards:
     get:
       security:
@@ -376,7 +380,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHDATASTANDARDS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/data/domains:
     get:
       security:
@@ -412,7 +416,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHDATADOMAINS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/deployments:
     get:
       security:
@@ -448,7 +452,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHDEPLOYMENTS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/governance/principle-categories:
     get:
       security:
@@ -484,7 +488,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLECATEGORIES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/governance/principles:
     get:
       security:
@@ -520,7 +524,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/governance/review-templates:
     get:
       security:
@@ -556,7 +560,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTEMPLATES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/governance/review-tickets:
     get:
       security:
@@ -592,7 +596,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTICKETS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/governance/tech-debts:
     get:
       security:
@@ -628,7 +632,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHGOVERNANCETECHDEBTS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/impact-analysis:
     get:
       security:
@@ -664,7 +668,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHIMPACTANALYSIS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/infrastructures:
     get:
       security:
@@ -700,7 +704,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHINFRASTRUCTURES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/ontology-mappings/changes:
     get:
       security:
@@ -736,7 +740,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSCHANGES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/ontology-mappings/rules:
     get:
       security:
@@ -772,7 +776,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSRULES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/orgs:
     get:
       security:
@@ -808,7 +812,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHORGS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/orgs/tree:
     get:
       security:
@@ -844,7 +848,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHORGSTREE
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/roles:
     get:
       security:
@@ -880,7 +884,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHROLES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/tech-stacks:
     get:
       security:
@@ -916,7 +920,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHTECHSTACKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/technology-components:
     get:
       security:
@@ -952,7 +956,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHTECHNOLOGYCOMPONENTS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/technology-radar:
     get:
       security:
@@ -988,7 +992,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHTECHNOLOGYRADAR
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/technology-stacks:
     get:
       security:
@@ -1024,7 +1028,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHTECHNOLOGYSTACKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/arch/value-streams:
     get:
       security:
@@ -1060,7 +1064,7 @@ paths:
       x-mate-permission: arch.get
       x-mate-requirements:
       - FR-ARCH-ARCHGETARCHVALUESTREAMS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:

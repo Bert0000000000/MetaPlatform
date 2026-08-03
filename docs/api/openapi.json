@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Mate Platform Aggregated API",
-    "version": "2026-08-02"
+    "version": "2026-08-03"
   },
   "paths": {
     "/api/v1/a2a/agent-cards/search": {
@@ -62,7 +62,7 @@
         "x-mate-requirements": [
           "FR-A2A-A2AGETA2AAGENTCARDSSEARCH"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/a2a/delegations": {
@@ -122,7 +122,7 @@
         "x-mate-requirements": [
           "FR-A2A-A2AGETA2ADELEGATIONS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/healthz": {
@@ -1663,7 +1663,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHAPPLICATIONS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/business-processes": {
@@ -1723,7 +1723,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHBUSINESSPROCESSES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/capabilities": {
@@ -1783,7 +1783,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHCAPABILITIES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/capabilities/tree": {
@@ -1843,7 +1843,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHCAPABILITIESTREE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/capability-mappings": {
@@ -1903,7 +1903,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/data-assets": {
@@ -1963,7 +1963,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHDATAASSETS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/data-assets/catalog": {
@@ -2023,7 +2023,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHDATAASSETSCATALOG"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/data-entities": {
@@ -2083,7 +2083,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHDATAENTITIES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/data-flows": {
@@ -2143,7 +2143,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHDATAFLOWS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/data-standards": {
@@ -2203,7 +2203,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHDATASTANDARDS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/data/domains": {
@@ -2263,7 +2263,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHDATADOMAINS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/deployments": {
@@ -2323,7 +2323,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHDEPLOYMENTS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/governance/principle-categories": {
@@ -2383,7 +2383,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLECATEGORIES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/governance/principles": {
@@ -2443,7 +2443,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/governance/review-templates": {
@@ -2503,7 +2503,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTEMPLATES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/governance/review-tickets": {
@@ -2563,7 +2563,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTICKETS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/governance/tech-debts": {
@@ -2623,7 +2623,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHGOVERNANCETECHDEBTS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/impact-analysis": {
@@ -2683,7 +2683,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHIMPACTANALYSIS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/infrastructures": {
@@ -2743,7 +2743,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHINFRASTRUCTURES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/ontology-mappings/changes": {
@@ -2803,7 +2803,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSCHANGES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/ontology-mappings/rules": {
@@ -2863,7 +2863,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSRULES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/orgs": {
@@ -2923,7 +2923,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHORGS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/orgs/tree": {
@@ -2983,7 +2983,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHORGSTREE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/roles": {
@@ -3043,7 +3043,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHROLES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/tech-stacks": {
@@ -3103,7 +3103,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHTECHSTACKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/technology-components": {
@@ -3163,7 +3163,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHTECHNOLOGYCOMPONENTS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/technology-radar": {
@@ -3223,7 +3223,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHTECHNOLOGYRADAR"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/technology-stacks": {
@@ -3283,7 +3283,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHTECHNOLOGYSTACKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/arch/value-streams": {
@@ -3343,7 +3343,7 @@
         "x-mate-requirements": [
           "FR-ARCH-ARCHGETARCHVALUESTREAMS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot": {
@@ -3403,7 +3403,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOT"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/a2a/delegate": {
@@ -3466,7 +3466,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTA2ADELEGATE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/a2a/external": {
@@ -3526,7 +3526,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTA2AEXTERNAL"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/actions": {
@@ -3586,7 +3586,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTACTIONS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/actions/execute": {
@@ -3649,7 +3649,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/actions/match": {
@@ -3712,7 +3712,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/analysis/audit-sql": {
@@ -3775,7 +3775,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTANALYSISAUDITSQL"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/analysis/execute-sql": {
@@ -3838,7 +3838,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTANALYSISEXECUTESQL"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/analysis/explain-sql": {
@@ -3898,7 +3898,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTANALYSISEXPLAINSQL"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/analysis/generate-sql": {
@@ -3961,7 +3961,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTANALYSISGENERATESQL"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/auth/login": {
@@ -4024,7 +4024,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTAUTHLOGIN"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/chat/multimodal/upload": {
@@ -4087,7 +4087,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTCHATMULTIMODALUPLOAD"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/code": {
@@ -4147,7 +4147,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTCODE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/conversations": {
@@ -4207,7 +4207,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTCONVERSATIONS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/datasources": {
@@ -4267,7 +4267,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTDATASOURCES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/generate/dashboard": {
@@ -4330,7 +4330,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTGENERATEDASHBOARD"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/generate/explain-code": {
@@ -4393,7 +4393,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTGENERATEEXPLAINCODE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/generate/form": {
@@ -4456,7 +4456,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTGENERATEFORM"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/generate/process": {
@@ -4516,7 +4516,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/generate/review-code": {
@@ -4579,7 +4579,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTGENERATEREVIEWCODE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/knowledge-bases": {
@@ -4639,7 +4639,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTKNOWLEDGEBASES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/models/multimodal": {
@@ -4699,7 +4699,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTMODELSMULTIMODAL"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/ontology/concepts/search": {
@@ -4759,7 +4759,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTONTOLOGYCONCEPTSSEARCH"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/ontology/graph/expand": {
@@ -4819,7 +4819,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHEXPAND"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/ontology/graph/query": {
@@ -4879,7 +4879,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHQUERY"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/plans": {
@@ -4939,7 +4939,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTPLANS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/queries/execute": {
@@ -5002,7 +5002,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTQUERIESEXECUTE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/queries/history": {
@@ -5062,7 +5062,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTQUERIESHISTORY"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/scheduling/employees/match": {
@@ -5122,7 +5122,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGEMPLOYEESMATCH"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/scheduling/execution/start": {
@@ -5185,7 +5185,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGEXECUTIONSTART"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/scheduling/intent/detect": {
@@ -5248,7 +5248,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGINTENTDETECT"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/scheduling/intents": {
@@ -5308,7 +5308,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGINTENTS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/scheduling/plan/generate": {
@@ -5371,7 +5371,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGPLANGENERATE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/scheduling/templates": {
@@ -5431,7 +5431,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/copilot/search": {
@@ -5491,7 +5491,7 @@
         "x-mate-requirements": [
           "FR-COPILOT-COPILOTGETCOPILOTSEARCH"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dashboard/auth/login": {
@@ -6954,7 +6954,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETDATASOURCES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "post": {
         "security": [
@@ -6999,7 +6999,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTDATASOURCES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/sources/{id}": {
@@ -7055,7 +7055,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETDATASOURCESID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "put": {
         "security": [
@@ -7109,7 +7109,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPUTDATASOURCESID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "delete": {
         "security": [
@@ -7163,7 +7163,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATADELETEDATASOURCESID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/sources/{id}/test": {
@@ -7219,7 +7219,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTDATASOURCESIDTEST"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/sources/{id}/schema": {
@@ -7275,7 +7275,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETDATASOURCESIDSCHEMA"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/cdc-tasks": {
@@ -7322,7 +7322,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETDATACDCTASKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "post": {
         "security": [
@@ -7367,7 +7367,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTDATACDCTASKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/cdc-tasks/{id}": {
@@ -7423,7 +7423,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETDATACDCTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "put": {
         "security": [
@@ -7477,7 +7477,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPUTDATACDCTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "delete": {
         "security": [
@@ -7531,7 +7531,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATADELETEDATACDCTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/cdc-tasks/{id}/status": {
@@ -7587,7 +7587,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETDATACDCTASKSIDSTATUS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/cdc-tasks/{id}/pause": {
@@ -7643,7 +7643,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/data/cdc-tasks/{id}/resume": {
@@ -7699,7 +7699,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTDATACDCTASKSIDRESUME"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/etl/tasks": {
@@ -7746,7 +7746,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETETLTASKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "post": {
         "security": [
@@ -7791,7 +7791,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTETLTASKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/etl/tasks/{id}": {
@@ -7847,7 +7847,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETETLTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "put": {
         "security": [
@@ -7901,7 +7901,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPUTETLTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "delete": {
         "security": [
@@ -7955,7 +7955,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATADELETEETLTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/etl/tasks/{id}/run": {
@@ -8011,7 +8011,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTETLTASKSIDRUN"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/etl/tasks/{id}/stop": {
@@ -8067,7 +8067,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTETLTASKSIDSTOP"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/etl/tasks/{id}/status": {
@@ -8123,7 +8123,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETETLTASKSIDSTATUS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/scheduler/tasks": {
@@ -8170,7 +8170,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETSCHEDULERTASKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "post": {
         "security": [
@@ -8215,7 +8215,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTSCHEDULERTASKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/scheduler/tasks/{id}": {
@@ -8271,7 +8271,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETSCHEDULERTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "put": {
         "security": [
@@ -8325,7 +8325,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPUTSCHEDULERTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "delete": {
         "security": [
@@ -8379,7 +8379,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATADELETESCHEDULERTASKSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/scheduler/tasks/{id}/trigger": {
@@ -8435,7 +8435,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTSCHEDULERTASKSIDTRIGGER"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/scheduler/tasks/{id}/pause": {
@@ -8491,7 +8491,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTSCHEDULERTASKSIDPAUSE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/scheduler/dag": {
@@ -8538,7 +8538,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETSCHEDULERDAG"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/metrics": {
@@ -8585,7 +8585,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETMETRICS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "post": {
         "security": [
@@ -8630,7 +8630,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTMETRICS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/metrics/{id}": {
@@ -8686,7 +8686,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETMETRICSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "put": {
         "security": [
@@ -8740,7 +8740,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPUTMETRICSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       },
       "delete": {
         "security": [
@@ -8794,7 +8794,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATADELETEMETRICSID"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/metrics/{id}/values": {
@@ -8850,7 +8850,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETMETRICSIDVALUES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/metrics/{id}/lineage": {
@@ -8906,7 +8906,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAGETMETRICSIDLINEAGE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/metrics/{id}/compute": {
@@ -8962,7 +8962,7 @@
         "x-mate-requirements": [
           "FR-DATA-DATAPOSTMETRICSIDCOMPUTE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/a2a/agent/deep-research/invoke": {
@@ -9095,7 +9095,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWAUTHLOGIN"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/collaborations": {
@@ -9155,7 +9155,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWCOLLABORATIONS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/commit": {
@@ -9215,7 +9215,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWCOMMIT"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/documents": {
@@ -9275,7 +9275,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWDOCUMENTS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/documents/upload": {
@@ -9338,7 +9338,7 @@
         "x-mate-requirements": [
           "FR-DW-DWPOSTDWDOCUMENTSUPLOAD"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/employees": {
@@ -9398,7 +9398,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWEMPLOYEES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/employees/tasks": {
@@ -9458,7 +9458,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWEMPLOYEESTASKS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/evaluations": {
@@ -9518,7 +9518,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWEVALUATIONS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/extract": {
@@ -9578,7 +9578,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWEXTRACT"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/knowledge-bases": {
@@ -9638,7 +9638,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWKNOWLEDGEBASES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/learning/extract": {
@@ -9698,7 +9698,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWLEARNINGEXTRACT"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/learning/feedback": {
@@ -9758,7 +9758,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWLEARNINGFEEDBACK"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/models": {
@@ -9818,7 +9818,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWMODELS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/tools": {
@@ -9878,7 +9878,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWTOOLS"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/traces": {
@@ -9938,7 +9938,7 @@
         "x-mate-requirements": [
           "FR-DW-DWGETDWTRACES"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/readyz": {
@@ -14536,7 +14536,7 @@
         "x-mate-requirements": [
           "FR-WFE-WFEPOSTWFEFLOWSTEST"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/wfe/flows/validate": {
@@ -14596,7 +14596,7 @@
         "x-mate-requirements": [
           "FR-WFE-WFEGETWFEFLOWSVALIDATE"
         ],
-        "x-mate-implementation-status": "planned"
+        "x-mate-implementation-status": "implemented"
       }
     }
   },
@@ -17100,6 +17100,6 @@
     "operations": 282,
     "schemas": 81,
     "services": 18,
-    "last_generated": "2026-08-02T08:07:35.879573+00:00"
+    "last_generated": "2026-08-03T15:21:32.931677+00:00"
   }
 }

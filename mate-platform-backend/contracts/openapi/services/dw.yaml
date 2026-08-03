@@ -12,10 +12,14 @@ servers:
 tags:
 - name: dw
   description: dw domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+
+  - bearerAuth: []
+
+    tenantHeader: []
+
+    oidcScopes: [platform.read]
+
 paths:
   /api/v1/dw/auth/login:
     get:
@@ -52,7 +56,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWAUTHLOGIN
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/collaborations:
     get:
       security:
@@ -88,7 +92,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWCOLLABORATIONS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/commit:
     get:
       security:
@@ -124,7 +128,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWCOMMIT
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/documents:
     get:
       security:
@@ -160,7 +164,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWDOCUMENTS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/documents/upload:
     post:
       security:
@@ -200,7 +204,7 @@ paths:
       x-mate-permission: dw.post
       x-mate-requirements:
       - FR-DW-DWPOSTDWDOCUMENTSUPLOAD
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/employees:
     get:
       security:
@@ -236,7 +240,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWEMPLOYEES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/employees/tasks:
     get:
       security:
@@ -272,7 +276,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWEMPLOYEESTASKS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/evaluations:
     get:
       security:
@@ -308,7 +312,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWEVALUATIONS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/extract:
     get:
       security:
@@ -344,7 +348,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWEXTRACT
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/knowledge-bases:
     get:
       security:
@@ -380,7 +384,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWKNOWLEDGEBASES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/learning/extract:
     get:
       security:
@@ -416,7 +420,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWLEARNINGEXTRACT
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/learning/feedback:
     get:
       security:
@@ -452,7 +456,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWLEARNINGFEEDBACK
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/models:
     get:
       security:
@@ -488,7 +492,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWMODELS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/tools:
     get:
       security:
@@ -524,7 +528,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWTOOLS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/dw/traces:
     get:
       security:
@@ -560,7 +564,7 @@ paths:
       x-mate-permission: dw.get
       x-mate-requirements:
       - FR-DW-DWGETDWTRACES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
