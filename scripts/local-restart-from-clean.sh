@@ -149,6 +149,17 @@ log "  ANTHROPIC_BASE_URL=$ANTHROPIC"
 [ -z "$KEY_OPENAI" ] && log "  WARN: OPENAI_API_KEY is empty (some services will fail)"
 [ -z "$KEY_ANTHROPIC" ] && log "  WARN: ANTHROPIC_API_KEY is empty (mate-tech-llmgw anthropic provider will fail)"
 
+# ---- 5b. WSL2 distro hint (only if Docker Desktop was uninstalled) ----
+# .wslconfig dataDirectory only governs NEW WSL2 distros, NOT the existing
+# docker-desktop / docker-desktop-data. To preserve those, set Docker Desktop
+# Settings -> Resources -> Advanced -> Disk image location to the existing
+# D:\Docker\DockerDesktopWSL\disk\ path BEFORE first daemon start.
+if [ -d "D:/Docker/DockerDesktopWSL/disk" ] || [ -d "/mnt/d/Docker/DockerDesktopWSL/disk" ]; then
+    log "  hint: D:\\Docker\\DockerDesktopWSL\\disk\\ found."
+    log "        If reinstalling Docker Desktop, set Settings -> Resources ->"
+    log "        Advanced -> Disk image location to that path to reuse the .vhdx."
+fi
+
 # ============================================================
 # Step 6: Optionally reset stale containers
 # ============================================================
