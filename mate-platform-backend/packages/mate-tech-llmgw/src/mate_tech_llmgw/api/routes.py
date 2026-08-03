@@ -102,25 +102,69 @@ class EmbeddingRequest(BaseModel):
 
     model: str = Field("text-embedding-3-small", description="embedding 模型")
     input: list[str] = Field(..., description="待嵌入文本")
+    provider: str = Field(
+        default="",
+        description="embedding provider: openai | doubao | local (默认按 model 推断)",
+    )
+    tenant_id: str = Field(default="default", description="租户 ID")
 
 
 class EmbeddingResponse(BaseModel):
-    """/embeddings 响应体."""
+    """/embeddings 响应体 (OpenAI 兼容格式)."""
 
     model: str
+    dimensions: int = 0
     data: list[dict[str, Any]]
     usage: dict[str, int] = {}
 
 
-@router.post("/embeddings", response_model=EmbeddingResponse)
-async def embeddings_endpoint(req: EmbeddingRequest) -> EmbeddingResponse:
-    """/embeddings 端点(占位 — 实际实现见 W5-6 tech-rag 嵌入层)."""
-    # TODO: 接入实际 embedding provider
+def _infer_embedding_provider(model: str, explicit: str) -> str:
+    """根据 model 名推断 embedding provider (openai / doubao / local)."""
+    if explicit:
+        return explicit
+    lower = (model or "").lower()
+    if lower.startswith("doubao") or lower.startswith("bge-"):
+        return "doubao"
+    return "openai"
+
+
+async def _run_embeddings(req: EmbeddingRequest) -> EmbeddingResponse:
+    """共享 embedding 执行逻辑 (canonical + legacy 复用，保证 body 一致).
+
+    通过 ``get_embedding_provider`` 路由到真实 provider；无 API key /
+    网络失败时 provider 自动回退到确定性 hash 向量，调用方永远拿到回复。
+    """
+    from ..providers.embeddings import get_embedding_provider
+
+    provider_name = _infer_embedding_provider(req.model, req.provider)
+    provider = get_embedding_provider(provider_name)
+
+    data: list[dict[str, Any]] = []
+    total_tokens = 0
+    for i, text in enumerate(req.input):
+        result = await provider.embed(
+            text, model=req.model, tenant_id=req.tenant_id
+        )
+        data.append({"index": i, "embedding": result.embedding})
+        total_tokens += result.usage.get("prompt_tokens", 0)
+
+    dimensions = len(data[0]["embedding"]) if data else 0
     return EmbeddingResponse(
         model=req.model,
-        data=[{"index": i, "embedding": [0.0] * 1536} for i in range(len(req.input))],
-        usage={"prompt_tokens": sum(len(s.split()) for s in req.input)},
+        dimensions=dimensions,
+        data=data,
+        usage={"prompt_tokens": total_tokens},
     )
+
+
+@router.post("/embeddings", response_model=EmbeddingResponse)
+async def embeddings_endpoint(req: EmbeddingRequest) -> EmbeddingResponse:
+    """/embeddings 端点 — 路由到真实 embedding provider (openai/doubao/local).
+
+    provider 按 ``req.provider`` 选择，缺省时按 ``req.model`` 推断。
+    无 API key / 网络失败时自动回退到确定性 hash 向量。
+    """
+    return await _run_embeddings(req)
 
 
 # ---------------------------------------------------------------------------
@@ -415,8 +459,4 @@ async def legacy_chat_stream(req: ChatRequest, response: Response):
 )
 async def legacy_embeddings(req: EmbeddingRequest, response: Response) -> EmbeddingResponse:
     response.headers.update(_deprecation_header())
-    return EmbeddingResponse(
-        model=req.model,
-        data=[{"index": i, "embedding": [0.0] * 1536} for i in range(len(req.input))],
-        usage={"prompt_tokens": sum(len(s.split()) for s in req.input)},
-    )
+    return await _run_embeddings(req)

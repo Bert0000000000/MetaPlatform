@@ -67,6 +67,12 @@ EXCLUDE_FILES = {
     "doubao.py",
     "openai.py",
     "qwen.py",
+    # llmgw embedding providers (P1-RED-4): call the external OpenAI /
+    # Doubao (火山方舟 ARK) Embeddings public API using provider-specific
+    # API keys (OPENAI_API_KEY / ARK_API_KEY), not the internal
+    # service-to-service Bearer. Same rationale as the chat providers
+    # above; the API key is tenant-scoped via env injection.
+    "embeddings.py",
     # mate-tech-iam/main.py: legacy dashboard callback that pings the
     # Keycloak IDP directly to verify a user session. IDP endpoints do
     # not accept the internal service Bearer; this module is deprecated
