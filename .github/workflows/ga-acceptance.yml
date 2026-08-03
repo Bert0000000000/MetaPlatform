@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - run: pip install ruff pyright
       - run: ruff check mate-platform-backend
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: python -c "import yaml; d = yaml.safe_load(open('infra/helm/charts/otel-collector/templates/configmap.yaml').read().replace('{{- if .Values.receivers.otlp.grpc.enabled }}', 'True').replace('{{- end }}', '')); assert 'otlp/grpc' in str(d.get('data', {}).get('relay.yaml', '')) or 'otlp' in str(d); print('OK')"
 
   # rule 11: helm-docs sync
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           curl -sSLO https://github.com/norwoodj/helm-docs/releases/latest/download/helm-docs_Linux_x86_64.tar.gz
           tar xf helm-docs_Linux_x86_64.tar.gz
@@ -71,13 +71,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # gitleaks-action auto-detects .gitleaks.toml at the repo root.
       # The config extends the built-in default ruleset and adds
       # Mate-Platform-specific rules (JWT / AWS / GitHub / PEM).
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -87,8 +87,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: oasdiff/oasdiff-action@v0.1.0
+      - uses: actions/checkout@v7
+      - uses: oasdiff/oasdiff-action@v0.1.11
         with:
           spec: mate-platform-backend/contracts/openapi/services
           fail-on: "ERR"
@@ -99,8 +99,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
         with: { version: v3.14.4 }
       - run: |
           curl -sSLO https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
@@ -128,8 +128,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
         with: { version: v3.14.4 }
       - run: |
           helm template metaplatform infra/helm -f infra/helm/values-local.yaml > /tmp/rendered.yaml
@@ -144,8 +144,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with: { python-version: "3.12" }
       - name: install pre-commit
         run: pip install pre-commit
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           # Each app PRD has requirement IDs; verify all 17 app directories
           # have at least one FR-* / NFR-* / AC-* reference.
