@@ -1,0 +1,46 @@
+{{/*
+  Headless service — required by the StatefulSet for stable pod DNS
+  names (iceberg-0.iceberg-headless, iceberg-1.iceberg-headless, …).
+  Trino / Spark / Flink connectors use these stable names for
+  catalog coordination.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "iceberg.fullname" . }}-headless
+  labels:
+    {{- include "iceberg.labels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "iceberg.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+  ports:
+    - name: rest
+      port: {{ .Values.service.port }}
+      targetPort: rest
+      protocol: TCP
+---
+{{/*
+  ClusterIP service — the stable REST catalog access point. Trino /
+  Spark table store clients connect to <release>-iceberg:8181.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "iceberg.fullname" . }}
+  labels:
+    {{- include "iceberg.labels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "iceberg.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+  ports:
+    - name: rest
+      port: {{ .Values.service.port }}
+      targetPort: rest
+      protocol: TCP

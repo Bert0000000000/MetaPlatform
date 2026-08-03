@@ -1,0 +1,45 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "iceberg.fullname" . }}
+  labels:
+    {{- include "iceberg.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for Iceberg catalog pods. Ingress restricted to the
+      platform namespace on the REST catalog port (8181); egress
+      restricted to DNS. Enforces hard rule 13 (NetworkPolicy
+      default-deny = prod-blocking when absent).
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "iceberg.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: catalog
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only pods in the platform namespace may reach the Iceberg
+    # REST catalog on 8181.
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+{{- end }}

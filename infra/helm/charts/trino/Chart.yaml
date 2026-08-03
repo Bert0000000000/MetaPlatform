@@ -1,0 +1,28 @@
+apiVersion: v2
+name: trino
+description: |
+  Trino (formerly PrestoSQL) distributed SQL query engine. Federates
+  queries across the Mate Platform lake formats (Paimon + Iceberg)
+  and exposes a single JDBC / REST endpoint for the data-platform
+  analytics workloads (BI, ADS, data products). Pairs with the
+  Iceberg + Paimon sub-charts that share the same S3 warehouse.
+
+type: application
+version: 0.1.0
+appVersion: "435"
+
+keywords:
+  - trino
+  - sql
+  - federation
+  - bi
+  - data-lake
+  - presto
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: DataLake
+  licenses: Apache-2.0

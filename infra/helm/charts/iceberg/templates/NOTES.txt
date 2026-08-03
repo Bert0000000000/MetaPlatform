@@ -1,0 +1,35 @@
+==========================================================================
+ Apache Iceberg ({{ .Chart.Name }} {{ .Chart.Version }} / appVersion {{ .Chart.AppVersion }})
+ REST catalog server has been deployed.
+==========================================================================
+
+Release         : {{ .Release.Name }}
+Namespace       : {{ .Release.Namespace }}
+Replicas        : {{ .Values.replicaCount }} catalog server(s)
+Catalog mode    : {{ .Values.catalog.mode }}
+Warehouse       : {{ .Values.catalog.warehouse }}
+Persistence     : {{ if .Values.persistence.enabled }}PVC {{ .Values.persistence.size }}{{ else }}emptyDir (ephemeral){{ end }}
+Tenant isolation: {{ if .Values.tenantIsolation.enabled }}enabled (prefix="{{ .Values.tenantIsolation.tablePrefix }}"){{ else }}disabled{{ end }}
+
+REST catalog endpoint (in-cluster):
+  {{ include "iceberg.fullname" . }}:{{ .Values.service.port }}
+
+Headless DNS (per-pod stable names):
+{{- $fullname := include "iceberg.fullname" . -}}
+{{- range $i := until (int .Values.replicaCount) }}
+  {{ $fullname }}-{{ $i }}.{{ $fullname }}-headless:{{ $.Values.service.port }}
+{{- end }}
+
+1. Verify the catalog servers are ready:
+
+   kubectl -n {{ .Release.Namespace }} rollout status statefulset/{{ include "iceberg.fullname" . }} \
+       --timeout=300s
+
+2. Trino / Spark / Flink table store connectors should point to the
+   REST catalog endpoint above. Table names follow the
+   tenant-isolation convention:
+     {{ .Values.tenantIsolation.tablePrefix }}<tenant_id>.<domain>.<table>
+
+NetworkPolicy (hard rule 13):
+  Ingress restricted to namespaces: {{ range .Values.networkPolicy.allowedIngressNamespaces }}{{ . }} {{ end }}
+  Egress restricted to DNS (kube-system:53).

@@ -33,6 +33,8 @@ REQUIRED_SUB_CHARTS = {
     "datahub",
     "ge",
     "paimon",
+    "iceberg",
+    "trino",
 }
 
 

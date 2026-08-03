@@ -1,0 +1,47 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "trino.fullname" . }}
+  labels:
+    {{- include "trino.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for Trino coordinator + worker pods. Ingress
+      restricted to the platform namespace on the HTTP port (8080);
+      egress restricted to DNS + sibling catalogs + S3 warehouse.
+      Enforces hard rule 13 (NetworkPolicy default-deny =
+      prod-blocking when absent).
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "trino.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only pods in the platform namespace may reach the Trino
+    # coordinator on 8080 / 8081.
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.httpPort }}
+        - protocol: TCP
+          port: 8081
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+{{- end }}

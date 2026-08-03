@@ -1,0 +1,32 @@
+==========================================================================
+ Trino ({{ .Chart.Name }} {{ .Chart.Version }} / appVersion {{ .Chart.AppVersion }})
+ Coordinator + worker fleet has been deployed.
+==========================================================================
+
+Release         : {{ .Release.Name }}
+Namespace       : {{ .Release.Namespace }}
+Coordinator replicas: {{ .Values.replicaCount }}
+Worker replicas     : {{ .Values.worker.replicaCount }}
+Federation catalogs : {{ if .Values.catalogs.iceberg.enabled }}iceberg {{ end }}{{ if .Values.catalogs.paimon.enabled }}paimon {{ end }}{{ if .Values.catalogs.system.enabled }}system{{ end }}
+Tenant isolation    : {{ if .Values.tenantIsolation.enabled }}enabled (prefix="{{ .Values.tenantIsolation.tablePrefix }}"){{ else }}disabled{{ end }}
+
+Coordinator HTTP endpoint (in-cluster):
+  {{ include "trino.fullname" . }}-coordinator:{{ .Values.service.httpPort }}
+
+JDBC URL:
+  jdbc:trino://{{ include "trino.fullname" . }}:{{ .Values.service.httpPort }}
+
+1. Verify the coordinator + workers are ready:
+
+   kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "trino.fullname" . }}-coordinator \
+       --timeout=300s
+   kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "trino.fullname" . }}-worker \
+       --timeout=300s
+
+2. BI / data-product clients should connect to the JDBC URL above.
+   Federated queries span the Iceberg + Paimon catalogs sharing the
+   same S3 warehouse.
+
+NetworkPolicy (hard rule 13):
+  Ingress restricted to namespaces: {{ range .Values.networkPolicy.allowedIngressNamespaces }}{{ . }} {{ end }}
+  Egress restricted to DNS (kube-system:53).

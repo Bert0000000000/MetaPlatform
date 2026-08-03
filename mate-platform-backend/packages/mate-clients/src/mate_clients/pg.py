@@ -4,6 +4,8 @@ isolation + OTel instrumentation (ADR-0014 step 4 / 硬规则 4).
 Every cross-service data access goes through this client so the
 platform can enforce:
   - tenant_id injection (硬规则 3, via ``bind_tenant_context``)
+  - RLS session GUC priming (mate.tenant_id via
+    ``install_rls_session`` — v3.2-α G6 增强, backend 双保险)
   - BearerAuth propagation (ADR-0014 step 4, via ``OutgoingAuthMiddleware``)
   - OTel span attributes (硬规则 9)
   - connection pool limits + retry
@@ -105,17 +107,38 @@ class PgClient:
         session = self._session_local()
         try:
             if tenant_id:
-                # Late import to avoid circular dependency in dev mode
-                from mate_platform.tenancy.context import TenantId
-                from mate_platform.tenancy.db_filter import bind_tenant_context
+                # Late import to avoid circular dependency in dev mode.
+                # Build a real RequestContext so install_rls_session can
+                # emit ``SET LOCAL app.tenant_id`` on PostgreSQL
+                # connections — this primes the G6 RLS policy
+                # (Alembic 0008) so it does not deny-by-default.
+                from mate_platform.tenancy.context import (
+                    AuthMethod,
+                    RequestContext,
+                    TenantId,
+                    UserId,
+                )
+                from mate_platform.tenancy.rls_session import (
+                    install_rls_session,
+                )
 
-                ctx = type("Ctx", (), {
-                    "tenant_id": TenantId(tenant_id),
-                    "trace_id": "",
-                    "user_id": "",
-                    "roles": (),
-                })()
-                bind_tenant_context(session, ctx)
+                ctx = RequestContext(
+                    request_id="",
+                    trace_id="",
+                    tenant_id=TenantId(tenant_id),
+                    user_id=UserId(""),
+                    roles=frozenset(),
+                    permissions=frozenset(),
+                    scopes=frozenset(),
+                    client_id="",
+                    auth_method=AuthMethod.SERVICE,
+                )
+                # install_rls_session is the G6 应用层 bridge:
+                # it binds the ctx AND emits the ``SET LOCAL
+                # app.tenant_id`` statement on PostgreSQL
+                # connections. Non-PG dialects (SQLite / MySQL
+                # dev) are no-ops so dev keeps working.
+                install_rls_session(session, ctx)
             yield session
             session.commit()
         except Exception:

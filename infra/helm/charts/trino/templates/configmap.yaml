@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "trino.fullname" . }}
+  labels:
+    {{- include "trino.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Non-sensitive Trino coordinator + worker configuration. Catalog
+      endpoints are decoupled from the image layer so the Iceberg /
+      Paimon REST catalog addresses can be overridden per environment
+      without rebuilding the image.
+data:
+  # Federation catalogs — Iceberg + Paimon + system. Each catalog
+  # is pointed at the sibling REST catalog service.
+  {{- if .Values.catalogs.iceberg.enabled }}
+  catalog-iceberg: {{ .Values.catalogs.iceberg.endpoint | quote }}
+  {{- end }}
+  {{- if .Values.catalogs.paimon.enabled }}
+  catalog-paimon: {{ .Values.catalogs.paimon.endpoint | quote }}
+  {{- end }}
+
+  # C2: tenant isolation — every Trino session operates under
+  # the tenant_<tenant_id>.<domain>.<table> convention.
+  {{- if .Values.tenantIsolation.enabled }}
+  tenant-isolation-enabled: "true"
+  tenant-table-prefix: {{ .Values.tenantIsolation.tablePrefix | quote }}
+  {{- end }}
+
+  # HTTP / REST endpoint port (used by the coordinator service +
+  # probes).
+  http-port: {{ .Values.service.httpPort | quote }}

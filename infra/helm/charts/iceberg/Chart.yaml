@@ -1,0 +1,27 @@
+apiVersion: v2
+name: iceberg
+description: |
+  Apache Iceberg open table format REST catalog. Provides the
+  Iceberg REST server consumed by Trino, Spark, Flink and the
+  data-platform lineage pipeline. Pairs with the Paimon sub-chart
+  (interchangeable table format on the same S3 warehouse) and the
+  Trino sub-chart for SQL federation.
+
+type: application
+version: 0.1.0
+appVersion: "1.4"
+
+keywords:
+  - iceberg
+  - data-lake
+  - table-format
+  - rest-catalog
+  - analytics
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: DataLake
+  licenses: Apache-2.0

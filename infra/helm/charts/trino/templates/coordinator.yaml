@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "trino.fullname" . }}-coordinator
+  labels:
+    {{- include "trino.labels" . | nindent 4 }}
+    app.kubernetes.io/component: coordinator
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "trino.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: coordinator
+  template:
+    metadata:
+      labels:
+        {{- include "trino.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: coordinator
+      annotations:
+        # Roll the pod when the ConfigMap changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: trino
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              # Write the Trino coordinator config from the
+              # configMap + values.
+              mkdir -p /etc/trino/catalog
+              {{- if .Values.catalogs.iceberg.enabled }}
+              echo "connector.name=iceberg" > /etc/trino/catalog/iceberg.properties
+              {{- end }}
+              {{- if .Values.catalogs.paimon.enabled }}
+              echo "connector.name=paimon" > /etc/trino/catalog/paimon.properties
+              {{- end }}
+              {{- if .Values.catalogs.system.enabled }}
+              echo "connector.name=system" > /etc/trino/catalog/system.properties
+              {{- end }}
+              # HTTP server config.
+              cat > /etc/trino/config.properties <<EOF
+              coordinator=true
+              node-scheduler.include-coordinator=false
+              http-server.http.port={{ .Values.service.httpPort }}
+              discovery.uri=http://localhost:{{ .Values.service.httpPort }}
+              EOF
+              exec /usr/lib/trino/bin/run-trino server
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+              protocol: TCP
+          env:
+            - name: TRINO_CATALOG_ICEBERG_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "trino.fullname" . }}
+                  key: catalog-iceberg
+                  optional: true
+            - name: TRINO_CATALOG_PAIMON_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "trino.fullname" . }}
+                  key: catalog-paimon
+                  optional: true
+            {{- if .Values.tenantIsolation.enabled }}
+            - name: TRINO_TENANT_ISOLATION_ENABLED
+              value: "true"
+            - name: TRINO_TENANT_TABLE_PREFIX
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "trino.fullname" . }}
+                  key: tenant-table-prefix
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources.coordinator | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /v1/info
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /v1/info
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: etc
+              mountPath: /etc/trino
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: etc
+          emptyDir: {}

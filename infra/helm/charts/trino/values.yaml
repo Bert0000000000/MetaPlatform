@@ -1,0 +1,89 @@
+# =============================================================================
+# Trino sub-chart values
+# =============================================================================
+# Closes the v3.2-γ task. Trino federates SQL queries across
+# Paimon + Iceberg catalogs (shared S3 warehouse) and exposes a
+# single JDBC / REST endpoint for the BI / data-product workloads.
+# ADR-0016 §3.1: D5 Iceberg format on the same warehouse, Trino
+# for SQL federation.
+# =============================================================================
+
+# Force the service DNS name to "trino" so BI clients resolve
+# the coordinator consistently.
+fullnameOverride: trino
+
+replicaCount: 1  # coordinator; workers scale via replicas below
+
+image:
+  repository: trinodb/trino
+  tag: "435"
+  pullPolicy: IfNotPresent
+
+# Federation catalogs — Iceberg + Paimon + a system connector. Each
+# catalog points at the REST catalog deployed by the sibling sub-
+# chart (ADR-0016: same S3 warehouse).
+catalogs:
+  iceberg:
+    enabled: true
+    endpoint: "http://iceberg:8181"
+  paimon:
+    enabled: true
+    endpoint: "http://paimon:8081"
+  system:
+    enabled: true  # connector for information_schema / system tables
+
+resources:
+  coordinator:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+  worker:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+
+# Worker deployment — separate StatefulSet/Deployment to scale
+# compute independently of the coordinator.
+worker:
+  replicaCount: 2
+
+# Persistence — Trino keeps spill-to-disk in /tmp; ephemeral
+# emptyDir is fine for short-lived query workloads.
+persistence:
+  enabled: false
+
+# Coordinator + worker ports (HTTP for UI/REST, Thrift for JDBC).
+service:
+  type: ClusterIP
+  httpPort: 8080
+
+# Probes — HTTP GET on /v1/info (Trino coordinator health).
+probes:
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+# C2: tenant isolation — every Trino session reads/writes under
+# the same tenant namespace as the catalog tables so the lake
+# writer and the SQL federator agree. Set via the BI integration
+# layer (ADR-0016 §3.2).
+tenantIsolation:
+  enabled: true
+  tablePrefix: "tenant_"
+
+# NetworkPolicy — default-deny, namespace-scoped ingress only
+# (hard rule 13). Egress restricted to DNS + sibling catalogs +
+# S3 warehouse.
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform

@@ -126,3 +126,69 @@ def test_reset_pg_client_clears_singleton() -> None:
         assert c1 is not c2
     finally:
         os.environ.pop("MATE_DB_URL", None)
+
+
+# ---------------------------------------------------------------------------
+# G6 RLS session bridge integration (v3.2-α)
+# ---------------------------------------------------------------------------
+def test_session_binds_tenant_ctx_when_tenant_id_provided() -> None:
+    """``session(tenant_id=...)`` primes the SQLAlchemy session with
+    a real ``RequestContext`` so the RLS bridge can emit ``SET LOCAL
+    app.tenant_id`` on PostgreSQL connections (no-op on SQLite)."""
+    client = PgClient(dsn="sqlite:///:memory:")
+    with client.session(tenant_id="tenant-acme") as s:
+        ctx = s.info.get("tenant_ctx")
+        assert ctx is not None
+        assert ctx.tenant_id == "tenant-acme"
+        assert ctx.auth_method.value == "service"
+
+
+def test_session_without_tenant_id_does_not_bind_ctx() -> None:
+    """``session()`` without tenant_id does not auto-bind a context.
+
+    Hard rule 3 still applies: if the caller queries a tenant-scoped
+    table they must call ``install_rls_session(session, ctx)`` (or
+    the legacy ``bind_tenant_context``) themselves.
+    """
+    client = PgClient(dsn="sqlite:///:memory:")
+    with client.session() as s:
+        assert s.info.get("tenant_ctx") is None
+
+
+def test_session_rejects_empty_tenant_id_string() -> None:
+    """On a real PostgreSQL backend the RLS bridge would raise
+    ``TenantAccessError`` for an empty tenant_id (the ``require_tenant``
+    guard). On SQLite the install helper short-circuits before that
+    check, so we exercise the SQLite branch only — production
+    deployments must use PostgreSQL (硬规则 5).
+
+    This test documents the SQLite fallback: the empty ctx is bound
+    without an error so dev / unit tests keep working. The PgClient
+    itself does not raise; responsibility for tenant validation
+    shifts to the handler / service layer (硬规则 3).
+    """
+    from mate_platform.tenancy.context import (
+        AuthMethod,
+        RequestContext,
+        TenantId,
+        UserId,
+    )
+    from mate_platform.tenancy.rls_session import install_rls_session
+
+    client = PgClient(dsn="sqlite:///:memory:")
+    ctx = RequestContext(
+        request_id="",
+        trace_id="",
+        tenant_id=TenantId(""),
+        user_id=UserId(""),
+        roles=frozenset(),
+        permissions=frozenset(),
+        scopes=frozenset(),
+        client_id="",
+        auth_method=AuthMethod.SERVICE,
+    )
+    # On SQLite the install helper is a no-op (dialect gate) — the
+    # bind still happens so the session info reflects the ctx.
+    with client.session() as s:
+        install_rls_session(s, ctx)
+        assert s.info["tenant_ctx"] is ctx

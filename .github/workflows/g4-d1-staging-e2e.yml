@@ -1,0 +1,63 @@
+name: g4-d1-staging-e2e
+
+on:
+  push:
+    branches: [main, codex/**]
+    paths:
+      - "infra/helm/**"
+      - ".github/workflows/g4-d1-staging-e2e.yml"
+      - "scripts/ci/d1_staging_smoke.sh"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/helm/**"
+
+permissions:
+  contents: read
+
+# Cancel in-progress runs on the same branch.
+concurrency:
+  group: g4-d1-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+# D1 staging smoke — v3.2-α W3 / v3.2-δ delivery. Same kind pattern as
+# g4-kind-e2e but the smoke script is the dedicated lineage e2e:
+#
+#   bash scripts/ci/d1_staging_smoke.sh
+#
+# Spins up a kind cluster, installs the umbrella chart with
+# values-staging.yaml (independent stg_ storage prefix), waits for
+# the lineage stack (debezium / marquez / datahub / ge), and asserts
+# a tenant-scoped lineage event lands end-to-end. The actual real
+# cloud K8s staging run is owned by DevOps and tracked under the
+# v3.2-δ milestone (2027-02-15); this workflow covers the local
+# rehearsal.
+jobs:
+  d1-staging-smoke:
+    name: kind cluster lineage staging smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1.10.0
+        with:
+          version: v0.22.0
+          node_image: kindest/node:v1.29.2
+          cluster_name: mate-platform-staging
+          wait: 120s
+      - uses: azure/setup-helm@v4
+        with: { version: v3.14.4 }
+      - name: pre-flight checks
+        run: |
+          set -euo pipefail
+          # Verify the smoke script exists + is executable (git 0755
+          # in CI; the bash interpreter will treat it as a normal
+          # script regardless).
+          test -x scripts/ci/d1_staging_smoke.sh
+          # Verify staging values file present.
+          test -f infra/helm/values-staging.yaml
+      - name: lineage stack smoke
+        run: bash scripts/ci/d1_staging_smoke.sh
+      - name: helm uninstall
+        if: always()
+        run: helm uninstall mate-platform --namespace metaplatform-staging

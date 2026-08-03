@@ -1,0 +1,73 @@
+# =============================================================================
+# Apache Iceberg sub-chart values
+# =============================================================================
+# Closes the v3.2-γ task. Iceberg is the open table format REST
+# catalog used by Trino, Spark, Flink and the data-platform
+# lineage pipeline (ADR-0016 §3.1: D5 Iceberg format on the same
+# S3 warehouse as Paimon, federated via Trino for SQL analytics).
+# =============================================================================
+
+# Force the service DNS name to "iceberg" so Trino / Spark / Flink
+# resolvers find the REST catalog consistently.
+fullnameOverride: iceberg
+
+replicaCount: 2
+
+image:
+  repository: apache/iceberg-rest-fixture
+  tag: "1.4"
+  pullPolicy: IfNotPresent
+
+# Catalog configuration. Mode matches Paimon so both engines can
+# read the same warehouse.
+catalog:
+  mode: filesystem    # filesystem | hive | jdbc
+  warehouse: "s3://mate-platform/data-lake"
+  hive_metastore: ""
+
+# Tables configuration (Iceberg side).
+tables:
+  autoCreate: true
+  format: parquet
+
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1"
+
+persistence:
+  enabled: true
+  size: 100Gi
+  storageClass: ""
+
+# C1/C2: tenant isolation — each tenant gets an independent
+# namespace prefix in the REST catalog. SEC-TENANT-01 Iceberg
+# writers resolve full table names as:
+#   <tablePrefix>.<tenant_id>.<domain>.<table>
+tenantIsolation:
+  enabled: true
+  tablePrefix: "tenant_"
+
+# REST catalog service port.
+service:
+  type: ClusterIP
+  port: 8181
+
+# Probes — HTTP GET on the Iceberg REST catalog health endpoint.
+probes:
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+# NetworkPolicy — default-deny, namespace-scoped ingress only
+# (hard rule 13). Egress restricted to DNS + S3 warehouse.
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform

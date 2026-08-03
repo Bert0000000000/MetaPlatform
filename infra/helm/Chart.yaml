@@ -63,3 +63,9 @@ dependencies:
   - name: paimon
     version: 0.1.0
     condition: paimon.enabled
+  - name: iceberg
+    version: 0.1.0
+    condition: iceberg.enabled
+  - name: trino
+    version: 0.1.0
+    condition: trino.enabled
