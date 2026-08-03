@@ -1,6 +1,8 @@
 """Tenant isolation primitives for mate-platform."""
+from .ads_audit import ADS_AUDIT_EVENT_TYPE, CROSS_TENANT_TAG, AdsAuditMiddleware
 from .audit import CrossTenantAccess, emit_cross_tenant_access, make_target_tenants
-from .context import AuthMethod, RequestContext, TenantId, UserId
+from .context import AuthMethod, RequestContext, UserId
+from .context import TenantId as TenantId
 from .guards import (
     TenantAccessError,
     assert_same_tenant,
@@ -15,14 +17,19 @@ from .rls_session import (
     attach_rls_listener,
     install_rls_session,
     is_attached,
+    rls_db_session,
+    rls_db_session_for,
     rls_session_middleware,
 )
 
 __all__ = [
-    "AuthMethod",
-    "CrossTenantAccess",
+    "ADS_AUDIT_EVENT_TYPE",
+    "CROSS_TENANT_TAG",
     "GUC_BYPASS",
     "GUC_TENANT_ID",
+    "AdsAuditMiddleware",
+    "AuthMethod",
+    "CrossTenantAccess",
     "RequestContext",
     "TenantAccessError",
     "TenantScopedRepository",
@@ -36,5 +43,7 @@ __all__ = [
     "make_target_tenants",
     "require_any_tenant",
     "require_tenant",
+    "rls_db_session",
+    "rls_db_session_for",
     "rls_session_middleware",
 ]

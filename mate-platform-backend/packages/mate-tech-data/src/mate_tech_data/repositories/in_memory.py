@@ -59,6 +59,49 @@ class DataSource:
     updated_at: str = ""
 
 
+@dataclass
+class DataProduct:
+    """Data Product (Iceberg ADS) entity — mutable.
+
+    Lifecycle status: draft | published | certified | suspended.
+    Modality: structured | embedding | chunk | mixed.
+    ``version`` is bumped on publish to record lifecycle milestones;
+    v1 keeps a single ``history`` entry for past versions (latest only).
+    """
+
+    id: str
+    tenant_id: str
+    name: str
+    source_paimon_table: str
+    target_iceberg_table: str
+    version: int = 1
+    modality: str = "structured"  # structured | embedding | chunk | mixed
+    status: str = "draft"  # draft | published | certified | suspended
+    owner: str = ""
+    description: str = ""
+    tags: list[str] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
+    created_at: str = ""
+    updated_at: str = ""
+
+
+# Valid value sets — kept here so the router can reuse them when validating
+# payloads. They are intentionally module-private dataclass attributes that
+# match the constraints in the companion OpenAPI spec.
+DATA_PRODUCT_MODALITIES: tuple[str, ...] = (
+    "structured",
+    "embedding",
+    "chunk",
+    "mixed",
+)
+DATA_PRODUCT_STATUSES: tuple[str, ...] = (
+    "draft",
+    "published",
+    "certified",
+    "suspended",
+)
+
+
 # ---------------------------------------------------------------------------
 # Seed builders
 # ---------------------------------------------------------------------------
@@ -161,12 +204,59 @@ def _seed_schemas(tenant_id: str) -> dict[str, dict[str, Any]]:
     }
 
 
+def _seed_data_products(tenant_id: str) -> dict[str, DataProduct]:
+    """Per-tenant data product seed catalog (>= 3 entries)."""
+    catalog: list[tuple[str, str, str, str]] = [
+        (
+            "dp-orders-summary",
+            "Orders Daily Summary",
+            "paimon.ods.orders",
+            "iceberg.ads.orders_summary",
+        ),
+        (
+            "dp-user-profile",
+            "User Profile",
+            "paimon.ods.users",
+            "iceberg.dim.user_profile",
+        ),
+        (
+            "dp-events-stream",
+            "Events Stream",
+            "paimon.ods.events",
+            "iceberg.ads.events_stream",
+        ),
+    ]
+    now = _now()
+    return {
+        pid: DataProduct(
+            id=pid,
+            tenant_id=tenant_id,
+            name=name,
+            source_paimon_table=src,
+            target_iceberg_table=tgt,
+            modality="structured",
+            status="published",
+            owner=f"owner-{tenant_id}",
+            description="Seeded data product.",
+            tags=["seed"],
+            history=[
+                {"version": 1, "status": "draft", "at": now},
+                {"version": 1, "status": "published", "at": now},
+            ],
+            created_at=now,
+            updated_at=now,
+        )
+        for pid, name, src, tgt in catalog
+    }
+
+
 # ---------------------------------------------------------------------------
 # Tenant-scoped stores
 # ---------------------------------------------------------------------------
 _CDC_TASKS: dict[str, dict[str, CdcTask]] = {}
 _SOURCES: dict[str, dict[str, DataSource]] = {}
 _SCHEMAS: dict[str, dict[str, dict[str, Any]]] = {}
+_DATA_PRODUCTS: dict[str, dict[str, DataProduct]] = {}
 
 
 def _ensure_tenant(tenant_id: str) -> None:
@@ -179,6 +269,8 @@ def _ensure_tenant(tenant_id: str) -> None:
         _CDC_TASKS[tenant_id] = _seed_cdc_tasks(tenant_id)
     if tenant_id not in _SCHEMAS:
         _SCHEMAS[tenant_id] = _seed_schemas(tenant_id)
+    if tenant_id not in _DATA_PRODUCTS:
+        _DATA_PRODUCTS[tenant_id] = _seed_data_products(tenant_id)
 
 
 def _now() -> str:
@@ -399,6 +491,147 @@ def delete_source(tenant_id: str, source_id: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Public read API — Data Products
+# ---------------------------------------------------------------------------
+def list_data_products(
+    tenant_id: str,
+    status: str | None = None,
+    modality: str | None = None,
+) -> list[DataProduct]:
+    """Return the DataProducts for a tenant, optionally filtered by status/modality."""
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    products = list(_DATA_PRODUCTS[tenant_id].values())
+    if status:
+        products = [p for p in products if p.status == status]
+    if modality:
+        products = [p for p in products if p.modality == modality]
+    return sorted(products, key=lambda p: p.id)
+
+
+def get_data_product(tenant_id: str, product_id: str) -> DataProduct | None:
+    """Return a single DataProduct by id, or None if not found."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _DATA_PRODUCTS[tenant_id].get(product_id)
+
+
+# ---------------------------------------------------------------------------
+# Public write API — Data Products
+# ---------------------------------------------------------------------------
+def create_data_product(
+    tenant_id: str,
+    name: str,
+    source_paimon_table: str,
+    target_iceberg_table: str,
+    *,
+    modality: str = "structured",
+    owner: str = "",
+    description: str = "",
+    tags: list[str] | None = None,
+) -> DataProduct:
+    """Create a new DataProduct and store it."""
+    _ensure_tenant(tenant_id)
+    product_id = f"dp-{uuid.uuid4().hex[:8]}"
+    now = _now()
+    normalised_modality = modality if modality in DATA_PRODUCT_MODALITIES else "structured"
+    product = DataProduct(
+        id=product_id,
+        tenant_id=tenant_id,
+        name=name,
+        source_paimon_table=source_paimon_table,
+        target_iceberg_table=target_iceberg_table,
+        version=1,
+        modality=normalised_modality,
+        status="draft",
+        owner=owner,
+        description=description,
+        tags=list(tags or []),
+        history=[{"version": 1, "status": "draft", "at": now}],
+        created_at=now,
+        updated_at=now,
+    )
+    _DATA_PRODUCTS[tenant_id][product_id] = product
+    return product
+
+
+def update_data_product(
+    tenant_id: str,
+    product_id: str,
+    **fields: Any,
+) -> DataProduct | None:
+    """Patch mutable fields of an existing DataProduct. Returns None if missing.
+
+    Allowed patch fields: ``name``, ``source_paimon_table``, ``target_iceberg_table``,
+    ``modality``, ``owner``, ``description``, ``tags``. Lifecycle state
+    (``status``, ``version``) is governed by the explicit transition handlers
+    (``set_data_product_status``) and cannot be patched through this entry.
+    """
+    _ensure_tenant(tenant_id)
+    product = _DATA_PRODUCTS[tenant_id].get(product_id)
+    if product is None:
+        return None
+    mutable_fields = {
+        "name",
+        "source_paimon_table",
+        "target_iceberg_table",
+        "modality",
+        "owner",
+        "description",
+        "tags",
+    }
+    for key, value in fields.items():
+        if key not in mutable_fields:
+            continue
+        if key == "modality" and value not in DATA_PRODUCT_MODALITIES:
+            continue  # ignore unsupported modality; keep prior value
+        if key == "tags" and value is not None:
+            product.tags = list(value)
+            continue
+        setattr(product, key, value)
+    product.updated_at = _now()
+    return product
+
+
+def delete_data_product(tenant_id: str, product_id: str) -> bool:
+    """Delete a DataProduct. Returns True if removed, False if not found."""
+    _ensure_tenant(tenant_id)
+    return _DATA_PRODUCTS[tenant_id].pop(product_id, None) is not None
+
+
+def set_data_product_status(
+    tenant_id: str, product_id: str, status: str,
+    *,
+    bump_version: bool = False,
+    require_owner: bool = False,
+) -> DataProduct | None:
+    """Transition a DataProduct's lifecycle status.
+
+    - ``bump_version=True`` increments ``version`` (used by /publish).
+    - ``require_owner=True`` rejects the transition when ``owner`` is empty
+      (used by /certify).
+    Returns None if the product is missing or constraints fail.
+    """
+    _ensure_tenant(tenant_id)
+    product = _DATA_PRODUCTS[tenant_id].get(product_id)
+    if product is None:
+        return None
+    if status not in DATA_PRODUCT_STATUSES:
+        return None
+    if require_owner and not product.owner:
+        return None
+    now = _now()
+    if bump_version:
+        product.version += 1
+    product.status = status
+    product.history.append({"version": product.version, "status": status, "at": now})
+    product.updated_at = now
+    return product
+
+
+# ---------------------------------------------------------------------------
 # Serialization helper
 # ---------------------------------------------------------------------------
 def task_to_dict(task: CdcTask) -> dict[str, Any]:
@@ -430,6 +663,26 @@ def source_to_dict(source: DataSource) -> dict[str, Any]:
     }
 
 
+def data_product_to_dict(product: DataProduct) -> dict[str, Any]:
+    """Serialize a DataProduct to a JSON-friendly dict."""
+    return {
+        "id": product.id,
+        "tenant_id": product.tenant_id,
+        "name": product.name,
+        "version": product.version,
+        "source_paimon_table": product.source_paimon_table,
+        "target_iceberg_table": product.target_iceberg_table,
+        "modality": product.modality,
+        "status": product.status,
+        "owner": product.owner,
+        "description": product.description,
+        "tags": list(product.tags),
+        "history": [dict(entry) for entry in product.history],
+        "created_at": product.created_at,
+        "updated_at": product.updated_at,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Test helpers — DO NOT call from production code paths
 # ---------------------------------------------------------------------------
@@ -438,3 +691,4 @@ def reset_store() -> None:
     _CDC_TASKS.clear()
     _SOURCES.clear()
     _SCHEMAS.clear()
+    _DATA_PRODUCTS.clear()

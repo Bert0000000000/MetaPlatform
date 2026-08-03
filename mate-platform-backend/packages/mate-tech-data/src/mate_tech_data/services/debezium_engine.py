@@ -25,11 +25,13 @@ Configuration (all from environment variables):
 """
 from __future__ import annotations
 
+import contextlib
 import os
 from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
+
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -287,10 +289,8 @@ class DebeziumEngine:
                 "status_code": exc.status_code,
             }
         finally:
-            try:
+            with contextlib.suppress(DebeziumEngineError):
                 await self.stop_cdc_task(task_id, connector_name)
-            except DebeziumEngineError:
-                pass  # Best-effort cleanup
 
     async def discover_source_schema(
         self, task_id: str, connector_name: str,

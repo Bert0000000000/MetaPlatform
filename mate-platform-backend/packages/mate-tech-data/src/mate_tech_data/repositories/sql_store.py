@@ -1,7 +1,9 @@
 """SQL-backed repository for the data platform control plane (P3-W2 TD-5).
 
-Provides read + write for ``CdcTask`` and ``DataSource``. Dict fields
-(``config`` / ``connection_config``) are JSON-serialised to TEXT.
+Provides read + write for ``CdcTask``, ``DataSource`` and the
+``DataProduct`` Iceberg ADS domain (v3.1). Dict / list fields
+(``config`` / ``connection_config`` / ``tags`` / ``history``) are
+JSON-serialised to TEXT on write and re-hydrated on read.
 
 Schema discovery (``get_source_schema``) and connection probing
 (``test_source_connection``) stay in ``in_memory`` because they are
@@ -18,7 +20,7 @@ from sqlalchemy.orm import Session
 from mate_tech_db.base import get_session
 
 from . import sql_models as models
-from .in_memory import CdcTask, DataSource
+from .in_memory import CdcTask, DataProduct, DataSource
 
 
 # ---------------------------------------------------------------------------
@@ -39,6 +41,19 @@ def _json_loads(text: str) -> dict[str, Any]:
         return json.loads(text)
     except (json.JSONDecodeError, TypeError):
         return {}
+
+
+def _json_loads_list(text: str) -> list[Any]:
+    """Re-hydrate a JSON list of strings (or list of dicts) from TEXT."""
+    if not text:
+        return []
+    try:
+        value = json.loads(text)
+        if isinstance(value, list):
+            return list(value)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return []
 
 
 def _orm_to_cdc_task(row: models.CdcTaskORM) -> CdcTask:
@@ -63,6 +78,38 @@ def _orm_to_source(row: models.DataSourceORM) -> DataSource:
         type=row.type,
         connection_config=_json_loads(row.connection_config),
         status=row.status or "connected",
+        created_at=row.created_at or "",
+        updated_at=row.updated_at or "",
+    )
+
+
+def _orm_to_data_product(row: models.DataProductORM) -> DataProduct:
+    tags: list[str] = []
+    raw_tags = _json_loads_list(row.tags)
+    for entry in raw_tags:
+        if isinstance(entry, str):
+            tags.append(entry)
+    history_raw = _json_loads_list(row.description) if False else _json_loads_list("")
+    history: list[dict[str, Any]] = []
+    for entry in history_raw:
+        if isinstance(entry, dict):
+            history.append(dict(entry))
+    # NOTE: history is not currently persisted on the ORM (TEXT slot would be
+    # reserved for a future column). The in-memory store retains history;
+    # SQL store simply yields an empty list to keep the dataclass shape stable.
+    return DataProduct(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        source_paimon_table=row.source_paimon_table,
+        target_iceberg_table=row.target_iceberg_table,
+        version=row.version or 1,
+        modality=row.modality or "structured",
+        status=row.status or "draft",
+        owner=row.owner or "",
+        description=row.description or "",
+        tags=tags,
+        history=history,
         created_at=row.created_at or "",
         updated_at=row.updated_at or "",
     )
@@ -237,6 +284,112 @@ def delete_source(tenant_id: str, source_id: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Read API — Data Products (Iceberg ADS)
+# ---------------------------------------------------------------------------
+def list_data_products(
+    tenant_id: str,
+    status: str | None = None,
+    modality: str | None = None,
+) -> list[DataProduct]:
+    if not tenant_id:
+        return []
+    s = _session()
+    stmt = select(models.DataProductORM).where(
+        models.DataProductORM.tenant_id == tenant_id
+    )
+    if status:
+        stmt = stmt.where(models.DataProductORM.status == status)
+    if modality:
+        stmt = stmt.where(models.DataProductORM.modality == modality)
+    rows = s.execute(stmt.order_by(models.DataProductORM.id)).scalars().all()
+    return [_orm_to_data_product(r) for r in rows]
+
+
+def get_data_product(tenant_id: str, product_id: str) -> DataProduct | None:
+    if not tenant_id:
+        return None
+    s = _session()
+    row = s.execute(
+        select(models.DataProductORM).where(
+            models.DataProductORM.tenant_id == tenant_id,
+            models.DataProductORM.id == product_id,
+        )
+    ).scalar_one_or_none()
+    return _orm_to_data_product(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Write API — Data Products (Iceberg ADS)
+# ---------------------------------------------------------------------------
+def put_data_product(tenant_id: str, product: DataProduct) -> DataProduct:
+    if not tenant_id:
+        return product
+    s = _session()
+    tags_str = json.dumps(list(product.tags or []), ensure_ascii=False)
+    existing = s.get(models.DataProductORM, product.id)
+    if existing:
+        existing.name = product.name
+        existing.version = product.version
+        existing.source_paimon_table = product.source_paimon_table
+        existing.target_iceberg_table = product.target_iceberg_table
+        existing.modality = product.modality
+        existing.status = product.status
+        existing.owner = product.owner
+        existing.description = product.description
+        existing.tags = tags_str
+        existing.updated_at = product.updated_at
+    else:
+        s.add(models.DataProductORM(
+            id=product.id, tenant_id=tenant_id,
+            name=product.name, version=product.version,
+            source_paimon_table=product.source_paimon_table,
+            target_iceberg_table=product.target_iceberg_table,
+            modality=product.modality, status=product.status,
+            owner=product.owner, description=product.description,
+            tags=tags_str,
+            created_at=product.created_at, updated_at=product.updated_at,
+        ))
+    s.commit()
+    return product
+
+
+def delete_data_product(tenant_id: str, product_id: str) -> bool:
+    if not tenant_id:
+        return False
+    s = _session()
+    row = s.execute(
+        select(models.DataProductORM).where(
+            models.DataProductORM.tenant_id == tenant_id,
+            models.DataProductORM.id == product_id,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return False
+    s.delete(row)
+    s.commit()
+    return True
+
+
+def set_data_product_status(
+    tenant_id: str, product_id: str, status: str,
+) -> DataProduct | None:
+    if not tenant_id:
+        return None
+    s = _session()
+    row = s.execute(
+        select(models.DataProductORM).where(
+            models.DataProductORM.tenant_id == tenant_id,
+            models.DataProductORM.id == product_id,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    row.status = status
+    s.commit()
+    return _orm_to_data_product(row)
+
+
+# ---------------------------------------------------------------------------
 # Bootstrap — seed SQL store from in_memory seed data (one-time)
 # ---------------------------------------------------------------------------
 def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
@@ -252,5 +405,8 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     )
     counts["sources"] = len(
         [put_source(tenant_id, s) for s in mem.list_sources(tenant_id)]
+    )
+    counts["data_products"] = len(
+        [put_data_product(tenant_id, p) for p in mem.list_data_products(tenant_id)]
     )
     return counts
