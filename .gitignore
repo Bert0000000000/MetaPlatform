@@ -151,3 +151,14 @@ Thumbs.db
 # Generated FastAPI runtime schemas
 mate-platform-backend/contracts/runtime/*.json
 !mate-platform-backend/contracts/runtime/.gitkeep
+
+# Docker build / recovery artifacts (2026-08-03 cleanup)
+.tmp-build-context/
+.tmp-build-logs/
+.tmp-build-logs2/
+.tmp-build-logs3/
+.tmp-*.py
+.tmp-*.sh
+.tmp-commit-v*.py
+.tmp-gh-push*.py
+.tmp-git-status.py
