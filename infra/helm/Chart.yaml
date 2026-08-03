@@ -69,3 +69,6 @@ dependencies:
   - name: trino
     version: 0.1.0
     condition: trino.enabled
+  - name: starrocks
+    version: 0.1.0
+    condition: starrocks.enabled

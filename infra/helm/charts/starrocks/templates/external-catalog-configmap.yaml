@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "starrocks.feFullname" . }}-external-catalogs
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fe
+  annotations:
+    policy.description: |
+      External catalog definitions for StarRocks FE. StarRocks reads
+      Iceberg / Paimon tables via the external catalog feature so BI
+      clients can join native StarRocks tables with lake tables under
+      the same SQL surface.
+data:
+  # Iceberg external catalog — points at the sibling Iceberg REST
+  # catalog deployed by infra/helm/charts/iceberg/.
+  {{- if .Values.externalCatalogs.iceberg.enabled }}
+  catalog-iceberg-name: "iceberg"
+  catalog-iceberg-type: "iceberg"
+  catalog-iceberg-endpoint: {{ .Values.externalCatalogs.iceberg.catalogEndpoint | quote }}
+  {{- end }}
+
+  # Paimon external catalog — sibling Paimon REST catalog.
+  {{- if .Values.externalCatalogs.paimon.enabled }}
+  catalog-paimon-name: "paimon"
+  catalog-paimon-type: "paimon"
+  catalog-paimon-endpoint: {{ .Values.externalCatalogs.paimon.catalogEndpoint | quote }}
+  {{- end }}
+
+  # Tenant isolation — every BI / external-catalog database is
+  # namespaced under the tenant_<tenant_id> convention so cross-
+  # tenant reports stay auditable.
+  {{- if .Values.tenantIsolation.enabled }}
+  tenant-database-prefix: {{ .Values.tenantIsolation.databasePrefix | quote }}
+  {{- end }}

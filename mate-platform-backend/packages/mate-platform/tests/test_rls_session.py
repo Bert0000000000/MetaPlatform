@@ -38,6 +38,7 @@ os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
 from mate_platform.tenancy.context import AuthMethod, RequestContext, TenantId
+from mate_platform.tenancy.guards import TenantAccessError
 from mate_platform.tenancy.rls_session import (
     GUC_BYPASS,
     GUC_TENANT_ID,
@@ -46,6 +47,8 @@ from mate_platform.tenancy.rls_session import (
     attach_rls_listener,
     install_rls_session,
     is_attached,
+    rls_db_session,
+    rls_db_session_for,
     rls_session_middleware,
 )
 
@@ -226,3 +229,96 @@ class TestRlsSessionMiddleware:
         assert session.conn.executed == [
             f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"
         ]
+
+
+class TestRlsDbSession:
+    """FastAPI Depends helper bridging ``request.state.ctx`` → SQLAlchemy session."""
+
+    def _request(self, ctx):
+        """Build a mock Request with the given ctx attached."""
+        req = MagicMock()
+        req.state.ctx = ctx
+        return req
+
+    def test_binds_ctx_and_emits_set_local(self) -> None:
+        ctx = _ctx(tenant_id="tenant-acme")
+        request = self._request(ctx)
+        session = _FakeSession(dialect_name="postgresql")
+        result = rls_db_session(request, lambda: session)
+        assert result is session
+        assert session.info["tenant_ctx"] is ctx
+        assert session.conn.executed == [
+            f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"
+        ]
+
+    def test_rejects_missing_ctx(self) -> None:
+        request = MagicMock()
+        # No ctx attribute at all (anonymous path).
+        del request.state.ctx
+        session = _FakeSession(dialect_name="postgresql")
+        with pytest.raises(TenantAccessError, match="tenant-bound ctx"):
+            rls_db_session(request, lambda: session)
+
+    def test_rejects_anonymous_ctx(self) -> None:
+        ctx = _ctx()
+        ctx = RequestContext(
+            request_id="",
+            trace_id="",
+            tenant_id=TenantId(""),
+            user_id=ctx.user_id,
+            roles=ctx.roles,
+            permissions=ctx.permissions,
+            scopes=ctx.scopes,
+            client_id=ctx.client_id,
+            auth_method=AuthMethod.ANONYMOUS,
+        )
+        request = self._request(ctx)
+        session = _FakeSession(dialect_name="postgresql")
+        with pytest.raises(TenantAccessError, match="tenant-bound ctx"):
+            rls_db_session(request, lambda: session)
+
+    def test_sqlite_dialect_is_noop(self) -> None:
+        ctx = _ctx(tenant_id="tenant-acme")
+        request = self._request(ctx)
+        session = _FakeSession(dialect_name="sqlite")
+        result = rls_db_session(request, lambda: session)
+        # ctx bound, but no SET LOCAL on SQLite.
+        assert result.info["tenant_ctx"] is ctx
+        assert session.conn.executed == []
+
+
+class TestRlsDbSessionFor:
+    """Partial-applied variant for ``Depends`` wiring."""
+
+    def _request(self, ctx):
+        req = MagicMock()
+        req.state.ctx = ctx
+        return req
+
+    def test_returns_callable_that_resolves_request_from_args(self) -> None:
+        ctx = _ctx(tenant_id="tenant-acme")
+        request = self._request(ctx)
+        session = _FakeSession(dialect_name="postgresql")
+        dep = rls_db_session_for(lambda: session)
+        result = dep(request)
+        assert result is session
+        assert session.info["tenant_ctx"] is ctx
+        assert session.conn.executed == [
+            f"SET LOCAL {GUC_TENANT_ID} = 'tenant-acme'"
+        ]
+
+    def test_returns_callable_that_resolves_request_from_kwargs(self) -> None:
+        ctx = _ctx(tenant_id="tenant-acme")
+        request = self._request(ctx)
+        session = _FakeSession(dialect_name="postgresql")
+        dep = rls_db_session_for(lambda: session)
+        result = dep(request=request)
+        assert result is session
+        assert session.info["tenant_ctx"] is ctx
+
+    def test_raises_when_no_request_argument(self) -> None:
+        session = _FakeSession(dialect_name="postgresql")
+        dep = rls_db_session_for(lambda: session)
+        # No request in args or kwargs.
+        with pytest.raises(TenantAccessError, match="no Request argument"):
+            dep()

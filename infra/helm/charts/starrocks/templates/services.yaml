@@ -1,0 +1,106 @@
+{{/*
+  FE headless service — required by the StatefulSet for stable pod DNS
+  names (starrocks-fe-0.starrocks-fe-headless, …). BEs use these
+  stable names for cluster bootstrap.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "starrocks.feFullname" . }}-headless
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fe
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fe
+  ports:
+    - name: query
+      port: {{ .Values.fe.queryPort }}
+      targetPort: query
+      protocol: TCP
+    - name: http
+      port: {{ .Values.fe.httpPort }}
+      targetPort: http
+      protocol: TCP
+---
+{{/*
+  FE ClusterIP service — the MySQL protocol endpoint (9030) that
+  JDBC clients (Grafana / Trino / BI apps) connect to.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "starrocks.feFullname" . }}
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fe
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fe
+  ports:
+    - name: query
+      port: {{ .Values.fe.queryPort }}
+      targetPort: query
+      protocol: TCP
+    - name: http
+      port: {{ .Values.fe.httpPort }}
+      targetPort: http
+      protocol: TCP
+---
+{{/*
+  BE headless service — required by the BE StatefulSet for stable
+  pod DNS names. FEs use these stable names to discover BEs.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "starrocks.beFullname" . }}-headless
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: be
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: be
+  ports:
+    - name: heartbeat
+      port: {{ .Values.be.heartbeatPort }}
+      targetPort: heartbeat
+      protocol: TCP
+    - name: be
+      port: {{ .Values.be.bePort }}
+      targetPort: be
+      protocol: TCP
+    - name: webserver
+      port: {{ .Values.be.webserverPort }}
+      targetPort: webserver
+      protocol: TCP
+---
+{{/*
+  BE ClusterIP service — JDBC clients can use this for BE-direct
+  queries (rare; most traffic goes via FE).
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "starrocks.beFullname" . }}
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: be
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: be
+  ports:
+    - name: webserver
+      port: {{ .Values.be.webserverPort }}
+      targetPort: webserver
+      protocol: TCP

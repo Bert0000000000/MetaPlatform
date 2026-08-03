@@ -1,0 +1,28 @@
+apiVersion: v2
+name: starrocks
+description: |
+  Apache StarRocks sub-chart (FE + BE) for high-concurrency OLAP serving.
+  Pairs with the Trino + Iceberg sub-charts: Iceberg tables flow into
+  StarRocks external catalogs and external tables; BI / reporting
+  workloads query StarRocks instead of going through Trino. Implements
+  the BI integration half of the v3.2-γ M-里程碑.
+
+type: application
+version: 0.1.0
+appVersion: "3.3"
+
+keywords:
+  - starrocks
+  - olap
+  - fe
+  - be
+  - bi
+  - data-warehouse
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: DataLake
+  licenses: Apache-2.0

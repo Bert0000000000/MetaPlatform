@@ -223,6 +223,109 @@ def rls_session_middleware(
     return _open
 
 
+# ---------------------------------------------------------------------------
+# FastAPI integration: bind a SQLAlchemy session to ``request.state.ctx``
+# ---------------------------------------------------------------------------
+def rls_db_session(
+    request,  # FastAPI Request type — untyped to keep this helper
+    # importable from non-web CLI workers that don't pull fastapi in.
+    session_factory: Callable[[], Session],
+) -> Session:
+    """FastAPI dependency yielding a session bound to ``request.state.ctx``.
+
+    Production usage::
+
+        @app.get("/items")
+        def list_items(
+            request: Request,
+            session: Session = Depends(
+                rls_db_session_for(lambda: Session(engine))
+            ),
+        ):
+            rows = session.execute(select(Item)).all()
+
+    The helper is the G6 增强 application-layer bridge:
+
+    * Reads ``request.state.ctx`` populated by ``AuthMiddleware.dispatch``.
+    * Calls ``install_rls_session(session, ctx)`` which both:
+      - Binds the ORM event listener (existing API in ``db_filter.py``)
+      - Emits ``SET LOCAL app.tenant_id = '<escaped>'`` on PostgreSQL
+
+    Non-PG dialects (SQLite / MySQL dev) skip the ``SET LOCAL`` half
+    so dev keeps working.
+
+    No-op on anonymous paths (``/healthz`` etc.) because
+    ``AuthMiddleware`` does not populate ``request.state.ctx`` with a
+    tenant-bound context for those — the helper raises
+    ``TenantAccessError`` if ``ctx`` is missing or anonymous, mirroring
+    the ``require_tenant`` guard (硬规则 3).
+    """
+    from .context import AuthMethod
+    from .guards import TenantAccessError
+
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is None or ctx.auth_method == AuthMethod.ANONYMOUS:
+        raise TenantAccessError(
+            "rls_db_session requires a tenant-bound ctx; "
+            "anonymous endpoints must not depend on this helper"
+        )
+
+    session = session_factory()
+    install_rls_session(session, ctx)
+    return session
+
+
+def rls_db_session_for(
+    session_factory: Callable[[], Session],
+) -> Callable[..., Session]:
+    """Partial-applied variant of :func:`rls_db_session`.
+
+    FastAPI dependencies need a no-argument callable. Use this when
+    wiring a SQLAlchemy session into a router via ``Depends``.
+
+    Example::
+
+        from mate_platform.tenancy.rls_session import rls_db_session_for
+
+        SessionDep = Annotated[
+            Session,
+            Depends(rls_db_session_for(lambda: Session(engine))),
+        ]
+
+        @router.get("/items")
+        def list_items(session: SessionDep):
+            ...
+
+    The returned callable is wired to FastAPI via ``Depends``. It
+    pulls ``request.state.ctx`` from the underlying FastAPI request
+    (which is a thread-local on the per-request context), so the
+    helper remains request-aware without threading the ``Request``
+    object through every router signature.
+    """
+    from .guards import TenantAccessError
+
+    # FastAPI injects the request as the first positional argument
+    # when the dependency callable's signature includes ``request``.
+    # We accept *args/**kwargs to remain forward-compatible with
+    # FastAPI's parameter-binding protocol.
+    def _dep(*args, **kwargs):  # type: ignore[no-untyped-def]
+        # Find the Request in args/kwargs (FastAPI always passes it).
+        request = kwargs.get("request")
+        if request is None:
+            for a in args:
+                if hasattr(a, "state"):
+                    request = a
+                    break
+        if request is None:
+            raise TenantAccessError(
+                "rls_db_session_for must be wired inside a FastAPI "
+                "request context (no Request argument detected)"
+            )
+        return rls_db_session(request, session_factory)
+
+    return _dep
+
+
 __all__ = [
     "GUC_BYPASS",
     "GUC_TENANT_ID",
@@ -230,5 +333,7 @@ __all__ = [
     "bind_tenant_context",
     "install_rls_session",
     "is_attached",
+    "rls_db_session",
+    "rls_db_session_for",
     "rls_session_middleware",
 ]

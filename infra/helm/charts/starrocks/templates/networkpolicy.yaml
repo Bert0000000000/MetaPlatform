@@ -1,0 +1,112 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "starrocks.feFullname" . }}-netpol
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fe
+  annotations:
+    policy.description: |
+      Default-deny for StarRocks FE pods. Ingress restricted to the
+      platform namespace on the FE query port (9030) + http port (8040);
+      egress restricted to DNS + sibling catalogs + S3 warehouse.
+      Enforces hard rule 13 (NetworkPolicy default-deny = prod-blocking
+      when absent).
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "starrocks.labels" . | nindent 6 }}
+      app.kubernetes.io/component: fe
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only pods in the platform namespace may reach the FE.
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.fe.queryPort }}
+        - protocol: TCP
+          port: {{ .Values.fe.httpPort }}
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # BEs receive queries from FEs — allow BE traffic within the
+    # namespace.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.be.heartbeatPort }}
+        - protocol: TCP
+          port: {{ .Values.be.bePort }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "starrocks.beFullname" . }}-netpol
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: be
+  annotations:
+    policy.description: |
+      Default-deny for StarRocks BE pods. Ingress restricted to the
+      FE ServiceAccount namespace (FE → BE heartbeats + data exchange);
+      egress restricted to DNS + S3 warehouse.
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "starrocks.labels" . | nindent 6 }}
+      app.kubernetes.io/component: be
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # FE → BE traffic only.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.be.heartbeatPort }}
+        - protocol: TCP
+          port: {{ .Values.be.bePort }}
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # FE → BE heartbeats (BE → FE direction).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.fe.queryPort }}
+        - protocol: TCP
+          port: {{ .Values.fe.httpPort }}
+{{- end }}

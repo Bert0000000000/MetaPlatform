@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "starrocks.beFullname" . }}
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: be
+spec:
+  serviceName: {{ include "starrocks.beFullname" . }}-headless
+  replicas: {{ .Values.be.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "starrocks.labels" . | nindent 6 }}
+      app.kubernetes.io/component: be
+  template:
+    metadata:
+      labels:
+        {{- include "starrocks.labels" . | nindent 8 }}
+        app.kubernetes.io/component: be
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: starrocks-be
+          image: "{{ .Values.be.image.repository }}:{{ .Values.be.image.tag }}"
+          imagePullPolicy: {{ .Values.be.image.pullPolicy }}
+          ports:
+            - name: heartbeat
+              containerPort: {{ .Values.be.heartbeatPort }}
+              protocol: TCP
+            - name: be
+              containerPort: {{ .Values.be.bePort }}
+              protocol: TCP
+            - name: webserver
+              containerPort: {{ .Values.be.webserverPort }}
+              protocol: TCP
+          env:
+            - name: BE_HEARTBEAT_PORT
+              value: {{ .Values.be.heartbeatPort | quote }}
+            - name: BE_BE_PORT
+              value: {{ .Values.be.bePort | quote }}
+            - name: BE_WEBSERVER_PORT
+              value: {{ .Values.be.webserverPort | quote }}
+            # Discover the FE service for initial cluster bootstrap.
+            - name: FE_SERVICE_NAME
+              value: {{ include "starrocks.feFullname" . | quote }}
+            - name: FE_QUERY_PORT
+              value: {{ .Values.fe.queryPort | quote }}
+          resources:
+            {{- toYaml .Values.resources.be | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: webserver
+            initialDelaySeconds: {{ .Values.probes.be.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.be.periodSeconds }}
+          readinessProbe:
+            tcpSocket:
+              port: webserver
+            initialDelaySeconds: {{ .Values.probes.be.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.be.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /opt/starrocks/be/storage
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- if not .Values.persistence.be.enabled }}
+        - name: data
+          emptyDir: {}
+      {{- end }}
+  {{- if .Values.persistence.be.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "starrocks.labels" . | nindent 10 }}
+          app.kubernetes.io/component: be
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.be.size }}
+        {{- if .Values.persistence.be.storageClass }}
+        storageClassName: {{ .Values.persistence.be.storageClass }}
+        {{- end }}
+  {{- end }}

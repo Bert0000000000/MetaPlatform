@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "starrocks.feFullname" . }}
+  labels:
+    {{- include "starrocks.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fe
+spec:
+  serviceName: {{ include "starrocks.feFullname" . }}-headless
+  replicas: {{ .Values.fe.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "starrocks.labels" . | nindent 6 }}
+      app.kubernetes.io/component: fe
+  template:
+    metadata:
+      labels:
+        {{- include "starrocks.labels" . | nindent 8 }}
+        app.kubernetes.io/component: fe
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: starrocks-fe
+          image: "{{ .Values.fe.image.repository }}:{{ .Values.fe.image.tag }}"
+          imagePullPolicy: {{ .Values.fe.image.pullPolicy }}
+          ports:
+            - name: query
+              containerPort: {{ .Values.fe.queryPort }}
+              protocol: TCP
+            - name: http
+              containerPort: {{ .Values.fe.httpPort }}
+              protocol: TCP
+          env:
+            - name: FE_QUERY_PORT
+              value: {{ .Values.fe.queryPort | quote }}
+            - name: FE_HTTP_PORT
+              value: {{ .Values.fe.httpPort | quote }}
+          resources:
+            {{- toYaml .Values.resources.fe | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: query
+            initialDelaySeconds: {{ .Values.probes.fe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.fe.periodSeconds }}
+          readinessProbe:
+            tcpSocket:
+              port: query
+            initialDelaySeconds: {{ .Values.probes.fe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.fe.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /opt/starrocks/fe/storage
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- if not .Values.persistence.fe.enabled }}
+        - name: data
+          emptyDir: {}
+      {{- end }}
+  {{- if .Values.persistence.fe.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "starrocks.labels" . | nindent 10 }}
+          app.kubernetes.io/component: fe
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.fe.size }}
+        {{- if .Values.persistence.fe.storageClass }}
+        storageClassName: {{ .Values.persistence.fe.storageClass }}
+        {{- end }}
+  {{- end }}

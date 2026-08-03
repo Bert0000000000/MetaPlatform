@@ -39,8 +39,8 @@ ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF0
 "packages/mate-app-kb/src/mate_app_kb/api/app.py" = ["PLR0915", "B008", "PLC0415"]
 # mate-clients: global handler singleton
 "packages/mate-clients/src/mate_clients/kafka/consumer.py" = ["PLW0603"]
+"packages/mate-clients/src/mate_clients/pg.py" = ["PLC0415", "PLW0603"]
 # mate-clients/pg.py: lazy imports break circular deps (mate_platform.session)
-"packages/mate-clients/src/mate_clients/pg.py" = ["PLC0415"]
 "packages/mate-clients/tests/test_pg_client.py" = ["PLC0415"]
 # mate-tech-obs: lazy imports for optional otel instrumentors
 "packages/mate-tech-obs/src/mate_tech_obs/tracing/instrument.py" = ["PLC0415"]

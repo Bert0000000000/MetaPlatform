@@ -35,6 +35,7 @@ REQUIRED_SUB_CHARTS = {
     "paimon",
     "iceberg",
     "trino",
+    "starrocks",
 }
 
 

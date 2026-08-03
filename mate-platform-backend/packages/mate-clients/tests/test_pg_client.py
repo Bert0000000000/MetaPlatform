@@ -7,9 +7,10 @@ SQLAlchemy which abstracts the dialect.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
-from sqlalchemy import inspect, select
+from sqlalchemy import select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_clients.pg import PgClient, get_pg_client, reset_pg_client
@@ -45,8 +46,7 @@ def test_pg_client_with_env_dsn() -> None:
         assert "test_pg_env" in client.dsn
     finally:
         os.environ.pop("MATE_DB_URL", None)
-        if os.path.exists("./test_pg_env.db"):
-            os.remove("./test_pg_env.db")
+        Path("./test_pg_env.db").unlink(missing_ok=True)
 
 
 def test_pg_client_health_check_ok() -> None:
@@ -86,10 +86,9 @@ def test_pg_client_session_rollback_on_error() -> None:
     client = PgClient(dsn="sqlite:///:memory:")
     Base.metadata.create_all(client.engine)
 
-    with pytest.raises(ValueError):
-        with client.session() as s:
-            s.add(Gizmo(id="g-1"))
-            raise ValueError("test error")
+    with pytest.raises(ValueError), client.session() as s:
+        s.add(Gizmo(id="g-1"))
+        raise ValueError("test error")
 
     # Verify the row was not committed
     with client.session() as s:

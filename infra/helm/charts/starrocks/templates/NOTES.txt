@@ -1,0 +1,41 @@
+==========================================================================
+ Apache StarRocks ({{ .Chart.Name }} {{ .Chart.Version }} / appVersion {{ .Chart.AppVersion }})
+ FE + BE cluster has been deployed.
+==========================================================================
+
+Release         : {{ .Release.Name }}
+Namespace       : {{ .Release.Namespace }}
+FE replicas     : {{ .Values.fe.replicaCount }}
+BE replicas     : {{ .Values.be.replicaCount }}
+External catalogs:
+{{- if .Values.externalCatalogs.iceberg.enabled }}
+  - iceberg ({{ .Values.externalCatalogs.iceberg.catalogEndpoint }})
+{{- end }}
+{{- if .Values.externalCatalogs.paimon.enabled }}
+  - paimon  ({{ .Values.externalCatalogs.paimon.catalogEndpoint }})
+{{- end }}
+Tenant isolation: {{ if .Values.tenantIsolation.enabled }}enabled (prefix="{{ .Values.tenantIsolation.databasePrefix }}"){{ else }}disabled{{ end }}
+
+JDBC URL (BI clients):
+  jdbc:mysql://{{ include "starrocks.feFullname" . }}:{{ .Values.fe.queryPort }}
+
+1. Verify the FE + BE pods are ready:
+
+   kubectl -n {{ .Release.Namespace }} rollout status statefulset/{{ include "starrocks.feFullname" . }} \
+       --timeout=300s
+   kubectl -n {{ .Release.Namespace }} rollout status statefulset/{{ include "starrocks.beFullname" . }} \
+       --timeout=300s
+
+2. Run a smoke query from inside the cluster:
+
+   kubectl -n {{ .Release.Namespace }} exec -it \
+       $(kubectl -n {{ .Release.Namespace }} get pod -l "app.kubernetes.io/component=fe" \
+              -o jsonpath='{.items[0].metadata.name}') -- \
+       mysql -h {{ include "starrocks.feFullname" . }} -P {{ .Values.fe.queryPort }} -e \
+       "SHOW DATABASES;"
+
+3. Configure Grafana MySQL data source pointing at jdbc:mysql://{{ include "starrocks.feFullname" . }}:{{ .Values.fe.queryPort }}.
+
+NetworkPolicy (hard rule 13):
+  Ingress restricted to namespaces: {{ range .Values.networkPolicy.allowedIngressNamespaces }}{{ . }} {{ end }}
+  Egress restricted to DNS + sibling StarRocks components + S3 warehouse.

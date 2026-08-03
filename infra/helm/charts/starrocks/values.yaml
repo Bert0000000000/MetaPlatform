@@ -1,0 +1,104 @@
+# =============================================================================
+# Apache StarRocks sub-chart values
+# =============================================================================
+# Closes the v3.2-γ BI 集成 task. StarRocks is the high-concurrency
+# OLAP serving layer for BI / reporting workloads. The chart deploys:
+#   - 1 FE (frontend) StatefulSet that owns metadata + receives MySQL
+#     protocol on port 9030 + HTTP on 8040.
+#   - 3 BE (backend) StatefulSets that own columnar storage + execute
+#     queries in parallel (typical 3-replica minimum for production).
+# FE + BE share the same S3 warehouse as Iceberg/Paimon (external
+# catalog feature). Default image is `starrocks/fe-ubuntu:3.3` per
+# architecture-implementation §6.
+# =============================================================================
+
+# Force the service DNS names to "starrocks-fe" + "starrocks-be" so
+# JDBC clients (Trino + Grafana + BI apps) resolve consistently.
+fe:
+  fullnameOverride: starrocks-fe
+  replicaCount: 1
+  queryPort: 9030        # MySQL protocol — JDBC clients
+  httpPort: 8040         # web UI + REST
+  image:
+    repository: starrocks/fe-ubuntu
+    tag: "3.3"
+    pullPolicy: IfNotPresent
+
+be:
+  fullnameOverride: starrocks-be
+  replicaCount: 3
+  heartbeatPort: 9050    # BE → FE heartbeats
+  bePort: 9060           # BE → BE data exchange
+  webserverPort: 8040    # BE web UI
+  image:
+    repository: starrocks/be-ubuntu
+    tag: "3.3"
+    pullPolicy: IfNotPresent
+
+resources:
+  fe:
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
+  be:
+    requests:
+      memory: "4Gi"
+      cpu: "2"
+    limits:
+      memory: "8Gi"
+      cpu: "4"
+
+# Persistence — StarRocks stores columnar data locally; production
+# deployments can also use object storage (S3) as a tiered cache.
+persistence:
+  fe:
+    enabled: true
+    size: 50Gi
+    storageClass: ""
+  be:
+    enabled: true
+    size: 200Gi
+    storageClass: ""
+
+# External catalogs — StarRocks reads Iceberg / Paimon tables directly
+# via external catalog. This is the BI integration path: the BI
+# client connects to StarRocks's MySQL protocol port (9030) and
+# queries either native StarRocks tables OR external Iceberg/Paimon
+# tables via the external catalog feature.
+externalCatalogs:
+  iceberg:
+    enabled: true
+    catalogEndpoint: "http://iceberg:8181"   # sibling sub-chart REST
+  paimon:
+    enabled: true
+    catalogEndpoint: "http://paimon:8081"    # sibling sub-chart REST
+
+# Tenant isolation — every StarRocks database is created under
+# the tenant_<tenant_id> prefix so cross-tenant reports stay
+# namespaced at the database level (SEC-TENANT-01). Materialised
+# views use the same convention.
+tenantIsolation:
+  enabled: true
+  databasePrefix: "tenant_"
+
+# NetworkPolicy — default-deny, namespace-scoped ingress only
+# (hard rule 13). Egress restricted to DNS + sibling catalogs +
+# S3 warehouse.
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+
+# Probes — TCP probe on the FE query port (9030) and HTTP probe
+# on the BE webserver (8040). Production deployments should switch
+# the FE probe to ``/api/health`` once the StarRocks API stabilises.
+probes:
+  fe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  be:
+    initialDelaySeconds: 60
+    periodSeconds: 15
