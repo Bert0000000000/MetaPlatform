@@ -1,6 +1,6 @@
 # ADR-0016：数据平台架构（DATA-D0-D8）
 
-> 状态：**Proposed**（待 DATA-D0-D8 启动后随实现陆续 Accepted）
+> 状态：**Accepted**（DATA-D0-D8 全部 8 阶段交付，45/45 tests pass）
 > 日期：2026-07-30
 > 关联批次：DATA-D0-D8（PROGRAM-BOBOARD.md）
 > 关联设计：docs/active/specs/2026-07-30-backend-production-readiness-design.md §12

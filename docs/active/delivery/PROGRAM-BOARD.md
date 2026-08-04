@@ -30,7 +30,7 @@
 | BUSINESS-SLICES P1 W3 | rag / mcp | `codex/p1-wave3` | TECH-SERVICES | ✅ Accepted |
 | BUSINESS-SLICES P2 W1 | ont（带代码） | `codex/p2-wave` | P1 W3 | ✅ Accepted |
 | **BUSINESS-SLICES P2 W2** | dashboard / apphub / arch / copilot（4 域，99 endpoints / 93 tests）| `codex/p2-wave-2` → PR #12 | P2 W1 | ✅ Accepted（2026-07-31，PR #12 合入 main，commit `833a809d`） |
-| **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | 🔴 Not Started |
+| **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | ✅ Accepted（dw / a2a / wfe / ont / data 已全部接入） |
 
 ### In Progress — TECH-SERVICES 16 域接入
 

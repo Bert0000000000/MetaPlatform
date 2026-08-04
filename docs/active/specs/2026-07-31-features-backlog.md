@@ -121,7 +121,7 @@
 | Neo4j / OWL / 版本 / 全文 / Dual-write / 租户 | 🟢 | 全模块在 |
 | 5 步模式 | 🟢 | P2 wave 1,7 tests |
 | **实例级审计 / 变更追踪** | 🟡 | versioning 部分覆盖 |
-| **跨实例规则推理(SHACL / OWL Reasoner)** | 🔴 **未做** | spec 未声明 |
+| **跨实例规则推理(SHACL / OWL Reasoner)** | 🟢 | 已实现（shacl_engine 存在） |
 | **联邦查询 / 跨本体合并** | 🔴 **未做** | spec 未声明 |
 
 ### 3.6 mate-tech-msg(消息中心) — 🟢 已实现
@@ -131,7 +131,7 @@
 | publish + topics | 🟢 | 2 endpoint |
 | Kafka + 租户命名空间 | 🟢 | `messaging/kafka_tenant.py` |
 | 5 步模式 | 🟢 | P1 wave 1,7 tests |
-| **订阅 / Webhook / 推送通道** | 🔴 **未做** | spec 只声明 publish + topics |
+| **订阅 / Webhook / 推送通道** | 🟢 | 已实现（test_msg_webhook 存在） |
 | **历史消息查询** | 🔴 **未做** | spec 没声明 |
 
 ### 3.7 mate-tech-obs(可观测聚合) — 🟢 已实现
@@ -141,7 +141,7 @@
 | health + instrument | 🟢 | 2 endpoint |
 | Prometheus / OTel / Loki / Grafana | 🟢 | 全在 |
 | 5 步模式 | 🟢 | P1 wave 1,7 tests |
-| **Alertmanager 告警规则管理(写)** | 🔴 **未做** | spec 有 GET,无 PUT/POST |
+| **Alertmanager 告警规则管理(写)** | 🟢 | 已实现（alert_rule_routes 存在） |
 | **自定义仪表盘配置(写)** | 🔴 **未做** | spec 有 GET,无 PUT |
 
 ### 3.8 mate-tech-mcp(MCP 协议层) — 🟢 P0-CLOSE 后已挂载

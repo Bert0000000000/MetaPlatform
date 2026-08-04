@@ -1,6 +1,6 @@
 # ADR-0014：17 域集成模式（TECH-SERVICES）
 
-> 状态：**Proposed**（待 TECH-SERVICES 验收通过后转 Accepted）
+> 状态：**Accepted**（代码已全部交付，17 域 5 步合规完成）
 > 日期：2026-07-30
 > 关联批次：TECH-SERVICES（PROGRAM-BOARD.md）
 > 关联设计：docs/active/specs/2026-07-30-backend-production-readiness-design.md §12
