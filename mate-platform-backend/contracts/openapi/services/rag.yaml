@@ -40,7 +40,7 @@ paths:
       x-mate-permission: rag.get
       x-mate-requirements:
       - FR-RAG-RAGGETHEALTHZ
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
   /api/v1/rag/status:
     get:
       security:
@@ -65,7 +65,7 @@ paths:
       x-mate-permission: rag.get
       x-mate-requirements:
       - FR-RAG-RAGGETRAGSTATUS
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
   /api/v1/rag/stats:
     get:
       security:
@@ -255,7 +255,7 @@ paths:
       x-mate-permission: rag.post
       x-mate-requirements:
       - FR-RAG-RAGPOSTRAGSEARCH
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
@@ -510,6 +510,31 @@ components:
           - THEMATIC
           default: AUTO
         metadata_filter:
+          type: object
+          additionalProperties:
+            type: string
+        rerank_strategy:
+          type: string
+          enum:
+          - identity
+          - keyword
+          - length
+          default: identity
+          description: Reranker strategy for second-pass reordering
+    RerankCandidate:
+      type: object
+      required:
+      - chunk_id
+      - text
+      - score
+      properties:
+        chunk_id:
+          type: string
+        text:
+          type: string
+        score:
+          type: number
+        metadata:
           type: object
           additionalProperties:
             type: string

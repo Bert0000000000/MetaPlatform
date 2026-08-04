@@ -43,6 +43,7 @@ from mate_tech_rag.api.retrieval import (
     retrieve,
 )
 from mate_tech_rag.api.schemas import (
+    ChunkHit,
     EmbedderInfo,
     HealthResponse,
     IndexStatus,
@@ -57,6 +58,7 @@ from mate_tech_rag.api.schemas import (
     SystemStatus,
     UploadResponse,
 )
+from mate_tech_rag.reranker import RerankCandidate, create_reranker
 
 _log = logging.getLogger(__name__)
 
@@ -277,10 +279,40 @@ def create_app() -> FastAPI:
                 filtered = [h for h in result.hits if h.document_id in owned]
             else:
                 filtered = []
+            # metadata_filter: keep only hits whose metadata matches all
+            # key-value pairs in the filter (task 3).
+            if req.metadata_filter:
+                filtered = [
+                    h for h in filtered
+                    if all(h.metadata.get(k) == v for k, v in req.metadata_filter.items())
+                ]
+            # Reranker: second-pass reordering of filtered hits (task 2).
+            reranker = create_reranker(req.rerank_strategy)
+            hit_map = {h.chunk_id: h for h in filtered}
+            candidates = [
+                RerankCandidate(
+                    chunk_id=h.chunk_id,
+                    text=h.text,
+                    score=h.score,
+                    metadata=dict(h.metadata),
+                )
+                for h in filtered
+            ]
+            reranked = reranker.rerank(req.query, candidates, req.top_k)
+            reranked_hits = [
+                ChunkHit(
+                    chunk_id=c.chunk_id,
+                    document_id=hit_map[c.chunk_id].document_id,
+                    score=c.score,
+                    text=c.text,
+                    metadata=hit_map[c.chunk_id].metadata,
+                )
+                for c in reranked
+            ]
             filtered_resp = RetrievalResponse(
                 query=result.query,
-                hits=filtered,
-                total=len(filtered),
+                hits=reranked_hits,
+                total=len(reranked_hits),
                 latency_ms=result.latency_ms,
                 mode=result.mode,
             )
@@ -291,7 +323,7 @@ def create_app() -> FastAPI:
                     "query": req.query[:200],
                     "top_k": req.top_k,
                     "mode": result.mode,
-                    "hits": len(filtered),
+                    "hits": len(reranked_hits),
                     "total_indexed": len(owned),
                 },
                 tenant_id,

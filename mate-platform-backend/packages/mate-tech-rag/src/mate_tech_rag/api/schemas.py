@@ -22,6 +22,8 @@ class RetrievalRequest(BaseDTO):
     top_k: Annotated[int, Field(ge=1, le=100, default=10, description="top k")]
     kb_id: Annotated[str | None, Field(default=None, description="kb id filter")]
     mode: Annotated[str, Field(default="AUTO", description="AUTO FACTUAL ENTITY THEMATIC")]
+    rerank_strategy: Annotated[str, Field(default="identity", description="identity / keyword / length")]
+    metadata_filter: Annotated[dict[str, str] | None, Field(default=None, description="metadata key-value filters")]
 
 
 class ChunkHit(BaseModel):
