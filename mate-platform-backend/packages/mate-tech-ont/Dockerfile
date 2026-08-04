@@ -21,7 +21,8 @@ RUN pip install --no-cache-dir \
 # 把 ont / common 源码拷到 gate 镜像的 system site-packages
 RUN SITE=/usr/local/lib/python3.12/site-packages && \
     cp -r /tmp/build/packages/mate-tech-ont/src/mate_tech_ont "$SITE/" && \
-    cp -r /tmp/build/packages/mate-common/src/mate_common "$SITE/" 2>/dev/null || true
+    cp -r /tmp/build/packages/mate-common/src/mate_common "$SITE/" && \
+    cp -r /tmp/build/packages/mate-platform/src/mate_platform "$SITE/" 2>/dev/null || true
 
 ENV PATH="/usr/local/bin:$PATH" \
     PORT=8007

@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
 
 COPY --from=builder /app /app
 COPY packages/mate-tech-obs/src/mate_tech_obs /app/src/mate_tech_obs
+COPY packages/mate-platform/src/mate_platform /app/src/mate_platform
 
 RUN useradd --create-home --shell /bin/bash appuser || true
 # Skip chown -R /app: too slow

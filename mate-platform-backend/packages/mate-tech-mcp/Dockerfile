@@ -1,4 +1,4 @@
-﻿# Custom fast Dockerfile for mate-tech-mcp
+# Custom fast Dockerfile for mate-tech-mcp
 # Avoids slow uv sync + chown -R of monorepo
 FROM python:3.12
 
@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Install mate-common (workspace dependency)
 COPY packages/mate-common /tmp/mate-common
 RUN pip install --no-cache-dir /tmp/mate-common
+
+# Copy mate-platform source into site-packages
+COPY packages/mate-platform/src/mate_platform /usr/local/lib/python3.12/site-packages/mate_platform
 
 # Copy MCP source code (no need to chown - running as root)
 COPY packages/mate-tech-mcp/src/mate_tech_mcp /usr/local/lib/python3.12/site-packages/mate_tech_mcp
