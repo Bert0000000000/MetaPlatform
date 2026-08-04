@@ -84,7 +84,7 @@ def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction
 
     @event.listens_for(Engine, "before_execute", named=True)
     def _on_before_execute(conn, clauseelement, multiparams, params, execution_options, context):  # type: ignore[no-redef]
-        return None  # placeholder for future use
+        return None  # future: inject tenant-scoped session filter
 
     @event.listens_for(Session, "do_orm_execute")
     def _on_orm_execute(state):  # type: ignore[no-redef]

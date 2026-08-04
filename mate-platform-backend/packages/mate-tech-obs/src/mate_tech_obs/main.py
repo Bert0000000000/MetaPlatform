@@ -29,6 +29,9 @@ from .admin.alert_rule_routes import router as alert_rule_management_router
 from .admin.alert_rule_routes import _set_outbox as _share_alert_rule_outbox
 from .admin.alert_rule_routes import _set_store as _share_alert_rule_store
 from .alerts.management import AlertRuleStore
+from .dashboards.routes import router as dashboard_config_router
+from .dashboards.routes import _set_store as _share_dashboard_config_store
+from .dashboards.store import DashboardConfigStore
 from .health.aggregator import aggregate_health
 from .metrics.prom import render_metrics
 from .tracing.instrument import auto_instrument
@@ -46,6 +49,10 @@ _share_alert_rule_store(alert_rule_store)
 # Outbox writer is optional — None in test profile; production wires
 # the InMemoryOutboxWriter or SQL-backed writer at startup.
 _share_alert_rule_outbox(None)
+
+# 扩展能力: 自定义仪表盘配置 (写) in-memory store.
+dashboard_config_store = DashboardConfigStore()
+_share_dashboard_config_store(dashboard_config_store)
 
 app = FastAPI(
     title="mate-tech-obs",
@@ -109,6 +116,8 @@ async def instrument_status(request: Request) -> dict[str, object]:
 app.include_router(admin_router)
 # 扩展能力 (backlog §3.7): Alertmanager 告警规则管理 (写) endpoints.
 app.include_router(alert_rule_management_router)
+# 扩展能力: 自定义仪表盘配置 (写) endpoints.
+app.include_router(dashboard_config_router)
 
 
 @app.on_event("startup")  # pyright: ignore[reportDeprecated]

@@ -171,6 +171,7 @@ async def dw_get_auth_login(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_auth_logins(tenant_id))
     return _paginate(items, page, size)
@@ -185,6 +186,7 @@ async def dw_get_collaborations(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_collaborations(tenant_id))
     return _paginate(items, page, size)
@@ -199,6 +201,7 @@ async def dw_get_commit(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_commits(tenant_id))
     return _paginate(items, page, size)
@@ -213,6 +216,7 @@ async def dw_get_documents(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_documents(tenant_id))
     return _paginate(items, page, size)
@@ -240,6 +244,7 @@ async def dw_post_documents_upload(
     request: Request,
     body: DocumentUploadRequest,
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     # Extract uploader from ctx (sub) — fall back to "anonymous"
     ctx = getattr(request.state, "ctx", None)
@@ -272,6 +277,7 @@ async def dw_get_employees(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_employees(tenant_id))
     return _paginate(items, page, size)
@@ -286,6 +292,7 @@ async def dw_get_employees_tasks(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_employee_tasks(tenant_id))
     return _paginate(items, page, size)
@@ -300,6 +307,7 @@ async def dw_get_evaluations(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_evaluations(tenant_id))
     return _paginate(items, page, size)
@@ -314,6 +322,7 @@ async def dw_get_extract(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_extracts(tenant_id))
     return _paginate(items, page, size)
@@ -328,6 +337,7 @@ async def dw_get_knowledge_bases(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_knowledge_bases(tenant_id))
     return _paginate(items, page, size)
@@ -342,6 +352,7 @@ async def dw_get_learning_extract(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_learning_extracts(tenant_id))
     return _paginate(items, page, size)
@@ -356,6 +367,7 @@ async def dw_get_learning_feedback(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_learning_feedback(tenant_id))
     return _paginate(items, page, size)
@@ -370,6 +382,7 @@ async def dw_get_models(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_models(tenant_id))
     return _paginate(items, page, size)
@@ -384,6 +397,7 @@ async def dw_get_tools(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_tools(tenant_id))
     return _paginate(items, page, size)
@@ -398,6 +412,7 @@ async def dw_get_traces(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
     tenant_id = _tenant_id(request)
     items = _serialize(list_traces(tenant_id))
     return _paginate(items, page, size)
@@ -425,6 +440,8 @@ async def create_employee_task(
 
     The employee must exist and be in an active or idle state.
     Offline employees cannot accept new tasks.
+
+    NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。
     """
     tid = _tenant_id(request)
     emp = get_employee(tid, employee_id)
@@ -458,6 +475,8 @@ async def transition_task_status(
 
     State machine: pending -> running -> success | failed.
     A failed task can be retried (failed -> running).
+
+    NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。
     """
     tid = _tenant_id(request)
     task = get_employee_task(tid, task_id)
@@ -509,6 +528,8 @@ async def create_evaluation(
       - score >= 60 -> passed=True
       - score <  60 -> passed=False
     A letter grade (A/B/C/D) is computed and returned alongside.
+
+    NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。
     """
     tid = _tenant_id(request)
     emp = get_employee(tid, employee_id)
@@ -552,6 +573,8 @@ async def submit_learning_feedback(
 
     A rating <= 2 flags the scenario for retraining (needs_retrain=True).
     A rating >= 4 marks the scenario as stable (needs_retrain=False).
+
+    NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。
     """
     tid = _tenant_id(request)
     emp = get_employee(tid, body.employee_id)
@@ -593,6 +616,8 @@ async def start_collaboration(
 
     Both employees must exist and at least one must be active.
     Self-collaboration (same employee_id) is rejected.
+
+    NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。
     """
     tid = _tenant_id(request)
     if body.employee_id == body.peer_employee_id:

@@ -16,11 +16,13 @@ Design:
     ``InMemoryAuditSink``. Production wires a Kafka-backed sink
     (outbox event ``audit.cross_tenant_data_access``) via the
     platform's outbox relay.
-  - Dataset inference: the middleware cannot know which dataset
-    a handler touched; it records ``dataset="*"`` as a placeholder
-    and relies on the handler to emit a finer-grained event if
-    needed. The audit log row is still valuable for "who crossed
-    tenant boundary when" forensics.
+  - Dataset inference: the middleware extracts the service segment
+    from the URL path (e.g. ``/api/v1/iam/xxx`` → ``iam``) as the
+    dataset label. If the path does not follow the canonical
+    ``/api/v1/{service}/...`` pattern, it falls back to ``"unknown"``
+    rather than a wildcard ``"*"``. Handlers can still emit a
+    finer-grained event if needed; the audit log row is valuable for
+    "who crossed tenant boundary when" forensics.
 
 Per ADR-0016 §3.3 D5.
 """
@@ -38,6 +40,19 @@ from ..auth.audit import (
 )
 from ..tenancy.context import RequestContext
 from ..tenancy.guards import is_cross_tenant_admin
+
+
+def _infer_service_from_path(path: str) -> str:
+    """Extract the service segment from a canonical API path.
+
+    Pattern: ``/api/v1/{service}/...`` → ``{service}``.
+    Falls back to ``"unknown"`` when the path does not match.
+    """
+    segments = [s for s in path.split("/") if s]
+    # Expect ["api", "v1", "{service}", ...]
+    if len(segments) >= 3 and segments[0] == "api" and segments[1].startswith("v"):
+        return segments[2]
+    return "unknown"
 
 
 def install_cross_tenant_audit_middleware(
@@ -91,7 +106,7 @@ def install_cross_tenant_audit_middleware(
                 actor_tenant_id=actor_tenant,
                 target_tenant_id=target_tenant,
                 operation=request.method,
-                dataset=str(request.url.path),
+                dataset=_infer_service_from_path(str(request.url.path)),
                 trace_id=getattr(ctx, "trace_id", ""),
                 sink=sink,
             )
