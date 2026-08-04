@@ -10,7 +10,7 @@ pattern and will be added incrementally.
 """
 from __future__ import annotations
 
-from sqlalchemy import REAL, Integer, String, Text
+from sqlalchemy import REAL, Boolean, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base
@@ -25,6 +25,22 @@ class ConversationORM(Base):
     summary: Mapped[str] = mapped_column(Text, default="")
     message_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[str] = mapped_column(String(64), default="")
+    mode: Mapped[str] = mapped_column(String(32), default="chat")
+    favorite: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+    preview: Mapped[str] = mapped_column(Text, default="")
+
+
+class MessageORM(Base):
+    __tablename__ = "copilot_messages"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(16), nullable=False)  # user|assistant
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class QueryLogORM(Base):
