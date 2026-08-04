@@ -56,7 +56,6 @@ def get_pg_store():
 
 def get_pg_client():
     return _pg_client
-    return _ragflow
 
 
 def set_dependencies(
@@ -81,8 +80,30 @@ def set_dependencies(
 
 
 def create_clients():
-    global _hybrid, _graph, _lightrag, _ragflow, _hybrid_real, _graph_real
+    """Initialize real clients based on RAG_MODE env (memory|hybrid|graph|full).
+
+    When PG_DSN is set, initializes PGClient + PGStore for BM25 full-text
+    search, and upgrades the hybrid client to HybridV2Client (vector +
+    BM25 score fusion) when Milvus is also active.
+    """
+    global _hybrid, _graph, _lightrag, _ragflow, _hybrid_real, _graph_real, _pg_client, _pg_store
     mode = os.environ.get("RAG_MODE", "memory").lower()
+
+    # Initialize PG BM25 store if PG_DSN is configured.
+    pg_dsn = os.environ.get("PG_DSN")
+    if pg_dsn:
+        try:
+            _pg_client = PGClient(dsn=pg_dsn)
+            _pg_store = PGStore(pg=_pg_client)
+            if _pg_client.is_available():
+                _log.info("PG BM25 ACTIVE: %s", pg_dsn.split("@")[-1])
+            else:
+                _log.warning("PG BM25 init: DSN set but server unreachable")
+        except Exception as exc:
+            _log.warning("PG BM25 init failed: %s", exc)
+            _pg_client = None
+            _pg_store = None
+
     if mode in ("hybrid", "full"):
         try:
             _hybrid_real = MilvusHybridClient()
@@ -90,6 +111,15 @@ def create_clients():
             _log.info("Milvus ACTIVE")
         except Exception as exc:
             _log.warning("Milvus init failed, using InMemory: %s", exc)
+        # If PG is available, upgrade hybrid to HybridV2 (vector + BM25 fusion).
+        if _pg_client is not None and _pg_client.is_available():
+            try:
+                from mate_tech_rag.clients.hybrid_v2_client import HybridV2Client
+
+                _hybrid = HybridV2Client(milvus=_hybrid_real, pg=_pg_client)
+                _log.info("HybridV2 ACTIVE (Milvus + PG BM25 fusion)")
+            except Exception as exc:
+                _log.warning("HybridV2 init failed, keeping pure vector: %s", exc)
     if mode in ("graph", "full"):
         try:
             _graph_real = Neo4jGraphRAGClient()
@@ -152,6 +182,31 @@ def retrieve(req: RetrievalRequest) -> RetrievalResponse:
     else:
         strat = HybridStrategy(get_hybrid(), get_embedder())
     result = strat.search(req.query, req.top_k)
+
+    # PG BM25 fallback: if hybrid is NOT HybridV2Client and PG store is
+    # available, supplement insufficient vector results with BM25 hits.
+    if mode == RetrievalMode.FACTUAL and _pg_store is not None and len(result.hits) < req.top_k:
+        from mate_tech_rag.clients.hybrid_v2_client import HybridV2Client
+
+        hybrid = get_hybrid()
+        if not isinstance(hybrid, HybridV2Client):
+            try:
+                bm25_hits = _pg_store.bm25_search(req.query, req.top_k)
+                existing_ids = {h.chunk_id for h in result.hits}
+                for hit in bm25_hits:
+                    if hit["chunk_id"] not in existing_ids and len(result.hits) < req.top_k:
+                        result.hits.append(
+                            ChunkHit(
+                                chunk_id=hit["chunk_id"],
+                                document_id=hit["document_id"],
+                                score=min(float(hit["score"]), 1.0),
+                                text=hit["text"],
+                                metadata={**hit.get("metadata", {}), "mode": "BM25"},
+                            )
+                        )
+            except Exception as exc:
+                _log.debug("PG BM25 fallback skipped: %s", exc)
+
     return RetrievalResponse(
         query=req.query,
         hits=result.hits,

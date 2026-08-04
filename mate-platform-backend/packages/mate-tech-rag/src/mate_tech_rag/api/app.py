@@ -195,12 +195,22 @@ def create_app() -> FastAPI:
             lightrag = get_lightrag()
 
             chunks = ragflow.parse_bytes(raw, doc_id, filename=file.filename or "")
+            pg_store = get_pg_store()
             success = 0
             for chunk_text in chunks:
                 vec = embedder.embed(chunk_text)
-                hybrid.add(doc_id, chunk_text, vec, {"filename": file.filename or ""})
+                chunk_id = hybrid.add(doc_id, chunk_text, vec, {"filename": file.filename or ""})
                 graph.insert(chunk_text, doc_id, {"filename": file.filename or ""})
                 lightrag.insert(chunk_text, doc_id, {"filename": file.filename or ""})
+                # Write to PG for BM25 search (idempotent upsert by chunk_id).
+                if pg_store is not None:
+                    try:
+                        pg_store.save_chunk(
+                            chunk_id, doc_id, chunk_text,
+                            {"filename": file.filename or "", "tenant_id": tenant_id},
+                        )
+                    except Exception:
+                        pass
                 success += 1
             mark_indexed(tenant_id, doc_id, success)
             # Hook 3 of 5: emit document-uploaded event.

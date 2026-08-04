@@ -13,7 +13,7 @@ v3.0 Plan D: ingest writes to:
 from __future__ import annotations
 
 from mate_tech_rag.api.document_registry import mark_failed, mark_indexed, register_document
-from mate_tech_rag.api.retrieval import get_embedder, get_graph, get_hybrid, get_lightrag
+from mate_tech_rag.api.retrieval import get_embedder, get_graph, get_hybrid, get_lightrag, get_pg_store
 from mate_tech_rag.api.schemas import IngestRequest, IngestResponse
 
 
@@ -64,12 +64,23 @@ def ingest(req: IngestRequest, tenant_id: str = "") -> IngestResponse:
         raise
 
     success = 0
+    pg_store = get_pg_store()
     try:
         for chunk_text in cleaned:
             vec = embedder.embed(chunk_text)
-            hybrid.add(req.document_id, chunk_text, vec, req.metadata)
+            chunk_id = hybrid.add(req.document_id, chunk_text, vec, req.metadata)
             graph.insert(chunk_text, req.document_id, req.metadata)
             lightrag.insert(chunk_text, req.document_id, req.metadata)
+            # Write to PG for BM25 search (idempotent upsert by chunk_id;
+            # HybridV2Client.add already writes to PG — this is a no-op then).
+            if pg_store is not None:
+                try:
+                    pg_store.save_chunk(
+                        chunk_id, req.document_id, chunk_text,
+                        {**req.metadata, "tenant_id": tenant_id},
+                    )
+                except Exception:
+                    pass
             success += 1
     except Exception as exc:
         if tenant_id:
