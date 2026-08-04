@@ -1,9 +1,11 @@
 /**
  * V14-04：应用市场模板生态
  * - 内置 20+ 官方模板（覆盖 CRM/HR/财务/采购/项目/协同 6 大类）
- * - localStorage 持久化已安装/已创建模板（mock，后端 API 未实现）
+ * - localStorage 持久化（Legacy fallback — marketplace API 不支持时使用）
  * - localStorage key: `metaplatform:apphub:templates`
  */
+
+import { listTemplates } from '@/api/apphub/marketplace';
 
 export type TemplateCategory =
   | 'CRM'
@@ -938,9 +940,10 @@ export const OFFICIAL_TEMPLATES: OfficialTemplate[] = [
 ];
 
 // ====================== localStorage 工具 ======================
+// Legacy localStorage fallback — marketplace API 不支持时使用
 
-/** 读取已安装/已创建模板列表 */
-export function loadUserTemplates(): UserTemplate[] {
+/** 读取 localStorage 中的已安装/已创建模板列表（同步内部工具） */
+function loadUserTemplatesSync(): UserTemplate[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -948,6 +951,34 @@ export function loadUserTemplates(): UserTemplate[] {
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
+  }
+}
+
+/** 读取已安装/已创建模板列表（优先 marketplace API，失败时 fallback 到 localStorage） */
+export async function loadUserTemplates(): Promise<UserTemplate[]> {
+  try {
+    const remote = await listTemplates();
+    return remote.map((t) => ({
+      templateId: t.templateId,
+      name: t.name,
+      category: t.category as TemplateCategory,
+      description: t.description,
+      icon: t.icon,
+      tags: t.tags,
+      rating: t.rating,
+      ratingCount: t.ratingCount ?? 0,
+      usageCount: t.usageCount ?? 0,
+      author: t.author ?? '',
+      screenshots: [],
+      fields: [],
+      flows: [],
+      isOfficial: false as const,
+      source: 'created' as const,
+      installedAt: t.createdAt,
+      createdAt: t.createdAt,
+    }));
+  } catch {
+    return loadUserTemplatesSync();
   }
 }
 
@@ -960,7 +991,7 @@ function saveUserTemplates(list: UserTemplate[]): void {
 export function installOfficialTemplate(templateId: string): UserTemplate | null {
   const official = OFFICIAL_TEMPLATES.find((t) => t.templateId === templateId);
   if (!official) return null;
-  const existing = loadUserTemplates();
+  const existing = loadUserTemplatesSync();
   if (existing.some((t) => t.templateId === templateId)) {
     return null; // 已安装
   }
@@ -981,7 +1012,7 @@ export function addCreatedTemplate(
   input: Omit<UserTemplate, 'templateId' | 'isOfficial' | 'source' | 'installedAt' | 'usageCount' | 'ratingCount' | 'rating'> &
     Partial<Pick<UserTemplate, 'rating' | 'ratingCount' | 'usageCount'>>,
 ): UserTemplate {
-  const existing = loadUserTemplates();
+  const existing = loadUserTemplatesSync();
   const userTpl: UserTemplate = {
     templateId: genId('user'),
     isOfficial: false,
@@ -1007,11 +1038,12 @@ export function addCreatedTemplate(
 
 /** 删除用户模板 */
 export function removeUserTemplate(templateId: string): void {
-  const list = loadUserTemplates().filter((t) => t.templateId !== templateId);
+  const list = loadUserTemplatesSync().filter((t) => t.templateId !== templateId);
   saveUserTemplates(list);
 }
 
 // ====================== 评论相关 ======================
+// Legacy localStorage fallback — marketplace API 不支持时使用
 
 /** 读取某模板的评论 */
 export function loadTemplateComments(templateId: string): TemplateComment[] {

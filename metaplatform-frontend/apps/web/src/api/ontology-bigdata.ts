@@ -1,6 +1,6 @@
 // APP-ONTSTUDIO 大数据相关 API
 // 遵循 API-CONTRACT v1.1 §4 + OpenAPI Spec
-// 全部带 mock fallback (catch 失败时返回 mock)
+// 网络错误时返回空结果，不返回 mock 数据
 
 import axios from 'axios';
 import {
@@ -226,17 +226,8 @@ export async function getMetricLineage(metricId: string): Promise<unknown> {
     const resp = await apiClient.get('/metrics/' + metricId + '/lineage');
     return resp.data;
   } catch (e) {
-    return {
-      metricId,
-      nodes: [
-        { id: metricId, label: '指标', type: 'metric' },
-        { id: 't1', label: '源表', type: 'table' },
-        { id: 'c1', label: '字段', type: 'column' },
-      ],
-      edges: [
-        { source: 'c1', target: metricId, label: '聚合' },
-        { source: 't1', target: 'c1', label: '包含' },
-      ],
-    };
+    // 网络错误时返回空结果，不返回 mock 数据
+    console.warn('getMetricLineage failed', metricId, e);
+    return null;
   }
 }

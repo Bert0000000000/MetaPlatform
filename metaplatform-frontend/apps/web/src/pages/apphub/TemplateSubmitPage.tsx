@@ -249,7 +249,7 @@ export default function TemplateSubmitPage() {
               <InboxOutlined />
             </p>
             <p className="ant-upload-text">点击或拖拽上传模板截图</p>
-            <p className="ant-upload-hint">支持多张，mock 模式仅保存文件名</p>
+            <p className="ant-upload-hint">支持多张，仅保存文件名</p>
           </Dragger>
         </Card>
 

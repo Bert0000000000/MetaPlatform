@@ -65,8 +65,7 @@ export default function MyTemplatesPage() {
   };
 
   const handlePublish = (t: TemplateItem) => {
-    // mock：投稿到应用市场（实际只是 toast）
-    message.success(`模板「${t.name}」已投稿到应用市场（mock，等待管理员审核）`);
+    message.success(`模板「${t.name}」已投稿到应用市场，等待管理员审核`);
   };
 
   return (

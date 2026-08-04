@@ -36,8 +36,11 @@ export async function markAllAsRead(): Promise<void> {
 }
 
 export async function markAsUnread(id: string): Promise<void> {
-  // TODO: backend unread reset support
-  console.warn('markAsUnread not supported yet', id);
+  try {
+    await post(`/v1/dashboard/notifications/${id}/unread`);
+  } catch {
+    console.warn('markAsUnread failed, notification may remain read', id);
+  }
 }
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
