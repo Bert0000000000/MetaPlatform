@@ -5,6 +5,7 @@ P3-W9: chat() 主路径接入 cache + quota + cost 三大模块。
 """
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import structlog
@@ -15,11 +16,34 @@ from .chat import ChatMessage, ChatProvider, ChatResponse
 from .cost.recorder import CostRecorder
 from .providers.anthropic import AnthropicChatProvider
 from .providers.doubao import DoubaoChatProvider
+from .providers.local import LocalStubProvider
 from .providers.openai import OpenAIChatProvider
 from .providers.qwen import QwenChatProvider
 from .quota.bucket import QuotaExceededError, RedisTokenBucket
 
 logger = structlog.get_logger(__name__)
+
+# ---------------------------------------------------------------------------
+# Provider 白名单 + 常量
+# ---------------------------------------------------------------------------
+SUPPORTED_PROVIDERS: dict[str, str] = {
+    "openai": "OpenAI GPT models",
+    "doubao": "ByteDance Doubao (Ark)",
+    "anthropic": "Anthropic Claude",
+    "deepseek": "DeepSeek",
+    "local": "Local stub provider (testing)",
+    "qwen": "Alibaba Qwen",
+    "moonshot": "Moonshot Kimi",
+}
+
+UNSUPPORTED_ERROR_MSG = (
+    "Provider '{name}' is not supported. "
+    "Supported providers: {supported}."
+)
+
+# OpenAI 兼容 provider 的 base_url
+DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
+MOONSHOT_BASE_URL = "https://api.moonshot.cn/v1"
 
 _ROUTING_RULES: dict[str, str] = {
     # OpenAI 系列
@@ -40,6 +64,14 @@ _ROUTING_RULES: dict[str, str] = {
     "doubao-pro": "doubao",
     "doubao-pro-32k": "doubao",
     "doubao-lite": "doubao",
+    # DeepSeek 系列 (OpenAI 兼容)
+    "deepseek-chat": "deepseek",
+    "deepseek-coder": "deepseek",
+    "deepseek-reasoner": "deepseek",
+    # Moonshot 系列 (OpenAI 兼容)
+    "moonshot-v1-8k": "moonshot",
+    "moonshot-v1-32k": "moonshot",
+    "moonshot-v1-128k": "moonshot",
 }
 
 
@@ -56,6 +88,10 @@ def _provider_name(model: str) -> str:
         return "qwen"
     if lower.startswith("doubao"):
         return "doubao"
+    if lower.startswith("deepseek"):
+        return "deepseek"
+    if lower.startswith("moonshot") or lower.startswith("kimi"):
+        return "moonshot"
     return "openai"
 
 
@@ -103,8 +139,29 @@ def get_cost_recorder() -> CostRecorder | None:
 
 
 def get_provider(model: str) -> ChatProvider:
-    """获取 provider 实例(懒加载 + 单例)."""
-    name = _provider_name(model)
+    """获取 provider 实例(懒加载 + 单例).
+
+    接受 model 名 (gpt-4o, claude-3-5-sonnet-20241022, ...) 或显式
+    provider 名 (openai, anthropic, local, ...)。未知 provider 抛
+    ``ValueError`` (含支持的 provider 列表)，替代原先的
+    ``NotImplementedError``，使调用方能以 400 而非 500 响应。
+    """
+    lower = (model or "").lower().strip()
+
+    # 显式 provider 名直达
+    if lower in SUPPORTED_PROVIDERS:
+        name = lower
+    elif "-" not in lower and lower.isalpha():
+        # 看起来像 provider 名但不支持 (bare word, 无连字符)
+        raise ValueError(
+            UNSUPPORTED_ERROR_MSG.format(
+                name=lower, supported=", ".join(SUPPORTED_PROVIDERS.keys())
+            )
+        )
+    else:
+        # model 名 → provider 名
+        name = _provider_name(model)
+
     if name in _providers:
         return _providers[name]
 
@@ -116,8 +173,26 @@ def get_provider(model: str) -> ChatProvider:
         provider = QwenChatProvider(model=model)
     elif name == "doubao":
         provider = DoubaoChatProvider(model=model)
+    elif name == "deepseek":
+        provider = OpenAIChatProvider(
+            model=model,
+            base_url=DEEPSEEK_BASE_URL,
+            api_key=os.getenv("DEEPSEEK_API_KEY", ""),
+        )
+    elif name == "moonshot":
+        provider = OpenAIChatProvider(
+            model=model,
+            base_url=MOONSHOT_BASE_URL,
+            api_key=os.getenv("MOONSHOT_API_KEY", ""),
+        )
+    elif name == "local":
+        provider = LocalStubProvider(model=model)
     else:
-        raise NotImplementedError(f"Provider '{name}' not implemented")
+        raise ValueError(
+            UNSUPPORTED_ERROR_MSG.format(
+                name=name, supported=", ".join(SUPPORTED_PROVIDERS.keys())
+            )
+        )
     _providers[name] = provider
     logger.info("llmgw.provider.initialized", name=name, model=model)
     return provider

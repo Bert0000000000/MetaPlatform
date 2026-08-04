@@ -72,8 +72,8 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
         return ChatResponseAPI(**resp.__dict__)
     except HTTPException:
         raise
-    except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e)) from e
+    except (NotImplementedError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error("llmgw.chat.error", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -344,6 +344,14 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
 # ---------------------------------------------------------------------------
 # P3-W9: Management API — cache / quota / cost 运维端点
 # ---------------------------------------------------------------------------
+@router.get("/providers")
+async def list_providers_endpoint() -> dict[str, Any]:
+    """列出所有支持的 LLM provider (name → description)."""
+    from ..router import SUPPORTED_PROVIDERS
+
+    return {"providers": SUPPORTED_PROVIDERS}
+
+
 @router.get("/cache/stats")
 async def cache_stats_endpoint() -> dict[str, Any]:
     """返回缓存命中率统计."""
@@ -429,8 +437,8 @@ async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
         )
     except HTTPException:
         raise
-    except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e)) from e
+    except (NotImplementedError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error("llmgw.chat.error.legacy", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) from e
