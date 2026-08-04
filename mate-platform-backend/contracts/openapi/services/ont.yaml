@@ -433,6 +433,99 @@ paths:
       x-mate-requirements:
       - FR-ONT-ONTPOSTONTEXPLAIN
       x-mate-implementation-status: implemented
+  /api/v1/ont/federation/query:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: Cross-ontology federation query
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FederationQueryRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FederationQueryResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+        '500':
+          description: Internal federation error
+      operationId: ontPostFederationQuery
+      description: Execute a federated SPARQL query across multiple ontologies and merge results
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.query
+      x-mate-required-tenant: true
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTFEDERATIONQUERY
+      x-mate-implementation-status: implemented
+  /api/v1/ont/federation/mappings:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: Create cross-ontology mapping
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMappingRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MappingResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: ontPostFederationMappings
+      description: Register a class/property mapping between two ontologies
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTFEDERATIONMAPPINGS
+      x-mate-implementation-status: implemented
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: List cross-ontology mappings
+      tags:
+      - ont
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MappingResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: ontGetFederationMappings
+      description: List all registered cross-ontology mappings for the current tenant
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-required-tenant: true
+      x-mate-requirements:
+      - FR-ONT-ONTGETFEDERATIONMAPPINGS
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
@@ -607,3 +700,94 @@ components:
             type: object
         took_ms:
           type: number
+    ClassMappingSpec:
+      type: object
+      required:
+      - source_class
+      - target_class
+      properties:
+        source_class:
+          type: string
+        target_class:
+          type: string
+    PropertyMappingSpec:
+      type: object
+      required:
+      - source_property
+      - target_property
+      properties:
+        source_property:
+          type: string
+        target_property:
+          type: string
+    CreateMappingRequest:
+      type: object
+      required:
+      - source_ontology
+      - target_ontology
+      properties:
+        source_ontology:
+          type: string
+        target_ontology:
+          type: string
+        class_mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassMappingSpec'
+        property_mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyMappingSpec'
+    MappingResponse:
+      type: object
+      required:
+      - source_ontology
+      - target_ontology
+      properties:
+        source_ontology:
+          type: string
+        target_ontology:
+          type: string
+        class_mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassMappingSpec'
+        property_mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyMappingSpec'
+    FederationQueryRequest:
+      type: object
+      required:
+      - query
+      - target_ontologies
+      properties:
+        query:
+          type: string
+        target_ontologies:
+          type: array
+          items:
+            type: string
+        merge_strategy:
+          type: string
+          default: union
+          enum:
+          - union
+          - intersection
+          - priority
+        ontology_priority:
+          type: object
+          additionalProperties:
+            type: integer
+    FederationQueryResponse:
+      type: object
+      required:
+      - results
+      - count
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+        count:
+          type: integer

@@ -12,6 +12,7 @@ from mate_platform.auth import install_auth
 from mate_platform.tenancy.guards import TenantAccessError, require_tenant
 
 from .api.ontology import router as ontology_router
+from .federation import router as federation_router
 from .inference.api import router as inference_router
 from .inference.shacl_api import router as shacl_router
 from .instances.api import router as instances_router
@@ -77,6 +78,7 @@ app.include_router(explain_router)
 app.include_router(versioning_router)
 app.include_router(inference_router)
 app.include_router(shacl_router)
+app.include_router(federation_router)
 
 
 @app.get("/healthz")
