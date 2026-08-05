@@ -7,44 +7,11 @@ on:
     branches: [main, master, develop]
 
 jobs:
-  java-backend:
-    name: Java Backend (${{ matrix.module }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        module:
-          - APP-COPILOT
-          - APP-DASHBOARD
-          - APP-DW
-          - APP-KB
-          - TECH-A2A
-          - TECH-ACTION
-          - TECH-AGENT
-          - TECH-DATA
-          - TECH-EA
-          - TECH-GW
-          - TECH-IAM
-          - TECH-LLMGW
-          - TECH-MCP
-          - TECH-MSG
-          - TECH-OBS
-          - TECH-ONT
-          - TECH-RAG
-          - TECH-RULE
-          - TECH-WFE
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-          cache: maven
-      - name: Run Maven tests (${{ matrix.module }})
-        working-directory: ./${{ matrix.module }}
-        run: mvn -B test
+  # NOTE: Historical "java-backend" job removed in codex/fix-ci-paths.
+  # The Mate Platform backend is Python (FastAPI + pyproject.toml), not
+  # Java/Maven. Python coverage lives in `python-ci.yml` and
+  # `ga-acceptance.yml`. See CLAUDE.md "v3.0 架构基线":
+  # "Python 主后端（业务）+ Java 外部引擎（Keycloak/Flowable/Drools）".
 
   frontend:
     name: Frontend (metaplatform-frontend)
@@ -67,7 +34,12 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: Install dependencies
         working-directory: ./metaplatform-frontend
-        run: pnpm install --frozen-lockfile
+        # pnpm 11 refuses to run postinstall scripts that aren't approved
+        # in the lockfile; we install with --ignore-scripts, then rebuild
+        # only the packages whose postinstall we actually need.
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm rebuild puppeteer esbuild
       - name: Operations audit
         run: python scripts/audit/operations-audit.py
       - name: Typecheck web
