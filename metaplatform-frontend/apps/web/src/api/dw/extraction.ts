@@ -1,19 +1,19 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
 async function put<T>(url: string, body?: unknown): Promise<T> { return data(await client.put<T>(url, body)); }
 
 
-import type { ExtractionItem, ExtractionResult, ExtractionType, ExtractionStatus } from './types';
+import type { ExtractionItem, ExtractionResult, ExtractionType, ExtractionStatus, PageResponse } from './types';
 
 export async function extractFromDocument(
   documentId: string,
   employeeId: string,
 ): Promise<ExtractionResult> {
-  return post<ExtractionResult>('/v1/dw/extract', { documentId, employeeId });
+  return post<ExtractionResult>('/dw/extract', { documentId, employeeId });
 }
 
 export async function getExtractionResults(documentId: string): Promise<ExtractionResult> {
@@ -39,7 +39,7 @@ export async function batchReview(
 }
 
 export async function commitToOntology(itemIds: string[]): Promise<ExtractionItem[]> {
-  return post<ExtractionItem[]>('/v1/dw/commit', { itemIds });
+  return post<ExtractionItem[]>('/dw/commit', { itemIds });
 }
 
 export async function getExtractionsByEmployee(
@@ -50,5 +50,6 @@ export async function getExtractionsByEmployee(
   const params: Record<string, unknown> = { employeeId };
   if (typeFilter) params.type = typeFilter;
   if (statusFilter) params.status = statusFilter;
-  return get<ExtractionItem[]>('/v1/dw/extract', params);
+  const res = await get<PageResponse<ExtractionItem>>('/dw/extract', params);
+  return res?.items ?? [];
 }

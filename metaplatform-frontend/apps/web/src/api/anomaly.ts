@@ -19,7 +19,7 @@ export interface CreateRulePayload {
 }
 
 export async function getAnomalies(status?: string): Promise<AnomalyEvent[]> {
-  return get<AnomalyEvent[]>('/v1/dashboard/anomalies', status ? { status } : undefined);
+  return get<AnomalyEvent[]>('/dashboard/anomalies', status ? { status } : undefined);
 }
 
 export async function getAnomaly(id: string): Promise<AnomalyEvent> {
@@ -39,11 +39,11 @@ export async function remediateAnomaly(
 }
 
 export async function getAnomalyRules(): Promise<AnomalyDetectionRule[]> {
-  return get<AnomalyDetectionRule[]>('/v1/dashboard/anomaly-rules');
+  return get<AnomalyDetectionRule[]>('/dashboard/anomaly-rules');
 }
 
 export async function createAnomalyRule(payload: CreateRulePayload): Promise<AnomalyDetectionRule> {
-  return post<AnomalyDetectionRule>('/v1/dashboard/anomaly-rules', payload);
+  return post<AnomalyDetectionRule>('/dashboard/anomaly-rules', payload);
 }
 
 export async function updateAnomalyRule(

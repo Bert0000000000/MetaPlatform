@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Card, Progress, Space, Typography } from 'antd';
 import type { EmployeeTask } from '@/api/dw/types';
@@ -33,7 +33,7 @@ export default function ExecutionProgress({ task }: ExecutionProgressProps) {
   return (
     <div>
       <Card>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Typography.Text>当前进度：{Math.round(progress)}%</Typography.Text>
           <Progress percent={Math.round(progress)} status={progress >= 100 ? 'success' : 'active'} />
           <Typography.Text strong>实时日志：</Typography.Text>

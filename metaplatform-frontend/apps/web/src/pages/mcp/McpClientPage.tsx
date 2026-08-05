@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -75,7 +75,7 @@ export default function ClientListPage() {
       title: 'Client',
       key: 'name',
       render: (_, c) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <LinkOutlined /> {c.name}
           </Typography.Text>

@@ -1,7 +1,7 @@
 import { useApiErrorBoundary } from '@mate/shared';
 import type { NormalizedError } from '@mate/shared';
 import { useState } from 'react';
-import { Card, List, Tag, Typography, Space, Button, Segmented, Modal, Form, Switch, message } from 'antd';
+import { Card, Tag, Typography, Space, Button, Segmented, Modal, Form, Switch, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import {
   getNotifications,
@@ -119,32 +119,31 @@ export default function NotificationsPage() {
           emptyDescription="暂无通知"
           onRetry={reload}
         >
-          <List<NotificationItem>
-            dataSource={items}
-            renderItem={(item) => (
-              <List.Item
-                actions={[
-                  item.read ? (
-                    <Button key="unread" type="link" size="small" onClick={() => handleMarkUnread(item.id)}>
-                      标为未读
-                    </Button>
-                  ) : (
-                    <Button key="read" type="link" size="small" onClick={() => handleMarkRead(item.id)}>
-                      标为已读
-                    </Button>
-                  ),
-                ].filter(Boolean)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {items.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  padding: '12px 0',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
               >
-                <List.Item.Meta
-                  avatar={<Tag color={TYPE_LABEL[item.type].color}>{TYPE_LABEL[item.type].label}</Tag>}
-                  title={
-                    <Space>
-                      <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
-                      {!item.read && <Tag color="processing">未读</Tag>}
-                    </Space>
-                  }
-                  description={
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ flexShrink: 0 }}>
+                    <Tag color={TYPE_LABEL[item.type].color}>{TYPE_LABEL[item.type].label}</Tag>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div>
+                      <Space>
+                        <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
+                        {!item.read && <Tag color="processing">未读</Tag>}
+                      </Space>
+                    </div>
+                    <div style={{ color: '#999', fontSize: 12 }}>
                       <Typography.Text type="secondary">{item.content}</Typography.Text>
                       <div>
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -152,11 +151,22 @@ export default function NotificationsPage() {
                         </Typography.Text>
                       </div>
                     </div>
-                  }
-                />
-              </List.Item>
-            )}
-          />
+                  </div>
+                </div>
+                <div style={{ flexShrink: 0 }}>
+                  {item.read ? (
+                    <Button type="link" size="small" onClick={() => handleMarkUnread(item.id)}>
+                      标为未读
+                    </Button>
+                  ) : (
+                    <Button type="link" size="small" onClick={() => handleMarkRead(item.id)}>
+                      标为已读
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </StateContainer>
       </Card>
 

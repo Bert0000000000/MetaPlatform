@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -20,12 +20,15 @@ import TaskAssignment from './components/TaskAssignment';
 import TaskFeedbackModal from './components/TaskFeedbackModal';
 import type { Employee, EmployeeTask, ExecutionResult, FeedbackType } from '@/api/dw/types';
 
-const STATUS_MAP: Record<EmployeeTask['status'], { label: string; color: string }> = {
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
   pending: { label: '待处理', color: 'default' },
   running: { label: '运行中', color: 'blue' },
   completed: { label: '已完成', color: 'green' },
   failed: { label: '失败', color: 'red' },
   cancelled: { label: '已取消', color: 'default' },
+  in_progress: { label: '运行中', color: 'blue' },
+  done: { label: '已完成', color: 'green' },
+  error: { label: '失败', color: 'red' },
 };
 
 export default function TaskListPage() {
@@ -65,7 +68,7 @@ export default function TaskListPage() {
       title: '任务',
       key: 'title',
       render: (_, t) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{t.title}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t.description}
@@ -76,11 +79,10 @@ export default function TaskListPage() {
     {
       title: '状态',
       dataIndex: 'status',
-      render: (v) => (
-        <Tag color={STATUS_MAP[v as EmployeeTask['status']].color}>
-          {STATUS_MAP[v as EmployeeTask['status']].label}
-        </Tag>
-      ),
+      render: (v) => {
+        const s = STATUS_MAP[v as string] ?? { label: v, color: 'default' };
+        return <Tag color={s.color}>{s.label}</Tag>;
+      },
     },
     {
       title: '优先级',
@@ -104,7 +106,7 @@ export default function TaskListPage() {
       key: 'actions',
       render: (_, t) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/dw/tasks/${t.id}`)}>
+          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/agents/tasks/${t.id}`)}>
             详情
           </Button>
           <Button
@@ -155,7 +157,7 @@ export default function TaskListPage() {
         <Typography.Title level={4} style={{ margin: 0 }}>
           任务列表
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/dw/tasks/create')}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/tasks/create')}>
           创建任务
         </Button>
       </div>

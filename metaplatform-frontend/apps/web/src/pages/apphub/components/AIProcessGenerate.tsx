@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Button, Card, Empty, Input, Space, Tag, Typography, message } from 'antd';
 import { PartitionOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { generateProcess } from '@/api/apphub/generate';
@@ -38,7 +38,7 @@ export default function AIProcessGenerate({ onApply }: AIProcessGenerateProps) {
 
   return (
     <Card size="small" title={<><PartitionOutlined /> AI 流程生成</>}>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Input.TextArea
           rows={3}
           placeholder="描述业务流程，例如：员工请假：员工提交→直属上级审批→HR 备案→结束"

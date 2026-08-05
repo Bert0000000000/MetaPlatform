@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Card, Empty, Modal, Space, Tag, Typography, message, Spin, Result, Button } from 'antd';
 import { AppstoreOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
@@ -61,7 +61,7 @@ export default function MarketplacePage() {
         </Typography.Title>
       </div>
 
-      <Space style={{ marginBottom: 16 }} direction="vertical">
+      <Space style={{ marginBottom: 16 }} orientation="vertical">
         <SearchBar
           keyword={keyword}
           onKeywordChange={setKeyword}
@@ -115,7 +115,7 @@ export default function MarketplacePage() {
         width={680}
       >
         {previewing && (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Card>
               <Typography.Paragraph>{previewing.description}</Typography.Paragraph>
               <Space wrap>

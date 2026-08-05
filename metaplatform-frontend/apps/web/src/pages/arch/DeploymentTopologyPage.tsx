@@ -49,8 +49,9 @@ export default function DeploymentTopologyPage() {
   const load = async () => {
     setLoading(true);
     const data = await listDeploymentTopologies(filteredEnv === 'all' ? undefined : filteredEnv);
-    setTopologies(data);
-    if (data.length > 0 && !selectedTopology) setSelectedTopology(data[0]);
+    const items = Array.isArray(data) ? data : ((data as { items?: DeploymentTopology[] }).items ?? []);
+    setTopologies(items);
+    if (items.length > 0 && !selectedTopology) setSelectedTopology(items[0]);
     setLoading(false);
   };
 
@@ -185,7 +186,7 @@ export default function DeploymentTopologyPage() {
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新增拓扑</Button>
           <Select value={filteredEnv} onChange={setFilteredEnv} style={{ width: 160 }} options={[{ value: 'all', label: '全部环境' }, ...ENV_OPTIONS]} />
         </Space>
-        <Table rowKey="id" columns={columns} dataSource={topologies} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+        <Table rowKey="id" columns={columns} dataSource={topologies ?? []} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
       </Card>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>

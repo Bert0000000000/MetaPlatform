@@ -389,6 +389,14 @@ async def get_role_detail(
 
 
 # ---- Permission Catalog ----
+class PermissionPayload(BaseModel):
+    code: str = Field(min_length=2, max_length=128)
+    name: str = Field(min_length=1, max_length=128)
+    resource_type: str = Field(min_length=1, max_length=64)
+    actions: str = Field(default="", max_length=512)
+    description: str | None = Field(default=None, max_length=512)
+
+
 @router.get("/catalog")
 async def list_catalog(
     caller: AdminDep,
@@ -401,6 +409,148 @@ async def list_catalog(
     perms = (await session.execute(base.order_by(Permission.resource_type, Permission.code))).scalars().all()
     items = [_permission_to_out(p).model_dump(mode="json") for p in perms]
     return ok(items)
+
+
+@router.post("/catalog", status_code=status.HTTP_201_CREATED)
+async def create_catalog(
+    caller: AdminDep,
+    session: SessionDep,
+    request: Request,
+    payload: PermissionPayload,
+) -> dict[str, Any]:
+    code = payload.code.strip()
+    resource_type = payload.resource_type.strip()
+    if not code or not resource_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "E400_BAD_REQUEST", "message": "code 和 resource_type 不能为空"},
+        )
+    existing = (
+        await session.execute(
+            select(Permission).where(
+                and_(Permission.tenant_id == caller.tenant_id, Permission.code == code)
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "E409_CONFLICT", "message": f"权限编码 {code} 已存在"},
+        )
+    perm = Permission(
+        tenant_id=caller.tenant_id,
+        code=code,
+        name=payload.name.strip(),
+        resource_type=resource_type,
+        actions=payload.actions or "",
+        description=payload.description,
+    )
+    session.add(perm)
+    await session.flush()
+    await write_audit(
+        session,
+        caller,
+        module="permission",
+        action=AuditAction.CREATE,
+        resource_type="permission",
+        resource_id=str(perm.id),
+        resource_name=perm.code,
+    )
+    await session.commit()
+    return ok(_permission_to_out(perm).model_dump(mode="json"))
+
+
+@router.put("/catalog/{perm_id}")
+async def update_catalog(
+    caller: AdminDep,
+    session: SessionDep,
+    request: Request,
+    perm_id: int,
+    payload: PermissionPayload,
+) -> dict[str, Any]:
+    perm = (
+        await session.execute(
+            select(Permission).where(
+                and_(Permission.id == perm_id, Permission.tenant_id == caller.tenant_id)
+            )
+        )
+    ).scalar_one_or_none()
+    if not perm:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "E404_NOT_FOUND", "message": "权限不存在"},
+        )
+    resource_type = payload.resource_type.strip()
+    if not resource_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "E400_BAD_REQUEST", "message": "resource_type 不能为空"},
+        )
+    perm.name = payload.name.strip()
+    perm.resource_type = resource_type
+    perm.actions = payload.actions or ""
+    perm.description = payload.description
+    await session.flush()
+    await write_audit(
+        session,
+        caller,
+        module="permission",
+        action=AuditAction.UPDATE,
+        resource_type="permission",
+        resource_id=str(perm.id),
+        resource_name=perm.code,
+    )
+    await session.commit()
+    return ok(_permission_to_out(perm).model_dump(mode="json"))
+
+
+@router.delete("/catalog/{perm_id}")
+async def delete_catalog(
+    caller: AdminDep,
+    session: SessionDep,
+    request: Request,
+    perm_id: int,
+) -> dict[str, Any]:
+    perm = (
+        await session.execute(
+            select(Permission).where(
+                and_(Permission.id == perm_id, Permission.tenant_id == caller.tenant_id)
+            )
+        )
+    ).scalar_one_or_none()
+    if not perm:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "E404_NOT_FOUND", "message": "权限不存在"},
+        )
+    # Prevent deletion if any role still references this permission
+    refs = (
+        await session.execute(
+            select(func.count()).select_from(RolePermission).where(RolePermission.permission_id == perm.id)
+        )
+    ).scalar_one()
+    if refs and refs > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "E409_CONFLICT",
+                "message": f"权限已被 {refs} 个角色引用，请先解除关联",
+            },
+        )
+    code = perm.code
+    await session.delete(perm)
+    await session.flush()
+    await write_audit(
+        session,
+        caller,
+        module="permission",
+        action=AuditAction.DELETE,
+        resource_type="permission",
+        resource_id=str(perm_id),
+        resource_name=code,
+    )
+    await session.commit()
+    return ok({"deleted": perm_id})
 
 
 # ---- Permission Assignment ----

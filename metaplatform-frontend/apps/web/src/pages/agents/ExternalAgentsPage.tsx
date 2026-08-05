@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -76,7 +76,7 @@ export default function ExternalAgentsPage() {
       title: '委托任务',
       key: 'task',
       render: (_: unknown, d: Delegation) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             {typeof d.payload?.task === 'string' ? d.payload.task : d.taskType}
           </Typography.Text>
@@ -210,7 +210,7 @@ export default function ExternalAgentsPage() {
         width={560}
       >
         {viewingAgent && (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Typography.Title level={5}>{viewingAgent.name}</Typography.Title>
             <Typography.Paragraph type="secondary">
               {viewingAgent.description || '暂无描述'}

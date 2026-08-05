@@ -1,4 +1,4 @@
-import { Form, Input, Select, InputNumber, Switch, Button, Space, Divider } from 'antd';
+﻿import { Form, Input, Select, InputNumber, Switch, Button, Space, Divider } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ApprovalNodeConfig, AssigneeType, ApprovalMode } from '@/api/apphub/types';
 
@@ -87,7 +87,7 @@ export default function ApprovalConfig({ config, onChange }: ApprovalConfigProps
         </Form.Item>
 
         <Form.Item label="审批人列表">
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             {config.assigneeIds.map((id, index) => (
               <Space key={index} style={{ width: '100%' }}>
                 <Select
@@ -149,7 +149,7 @@ export default function ApprovalConfig({ config, onChange }: ApprovalConfigProps
         </Form.Item>
 
         <Form.Item label="抄送人列表">
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             {(config.ccList || []).map((id, index) => (
               <Space key={index} style={{ width: '100%' }}>
                 <Input

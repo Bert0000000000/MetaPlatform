@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -132,7 +132,7 @@ function SortableShortcutCard({ item, isEditing, onEdit, onDelete, onClick }: So
         style={{ height: '100%', position: 'relative' }}
         bodyStyle={{ padding: 16 }}
       >
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
           <Space style={{ justifyContent: 'space-between', width: '100%' }}>
             <div
               style={{

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Avatar,
@@ -319,7 +319,7 @@ export default function TemplateDetailPage() {
                       color: NODE_TYPE_COLOR[node.type],
                       dot: <Icons.CheckCircleOutlined style={{ fontSize: 16 }} />,
                       children: (
-                        <Space direction="vertical" size={0}>
+                        <Space orientation="vertical" size={0}>
                           <Space>
                             <Typography.Text strong>{node.name}</Typography.Text>
                             <Tag color={NODE_TYPE_COLOR[node.type]}>{node.type}</Tag>

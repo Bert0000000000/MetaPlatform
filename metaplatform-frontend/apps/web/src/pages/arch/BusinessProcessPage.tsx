@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, Typography, List, Tabs } from 'antd';
+import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, Typography, Tabs } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { listProcesses, createProcess, updateProcess, deleteProcess, linkProcessRoles, getProcessRoleIds } from '@/api/arch/businessProcesses';
 import { listCapabilities } from '@/api/arch/capabilities';
@@ -45,7 +45,7 @@ export default function BusinessProcessPage() {
       const [res, capRes, appRes, roleRes] = await Promise.all([
         listProcesses(), listCapabilities(), listApplications(), listRoles()
       ]);
-      setList(res);
+      setList(Array.isArray(res) ? res : ((res as { items?: BusinessProcess[] }).items ?? []));
       setCaps(capRes.items);
       setApps(appRes.items);
       setRoles(roleRes.items);
@@ -148,7 +148,7 @@ export default function BusinessProcessPage() {
   return (
     <div>
       <Card title="业务流程管理" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新建</Button>}>
-        <Table rowKey="id" columns={columns} dataSource={list} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
+        <Table rowKey="id" columns={columns} dataSource={list ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
       </Card>
 
       {detail && (
@@ -157,7 +157,13 @@ export default function BusinessProcessPage() {
             {
               key: 'steps', label: '流程步骤',
               children: detail.processSteps && detail.processSteps.length > 0 ? (
-                <List dataSource={detail.processSteps} renderItem={(step, idx) => <List.Item><Tag>{idx + 1}</Tag> {String(step.name || step)}</List.Item>} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {detail.processSteps.map((step, idx) => (
+                    <div key={idx} style={{ padding: '4px 0' }}>
+                      <Tag>{idx + 1}</Tag> {String(step.name || step)}
+                    </div>
+                  ))}
+                </div>
               ) : <Typography.Text type="secondary">暂无步骤</Typography.Text>
             },
             {

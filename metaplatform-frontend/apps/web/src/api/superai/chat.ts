@@ -32,10 +32,22 @@ export interface MultimodalResponse {
   latencyMs: number;
 }
 export async function listMultimodalModels(): Promise<MultimodalModel[]> {
-  const data = await get<{ items: MultimodalModel[]; total: number }>(
+  const resp = await get<{ items: MultimodalModel[]; total: number }>(
     '/models/multimodal',
   );
-  return data.items;
+  return (resp.items ?? []).map((m: any) => ({
+    modelId: m.modelId ?? m.id,
+    provider: m.provider ?? '',
+    modelCode: m.modelCode ?? m.id ?? '',
+    displayName: m.displayName ?? m.name ?? m.id,
+    type: m.type ?? m.modality ?? 'multimodal',
+    inputPrice: m.inputPrice ?? 0,
+    outputPrice: m.outputPrice ?? 0,
+    contextLength: m.contextLength ?? 4096,
+    capabilities: m.capabilities ?? [],
+    enabled: m.enabled ?? (m.status === 'available'),
+    description: m.description,
+  }));
 }
 export async function multimodalUploadChat(params: {
   modelId: string;
@@ -67,6 +79,7 @@ export async function streamChat(
   messages: StreamMessage[],
   callbacks: StreamCallbacks,
   signal?: AbortSignal,
+  options?: { model?: string; temperature?: number; maxTokens?: number },
 ): Promise<void> {
   const token = getToken();
   const user = getUser();
@@ -79,10 +92,10 @@ export async function streamChat(
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        model: 'doubao-pro-32k',
+        model: options?.model ?? 'doubao-pro-32k',
         messages,
-        temperature: 0.7,
-        maxTokens: 2048,
+        temperature: options?.temperature ?? 0.7,
+        maxTokens: options?.maxTokens ?? 2048,
         user: user?.id,
         appId: 'app-superai',
       }),

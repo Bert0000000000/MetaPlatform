@@ -74,7 +74,7 @@ export function EvidenceRenderer({ evidenceList, emptyText }: EvidenceRendererPr
         title={activeEvidence ? 'Evidence: ' + activeEvidence.evidenceId : ''}
         open={!!activeEvidence}
         onClose={() => setActiveEvidence(null)}
-        width={560}
+        size={560}
       >
         {activeEvidence && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

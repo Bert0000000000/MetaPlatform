@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -10,13 +10,21 @@ import {
   Slider,
   InputNumber,
   Switch,
-  Divider,
   Typography,
   Space,
-  message,
+  App,
   Spin,
+  Row,
+  Col,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import {
+  ArrowLeftOutlined,
+  SaveOutlined,
+  RobotOutlined,
+  ToolOutlined,
+  DatabaseOutlined,
+  CodeOutlined,
+} from '@ant-design/icons';
 import { getEmployee, updateEmployee } from '@/api/dw/employees';
 import type { Employee } from '@/api/dw/types';
 import {
@@ -27,11 +35,14 @@ import {
 } from '@/api/dw/types';
 
 const { TextArea } = Input;
+const { Title, Text } = Typography;
 
 export default function CapabilityConfigPage() {
-  const { id } = useParams<{ id: string }>();
+  const { employeeId } = useParams<{ employeeId: string }>();
+  const id = employeeId;
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -65,7 +76,6 @@ export default function CapabilityConfigPage() {
       setSubmitting(true);
       await updateEmployee(id, {
         name: employee.name,
-        code: employee.code,
         roleCategory: employee.roleCategory,
         roleIdentity: employee.roleIdentity,
         description: employee.description,
@@ -84,7 +94,7 @@ export default function CapabilityConfigPage() {
         },
       });
       message.success('能力配置已更新');
-      navigate(`/dw/employees/${id}`);
+      navigate(`/agents/${employee?.code ?? id}`);
     } catch (error) {
       if (error instanceof Error && error.message.includes('validated')) return;
       message.error(error instanceof Error ? error.message : '保存失败');
@@ -108,107 +118,176 @@ export default function CapabilityConfigPage() {
 
   return (
     <div>
-      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/dw/employees/${id}`)} style={{ marginBottom: 16 }}>
-        返回详情
-      </Button>
+      {/* 顶部导航 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/agents/${id}`)}>
+          返回详情
+        </Button>
+        <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
+          保存配置
+        </Button>
+      </div>
 
-      <Card
-        title={`${employee.name} - 能力配置`}
-        extra={
-          <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
-            保存配置
-          </Button>
-        }
-      >
-        <Form form={form} layout="vertical" style={{ maxWidth: 800 }}>
-          <Typography.Title level={5}>Tool 工具绑定</Typography.Title>
-          <Form.Item name="tools" label="已绑定工具">
-            <Checkbox.Group style={{ width: '100%' }}>
-              <Space direction="vertical">
-                {MOCK_TOOLS.map((tool) => (
-                  <Checkbox key={tool.id} value={tool.id}>
-                    <Space size={4}>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{tool.category}</Typography.Text>
-                      <span>{tool.name}</span>
-                    </Space>
-                  </Checkbox>
-                ))}
-              </Space>
-            </Checkbox.Group>
-          </Form.Item>
-
-          <Divider />
-
-          <Typography.Title level={5}>RAG 知识库配置</Typography.Title>
-          <Form.Item name="ragKnowledgeBaseIds" label="知识库范围">
-            <Checkbox.Group style={{ width: '100%' }}>
-              <Space direction="vertical">
-                {MOCK_KNOWLEDGE_BASES.map((kb) => (
-                  <Checkbox key={kb.id} value={kb.id}>
-                    {kb.name}（{kb.documentCount} 篇文档）
-                  </Checkbox>
-                ))}
-              </Space>
-            </Checkbox.Group>
-          </Form.Item>
-          <Form.Item name="retrievalMethod" label="检索策略">
-            <Select>
-              <Select.Option value="hybrid">混合检索（向量+关键词）</Select.Option>
-              <Select.Option value="vector">纯向量检索</Select.Option>
-              <Select.Option value="keyword">纯关键词检索</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="topK" label="Top-K">
-            <InputNumber min={1} max={20} />
-          </Form.Item>
-          <Form.Item name="rerank" label="重排序" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-
-          <Divider />
-
-          <Typography.Title level={5}>模型配置</Typography.Title>
-          <Form.Item name="model" label="LLM 模型" rules={[{ required: true, message: '请选择模型' }]}>
-            <Select>
-              {MOCK_MODELS.map((m) => (
-                <Select.Option key={m.id} value={m.id}>
-                  {m.name} - {m.description}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Space style={{ marginBottom: 16 }}>
-            {DIALOG_STYLE_PRESETS.map((preset, index) => (
-              <Button key={preset.label} onClick={() => applyDialogStyle(index)}>
-                {preset.label}
-              </Button>
-            ))}
-          </Space>
-          <Form.Item label="Temperature">
-            <Space>
-              <Form.Item name="temperature" noStyle>
-                <Slider style={{ width: 200 }} min={0} max={1} step={0.1} />
+      <Form form={form} layout="vertical">
+        {/* 模型配置 */}
+        <Card
+          size="small"
+          title={<Space><RobotOutlined /> 模型配置</Space>}
+          style={{ marginBottom: 16 }}
+        >
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item name="model" label="LLM 模型" rules={[{ required: true, message: '请选择模型' }]}>
+                <Select placeholder="选择模型">
+                  {MOCK_MODELS.map((m) => (
+                    <Select.Option key={m.id} value={m.id}>
+                      {m.name} - {m.description}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
-              <Form.Item name="temperature" noStyle>
-                <InputNumber min={0} max={1} step={0.1} style={{ width: 80 }} />
+            </Col>
+            <Col span={12}>
+              <Form.Item label="对话风格预设">
+                <Space wrap>
+                  {DIALOG_STYLE_PRESETS.map((preset, index) => (
+                    <Button key={preset.label} size="small" onClick={() => applyDialogStyle(index)}>
+                      {preset.label}
+                    </Button>
+                  ))}
+                </Space>
               </Form.Item>
-            </Space>
-          </Form.Item>
-          <Form.Item label="Max Tokens" name="maxTokens" rules={[{ required: true }]}>
-            <InputNumber min={100} max={8192} style={{ width: 200 }} />
-          </Form.Item>
-          <Form.Item label="Top P" name="topP">
-            <InputNumber min={0.1} max={1} step={0.05} style={{ width: 200 }} />
-          </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={24}>
+            <Col span={8}>
+              <Form.Item label="Temperature">
+                <Space>
+                  <Form.Item name="temperature" noStyle>
+                    <Slider style={{ width: 120 }} min={0} max={1} step={0.1} />
+                  </Form.Item>
+                  <Form.Item name="temperature" noStyle>
+                    <InputNumber min={0} max={1} step={0.1} style={{ width: 70 }} size="small" />
+                  </Form.Item>
+                </Space>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Top P" name="topP">
+                <InputNumber min={0.1} max={1} step={0.05} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Max Tokens" name="maxTokens" rules={[{ required: true }]}>
+                <InputNumber min={100} max={8192} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* System Prompt */}
+        <Card
+          size="small"
+          title={<Space><CodeOutlined /> Prompt 模板</Space>}
+          style={{ marginBottom: 16 }}
+        >
           <Form.Item
-            label="System Prompt"
             name="systemPrompt"
             rules={[{ required: true, message: '请输入 System Prompt' }]}
           >
-            <TextArea rows={4} placeholder="系统提示词" />
+            <TextArea
+              rows={6}
+              placeholder="系统提示词，定义数字员工的角色、职责和输出规范"
+              style={{ fontFamily: 'monospace', fontSize: 13 }}
+            />
           </Form.Item>
-        </Form>
-      </Card>
+        </Card>
+
+        {/* 工具配置 */}
+        <Card
+          size="small"
+          title={
+            <Space>
+              <ToolOutlined /> 工具配置
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {MOCK_TOOLS.length} 个可用
+              </Text>
+            </Space>
+          }
+          style={{ marginBottom: 16 }}
+        >
+          <Form.Item name="tools">
+            <Checkbox.Group style={{ width: '100%' }}>
+              <Row gutter={[16, 12]}>
+                {MOCK_TOOLS.map((tool) => (
+                  <Col key={tool.id} span={12}>
+                    <Checkbox value={tool.id} style={{ alignItems: 'flex-start' }}>
+                      <Space orientation="vertical" size={0}>
+                        <Space size={4}>
+                          <Text strong style={{ fontSize: 13 }}>{tool.name}</Text>
+                          <Text type="secondary" style={{ fontSize: 11 }}>{tool.category}</Text>
+                        </Space>
+                      </Space>
+                    </Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </Form.Item>
+        </Card>
+
+        {/* RAG 知识库配置 */}
+        <Card
+          size="small"
+          title={
+            <Space>
+              <DatabaseOutlined /> RAG 知识库配置
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {MOCK_KNOWLEDGE_BASES.length} 个可用
+              </Text>
+            </Space>
+          }
+          style={{ marginBottom: 16 }}
+        >
+          <Form.Item name="ragKnowledgeBaseIds" label="知识库范围">
+            <Checkbox.Group style={{ width: '100%' }}>
+              <Row gutter={[16, 8]}>
+                {MOCK_KNOWLEDGE_BASES.map((kb) => (
+                  <Col key={kb.id} span={12}>
+                    <Checkbox value={kb.id}>
+                      <Space size={4}>
+                        <Text style={{ fontSize: 13 }}>{kb.name}</Text>
+                        <Text type="secondary" style={{ fontSize: 11 }}>({kb.documentCount} 篇)</Text>
+                      </Space>
+                    </Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </Form.Item>
+          <Row gutter={24}>
+            <Col span={8}>
+              <Form.Item name="retrievalMethod" label="检索策略">
+                <Select>
+                  <Select.Option value="hybrid">混合检索（向量+关键词）</Select.Option>
+                  <Select.Option value="vector">纯向量检索</Select.Option>
+                  <Select.Option value="keyword">纯关键词检索</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="topK" label="Top-K">
+                <InputNumber min={1} max={20} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="rerank" label="重排序" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+      </Form>
     </div>
   );
 }

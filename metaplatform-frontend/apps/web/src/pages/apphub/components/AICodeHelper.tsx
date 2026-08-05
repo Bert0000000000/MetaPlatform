@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Button, Card, Empty, Input, Select, Space, Tag, Typography, message } from 'antd';
 import { CodeOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { generateCode } from '@/api/apphub/generate';
@@ -30,7 +30,7 @@ export default function AICodeHelper({ defaultLanguage = 'typescript' }: AICodeH
 
   return (
     <Card size="small" title={<><CodeOutlined /> AI 代码助手</>}>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Space>
           <Select
             value={language}

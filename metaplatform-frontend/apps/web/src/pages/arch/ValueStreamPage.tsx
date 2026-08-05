@@ -43,7 +43,7 @@ export default function ValueStreamPage() {
     setLoading(true);
     try {
       const [res, capRes, roleRes] = await Promise.all([listValueStreams(), listCapabilities(), listRoles()]);
-      setList(res);
+      setList(Array.isArray(res) ? res : ((res as { items?: ValueStream[] }).items ?? []));
       setCaps(capRes.items);
       setRoles(roleRes.items);
     } finally {
@@ -55,7 +55,7 @@ export default function ValueStreamPage() {
 
   const loadStages = async (vs: ValueStream) => {
     const data = await listStages(vs.id);
-    setStages(data);
+    setStages(Array.isArray(data) ? data : ((data as { items?: ValueStreamStage[] }).items ?? []));
     setSelectedStream(vs);
   };
 
@@ -182,7 +182,7 @@ export default function ValueStreamPage() {
   return (
     <div>
       <Card title="价值流管理" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新建</Button>}>
-        <Table rowKey="id" columns={columns} dataSource={list} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
+        <Table rowKey="id" columns={columns} dataSource={list ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
       </Card>
 
       {detail && (
@@ -193,7 +193,7 @@ export default function ValueStreamPage() {
 
       {selectedStream && (
         <Card title={`阶段管理 - ${selectedStream.name}`} style={{ marginTop: 16 }} extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openStageModal()}>新增阶段</Button>}>
-          <Table rowKey="id" columns={stageColumns} dataSource={stages} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+          <Table rowKey="id" columns={stageColumns} dataSource={stages ?? []} size="small" pagination={false} scroll={{ x: 'max-content' }} />
         </Card>
       )}
 

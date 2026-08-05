@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -15,7 +15,7 @@ export async function listEmployees(params?: {
   status?: string;
   roleCategory?: string;
 }): Promise<PageResponse<Employee>> {
-  return get<PageResponse<Employee>>('/v1/dw/employees', params as Record<string, unknown> | undefined);
+  return get<PageResponse<Employee>>('/dw/employees', params as Record<string, unknown> | undefined);
 }
 
 export async function getEmployee(id: string): Promise<Employee> {
@@ -23,7 +23,7 @@ export async function getEmployee(id: string): Promise<Employee> {
 }
 
 export async function createEmployee(request: EmployeeCreateRequest): Promise<Employee> {
-  return post<Employee>('/v1/dw/employees', request);
+  return post<Employee>('/dw/employees', request);
 }
 
 export async function updateEmployee(id: string, request: EmployeeCreateRequest): Promise<Employee> {
@@ -56,11 +56,9 @@ export async function deactivateEmployee(id: string): Promise<Employee> {
 export async function cloneEmployee(
   source: Employee,
   newName: string,
-  newCode: string,
 ): Promise<Employee> {
   return post<Employee>(`/v1/dw/employees/${source.employeeId}/clone`, {
     name: newName,
-    code: newCode,
   });
 }
 

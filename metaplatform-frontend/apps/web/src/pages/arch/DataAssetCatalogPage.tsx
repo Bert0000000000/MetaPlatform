@@ -158,9 +158,9 @@ export default function DataAssetCatalogPage() {
         </div>
       </div>
 
-      <Drawer title={selectedAsset ? selectedAsset.name : '资产详情'} open={drawerOpen} onClose={() => setDrawerOpen(false)} width={480}>
+      <Drawer title={selectedAsset ? selectedAsset.name : '资产详情'} open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {selectedAsset && (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <div><strong>编码：</strong>{selectedAsset.code}</div>
             <div><strong>类型：</strong><Tag>{selectedAsset.assetType}</Tag></div>
             <div><strong>主题域：</strong>{selectedAsset.classification || '-'}</div>

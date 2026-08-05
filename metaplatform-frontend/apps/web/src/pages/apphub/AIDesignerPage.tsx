@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -346,7 +346,7 @@ type TemplateFieldType =
 function renderFormPreview(artifact: AIFormArtifact) {
   const cfg = artifact.config;
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space orientation="vertical" style={{ width: '100%' }}>
       <Typography.Text strong>{cfg.name}</Typography.Text>
       <Typography.Paragraph type="secondary">
         {cfg.description || artifact.description}
@@ -366,7 +366,7 @@ function renderFormPreview(artifact: AIFormArtifact) {
 function renderFlowPreview(artifact: AIFlowArtifact) {
   const cfg = artifact.config;
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space orientation="vertical" style={{ width: '100%' }}>
       <Typography.Text strong>{cfg.name}</Typography.Text>
       <Typography.Paragraph type="secondary">
         {cfg.description || artifact.description}
@@ -390,7 +390,7 @@ function renderFlowPreview(artifact: AIFlowArtifact) {
 function renderPagePreview(artifact: AIPageArtifact) {
   const cfg = artifact.config;
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space orientation="vertical" style={{ width: '100%' }}>
       <Typography.Text strong>{cfg.name}</Typography.Text>
       <Typography.Paragraph type="secondary">
         {cfg.description || artifact.description}
@@ -428,7 +428,7 @@ function renderAppPreview(
   return (
     <Timeline mode="left" style={{ marginTop: 8 }}>
       <Timeline.Item label="表单" dot={<FileTextOutlined />}>
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
           <Typography.Text strong>{form.config.name}</Typography.Text>
           <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
             {form.config.description}
@@ -444,7 +444,7 @@ function renderAppPreview(
       </Timeline.Item>
 
       <Timeline.Item label="流程" dot={<NodeIndexOutlined />}>
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
           <Typography.Text strong>{flow.config.name}</Typography.Text>
           <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
             {flow.config.description}
@@ -474,7 +474,7 @@ function renderAppPreview(
       </Timeline.Item>
 
       <Timeline.Item label="页面" dot={<LayoutOutlined />}>
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
           <Typography.Text strong>{page.config.name}</Typography.Text>
           <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
             {page.config.description}

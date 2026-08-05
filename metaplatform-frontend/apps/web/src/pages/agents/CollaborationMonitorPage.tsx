@@ -136,7 +136,7 @@ export default function CollaborationMonitorPage() {
       title: '子任务',
       key: 'title',
       render: (_, st) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{st.title}</Typography.Text>
           {st.description && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -232,7 +232,7 @@ export default function CollaborationMonitorPage() {
             ? 'red'
             : 'gray',
     children: (
-      <Space direction="vertical" size={2} style={{ width: '100%' }}>
+      <Space orientation="vertical" size={2} style={{ width: '100%' }}>
         <Space>
           <Typography.Text strong>
             #{idx + 1} {st.title}
@@ -269,7 +269,7 @@ export default function CollaborationMonitorPage() {
   const stepsItems = task.subtasks.map((st, idx) => ({
     title: `#${idx + 1} ${st.title}`,
     description: (
-      <Space direction="vertical" size={0}>
+      <Space orientation="vertical" size={0}>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {st.employeeId}
         </Typography.Text>

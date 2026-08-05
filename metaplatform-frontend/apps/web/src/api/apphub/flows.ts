@@ -24,11 +24,11 @@ export async function saveFlow(moduleId: string, config: FlowConfig): Promise<Fl
 }
 
 export async function validateFlow(config: FlowConfig): Promise<FlowValidationResult> {
-  return post<FlowValidationResult>('/v1/wfe/flows/validate', config);
+  return post<FlowValidationResult>('/wfe/flows/validate', config);
 }
 
 export async function testFlow(config: FlowConfig): Promise<FlowTestResult> {
-  return post<FlowTestResult>('/v1/wfe/flows/test', config);
+  return post<FlowTestResult>('/wfe/flows/test', config);
 }
 
 export async function publishFlow(moduleId: string, config: FlowConfig): Promise<{ success: boolean; message: string }> {

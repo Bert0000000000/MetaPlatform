@@ -318,7 +318,7 @@ export default function ExtractionPanel({ employeeId, documentId }: ExtractionPa
             <Statistic
               title="已通过"
               value={stats.approved}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
             />
           </Card>
         </Col>
@@ -327,7 +327,7 @@ export default function ExtractionPanel({ employeeId, documentId }: ExtractionPa
             <Statistic
               title="已提交"
               value={stats.committed}
-              valueStyle={{ color: '#1677ff' }}
+              styles={{ content: { color: '#1677ff' } }}
             />
           </Card>
         </Col>

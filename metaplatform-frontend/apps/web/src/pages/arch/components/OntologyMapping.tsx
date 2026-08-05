@@ -15,6 +15,7 @@ export default function OntologyMappingGraph({ mappings, onImpact }: Props) {
 
   useEffect(() => {
     if (!containerRef.current) return;
+    if (!Array.isArray(mappings) || mappings.length === 0) return;
 
     const graph = new Graph({
       container: containerRef.current,

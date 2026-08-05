@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -128,7 +128,7 @@ export default function EvaluationPage() {
             key: 'autoScore',
             label: '自动评分',
             children: (
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Space orientation="vertical" style={{ width: '100%' }} size="middle">
                 <AutoScorePanel
                   employeeId={employeeId}
                   conversationId={selected?.conversationId}
@@ -152,7 +152,7 @@ export default function EvaluationPage() {
             key: 'reports',
             label: '评估报告',
             children: (
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Space orientation="vertical" style={{ width: '100%' }} size="middle">
                 <TrendChart data={trend} />
                 <Card
                   title="历史报告"

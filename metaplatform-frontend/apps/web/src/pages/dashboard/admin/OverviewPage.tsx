@@ -1,4 +1,4 @@
-﻿import { Card, Col, Row, Tag } from "antd";
+import { Card, Col, Row, Tag } from "antd";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,7 +13,7 @@ import { listUsers } from "@/api/admin";
 import { listRoles } from "@/api/admin/permissions";
 import { listConfigs } from "@/api/admin/configs";
 import { listAuditLogs } from "@/api/admin/logs";
-import { AdminLayout } from "./__AdminLayout";
+import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 import { PageContainer, SectionCard } from "@mate/shared";
 
 interface CardItem {
@@ -63,6 +63,12 @@ export default function OverviewPage() {
 
   return (
     <AdminLayout title="后台管理">
+      <StatGrid>
+        <StatCard label="用户总数" value={counts.users ?? "—"} />
+        <StatCard label="角色总数" value={counts.permissions ?? "—"} />
+        <StatCard label="今日日志" value={counts.logs ?? "—"} color="warning" />
+        <StatCard label="系统状态" value="正常" color="success" />
+      </StatGrid>
       <PageContainer title="总览">
         <SectionCard title="功能模块">
           <Row gutter={[16, 16]}>

@@ -65,6 +65,41 @@ export async function listPermissionCatalog(resourceType?: string): Promise<Admi
   return unwrap<AdminPermission[]>(data as ApiEnvelope<AdminPermission[]>);
 }
 
+export interface PermissionPayload {
+  code: string;
+  name: string;
+  resource_type: string;
+  actions?: string;
+  description?: string;
+}
+
+export async function createPermission(payload: PermissionPayload): Promise<AdminPermission> {
+  const { data } = await apiClient.post(ADMIN_BASE + "/permissions/catalog", {
+    code: payload.code,
+    name: payload.name,
+    resource_type: payload.resource_type,
+    actions: payload.actions ?? "",
+    description: payload.description ?? "",
+  });
+  return unwrap<AdminPermission>(data as ApiEnvelope<AdminPermission>);
+}
+
+export async function updatePermission(id: number, payload: PermissionPayload): Promise<AdminPermission> {
+  const { data } = await apiClient.put(ADMIN_BASE + "/permissions/catalog/" + id, {
+    code: payload.code,
+    name: payload.name,
+    resource_type: payload.resource_type,
+    actions: payload.actions ?? "",
+    description: payload.description ?? "",
+  });
+  return unwrap<AdminPermission>(data as ApiEnvelope<AdminPermission>);
+}
+
+export async function deletePermission(id: number): Promise<{ deleted: number }> {
+  const { data } = await apiClient.delete(ADMIN_BASE + "/permissions/catalog/" + id);
+  return unwrap<{ deleted: number }>(data as ApiEnvelope<{ deleted: number }>);
+}
+
 export async function getPermissionMatrix(): Promise<PermissionMatrixResponse> {
   const { data } = await apiClient.get(ADMIN_BASE + "/permissions/matrix");
   return unwrap<PermissionMatrixResponse>(data as ApiEnvelope<PermissionMatrixResponse>);

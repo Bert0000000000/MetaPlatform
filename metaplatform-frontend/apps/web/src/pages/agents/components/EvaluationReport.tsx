@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Card, Col, Descriptions, Row, Space, Spin, Tag, Typography } from 'antd';
 import {
   CheckCircleOutlined,
@@ -65,7 +65,7 @@ export default function EvaluationReportCard({ report }: EvaluationReportCardPro
     const priMeta = SUGGESTION_PRIORITY_META[s.priority];
     return (
       <Card key={s.id} size="small" style={{ marginBottom: 8 }}>
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+        <Space orientation="vertical" size={4} style={{ width: '100%' }}>
           <Space wrap>
             <Typography.Text strong>{s.title}</Typography.Text>
             <Tag color={catMeta.color}>{catMeta.label}</Tag>
@@ -119,7 +119,7 @@ export default function EvaluationReportCard({ report }: EvaluationReportCardPro
 
         <Row gutter={16} style={{ marginTop: 12 }}>
           <Col xs={24} md={hasDimensions ? 12 : 24}>
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <div>
                 <Typography.Text strong>亮点：</Typography.Text>
                 <ul style={{ marginTop: 4 }}>

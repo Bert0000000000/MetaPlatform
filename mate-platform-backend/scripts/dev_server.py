@@ -38,6 +38,7 @@ for pkg in [
 
 import uvicorn  # noqa: E402
 from fastapi import FastAPI  # noqa: E402
+from typing import Any  # noqa: E402
 
 
 def build_app() -> FastAPI:
@@ -57,6 +58,9 @@ def build_app() -> FastAPI:
             "/api/v1/iam/auth/refresh",
             "/api/v1/iam/sso-providers",
             "/api/v1/dashboard/auth/login",
+            "/api/v1/llmgw/chat",
+            "/api/v1/llmgw/chat/stream",
+            "/api/v1/llmgw/embeddings",
         })
         logger.info("Auth middleware installed (with login anonymous paths)")
     except Exception as e:
@@ -78,6 +82,24 @@ def build_app() -> FastAPI:
             logger.info("Mounted %s router (%d routes)", name, len(router.routes))
         except Exception as e:
             logger.warning("Failed to mount %s: %s", name, e)
+
+    # DW router (digital workforce)
+    try:
+        sys.path.insert(0, _base + r"\mate-tech-dw\src")
+        from mate_tech_dw.api import router as dw_router
+        app.include_router(dw_router)
+        logger.info("Mounted dw router (%d routes)", len(dw_router.routes))
+    except Exception as e:
+        logger.warning("Failed to mount dw: %s", e)
+
+    # LLM Gateway router (mate-tech-llmgw) — provides /api/v1/llmgw/chat/stream
+    try:
+        sys.path.insert(0, _base + r"\mate-tech-llmgw\src")
+        from mate_tech_llmgw.api.routes import router as llmgw_router
+        app.include_router(llmgw_router)
+        logger.info("Mounted llmgw router (%d routes)", len(llmgw_router.routes))
+    except Exception as e:
+        logger.warning("Failed to mount llmgw: %s", e)
 
     # IAM routers
     try:

@@ -15,6 +15,7 @@ RUN uv sync --frozen --no-dev
 
 RUN SITE=/app/.venv/lib/python3.12/site-packages && \
     cp -r packages/mate-common/src/mate_common "$SITE/" && \
+    cp -r packages/mate-platform/src/mate_platform "$SITE/" && \
     cp -r packages/mate-tech-rag/src/mate_tech_rag "$SITE/" && \
     cp -r packages/mate-tech-agent/src/mate_tech_agent "$SITE/"
 

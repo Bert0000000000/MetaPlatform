@@ -1,9 +1,9 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { message } from 'antd';
+import { toast } from '@mate/shared';
 import { getToken, removeToken } from '@/utils/auth';
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ apiClient.interceptors.response.use(
         code === '200' ||
         code === 200;
       if (!isSuccess) {
-        message.error(data.message || '请求失败');
+        toast(data.message || '请求失败', 'error');
         return Promise.reject(new Error(data.message || '请求失败'));
       }
     }
@@ -61,10 +61,10 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
       removeToken();
-      message.error('登录已过期，请重新登录');
+      toast('登录已过期，请重新登录', 'error');
       window.location.href = '/login';
     } else {
-      message.error(msg);
+      toast(msg, 'error');
     }
     return Promise.reject(error);
   }

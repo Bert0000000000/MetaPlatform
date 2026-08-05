@@ -101,7 +101,7 @@ export default function DataEntityDetailPage() {
       <Table
         rowKey={(_, index) => `${index}`}
         columns={columns}
-        dataSource={fields}
+        dataSource={fields ?? []}
         size="small"
         pagination={false}
         onRow={(_, index) => ({

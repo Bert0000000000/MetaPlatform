@@ -105,7 +105,7 @@ export async function listExternalAgents(params?: {
   name?: string;
   capability?: string;
 }): Promise<ExternalAgent[]> {
-  const cards = await get<Record<string, unknown>[]>('/v1/a2a/agent-cards/search', {
+  const cards = await get<Record<string, unknown>[]>('/a2a/agent-cards/search', {
     status: 'PUBLISHED',
     ...params,
   });
@@ -117,7 +117,7 @@ export async function discoverAgents(): Promise<ExternalAgent[]> {
 }
 
 export async function createDelegation(body: CreateDelegationRequest): Promise<Delegation> {
-  return post<Delegation>('/v1/a2a/delegations', {
+  return post<Delegation>('/a2a/delegations', {
     taskType: 'a2a-delegation',
     payload: {},
     ...body,
@@ -133,7 +133,7 @@ export async function listDelegations(params?: {
   page?: number;
   pageSize?: number;
 }): Promise<PageResponse<Delegation>> {
-  return get<PageResponse<Delegation>>('/v1/a2a/delegations', params as Record<string, unknown>);
+  return get<PageResponse<Delegation>>('/a2a/delegations', params as Record<string, unknown>);
 }
 
 export async function cancelDelegation(taskId: string): Promise<Delegation> {

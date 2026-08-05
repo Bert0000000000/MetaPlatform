@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('mcp', '/v1') });
+const client = createApiClient({ baseURL: apiPath('mcp', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -21,23 +21,23 @@ export async function listExternalAgents(params?: {
   page?: number;
   size?: number;
 }): Promise<PageResponse<ExternalAgent>> {
-  return get<PageResponse<ExternalAgent>>('/v1/mcp/external-agents', params);
+  return get<PageResponse<ExternalAgent>>('/external-agents', params);
 }
 export async function getExternalAgent(id: string): Promise<ExternalAgent> {
-  return get<ExternalAgent>(`/v1/mcp/external-agents/${id}`);
+  return get<ExternalAgent>(`/external-agents/${id}`);
 }
 export async function createExternalAgent(req: ExternalAgentCreateRequest): Promise<ExternalAgent> {
-  return post<ExternalAgent>('/v1/mcp/external-agents', req);
+  return post<ExternalAgent>('/external-agents', req);
 }
 export async function updateExternalAgent(
   id: string,
   req: ExternalAgentCreateRequest,
 ): Promise<ExternalAgent> {
-  return put<ExternalAgent>(`/v1/mcp/external-agents/${id}`, req);
+  return put<ExternalAgent>(`/external-agents/${id}`, req);
 }
 export async function deleteExternalAgent(id: string): Promise<void> {
-  await del(`/v1/mcp/external-agents/${id}`);
+  await del(`/external-agents/${id}`);
 }
 export async function testExternalAgentConnection(id: string): Promise<ExternalAgentTestResult> {
-  return post<ExternalAgentTestResult>(`/v1/mcp/external-agents/${id}/test-connection`);
+  return post<ExternalAgentTestResult>(`/external-agents/${id}/test-connection`);
 }

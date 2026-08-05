@@ -20,7 +20,7 @@ export default function SchedulePlanCardPage() {
     <div>
       <Typography.Title level={4}>调度计划卡片</Typography.Title>
       <Card title={`计划 #${PLAN.planId}`} style={{ maxWidth: 720 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <div>
             <Tag color="blue">{(PLAN.parallelGroups?.length || 0) > 0 ? '混合' : '顺序'}</Tag>
             <Typography.Text type="secondary">

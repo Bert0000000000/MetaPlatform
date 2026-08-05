@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -108,7 +108,7 @@ export default function ServerListPage() {
       title: '名称',
       key: 'name',
       render: (_, s) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <ClusterOutlined /> {s.name}
           </Typography.Text>
@@ -129,7 +129,7 @@ export default function ServerListPage() {
       title: '状态',
       key: 'status',
       render: (_, s) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Tag color={STATUS_MAP[s.status].color}>{STATUS_MAP[s.status].label}</Tag>
           {s.lastHeartbeatAt && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>

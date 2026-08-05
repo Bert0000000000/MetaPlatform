@@ -9,8 +9,12 @@ import {
   useThemeMode,
   getAntdTheme,
    ScrollbarAutoHide,
+  setMessageInstance,
 } from '@mate/shared';
 import LoginPage from './pages/LoginPage';
+import ArchLayout from './pages/arch/ArchLayout';
+import { SettingsProvider } from './contexts/SettingsContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // 閹虫帒濮炴潪钘夋倗濡€虫健妞ょ敻娼?
 
@@ -70,7 +74,9 @@ const DashboardAdminPermissionsPage = lazy(() => import('./pages/dashboard/admin
 const DashboardAdminOrgsPage = lazy(() => import('./pages/dashboard/admin/OrgsPage'));
 const DashboardAdminLogsPage = lazy(() => import('./pages/dashboard/admin/LogsPage'));
 const DashboardAdminConfigsPage = lazy(() => import('./pages/dashboard/admin/ConfigsPage'));
+const DashboardAdminAIProvidersPage = lazy(() => import('./pages/dashboard/admin/AIProvidersPage'));
 const DashboardAdminOperationsPage = lazy(() => import('./pages/dashboard/admin/OperationsPage'));
+const DashboardAdminAnalyticsPage = lazy(() => import('./pages/dashboard/admin/AnalyticsPage'));
 const DashboardDeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
 const ArchBusinessArchPage = lazy(() => import('./pages/arch/BusinessArchPage'));
 const ArchApplicationManagementPage = lazy(() => import('./pages/arch/ApplicationManagementPage'));
@@ -122,12 +128,17 @@ const McpExternalAgentListPage = lazy(() => import('./pages/mcp/ExternalAgentLis
 const McpTrustManagementPage = lazy(() => import('./pages/mcp/TrustManagementPage'));
 const McpAuditDetailPage = lazy(() => import('./pages/mcp/AuditDetailPage'));
 const McpAuditStatisticsPage = lazy(() => import('./pages/mcp/AuditStatisticsPage'));
-const AgentsListPage = lazy(() => import('./pages/agents/AgentsListPage'));
-const AgentsDetailPage = lazy(() => import('./pages/agents/AgentsDetailPage'));
-const AgentsKnowledgePage = lazy(() => import('./pages/agents/AgentsKnowledgePage'));
-const AgentsTasksPage = lazy(() => import('./pages/agents/AgentsTasksPage'));
-const AgentsCollabPage = lazy(() => import('./pages/agents/AgentsCollabPage'));
-const AgentsEvaluationPage = lazy(() => import('./pages/agents/AgentsEvaluationPage'));
+const EmployeeListPage = lazy(() => import('./pages/agents/EmployeeListPage'));
+const EmployeeCreatePage = lazy(() => import('./pages/agents/EmployeeCreatePage'));
+const EmployeeDetailPage = lazy(() => import('./pages/agents/EmployeeDetailPage'));
+const TaskListPage = lazy(() => import('./pages/agents/TaskListPage'));
+const TaskDetailPage = lazy(() => import('./pages/agents/TaskDetailPage'));
+const CollaborationListPage = lazy(() => import('./pages/agents/CollaborationListPage'));
+const CollaborationCreatePage = lazy(() => import('./pages/agents/CollaborationCreatePage'));
+const CollaborationMonitorPage = lazy(() => import('./pages/agents/CollaborationMonitorPage'));
+const EvaluationPage = lazy(() => import('./pages/agents/EvaluationPage'));
+const CapabilityConfigPage = lazy(() => import('./pages/agents/CapabilityConfigPage'));
+const ExternalAgentsPage = lazy(() => import('./pages/agents/ExternalAgentsPage'));
 
 
 function Loading() {
@@ -173,7 +184,9 @@ function AppRoutes() {
           <Route path="admin/orgs" element={<DashboardAdminOrgsPage />} />
           <Route path="admin/logs" element={<DashboardAdminLogsPage />} />
           <Route path="admin/configs" element={<DashboardAdminConfigsPage />} />
+          <Route path="admin/ai-providers" element={<DashboardAdminAIProvidersPage />} />
           <Route path="admin/operations" element={<DashboardAdminOperationsPage />} />
+          <Route path="admin/analytics" element={<DashboardAdminAnalyticsPage />} />
           {/* SuperAI 鐎电鐦芥稉顓炵妇(Phase 4.5: from apps/superai) */}
           <Route path="superai" element={<SuperaiOverviewPage />} />
           <Route path="superai/chat" element={<SuperaiChatPage />} />
@@ -195,27 +208,27 @@ function AppRoutes() {
           <Route path="superai/tasks" element={<SuperaiTaskOrchestrationPage />} />
           <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
           {/* 閺嬭埖鐎稉顓炵妇(Phase 4: from apps/arch) */}
-          <Route path="arch" element={<ArchBusinessArchPage />} />
-          <Route path="arch/capabilities" element={<ArchCapabilityManagementPage />} />
-          <Route path="arch/applications" element={<ArchApplicationManagementPage />} />
-          <Route path="arch/value-streams" element={<ArchValueStreamPage />} />
-          <Route path="arch/processes" element={<ArchBusinessProcessPage />} />
-          <Route path="arch/org-roles" element={<ArchOrgRolePage />} />
-          <Route path="arch/data" element={<ArchDataArchPage />} />
-          <Route path="arch/data/entities/:id" element={<ArchDataEntityDetailPage />} />
-          <Route path="arch/data/flows" element={<ArchDataFlowPage />} />
-          <Route path="arch/data/standards" element={<ArchDataStandardPage />} />
-          <Route path="arch/data/assets" element={<ArchDataAssetCatalogPage />} />
-          <Route path="arch/tech" element={<ArchTechArchPage />} />
-          <Route path="arch/tech-components" element={<ArchTechComponentPage />} />
-          <Route path="arch/tech-stacks" element={<ArchTechStackPage />} />
-          <Route path="arch/deployment-topologies" element={<ArchDeploymentTopologyPage />} />
-          <Route path="arch/tech-radar" element={<ArchTechRadarPage />} />
-          <Route path="arch/principles" element={<ArchPrinciplesPage />} />
-          <Route path="arch/review-templates" element={<ArchReviewTemplatePage />} />
-          <Route path="arch/reviews" element={<ArchReviewPage />} />
-          <Route path="arch/tech-debt" element={<ArchTechDebtPage />} />
-          <Route path="arch/ontology-mapping" element={<ArchOntologyMappingPage />} />
+          <Route path="arch" element={<Navigate to="/arch/capabilities" replace />} />
+          <Route path="arch/capabilities" element={<ArchLayout><ArchCapabilityManagementPage /></ArchLayout>} />
+          <Route path="arch/applications" element={<ArchLayout><ArchApplicationManagementPage /></ArchLayout>} />
+          <Route path="arch/value-streams" element={<ArchLayout><ArchValueStreamPage /></ArchLayout>} />
+          <Route path="arch/processes" element={<ArchLayout><ArchBusinessProcessPage /></ArchLayout>} />
+          <Route path="arch/org-roles" element={<ArchLayout><ArchOrgRolePage /></ArchLayout>} />
+          <Route path="arch/data" element={<ArchLayout><ArchDataArchPage /></ArchLayout>} />
+          <Route path="arch/data/entities/:id" element={<ArchLayout><ArchDataEntityDetailPage /></ArchLayout>} />
+          <Route path="arch/data/flows" element={<ArchLayout><ArchDataFlowPage /></ArchLayout>} />
+          <Route path="arch/data/standards" element={<ArchLayout><ArchDataStandardPage /></ArchLayout>} />
+          <Route path="arch/data/assets" element={<ArchLayout><ArchDataAssetCatalogPage /></ArchLayout>} />
+          <Route path="arch/tech" element={<ArchLayout><ArchTechArchPage /></ArchLayout>} />
+          <Route path="arch/tech-components" element={<ArchLayout><ArchTechComponentPage /></ArchLayout>} />
+          <Route path="arch/tech-stacks" element={<ArchLayout><ArchTechStackPage /></ArchLayout>} />
+          <Route path="arch/deployment-topologies" element={<ArchLayout><ArchDeploymentTopologyPage /></ArchLayout>} />
+          <Route path="arch/tech-radar" element={<ArchLayout><ArchTechRadarPage /></ArchLayout>} />
+          <Route path="arch/principles" element={<ArchLayout><ArchPrinciplesPage /></ArchLayout>} />
+          <Route path="arch/review-templates" element={<ArchLayout><ArchReviewTemplatePage /></ArchLayout>} />
+          <Route path="arch/reviews" element={<ArchLayout><ArchReviewPage /></ArchLayout>} />
+          <Route path="arch/tech-debt" element={<ArchLayout><ArchTechDebtPage /></ArchLayout>} />
+          <Route path="arch/ontology-mapping" element={<ArchLayout><ArchOntologyMappingPage /></ArchLayout>} />
 
           {/* 閹煎瓨姊婚弫銈嗙▔椤撶偟濡?Phase 2: from apps/apphub) */}
           <Route path="apps" element={<ApphubAppListPage />} />
@@ -273,12 +286,18 @@ function AppRoutes() {
           <Route path="mcp/external-agents" element={<McpExternalAgentListPage />} />
           <Route path="mcp/trusts" element={<McpTrustManagementPage />} />
           {/* 閺佹澘鐡ч崨妯轰紣 */}
-          <Route path="agents" element={<AgentsListPage />} />
-          <Route path="agents/detail" element={<AgentsDetailPage />} />
-          <Route path="agents/knowledge" element={<AgentsKnowledgePage />} />
-          <Route path="agents/tasks" element={<AgentsTasksPage />} />
-          <Route path="agents/collab" element={<AgentsCollabPage />} />
-          <Route path="agents/evaluation" element={<AgentsEvaluationPage />} />          {/* 鍚庡彴绠＄悊锛氱粺涓€浣跨敤 dashboard/admin 椤甸潰锛岄伩鍏嶉噸澶嶈矾鐢卞拰鏈畾涔夌粍浠?*/}
+          <Route path="agents" element={<EmployeeListPage />} />
+          <Route path="agents/create" element={<EmployeeCreatePage />} />
+          <Route path="agents/:employeeId" element={<EmployeeDetailPage />} />
+          <Route path="agents/:employeeId/edit" element={<EmployeeCreatePage />} />
+          <Route path="agents/tasks" element={<TaskListPage />} />
+          <Route path="agents/tasks/:taskId" element={<TaskDetailPage />} />
+          <Route path="agents/collab" element={<CollaborationListPage />} />
+          <Route path="agents/collab/create" element={<CollaborationCreatePage />} />
+          <Route path="agents/collab/:id" element={<CollaborationMonitorPage />} />
+          <Route path="agents/evaluation" element={<EvaluationPage />} />
+          <Route path="agents/:employeeId/capabilities" element={<CapabilityConfigPage />} />
+          <Route path="agents/external" element={<ExternalAgentsPage />} />          {/* 鍚庡彴绠＄悊锛氱粺涓€浣跨敤 dashboard/admin 椤甸潰锛岄伩鍏嶉噸澶嶈矾鐢卞拰鏈畾涔夌粍浠?*/}
         </Route>
       </Routes>
     </Suspense>
@@ -293,14 +312,24 @@ function App() {
   return (
     <ConfigProvider locale={zhCN} theme={theme}>
       <AntApp>
+        <MessageBridge />
         <AuthProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <SettingsProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </SettingsProvider>
         </AuthProvider>
       </AntApp>
     </ConfigProvider>
   );
+}
+
+/** 把 antd App.useApp() 的 message 实例注入全局 toast holder，供非 React 模块（如 client.ts）使用 */
+function MessageBridge() {
+  const { message } = AntApp.useApp();
+  setMessageInstance(message);
+  return null;
 }
 
 export default App;

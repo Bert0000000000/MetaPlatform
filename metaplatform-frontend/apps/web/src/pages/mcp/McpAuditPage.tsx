@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -69,7 +69,7 @@ export default function CollaborationAuditPage() {
       title: '调用方',
       key: 'caller',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{record.callerId}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {record.callerType}
@@ -81,7 +81,7 @@ export default function CollaborationAuditPage() {
       title: '被调用方',
       key: 'callee',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{record.calleeId}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {record.calleeType}
@@ -207,7 +207,7 @@ export default function CollaborationAuditPage() {
         width={720}
       >
         {detail && (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Typography.Paragraph>
               <Typography.Text strong>ID: </Typography.Text>
               {detail.id}

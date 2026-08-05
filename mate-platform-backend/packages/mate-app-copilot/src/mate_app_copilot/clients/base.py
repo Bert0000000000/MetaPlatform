@@ -1,4 +1,4 @@
-"""mate_app_copilot.clients — outbound client with BearerAuth.
+"""mate_app_copilot.clients.base — outbound client base with BearerAuth.
 
 Provides typed client wrappers for copilot → llmgw / kb / ontology /
 a2a cross-service calls. Each client injects `Authorization: Bearer`

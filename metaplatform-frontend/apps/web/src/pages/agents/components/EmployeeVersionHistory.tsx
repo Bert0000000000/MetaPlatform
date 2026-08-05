@@ -63,7 +63,7 @@ export default function EmployeeVersionHistory({ employeeId }: EmployeeVersionHi
         <Timeline
           items={versions.map((v) => ({
             color: 'blue',
-            children: (
+            content: (
               <div>
                 <Typography.Text strong>v{v.version}</Typography.Text>
                 <Tag color="blue" style={{ marginLeft: 8 }}>

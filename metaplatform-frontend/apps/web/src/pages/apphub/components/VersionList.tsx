@@ -1,4 +1,4 @@
-import { Table, Tag, Button, Space, Popconfirm, Typography } from 'antd';
+﻿import { Table, Tag, Button, Space, Popconfirm, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   RollbackOutlined,
@@ -66,7 +66,7 @@ export default function VersionList({
       title: '版本',
       key: 'version',
       render: (_, v) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>v{v.version}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {v.changeLog || '无变更说明'}
@@ -88,7 +88,7 @@ export default function VersionList({
       title: '发布/回滚',
       key: 'dates',
       render: (_, v) => (
-        <Space direction="vertical" size={0} style={{ fontSize: 12 }}>
+        <Space orientation="vertical" size={0} style={{ fontSize: 12 }}>
           {v.publishedAt && (
             <span>发布: {new Date(v.publishedAt).toLocaleString()}</span>
           )}

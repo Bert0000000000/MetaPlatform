@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
 
 COPY --from=builder /app /app
 COPY packages/mate-tech-msg/src/mate_tech_msg /app/src/mate_tech_msg
+COPY packages/mate-platform/src/mate_platform /app/src/mate_platform
 
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app

@@ -79,19 +79,29 @@ export default function OntologyMappingPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    Promise.all([
+    Promise.allSettled([
       listMappingRules(),
       listPendingChanges(),
       listCapabilities(),
       listApplications(),
       searchOntologyConcepts(),
     ])
-      .then(([rulesRes, eventsRes, capsRes, appsRes, conceptsRes]) => {
-        setRules(rulesRes);
-        setEvents(eventsRes);
-        setCapabilities(capsRes.items);
-        setApplications(appsRes.items);
-        setConcepts(conceptsRes);
+      .then((results) => {
+        const [rulesRes, eventsRes, capsRes, appsRes, conceptsRes] = results;
+        if (rulesRes.status === 'fulfilled') {
+          const v = rulesRes.value;
+          setRules(Array.isArray(v) ? v : ((v as { items?: ConceptMappingRule[] }).items ?? []));
+        }
+        if (eventsRes.status === 'fulfilled') {
+          const v = eventsRes.value;
+          setEvents(Array.isArray(v) ? v : ((v as { items?: OntologyChangeEvent[] }).items ?? []));
+        }
+        if (capsRes.status === 'fulfilled') setCapabilities(capsRes.value.items);
+        if (appsRes.status === 'fulfilled') setApplications(appsRes.value.items);
+        if (conceptsRes.status === 'fulfilled') {
+          const v = conceptsRes.value;
+          setConcepts(Array.isArray(v) ? v : ((v as { items?: OntologyConcept[] }).items ?? []));
+        }
       })
       .finally(() => setLoading(false));
 
@@ -304,7 +314,7 @@ export default function OntologyMappingPage() {
             <Table
               rowKey="id"
               columns={ruleColumns}
-              dataSource={rules}
+              dataSource={rules ?? []}
               loading={loading}
               size="small"
               pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
@@ -315,7 +325,7 @@ export default function OntologyMappingPage() {
             <Table
               rowKey="id"
               columns={eventColumns}
-              dataSource={events.filter((e) => e.status === 'PENDING')}
+              dataSource={(events ?? []).filter((e) => e.status === 'PENDING')}
               loading={loading}
               size="small"
               pagination={{ pageSize: 5 }}

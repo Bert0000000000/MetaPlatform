@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -55,7 +55,7 @@ export interface EvaluationReport {
   createdAt: string;
 }
 
-const BASE = '/v1/dw/evaluations';
+const BASE = '/dw/evaluations';
 
 export async function listConversations(employeeId?: string): Promise<ConversationRecord[]> {
   return get<ConversationRecord[]>(`${BASE}/conversations`, { employeeId });

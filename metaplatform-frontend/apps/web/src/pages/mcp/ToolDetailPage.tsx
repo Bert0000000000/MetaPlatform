@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -204,7 +204,7 @@ export default function ToolDetailPage() {
         onCancel={() => setCompareOpen(false)}
       >
         {compareResult && (
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <Space>
                 <Tag color="blue">差异项</Tag>
                 {compareResult.differences.map((d) => (

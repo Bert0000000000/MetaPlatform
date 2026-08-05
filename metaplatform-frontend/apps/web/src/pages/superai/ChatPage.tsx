@@ -425,6 +425,8 @@ export default function ChatPage() {
   const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
+  const [currentModel, setCurrentModel] = useState('doubao-pro-32k');
+  const [availableModels, setAvailableModels] = useState<{ label: string; value: string }[]>([]);
   const loadedHistoryRef = useRef<Set<string>>(new Set());
   const modelsLoadedRef = useRef(false);
 
@@ -469,6 +471,29 @@ export default function ChatPage() {
         });
     }
   }, [isMultimodal]);
+
+  // Load available models on mount for the chat model selector
+  useEffect(() => {
+    listMultimodalModels()
+      .then((models) => {
+        const opts = models
+          .filter((m) => m.enabled)
+          .map((m) => ({ label: m.displayName || m.modelCode, value: m.modelId || m.modelCode }));
+        if (opts.length > 0) {
+          setAvailableModels(opts);
+          setCurrentModel((prev) => prev || opts[0].value);
+        }
+      })
+      .catch(() => {
+        // Fallback model list
+        setAvailableModels([
+          { label: 'Doubao Pro 32K', value: 'doubao-pro-32k' },
+          { label: 'GPT-4o', value: 'gpt-4o' },
+          { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet-20241022' },
+          { label: 'DeepSeek Chat', value: 'deepseek-chat' },
+        ]);
+      });
+  }, []);
 
   const loadHistoryIfNeeded = useCallback(
     async (sessionId: string) => {
@@ -789,9 +814,10 @@ export default function ChatPage() {
           },
         },
         controller.signal,
+        { model: currentModel },
       );
     },
-    [activeSession, loading, updateSession, updateMessage, selectedKbIds, isMultimodal, selectedModelId, imageFiles],
+    [activeSession, loading, updateSession, updateMessage, selectedKbIds, isMultimodal, selectedModelId, imageFiles, currentModel],
   );
 
   const handleCancel = useCallback(() => {
@@ -811,7 +837,6 @@ export default function ChatPage() {
   );
 
   const [temperature, setTemperature] = useState(70);
-  const [currentModel, setCurrentModel] = useState('GPT-4o');
   const [searchKeyword, setSearchKeyword] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1309,15 +1334,15 @@ export default function ChatPage() {
                   <PaperClipOutlined style={{ fontSize: 14 }} />
                 </button>
               </Tooltip>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: '#a1a1a1',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {currentModel}
-              </div>
+              <Select
+                size="small"
+                variant="borderless"
+                value={currentModel}
+                onChange={setCurrentModel}
+                options={availableModels}
+                style={{ width: 160, fontSize: 11 }}
+                popupMatchSelectWidth={false}
+              />
             </div>
           </div>
 

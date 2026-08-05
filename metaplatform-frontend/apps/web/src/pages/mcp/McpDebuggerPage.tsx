@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -261,7 +261,7 @@ export default function DebuggerPage() {
         </span>
       ),
       children: currentSession ? (
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Card size="small" title="请求报文">
             <Editor
               height="180px"
@@ -291,7 +291,7 @@ export default function DebuggerPage() {
         </span>
       ),
       children: currentSession ? (
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Card size="small">
             <Row gutter={16}>
               <Col span={12}>
@@ -403,7 +403,7 @@ export default function DebuggerPage() {
         </span>
       ),
       children: (
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Card size="small" title="差异字段">
             {compareResult.differences.length > 0 ? (
               compareResult.differences.map((d) => <Tag key={d}>{d}</Tag>)
@@ -478,7 +478,7 @@ export default function DebuggerPage() {
             {loadingResources ? (
               <Spin />
             ) : (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space orientation="vertical" style={{ width: '100%' }}>
                 <div>
                   <Typography.Text strong style={{ fontSize: 12 }}>
                     MCP Server

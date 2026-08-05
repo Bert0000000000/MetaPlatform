@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Drawer,
@@ -20,7 +20,7 @@ import {
   updateConfig,
 } from "@/api/admin/configs";
 import type { AdminSystemConfig, ConfigCategory } from "@/types";
-import { AdminLayout } from "./__AdminLayout";
+import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 import { formatDateTime } from "@/utils/datetime";
 import { useSettings } from "@/contexts/SettingsContext";
 
@@ -31,6 +31,7 @@ const CATEGORY_LABEL: Record<ConfigCategory, string> = {
   RATE_LIMIT: "限流",
   SECURITY: "安全",
   BRANDING: "品牌",
+  AI_PROVIDER: "AI 提供方",
   OTHER: "其他",
 };
 
@@ -41,6 +42,7 @@ const CATEGORY_COLOR: Record<ConfigCategory, string> = {
   RATE_LIMIT: "orange",
   SECURITY: "red",
   BRANDING: "cyan",
+  AI_PROVIDER: "magenta",
   OTHER: "default",
 };
 
@@ -67,7 +69,7 @@ export default function ConfigsPage() {
         page,
         pageSize,
       });
-      setItems(res.items);
+      setItems(res.items ?? []);
       setTotal(res.total);
     } finally {
       setLoading(false);
@@ -176,23 +178,41 @@ export default function ConfigsPage() {
     return <Form.Item name="value" label="值" rules={[{ required: true }]}><Input.Password placeholder={editTarget.isSensitive ? "敏感字段，输入新值" : ""} /></Form.Item>;
   };
 
+  const stats = useMemo(() => {
+    const enabled = items.filter((c) => (c.value === true || c.value === "true")).length;
+    const disabled = items.length - enabled;
+    const systemConfig = items.filter((c) => c.category === "SSO" || c.category === "SECURITY" || c.category === "LICENSE").length;
+    const aiProviders = items.filter((c) => c.category === "AI_PROVIDER").length;
+    return { enabled, disabled, systemConfig, aiProviders };
+  }, [items]);
+
   return (
     <AdminLayout
       title="系统配置"
       extra={<Space><Button icon={<ReloadOutlined />} onClick={load}>刷新</Button></Space>}
     >
+      <StatGrid>
+        <StatCard label="配置项总数" value={total} />
+        <StatCard label="已启用" value={stats.enabled} color="success" />
+        <StatCard
+          label="已禁用"
+          value={stats.disabled}
+          color={stats.disabled > 0 ? "destructive" : "default"}
+        />
+        <StatCard label="系统配置" value={stats.systemConfig} color="warning" />
+      </StatGrid>
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, marginBottom: 12, display: "flex", gap: 8 }}>
         <Input.Search placeholder="搜索 Key" allowClear value={keyword} onChange={(e) => setKeyword(e.target.value)} onSearch={() => { setPage(1); load(); }} style={{ maxWidth: 280 }} />
-        <Select placeholder="分类" value={category} onChange={(v) => { setCategory(v); setPage(1); }} allowClear style={{ width: 200 }} options={categories.map((c) => ({ value: c.value, label: (CATEGORY_LABEL[c.value as ConfigCategory] ?? c.value) + " (" + c.count + ")" }))} />
+        <Select placeholder="分类" value={category} onChange={(v) => { setCategory(v); setPage(1); }} allowClear style={{ width: 200 }} options={Array.isArray(categories) ? categories.map((c) => ({ value: c.value, label: (CATEGORY_LABEL[c.value as ConfigCategory] ?? c.value) + " (" + c.count + ")" })) : []} />
       </div>
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, padding: 8 }}>
-        <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={{ current: page, pageSize, total, showSizeChanger: true, onChange: (p, ps) => { setPage(p); setPageSize(ps); } }} size="middle" />
+        <Table rowKey="id" loading={loading} columns={columns} dataSource={items ?? []} pagination={{ current: page, pageSize, total, showSizeChanger: true, onChange: (p, ps) => { setPage(p); setPageSize(ps); } }} size="middle" />
       </div>
       <Drawer
         title={editTarget ? "编辑配置 - " + editTarget.key : ""}
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        width={520}
+        size={520}
         extra={<Space><Button onClick={() => setEditOpen(false)}>取消</Button><Button type="primary" onClick={submit}>保存</Button></Space>}
       >
         {editTarget && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -83,7 +83,7 @@ export default function CollaborationReport({
           showIcon
           message="协作报告暂不可用"
           description={
-            <Space direction="vertical">
+            <Space orientation="vertical">
               <Typography.Text type="secondary">{error}</Typography.Text>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 请先执行协作任务后再查看报告。
@@ -158,7 +158,7 @@ export default function CollaborationReport({
         </Space>
       }
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
+      <Space orientation="vertical" style={{ width: '100%' }} size="large">
         <Card type="inner" title="基础信息">
           <Space size="large" wrap>
             <Statistic title="协作任务" value={report.title} />

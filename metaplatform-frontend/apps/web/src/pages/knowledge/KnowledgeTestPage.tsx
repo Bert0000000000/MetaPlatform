@@ -7,7 +7,7 @@
  */
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Card, Input, Button, Select, Space, List, Tag, Typography, message } from 'antd';
+import { Card, Input, Button, Select, Space, Empty, Tag, Typography, message } from 'antd';
 import { Search, FileText, Zap } from 'lucide-react';
 import { SubTabs, type SubTabItem, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
 import { listKb, search, type KbEntity, type Evidence } from '@/api/kb';
@@ -92,29 +92,45 @@ export default function KnowledgeTestPage() {
         </Card>
 
         <Card title={`命中 ${evidences.length} 条`} style={{ marginTop: 16 }}>
-          <List
-            dataSource={evidences}
-            renderItem={(ev) => (
-              <List.Item
-                key={ev.evidenceId}
-                actions={[
-                  <Tag color="green" key="score">score {ev.score.toFixed(3)}</Tag>,
-                  <Tag key="type">{ev.type}</Tag>,
-                ]}
-              >
-                <List.Item.Meta
-                  avatar={<FileText size={24} color="#1677ff" />}
-                  title={<Typography.Text strong>{ev.title ?? ev.documentId}</Typography.Text>}
-                  description={
-                    <Typography.Paragraph ellipsis={{ rows: 3 }} style={{ marginBottom: 0 }}>
-                      {ev.fragment}
-                    </Typography.Paragraph>
-                  }
-                />
-              </List.Item>
-            )}
-            locale={{ emptyText: '暂无命中，输入 query 开始检索' }}
-          />
+          {evidences.length === 0 ? (
+            <Empty description="暂无命中，输入 query 开始检索" />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {evidences.map((ev) => (
+                <div
+                  key={ev.evidenceId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    padding: '12px 0',
+                    borderBottom: '1px solid #f0f0f0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
+                    <div style={{ flexShrink: 0 }}>
+                      <FileText size={24} color="#1677ff" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div>
+                        <Typography.Text strong>{ev.title ?? ev.documentId}</Typography.Text>
+                      </div>
+                      <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                        <Typography.Paragraph ellipsis={{ rows: 3 }} style={{ marginBottom: 0 }}>
+                          {ev.fragment}
+                        </Typography.Paragraph>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <Tag color="green">score {ev.score.toFixed(3)}</Tag>
+                    <Tag>{ev.type}</Tag>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>

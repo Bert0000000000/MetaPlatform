@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-export const apiClient = createApiClient({ baseURL: apiPath('mcp', '/v1') });
+export const apiClient = createApiClient({ baseURL: apiPath('mcp', '') });
 
 import type { JsonRpcRequest, JsonRpcResponse } from './types';
 

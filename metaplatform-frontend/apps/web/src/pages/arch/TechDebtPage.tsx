@@ -46,7 +46,7 @@ export default function TechDebtPage() {
 
   const load = async () => {
     setLoading(true);
-    try { setList(await listTechDebt()); } finally { setLoading(false); }
+    try { const res = await listTechDebt(); setList(Array.isArray(res) ? res : ((res as { items?: TechDebt[] }).items ?? [])); } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
@@ -168,7 +168,7 @@ export default function TechDebtPage() {
         <Col span={6}><Statistic title="已解决" value={summary.resolved} valueStyle={{ color: '#3f8600' }} /></Col>
       </Row>
 
-      <Table rowKey="id" columns={columns} dataSource={list} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
+      <Table rowKey="id" columns={columns} dataSource={list ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
 
       <Modal
         title={editing ? '编辑技术债务' : '新增技术债务'}

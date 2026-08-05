@@ -55,7 +55,7 @@ export interface Employee {
 
 export interface EmployeeCreateRequest {
   name: string;
-  code: string;
+  code?: string;
   roleCategory: RoleCategory;
   roleIdentity: string;
   description: string;
@@ -102,11 +102,14 @@ export const ROLE_CATEGORY_MAP: Record<RoleCategory, { label: string; color: str
   CUSTOM: { label: '自定义', color: 'default' },
 };
 
-export const EMPLOYEE_STATUS_MAP: Record<EmployeeStatus, { label: string; color: string }> = {
+export const EMPLOYEE_STATUS_MAP: Record<string, { label: string; color: string }> = {
   DRAFT: { label: '草稿', color: 'default' },
   ACTIVE: { label: '在线', color: 'success' },
   INACTIVE: { label: '已停用', color: 'default' },
   ARCHIVED: { label: '已归档', color: 'text' },
+  // remapUserStatus interceptor converts ACTIVE→ENABLED, INACTIVE→DISABLED
+  ENABLED: { label: '在线', color: 'success' },
+  DISABLED: { label: '已停用', color: 'default' },
 };
 
 export const DIALOG_STYLE_PRESETS = [

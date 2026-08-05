@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('mcp', '/v1') });
+const client = createApiClient({ baseURL: apiPath('mcp', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -106,53 +106,53 @@ export async function listTools(params?: {
   keyword?: string;
   category?: string;
 }): Promise<PageResponse<McpTool>> {
-  const data = await get<PageResponse<BackendTool>>('/v1/mcp/tools', params);
+  const data = await get<PageResponse<BackendTool>>('/tools', params);
   return {
     ...data,
     items: data.items.map(fromBackendTool),
   };
 }
 export async function getTool(id: string): Promise<McpTool> {
-  const data = await get<BackendTool>(`/v1/mcp/tools/${id}`);
+  const data = await get<BackendTool>(`/tools/${id}`);
   return fromBackendTool(data);
 }
 export async function createTool(req: McpToolCreateRequest): Promise<McpTool> {
-  const data = await post<BackendTool>('/v1/mcp/tools', toBackendRequest(req));
+  const data = await post<BackendTool>('/tools', toBackendRequest(req));
   return fromBackendTool(data);
 }
 export async function updateTool(id: string, req: McpToolCreateRequest): Promise<McpTool> {
-  const data = await put<BackendTool>(`/v1/mcp/tools/${id}`, toBackendRequest(req));
+  const data = await put<BackendTool>(`/tools/${id}`, toBackendRequest(req));
   return fromBackendTool(data);
 }
 export async function deleteTool(id: string): Promise<void> {
-  await del(`/v1/mcp/tools/${id}`);
+  await del(`/tools/${id}`);
 }
 export async function listCategories(): Promise<McpToolCategory[]> {
-  return get<McpToolCategory[]>('/v1/mcp/tool-categories');
+  return get<McpToolCategory[]>('/tool-categories');
 }
 export async function createCategory(req: McpToolCategoryCreateRequest): Promise<McpToolCategory> {
-  return post<McpToolCategory>('/v1/mcp/tool-categories', req);
+  return post<McpToolCategory>('/tool-categories', req);
 }
 export async function updateCategory(id: string, req: McpToolCategoryCreateRequest): Promise<McpToolCategory> {
-  return put<McpToolCategory>(`/v1/mcp/tool-categories/${id}`, req);
+  return put<McpToolCategory>(`/tool-categories/${id}`, req);
 }
 export async function deleteCategory(id: string): Promise<void> {
-  await del(`/v1/mcp/tool-categories/${id}`);
+  await del(`/tool-categories/${id}`);
 }
 export async function listToolVersions(toolId: string): Promise<McpToolVersion[]> {
-  const data = await get<BackendVersion[]>(`/v1/mcp/tools/${toolId}/versions`);
+  const data = await get<BackendVersion[]>(`/tools/${toolId}/versions`);
   return data.map(fromBackendVersion);
 }
 export async function getToolVersion(toolId: string, versionId: string): Promise<McpToolVersion> {
-  const data = await get<BackendVersion>(`/v1/mcp/tools/${toolId}/versions/${versionId}`);
+  const data = await get<BackendVersion>(`/tools/${toolId}/versions/${versionId}`);
   return fromBackendVersion(data);
 }
 export async function rollbackToolVersion(toolId: string, versionId: string): Promise<McpToolVersion> {
-  const data = await post<BackendVersion>(`/v1/mcp/tools/${toolId}/versions/${versionId}/rollback`);
+  const data = await post<BackendVersion>(`/tools/${toolId}/versions/${versionId}/rollback`);
   return fromBackendVersion(data);
 }
 export async function setCurrentToolVersion(toolId: string, versionId: string): Promise<McpToolVersion> {
-  const data = await post<BackendVersion>(`/v1/mcp/tools/${toolId}/versions/${versionId}/set-current`);
+  const data = await post<BackendVersion>(`/tools/${toolId}/versions/${versionId}/set-current`);
   return fromBackendVersion(data);
 }
 export async function compareToolVersions(
@@ -164,7 +164,7 @@ export async function compareToolVersions(
     left: BackendVersion;
     right: BackendVersion;
     differences: string[];
-  }>(`/v1/mcp/tools/${toolId}/versions/compare`, { leftVersionId, rightVersionId });
+  }>(`/tools/${toolId}/versions/compare`, { leftVersionId, rightVersionId });
   return {
     left: fromBackendVersion(data.left),
     right: fromBackendVersion(data.right),

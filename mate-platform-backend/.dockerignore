@@ -1,16 +1,16 @@
 # Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-env/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.pyright_cache/
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+**/.venv/
+**/venv/
+**/env/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/.pyright_cache/
 
 # IDE
 .vscode/
@@ -18,10 +18,10 @@ env/
 *.swp
 .DS_Store
 
-# 濠电偞娼欓鍫ユ儊?tests/
-.pytest_cache/
-htmlcov/
-.coverage
+# tests
+**/.pytest_cache/
+**/htmlcov/
+**/.coverage
 
 # 闂佸搫鍟ㄩ崕杈╂崲?*.log
 logs/

@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('mcp', '/v1') });
+const client = createApiClient({ baseURL: apiPath('mcp', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -32,27 +32,27 @@ function normalizeResponse(data: McpClient): McpClient {
   };
 }
 export async function listClients(): Promise<PageResponse<McpClient>> {
-  const res = await get<PageResponse<McpClient>>('/v1/mcp/clients');
+  const res = await get<PageResponse<McpClient>>('/clients');
   return { ...res, items: res.items.map(normalizeResponse) };
 }
 export async function getClient(id: string): Promise<McpClient> {
-  return normalizeResponse(await get<McpClient>(`/v1/mcp/clients/${id}`));
+  return normalizeResponse(await get<McpClient>(`/clients/${id}`));
 }
 export async function createClient(req: McpClientCreateRequest): Promise<McpClient> {
-  return normalizeResponse(await post<McpClient>('/v1/mcp/clients', normalizeRequest(req)));
+  return normalizeResponse(await post<McpClient>('/clients', normalizeRequest(req)));
 }
 export async function updateClient(id: string, req: McpClientCreateRequest): Promise<McpClient> {
-  return normalizeResponse(await put<McpClient>(`/v1/mcp/clients/${id}`, normalizeRequest(req)));
+  return normalizeResponse(await put<McpClient>(`/clients/${id}`, normalizeRequest(req)));
 }
 export async function deleteClient(id: string): Promise<void> {
-  await del(`/v1/mcp/clients/${id}`);
+  await del(`/clients/${id}`);
 }
 export async function testConnection(id: string): Promise<McpClient> {
-  return normalizeResponse(await post<McpClient>(`/v1/mcp/clients/${id}/test-connection`));
+  return normalizeResponse(await post<McpClient>(`/clients/${id}/test-connection`));
 }
 export async function discoverClientTools(id: string): Promise<McpDiscoveredTool[]> {
-  return post<McpDiscoveredTool[]>(`/v1/mcp/clients/${id}/discover`);
+  return post<McpDiscoveredTool[]>(`/clients/${id}/discover`);
 }
 export async function listClientTools(id: string): Promise<McpDiscoveredTool[]> {
-  return get<McpDiscoveredTool[]>(`/v1/mcp/clients/${id}/tools`);
+  return get<McpDiscoveredTool[]>(`/clients/${id}/tools`);
 }

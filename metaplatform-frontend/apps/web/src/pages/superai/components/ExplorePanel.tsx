@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 import {
   Button,
   Input,
@@ -122,7 +122,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
   const renderConceptDetail = () => {
     if (!selectedConcept) return <Empty description="请选择一个概念查看详情" />;
     return (
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <Typography.Title level={5}>{selectedConcept.name}</Typography.Title>
         <Typography.Paragraph type="secondary">{selectedConcept.definition}</Typography.Paragraph>
 
@@ -192,7 +192,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
 
   return (
     <Card size="small" style={{ marginBottom: 8 }}>
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <TextArea
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -231,7 +231,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
                 </Space>
               ),
               children: (
-                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                <Space orientation="vertical" style={{ width: '100%' }} size="small">
                   <Space.Compact style={{ width: '100%' }}>
                     <Select
                       value={searchField}
@@ -271,7 +271,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
                         onClick={() => handleConceptClick(concept.id)}
                         style={{ cursor: 'pointer' }}
                       >
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
                           <Space>
                             <Typography.Text strong>{concept.name}</Typography.Text>
                             <Tag>{concept.attributes.length} 属性</Tag>

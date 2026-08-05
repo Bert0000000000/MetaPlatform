@@ -407,7 +407,7 @@ export default function PlanPanel({
         </Space>
       }
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <TextArea
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -447,7 +447,7 @@ export default function PlanPanel({
               }
             />
           ) : (
-            <Space direction="vertical" style={{ width: '100%' }} size="small">
+            <Space orientation="vertical" style={{ width: '100%' }} size="small">
               <Alert
                 type="info"
                 showIcon

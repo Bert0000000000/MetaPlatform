@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -77,7 +77,7 @@ export default function PromptTemplatePage() {
       title: 'Prompt',
       key: 'name',
       render: (_, p) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <AppstoreOutlined /> {p.name}
           </Typography.Text>

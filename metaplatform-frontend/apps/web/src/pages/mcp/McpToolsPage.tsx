@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -82,7 +82,7 @@ export default function ToolListPage() {
       title: '工具',
       key: 'name',
       render: (_, t) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{t.name}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             <CodeOutlined /> {t.code}

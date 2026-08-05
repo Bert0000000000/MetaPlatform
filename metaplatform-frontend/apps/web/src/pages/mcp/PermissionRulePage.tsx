@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -94,7 +94,7 @@ export default function PermissionRulePage() {
       title: '规则',
       key: 'name',
       render: (_, r) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <SafetyOutlined /> {r.name}
           </Typography.Text>

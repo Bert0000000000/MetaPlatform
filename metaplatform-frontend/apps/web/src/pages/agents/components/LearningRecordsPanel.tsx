@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   Card,
-  List,
   Tag,
   Space,
   Typography,
@@ -71,8 +70,22 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
         listKnowledge(employee.employeeId),
         getLearningStats(employee.employeeId),
       ]);
-      setRecords(feedbackRes.items);
-      setKnowledge(knowledgeRes.items);
+      // Backend's feedback items use snake_case fields (id/tenant_id/scenario/rating/comment/feedback_at).
+      // Frontend FeedbackRecord expects camelCase (feedbackId/taskId/taskTitle/feedbackType/executionResult/suggestion/tags/createdAt).
+      // Map the backend fields onto the frontend shape so the panel can render without crashing on missing fields.
+      const normalizedFeedback = (feedbackRes.items ?? []).map((raw: any) => ({
+        feedbackId: raw.feedbackId ?? raw.id,
+        employeeId: raw.employeeId ?? raw.employee_id,
+        taskId: raw.taskId ?? raw.id ?? 'unknown',
+        taskTitle: raw.taskTitle ?? raw.scenario ?? raw.comment ?? '反馈记录',
+        executionResult: raw.executionResult ?? (raw.rating != null ? (raw.rating >= 4 ? 'success' : 'partial') : 'partial'),
+        feedbackType: raw.feedbackType ?? (raw.rating != null ? (raw.rating >= 4 ? 'thumb_up' : 'thumb_down') : 'suggestion'),
+        suggestion: raw.suggestion ?? raw.comment ?? '',
+        tags: raw.tags ?? [],
+        createdAt: raw.createdAt ?? raw.feedback_at ?? raw.created_at ?? new Date().toISOString(),
+      }));
+      setRecords(normalizedFeedback);
+      setKnowledge(knowledgeRes.items ?? []);
       setStats(statsRes);
     } finally {
       setLoading(false);
@@ -112,7 +125,7 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
       <Space style={{ marginBottom: 16 }} wrap>
         <Card size="small" title="学习统计" style={{ minWidth: 240 }}>
           {stats ? (
-            <Space direction="vertical" size={4}>
+            <Space orientation="vertical" size={4}>
               <Typography.Text>反馈总数：{stats.totalFeedback}</Typography.Text>
               <Typography.Text>
                 <LikeOutlined /> {stats.thumbUp} &nbsp;
@@ -125,7 +138,7 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
               <Typography.Text>知识片段：{stats.knowledgeFragments}</Typography.Text>
               <Typography.Text>已同步：{stats.syncedFragments}</Typography.Text>
               <Space wrap>
-                {stats.topTags.map((tag) => (
+                {stats.topTags?.map((tag) => (
                   <Tag key={tag}>{tag}</Tag>
                 ))}
               </Space>
@@ -136,7 +149,7 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
         </Card>
 
         <Card size="small" title="操作" style={{ minWidth: 200 }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Button
               icon={<SyncOutlined spin={extracting} />}
               loading={extracting}
@@ -165,10 +178,10 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
         <Timeline
           items={records.map((record) => ({
             color: FEEDBACK_COLOR[record.feedbackType],
-            dot: FEEDBACK_ICON[record.feedbackType],
-            children: (
+            icon: FEEDBACK_ICON[record.feedbackType],
+            content: (
               <Card size="small" style={{ marginBottom: 8 }}>
-                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                <Space orientation="vertical" size={4} style={{ width: '100%' }}>
                   <Space>
                     <Badge
                       status={
@@ -192,7 +205,7 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
                     </Typography.Text>
                   )}
                   <Space wrap>
-                    {record.tags.map((tag) => (
+                    {record.tags?.map((tag) => (
                       <Tag key={tag}>{tag}</Tag>
                     ))}
                   </Space>
@@ -212,33 +225,30 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
       {knowledge.length === 0 ? (
         <Empty description="暂无知识片段" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
-        <List
-          dataSource={knowledge}
-          renderItem={(item) => (
-            <List.Item>
-              <Card
-                size="small"
-                title={item.title}
-                extra={
-                  <Space>
-                    <Tag color={item.syncedToKb ? 'green' : 'default'}>
-                      {item.syncedToKb ? '已同步' : '未同步'}
-                    </Tag>
-                    <Rate disabled defaultValue={Math.round(item.confidence * 5)} count={5} />
-                  </Space>
-                }
-                style={{ width: '100%' }}
-              >
-                <Typography.Paragraph>{item.content}</Typography.Paragraph>
-                <Space wrap>
-                  {item.tags.map((tag) => (
-                    <Tag key={tag}>{tag}</Tag>
-                  ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {knowledge.map((item) => (
+            <Card
+              key={item.knowledgeId}
+              size="small"
+              title={item.title}
+              extra={
+                <Space>
+                  <Tag color={item.syncedToKb ? 'green' : 'default'}>
+                    {item.syncedToKb ? '已同步' : '未同步'}
+                  </Tag>
+                  <Rate disabled defaultValue={Math.round(item.confidence * 5)} count={5} />
                 </Space>
-              </Card>
-            </List.Item>
-          )}
-        />
+              }
+            >
+              <Typography.Paragraph>{item.content}</Typography.Paragraph>
+              <Space wrap>
+                {item.tags?.map((tag) => (
+                  <Tag key={tag}>{tag}</Tag>
+                ))}
+              </Space>
+            </Card>
+          ))}
+        </div>
       )}
 
     </div>

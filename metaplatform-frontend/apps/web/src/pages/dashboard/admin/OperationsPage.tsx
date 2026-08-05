@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Col, Form, Input, Row, Space, Statistic, Table, Tag, Typography } from "antd";
 import { ReloadOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import {
@@ -9,7 +9,7 @@ import {
   queryPrometheus,
 } from "@/api/admin/operations";
 import type { OpsAlertRule, OpsCapacityResponse, OpsHealthReport, OpsSelfMetrics } from "@/types";
-import { AdminLayout } from "./__AdminLayout";
+import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 
 function formatNumber(v: number | undefined, digits = 2): string {
   if (v === undefined || v === null) return "-";
@@ -50,10 +50,10 @@ export default function OperationsPage() {
         listAlertRules(),
         getOpsCapacity(),
       ]);
-      if (h.status === "fulfilled") setHealth(h.value);
-      if (m.status === "fulfilled") setMetrics(m.value);
-      if (r.status === "fulfilled") setRules(r.value);
-      if (c.status === "fulfilled") setCapacity(c.value);
+      if (h.status === "fulfilled") setHealth(h.value ?? null);
+      if (m.status === "fulfilled") setMetrics(m.value ?? null);
+      if (r.status === "fulfilled") setRules(r.value ?? []);
+      if (c.status === "fulfilled") setCapacity(c.value ?? null);
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export default function OperationsPage() {
       { title: "状态", dataIndex: "healthy", render: (v: boolean, r: OpsHealthReport["components"][number]) => (
         <Space><Tag color={v ? "success" : "error"}>{v ? "健康" : "异常"}</Tag><span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{r.detail}</span></Space>
       ) },
-      { title: "延迟", dataIndex: "latencyMs", render: (v: number) => (<span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{v.toFixed(1)} ms</span>) },
+      { title: "延迟", dataIndex: "latencyMs", render: (v?: number) => (<span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{v != null ? v.toFixed(1) + " ms" : "—"}</span>) },
     ],
     [],
   );
@@ -103,6 +103,25 @@ export default function OperationsPage() {
       title="运营监控"
       extra={<Button icon={<ReloadOutlined />} loading={loading} onClick={load}>刷新</Button>}
     >
+      <StatGrid>
+        <StatCard
+          label="健康服务"
+          value={health ? `${health.summary.healthy} / ${health.summary.total}` : "—"}
+          color={health?.overall ? "success" : "destructive"}
+        />
+        <StatCard label="告警规则" value={rules.length} color="warning" />
+        <StatCard
+          label="容量"
+          value={metrics?.processResidentMemoryBytes !== undefined
+            ? formatNumber(metrics.processResidentMemoryBytes, 1)
+            : "—"}
+        />
+        <StatCard
+          label="状态"
+          value={capacity?.prometheus?.configured ? "运行中" : "待配置"}
+          color={capacity?.prometheus?.configured ? "success" : "default"}
+        />
+      </StatGrid>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={8}>
           <Card>
@@ -127,8 +146,8 @@ export default function OperationsPage() {
           <Card>
             <Statistic
               title="Prometheus"
-              value={capacity?.prometheus.configured ? "已连接" : "未连接"}
-              valueStyle={{ color: capacity?.prometheus.configured ? "#62d178" : "#a1a1a1" }}
+              value={capacity?.prometheus?.configured ? "已连接" : "未连接"}
+              valueStyle={{ color: capacity?.prometheus?.configured ? "#62d178" : "#a1a1a1" }}
             />
             <div style={{ marginTop: 8, color: "var(--muted-foreground)", fontSize: 12 }}>配置 PROM_URL 后可执行即时查询</div>
           </Card>
@@ -154,7 +173,7 @@ export default function OperationsPage() {
       </Row>
 
       <Card title="告警规则" size="small" style={{ marginBottom: 16 }}>
-        <Table rowKey="alert" size="small" loading={loading} pagination={{ pageSize: 10, showSizeChanger: false }} columns={ruleColumns} dataSource={rules} />
+        <Table rowKey="alert" size="small" loading={loading} pagination={{ pageSize: 10, showSizeChanger: false }} columns={ruleColumns} dataSource={rules ?? []} />
       </Card>
 
       <Card title="Prometheus 即时查询" size="small">

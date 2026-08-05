@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Drawer,
@@ -20,7 +20,7 @@ import {
   listAuditLogs,
 } from "@/api/admin/logs";
 import type { AdminAuditLog, AuditAction } from "@/types";
-import { AdminLayout } from "./__AdminLayout";
+import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 import { formatDateTime } from "@/utils/datetime";
 import { useSettings } from "@/contexts/SettingsContext";
 import { apiClient } from "@/api/client";
@@ -89,8 +89,8 @@ export default function LogsPage() {
         page,
         pageSize,
       });
-      setItems(res.items);
-      setTotal(res.total);
+      setItems(res.items ?? []);
+      setTotal(res.total ?? 0);
     } finally {
       setLoading(false);
     }
@@ -99,8 +99,8 @@ export default function LogsPage() {
   const loadFacets = async () => {
     try {
       const m = await getAuditModules();
-      setModules(m.modules);
-      setActions(m.actions);
+      setModules(m.modules ?? []);
+      setActions(m.actions ?? []);
     } catch {
       /* ignore */
     }
@@ -203,6 +203,24 @@ export default function LogsPage() {
     [settings],
   );
 
+  const { todayCount, successCount, failureCount } = useMemo(() => {
+    const todayPrefix = new Date().toISOString().slice(0, 10);
+    let today = 0;
+    let success = 0;
+    let failure = 0;
+    for (const it of items) {
+      const day = (it.occurredAt ?? "").slice(0, 10);
+      if (day === todayPrefix) today += 1;
+      if (it.action === "CREATE" || it.action === "UPDATE" || it.action === "ENABLE" || it.action === "ASSIGN" || it.action === "LOGIN" || it.action === "EXPORT" || it.action === "IMPORT") {
+        success += 1;
+      }
+      if (it.action === "DELETE" || it.action === "REVOKE" || it.action === "DISABLE") {
+        failure += 1;
+      }
+    }
+    return { todayCount: today, successCount: success, failureCount: failure };
+  }, [items]);
+
   return (
     <AdminLayout
       title="日志管理"
@@ -213,10 +231,20 @@ export default function LogsPage() {
           </Button>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>
             导出 CSV
-          </Button>
-        </Space>
-      }
-    >
+        </Button>
+      </Space>
+    }
+  >
+      <StatGrid>
+        <StatCard label="总日志" value={total} />
+        <StatCard label="今日日志" value={todayCount} color="warning" />
+        <StatCard label="成功操作" value={successCount} color="success" />
+        <StatCard
+          label="失败操作"
+          value={failureCount}
+          color={failureCount > 0 ? "destructive" : "default"}
+        />
+      </StatGrid>
       <div
         style={{
           background: "var(--card)",
@@ -243,7 +271,7 @@ export default function LogsPage() {
           onChange={(v) => { setModuleFilter(v); setPage(1); }}
           allowClear
           style={{ width: 140 }}
-          options={modules.map((m) => ({ value: m.value, label: m.value + " (" + m.count + ")" }))}
+          options={Array.isArray(modules) ? modules.map((m) => ({ value: m.value, label: m.value + " (" + m.count + ")" })) : []}
         />
         <Select
           placeholder="动作"
@@ -251,7 +279,7 @@ export default function LogsPage() {
           onChange={(v) => { setActionFilter(v as AuditAction); setPage(1); }}
           allowClear
           style={{ width: 140 }}
-          options={actions.map((a) => ({ value: a.value, label: a.value + " (" + a.count + ")" }))}
+          options={Array.isArray(actions) ? actions.map((a) => ({ value: a.value, label: a.value + " (" + a.count + ")" })) : []}
         />
         <input
           type="datetime-local"
@@ -289,7 +317,7 @@ export default function LogsPage() {
           rowKey="id"
           loading={loading}
           columns={columns}
-          dataSource={items}
+          dataSource={items ?? []}
           pagination={{
             current: page,
             pageSize,
@@ -304,7 +332,7 @@ export default function LogsPage() {
         title={detail ? "日志详情 #" + detail.id : ""}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width={620}
+        size={620}
       >
         {detail && (
           <Form layout="vertical" size="small">

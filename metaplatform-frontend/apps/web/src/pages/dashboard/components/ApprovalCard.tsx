@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, List, Tag, Typography, Space, Empty, Button, Badge } from 'antd';
+import { Card, Tag, Typography, Space, Empty, Button, Badge } from 'antd';
 import { CheckOutlined, CloseOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { getPendingTasks, completeTask } from '@/api/dashboard/approvals';
 import type { ApprovalTask } from '@/api/dashboard/types';
@@ -56,47 +56,53 @@ export default function ApprovalCard() {
       {tasks.length === 0 ? (
         <Empty description="暂无待办审批" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
-        <List
-          dataSource={tasks.slice(0, 5)}
-          renderItem={(task) => (
-            <List.Item
-              actions={[
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {tasks.slice(0, 5).map((task) => (
+            <div
+              key={task.taskId}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '8px 0',
+                borderBottom: '1px solid #f0f0f0',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div>
+                  <Space>
+                    <Typography.Text strong>{task.title}</Typography.Text>
+                    <Tag color={PRIORITY_COLOR[task.priority]}>{PRIORITY_LABEL[task.priority]}</Tag>
+                  </Space>
+                </div>
+                <div style={{ color: '#999', fontSize: 12 }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    申请人：{task.applicant} · 流程：{task.flowName} · {new Date(task.createdAt).toLocaleString('zh-CN')}
+                  </Typography.Text>
+                </div>
+              </div>
+              <div style={{ flexShrink: 0, display: 'flex', gap: 8 }}>
                 <Button
-                  key="approve"
                   type="primary"
                   size="small"
                   icon={<CheckOutlined />}
                   onClick={() => handleAction(task, 'approve')}
                 >
                   同意
-                </Button>,
+                </Button>
                 <Button
-                  key="reject"
                   danger
                   size="small"
                   icon={<CloseOutlined />}
                   onClick={() => handleAction(task, 'reject')}
                 >
                   驳回
-                </Button>,
-              ]}
-            >
-              <List.Item.Meta
-                title={
-                  <Space>
-                    <Typography.Text strong>{task.title}</Typography.Text>
-                    <Tag color={PRIORITY_COLOR[task.priority]}>{PRIORITY_LABEL[task.priority]}</Tag>
-                  </Space>
-                }
-                description={
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    申请人：{task.applicant} · 流程：{task.flowName} · {new Date(task.createdAt).toLocaleString('zh-CN')}
-                  </Typography.Text>
-                }
-              />
-            </List.Item>
-          )}
-        />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </Card>
   );

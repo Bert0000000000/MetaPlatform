@@ -103,6 +103,18 @@ EXCLUDE_FILES = {
     "lightrag_httpx_client.py",
     "ragflow_httpx_client.py",
     "embedder.py",
+    # Copilot outbound streaming client to mate-tech-llmgw. This is the
+    # single ACL boundary for the chat-completions stream endpoint; every
+    # call site goes through OutgoingAuthMiddleware (Bearer + X-Tenant-Id).
+    # Module is exempted so the wrapper can construct httpx.AsyncClient,
+    # NOT because it bypasses the ACL — it IS the ACL for this service.
+    "llmgw_stream.py",
+    # LLMGW AI Provider connectivity probe (ADR-0019). Server-side probe
+    # against upstream LLM vendor endpoints (OpenAI / Azure / Ollama /
+    # custom). The probe is the outbound boundary itself; it never
+    # reaches internal mate-platform services, so the internal Bearer
+    # does not apply.
+    "test.py",
 }
 
 

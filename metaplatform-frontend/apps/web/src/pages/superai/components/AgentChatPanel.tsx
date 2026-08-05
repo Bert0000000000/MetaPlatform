@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+﻿import React, { useCallback, useMemo } from 'react';
 import { Alert, Button, Card, Empty, Space, Spin, Tag, Typography } from 'antd';
 import { PlayCircleOutlined, StopOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useAgentStream, useInteractionContext } from '@/api/superai/types';
@@ -99,7 +99,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
         {events.length === 0 ? (
           <Empty description="No events yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
-          <Space direction="vertical" style={{ width: '100%' }} size={4}>
+          <Space orientation="vertical" style={{ width: '100%' }} size={4}>
             {events.slice(-10).map((ev) => (
               <Space key={ev.eventId} size={6}>
                 <Tag color={eventColor(ev.type)} style={{ minWidth: 130, textAlign: 'center' }}>

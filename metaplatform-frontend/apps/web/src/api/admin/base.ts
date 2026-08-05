@@ -6,7 +6,7 @@
 import { apiClient } from "../client";
 import type { ApiEnvelope, PageResult } from "@/types";
 
-export const ADMIN_BASE = "/api/v1/admin";
+export const ADMIN_BASE = "/admin";
 
 export function unwrap<T>(payload: ApiEnvelope<T> | T): T {
   if (

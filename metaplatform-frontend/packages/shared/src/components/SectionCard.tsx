@@ -1,4 +1,4 @@
-import { Card, Typography, Space } from 'antd';
+﻿import { Card, Typography, Space } from 'antd';
 import type { CSSProperties, ReactNode } from 'react';
 
 interface SectionCardProps {
@@ -24,7 +24,7 @@ export default function SectionCard({
       styles={{ body: { padding: bodyPadding } }}
       style={style}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography.Text strong style={{ fontSize: 14, color: 'var(--foreground)' }}>
             {title}

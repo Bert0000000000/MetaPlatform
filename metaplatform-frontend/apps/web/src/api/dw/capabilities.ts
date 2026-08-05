@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -27,15 +27,15 @@ export interface KnowledgeBase {
 }
 
 export async function listTools(): Promise<AgentTool[]> {
-  return get<AgentTool[]>('/v1/dw/tools');
+  return get<AgentTool[]>('/dw/tools');
 }
 
 export async function listModels(): Promise<LlmModel[]> {
-  return get<LlmModel[]>('/v1/dw/models');
+  return get<LlmModel[]>('/dw/models');
 }
 
 export async function listKnowledgeBases(): Promise<KnowledgeBase[]> {
-  return get<KnowledgeBase[]>('/v1/dw/knowledge-bases');
+  return get<KnowledgeBase[]>('/dw/knowledge-bases');
 }
 
 export async function updateCapability(

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -36,7 +36,6 @@ const { TextArea } = Input;
 
 interface FormValues {
   name: string;
-  code: string;
   roleCategory: RoleCategory;
   roleIdentity: string;
   description: string;
@@ -111,6 +110,15 @@ export default function EmployeeCreatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
 
+  // 优先使用浏览器历史回退；若直接打开创建页（无历史）则跳到列表页
+  const goBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/agents');
+    }
+  };
+
   const steps = ['基本信息', '能力配置', '知识范围', '确认创建'];
 
   const applyTemplate = (key: string) => {
@@ -164,7 +172,6 @@ export default function EmployeeCreatePage() {
 
       const request: EmployeeCreateRequest = {
         name: values.name,
-        code: values.code,
         roleCategory: values.roleCategory,
         roleIdentity: values.roleIdentity,
         description: values.description,
@@ -184,8 +191,8 @@ export default function EmployeeCreatePage() {
       };
 
       const created = await createEmployee(request);
-      message.success(`数字员工「${created.name}」创建成功`);
-      navigate(`/dw/employees/${created.employeeId}`);
+      message.success(`数字员工「${created.name}」创建成功，编码 ${created.code}`);
+      navigate(`/agents/${created.code}`);
     } catch (error) {
       message.error(error instanceof Error ? error.message : '创建失败');
     } finally {
@@ -227,18 +234,6 @@ export default function EmployeeCreatePage() {
         ]}
       >
         <Input placeholder="例如：财务小助手" />
-      </Form.Item>
-      <Form.Item
-        name="code"
-        label="员工编码"
-        rules={[
-          { required: true, message: '请输入员工编码' },
-          { pattern: /^[a-zA-Z0-9_]+$/, message: '员工编码只能包含字母、数字和下划线' },
-          { min: 2, message: '员工编码至少 2 个字符' },
-          { max: 30, message: '员工编码最多 30 个字符' },
-        ]}
-      >
-        <Input placeholder="例如：DW_001" />
       </Form.Item>
       <Form.Item
         name="roleCategory"
@@ -322,7 +317,7 @@ export default function EmployeeCreatePage() {
         <Typography.Title level={5}>Tool 工具选择</Typography.Title>
         <Form.Item name="tools">
           <Checkbox.Group style={{ width: '100%' }}>
-            <Space direction="vertical">
+            <Space orientation="vertical">
               {MOCK_TOOLS.map((tool) => (
                 <Checkbox key={tool.id} value={tool.id}>
                   <Tag>{tool.category}</Tag> {tool.name}
@@ -387,7 +382,7 @@ export default function EmployeeCreatePage() {
       <Typography.Title level={5}>RAG 知识库绑定</Typography.Title>
       <Form.Item name="ragKnowledgeBaseIds">
         <Checkbox.Group style={{ width: '100%' }}>
-          <Space direction="vertical">
+          <Space orientation="vertical">
             {MOCK_KNOWLEDGE_BASES.map((kb) => (
               <Checkbox key={kb.id} value={kb.id}>
                 {kb.name}（{kb.documentCount} 篇文档）
@@ -430,7 +425,7 @@ export default function EmployeeCreatePage() {
         <Typography.Title level={5}>配置汇总</Typography.Title>
         <Descriptions bordered column={2}>
           <Descriptions.Item label="员工名称">{values.name}</Descriptions.Item>
-          <Descriptions.Item label="员工编码">{values.code}</Descriptions.Item>
+          <Descriptions.Item label="员工编码">提交后系统自动生成</Descriptions.Item>
           <Descriptions.Item label="角色分类">
             {ROLE_CATEGORY_MAP[values.roleCategory]?.label}
           </Descriptions.Item>
@@ -498,7 +493,7 @@ export default function EmployeeCreatePage() {
 
   return (
     <div>
-      <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dw')} style={{ marginBottom: 16 }}>
+      <Button icon={<ArrowLeftOutlined />} onClick={goBack} style={{ marginBottom: 16 }}>
         返回列表
       </Button>
 

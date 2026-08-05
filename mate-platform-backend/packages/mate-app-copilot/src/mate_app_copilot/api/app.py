@@ -9,14 +9,19 @@ Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
 """
 from __future__ import annotations
 
+import json
 import re
 import time
 import uuid
 from dataclasses import asdict
+from datetime import datetime, timezone
 from typing import Any
 
+import os
 import sqlparse
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Body, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+from sqlalchemy import delete, select
 from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
     list_capability_tree,
     list_data_assets,
@@ -29,10 +34,12 @@ from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
+from mate_tech_db.base import get_session
 
 from ..a2a.client import get_default_client as get_default_a2a_client
 from ..a2a.models import DelegationRequest
 from ..clients import AsyncCopilotClient
+from ..clients.llmgw_stream import LlmgwStreamClient, LlmgwStreamError
 from ..llm import stub_provider
 from ..repositories import (
     AssetRecord,
@@ -48,6 +55,7 @@ from ..repositories import (
     list_templates,
     put_asset,
 )
+from ..repositories.sql_models import ConversationORM, MessageORM
 
 router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
 
@@ -58,6 +66,34 @@ router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
 def _tid(request: Request) -> str:
     ctx = request.state.ctx
     return str(require_tenant(ctx))
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _conv_orm_to_dict(orm: Any) -> dict[str, Any]:
+    return {
+        "id": orm.id,
+        "title": orm.title,
+        "mode": getattr(orm, "mode", "chat"),
+        "favorite": getattr(orm, "favorite", False),
+        "messageCount": orm.message_count,
+        "createdAt": orm.created_at,
+        "updatedAt": getattr(orm, "updated_at", orm.created_at),
+        "preview": getattr(orm, "preview", orm.summary or ""),
+    }
+
+
+def _msg_orm_to_dict(orm: Any) -> dict[str, Any]:
+    return {
+        "id": orm.id,
+        "conversationId": orm.conversation_id,
+        "role": orm.role,
+        "content": orm.content,
+        "createdAt": orm.created_at,
+        "metadata": json.loads(orm.metadata_json) if orm.metadata_json else {},
+    }
 
 
 def _emit(
@@ -177,8 +213,8 @@ async def a2a_delegate(request: Request) -> dict[str, Any]:
     tid = _tid(request)
     body = await request.json()
 
-    target_agent_id = str(body.get("target_agent_id", ""))
-    message = str(body.get("message", ""))
+    target_agent_id = str(body.get("target_agent_id") or body.get("agentId", ""))
+    message = str(body.get("message") or body.get("task", ""))
     context = body.get("context", {})
     if not isinstance(context, dict):
         context = {}
@@ -262,7 +298,7 @@ async def get_actions(
 @router.post("/actions/match")
 async def match_actions(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     tid = _tid(request)
-    context = str(body.get("context", ""))
+    context = str(body.get("context") or body.get("query", ""))
     ctx_lower = context.lower()
     actions = list_actions(tid)
     matched = [
@@ -337,12 +373,13 @@ async def execute_action_by_body(
 
 
 # --- Analysis SQL Copilot (4) ----------------------------------------------
-@router.get("/analysis/explain-sql")
+@router.post("/analysis/explain-sql")
 async def explain_sql(
     request: Request,
-    sql: str = Query(...),
+    body: dict = Body(...),
 ) -> dict[str, Any]:
     _tid(request)
+    sql = body.get("sql", "")
     parsed = sqlparse.parse(sql)
     stmt = parsed[0] if parsed else None
     tables: list[str] = []
@@ -505,10 +542,262 @@ async def get_code(request: Request) -> dict[str, Any]:
     }
 
 
-# --- Conversations (1) ------------------------------------------------------
+# --- Conversations (7) ------------------------------------------------------
 @router.get("/conversations")
 async def get_conversations(request: Request) -> dict[str, Any]:
-    return _resp(list_conversations(_tid(request)))
+    tid = _tid(request)
+    # Read from PostgreSQL (merge with in-memory fallback)
+    try:
+        session = get_session()
+        try:
+            orms = session.query(ConversationORM).filter_by(tenant_id=tid).order_by(ConversationORM.created_at.desc()).all()
+            db_items = [_conv_orm_to_dict(o) for o in orms]
+            return {"items": db_items, "total": len(db_items)}
+        finally:
+            session.close()
+    except Exception:
+        # Fallback to in-memory if DB unavailable
+        return _resp(list_conversations(tid))
+
+
+@router.post("/conversations")
+async def create_conversation(request: Request, body: dict = Body(...)) -> dict[str, Any]:
+    tid = _tid(request)
+    conv_id = f"conv-{uuid.uuid4().hex[:12]}"
+    now = _now_iso()
+    title = body.get("title", "新会话")
+    mode = body.get("mode", "chat")
+    session = get_session()
+    try:
+        orm = ConversationORM(
+            id=conv_id, tenant_id=tid, title=title,
+            summary="", message_count=0, created_at=now,
+        )
+        setattr(orm, "mode", mode)
+        setattr(orm, "favorite", False)
+        setattr(orm, "updated_at", now)
+        setattr(orm, "preview", "")
+        session.add(orm)
+        session.commit()
+        session.refresh(orm)
+        _emit(request, "copilot.conversation.created", conv_id, {"title": title}, tid)
+        return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
+    finally:
+        session.close()
+
+
+@router.get("/conversations/{conv_id}")
+async def get_conversation_detail(request: Request, conv_id: str) -> dict[str, Any]:
+    tid = _tid(request)
+    session = get_session()
+    try:
+        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid).first()
+        if not orm:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
+    finally:
+        session.close()
+
+
+@router.delete("/conversations/{conv_id}")
+async def delete_conversation(request: Request, conv_id: str) -> dict[str, Any]:
+    tid = _tid(request)
+    session = get_session()
+    try:
+        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid).first()
+        if orm:
+            session.delete(orm)
+            session.query(MessageORM).filter_by(conversation_id=conv_id).delete()
+            session.commit()
+            _emit(request, "copilot.conversation.deleted", conv_id, {}, tid)
+        # Idempotent: return success even if not found
+        return {"code": 0, "data": None, "message": "ok"}
+    finally:
+        session.close()
+
+
+@router.post("/conversations/{conv_id}/favorite")
+async def toggle_favorite(request: Request, conv_id: str) -> dict[str, Any]:
+    tid = _tid(request)
+    session = get_session()
+    try:
+        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid).first()
+        if not orm:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        setattr(orm, "favorite", not getattr(orm, "favorite", False))
+        setattr(orm, "updated_at", _now_iso())
+        session.commit()
+        session.refresh(orm)
+        return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
+    finally:
+        session.close()
+
+
+@router.get("/conversations/{conv_id}/messages")
+async def get_messages(
+    request: Request, conv_id: str, page: int = 1, pageSize: int = 50,
+) -> dict[str, Any]:
+    tid = _tid(request)
+    session = get_session()
+    try:
+        q = select(MessageORM).filter_by(
+            conversation_id=conv_id, tenant_id=tid,
+        ).order_by(MessageORM.created_at)
+        orms = session.execute(q).scalars().all()
+        items = [_msg_orm_to_dict(o) for o in orms]
+        return {
+            "code": 0,
+            "data": {"items": items, "total": len(items), "page": page, "size": pageSize},
+            "message": "ok",
+        }
+    finally:
+        session.close()
+
+
+# --- Chat stream (1) --------------------------------------------------------
+@router.post("/chat/completions/stream")
+async def chat_completions_stream(
+    request: Request, body: dict = Body(...),
+) -> StreamingResponse:
+    tid = _tid(request)
+    messages = body.get("messages", [])
+    model = body.get("model", "doubao-pro-32k")
+    temperature = body.get("temperature", 0.7)
+    max_tokens = body.get("maxTokens", body.get("max_tokens", 2048))
+    conv_id = body.get("conversationId", "")
+
+    # Save user message if we have a conversation
+    if conv_id:
+        session = get_session()
+        try:
+            user_msg = MessageORM(
+                id=f"msg-{uuid.uuid4().hex[:12]}",
+                conversation_id=conv_id,
+                tenant_id=tid,
+                role="user",
+                content=messages[-1]["content"] if messages else "",
+                created_at=_now_iso(),
+                metadata_json=json.dumps({"model": model}),
+            )
+            session.add(user_msg)
+            session.commit()
+        finally:
+            session.close()
+
+    async def event_stream():
+        full_response = ""
+        # Build the streaming client. The host/port come from env so the
+        # service is portable across docker-compose / staging / prod
+        # (default targets the docker-compose service name + port 8008).
+        llmgw_host = os.getenv("MATE_LLMGW_HOST", "mate-tech-llmgw")
+        llmgw_port = int(os.getenv("MATE_LLMGW_PORT", "8008"))
+        stream_client = LlmgwStreamClient(
+            host=llmgw_host,
+            port=llmgw_port,
+            auth=BearerAuth(
+                token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+                client_id="metaplatform-backend",
+                client_secret="stub",  # noqa: S106
+                scope="platform.read platform.write",
+            ),
+            tenant_id=tid,
+        )
+        try:
+            async for line in stream_client.stream_chat_real(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            ):
+                if line.startswith("data: "):
+                    data = line[6:]
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    text = ""
+                    if "choices" in chunk:
+                        text = chunk["choices"][0].get("delta", {}).get("content", "")
+                    elif "data" in chunk:
+                        text = chunk["data"].get("text", "")
+                    elif "content" in chunk:
+                        text = chunk["content"]
+                    if text:
+                        full_response += text
+                        openai_chunk = {
+                            "choices": [{"delta": {"content": text}, "index": 0}],
+                            "model": model,
+                        }
+                        yield f"data: {json.dumps(openai_chunk)}\n\n"
+
+            # Fallback: non-streaming if llmgw stream returned nothing
+            if not full_response:
+                try:
+                    data = await stream_client.chat_completion(
+                        messages=messages,
+                        model=model,
+                        temperature=temperature,
+                    )
+                    full_response = data.get(
+                        "content",
+                        data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
+                    )
+                except LlmgwStreamError:
+                    full_response = "抱歉，LLM 服务暂时不可用。"
+                chunk = {
+                    "choices": [{"delta": {"content": full_response}, "index": 0}],
+                    "model": model,
+                }
+                yield f"data: {json.dumps(chunk)}\n\n"
+
+        except LlmgwStreamError as e:
+            full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
+            chunk = {
+                "choices": [{"delta": {"content": full_response}, "index": 0}],
+                "model": model,
+            }
+            yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as e:  # last-resort guard: never break the SSE stream
+            full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
+            chunk = {
+                "choices": [{"delta": {"content": full_response}, "index": 0}],
+                "model": model,
+            }
+            yield f"data: {json.dumps(chunk)}\n\n"
+
+        # SSE end marker
+        yield "data: [DONE]\n\n"
+
+        # Persist assistant message + update conversation
+        if conv_id and full_response:
+            session = get_session()
+            try:
+                ai_msg = MessageORM(
+                    id=f"msg-{uuid.uuid4().hex[:12]}",
+                    conversation_id=conv_id,
+                    tenant_id=tid,
+                    role="assistant",
+                    content=full_response,
+                    created_at=_now_iso(),
+                    metadata_json=json.dumps({"model": model}),
+                )
+                session.add(ai_msg)
+                conv = session.query(ConversationORM).filter_by(id=conv_id).first()
+                if conv:
+                    conv.message_count = (conv.message_count or 0) + 2
+                    setattr(conv, "preview", full_response[:100])
+                    setattr(conv, "updated_at", _now_iso())
+                session.commit()
+            finally:
+                session.close()
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )
 
 
 # --- Datasources (1) --------------------------------------------------------
@@ -603,17 +892,18 @@ async def review_code(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     return {"issues": issues, "score": score, "review": review}
 
 
-@router.get("/generate/process")
+@router.post("/generate/process")
 async def get_generate_process(
     request: Request,
-    page: int = Query(default=1, ge=1),
-    size: int = Query(default=20, ge=1, le=100),
+    body: dict = Body(...),
 ) -> dict[str, Any]:
     """List generation processes (FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS).
 
     A generation process is backed by a copilot Plan in ``running`` /
     ``draft`` state; we surface the plan list as the process catalog.
     """
+    page = body.get("page", 1)
+    size = body.get("size", 20)
     rows = list_plans(_tid(request))
     return _paginate(rows, page, size)
 
@@ -664,6 +954,7 @@ async def expand_graph(
     node_id: str = Query(...),
 ) -> dict[str, Any]:
     tid = _tid(request)
+    node_id = node_id or request.query_params.get("nodeId", "")
     # P2-W4: expand from arch Capability tree (parent → children)
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
@@ -689,12 +980,13 @@ async def expand_graph(
     return {"nodes": nodes, "edges": edges}
 
 
-@router.get("/ontology/graph/query")
+@router.post("/ontology/graph/query")
 async def query_graph(
     request: Request,
-    cypher: str = Query(default=""),
+    body: dict = Body(...),
 ) -> dict[str, Any]:
     tid = _tid(request)
+    cypher = body.get("cypher", "")
     # P2-W4: full graph from arch Capability tree + DataEntity store
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
@@ -738,12 +1030,13 @@ async def query_history(request: Request) -> dict[str, Any]:
 
 
 # --- Scheduling (5) ---------------------------------------------------------
-@router.get("/scheduling/employees/match")
+@router.post("/scheduling/employees/match")
 async def match_employees(
     request: Request,
-    task_type: str = Query(...),
+    body: dict = Body(...),
 ) -> dict[str, Any]:
     _tid(request)
+    task_type = body.get("task_type", body.get("taskType", ""))
     employees: list[dict[str, Any]] = [
         {"id": "emp-1", "name": "Finance Recon Bot", "skills": ["finance", "reconciliation"]},
         {"id": "emp-2", "name": "CRM Archivist", "skills": ["crm", "data"]},
@@ -873,12 +1166,13 @@ async def get_scheduling_templates(
 
 
 # --- Search (1) -------------------------------------------------------------
-@router.get("/search")
+@router.post("/search")
 async def search(
     request: Request,
-    q: str = Query(...),
+    body: dict = Body(...),
 ) -> dict[str, Any]:
     tid = _tid(request)
+    q = body.get("q", body.get("query", ""))
     # P2-W4: semantic search using client.embed to compute a similarity
     # score between the query and known asset filenames in the tenant.
     client = _get_client(request)

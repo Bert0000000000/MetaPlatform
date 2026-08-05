@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7
 # =============================================================================
 # Mate Platform Backend - Multi-stage Dockerfile
 # Target image: python:3.12 (full, per architecture: agent.md "Python 闂傚倵鍋撴繝濠傚暙閸? + tech-stack-confirmed.md)
@@ -22,10 +22,14 @@ COPY pyproject.toml uv.lock ./
 
 COPY packages/ packages/
 
+# Remove pytest caches (ACL-blocked on Windows / WSL2 bind mounts)
+RUN find packages -type d -name '.pytest_cache' -prune -exec rm -rf {} + 2>/dev/null || true
+
 RUN uv sync --frozen --no-dev
 
 RUN SITE=/app/.venv/lib/python3.12/site-packages && \
     cp -r packages/mate-common/src/mate_common "$SITE/" && \
+    cp -r packages/mate-platform/src/mate_platform "$SITE/" && \
     cp -r packages/mate-tech-rag/src/mate_tech_rag "$SITE/"
 
 

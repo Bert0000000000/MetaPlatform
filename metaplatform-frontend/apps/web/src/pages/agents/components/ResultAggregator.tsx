@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Button, Card, Empty, Space, Tag, Typography, message } from 'antd';
 import { ThunderboltOutlined, FileTextOutlined } from '@ant-design/icons';
@@ -64,7 +64,7 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
 
   return (
     <Card title="结果汇聚">
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Typography.Text type="secondary">
           子任务完成情况：{completed} / {task.subtasks.length}
         </Typography.Text>

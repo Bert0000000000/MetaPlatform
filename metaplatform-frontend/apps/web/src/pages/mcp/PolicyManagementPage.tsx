@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -167,7 +167,7 @@ export default function PolicyManagementPage() {
       title: '策略',
       key: 'name',
       render: (_, r) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <SafetyOutlined /> {r.name}
           </Typography.Text>

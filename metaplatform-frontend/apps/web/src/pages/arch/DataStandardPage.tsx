@@ -15,7 +15,7 @@ export default function DataStandardPage() {
 
   const load = async () => {
     const data = await listStandards();
-    setStandards(data);
+    setStandards(Array.isArray(data) ? data : ((data as { items?: DataStandard[] }).items ?? []));
   };
 
   useEffect(() => { load(); }, []);
@@ -80,7 +80,7 @@ export default function DataStandardPage() {
       title="数据标准管理"
       extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建标准</Button>}
     >
-      <Table rowKey="id" columns={columns} dataSource={standards} size="small" scroll={{ x: 'max-content' }} />
+      <Table rowKey="id" columns={columns} dataSource={standards ?? []} size="small" scroll={{ x: 'max-content' }} />
 
       <Modal title={editing ? '编辑数据标准' : '新建数据标准'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.resetFields(); }}>
         <Form form={form} layout="vertical">
@@ -94,9 +94,9 @@ export default function DataStandardPage() {
         </Form>
       </Modal>
 
-      <Drawer title="规则预览" open={!!preview} onClose={() => setPreview(null)} width={480}>
+      <Drawer title="规则预览" open={!!preview} onClose={() => setPreview(null)}>
         {preview && (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <div><strong>编码：</strong>{preview.code}</div>
             <div><strong>名称：</strong>{preview.name}</div>
             <div><strong>类型：</strong><Tag color={typeColor[preview.standardType] || 'default'}>{preview.standardType}</Tag></div>

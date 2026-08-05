@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -94,7 +94,7 @@ export default function ExternalIntegrationPage() {
       title: '集成',
       key: 'name',
       render: (_, i) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <GlobalOutlined /> {i.name}
           </Typography.Text>

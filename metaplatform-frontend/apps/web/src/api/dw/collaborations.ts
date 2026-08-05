@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -85,13 +85,13 @@ export async function listCollaborations(params?: {
   page?: number;
   pageSize?: number;
 }): Promise<{ items: CollaborationTask[]; total: number; page: number; pageSize: number; totalPages: number }> {
-  return get('/v1/dw/collaborations', params as Record<string, unknown> | undefined);
+  return get('/dw/collaborations', params as Record<string, unknown> | undefined);
 }
 
 export async function createCollaboration(
   req: CreateCollaborationRequest,
 ): Promise<CollaborationTask> {
-  return post<CollaborationTask>('/v1/dw/collaborations', req);
+  return post<CollaborationTask>('/dw/collaborations', req);
 }
 
 export async function getCollaboration(id: string): Promise<CollaborationTask> {

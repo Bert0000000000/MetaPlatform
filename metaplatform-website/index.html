@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mate Platform — 企业级 AI 平台,以 Ontology 为锚</title>
+<meta name="description" content="Mate Platform 是基于 Ontology 本体引擎与 Polyglot Microservice 的企业级 AI 平台。统一语义建模、低代码应用、AI Agent 协作、MCP/A2A 协议一站式集成。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Design Tokens (与 Mate Platform 产品 UI 保持一致)
+   ============================================================ */
+:root {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #111111;
+  --card-foreground: #fafafa;
+  --muted: #1a1a1a;
+  --muted-foreground: #a1a1a1;
+  --muted-foreground-soft: #8a8a8a;
+  --accent: #1a1a1a;
+  --accent-foreground: #fafafa;
+  --border: #262626;
+  --border-strong: #404040;
+  --primary: #fafafa;
+  --primary-foreground: #0a0a0a;
+  --destructive: #ff6166;
+  --success: #62d178;
+  --success-subtle: #14241a;
+  --warning: #eab308;
+  --warning-subtle: #1a1800;
+  --info: #60a5fa;
+  --info-subtle: #141824;
+  --radius: 4px;
+  --radius-lg: 8px;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --max-width: 1600px;
+  --gutter: 56px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01', 'ss02';
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+
+/* ============================================================
+   Layout
+   ============================================================ */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 56px;
+}
+@media (max-width: 720px) { .container { padding: 0 20px; } }
+@media (min-width: 720px) and (max-width: 1280px) {
+  .container { padding: 0 32px; }
+}
+@media (min-width: 1920px) {
+  :root { --max-width: 3360px; }
+  .container { padding: 0 80px; }
+}
+
+/* ============================================================
+   Nav
+   ============================================================ */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  background: rgba(10, 10, 10, 0.72);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+.brand-name span { color: var(--muted-foreground); font-weight: 500; font-family: var(--font-mono); font-size: 12px; margin-left: 6px; }
+.nav-links {
+  display: flex;
+  gap: 28px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.nav-links a:hover { color: var(--foreground); }
+.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--primary);
+  transition: opacity .15s ease;
+}
+.nav-cta:hover { opacity: 0.88; }
+@media (max-width: 720px) { .nav-links { display: none; } }
+
+/* ============================================================
+   Section base
+   ============================================================ */
+.section {
+  position: relative;
+  padding: 140px 0;
+  border-top: 1px solid var(--border);
+}
+.section:first-of-type { border-top: none; }
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero {
+  min-height: 100vh;
+  padding-top: 120px;
+  padding-bottom: 80px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-top: none;
+  overflow: hidden;
+  /* Hero runs edge-to-edge; the inner container holds max-width */
+  width: 100%;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(96, 165, 250, 0.06), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(98, 209, 120, 0.04), transparent 70%);
+  pointer-events: none;
+}
+.hero-inner { position: relative; width: 100%; }
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 96px;
+  align-items: center;
+}
+@media (min-width: 1920px) {
+  .hero-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 120px; }
+}
+@media (max-width: 1024px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 64px; }
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 28px;
+  background: var(--card);
+  font-family: var(--font-mono);
+}
+.hero-badge-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--success-subtle);
+  color: var(--success);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  position: relative;
+}
+.hero-badge-dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 0 0 rgba(98, 209, 120, 0.6);
+  animation: pulse 2s ease-out infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(98, 209, 120, 0.55); }
+  70% { box-shadow: 0 0 0 6px rgba(98, 209, 120, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(98, 209, 120, 0); }
+}
+.hero-title {
+  font-size: clamp(52px, 7.2vw, 120px);
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  margin-bottom: 36px;
+  color: var(--foreground);
+  max-width: 16ch;
+}
+@media (min-width: 1920px) {
+  .hero-title { font-size: 128px; max-width: 18ch; }
+}
+.hero-title .underline {
+  position: relative;
+  display: inline-block;
+  color: var(--foreground);
+}
+.hero-title .underline::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0.06em;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--info), transparent);
+  opacity: 0.6;
+}
+.hero-title .accent {
+  background: linear-gradient(110deg, var(--foreground) 0%, var(--muted-foreground) 40%, var(--foreground) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sheen 12s linear infinite;
+}
+@keyframes sheen {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+.hero-sub {
+  font-size: 22px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  max-width: 1080px;
+  margin-bottom: 48px;
+}
+.hero-cta-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 56px;
+  align-items: center;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.btn:hover { background: var(--muted); border-color: var(--border-strong); }
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.btn-primary:hover { background: var(--foreground); opacity: 0.92; }
+.btn .arrow {
+  display: inline-block;
+  transition: transform .2s ease;
+}
+.btn:hover .arrow { transform: translateX(4px); }
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  max-width: 640px;
+}
+.hero-stat {
+  padding: 18px 24px 18px 0;
+  border-right: 1px solid var(--border);
+}
+.hero-stat:last-child { border-right: none; padding-right: 0; }
+.hero-stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+  margin-bottom: 8px;
+}
+.hero-stat-value {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'tnum';
+}
+.hero-stat-sub {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+}
+@media (max-width: 540px) {
+  .hero-stats { grid-template-columns: repeat(2, 1fr); }
+  .hero-stat:nth-child(2) { border-right: none; padding-right: 0; }
+  .hero-stat:nth-child(1), .hero-stat:nth-child(2) { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 4px; }
+}
+
+/* Hero visual — terminal block */
+.hero-visual {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
+}
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--border);
+}
+.terminal-dot.live { background: var(--success); box-shadow: 0 0 8px rgba(98, 209, 120, 0.6); }
+.terminal-title {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  letter-spacing: 0.04em;
+}
+.terminal-body {
+  padding: 24px 28px;
+  color: var(--foreground);
+  min-height: 420px;
+  position: relative;
+}
+.terminal-line {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeInUp .5s ease forwards;
+}
+.terminal-line:nth-child(1) { animation-delay: 0.2s; }
+.terminal-line:nth-child(2) { animation-delay: 0.6s; }
+.terminal-line:nth-child(3) { animation-delay: 1.0s; }
+.terminal-line:nth-child(4) { animation-delay: 1.4s; }
+.terminal-line:nth-child(5) { animation-delay: 1.8s; }
+.terminal-line:nth-child(6) { animation-delay: 2.2s; }
+.terminal-line:nth-child(7) { animation-delay: 2.6s; }
+.terminal-line:nth-child(8) { animation-delay: 3.0s; }
+.terminal-line:nth-child(9) { animation-delay: 3.4s; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.terminal-prompt { color: var(--info); flex-shrink: 0; }
+.terminal-cmd { color: var(--foreground); }
+.terminal-cmd .keyword { color: var(--success); }
+.terminal-cmd .string { color: var(--warning); }
+.terminal-cmd .comment { color: var(--muted-foreground); }
+.terminal-cmd .var { color: var(--info); }
+.terminal-cmd .brace { color: var(--muted-foreground); }
+.terminal-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--foreground);
+  margin-left: 2px;
+  animation: blink 1s steps(2) infinite;
+  vertical-align: -2px;
+}
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+.hero-visual::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  background: radial-gradient(60% 50% at 80% 0%, rgba(96, 165, 250, 0.08), transparent 60%);
+}
+
+/* ============================================================
+   Section 2 — Ontology Architecture
+   ============================================================ */
+.sec-2-head {
+  display: none;
+}
+.sec-h2 {
+  font-size: clamp(44px, 5.6vw, 88px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  margin-top: 16px;
+  max-width: 16ch;
+}
+@media (min-width: 1920px) {
+  .sec-h2 { font-size: 96px; max-width: 18ch; }
+}
+.sec-h2 em {
+  font-style: normal;
+  color: var(--muted-foreground);
+}
+.sec-lede {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  max-width: 540px;
+}
+.arch-stage {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 56px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .arch-stage { grid-template-columns: 1fr; gap: 40px; }
+}
+@media (min-width: 1920px) {
+  .arch-stage { grid-template-columns: 1fr 1.3fr; gap: 80px; }
+}
+
+/* 左侧介绍（标题 + lede + 4 层说明） */
+.arch-prose {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+.arch-prose-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.arch-prose-h2 {
+  font-size: clamp(44px, 5.6vw, 88px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  max-width: 16ch;
+}
+@media (min-width: 1920px) {
+  .arch-prose-h2 { font-size: 96px; max-width: 18ch; }
+}
+.arch-prose-h2 em {
+  font-style: normal;
+  color: var(--muted-foreground);
+}
+.arch-prose-lede {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  max-width: 820px;
+}
+.arch-prose-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.arch-prose-sub h3 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+.arch-prose-sub p {
+  font-size: 16px;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+  max-width: 720px;
+}
+.arch-prose-sub strong {
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.arch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  align-self: stretch;
+  width: 100%;
+}
+.arch-item {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: start;
+  gap: 20px;
+  padding: 18px 28px;
+  background: var(--background);
+  transition: background .2s ease;
+  position: relative;
+}
+.arch-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border);
+  transition: background .2s ease;
+}
+.arch-item:hover { background: var(--muted); }
+.arch-item:hover::before { background: var(--info); }
+.arch-item-num {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+  padding-top: 3px;
+}
+.arch-item-body { display: flex; flex-direction: column; gap: 6px; }
+.arch-item-label {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+.arch-item-desc {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.arch-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.arch-item-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  line-height: 1.4;
+}
+
+/* 右侧架构图 */
+.arch-canvas {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.arch-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(96, 165, 250, 0.05), transparent 70%);
+  pointer-events: none;
+}
+.arch-svg {
+  width: 100%;
+  height: auto;
+  max-height: 820px;
+  display: block;
+  position: relative;
+}
+
+/* ============================================================
+   Section 3 — Capabilities
+   ============================================================ */
+.sec-3-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 56px;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+@media (min-width: 1920px) {
+  .cap { padding: 56px; min-height: 420px; }
+  .cap-title { font-size: 26px; }
+  .cap-text { font-size: 16px; }
+}
+.cap {
+  position: relative;
+  background: var(--background);
+  padding: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: background .18s ease;
+  min-height: 360px;
+}
+.cap:hover { background: var(--card); }
+.cap:hover .cap-arrow { transform: translate(4px, -4px); color: var(--foreground); }
+.cap-1 { grid-column: span 6; }
+.cap-2 { grid-column: span 6; }
+.cap-3 { grid-column: span 4; }
+.cap-4 { grid-column: span 4; }
+.cap-5 { grid-column: span 4; }
+@media (max-width: 960px) {
+  .cap-1, .cap-2, .cap-3, .cap-4, .cap-5 { grid-column: span 12; }
+}
+.cap-icon {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted);
+  color: var(--foreground);
+}
+.cap-icon svg { width: 24px; height: 24px; }
+.cap-title {
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cap-arrow {
+  color: var(--muted-foreground);
+  transition: transform .2s ease, color .2s ease;
+}
+.cap-text {
+  font-size: 15px;
+  color: var(--muted-foreground-soft);
+  line-height: 1.6;
+  flex: 1;
+}
+.cap-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.cap-tag {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   Section 3.5 — Demo 环境入口
+   ============================================================ */
+.demo-banner {
+  margin-top: 72px;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 56px;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 56px;
+}
+@media (max-width: 1024px) {
+  .demo-banner { grid-template-columns: 1fr; gap: 32px; }
+}
+@media (min-width: 1920px) {
+  .demo-banner { gap: 80px; }
+}
+
+.demo-banner-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.demo-banner-title {
+  font-size: clamp(36px, 4.2vw, 64px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  max-width: 14ch;
+  color: var(--foreground);
+}
+@media (min-width: 1920px) {
+  .demo-banner-title { font-size: 72px; }
+}
+.demo-banner-lede {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  max-width: 480px;
+}
+
+.demo-terminal {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  overflow: hidden;
+}
+.demo-terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+.demo-terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--muted);
+}
+.demo-terminal-dot:nth-child(1) { background: #ef4444; }
+.demo-terminal-dot:nth-child(2) { background: #eab308; }
+.demo-terminal-dot:nth-child(3) { background: #22c55e; }
+.demo-terminal-url {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted-foreground);
+  letter-spacing: 0.02em;
+}
+.demo-terminal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+  animation: live-pulse 1.8s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.demo-terminal-body {
+  padding: 20px 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--foreground);
+  min-height: 280px;
+  background:
+    linear-gradient(180deg, rgba(96, 165, 250, 0.04) 0%, transparent 30%),
+    var(--background);
+}
+.demo-terminal-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin-top: 8px;
+}
+.demo-terminal-row:first-child { margin-top: 0; }
+.demo-terminal-prompt {
+  color: var(--success);
+  font-weight: 600;
+  user-select: none;
+}
+.demo-terminal-cmd {
+  color: var(--foreground);
+  flex: 1;
+}
+.demo-terminal-output {
+  color: var(--muted-foreground);
+  white-space: pre;
+  padding-left: 22px;
+}
+.demo-success {
+  color: var(--success);
+  font-weight: 600;
+  margin-right: 6px;
+}
+.demo-terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--foreground);
+  vertical-align: text-bottom;
+  animation: blink 1.05s steps(2) infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.demo-terminal-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 22px 24px;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+.demo-cta-primary {
+  /* uses .btn-primary */
+}
+.demo-cta-secondary {
+  background: transparent;
+}
+.demo-banner-hint {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+}
+@media (max-width: 720px) {
+  .demo-banner-hint { margin-left: 0; width: 100%; }
+}
+
+.demo-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  margin-right: 4px;
+  vertical-align: 1px;
+  animation: live-pulse 1.8s ease-in-out infinite;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted-foreground);
+}
+.btn-ghost:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+/* ============================================================
+   Section 5 — Contact
+   ============================================================ */
+.sec-4 { border-top: 1px solid var(--border); }
+.contact-wrap {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 96px;
+  align-items: start;
+  margin-top: 40px;
+}
+@media (max-width: 960px) {
+  .contact-wrap { grid-template-columns: 1fr; gap: 56px; }
+}
+.contact-h2 {
+  font-size: clamp(48px, 6.4vw, 120px);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  margin: 24px 0 28px;
+  color: var(--foreground);
+  max-width: 12ch;
+}
+@media (min-width: 1920px) {
+  .contact-h2 { font-size: 124px; max-width: 12ch; }
+}
+.contact-h2 span {
+  display: block;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  margin-top: 4px;
+}
+.contact-sub {
+  font-size: 15px;
+  color: var(--muted-foreground);
+  max-width: 420px;
+  margin-bottom: 28px;
+  line-height: 1.65;
+}
+.contact-channels {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.contact-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 20px;
+  align-items: center;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border);
+  transition: padding .2s ease;
+}
+.contact-row:hover { padding-left: 8px; }
+.contact-row:hover .contact-row-arrow { transform: translateX(4px); color: var(--foreground); }
+.contact-row:hover .contact-row-value a { color: var(--info); }
+.contact-row-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+}
+.contact-row-value {
+  font-size: 17px;
+  letter-spacing: -0.012em;
+  font-weight: 500;
+}
+.contact-row-value a { transition: color .15s ease; }
+.contact-row-arrow {
+  color: var(--muted-foreground);
+  transition: transform .2s ease, color .2s ease;
+  font-family: var(--font-mono);
+  font-size: 18px;
+}
+
+.contact-aside {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.contact-aside-head h3 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  margin-bottom: 8px;
+}
+.contact-aside-head p {
+  font-size: 15px;
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+}
+.field input, .field textarea {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  padding: 14px 16px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  transition: border-color .15s ease;
+  resize: vertical;
+}
+.field input:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+.contact-form button {
+  margin-top: 6px;
+  align-self: flex-start;
+}
+.contact-aside-foot {
+  display: flex;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted-foreground);
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 0;
+}
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-links { display: flex; gap: 24px; }
+.footer-links a:hover { color: var(--foreground); }
+
+/* ============================================================
+   Reveal animation
+   ============================================================ */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .8s ease, transform .8s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal[data-delay="1"] { transition-delay: 0.05s; }
+.reveal[data-delay="2"] { transition-delay: 0.1s; }
+.reveal[data-delay="3"] { transition-delay: 0.15s; }
+.reveal[data-delay="4"] { transition-delay: 0.2s; }
+.reveal[data-delay="5"] { transition-delay: 0.25s; }
+.reveal[data-delay="6"] { transition-delay: 0.3s; }
+.reveal[data-delay="7"] { transition-delay: 0.35s; }
+.reveal[data-delay="8"] { transition-delay: 0.4s; }
+
+/* Sticky progress dot nav */
+.dotnav {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 40;
+}
+.dotnav a {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background .2s ease, transform .2s ease;
+  position: relative;
+}
+.dotnav a:hover { background: var(--border-strong); transform: scale(1.1); }
+.dotnav a.active { background: var(--foreground); transform: scale(1.2); }
+.dotnav a span {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .2s ease;
+  pointer-events: none;
+}
+.dotnav a:hover span { opacity: 1; }
+@media (max-width: 720px) { .dotnav { display: none; } }
+
+/* Mobile */
+@media (max-width: 720px) {
+  .section { padding: 80px 0; }
+  .hero { padding-top: 100px; padding-bottom: 60px; min-height: auto; }
+  .hero-title { font-size: 44px; }
+  .terminal-body { font-size: 11px; min-height: 280px; padding: 16px; }
+}
+
+@media (max-width: 540px) {
+  .contact-h2 { font-size: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="#top" class="brand">
+      <span class="brand-mark">M</span>
+      <span class="brand-name">Mate Platform <span>v3.0</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#ontology">本体架构</a>
+      <a href="#capabilities">核心能力</a>
+      <a href="#demo">体验 Demo</a>
+      <a href="#contact">联系我们</a>
+      <a href="docs/active/specs/2026-07-27-mate-platform-technical-architecture.md">技术文档</a>
+    </div>
+    <a href="#demo" class="nav-cta">进入 Demo 环境 →</a>
+  </div>
+</nav>
+
+<!-- Right side dot nav -->
+<div class="dotnav" aria-label="分屏导航">
+  <a href="#top" class="active" data-dot="0"><span>01 · 平台介绍</span></a>
+  <a href="#ontology" data-dot="1"><span>02 · 本体架构</span></a>
+  <a href="#capabilities" data-dot="2"><span>03 · 核心能力</span></a>
+  <a href="#demo" data-dot="3"><span>04 · 体验 Demo</span></a>
+  <a href="#contact" data-dot="4"><span>05 · 联系方式</span></a>
+</div>
+
+<!-- ============================================================
+     Section 1 — Hero (平台介绍 + 主打价值)
+     ============================================================ -->
+<header id="top" class="section hero">
+  <div class="container hero-inner">
+    <div class="hero-grid">
+      <!-- Left: Copy -->
+      <div>
+        <div class="hero-badge reveal">
+          <span class="hero-badge-dot"></span>
+          v3.0 GA · 8 / 8 交付批次已 Accepted
+        </div>
+        <h1 class="hero-title reveal" data-delay="1">
+          以 <span class="underline">Ontology</span> 为锚的<br>
+          企业级 AI 平台。
+        </h1>
+        <p class="hero-sub reveal" data-delay="2">
+          一套 Ontology,把本体、低代码、AI Agent、MCP/A2A 协议
+          收敛为可被全公司调用的语义层。
+          让业务事实成为系统能查、AI 能用的单一事实源。
+        </p>
+        <div class="hero-cta-row reveal" data-delay="3">
+          <a href="#demo" class="btn btn-primary">
+            <span class="demo-dot"></span>
+            进入 Demo 环境 <span class="arrow">→</span>
+          </a>
+          <a href="#ontology" class="btn">
+            查看本体架构
+          </a>
+          <a href="#contact" class="btn btn-ghost">
+            预约架构 Demo
+          </a>
+        </div>
+        <div class="hero-stats reveal" data-delay="4">
+          <div class="hero-stat">
+            <div class="hero-stat-label">服务域</div>
+            <div class="hero-stat-value">17</div>
+            <div class="hero-stat-sub">P0 / P1 / P2 已接入</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-label">硬规则</div>
+            <div class="hero-stat-value">13</div>
+            <div class="hero-stat-sub">生产门禁全部闭环</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-label">测试</div>
+            <div class="hero-stat-value">251</div>
+            <div class="hero-stat-sub">全部通过</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-label">技术分层</div>
+            <div class="hero-stat-value">4</div>
+            <div class="hero-stat-sub">Kernel / Platform / Clients / App</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Terminal preview -->
+      <div class="hero-visual reveal" data-delay="2" aria-hidden="true">
+        <div class="terminal-header">
+          <span class="terminal-dot live"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-title">mate-platform · ontology-graph</span>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line">
+            <span class="terminal-prompt">$</span>
+            <span class="terminal-cmd">mate ont inspect <span class="var">contract.approval</span></span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">→</span>
+            <span class="terminal-cmd"><span class="comment">// 从本体图解析</span></span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">→</span>
+            <span class="terminal-cmd"><span class="brace">{</span></span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">&nbsp;</span>
+            <span class="terminal-cmd"><span class="var">"concept"</span>: <span class="string">"合同审批"</span>,</span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">&nbsp;</span>
+            <span class="terminal-cmd"><span class="var">"actions"</span>: <span class="keyword">[</span> <span class="string">"起草"</span>, <span class="string">"审批"</span>, <span class="string">"驳回"</span> <span class="keyword">]</span>,</span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">&nbsp;</span>
+            <span class="terminal-cmd"><span class="var">"policy"</span>: <span class="string">"v2.3"</span>,</span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">&nbsp;</span>
+            <span class="terminal-cmd"><span class="var">"tenant"</span>: <span class="string">"acme.global"</span>,</span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">&nbsp;</span>
+            <span class="terminal-cmd"><span class="var">"context"</span>: <span class="string">"已签名 · ttl=300s"</span></span>
+          </div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">→</span>
+            <span class="terminal-cmd"><span class="brace">}</span><span class="terminal-cursor"></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     Section 2 — Ontology Architecture (本体论总架构)
+     ============================================================ -->
+<section id="ontology" class="section">
+  <div class="container">
+    <div class="arch-stage">
+      <!-- 左侧：标题 + 介绍 + 4 层说明 -->
+      <div class="arch-prose reveal" data-delay="1">
+        <div class="arch-prose-hero">
+          <span class="section-eyebrow">02 · 本体引擎</span>
+          <h2 class="arch-prose-h2">
+            语义统一,<br>
+            <em>而非模型拼接。</em>
+          </h2>
+          <p class="arch-prose-lede">
+            Ontology 本体引擎是 Mate Platform 的语义心脏。
+            概念、对象、动作、事件、版本在图数据库中以同一张图维护,
+            被低代码、Agent、RAG、Action 治理四个上层共用。
+            它把"业务事实"变成"可被任意子系统检索的图节点",
+            让 AI 真正基于业务而非幻觉作答。
+          </p>
+        </div>
+        <div class="arch-prose-sub">
+          <h3>四层架构 · 自下而上读取,自上而下治理</h3>
+          <p>
+            本体引擎以 <strong>L1 模型层</strong> 定义语义,
+            <strong>L2 图谱层</strong> 存储关系,
+            <strong>L3 推理层</strong> 包装上下文,
+            <strong>L4 动作层</strong> 治理回写。
+            写入语义集中在底部 ETL 与顶部 Action 两条路径,
+            其它层均为只读计算。
+          </p>
+        </div>
+        <div class="arch-list">
+          <div class="arch-item">
+            <span class="arch-item-num">L1</span>
+            <div class="arch-item-body">
+              <span class="arch-item-label">模型层 · Model</span>
+              <span class="arch-item-desc">OWL/TBox: 类、属性、关系、约束;事实声明的单一来源</span>
+              <div class="arch-item-tags">
+                <span class="arch-item-tag">JSON Schema</span>
+                <span class="arch-item-tag">Postgres</span>
+                <span class="arch-item-tag">Version</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-item">
+            <span class="arch-item-num">L2</span>
+            <div class="arch-item-body">
+              <span class="arch-item-label">图谱层 · Graph</span>
+              <span class="arch-item-desc">ABox: 概念图、对象图、动作图;关系推理与跨域联接</span>
+              <div class="arch-item-tags">
+                <span class="arch-item-tag">Neo4j 5.x</span>
+                <span class="arch-item-tag">Cypher</span>
+                <span class="arch-item-tag">GraphQL</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-item">
+            <span class="arch-item-num">L3</span>
+            <div class="arch-item-body">
+              <span class="arch-item-label">推理层 · Reasoning</span>
+              <span class="arch-item-desc">Context Envelope、签名校验;规则与 LLM 协同</span>
+              <div class="arch-item-tags">
+                <span class="arch-item-tag">Drools 8</span>
+                <span class="arch-item-tag">LangGraph</span>
+                <span class="arch-item-tag">Redis · TTL</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-item">
+            <span class="arch-item-num">L4</span>
+            <div class="arch-item-body">
+              <span class="arch-item-label">动作层 · Action</span>
+              <span class="arch-item-desc">ActionPolicy 治理、Approve/Reject、幂等执行、审计可追溯</span>
+              <div class="arch-item-tags">
+                <span class="arch-item-tag">Flowable 8</span>
+                <span class="arch-item-tag">OTel</span>
+                <span class="arch-item-tag">Kafka 审计</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：架构图（自下而上数据流 · 自上而下 Action 写回） -->
+      <div class="arch-canvas reveal" data-delay="2">
+        <svg viewBox="0 0 720 800" xmlns="http://www.w3.org/2000/svg" class="arch-svg" role="img" aria-label="Mate Platform 本体引擎四层架构图">
+          <defs>
+            <marker id="a-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/>
+            </marker>
+            <marker id="a-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#ff6166"/>
+            </marker>
+            <marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#a78bfa"/>
+            </marker>
+            <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+            </pattern>
+          </defs>
+
+          <!-- 背景网格 -->
+          <rect x="0" y="0" width="720" height="800" fill="url(#grid)" opacity="0.55"/>
+
+          <!-- 顶部 Observer hook（外部消费者,只读） -->
+          <g transform="translate(220, 20)">
+            <rect x="0" y="0" width="280" height="42" rx="4" fill="#0a0a0a" stroke="#262626"/>
+            <text x="140" y="17" text-anchor="middle" fill="#a1a1a1" font-family="Geist Mono" font-size="9" letter-spacing="0.1em">EXTERNAL CONSUMERS</text>
+            <text x="140" y="33" text-anchor="middle" fill="#fafafa" font-family="Geist" font-size="12" font-weight="600">Agent · RAG · Low-Code · Copilot</text>
+          </g>
+          <!-- Observer → L4 (查询 / 蓝虚线) -->
+          <line x1="360" y1="62" x2="360" y2="92" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a-blue)"/>
+          <text x="370" y="80" fill="#60a5fa" font-family="Geist Mono" font-size="9" letter-spacing="0.05em">query</text>
+
+          <!-- L4 Action 动作层（最顶,治理入口） -->
+          <g transform="translate(40, 95)">
+            <rect x="0" y="0" width="640" height="115" rx="6" fill="#111111" stroke="#ff6166" stroke-width="1.5"/>
+            <text x="20" y="22" fill="#ff6166" font-family="Geist Mono" font-size="10" letter-spacing="0.12em">L4 · ACTION</text>
+            <text x="20" y="48" fill="#fafafa" font-family="Geist" font-size="20" font-weight="600">动作层</text>
+            <text x="20" y="68" fill="#a1a1a1" font-family="Geist" font-size="11">ActionPolicy · Approve · 幂等执行 · 审计可追溯</text>
+            <g transform="translate(20, 82)">
+              <rect x="0" y="0" width="118" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="59" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">ActionPolicy</text>
+            </g>
+            <g transform="translate(148, 82)">
+              <rect x="0" y="0" width="100" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="50" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Approve</text>
+            </g>
+            <g transform="translate(258, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Flowable 8</text>
+            </g>
+            <g transform="translate(384, 82)">
+              <rect x="0" y="0" width="100" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="50" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Idempotent</text>
+            </g>
+            <g transform="translate(494, 82)">
+              <rect x="0" y="0" width="126" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="63" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">OTel + Kafka</text>
+            </g>
+          </g>
+
+          <!-- L4 → L3 内部数据流（向下,蓝虚线） -->
+          <line x1="360" y1="210" x2="360" y2="242" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a-blue)"/>
+          <text x="370" y="230" fill="#60a5fa" font-family="Geist Mono" font-size="9" letter-spacing="0.05em">context</text>
+
+          <!-- L3 Reasoning 推理层 -->
+          <g transform="translate(40, 245)">
+            <rect x="0" y="0" width="640" height="115" rx="6" fill="#111111" stroke="#eab308" stroke-width="1.5"/>
+            <text x="20" y="22" fill="#eab308" font-family="Geist Mono" font-size="10" letter-spacing="0.12em">L3 · REASONING</text>
+            <text x="20" y="48" fill="#fafafa" font-family="Geist" font-size="20" font-weight="600">推理层</text>
+            <text x="20" y="68" fill="#a1a1a1" font-family="Geist" font-size="11">Context Envelope · 签名信封 · 5min TTL · 规则与 LLM 协同</text>
+            <g transform="translate(20, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Drools 8</text>
+            </g>
+            <g transform="translate(146, 82)">
+              <rect x="0" y="0" width="124" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="62" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">LangGraph</text>
+            </g>
+            <g transform="translate(280, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Redis · TTL</text>
+            </g>
+            <g transform="translate(406, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">LLM 融合</text>
+            </g>
+            <g transform="translate(532, 82)">
+              <rect x="0" y="0" width="88" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="44" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">签名</text>
+            </g>
+          </g>
+
+          <!-- L3 → L2 数据流（向下,蓝虚线） -->
+          <line x1="360" y1="360" x2="360" y2="392" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a-blue)"/>
+          <text x="370" y="380" fill="#60a5fa" font-family="Geist Mono" font-size="9" letter-spacing="0.05em">cypher</text>
+
+          <!-- L2 Graph 图谱层 -->
+          <g transform="translate(40, 395)">
+            <rect x="0" y="0" width="640" height="115" rx="6" fill="#111111" stroke="#62d178" stroke-width="1.5"/>
+            <text x="20" y="22" fill="#62d178" font-family="Geist Mono" font-size="10" letter-spacing="0.12em">L2 · GRAPH</text>
+            <text x="20" y="48" fill="#fafafa" font-family="Geist" font-size="20" font-weight="600">图谱层</text>
+            <text x="20" y="68" fill="#a1a1a1" font-family="Geist" font-size="11">概念图 · 对象图 · 动作图 · 知识图谱 · 域间关联</text>
+            <g transform="translate(20, 82)">
+              <rect x="0" y="0" width="124" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="62" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Neo4j 5.x</text>
+            </g>
+            <g transform="translate(154, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Cypher</text>
+            </g>
+            <g transform="translate(280, 82)">
+              <rect x="0" y="0" width="108" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="54" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">GraphQL</text>
+            </g>
+            <g transform="translate(398, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">跨域联接</text>
+            </g>
+            <g transform="translate(524, 82)">
+              <rect x="0" y="0" width="96" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="48" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">血缘</text>
+            </g>
+          </g>
+
+          <!-- L2 ↔ L1 SHACL 双向虚线（紫） -->
+          <line x1="320" y1="510" x2="320" y2="542" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a-purple)"/>
+          <line x1="400" y1="542" x2="400" y2="510" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a-purple)"/>
+          <text x="410" y="530" fill="#a78bfa" font-family="Geist Mono" font-size="9" letter-spacing="0.05em">SHACL validate</text>
+
+          <!-- L1 Model 模型层（最底,语义根） -->
+          <g transform="translate(40, 545)">
+            <rect x="0" y="0" width="640" height="115" rx="6" fill="#111111" stroke="#60a5fa" stroke-width="1.5"/>
+            <text x="20" y="22" fill="#60a5fa" font-family="Geist Mono" font-size="10" letter-spacing="0.12em">L1 · MODEL</text>
+            <text x="20" y="48" fill="#fafafa" font-family="Geist" font-size="20" font-weight="600">模型层</text>
+            <text x="20" y="68" fill="#a1a1a1" font-family="Geist" font-size="11">TBox: Concept · Object · Metric · Action · Event · Version</text>
+            <g transform="translate(20, 82)">
+              <rect x="0" y="0" width="124" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="62" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">JSON Schema</text>
+            </g>
+            <g transform="translate(154, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Postgres</text>
+            </g>
+            <g transform="translate(280, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">OWL 约束</text>
+            </g>
+            <g transform="translate(406, 82)">
+              <rect x="0" y="0" width="116" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="58" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Version Diff</text>
+            </g>
+            <g transform="translate(532, 82)">
+              <rect x="0" y="0" width="88" height="22" rx="4" fill="#0a0a0a" stroke="#404040"/>
+              <text x="44" y="15" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">变更</text>
+            </g>
+          </g>
+
+          <!-- L4 → L1 Action 写回（红实线,核心修复） -->
+          <!-- 从 L4 右侧绕到 L1 右侧,带 label "Action / Write-back" -->
+          <path d="M 680 152 C 720 152, 720 600, 680 600" fill="none" stroke="#ff6166" stroke-width="1.5" marker-end="url(#a-red)"/>
+          <text x="690" y="380" fill="#ff6166" font-family="Geist Mono" font-size="10" letter-spacing="0.06em" transform="rotate(90 690 380)">Action · Write-back</text>
+
+          <!-- 底部：外部数据源（ETL 写入 L1,红色） -->
+          <g transform="translate(40, 690)">
+            <rect x="0" y="0" width="640" height="78" rx="6" fill="#0a0a0a" stroke="#262626"/>
+            <text x="20" y="22" fill="#a1a1a1" font-family="Geist Mono" font-size="10" letter-spacing="0.12em">EXTERNAL DATA SOURCES</text>
+            <g transform="translate(20, 36)">
+              <rect x="0" y="0" width="116" height="26" rx="4" fill="#111111" stroke="#404040"/>
+              <text x="58" y="17" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">业务库</text>
+            </g>
+            <g transform="translate(146, 36)">
+              <rect x="0" y="0" width="100" height="26" rx="4" fill="#111111" stroke="#404040"/>
+              <text x="50" y="17" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">文档</text>
+            </g>
+            <g transform="translate(256, 36)">
+              <rect x="0" y="0" width="100" height="26" rx="4" fill="#111111" stroke="#404040"/>
+              <text x="50" y="17" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">API</text>
+            </g>
+            <g transform="translate(366, 36)">
+              <rect x="0" y="0" width="116" height="26" rx="4" fill="#111111" stroke="#404040"/>
+              <text x="58" y="17" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">Kafka 流</text>
+            </g>
+            <g transform="translate(492, 36)">
+              <rect x="0" y="0" width="128" height="26" rx="4" fill="#111111" stroke="#404040"/>
+              <text x="64" y="17" text-anchor="middle" fill="#fafafa" font-family="Geist Mono" font-size="10">CDC / Debezium</text>
+            </g>
+          </g>
+
+          <!-- 数据源 → L1 ETL 写入（红色实线） -->
+          <line x1="360" y1="660" x2="360" y2="690" stroke="#ff6166" stroke-width="1.5" marker-end="url(#a-red)"/>
+          <text x="370" y="678" fill="#ff6166" font-family="Geist Mono" font-size="9" letter-spacing="0.06em">ETL · CDC</text>
+
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     Section 3 — Capabilities (功能介绍)
+     ============================================================ -->
+<section id="capabilities" class="section">
+  <div class="container">
+    <div class="sec-3-head">
+      <div>
+        <span class="section-eyebrow reveal">03 · 核心能力</span>
+        <h2 class="sec-h2 reveal" data-delay="1">
+          一底座,五能力。
+        </h2>
+      </div>
+      <p class="sec-lede reveal" data-delay="2" style="max-width:380px">
+        围绕 Ontology 引擎构建的五大核心能力,
+        既可独立使用,又彼此咬合。
+      </p>
+    </div>
+
+    <div class="cap-grid">
+      <article class="cap cap-1 reveal">
+        <span class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        </span>
+        <h3 class="cap-title">
+          低代码应用构建
+          <span class="cap-arrow">↗</span>
+        </h3>
+        <p class="cap-text">
+          表单设计器、流程设计器、版本管理、灰度发布一应俱全。
+          BPMN 2.0 工作流引擎承接企业级审批,
+          业务专家可独立完成 80% 应用交付。
+        </p>
+        <div class="cap-tags">
+          <span class="cap-tag">表单设计器</span>
+          <span class="cap-tag">流程设计器</span>
+          <span class="cap-tag">Flowable 8.0</span>
+          <span class="cap-tag">版本管理</span>
+        </div>
+      </article>
+
+      <article class="cap cap-2 reveal" data-delay="1">
+        <span class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        </span>
+        <h3 class="cap-title">
+          AI Agent 编排
+          <span class="cap-arrow">↗</span>
+        </h3>
+        <p class="cap-text">
+          LangGraph 驱动的多 Agent 协作,每 Thread 独立 K8s Sandbox。
+          Ontology Context Envelope 给 Agent 不可变业务上下文,
+          让 LLM 真正基于事实而非幻觉。
+        </p>
+        <div class="cap-tags">
+          <span class="cap-tag">LangGraph</span>
+          <span class="cap-tag">Code Mode</span>
+          <span class="cap-tag">K8s Sandbox</span>
+          <span class="cap-tag">Sub-Agent</span>
+        </div>
+      </article>
+
+      <article class="cap cap-3 reveal" data-delay="2">
+        <span class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16v16H4z"/><path d="M4 8h16M8 4v16"/></svg>
+        </span>
+        <h3 class="cap-title">
+          企业级 RAG
+          <span class="cap-arrow">↗</span>
+        </h3>
+        <p class="cap-text">
+          RAGFlow + LightRAG 双引擎。4 切片策略、向量检索、引用回溯,
+          全部走 Ontology 过滤,租户级隔离。
+        </p>
+        <div class="cap-tags">
+          <span class="cap-tag">Milvus</span>
+          <span class="cap-tag">RAGFlow</span>
+          <span class="cap-tag">本体过滤</span>
+          <span class="cap-tag">引用回溯</span>
+        </div>
+      </article>
+
+      <article class="cap cap-4 reveal" data-delay="3">
+        <span class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 1 0-7.07-7.07L11 5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07L13 19"/></svg>
+        </span>
+        <h3 class="cap-title">
+          MCP / A2A 协议
+          <span class="cap-arrow">↗</span>
+        </h3>
+        <p class="cap-text">
+          标准化工具调用与 Agent 互联。外部系统 ACL Client 唯一接入,
+          Server/Client 双向审计,跨域 Agent 路由安全可追溯。
+        </p>
+        <div class="cap-tags">
+          <span class="cap-tag">MCP Hub</span>
+          <span class="cap-tag">A2A</span>
+          <span class="cap-tag">审计</span>
+          <span class="cap-tag">权限</span>
+        </div>
+      </article>
+
+      <article class="cap cap-5 reveal" data-delay="4">
+        <span class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/><circle cx="17" cy="9" r="2.5"/><path d="M14 21v-.5a3 3 0 0 1 3-3h.5a3 3 0 0 1 3 3V21"/></svg>
+        </span>
+        <h3 class="cap-title">
+          企业级多租户
+          <span class="cap-arrow">↗</span>
+        </h3>
+        <p class="cap-text">
+          5 层隔离 · 跨租户 admin 逃生通道。
+          Postgres RLS、Kafka 命名、Redis namespace、MinIO bucket
+          全部按 tenant 维度自动隔离。
+        </p>
+        <div class="cap-tags">
+          <span class="cap-tag">RLS</span>
+          <span class="cap-tag">租户边界</span>
+          <span class="cap-tag">Keycloak</span>
+          <span class="cap-tag">OTel</span>
+        </div>
+      </article>
+    </div>
+
+    <!-- Demo 环境入口 banner -->
+    <div class="demo-banner reveal" data-delay="3">
+      <div class="demo-banner-head">
+        <span class="section-eyebrow">04 · 体验 Demo</span>
+        <h2 class="demo-banner-title">现在就用 Demo 系统跑一次,不需要注册。</h2>
+        <p class="demo-banner-lede">
+          直接进入隔离沙箱,体验本体建模、低代码表单、AI Agent 编排、企业级 RAG 检索。
+          沙箱 30 分钟后自动回收,数据不会被持久化。
+        </p>
+      </div>
+
+      <div class="demo-terminal">
+        <div class="demo-terminal-bar">
+          <span class="demo-terminal-dot"></span>
+          <span class="demo-terminal-dot"></span>
+          <span class="demo-terminal-dot"></span>
+          <span class="demo-terminal-url">demo.mate-platform.io · tenant=demo-001</span>
+          <span class="demo-terminal-status"><span class="live-dot"></span>在线 · 12 ms</span>
+        </div>
+        <div class="demo-terminal-body">
+          <div class="demo-terminal-row">
+            <span class="demo-terminal-prompt">$</span>
+            <span class="demo-terminal-cmd">mate ont inspect contract.approval --tenant=demo-001</span>
+          </div>
+          <div class="demo-terminal-output">//  从本体图谱解析</div>
+          <div class="demo-terminal-output">{</div>
+          <div class="demo-terminal-output">&nbsp;&nbsp;"concept":&nbsp;&nbsp;"合同审批",</div>
+          <div class="demo-terminal-output">&nbsp;&nbsp;"actions": [&nbsp;"起草",&nbsp;"审批",&nbsp;"驳回"&nbsp;],</div>
+          <div class="demo-terminal-output">&nbsp;&nbsp;"policy":&nbsp;&nbsp;"v2.3",</div>
+          <div class="demo-terminal-output">&nbsp;&nbsp;"tenant":&nbsp;&nbsp;"acme.global",</div>
+          <div class="demo-terminal-output">&nbsp;&nbsp;"context":&nbsp;&nbsp;"已签名 · ttl=300s"</div>
+          <div class="demo-terminal-output">}</div>
+          <div class="demo-terminal-row">
+            <span class="demo-terminal-prompt">$</span>
+            <span class="demo-terminal-cmd">mate agent run "把合同审批流程跑一遍"</span>
+          </div>
+          <div class="demo-terminal-output"><span class="demo-success">✓</span> 8 steps · 2.3s · Context Envelope sealed</div>
+          <div class="demo-terminal-row demo-terminal-row--cursor">
+            <span class="demo-terminal-prompt">$</span>
+            <span class="demo-terminal-cursor"></span>
+          </div>
+        </div>
+        <div class="demo-terminal-actions">
+          <a href="https://demo.mate-platform.io" target="_blank" rel="noopener" class="btn btn-primary demo-cta-primary">
+            <span class="demo-dot"></span>
+            打开 Demo 环境 <span class="arrow">→</span>
+          </a>
+          <a href="docs/active/specs/2026-07-27-mate-platform-technical-architecture.md" class="btn demo-cta-secondary">
+            查看 Demo 文档
+          </a>
+          <span class="demo-banner-hint">沙箱 30 分钟自动清理,无需注册,无需信用卡。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     Section 5 — Contact (联系方式)
+     ============================================================ -->
+<section id="contact" class="section sec-4">
+  <div class="container">
+    <span class="section-eyebrow reveal">05 · 联系我们</span>
+    <div class="contact-wrap">
+      <div>
+        <h2 class="contact-h2 reveal" data-delay="1">
+          一起构建<br>
+          <span>语义基础设施。</span>
+        </h2>
+        <p class="contact-sub reveal" data-delay="2">
+          无论你是想落地 Ontology 治理、引入 AI Agent,
+          还是评估企业级 AI 平台选型,我们都愿意深入交流。
+        </p>
+        <div class="contact-channels reveal" data-delay="3">
+          <div class="contact-row">
+            <span class="contact-row-label">商务</span>
+            <span class="contact-row-value">
+              <a href="mailto:business@mate-platform.io">business@mate-platform.io</a>
+            </span>
+            <span class="contact-row-arrow">→</span>
+          </div>
+          <div class="contact-row">
+            <span class="contact-row-label">技术</span>
+            <span class="contact-row-value">
+              <a href="mailto:tech@mate-platform.io">tech@mate-platform.io</a>
+            </span>
+            <span class="contact-row-arrow">→</span>
+          </div>
+          <div class="contact-row">
+            <span class="contact-row-label">伙伴</span>
+            <span class="contact-row-value">
+              <a href="mailto:partners@mate-platform.io">partners@mate-platform.io</a>
+            </span>
+            <span class="contact-row-arrow">→</span>
+          </div>
+          <div class="contact-row">
+            <span class="contact-row-label">代码</span>
+            <span class="contact-row-value">
+              <a href="#" target="_blank" rel="noopener">github.com/mate-platform</a>
+            </span>
+            <span class="contact-row-arrow">↗</span>
+          </div>
+          <div class="contact-row">
+            <span class="contact-row-label">地址</span>
+            <span class="contact-row-value">北京市 海淀区 · 中关村</span>
+            <span class="contact-row-arrow">→</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="contact-aside reveal" data-delay="2">
+        <div class="contact-aside-head">
+          <h3>告诉我们你的场景</h3>
+          <p>填写后我们会在 2 个工作日内回复,所有信息仅用于沟通。</p>
+        </div>
+        <form class="contact-form" onsubmit="event.preventDefault(); this.querySelector('button').textContent='已收到 · 我们会尽快联系你'; this.querySelector('button').disabled=true;">
+          <div class="field">
+            <label for="name">姓名</label>
+            <input id="name" name="name" type="text" placeholder="李明" required>
+          </div>
+          <div class="field">
+            <label for="email">工作邮箱</label>
+            <input id="email" name="email" type="email" placeholder="you@company.com" required>
+          </div>
+          <div class="field">
+            <label for="scenario">场景描述</label>
+            <textarea id="scenario" name="scenario" rows="4" placeholder="例如:想把内部审批流程搬到 Mate Platform,涉及 12 个业务域、年均 50 万单据…"></textarea>
+          </div>
+          <button class="btn btn-primary" type="submit">发送 <span class="arrow">→</span></button>
+        </form>
+        <div class="contact-aside-foot">
+          <span>· 24 小时内回复</span>
+          <span>· 不打扰</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>© 2026 Mate Platform · v3.0 GA · 为生产而造</span>
+    <div class="footer-links">
+      <a href="#ontology">本体架构</a>
+      <a href="#capabilities">核心能力</a>
+      <a href="#contact">联系我们</a>
+      <a href="docs/active/specs/2026-07-27-mate-platform-technical-architecture.md">架构文档</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Reveal-on-scroll */
+(function() {
+  const els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(el => el.classList.add('in'));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  els.forEach(el => io.observe(el));
+})();
+
+/* Right-side dot nav active state */
+(function() {
+  const dots = document.querySelectorAll('.dotnav a');
+  const sections = ['top', 'ontology', 'capabilities', 'contact'];
+  function update() {
+    let current = 0;
+    const y = window.scrollY + window.innerHeight * 0.4;
+    sections.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el && el.offsetTop <= y) current = i;
+    });
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+</body>
+</html>

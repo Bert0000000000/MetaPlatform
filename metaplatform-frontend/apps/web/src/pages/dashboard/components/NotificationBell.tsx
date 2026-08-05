@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Badge, Button, Dropdown, List, Typography, Space, Empty, Tabs, Popconfirm, Tooltip } from 'antd';
+import { Badge, Button, Dropdown, Typography, Space, Empty, Tabs, Popconfirm, Tooltip } from 'antd';
 import { BellOutlined, CheckOutlined, ClearOutlined } from '@ant-design/icons';
 import { getNotifications, markAsRead, markAllAsRead, getUnreadCount } from '@/api/dashboard/notifications';
 import { useWebSocket, type WsMessage } from '../hooks/useWebSocket';
@@ -187,10 +187,10 @@ export default function NotificationBell() {
             style={{ padding: 32 }}
           />
         ) : (
-          <List
-            dataSource={filteredList.slice(0, 50)}
-            renderItem={(item) => (
-              <List.Item
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {filteredList.slice(0, 50).map((item) => (
+              <div
+                key={item.id}
                 style={{
                   padding: '12px 16px',
                   cursor: 'pointer',
@@ -199,30 +199,34 @@ export default function NotificationBell() {
                 }}
                 onClick={() => !item.read && handleMarkRead(item.id)}
               >
-                <List.Item.Meta
-                  avatar={<span style={{ fontSize: 20 }}>{TYPE_ICON[item.type]}</span>}
-                  title={
-                    <Space>
-                      <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
-                      {!item.read && <Badge status="processing" />}
-                    </Space>
-                  }
-                  description={
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ flexShrink: 0 }}>
+                    <span style={{ fontSize: 20 }}>{TYPE_ICON[item.type]}</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {item.content}
-                      </Typography.Text>
+                      <Space>
+                        <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
+                        {!item.read && <Badge status="processing" />}
+                      </Space>
+                    </div>
+                    <div style={{ color: '#999', fontSize: 12 }}>
+                      <div>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {item.content}
+                        </Typography.Text>
+                      </div>
                       <div>
                         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                           {new Date(item.createdAt).toLocaleString('zh-CN')}
                         </Typography.Text>
                       </div>
                     </div>
-                  }
-                />
-              </List.Item>
-            )}
-          />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

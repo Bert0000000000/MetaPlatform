@@ -71,7 +71,7 @@ export default function FlowTestPanel({ result }: FlowTestPanelProps) {
                     </Space>
                   ),
                   description: (
-                    <Space direction="vertical" size="small">
+                    <Space orientation="vertical" size="small">
                       <Space>
                         {ACTION_ICONS[step.action]}
                         <Typography.Text>{step.actionLabel}</Typography.Text>

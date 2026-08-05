@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7
 # =============================================================================
 # mate-tech-llmgw : LLM Gateway (multi-provider routing)
 # Base: mate-api-gateway (pip-installed globally to /usr/local/lib/...)
@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir \
         langchain langchain-core langchain-openai langchain-anthropic \
         openai anthropic \
         redis pybreaker sse-starlette \
-        tiktoken
+        tiktoken sqlalchemy sqlmodel
 
 # Install llmgw source into the SAME global site-packages the base image uses
 # (api-gateway installs to /usr/local/lib/python3.12/site-packages, NOT a venv)

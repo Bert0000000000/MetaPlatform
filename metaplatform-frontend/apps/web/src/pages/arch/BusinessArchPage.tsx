@@ -47,7 +47,7 @@ export default function BusinessArchPage() {
         ))}
       </Row>
       <Card title="架构导航" style={{ marginTop: 16 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Typography.Text>📋 <Typography.Link href="#/arch/capabilities">能力地图</Typography.Link> — 管理企业业务能力层级</Typography.Text>
           <Typography.Text>📱 <Typography.Link href="#/arch/applications">应用系统</Typography.Link> — 注册应用系统并关联能力</Typography.Text>
           <Typography.Text>🔀 <Typography.Link href="#/arch/value-streams">价值流</Typography.Link> — 管理端到端价值交付流</Typography.Text>
