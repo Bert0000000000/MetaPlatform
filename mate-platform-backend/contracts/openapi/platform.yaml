@@ -48,6 +48,8 @@ tags:
   description: wfe domain operations
 - name: a2a
   description: a2a domain operations
+- name: marketplace
+  description: 云服务市场消费侧（私有化版）— browse / install / license / events
 security:
 - bearerAuth: []
 paths:
@@ -405,6 +407,24 @@ paths:
     $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat~1stream
   /api/v1/llmgw/embeddings:
     $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1embeddings
+  /api/v1/marketplace/artifacts/{kind}/{id}:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1artifacts~1{kind}~1{id}
+  /api/v1/marketplace/browse:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1browse
+  /api/v1/marketplace/install:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1install
+  /api/v1/marketplace/install/{install_id}:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1install~1{install_id}
+  /api/v1/marketplace/install/{install_id}/events:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1install~1{install_id}~1events
+  /api/v1/marketplace/install/{install_id}/retry:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1install~1{install_id}~1retry
+  /api/v1/marketplace/installed:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1installed
+  /api/v1/marketplace/license/activate:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1license~1activate
+  /api/v1/marketplace/subscriptions:
+    $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1subscriptions
   /api/v1/mcp/prompts:
     $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1prompts
   /api/v1/mcp/prompts/{name}:

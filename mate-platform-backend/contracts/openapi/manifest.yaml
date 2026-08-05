@@ -85,3 +85,8 @@ domains:
     owner: ai-protocols
     visibility: external
     runtimeModule: null
+  marketplace:
+    contract: services/marketplace.yaml
+    owner: marketplace-consumer
+    visibility: external
+    runtimeModule: null  # 部署为 mate-marketplace-api / mate-marketplace-worker 双 pod

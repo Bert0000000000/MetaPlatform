@@ -1,0 +1,566 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform Marketplace Consumer API
+  version: 1.0.0
+  x-mate-owner: marketplace-consumer
+  description: |
+    云服务市场消费侧 API(私有化版)。
+
+    本服务调用公有 SaaS 市场(`mate-cloud-marketplace`,独立仓)检索/拉取 MCP / Agent /
+    Ontology 三类资产,安装到本地 `mate-tech-mcp` / `mate-tech-agent` / `mate-tech-ont`。
+
+    双仓双部署 — 本仓仅覆盖消费侧;SaaS 端的发布/审核/许可/Billing 由独立 spec 处理。
+
+    资产进入私有化后落入"共享资产池",跨租户可见、可调用;license 仍按租户隔离。
+  contact:
+    name: Mate Platform Marketplace Consumer
+    email: marketplace-consumer@metaplatform.local
+servers:
+- url: /
+tags:
+- name: marketplace
+  description: 云服务市场消费侧 — browse / install / license / events
+security:
+- bearerAuth: []
+  tenantHeader: []
+paths:
+  /api/v1/marketplace/browse:
+    get:
+      x-requirement-id: MP-CONS-001
+      x-owner: marketplace-consumer
+      operationId: listMarketplaceArtifacts
+      summary: 浏览市场列表(SaaS 检索代理 + 本地已安装标注)
+      tags:
+      - marketplace
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - mcp
+          - agent
+          - ontology
+      - in: query
+        name: q
+        schema:
+          type: string
+      - in: query
+        name: tag
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          default: 20
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactList'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '502':
+          description: 上游 SaaS 不可达
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/artifacts/{kind}/{id}:
+    get:
+      x-requirement-id: MP-CONS-002
+      x-owner: marketplace-consumer
+      operationId: getMarketplaceArtifact
+      summary: 获取资产完整 manifest + 本地已安装版本
+      tags:
+      - marketplace
+      parameters:
+      - in: path
+        name: kind
+        required: true
+        schema:
+          type: string
+          enum:
+          - mcp
+          - agent
+          - ontology
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactDetail'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '502':
+          description: 上游 SaaS 不可达
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/installed:
+    get:
+      x-requirement-id: MP-CONS-003
+      x-owner: marketplace-consumer
+      operationId: listInstalledArtifacts
+      summary: 平台级安装清单
+      description: |
+        跨租户可见 — 不参与 SEC-TENANT-01 db_filter 强过滤,范围由 OAuth scope 决定:
+        - `platform.marketplace.read` — 管理员可见全平台
+        - `platform.marketplace.read.tenant` — 租户管理员仅见本租户发起
+      tags:
+      - marketplace
+      security:
+      - bearerAuth: []
+        oidcScopes:
+        - platform.marketplace.read
+        - platform.marketplace.read.tenant
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - mcp
+          - agent
+          - ontology
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - downloading
+          - verifying
+          - installed
+          - failed
+          - uninstalled
+      responses:
+        '200':
+          description: 安装清单
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallList'
+
+  /api/v1/marketplace/install:
+    post:
+      x-requirement-id: MP-CONS-004
+      x-owner: marketplace-consumer
+      operationId: installArtifact
+      summary: 异步安装(202 + install_id,orchestrator 异步推进)
+      tags:
+      - marketplace
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.marketplace.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallRequest'
+      responses:
+        '202':
+          description: 触发成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallAccepted'
+        '409':
+          description: 同 id+version 已在安装中(幂等命中)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/install/{install_id}:
+    get:
+      x-requirement-id: MP-CONS-005
+      x-owner: marketplace-consumer
+      operationId: getInstallStatus
+      summary: 查询安装任务状态
+      tags:
+      - marketplace
+      parameters:
+      - in: path
+        name: install_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: 状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallState'
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      x-requirement-id: MP-CONS-006
+      x-owner: marketplace-consumer
+      operationId: uninstallArtifact
+      summary: 异步卸载(反注册 + instance 删除)
+      tags:
+      - marketplace
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.marketplace.write
+      parameters:
+      - in: path
+        name: install_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '202':
+          description: 卸载已触发
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [install_id]
+                properties:
+                  install_id:
+                    type: string
+                    format: uuid
+
+  /api/v1/marketplace/install/{install_id}/retry:
+    post:
+      x-requirement-id: MP-CONS-006
+      x-owner: marketplace-consumer
+      operationId: retryInstall
+      summary: 重新进入 orchestrator
+      tags:
+      - marketplace
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.marketplace.write
+      parameters:
+      - in: path
+        name: install_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '202':
+          description: 重试已触发
+
+  /api/v1/marketplace/install/{install_id}/events:
+    get:
+      x-requirement-id: MP-CONS-006
+      x-owner: marketplace-consumer
+      operationId: streamInstallEvents
+      summary: SSE 通道,推送 install 状态变更
+      tags:
+      - marketplace
+      parameters:
+      - in: path
+        name: install_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: SSE 流
+          content:
+            text/event-stream: {}
+
+  /api/v1/marketplace/license/activate:
+    post:
+      x-requirement-id: MP-CONS-007
+      x-owner: marketplace-consumer
+      operationId: activateLicense
+      summary: 激活 license(写入 marketplace_subscription,KMS 加密存储)
+      tags:
+      - marketplace
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.marketplace.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseActivateRequest'
+      responses:
+        '200':
+          description: 激活成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseActivationResult'
+
+  /api/v1/marketplace/subscriptions:
+    get:
+      x-requirement-id: MP-CONS-008
+      x-owner: marketplace-consumer
+      operationId: listSubscriptions
+      summary: 当前租户 license 列表(走标准 db_filter)
+      tags:
+      - marketplace
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionList'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+    tenantHeader:
+      $ref: ./common/security.yaml#/components/securitySchemes/tenantHeader
+    oidcScopes:
+      $ref: ./common/security.yaml#/components/securitySchemes/oidcScopes
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+          - MP_DIGEST_MISMATCH
+          - MP_LICENSE_INVALID
+          - MP_LICENSE_EXPIRED
+          - MP_LICENSE_QUOTA_EXCEEDED
+          - MP_KIND_NOT_ALLOWED
+          - MP_INCOMPATIBLE_PLATFORM
+          - MP_MANIFEST_INVALID
+          - MP_SAAS_UNREACHABLE
+          - MP_RATE_LIMITED
+          - MP_INTERNAL
+        message: { type: string }
+        retry_after_ms: { type: integer, nullable: true }
+        request_id: { type: string, format: uuid, nullable: true }
+
+    ArtifactSummary:
+      type: object
+      required: [kind, id, name, version, publisher]
+      properties:
+        kind: { type: string, enum: [mcp, agent, ontology] }
+        id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: string }
+        publisher: { type: string, enum: [official, partner, community] }
+        title: { type: string, nullable: true }
+        tags:
+          type: array
+          items: { type: string }
+        icon: { type: string, format: uri, nullable: true }
+        installed_version: { type: string, nullable: true }
+
+    ArtifactList:
+      type: object
+      required: [items, total, page]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ArtifactSummary' }
+        total: { type: integer }
+        page: { type: integer }
+
+    ArtifactManifest:
+      type: object
+      required: [schemaVersion, kind, id, name, version, digest, blobs]
+      properties:
+        schemaVersion: { type: string }
+        kind: { type: string, enum: [mcp, agent, ontology] }
+        id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: string }
+        publisher: { type: string, enum: [official, partner, community] }
+        license:
+          type: object
+          required: [tier]
+          properties:
+            tier: { type: string, enum: [free, paid] }
+            sku: { type: string }
+            checksum: { type: string }
+        digest:
+          type: object
+          required: [sha256]
+          properties:
+            sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        size: { type: integer }
+        blobs:
+          type: array
+          items:
+            type: object
+            required: [mediaType, digest, size]
+            properties:
+              mediaType: { type: string }
+              digest:
+                type: object
+                required: [sha256]
+                properties:
+                  sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+              size: { type: integer }
+        metadata:
+          type: object
+          properties:
+            title: { type: string }
+            description: { type: string }
+            tags:
+              type: array
+              items: { type: string }
+            icon: { type: string, format: uri }
+            homepage: { type: string, format: uri }
+        requirements:
+          type: object
+          properties:
+            minPlatformVersion: { type: string }
+            compatKind:
+              type: array
+              items: { type: string }
+            permissions:
+              type: array
+              items: { type: string }
+
+    ArtifactDetail:
+      allOf:
+      - $ref: '#/components/schemas/ArtifactSummary'
+      - type: object
+        required: [manifest]
+        properties:
+          manifest: { $ref: '#/components/schemas/ArtifactManifest' }
+
+    InstallRow:
+      type: object
+      required: [id, kind, artifact_id, version, state]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid, nullable: true }
+        kind: { type: string, enum: [mcp, agent, ontology] }
+        artifact_id: { type: string, format: uuid }
+        version: { type: string }
+        digest_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        state:
+          type: string
+          enum: [downloading, verifying, installed, failed, uninstalled]
+        installed_by: { type: string, format: uuid }
+        installed_at: { type: string, format: date-time, nullable: true }
+        install_path: { type: string, nullable: true }
+        failure_reason: { type: string, nullable: true }
+
+    InstallList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/InstallRow' }
+
+    InstallRequest:
+      type: object
+      required: [kind, artifact_id, version]
+      properties:
+        kind: { type: string, enum: [mcp, agent, ontology] }
+        artifact_id: { type: string, format: uuid }
+        version: { type: string }
+        license_key: { type: string, nullable: true }
+
+    InstallAccepted:
+      type: object
+      required: [install_id]
+      properties:
+        install_id: { type: string, format: uuid }
+        already_installed: { type: boolean, description: '幂等命中时为 true' }
+
+    InstallState:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [downloading, verifying, installed, failed, uninstalled]
+        progress: { type: integer, minimum: 0, maximum: 100 }
+        error:
+          type: object
+          nullable: true
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+
+    LicenseActivateRequest:
+      type: object
+      required: [license_key]
+      properties:
+        license_key: { type: string }
+
+    LicenseActivationResult:
+      type: object
+      required: [sku]
+      properties:
+        sku: { type: string }
+        expires_at: { type: string, format: date-time, nullable: true }
+
+    SubscriptionRow:
+      type: object
+      required: [id, sku, status, purchased_at]
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        status: { type: string, enum: [active, expired, revoked] }
+        purchased_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true }
+
+    SubscriptionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SubscriptionRow' }
+
+  responses:
+    Unauthorized:
+      description: 未认证
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: 缺少 scope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

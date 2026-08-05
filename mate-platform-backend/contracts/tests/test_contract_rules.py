@@ -4,7 +4,7 @@ import yaml
 import pytest
 
 ROOT = Path(__file__).parents[1]
-EXPECTED = {"iam", "dashboard", "msg", "obs", "mcp", "llmgw", "ont", "rag", "agent", "data", "kb", "copilot", "dw", "apphub", "arch", "wfe", "a2a"}
+EXPECTED = {"iam", "dashboard", "msg", "obs", "mcp", "llmgw", "ont", "rag", "agent", "data", "kb", "copilot", "dw", "apphub", "arch", "wfe", "a2a", "marketplace"}
 
 def test_manifest_contains_every_approved_domain() -> None:
     manifest = yaml.safe_load((ROOT / "openapi/manifest.yaml").read_text(encoding="utf-8"))
