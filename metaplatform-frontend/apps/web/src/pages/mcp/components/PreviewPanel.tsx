@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { Card, Empty, Form, Input, Space, Typography } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { PromptTemplate } from '@/api/mcphub/types';
@@ -25,7 +25,7 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
   const emptyVars = template.variables.length === 0;
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+    <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
       {emptyVars ? (
         <Card title="预览" size="small">
           <Empty description="该模板无变量" />

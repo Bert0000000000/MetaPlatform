@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   Button,
   Card,
@@ -107,7 +107,7 @@ export default function AutoScorePanel({
   }));
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+    <Space orientation="vertical" style={{ width: '100%' }} size="middle">
       <Card title="自动评分">
         <Space wrap>
           <Input
@@ -186,7 +186,7 @@ export default function AutoScorePanel({
                       </Space>
                     ),
                     children: (
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space orientation="vertical" size="small" style={{ width: '100%' }}>
                         {d.reasoning && (
                           <Typography.Paragraph style={{ marginBottom: 0 }}>
                             <Typography.Text type="secondary">理由：</Typography.Text>
@@ -249,7 +249,7 @@ export default function AutoScorePanel({
                           </Space>
                         ),
                         children: (
-                          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                          <Space orientation="vertical" size={4} style={{ width: '100%' }}>
                             {d.reasoning && <Typography.Text>{d.reasoning}</Typography.Text>}
                             {d.evidence && d.evidence.length > 0 && (
                               <ul style={{ margin: 0, paddingLeft: 16 }}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Button, Form, Input, Modal, Space, Table, message, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -113,7 +113,7 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
         </Button>,
       ]}
     >
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Form form={form} layout="inline" style={{ marginBottom: 16 }}>
           <Form.Item name="name" label="名称" rules={[{ required: true }]}>
             <Input placeholder="分类名称" />

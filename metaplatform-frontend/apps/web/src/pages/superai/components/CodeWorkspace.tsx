@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -405,7 +405,7 @@ export default function CodeWorkspace({
       onCancel={() => setTemplatesOpen(false)}
       width={720}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <Button type="primary" icon={<PlusOutlined />} onClick={openTemplateModal}>
           保存当前代码为模板
         </Button>
@@ -459,7 +459,7 @@ export default function CodeWorkspace({
       okText="保存"
       cancelText="取消"
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
         <Input
           placeholder="模板名称"
           value={templateName}
@@ -485,7 +485,7 @@ export default function CodeWorkspace({
       cancelText="取消"
       confirmLoading={saving}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
         <Input
           placeholder="片段标题"
           value={saveTitle}
@@ -553,7 +553,7 @@ export default function CodeWorkspace({
       footer={null}
       width={900}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         {versionsLoading ? (
           <Text type="secondary">加载中...</Text>
         ) : versions.length === 0 ? (
@@ -619,7 +619,7 @@ export default function CodeWorkspace({
             {diffLoading && <Text type="secondary">计算差异中...</Text>}
             {diffResult && (
               <Card size="small" title={`差异：v${diffResult.versionA} → v${diffResult.versionB}`}>
-                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                <Space orientation="vertical" style={{ width: '100%' }} size="small">
                   {diffResult.addedLines.length > 0 && (
                     <div>
                       <Text type="success">新增（{diffResult.addedLines.length} 行）</Text>
@@ -719,7 +719,7 @@ export default function CodeWorkspace({
         </Space>
       }
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <Select
           value={language}
           onChange={setLanguage}

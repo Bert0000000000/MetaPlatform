@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Button, Card, Empty, Input, Space, Typography, message } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { Integration, JsonRpcResponse } from '@/api/mcphub/types';
@@ -38,7 +38,7 @@ export default function OnlineTester({ integration }: OnlineTesterProps) {
 
   return (
     <Card title="在线测试" size="small">
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <Space>
           <Input
             value={method}

@@ -16,7 +16,7 @@ COPY packages/ /tmp/build/packages/
 # structlog 已经在 api-gateway 的 system site-packages 里
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install --no-cache-dir \
-        neo4j owlready2 rdflib
+        neo4j owlready2 rdflib sqlalchemy sqlmodel
 
 # 把 ont / common 源码拷到 gate 镜像的 system site-packages
 RUN SITE=/usr/local/lib/python3.12/site-packages && \

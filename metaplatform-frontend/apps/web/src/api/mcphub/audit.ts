@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('mcp', '/v1') });
+const client = createApiClient({ baseURL: apiPath('mcp', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -76,7 +76,7 @@ function toAuditLogDetail(data: BackendAuditLog): AuditLogDetail {
 }
 export async function listAuditLogs(params?: AuditQueryParams): Promise<PageResponse<AuditLog>> {
   const data = await get<PageResponse<BackendAuditLog>>(
-    '/v1/mcp/audit/logs',
+    '/audit/logs',
     params as Record<string, unknown>,
   );
   return {
@@ -85,29 +85,29 @@ export async function listAuditLogs(params?: AuditQueryParams): Promise<PageResp
   };
 }
 export async function getAuditLogDetail(id: string): Promise<AuditLogDetail> {
-  const data = await get<BackendAuditLog>(`/v1/mcp/audit/logs/${id}`);
+  const data = await get<BackendAuditLog>(`/audit/logs/${id}`);
   return toAuditLogDetail(data);
 }
 export async function getAuditStatistics(params?: {
   startTime?: string;
   endTime?: string;
 }): Promise<AuditLogStatistics> {
-  return get<AuditLogStatistics>('/v1/mcp/audit/statistics', params as Record<string, unknown>);
+  return get<AuditLogStatistics>('/audit/statistics', params as Record<string, unknown>);
 }
 export async function getAuditTrends(
   params?: AuditQueryParams & { granularity?: string },
 ): Promise<TrendPoint[]> {
-  return get<TrendPoint[]>('/v1/mcp/audit/trends', params as Record<string, unknown>);
+  return get<TrendPoint[]>('/audit/trends', params as Record<string, unknown>);
 }
 export async function getAuditAnalytics(
   params?: AuditQueryParams & { dimension?: string },
 ): Promise<AnalyticsItem[]> {
-  return get<AnalyticsItem[]>('/v1/mcp/audit/analytics', params as Record<string, unknown>);
+  return get<AnalyticsItem[]>('/audit/analytics', params as Record<string, unknown>);
 }
 export async function getAuditTrace(id: string): Promise<AuditLogDetail[]> {
-  const data = await get<BackendAuditLog[]>(`/v1/mcp/audit/${id}/trace`);
+  const data = await get<BackendAuditLog[]>(`/audit/${id}/trace`);
   return data.map(toAuditLogDetail);
 }
 export async function exportAuditLogs(params?: AuditQueryParams & { format?: string }): Promise<Blob> {
-  return download('/v1/mcp/audit/export', params as Record<string, unknown>);
+  return download('/audit/export', params as Record<string, unknown>);
 }

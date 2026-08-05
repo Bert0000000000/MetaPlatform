@@ -4,6 +4,7 @@ packages:
 
 allowBuilds:
   esbuild: true
+  puppeteer: set this to true or false
 
 overrides:
   react: ^19.0.0

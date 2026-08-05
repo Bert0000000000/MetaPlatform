@@ -77,7 +77,7 @@ export default function TaskOrchestrationPage() {
 
       {intent && (
         <Card title="2. 意图识别" style={{ marginBottom: 16 }}>
-          <Space direction="vertical">
+          <Space orientation="vertical">
             <Typography.Paragraph>
               <Tag color={intent.detectedIntent === 'scheduled' ? 'blue' : 'green'}>
                 {intent.detectedIntent === 'scheduled' ? '定时任务' : '即时任务'}

@@ -82,7 +82,7 @@ export default function EmbeddedChat({ employee }: EmbeddedChatProps) {
       const systemPrompt = employee.capability?.systemPrompt || `你是${employee.name}，${employee.roleIdentity}。${employee.description}`;
 
       try {
-        const response = await fetch('/api/v1/llmgw/chat/completions/stream', {
+        const response = await fetch('/api/v1/llmgw/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -96,9 +96,8 @@ export default function EmbeddedChat({ employee }: EmbeddedChatProps) {
               { role: 'user', content: trimmed },
             ],
             temperature: employee.capability?.temperature ?? 0.7,
-            maxTokens: employee.capability?.maxTokens ?? 2048,
-            user: getUser()?.id,
-            appId: `app-dw-${employee.employeeId}`,
+            max_tokens: employee.capability?.maxTokens ?? 2048,
+            tenant_id: getUser()?.tenantId || 'tenant-default',
           }),
           signal: controller.signal,
         });
@@ -127,9 +126,13 @@ export default function EmbeddedChat({ employee }: EmbeddedChatProps) {
             if (!data || data === '[DONE]') continue;
 
             try {
-              const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string }; finishReason?: string | null }> };
-              if (parsed.choices?.[0]?.delta?.content !== undefined) {
-                const delta = parsed.choices[0].delta.content || '';
+              // mate-tech-llmgw SSE format: {type: "token"|"final", data: {...}}
+              const parsed = JSON.parse(data) as {
+                type?: string;
+                data?: { text?: string; finish_reason?: string };
+              };
+              if (parsed.type === 'token' && parsed.data?.text !== undefined) {
+                const delta = parsed.data.text || '';
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsg.id
@@ -138,7 +141,7 @@ export default function EmbeddedChat({ employee }: EmbeddedChatProps) {
                   ),
                 );
               }
-              if (parsed.choices?.[0]?.finishReason) {
+              if (parsed.type === 'final' || parsed.data?.finish_reason) {
                 finished = true;
               }
             } catch {

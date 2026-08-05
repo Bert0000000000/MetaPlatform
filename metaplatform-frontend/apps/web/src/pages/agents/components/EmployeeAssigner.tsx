@@ -1,4 +1,4 @@
-import { Card, Empty, Select, Space, Tag, Typography } from 'antd';
+﻿import { Card, Empty, Select, Space, Tag, Typography } from 'antd';
 import type { Employee } from '@/api/dw/types';
 
 interface SubTask {
@@ -19,7 +19,7 @@ export default function EmployeeAssigner({ subTasks, employees, onAssign }: Empl
 
   return (
     <Card title="员工分配">
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         {subTasks.map((st, i) => (
           <Card key={i} type="inner" size="small" title={st.title}>
             <Space>

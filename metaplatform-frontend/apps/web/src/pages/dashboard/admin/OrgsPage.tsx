@@ -38,7 +38,7 @@ import type {
   AdminPosition,
   OrgType,
 } from "@/types";
-import { AdminLayout } from "./__AdminLayout";
+import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 
 interface OrgTreeDataNode {
   key: string;
@@ -49,15 +49,24 @@ interface OrgTreeDataNode {
   raw: AdminOrgTreeNode;
 }
 
-function toTreeData(nodes: AdminOrgTreeNode[]): OrgTreeDataNode[] {
-  return nodes.map((n) => ({
-    key: String(n.id),
-    title: n.name,
-    type: n.type,
-    memberCount: n.memberCount,
-    children: n.children && n.children.length ? toTreeData(n.children) : undefined,
-    raw: n,
-  }));
+function toTreeData(nodes: AdminOrgTreeNode[] | undefined): OrgTreeDataNode[] {
+  if (!Array.isArray(nodes)) return [];
+  return nodes.map((n) => {
+    // 后端 Pydantic 默认 snake_case，回退兼容
+    const raw = n as unknown as {
+      member_count?: number;
+      leader_name?: string | null;
+      sort_order?: number;
+    };
+    return {
+      key: String(n.id),
+      title: n.name,
+      type: n.type,
+      memberCount: n.memberCount ?? raw.member_count ?? 0,
+      children: Array.isArray(n.children) && n.children.length > 0 ? toTreeData(n.children) : undefined,
+      raw: n,
+    };
+  });
 }
 
 export default function OrgsPage() {
@@ -77,7 +86,7 @@ export default function OrgsPage() {
     setLoading(true);
     try {
       const t = await getOrgTree();
-      setTree(t);
+      setTree(t ?? []);
     } finally {
       setLoading(false);
     }
@@ -86,7 +95,7 @@ export default function OrgsPage() {
   const loadPositions = async (orgId: number) => {
     try {
       const r = await listPositions({ orgId, pageSize: 100 });
-      setPositions(r.items);
+      setPositions(r.items ?? []);
     } catch {
       /* ignore */
     }
@@ -111,20 +120,30 @@ export default function OrgsPage() {
     function find(nodes: AdminOrgTreeNode[]): AdminOrg | null {
       for (const n of nodes) {
         if (String(n.id) === String(k)) {
+          const raw = n as unknown as {
+            parent_id?: number | null;
+            leader_id?: number | null;
+            leader_name?: string | null;
+            sort_order?: number;
+            member_count?: number;
+            position_count?: number;
+            created_at?: string;
+            updated_at?: string;
+          };
           return {
             id: n.id,
-            parentId: n.parentId,
+            parentId: n.parentId ?? raw.parent_id ?? null,
             code: n.code,
             name: n.name,
             type: n.type,
-            leaderId: n.leaderId,
-            leaderName: n.leaderName,
-            sortOrder: n.sortOrder,
+            leaderId: n.leaderId ?? raw.leader_id ?? null,
+            leaderName: n.leaderName ?? raw.leader_name ?? null,
+            sortOrder: n.sortOrder ?? raw.sort_order ?? 0,
             description: n.description,
-            memberCount: n.memberCount,
-            positionCount: n.positionCount,
-            createdAt: n.createdAt,
-            updatedAt: n.updatedAt,
+            memberCount: n.memberCount ?? raw.member_count ?? 0,
+            positionCount: n.positionCount ?? raw.position_count ?? 0,
+            createdAt: n.createdAt ?? raw.created_at ?? "",
+            updatedAt: n.updatedAt ?? raw.updated_at ?? "",
           };
         }
         if (n.children?.length) {
@@ -249,6 +268,24 @@ export default function OrgsPage() {
 
   const treeData = useMemo(() => toTreeData(tree), [tree]);
 
+  const orgStats = useMemo(() => {
+    function walk(nodes: AdminOrgTreeNode[], acc: { total: number; deptCount: number; rootCount: number; memberTotal: number }) {
+      for (const n of nodes) {
+        const raw = n as unknown as { member_count?: number; parent_id?: number | null };
+        const memberCount = n.memberCount ?? raw.member_count ?? 0;
+        const parentId = n.parentId ?? raw.parent_id ?? null;
+        acc.total += 1;
+        acc.memberTotal += memberCount;
+        if (n.type === "DEPARTMENT") acc.deptCount += 1;
+        if (parentId == null) acc.rootCount += 1;
+        if (n.children?.length) walk(n.children, acc);
+      }
+    }
+    const acc = { total: 0, deptCount: 0, rootCount: 0, memberTotal: 0 };
+    walk(tree, acc);
+    return acc;
+  }, [tree]);
+
   const positionColumns: ColumnsType<AdminPosition> = [
     { title: "编码", dataIndex: "code" },
     { title: "名称", dataIndex: "name" },
@@ -291,6 +328,12 @@ export default function OrgsPage() {
         </Space>
       }
     >
+      <StatGrid>
+        <StatCard label="组织总数" value={orgStats.total} />
+        <StatCard label="部门数" value={orgStats.deptCount} />
+        <StatCard label="在职人数" value={orgStats.memberTotal} color="success" />
+        <StatCard label="根组织数" value={orgStats.rootCount} color="warning" />
+      </StatGrid>
       <div style={{ display: "flex", gap: 16, height: "100%" }}>
         <div
           style={{
@@ -309,7 +352,8 @@ export default function OrgsPage() {
             </div>
           ) : (
             <Tree
-              treeData={treeData}
+              treeData={Array.isArray(treeData) ? treeData : []}
+              fieldNames={{ title: "title", key: "key", children: "children" }}
               defaultExpandAll
               onSelect={onSelect}
               showLine
@@ -412,7 +456,7 @@ export default function OrgsPage() {
             <Select
               allowClear
               placeholder="无（顶级组织）"
-              options={tree.map((n) => ({ value: n.id, label: n.name }))}
+              options={Array.isArray(tree) ? tree.map((n) => ({ value: n.id, label: n.name })) : []}
               disabled={orgModal?.mode === "edit"}
             />
           </Form.Item>
@@ -452,7 +496,7 @@ export default function OrgsPage() {
         <Form form={positionForm} layout="vertical" preserve={false}>
           <Form.Item name="orgId" label="所属组织" rules={[{ required: true }]}>
             <Select
-              options={tree.map((n) => ({ value: n.id, label: n.name }))}
+              options={Array.isArray(tree) ? tree.map((n) => ({ value: n.id, label: n.name })) : []}
               disabled={positionModal?.mode === "edit"}
             />
           </Form.Item>
@@ -484,7 +528,7 @@ export default function OrgsPage() {
             <Input type="number" />
           </Form.Item>
           <Form.Item name="targetOrgId" label="目标组织" rules={[{ required: true }]}>
-            <Select options={tree.map((n) => ({ value: n.id, label: n.name }))} showSearch optionFilterProp="label" />
+            <Select options={Array.isArray(tree) ? tree.map((n) => ({ value: n.id, label: n.name })) : []} showSearch optionFilterProp="label" />
           </Form.Item>
           <Form.Item name="targetPositionId" label="目标岗位（留空自动取第一岗）">
             <Input type="number" />

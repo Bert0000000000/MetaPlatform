@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 
@@ -8,7 +8,8 @@ async function get<T>(url: string, params?: Record<string, unknown>): Promise<T>
 import type { EmployeeTask } from './types';
 
 export async function listTasks(employeeId: string): Promise<EmployeeTask[]> {
-  return get<EmployeeTask[]>('/v1/dw/employees/tasks', { employeeId });
+  const res = await get<{ items: EmployeeTask[] } | EmployeeTask[]>('/dw/employees/tasks', { employeeId });
+  return Array.isArray(res) ? res : (res?.items ?? []);
 }
 
 export async function getTaskStats(employeeId: string): Promise<{

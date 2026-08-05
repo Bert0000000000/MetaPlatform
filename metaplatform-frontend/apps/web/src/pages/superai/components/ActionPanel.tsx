@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+﻿import { useState, useCallback, useEffect } from 'react';
 import {
   Button,
   Input,
@@ -155,7 +155,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
 
   return (
     <Card size="small" style={{ marginBottom: 8 }}>
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <TextArea
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -184,7 +184,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
                   }}
                   onClick={() => handleSelectAction(m.action)}
                 >
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Space orientation="vertical" size="small" style={{ width: '100%' }}>
                     <Space>
                       <ThunderboltOutlined style={{ color: '#1677ff' }} />
                       <Typography.Text strong>{m.action.name}</Typography.Text>

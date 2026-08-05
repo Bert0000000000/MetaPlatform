@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -61,7 +61,7 @@ export default function ResourceListPage() {
       title: '资源',
       key: 'name',
       render: (_, r) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <FileTextOutlined /> {r.name}
           </Typography.Text>

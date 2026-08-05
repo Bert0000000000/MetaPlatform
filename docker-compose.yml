@@ -82,6 +82,9 @@ services:
     environment:
       IAM_DATA_DIR: /data
       IAM_DATABASE_URL: sqlite+aiosqlite:////data/mate_iam.db
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-iam
@@ -92,6 +95,33 @@ services:
       - iam_data:/data
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8102/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-tech-dw: 数字员工聚合查询服务 (TECH-DW)
+  # 数字员工 / 协作 / 提交 / 知识库 / 评估 / 工具 / 跟踪等 15 个端点 (FR-DW-001..015)
+  # P2-W3: in-memory repository only. No persistent storage configured.
+  mate-tech-dw:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-dw/Dockerfile
+    image: mate-tech-dw:dev
+    container_name: mate-tech-dw
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-dw
+      CORS_ALLOW_ORIGINS: "*"
+    ports:
+      - "${MATE_DW_PORT:-8021}:8021"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8021/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -464,6 +494,72 @@ services:
       retries: 5
       start_period: 20s
 
+  # mate-app-copilot: AI business assistant (chat, NL2SQL, code-gen, scheduling)
+  # SuperAI module backend — serves /api/v1/copilot/* and /api/v1/superai/*
+  mate-app-copilot:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-app-copilot/Dockerfile
+    image: mate-app-copilot:dev
+    container_name: mate-app-copilot
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      REDIS_URL: redis://redis:6379/0
+      PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-app-copilot
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_COPILOT_PORT:-8601}:8601"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8601/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # mate-app-arch: Architecture center (applications, capabilities, data assets, governance, impact analysis)
+  # FR-ARCH-001..027 — serves /api/v1/arch/*
+  mate-app-arch:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-app-arch/Dockerfile
+    image: mate-app-arch:dev
+    container_name: mate-app-arch
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      REDIS_URL: redis://redis:6379/0
+      PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-app-arch
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_ARCH_PORT:-8321}:8321"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8321/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # mate-tech-ont: 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴鐔虹瘈闁汇垽娼у瓭闂佹寧娲忛崐婵嬪箖瑜斿畷鍗炩枎閹寸姷鍔堕梻浣侯焾閺堫剛绮欓幘鍓佷笉濡わ絽鍟悡娆撴倵閻㈡鐒惧ù鐙呯畵閺岋綁濡搁敃鈧悘鈺冪磼鏉堛劌娴柛鈹惧亾濡炪倖甯婇懗鍓佸姬閳ь剟姊洪幖鐐插姌闁告柨鐭傞崺鈧い鎺戝€归弳顒勬煛鐏炶濡奸柍瑙勫灴瀹曞崬鈻庤箛鎾寸槗闂傚倷娴囬～澶愭偂閿涘嫮涓嶉柡宥庡幖閽冪喐绻涢幋娆忕仼閸ユ挳姊虹化鏇炲⒉妞ゎ厼娲棟濞寸厧鐡ㄩ埛鎴︽煕濠靛棗顏柣鎺曟硶缁辨帞绱掑Ο鑲╃暤闂佷紮绲块崗妯虹暦婵傜鍗抽柣鎰版涧楠炴劕鈹戦悙鑸靛涧缂佽尪妫勯敃銏ゆ焼瀹ュ懐鍔﹀銈嗗笒鐎氼噣鎮鹃悜妯诲弿?(Neo4j backed)
   mate-tech-ont:
     <<: [*restart, *logging]
@@ -789,6 +885,9 @@ services:
       IAM_URL: http://mate-auth-service:8101
       IAM_ADMIN_URL: http://mate-tech-iam:8102
       OBS_URL: http://mate-tech-obs:8083
+      COPILOT_URL: http://mate-app-copilot:8601
+      ARCH_URL: http://mate-app-arch:8321
+      DW_URL: http://mate-tech-dw:8021
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-api-gateway
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

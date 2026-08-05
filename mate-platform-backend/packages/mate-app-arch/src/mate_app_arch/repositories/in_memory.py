@@ -9,8 +9,9 @@ adapter can reuse them without leaking FastAPI types.
 """
 from __future__ import annotations
 
+import uuid
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 
@@ -1021,6 +1022,110 @@ def list_impact_analysis(
             impacted_ids=tuple(visited),
         )
     ]
+
+
+# ---------------------------------------------------------------------------
+# Generic CRUD helpers (write operations)
+# ---------------------------------------------------------------------------
+def gen_id(prefix: str) -> str:
+    """Generate a unique ID with the given prefix."""
+    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+
+
+def store_get(tenant_id: str, key: str, item_id: str) -> Any | None:
+    """Get a single item by id from a tenant-scoped store bucket."""
+    store = _ensure_tenant(tenant_id)
+    return store.get(key, {}).get(item_id)
+
+
+def store_create(tenant_id: str, key: str, item: Any) -> Any:
+    """Insert an item into a tenant-scoped store bucket."""
+    store = _ensure_tenant(tenant_id)
+    bucket = store.setdefault(key, {})
+    bucket[item.id] = item
+    return item
+
+
+def store_update(
+    tenant_id: str, key: str, item_id: str, changes: dict[str, Any]
+) -> Any | None:
+    """Patch a frozen dataclass item in-place via ``dataclasses.replace``.
+
+    ``None`` values in *changes* are ignored so callers can pass partial
+    bodies without accidentally nulling fields.
+    """
+    store = _ensure_tenant(tenant_id)
+    bucket = store.get(key, {})
+    existing = bucket.get(item_id)
+    if existing is None:
+        return None
+    clean = {k: v for k, v in changes.items() if v is not None}
+    if not clean:
+        return existing
+    updated = replace(existing, **clean)
+    bucket[item_id] = updated
+    return updated
+
+
+def store_delete(tenant_id: str, key: str, item_id: str) -> bool:
+    """Remove an item; idempotent (returns ``True`` even if not found)."""
+    store = _ensure_tenant(tenant_id)
+    bucket = store.get(key, {})
+    bucket.pop(item_id, None)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Specialised write operations
+# ---------------------------------------------------------------------------
+def move_capability(tenant_id: str, cap_id: str, new_parent_id: str) -> Any | None:
+    """Move a capability under a new parent (recalculates level)."""
+    parent = store_get(tenant_id, "capabilities", new_parent_id)
+    new_level = (parent.level + 1) if parent else 1
+    return store_update(
+        tenant_id, "capabilities", cap_id,
+        {"parent_id": new_parent_id, "level": new_level},
+    )
+
+
+def add_value_stream_stage(
+    tenant_id: str, vs_id: str, stage_name: str
+) -> Any | None:
+    """Append a stage to a value stream."""
+    vs = store_get(tenant_id, "value_streams", vs_id)
+    if vs is None:
+        return None
+    new_stages = tuple(list(vs.stages) + [stage_name])
+    return store_update(tenant_id, "value_streams", vs_id, {"stages": new_stages})
+
+
+def update_value_stream_stage(
+    tenant_id: str, vs_id: str, stage_id: str, new_name: str
+) -> Any | None:
+    """Rename a stage within a value stream (matched by current name)."""
+    vs = store_get(tenant_id, "value_streams", vs_id)
+    if vs is None:
+        return None
+    new_stages = tuple(
+        new_name if s == stage_id else s for s in vs.stages
+    )
+    return store_update(tenant_id, "value_streams", vs_id, {"stages": new_stages})
+
+
+def delete_value_stream_stage(
+    tenant_id: str, vs_id: str, stage_id: str
+) -> Any | None:
+    """Remove a stage from a value stream (matched by name)."""
+    vs = store_get(tenant_id, "value_streams", vs_id)
+    if vs is None:
+        return None
+    new_stages = tuple(s for s in vs.stages if s != stage_id)
+    return store_update(tenant_id, "value_streams", vs_id, {"stages": new_stages})
+
+
+def resolve_ontology_change(tenant_id: str, change_id: str) -> bool:
+    """Mark an ontology mapping change as resolved by deleting it."""
+    return store_delete(tenant_id, "ontology_changes", change_id)
 
 
 # ---------------------------------------------------------------------------

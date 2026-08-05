@@ -1,4 +1,4 @@
-import { Space, Typography } from 'antd';
+﻿import { Space, Typography } from 'antd';
 import type { ReactNode } from 'react';
 
 interface PageHeaderProps {
@@ -17,7 +17,7 @@ export default function PageHeader({ title, subtitle, extra }: PageHeaderProps) 
         marginBottom: 24,
       }}
     >
-      <Space direction="vertical" size="small">
+      <Space orientation="vertical" size="small">
         <Typography.Title level={4} style={{ margin: 0, color: 'var(--foreground)' }}>
           {title}
         </Typography.Title>

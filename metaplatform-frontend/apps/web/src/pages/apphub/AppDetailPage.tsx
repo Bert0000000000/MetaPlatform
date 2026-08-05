@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -398,7 +398,7 @@ export default function AppDetailPage() {
                     <Typography.Paragraph type="secondary">
                       为已发布的应用生成短链，便于快速访问与分享。访问短链无需登录鉴权（自决权限）。
                     </Typography.Paragraph>
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
                       <Button
                         type="primary"
                         icon={<ShareAltOutlined />}
@@ -409,7 +409,7 @@ export default function AppDetailPage() {
                       </Button>
                       {shortlink && (
                         <Card size="small">
-                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          <Space orientation="vertical" size="small" style={{ width: '100%' }}>
                             <div>
                               <Typography.Text type="secondary">短链 Code：</Typography.Text>
                               <Typography.Text copyable code>

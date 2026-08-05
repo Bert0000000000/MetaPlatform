@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -109,7 +109,7 @@ export default function OptimizationSuggestionsCard({
           </Space>
         }
       >
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
           <Typography.Paragraph style={{ marginBottom: 0 }}>
             <Typography.Text type="secondary">描述：</Typography.Text>
             {s.description}
@@ -142,7 +142,7 @@ export default function OptimizationSuggestionsCard({
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+    <Space orientation="vertical" style={{ width: '100%' }} size="middle">
       <Card title="优化建议">
         <Space wrap>
           <Button

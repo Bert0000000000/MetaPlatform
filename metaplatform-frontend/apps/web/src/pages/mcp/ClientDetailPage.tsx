@@ -223,7 +223,7 @@ export default function ClientDetailPage() {
 
       <Drawer
         title={schemaTool ? `${schemaTool.name} - Schema` : 'Schema'}
-        width={560}
+        size={560}
         open={!!schemaTool}
         onClose={() => setSchemaTool(null)}
       >

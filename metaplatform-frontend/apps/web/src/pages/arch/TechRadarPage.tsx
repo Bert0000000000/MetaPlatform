@@ -89,8 +89,9 @@ export default function TechRadarPage() {
   const load = async () => {
     setLoading(true);
     const data = await listTechnologyRadars();
-    setRadars(data);
-    if (data.length > 0 && !selectedRadar) setSelectedRadar(data[0]);
+    const items = Array.isArray(data) ? data : ((data as { items?: TechnologyRadar[] }).items ?? []);
+    setRadars(items);
+    if (items.length > 0 && !selectedRadar) setSelectedRadar(items[0]);
     setLoading(false);
   };
 
@@ -185,7 +186,7 @@ export default function TechRadarPage() {
         <Space style={{ marginBottom: 16 }} wrap>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新增雷达</Button>
         </Space>
-        <Table rowKey="id" columns={radarColumns} dataSource={radars} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+        <Table rowKey="id" columns={radarColumns} dataSource={radars ?? []} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
       </Card>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>

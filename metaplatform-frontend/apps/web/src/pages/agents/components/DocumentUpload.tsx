@@ -1,35 +1,70 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Upload, Button, List, Tag, Typography, Space, Progress, message, Popconfirm } from 'antd';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { Upload, Button, Empty, Tag, Typography, Space, Progress, Spin, message, Popconfirm, Input } from 'antd';
+import type { UploadProps } from 'antd';
 import {
   InboxOutlined,
   FilePdfOutlined,
   FileWordOutlined,
   FileTextOutlined,
+  FileUnknownOutlined,
   DeleteOutlined,
   ReloadOutlined,
+  SearchOutlined,
+  CloudUploadOutlined,
+  ClockCircleOutlined,
+  UserOutlined,
+  CheckCircleFilled,
+  SyncOutlined,
+  CloseCircleFilled,
+  FileOutlined,
 } from '@ant-design/icons';
-import type { UploadProps } from 'antd';
 import { uploadDocument, listDocuments, deleteDocument } from '@/api/dw/documents';
-import type { DocumentItem } from '@/api/dw/types';
+import type { DocumentItem, DocumentStatus } from '@/api/dw/types';
 
 interface DocumentUploadProps {
   employeeId: string;
   onDocumentProcessed?: (doc: DocumentItem) => void;
 }
 
-function getFileIcon(fileType: DocumentItem['fileType']) {
-  switch (fileType) {
-    case 'pdf':
-      return <FilePdfOutlined style={{ color: '#f5222d' }} />;
-    case 'word':
-      return <FileWordOutlined style={{ color: '#1677ff' }} />;
-    case 'txt':
-    case 'md':
-      return <FileTextOutlined style={{ color: '#52c41a' }} />;
-    default:
-      return <FileTextOutlined />;
-  }
-}
+// ---------------------------------------------------------------------------
+// 设计 token — 与 packages/shared/src/theme.ts 保持一致
+// ---------------------------------------------------------------------------
+const TOKENS = {
+  bgBody: '#0a0a0a',
+  bgContainer: '#111111',
+  bgElevated: '#1a1a1a',
+  bgHover: '#1a1a1a',
+  border: '#262626',
+  borderStrong: '#525252',
+  textPrimary: '#fafafa',
+  textSecondary: '#a1a1a1',
+  textTertiary: '#737373',
+  success: '#22c55e',
+  warning: '#eab308',
+  error: '#ef4444',
+  info: '#3b82f6',
+};
+
+// ---------------------------------------------------------------------------
+// 文件类型 → 图标 + 配色 + 标签
+// ---------------------------------------------------------------------------
+const FILE_TYPE_META: Record<DocumentItem['fileType'], { icon: React.ReactNode; color: string; bg: string; label: string }> = {
+  pdf:  { icon: <FilePdfOutlined />,   color: '#f87171', bg: 'rgba(239, 68, 68, 0.12)',  label: 'PDF' },
+  word: { icon: <FileWordOutlined />,  color: '#60a5fa', bg: 'rgba(59, 130, 246, 0.12)', label: 'Word' },
+  txt:  { icon: <FileTextOutlined />,  color: '#a3a3a3', bg: 'rgba(163, 163, 163, 0.10)', label: 'TXT' },
+  md:   { icon: <FileTextOutlined />,  color: '#a3a3a3', bg: 'rgba(163, 163, 163, 0.10)', label: 'MD' },
+  other:{ icon: <FileUnknownOutlined />, color: '#a3a3a3', bg: 'rgba(163, 163, 163, 0.10)', label: '文件' },
+};
+
+// ---------------------------------------------------------------------------
+// 状态 → 点 + 颜色 + 标签
+// ---------------------------------------------------------------------------
+const STATUS_META: Record<DocumentStatus, { color: string; label: string; dot: React.ReactNode }> = {
+  uploaded:   { color: TOKENS.info,    label: '已上传',   dot: <CheckCircleFilled style={{ color: TOKENS.info }} /> },
+  processing: { color: TOKENS.warning, label: '处理中',   dot: <SyncOutlined spin style={{ color: TOKENS.warning }} /> },
+  ready:      { color: TOKENS.success, label: '已就绪',   dot: <CheckCircleFilled style={{ color: TOKENS.success }} /> },
+  failed:     { color: TOKENS.error,   label: '失败',     dot: <CloseCircleFilled style={{ color: TOKENS.error }} /> },
+};
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -37,23 +72,33 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const STATUS_TAGS: Record<DocumentItem['status'], { color: string; label: string }> = {
-  uploaded: { color: 'blue', label: '已上传' },
-  processing: { color: 'orange', label: '处理中' },
-  ready: { color: 'green', label: '已就绪' },
-  failed: { color: 'red', label: '失败' },
-};
+function formatRelativeTime(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '—';
+  const diff = Date.now() - t;
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return '刚刚';
+  if (min < 60) return `${min} 分钟前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} 小时前`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day} 天前`;
+  return new Date(iso).toLocaleDateString('zh-CN');
+}
 
 export default function DocumentUpload({ employeeId, onDocumentProcessed }: DocumentUploadProps) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
 
   const loadDocs = useCallback(async () => {
     setLoading(true);
     try {
       const docs = await listDocuments(employeeId);
       setDocuments(docs);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '加载文档失败');
     } finally {
       setLoading(false);
     }
@@ -67,8 +112,8 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
     setUploading(true);
     try {
       const doc = await uploadDocument(employeeId, file);
-      message.success(`文件「${file.name}」上传成功`);
-      setDocuments((prev) => [...prev, doc]);
+      message.success(`「${file.name}」上传成功`);
+      setDocuments((prev) => [doc, ...prev]);
       onDocumentProcessed?.(doc);
     } catch (error) {
       message.error(error instanceof Error ? error.message : '上传失败');
@@ -97,76 +142,359 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
       return false;
     },
   };
-
   const { Dragger } = Upload;
+
+  // 过滤后文档
+  const filtered = useMemo(() => {
+    if (!search.trim()) return documents;
+    const q = search.trim().toLowerCase();
+    return documents.filter((d) => d.filename.toLowerCase().includes(q));
+  }, [documents, search]);
+
+  // 状态汇总
+  const counts = useMemo(() => {
+    const c = { uploaded: 0, processing: 0, ready: 0, failed: 0 };
+    for (const d of documents) c[d.status] = (c[d.status] ?? 0) + 1;
+    return c;
+  }, [documents]);
+
+  // 单行菜单（保留扩展点，未来可加「下载」「分享」「重命名」等）
+  // 当前直接用 Popconfirm 处理删除，不展示行内下拉
 
   return (
     <div>
-      <Dragger {...uploadProps} style={{ marginBottom: 16 }}>
-        <p className="ant-upload-drag-icon">
-          <InboxOutlined />
-        </p>
-        <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-        <p className="ant-upload-hint">
-          支持 PDF、Word（.doc/.docx）、TXT、Markdown 文件，单个文件不超过 50MB
-        </p>
+      {/* 顶部：上传区（紧凑化） */}
+      <Dragger
+        {...uploadProps}
+        style={{
+          marginBottom: 20,
+          background: TOKENS.bgContainer,
+          border: `1px dashed ${TOKENS.border}`,
+          borderRadius: 4,
+          padding: '20px 24px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: TOKENS.bgElevated,
+              border: `1px solid ${TOKENS.border}`,
+              borderRadius: 4,
+              color: TOKENS.textPrimary,
+              fontSize: 22,
+              flexShrink: 0,
+            }}
+          >
+            <CloudUploadOutlined />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: TOKENS.textPrimary, fontSize: 14, fontWeight: 500, marginBottom: 2 }}>
+              点击或拖拽文件到此处上传
+            </div>
+            <div style={{ color: TOKENS.textTertiary, fontSize: 12 }}>
+              支持 PDF / Word / TXT / Markdown 格式，单个文件不超过 50MB
+            </div>
+          </div>
+          <Button type="primary" icon={<InboxOutlined />} disabled={uploading}>
+            选择文件
+          </Button>
+        </div>
       </Dragger>
 
       {uploading && (
-        <Progress percent={100} status="active" style={{ marginBottom: 16 }} />
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 12,
+            background: TOKENS.bgContainer,
+            border: `1px solid ${TOKENS.border}`,
+            borderRadius: 4,
+          }}
+        >
+          <Progress percent={100} status="active" size="small" showInfo={false} />
+        </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <Typography.Text strong>文档列表 ({documents.length})</Typography.Text>
-        <Button size="small" icon={<ReloadOutlined />} onClick={loadDocs} loading={loading}>
+      {/* 标题栏：统计 + 搜索 + 刷新 */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <Typography.Text style={{ color: TOKENS.textPrimary, fontSize: 14, fontWeight: 500 }}>
+          文档库
+        </Typography.Text>
+        <Space size={8} style={{ flex: 1 }}>
+          {(['ready', 'processing', 'uploaded', 'failed'] as DocumentStatus[]).map((s) =>
+            counts[s] > 0 ? (
+              <Tag
+                key={s}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${TOKENS.border}`,
+                  color: TOKENS.textSecondary,
+                  borderRadius: 4,
+                  padding: '0 8px',
+                  fontSize: 12,
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: STATUS_META[s].color,
+                    marginRight: 6,
+                    verticalAlign: 'middle',
+                  }}
+                />
+                {STATUS_META[s].label} {counts[s]}
+              </Tag>
+            ) : null,
+          )}
+        </Space>
+        <Input
+          allowClear
+          prefix={<SearchOutlined style={{ color: TOKENS.textTertiary }} />}
+          placeholder="搜索文件名"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: 220,
+            background: TOKENS.bgElevated,
+            border: `1px solid ${TOKENS.border}`,
+          }}
+        />
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={loadDocs}
+          loading={loading}
+          style={{ background: TOKENS.bgContainer, border: `1px solid ${TOKENS.border}` }}
+        >
           刷新
         </Button>
       </div>
 
-      <List
-        loading={loading}
-        dataSource={documents}
-        locale={{ emptyText: '暂无上传文档' }}
-        renderItem={(doc) => (
-          <List.Item
-            actions={[
-              <Popconfirm
-                key="delete"
-                title="确认删除"
-                description={`确定删除「${doc.filename}」吗？`}
-                onConfirm={() => handleDelete(doc.id)}
-              >
-                <Button type="text" danger icon={<DeleteOutlined />} size="small" />
-              </Popconfirm>,
-            ]}
+      {/* 文档列表 */}
+      <Spin spinning={loading && documents.length === 0}>
+        {filtered.length === 0 ? (
+          <div
+            style={{
+              background: TOKENS.bgContainer,
+              border: `1px solid ${TOKENS.border}`,
+              borderRadius: 4,
+              padding: '64px 24px',
+            }}
           >
-            <List.Item.Meta
-              avatar={getFileIcon(doc.fileType)}
-              title={
-                <Space>
-                  <Typography.Text>{doc.filename}</Typography.Text>
-                  <Tag color={STATUS_TAGS[doc.status].color}>{STATUS_TAGS[doc.status].label}</Tag>
-                </Space>
+            <Empty
+              image={
+                <FileOutlined style={{ fontSize: 40, color: TOKENS.textTertiary }} />
               }
               description={
-                <Space size="small">
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {formatFileSize(doc.fileSize)}
-                  </Typography.Text>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {new Date(doc.uploadedAt).toLocaleString()}
-                  </Typography.Text>
-                  {doc.errorMessage && (
-                    <Typography.Text type="danger" style={{ fontSize: 12 }}>
-                      {doc.errorMessage}
-                    </Typography.Text>
-                  )}
-                </Space>
+                <span style={{ color: TOKENS.textSecondary }}>
+                  {documents.length === 0 ? '暂无上传文档' : `没有匹配「${search}」的文档`}
+                </span>
               }
             />
-          </List.Item>
+          </div>
+        ) : (
+          <div
+            style={{
+              background: TOKENS.bgContainer,
+              border: `1px solid ${TOKENS.border}`,
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}
+          >
+            {/* 表头 */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '40px 1fr 100px 120px 140px 56px',
+                padding: '10px 16px',
+                background: TOKENS.bgElevated,
+                borderBottom: `1px solid ${TOKENS.border}`,
+                color: TOKENS.textTertiary,
+                fontSize: 12,
+                fontWeight: 500,
+                letterSpacing: 0.3,
+              }}
+            >
+              <div></div>
+              <div>文件名</div>
+              <div>大小</div>
+              <div>状态</div>
+              <div>上传时间</div>
+              <div style={{ textAlign: 'right' }}>操作</div>
+            </div>
+
+            {/* 行 */}
+            {filtered.map((doc, idx) => {
+              const typeMeta = FILE_TYPE_META[doc.fileType] ?? FILE_TYPE_META.other;
+              const statusMeta = STATUS_META[doc.status] ?? STATUS_META.uploaded;
+              return (
+                <div
+                  key={doc.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '40px 1fr 100px 120px 140px 56px',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    borderBottom:
+                      idx === filtered.length - 1 ? 'none' : `1px solid ${TOKENS.border}`,
+                    transition: 'background 120ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.background = TOKENS.bgHover;
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                  }}
+                >
+                  {/* 文件类型图标 */}
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: typeMeta.bg,
+                      color: typeMeta.color,
+                      borderRadius: 4,
+                      fontSize: 16,
+                    }}
+                    title={typeMeta.label}
+                  >
+                    {typeMeta.icon}
+                  </div>
+
+                  {/* 文件名 + 上传者 */}
+                  <div style={{ minWidth: 0, paddingRight: 16 }}>
+                    <div
+                      style={{
+                        color: TOKENS.textPrimary,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={doc.filename}
+                    >
+                      {doc.filename}
+                    </div>
+                    {doc.uploader && (
+                      <div
+                        style={{
+                          color: TOKENS.textTertiary,
+                          fontSize: 11,
+                          marginTop: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <UserOutlined style={{ fontSize: 10 }} />
+                        {doc.uploader}
+                        {doc.errorMessage && (
+                          <span style={{ color: TOKENS.error, marginLeft: 8 }}>
+                            · {doc.errorMessage}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 文件大小 */}
+                  <div style={{ color: TOKENS.textSecondary, fontSize: 12 }}>
+                    {formatFileSize(doc.fileSize)}
+                  </div>
+
+                  {/* 状态 */}
+                  <div>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 12,
+                        color: statusMeta.color,
+                      }}
+                    >
+                      {statusMeta.dot}
+                      {statusMeta.label}
+                    </span>
+                  </div>
+
+                  {/* 上传时间 */}
+                  <div
+                    style={{
+                      color: TOKENS.textTertiary,
+                      fontSize: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                    title={new Date(doc.uploadedAt).toLocaleString('zh-CN')}
+                  >
+                    <ClockCircleOutlined style={{ fontSize: 11 }} />
+                    {formatRelativeTime(doc.uploadedAt)}
+                  </div>
+
+                  {/* 操作 */}
+                  <div style={{ textAlign: 'right' }}>
+                    <Popconfirm
+                      title="确认删除文档"
+                      description={
+                        <span style={{ color: TOKENS.textSecondary }}>
+                          将永久删除「{doc.filename}」，且无法恢复
+                        </span>
+                      }
+                      okText="删除"
+                      cancelText="取消"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => handleDelete(doc.id)}
+                    >
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        style={{ color: TOKENS.textTertiary }}
+                        title="删除"
+                      />
+                    </Popconfirm>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
-      />
+      </Spin>
+
+      {/* 列表底部统计 */}
+      {!loading && filtered.length > 0 && (
+        <div
+          style={{
+            marginTop: 8,
+            color: TOKENS.textTertiary,
+            fontSize: 12,
+            textAlign: 'right',
+          }}
+        >
+          共 {filtered.length} 个文档
+          {search && documents.length !== filtered.length && `（已过滤 ${documents.length - filtered.length} 个）`}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Button, Card, Input, Radio, Space, Tag, Typography, message } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 
@@ -24,7 +24,7 @@ export default function ReportExportPage() {
       <Typography.Title level={4}>报告导出</Typography.Title>
 
       <Card>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Input
             value={execId}
             onChange={(e) => setExecId(e.target.value)}

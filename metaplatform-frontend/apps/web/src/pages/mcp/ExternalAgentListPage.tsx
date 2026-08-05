@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -170,7 +170,7 @@ export default function ExternalAgentListPage() {
       title: 'Agent',
       key: 'name',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <RobotOutlined /> {record.name}
           </Typography.Text>
@@ -398,7 +398,7 @@ export default function ExternalAgentListPage() {
         width={640}
       >
         {detail && (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Typography.Paragraph>
               <Typography.Text strong>ID: </Typography.Text>
               {detail.id}

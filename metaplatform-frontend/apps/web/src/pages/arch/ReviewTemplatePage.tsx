@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Space, Form, Input, Tag, message, Popconfirm, List, Typography } from 'antd';
+import { Table, Button, Space, Form, Input, Tag, message, Popconfirm, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import {
   listReviewTemplates,
@@ -20,7 +20,7 @@ export default function ReviewTemplatePage() {
 
   const load = async () => {
     setLoading(true);
-    try { setList(await listReviewTemplates()); } finally { setLoading(false); }
+    try { const res = await listReviewTemplates(); setList(Array.isArray(res) ? res : ((res as { items?: ReviewTemplate[] }).items ?? [])); } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
@@ -78,32 +78,28 @@ export default function ReviewTemplatePage() {
       title: '评审维度',
       key: 'dimensions',
       render: (_: unknown, r: ReviewTemplate) => (
-        <List
-          size="small"
-          dataSource={r.dimensions || []}
-          renderItem={(d) => (
-            <List.Item>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {(r.dimensions || []).map((d, idx) => (
+            <div key={`${d.name}-${idx}`} style={{ padding: '2px 0' }}>
               <Typography.Text>{d.name}</Typography.Text>
               {d.weight ? <Tag color="blue" style={{ marginLeft: 8 }}>权重 {d.weight}</Tag> : null}
-            </List.Item>
-          )}
-        />
+            </div>
+          ))}
+        </div>
       ),
     },
     {
       title: '专家组',
       key: 'experts',
       render: (_: unknown, r: ReviewTemplate) => (
-        <List
-          size="small"
-          dataSource={r.experts || []}
-          renderItem={(e) => (
-            <List.Item>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {(r.experts || []).map((e, idx) => (
+            <div key={`${e.userId}-${idx}`} style={{ padding: '2px 0' }}>
               <Typography.Text>{e.name}</Typography.Text>
               {e.role ? <Tag style={{ marginLeft: 8 }}>{e.role}</Tag> : null}
-            </List.Item>
-          )}
-        />
+            </div>
+          ))}
+        </div>
       ),
     },
     {
@@ -151,7 +147,7 @@ export default function ReviewTemplatePage() {
       <Table
         rowKey="id"
         columns={columns}
-        dataSource={list}
+        dataSource={list ?? []}
         loading={loading}
         pagination={{ pageSize: 10 }}
         size="small" scroll={{ x: 'max-content' }} />

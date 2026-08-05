@@ -48,8 +48,8 @@ export default function ReviewPage() {
     setLoading(true);
     try {
       const [t, tpl] = await Promise.all([listReviewTickets(), listReviewTemplates()]);
-      setTickets(t);
-      setTemplates(tpl);
+      setTickets(Array.isArray(t) ? t : ((t as { items?: ReviewTicket[] }).items ?? []));
+      setTemplates(Array.isArray(tpl) ? tpl : ((tpl as { items?: ReviewTemplate[] }).items ?? []));
     } finally {
       setLoading(false);
     }
@@ -161,7 +161,7 @@ export default function ReviewPage() {
 
   return (
     <Card title="架构评审" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>提交评审</Button>}>
-      <Table rowKey="id" columns={columns} dataSource={tickets} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
+      <Table rowKey="id" columns={columns} dataSource={tickets ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
 
       <Modal title="评审详情" open={!!detail && !actionModalOpen} onCancel={() => setDetail(null)} footer={null} width={640}>
         {detail && (
@@ -176,7 +176,7 @@ export default function ReviewPage() {
               {detail.scores.length > 0 && (
                 <>
                   <Typography.Text strong>评分</Typography.Text>
-                  <Table rowKey="dimension" columns={scoreColumns} dataSource={detail.scores} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+                  <Table rowKey="dimension" columns={scoreColumns} dataSource={detail.scores ?? []} size="small" pagination={false} scroll={{ x: 'max-content' }} />
                 </>
               )}
             </Tabs.TabPane>

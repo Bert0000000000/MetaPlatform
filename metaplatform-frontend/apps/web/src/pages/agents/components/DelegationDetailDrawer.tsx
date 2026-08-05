@@ -125,7 +125,7 @@ export default function DelegationDetailDrawer({
   return (
     <Drawer
       title="委托详情"
-      width={720}
+      size={720}
       open={!!delegationId}
       onClose={onClose}
       footer={
@@ -144,7 +144,7 @@ export default function DelegationDetailDrawer({
       {loading && !delegation ? (
         <Spin tip="加载中..." />
       ) : delegation ? (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <Descriptions column={2} bordered size="small">
             <Descriptions.Item label="目标 Agent" span={2}>
               <Typography.Text code>{delegation.targetAgentId}</Typography.Text>
@@ -184,7 +184,7 @@ export default function DelegationDetailDrawer({
               items={mergedHistory.map((h) => ({
                 color: STATUS_LABEL[h.status]?.color || 'blue',
                 children: (
-                  <Space direction="vertical" size={0}>
+                  <Space orientation="vertical" size={0}>
                     <Tag color={STATUS_LABEL[h.status]?.color || 'default'}>
                       {STATUS_LABEL[h.status]?.label || h.status}
                     </Tag>

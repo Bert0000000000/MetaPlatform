@@ -1,4 +1,4 @@
-﻿import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
 import { User, LogOut, ChevronsLeft, ChevronsRight } from './icons';
@@ -207,11 +207,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           className="v-content"
           style={{
             padding: '0 24px',
-            height: '100vh',
-            overflow: 'hidden',
+            minHeight: '100vh',
+            overflow: 'auto',
             background: 'var(--background)',
-            display: 'flex',
-            flexDirection: 'column',
           }}
         >
           {children ?? <Outlet />}

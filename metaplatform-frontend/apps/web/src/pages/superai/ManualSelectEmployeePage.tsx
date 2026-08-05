@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Card, Space, Tag, Typography, Transfer, Button } from 'antd';
 import type { TransferProps } from 'antd';
 
@@ -19,7 +19,7 @@ export default function ManualSelectEmployeePage() {
     <div>
       <Typography.Title level={4}>手动选择员工</Typography.Title>
       <Card>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Transfer
             dataSource={MOCK}
             titles={['可选', '已选']}

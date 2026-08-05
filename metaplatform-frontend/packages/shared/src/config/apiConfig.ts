@@ -22,6 +22,7 @@ export interface ServiceRoute {
 export const SERVICES: Record<string, ServiceRoute> = {
   iam:     { name: 'tech-iam',     port: 8101, apiPrefix: '/api/v1/iam',     label: 'IAM' },
   dashboard: { name: 'tech-iam',   port: 8101, apiPrefix: '/api/v1/dashboard', label: 'DASHBOARD' },
+  dw:      { name: 'mate-tech-dw',  port: 8100, apiPrefix: '/api/v1/dw',      label: 'DW' },
   kb:      { name: 'tech-kb',      port: 9004, apiPrefix: '/api/v1/kb',      label: 'KB' },
   agent:   { name: 'mate-agent',   port: 8511, apiPrefix: '/api/v1/agent',   label: 'AGENT' },
   apphub:  { name: 'tech-apphub',  port: 8202, apiPrefix: '/api/v1/apphub',  label: 'APP' },

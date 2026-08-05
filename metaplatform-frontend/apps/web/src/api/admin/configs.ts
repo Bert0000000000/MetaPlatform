@@ -16,7 +16,11 @@ export interface ListConfigsParams {
 
 export async function listConfigs(p?: ListConfigsParams): Promise<PageResult<AdminSystemConfig>> {
   const params: Record<string, unknown> = {};
-  if (p?.category) params.category = p.category;
+  // 兼容尚未重启的旧后端：当 category 不在已知枚举里时不要传，避免 422
+  const known = new Set<string>([
+    "SSO", "LICENSE", "MESSAGE", "RATE_LIMIT", "SECURITY", "BRANDING", "OTHER",
+  ]);
+  if (p?.category && known.has(p.category)) params.category = p.category;
   if (p?.keyword) params.keyword = p.keyword;
   if (p?.page) params.page = p.page;
   if (p?.pageSize) params.pageSize = p.pageSize;

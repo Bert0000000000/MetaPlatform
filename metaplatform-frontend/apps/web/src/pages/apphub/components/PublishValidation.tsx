@@ -1,4 +1,4 @@
-import { Alert, Typography, Space, Tag, Button, List, Card, Row, Col, Statistic } from 'antd';
+﻿import { Alert, Typography, Space, Tag, Button, Card, Row, Col, Statistic } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -42,7 +42,7 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
         </Col>
       </Row>
 
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <Alert
           type={result.valid ? 'success' : 'error'}
           message={
@@ -72,11 +72,9 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             <Typography.Text type="danger" strong>
               <CloseCircleOutlined /> 错误（{result.errors.length}）
             </Typography.Text>
-            <List
-              size="small"
-              dataSource={result.errors}
-              renderItem={(error) => (
-                <List.Item>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {result.errors.map((error) => (
+                <div key={error.code} style={{ padding: '4px 0' }}>
                   <Space>
                     <Tag color="red">{error.code}</Tag>
                     <Typography.Text>{error.message}</Typography.Text>
@@ -86,9 +84,9 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
                       </Typography.Text>
                     )}
                   </Space>
-                </List.Item>
-              )}
-            />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -97,18 +95,16 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
             <Typography.Text type="warning" strong>
               <WarningOutlined /> 警告（{result.warnings.length}）
             </Typography.Text>
-            <List
-              size="small"
-              dataSource={result.warnings}
-              renderItem={(warning) => (
-                <List.Item>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {result.warnings.map((warning) => (
+                <div key={warning.code} style={{ padding: '4px 0' }}>
                   <Space>
                     <Tag color="orange">{warning.code}</Tag>
                     <Typography.Text>{warning.message}</Typography.Text>
                   </Space>
-                </List.Item>
-              )}
-            />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </Space>

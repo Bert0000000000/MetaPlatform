@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm, Space, Typography, Row, Col, List } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm, Space, Typography, Row, Col } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { listTechnologyStacks, createTechnologyStack, updateTechnologyStack, deleteTechnologyStack } from '@/api/arch/technologyStacks';
@@ -36,9 +36,10 @@ export default function TechStackPage() {
   const load = async () => {
     setLoading(true);
     const [s, c] = await Promise.all([listTechnologyStacks(), listTechnologyComponents()]);
-    setStacks(s);
-    setComponents(c);
-    if (s.length > 0 && !selectedStack) setSelectedStack(s[0]);
+    const stackItems = Array.isArray(s) ? s : ((s as { items?: TechnologyStack[] }).items ?? []);
+    setStacks(stackItems);
+    setComponents(Array.isArray(c) ? c : ((c as { items?: TechnologyComponent[] }).items ?? []));
+    if (stackItems.length > 0 && !selectedStack) setSelectedStack(stackItems[0]);
     setLoading(false);
   };
 
@@ -154,7 +155,7 @@ export default function TechStackPage() {
       <Typography.Title level={4}>技术栈画像</Typography.Title>
       <Card>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }} style={{ marginBottom: 16 }}>新增技术栈</Button>
-        <Table rowKey="id" columns={columns} dataSource={stacks} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+        <Table rowKey="id" columns={columns} dataSource={stacks ?? []} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
       </Card>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
@@ -165,22 +166,20 @@ export default function TechStackPage() {
         </Col>
         <Col span={8}>
           <Card title="组件清单">
-            <List
-              size="small"
-              dataSource={selectedStack?.components ?? []}
-              renderItem={(ref, idx) => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {(selectedStack?.components ?? []).map((ref, idx) => {
                 const comp = components.find((c) => c.id === ref.componentId);
                 return (
-                  <List.Item>
+                  <div key={`${ref.componentId}-${idx}`} style={{ padding: '6px 0' }}>
                     <Space>
                       <Tag color={comp ? COMPONENT_COLORS[comp.type] ?? 'default' : 'default'}>{idx + 1}</Tag>
                       <span>{comp?.name ?? ref.componentName ?? ref.componentId}</span>
                       {ref.version && <Tag>{ref.version}</Tag>}
                     </Space>
-                  </List.Item>
+                  </div>
                 );
-              }}
-            />
+              })}
+            </div>
           </Card>
         </Col>
       </Row>

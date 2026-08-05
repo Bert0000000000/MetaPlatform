@@ -6,9 +6,21 @@ import { getOrgTree, listRoles, createRole, updateRole, deleteRole } from '@/api
 import type { OrgUnit, ArchRole, CreateRoleRequest, UpdateRoleRequest } from '@/api/arch/types';
 
 function buildOrgTree(orgs: OrgUnit[]): DataNode[] {
-  const build = (parentId?: string): DataNode[] =>
-    orgs.filter((o) => o.parentId === parentId).map((o) => ({ key: o.id, title: `${o.name} (${o.head || ''})`, children: build(o.id) }));
-  return build();
+  const safeOrgs = Array.isArray(orgs) ? orgs : [];
+  const visited = new Set<string>();
+  const getId = (o: OrgUnit) => o.id || (o as Record<string, unknown>).org_id as string || '';
+  const getParent = (o: OrgUnit) => o.parentId || (o as Record<string, unknown>).parent_id as string || '';
+  const build = (parentId: string): DataNode[] =>
+    safeOrgs.filter((o) => getParent(o) === parentId && !visited.has(getId(o))).map((o) => {
+      const id = getId(o);
+      visited.add(id);
+      return { key: id, title: `${o.name} (${o.head || ''})`, children: build(id) };
+    });
+  return safeOrgs.filter((o) => !getParent(o) && !visited.has(getId(o))).map((o) => {
+    const id = getId(o);
+    visited.add(id);
+    return { key: id, title: `${o.name} (${o.head || ''})`, children: build(id) };
+  });
 }
 
 const DOMAIN_OPTIONS = ['SALES', 'MARKETING', 'FINANCE', 'HR', 'OPERATIONS', 'IT', 'LEGAL', 'PRODUCT'];
@@ -25,9 +37,14 @@ export default function OrgRolePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [orgData, roleData] = await Promise.all([getOrgTree(), listRoles()]);
-      setOrgs(orgData);
-      setRoles(roleData.items);
+      const [orgData, roleData] = await Promise.all([
+        getOrgTree().catch(() => []),
+        listRoles().catch(() => ({ items: [] })),
+      ]);
+      const orgs = Array.isArray(orgData) ? orgData : ((orgData as Record<string, unknown>)?.tree as OrgUnit[] ?? []);
+      const roles = Array.isArray(roleData) ? roleData : (roleData?.items ?? []);
+      setOrgs(orgs);
+      setRoles(roles);
     } finally {
       setLoading(false);
     }
@@ -85,7 +102,7 @@ export default function OrgRolePage() {
       </Col>
       <Col span={16}>
         <Card title={`角色管理${selectedOrg ? ` - ${orgs.find((o) => o.id === selectedOrg)?.name}` : ''}`} size="small" extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新增角色</Button>}>
-          <Table rowKey="id" columns={columns} dataSource={roles} loading={loading} pagination={false} size="small" scroll={{ x: 'max-content' }} />
+          <Table rowKey="id" columns={columns} dataSource={roles ?? []} loading={loading} pagination={false} size="small" scroll={{ x: 'max-content' }} />
         </Card>
       </Col>
 

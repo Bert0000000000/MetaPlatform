@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -16,14 +16,14 @@ import type {
 } from './types';
 
 export async function recordFeedback(request: FeedbackCreateRequest): Promise<FeedbackRecord> {
-  return post<FeedbackRecord>('/v1/dw/learning/feedback', request);
+  return post<FeedbackRecord>('/dw/learning/feedback', request);
 }
 
 export async function listFeedback(params?: {
   employeeId?: string;
   taskId?: string;
 }): Promise<PageResponse<FeedbackRecord>> {
-  return get<PageResponse<FeedbackRecord>>('/v1/dw/learning/feedback', params as Record<string, unknown> | undefined);
+  return get<PageResponse<FeedbackRecord>>('/dw/learning/feedback', params as Record<string, unknown> | undefined);
 }
 
 export async function updateFeedbackTags(feedbackId: string, tags: string[]): Promise<FeedbackRecord> {
@@ -33,7 +33,7 @@ export async function updateFeedbackTags(feedbackId: string, tags: string[]): Pr
 export async function extractKnowledge(employeeId: string): Promise<{
   knowledge: LearnedKnowledge[];
 }> {
-  return post<{ knowledge: LearnedKnowledge[] }>('/v1/dw/learning/extract', { employee_id: employeeId });
+  return post<{ knowledge: LearnedKnowledge[] }>('/dw/learning/extract', { employee_id: employeeId });
 }
 
 export async function listKnowledge(

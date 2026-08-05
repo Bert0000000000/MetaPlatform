@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   Button,
   Card,
@@ -68,7 +68,7 @@ export default function ScheduleExecutionPage() {
 
       {exec ? (
         <Card title={`Execution #${exec.executionId}`}>
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Tag color={exec.status === 'completed' ? 'green' : 'blue'}>{exec.status}</Tag>
             <Progress percent={Math.round(exec.progress)} status={exec.status === 'completed' ? 'success' : 'active'} />
           </Space>

@@ -51,6 +51,7 @@ export * as FlowCanvas from './components/flow';
 export * as Api from './api';
 export { isApiError, isBizError, isHttpError } from './api/errors';
 export type { BizError, HttpError } from './api/errors';
+export { setMessageInstance, toast } from './api/toast';
 export { useAsyncError } from './errors';
 export { useApiErrorBoundary, type NormalizedError } from './hooks/useApiErrorBoundary';
 export { useAsync } from './hooks/useAsync';

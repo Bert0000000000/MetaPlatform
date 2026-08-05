@@ -9,18 +9,26 @@ interface Props {
 
 function buildNodes(caps: Capability[], parentId?: string, x = 0, y = 0, level = 0): Array<{ id: string; name: string; parentId?: string; level: number }> {
   const result: Array<{ id: string; name: string; parentId?: string; level: number }> = [];
-  const children = caps.filter((c) => c.parentCapabilityId === parentId);
+  const getId = (c: Capability) => c.capabilityId || (c as Record<string, unknown>).id as string || '';
+  const getParent = (c: Capability) => c.parentCapabilityId || (c as Record<string, unknown>).parent_id as string || '';
+  const visited = new Set<string>();
+
+  const children = caps.filter((c) => getParent(c) === (parentId ?? '') && !visited.has(getId(c)));
   children.forEach((c) => {
-    result.push({ id: c.capabilityId, name: c.name, parentId, level });
-    result.push(...buildNodes(caps, c.capabilityId, x, y, level + 1));
+    const id = getId(c);
+    if (visited.has(id)) return;
+    visited.add(id);
+    result.push({ id, name: c.name, parentId, level });
+    result.push(...buildNodes(caps, id, x, y, level + 1));
   });
   if (!parentId) {
-    const roots = caps.filter((c) => !c.parentCapabilityId);
+    const roots = caps.filter((c) => !getParent(c) && !visited.has(getId(c)));
     roots.forEach((c) => {
-      if (!result.find((r) => r.id === c.capabilityId)) {
-        result.push({ id: c.capabilityId, name: c.name, level: 0 });
-        result.push(...buildNodes(caps, c.capabilityId, x, y, level + 1));
-      }
+      const id = getId(c);
+      if (visited.has(id)) return;
+      visited.add(id);
+      result.push({ id, name: c.name, level: 0 });
+      result.push(...buildNodes(caps, id, x, y, level + 1));
     });
   }
   return result;

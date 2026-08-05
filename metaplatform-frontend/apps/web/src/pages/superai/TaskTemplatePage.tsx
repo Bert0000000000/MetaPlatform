@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -68,7 +68,7 @@ export default function TaskTemplatePage() {
       title: '模板',
       key: 'name',
       render: (_, t) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{t.name}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t.description}</Typography.Text>
         </Space>

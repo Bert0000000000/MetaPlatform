@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, Spin, Typography, Alert, Tag, Space } from 'antd';
 import { getAppRuntime } from '@/api/apphub/runtime';
@@ -30,7 +30,7 @@ export default function AppRuntimePage() {
   return (
     <div style={{ padding: 24 }}>
       <Card>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           <div>
             <Title level={3}>{runtime.app_id}</Title>
             <Tag color="blue">v{runtime.version}</Tag>

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Tabs } from "@/components/Tabs";
 import {
   Button,
   Form,
@@ -6,7 +7,6 @@ import {
   Select,
   Space,
   Table,
-  Tabs,
   Tag,
   Modal,
   Popconfirm,
@@ -22,6 +22,7 @@ import {
   DeleteOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
+import { CatalogEditor } from "./CatalogEditor";
 import {
   assignPermissions,
   createRole,
@@ -38,7 +39,7 @@ import type {
   AdminRoleDetail,
   PermissionMatrixResponse,
 } from "@/types";
-import { AdminLayout } from "./__AdminLayout";
+import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 import { formatDateTime } from "@/utils/datetime";
 import { useSettings } from "@/contexts/SettingsContext";
 
@@ -73,7 +74,7 @@ export default function PermissionsPage() {
     setLoading(true);
     try {
       const r = await listRoles({ keyword: keyword || undefined, page, pageSize });
-      setRoles(r.items);
+      setRoles(r.items ?? []);
       setTotal(r.total);
     } finally {
       setLoading(false);
@@ -175,13 +176,21 @@ export default function PermissionsPage() {
 
   const toggleMatrixCell = async (roleId: number, permissionId: number, granted: boolean) => {
     try {
-      // Toggling a single cell: re-assign all currently granted perms for that role (excluding the toggled one)
-      if (granted) {
-        // Removing: re-assign with empty
-        await assignPermissions({ type: "role", targetId: roleId, permissionIds: [] });
-      } else {
-        await assignPermissions({ type: "role", targetId: roleId, permissionIds: [permissionId] });
+      // Collect all currently granted permissionIds for this role from the matrix
+      const currentGranted: number[] = [];
+      if (matrix) {
+        const raw = matrix as unknown as { matrix?: Array<{ role_id: number; permission_id: number; granted: boolean }> };
+        for (const cell of raw.matrix ?? []) {
+          if (cell.role_id === roleId && cell.granted) {
+            currentGranted.push(cell.permission_id);
+          }
+        }
       }
+      // Toggle: if currently granted, remove; otherwise add
+      const next = granted
+        ? currentGranted.filter((id) => id !== permissionId)
+        : [...currentGranted, permissionId];
+      await assignPermissions({ type: "role", targetId: roleId, permissionIds: next });
       loadMatrix();
       loadRoles();
     } catch {
@@ -202,10 +211,10 @@ export default function PermissionsPage() {
         title: "名称",
         dataIndex: "name",
         render: (v: string, r) => (
-          <Space>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <a onClick={() => openDetail(r)}>{v}</a>
-            {r.isBuiltin && <Tag color="purple">内置</Tag>}
-          </Space>
+            {r.isBuiltin ? <Tag color="purple">内置</Tag> : null}
+          </span>
         ),
       },
       {
@@ -237,7 +246,7 @@ export default function PermissionsPage() {
         key: "actions",
         width: 220,
         render: (_v, r) => (
-          <Space size={4} wrap>
+          <span style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}>
             <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(r)}>
               查看
             </Button>
@@ -262,50 +271,54 @@ export default function PermissionsPage() {
                 删除
               </Button>
             )}
-          </Space>
+          </span>
         ),
       },
     ],
     [settings],
   );
 
-  // Catalog grouping
-  const groupedCatalog = useMemo(() => {
-    const m = new Map<string, AdminPermission[]>();
-    for (const p of catalog) {
-      const arr = m.get(p.resourceType) ?? [];
-      arr.push(p);
-      m.set(p.resourceType, arr);
-    }
-    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [catalog]);
-
   // Matrix lookup
   const matrixMap = useMemo(() => {
     const m = new Map<string, boolean>();
-    if (!matrix) return m;
-    for (const cell of matrix.matrix) {
-      m.set(cell.roleId + ":" + cell.permissionId, cell.granted);
+    const raw = matrix as unknown as { matrix?: Array<{ role_id: number; permission_id: number; granted: boolean }> };
+    if (!matrix || !Array.isArray(raw.matrix)) return m;
+    for (const cell of raw.matrix!) {
+      m.set(cell.role_id + ":" + cell.permission_id, cell.granted);
     }
     return m;
   }, [matrix]);
 
+  const builtinCount = (roles ?? []).filter((r) => r.isBuiltin).length;
+  const customCount = roles.length - builtinCount;
+  const permissionTotalCount = useMemo(
+    () => (catalog.length ? catalog.length : roles.reduce((sum, r) => sum + (r.permissionCount ?? 0), 0)),
+    [catalog, roles],
+  );
+
   return (
+    <Fragment key="root">
     <AdminLayout
       title="权限管理"
       extra={
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => {
+        <span style={{ display: "inline-flex", gap: 8 }} key="extra-btns">
+          <Button key="reload" icon={<ReloadOutlined />} onClick={() => {
             loadRoles(); loadCatalog(); loadMatrix();
           }}>
             刷新
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             新建角色
           </Button>
-        </Space>
+        </span>
       }
     >
+      <StatGrid key="stat">
+        <StatCard key="t-roles" label="角色总数" value={total} />
+        <StatCard key="t-perms" label="权限总数" value={permissionTotalCount} />
+        <StatCard key="t-builtin" label="超级管理员" value={builtinCount} color="warning" />
+        <StatCard key="t-custom" label="自定义角色" value={customCount} color="success" />
+      </StatGrid>
       <Tabs
         defaultActiveKey="roles"
         items={[
@@ -355,31 +368,21 @@ export default function PermissionsPage() {
             key: "catalog",
             label: "权限目录",
             children: (
-              <div
-                style={{
-                  background: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: 16,
+              <CatalogEditor
+                catalog={catalog}
+                roles={roles}
+                onSave={async (roleId, permissionIds) => {
+                  try {
+                    await assignPermissions({ type: "role", targetId: roleId, permissionIds });
+                    message.success("权限已保存");
+                    loadRoles();
+                    loadMatrix();
+                  } catch {
+                    /* ignore */
+                  }
                 }}
-              >
-                {groupedCatalog.length === 0 ? (
-                  <div style={{ color: "var(--muted-foreground)" }}>暂无权限数据</div>
-                ) : (
-                  groupedCatalog.map(([resourceType, perms]) => (
-                    <div key={resourceType} style={{ marginBottom: 16 }}>
-                      <h4 style={{ marginBottom: 8 }}>{resourceType}</h4>
-                      <Space wrap>
-                        {perms.map((p) => (
-                          <Tag key={p.id} color="blue">
-                            {p.code} · {p.name}
-                          </Tag>
-                        ))}
-                      </Space>
-                    </div>
-                  ))
-                )}
-              </div>
+                onRefresh={loadCatalog}
+              />
             ),
           },
           {
@@ -402,6 +405,7 @@ export default function PermissionsPage() {
                     <thead>
                       <tr>
                         <th
+                          key="__role_col"
                           style={{
                             padding: 8,
                             border: "1px solid var(--border)",
@@ -413,7 +417,7 @@ export default function PermissionsPage() {
                         >
                           角色 / 权限
                         </th>
-                        {matrix.permissions.map((p) => (
+                        {(matrix.permissions ?? []).map((p) => (
                           <th
                             key={p.id}
                             style={{
@@ -431,9 +435,10 @@ export default function PermissionsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {matrix.roles.map((r) => (
+                      {(matrix.roles ?? []).map((r) => (
                         <tr key={r.id}>
                           <td
+                            key={`${r.id}-name`}
                             style={{
                               padding: 8,
                               border: "1px solid var(--border)",
@@ -450,7 +455,7 @@ export default function PermissionsPage() {
                               </Tag>
                             )}
                           </td>
-                          {matrix.permissions.map((p) => {
+                          {(matrix.permissions ?? []).map((p) => {
                             const granted = matrixMap.get(r.id + ":" + p.id) === true;
                             return (
                               <td
@@ -513,7 +518,7 @@ export default function PermissionsPage() {
           <Form.Item name="permissionIds" label="权限">
             <Select
               mode="multiple"
-              options={catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name }))}
+              options={Array.isArray(catalog) ? catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name })) : []}
               placeholder="选择权限"
               showSearch
               optionFilterProp="label"
@@ -552,7 +557,7 @@ export default function PermissionsPage() {
           <Form.Item name="permissionIds" label="权限">
             <Select
               mode="multiple"
-              options={catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name }))}
+              options={Array.isArray(catalog) ? catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name })) : []}
               showSearch
               optionFilterProp="label"
             />
@@ -561,34 +566,47 @@ export default function PermissionsPage() {
       </Modal>
 
       <Drawer
+        key="drawer-detail"
         title={detail ? "角色详情：" + detail.name : ""}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width={520}
+        size={520}
       >
         {detail && (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="编码">{detail.code}</Descriptions.Item>
-            <Descriptions.Item label="名称">{detail.name}</Descriptions.Item>
-            <Descriptions.Item label="描述">{detail.description || "—"}</Descriptions.Item>
-            <Descriptions.Item label="数据范围">
-              <Tag>{DATA_SCOPE_LABEL[detail.dataScope] ?? detail.dataScope}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="内置">{detail.isBuiltin ? "是" : "否"}</Descriptions.Item>
-            <Descriptions.Item label={"权限（" + detail.permissions.length + "）"}>
-              <Space wrap>
-                {detail.permissions.length === 0
-                  ? "—"
-                  : detail.permissions.map((p) => (
-                      <Tag key={p.id} color="blue">
-                        {p.code}
-                      </Tag>
-                    ))}
-              </Space>
-            </Descriptions.Item>
-          </Descriptions>
+          <Descriptions
+            column={1}
+            bordered
+            size="small"
+            items={[
+              { key: "code", label: "编码", children: detail.code },
+              { key: "name", label: "名称", children: detail.name },
+              { key: "desc", label: "描述", children: detail.description || "—" },
+              {
+                key: "scope",
+                label: "数据范围",
+                children: <Tag>{DATA_SCOPE_LABEL[detail.dataScope] ?? detail.dataScope}</Tag>,
+              },
+              { key: "builtin", label: "内置", children: detail.isBuiltin ? "是" : "否" },
+              {
+                key: "perms",
+                label: "权限（" + detail.permissions.length + "）",
+                children: (
+                  <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
+                    {detail.permissions.length === 0
+                      ? "—"
+                      : detail.permissions.map((p) => (
+                          <Tag key={p.id} color="blue">
+                            {p.code}
+                          </Tag>
+                        ))}
+                  </span>
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
     </AdminLayout>
+    </Fragment>
   );
 }

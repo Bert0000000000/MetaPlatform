@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Space, Form, Input, Select, Tag, message, Popconfirm, List, Tabs } from 'antd';
+import { Table, Button, Space, Form, Input, Select, Tag, message, Popconfirm, Tabs } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import {
   listPrinciples,
@@ -41,8 +41,8 @@ export default function PrinciplesPage() {
     setLoading(true);
     try {
       const [p, c] = await Promise.all([listPrinciples(), listPrincipleCategories()]);
-      setPrinciples(p);
-      setCategories(c);
+      setPrinciples(Array.isArray(p) ? p : ((p as { items?: Principle[] }).items ?? []));
+      setCategories(Array.isArray(c) ? c : ((c as { items?: PrincipleCategory[] }).items ?? []));
     } finally {
       setLoading(false);
     }
@@ -190,13 +190,17 @@ export default function PrinciplesPage() {
           <Table
             rowKey="id"
             columns={principleColumns}
-            dataSource={principles}
+            dataSource={principles ?? []}
             loading={loading}
             pagination={{ pageSize: 10 }}
             size="small"
             expandable={{
               expandedRowRender: (r: Principle) => (
-                <List size="small" dataSource={r.standards || []} renderItem={(s) => <List.Item>• {s}</List.Item>} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {(r.standards || []).map((s, idx) => (
+                    <div key={idx} style={{ padding: '2px 0' }}>• {s}</div>
+                  ))}
+                </div>
               ),
             }}
            scroll={{ x: 'max-content' }}/>
@@ -213,7 +217,7 @@ export default function PrinciplesPage() {
           <Table
             rowKey="id"
             columns={categoryColumns}
-            dataSource={categories}
+            dataSource={categories ?? []}
             loading={loading}
             pagination={{ pageSize: 10 }}
             size="small" scroll={{ x: 'max-content' }} />

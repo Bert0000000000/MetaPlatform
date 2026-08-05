@@ -341,7 +341,7 @@ export default function AiOpsPage() {
 
       <Drawer
         title="异常详情"
-        width={640}
+        size={640}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         footer={
@@ -359,7 +359,7 @@ export default function AiOpsPage() {
         }
       >
         {selectedEvent && (
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <Space orientation="vertical" style={{ width: '100%' }} size="large">
             <Row gutter={16}>
               <Col span={8}>
                 <Statistic title="服务" value={selectedEvent.serviceName} />

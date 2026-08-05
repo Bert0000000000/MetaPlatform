@@ -550,6 +550,46 @@ def get_employee(tenant_id: str, employee_id: str) -> DwEmployee | None:
     return _EMPLOYEES[tenant_id].get(employee_id)
 
 
+def create_employee(tenant_id: str, employee: DwEmployee) -> DwEmployee:
+    """Create a new employee record."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _EMPLOYEES[tenant_id][employee.id] = employee
+    return employee
+
+
+def update_employee(tenant_id: str, employee_id: str, **kwargs) -> DwEmployee | None:
+    """Update an employee's fields. Returns the updated employee or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    emp = _EMPLOYEES[tenant_id].get(employee_id)
+    if emp is None:
+        return None
+    # Build updated employee (DwEmployee is frozen=True, so create new)
+    data = {
+        'id': emp.id, 'tenant_id': emp.tenant_id, 'name': emp.name,
+        'code': emp.code, 'role': emp.role, 'status': emp.status,
+        'model_id': emp.model_id, 'kb_ids': emp.kb_ids,
+    }
+    data.update(kwargs)
+    updated = DwEmployee(**data)
+    _EMPLOYEES[tenant_id][employee_id] = updated
+    return updated
+
+
+def delete_employee(tenant_id: str, employee_id: str) -> bool:
+    """Delete an employee. Returns True if deleted, False if not found."""
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    if employee_id in _EMPLOYEES[tenant_id]:
+        del _EMPLOYEES[tenant_id][employee_id]
+        return True
+    return False
+
+
 def append_employee_task(
     tenant_id: str, task: DwEmployeeTask,
 ) -> DwEmployeeTask:
@@ -727,4 +767,5 @@ __all__ = [
     "list_knowledge_bases", "list_learning_extracts",
     "list_learning_feedback", "list_models", "list_tools",
     "list_traces", "reset_store",
+    "create_employee", "update_employee", "delete_employee",
 ]

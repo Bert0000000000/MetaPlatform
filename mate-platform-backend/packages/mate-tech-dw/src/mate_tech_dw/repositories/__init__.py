@@ -48,6 +48,9 @@ from .in_memory import (
     list_tools,
     list_traces,
     append_collaboration,
+    create_employee,
+    update_employee,
+    delete_employee,
 )
 
 __all__ = [
@@ -64,5 +67,6 @@ __all__ = [
     "list_learning_feedback", "append_learning_feedback",
     "list_models", "list_tools", "list_traces",
     "append_collaboration",
+    "create_employee", "update_employee", "delete_employee",
     "sql_store",
 ]

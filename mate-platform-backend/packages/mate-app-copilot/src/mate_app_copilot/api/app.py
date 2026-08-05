@@ -17,7 +17,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any
 
-import httpx
+import os
 import sqlparse
 from fastapi import APIRouter, Body, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -39,6 +39,7 @@ from mate_tech_db.base import get_session
 from ..a2a.client import get_default_client as get_default_a2a_client
 from ..a2a.models import DelegationRequest
 from ..clients import AsyncCopilotClient
+from ..clients.llmgw_stream import LlmgwStreamClient, LlmgwStreamError
 from ..llm import stub_provider
 from ..repositories import (
     AssetRecord,
@@ -544,7 +545,19 @@ async def get_code(request: Request) -> dict[str, Any]:
 # --- Conversations (7) ------------------------------------------------------
 @router.get("/conversations")
 async def get_conversations(request: Request) -> dict[str, Any]:
-    return _resp(list_conversations(_tid(request)))
+    tid = _tid(request)
+    # Read from PostgreSQL (merge with in-memory fallback)
+    try:
+        session = get_session()
+        try:
+            orms = session.query(ConversationORM).filter_by(tenant_id=tid).order_by(ConversationORM.created_at.desc()).all()
+            db_items = [_conv_orm_to_dict(o) for o in orms]
+            return {"items": db_items, "total": len(db_items)}
+        finally:
+            session.close()
+    except Exception:
+        # Fallback to in-memory if DB unavailable
+        return _resp(list_conversations(tid))
 
 
 @router.post("/conversations")
@@ -592,12 +605,12 @@ async def delete_conversation(request: Request, conv_id: str) -> dict[str, Any]:
     session = get_session()
     try:
         orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid).first()
-        if not orm:
-            raise HTTPException(status_code=404, detail="Conversation not found")
-        session.delete(orm)
-        session.query(MessageORM).filter_by(conversation_id=conv_id).delete()
-        session.commit()
-        _emit(request, "copilot.conversation.deleted", conv_id, {}, tid)
+        if orm:
+            session.delete(orm)
+            session.query(MessageORM).filter_by(conversation_id=conv_id).delete()
+            session.commit()
+            _emit(request, "copilot.conversation.deleted", conv_id, {}, tid)
+        # Idempotent: return success even if not found
         return {"code": 0, "data": None, "message": "ok"}
     finally:
         session.close()
@@ -673,79 +686,80 @@ async def chat_completions_stream(
 
     async def event_stream():
         full_response = ""
+        # Build the streaming client. The host/port come from env so the
+        # service is portable across docker-compose / staging / prod
+        # (default targets the docker-compose service name + port 8008).
+        llmgw_host = os.getenv("MATE_LLMGW_HOST", "mate-tech-llmgw")
+        llmgw_port = int(os.getenv("MATE_LLMGW_PORT", "8008"))
+        stream_client = LlmgwStreamClient(
+            host=llmgw_host,
+            port=llmgw_port,
+            auth=BearerAuth(
+                token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+                client_id="metaplatform-backend",
+                client_secret="stub",  # noqa: S106
+                scope="platform.read platform.write",
+            ),
+            tenant_id=tid,
+        )
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                llmgw_body = {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
-                    "tenant_id": tid,
-                }
-                async with client.stream(
-                    "POST",
-                    "http://mate-tech-llmgw:8008/api/v1/llmgw/chat/real",
-                    json=llmgw_body,
-                ) as resp:
-                    if resp.status_code == 200:
-                        async for line in resp.aiter_lines():
-                            if line.startswith("data: "):
-                                data = line[6:]
-                                if data == "[DONE]":
-                                    break
-                                try:
-                                    chunk = json.loads(data)
-                                    text = ""
-                                    if "choices" in chunk:
-                                        text = chunk["choices"][0].get("delta", {}).get("content", "")
-                                    elif "data" in chunk:
-                                        text = chunk["data"].get("text", "")
-                                    elif "content" in chunk:
-                                        text = chunk["content"]
-                                    if text:
-                                        full_response += text
-                                        openai_chunk = {
-                                            "choices": [{"delta": {"content": text}, "index": 0}],
-                                            "model": model,
-                                        }
-                                        yield f"data: {json.dumps(openai_chunk)}\n\n"
-                                except json.JSONDecodeError:
-                                    pass
-                    else:
-                        yield f"data: {json.dumps({'error': f'llmgw returned {resp.status_code}'})}\n\n"
+            async for line in stream_client.stream_chat_real(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            ):
+                if line.startswith("data: "):
+                    data = line[6:]
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    text = ""
+                    if "choices" in chunk:
+                        text = chunk["choices"][0].get("delta", {}).get("content", "")
+                    elif "data" in chunk:
+                        text = chunk["data"].get("text", "")
+                    elif "content" in chunk:
+                        text = chunk["content"]
+                    if text:
+                        full_response += text
+                        openai_chunk = {
+                            "choices": [{"delta": {"content": text}, "index": 0}],
+                            "model": model,
+                        }
+                        yield f"data: {json.dumps(openai_chunk)}\n\n"
 
             # Fallback: non-streaming if llmgw stream returned nothing
             if not full_response:
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    resp = await client.post(
-                        "http://mate-tech-llmgw:8008/api/v1/llmgw/chat",
-                        json={
-                            "model": model,
-                            "messages": messages,
-                            "temperature": temperature,
-                            "tenant_id": tid,
-                        },
+                try:
+                    data = await stream_client.chat_completion(
+                        messages=messages,
+                        model=model,
+                        temperature=temperature,
                     )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        full_response = data.get(
-                            "content",
-                            data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
-                        )
-                        chunk = {
-                            "choices": [{"delta": {"content": full_response}, "index": 0}],
-                            "model": model,
-                        }
-                        yield f"data: {json.dumps(chunk)}\n\n"
-                    else:
-                        full_response = "抱歉，LLM 服务暂时不可用。"
-                        chunk = {
-                            "choices": [{"delta": {"content": full_response}, "index": 0}],
-                            "model": model,
-                        }
-                        yield f"data: {json.dumps(chunk)}\n\n"
+                    full_response = data.get(
+                        "content",
+                        data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
+                    )
+                except LlmgwStreamError:
+                    full_response = "抱歉，LLM 服务暂时不可用。"
+                chunk = {
+                    "choices": [{"delta": {"content": full_response}, "index": 0}],
+                    "model": model,
+                }
+                yield f"data: {json.dumps(chunk)}\n\n"
 
-        except Exception as e:
+        except LlmgwStreamError as e:
+            full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
+            chunk = {
+                "choices": [{"delta": {"content": full_response}, "index": 0}],
+                "model": model,
+            }
+            yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as e:  # last-resort guard: never break the SSE stream
             full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
             chunk = {
                 "choices": [{"delta": {"content": full_response}, "index": 0}],

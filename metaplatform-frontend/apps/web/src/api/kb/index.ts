@@ -11,8 +11,8 @@
  */
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const kbClient = createApiClient({ baseURL: apiPath('kb', '/') });
-const ragClient = createApiClient({ baseURL: apiPath('rag', '/') });
+const kbClient = createApiClient({ baseURL: apiPath('kb', '') });
+const ragClient = createApiClient({ baseURL: apiPath('rag', '') });
 
 export interface KbEntity {
   id: string;

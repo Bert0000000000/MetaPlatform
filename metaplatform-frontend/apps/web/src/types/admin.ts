@@ -12,6 +12,7 @@ export type ConfigCategory =
   | "RATE_LIMIT"
   | "SECURITY"
   | "BRANDING"
+  | "AI_PROVIDER"
   | "OTHER";
 export type LoginResult = "SUCCESS" | "FAILED" | "LOCKED" | "MFA_REQUIRED";
 export type AuditAction =

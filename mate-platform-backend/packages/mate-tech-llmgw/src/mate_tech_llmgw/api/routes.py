@@ -79,9 +79,17 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-async def _mock_stream(req: ChatRequest):
+async def _mock_stream(*, messages=None, model=None, temperature=1.0, **kwargs):
     """ST-5.5.7 配套:mock token 流(实际生产应替换为 provider 的 stream 接口)."""
-    for i, word in enumerate(("hello", " ", "world")):
+    user_text = ""
+    if messages:
+        # Get the last user message content for a slightly personalized reply
+        for msg in reversed(messages):
+            if msg.role == "user":
+                user_text = msg.content[:50]
+                break
+    reply = f"收到您的消息: {user_text or '(无内容)'}。我是 Mate Platform 数字员工助手。"
+    for i, word in enumerate(reply):
         yield {"type": "token", "data": {"text": word, "index": i}}
     yield {"type": "final", "data": {"finish_reason": "stop"}}
 
@@ -468,3 +476,96 @@ async def legacy_chat_stream(req: ChatRequest, response: Response):
 async def legacy_embeddings(req: EmbeddingRequest, response: Response) -> EmbeddingResponse:
     response.headers.update(_deprecation_header())
     return await _run_embeddings(req)
+
+
+# ---------------------------------------------------------------------------
+# ADR-0019: AI Provider connectivity probe.
+#
+# UI (AIProvidersPage) used to call the upstream provider directly, which
+# failed with net::ERR_FAILED (CORS). The endpoint below probes upstream
+# on behalf of the user; the API key is sent in the request body and is
+# never persisted (see ADR-0019 §2.2).
+# ---------------------------------------------------------------------------
+class ProviderTestRequest(BaseModel):
+    """``POST /api/v1/llmgw/providers/test`` request body."""
+
+    provider: str = Field(
+        ...,
+        description="openai / azure / ollama / custom",
+    )
+    base_url: str = Field(
+        ...,
+        description="Provider base URL (no trailing slash required)",
+    )
+    api_key: str | None = Field(
+        default=None,
+        description="Optional API key; never persisted server-side",
+    )
+    api_version: str | None = Field(
+        default=None,
+        description="Azure OpenAI api-version (only used when provider=azure)",
+    )
+    timeout_sec: float = Field(
+        default=10.0,
+        description="Probe timeout in seconds (1-30, default 10)",
+    )
+
+
+class ProviderTestResponseAPI(BaseModel):
+    """``POST /api/v1/llmgw/providers/test`` response body."""
+
+    ok: bool
+    status: int
+    latency_ms: int
+    provider: str
+    message: str
+    hint: str | None = None
+    error: str | None = None
+    probe_url: str | None = None
+
+
+_ALLOWED_PROVIDERS: frozenset[str] = frozenset({"openai", "azure", "ollama", "custom"})
+
+
+@router.post("/providers/test", response_model=ProviderTestResponseAPI)
+async def providers_test_endpoint(req: ProviderTestRequest) -> ProviderTestResponseAPI:
+    """ADR-0019: server-side AI provider connectivity probe.
+
+    The endpoint resolves the probe URL (per provider) and runs a
+    server-side GET against it. OK semantics: 200/401/403 all
+    count as "endpoint reachable". Any other status or transport
+    failure produces an ``ok: false`` body with a short error code.
+    """
+    provider = req.provider.lower().strip()
+    if provider not in _ALLOWED_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown provider: {provider!r} (expected one of: sorted ..)",
+        )
+    from ..providers.test import probe as _probe  # local import to avoid cycle
+
+    timeout_sec = max(1.0, min(req.timeout_sec, 30.0))
+    result = await _probe(
+        provider=provider,  # type: ignore[arg-type]
+        base_url=req.base_url,
+        api_key=req.api_key,
+        timeout_sec=timeout_sec,
+    )
+    return ProviderTestResponseAPI(
+        ok=result.ok,
+        status=result.status,
+        latency_ms=result.latency_ms,
+        provider=provider,
+        message=result.message,
+        hint=result.hint,
+        error=result.error,
+        probe_url=(
+            f"{req.base_url.rstrip('/')}"
+            + (
+                "/openai/deployments?api-version="
+                + (req.api_version or "2024-02-01")
+                if provider == "azure"
+                else "/models" if provider != "ollama" else "/api/tags"
+            )
+        ),
+    )

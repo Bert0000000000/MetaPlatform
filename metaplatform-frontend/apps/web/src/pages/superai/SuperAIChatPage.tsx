@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Card, Input, Button, List, Empty, Tag, Space, Select, message, Row, Col, Statistic } from 'antd';
+import { Card, Input, Button, Empty, Tag, Space, Select, message, Row, Col, Statistic } from 'antd';
 import { SendOutlined, ThunderboltOutlined, useApiErrorBoundary } from '@mate/shared';
 import {
   InteractionProvider, useInteractionContext, toInteractionContextJson,
@@ -88,42 +88,45 @@ function SuperAIInner() {
           </Row>
         )}
 
-        <List
-          style={{ minHeight: 400, maxHeight: 600, overflowY: 'auto', border: '1px solid #f0f0f0', padding: 12, borderRadius: 6 }}
-          dataSource={messages}
-          renderItem={(msg, i) => (
-            <List.Item key={i} style={{ border: 'none', padding: '6px 0' }}>
-              {msg.role === 'user' ? (
-                <div style={{ background: '#1677ff', color: 'white', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
-                  {msg.content}
-                </div>
-              ) : (
-                <div style={{ maxWidth: '95%' }}>
-                  {msg.subAgents && msg.subAgents.length > 0 && (
-                    <Space wrap style={{ marginBottom: 8 }}>
-                      {msg.subAgents.map((sa: any, k: number) => (
-                        <Tag color="purple" key={k}>Sub-Agent: {sa.name ?? sa.agentId ?? `#${k}`}</Tag>
-                      ))}
-                    </Space>
-                  )}
-                  {msg.content && (
-                    <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, marginBottom: 8 }}>{msg.content}</div>
-                  )}
-                  {msg.claims?.map((c: any, k: number) => <ClaimRenderer key={k} claim={c} />)}
-                  {(msg.evidences ?? []).length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <strong>证据：</strong>
-                      <div style={{ marginTop: 4 }}>
-                        {(msg.evidences ?? []).map((e: any, k: number) => <EvidenceRenderer key={k} evidence={e} />)}
-                      </div>
+        <div style={{ minHeight: 400, maxHeight: 600, overflowY: 'auto', border: '1px solid #f0f0f0', padding: 12, borderRadius: 6 }}>
+          {messages.length === 0 ? (
+            <Empty description="输入问题开始对话" />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {messages.map((msg, i) => (
+                <div key={i} style={{ border: 'none', padding: '6px 0' }}>
+                  {msg.role === 'user' ? (
+                    <div style={{ background: '#1677ff', color: 'white', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
+                      {msg.content}
+                    </div>
+                  ) : (
+                    <div style={{ maxWidth: '95%' }}>
+                      {msg.subAgents && msg.subAgents.length > 0 && (
+                        <Space wrap style={{ marginBottom: 8 }}>
+                          {msg.subAgents.map((sa: any, k: number) => (
+                            <Tag color="purple" key={k}>Sub-Agent: {sa.name ?? sa.agentId ?? `#${k}`}</Tag>
+                          ))}
+                        </Space>
+                      )}
+                      {msg.content && (
+                        <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, marginBottom: 8 }}>{msg.content}</div>
+                      )}
+                      {msg.claims?.map((c: any, k: number) => <ClaimRenderer key={k} claim={c} />)}
+                      {(msg.evidences ?? []).length > 0 && (
+                        <div style={{ marginTop: 8 }}>
+                          <strong>证据：</strong>
+                          <div style={{ marginTop: 4 }}>
+                            {(msg.evidences ?? []).map((e: any, k: number) => <EvidenceRenderer key={k} evidence={e} />)}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </List.Item>
+              ))}
+            </div>
           )}
-          locale={{ emptyText: <Empty description="输入问题开始对话" /> }}
-        />
+        </div>
 
         <Input.Group compact style={{ marginTop: 12 }}>
           <Input

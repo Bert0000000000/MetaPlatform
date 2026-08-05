@@ -1,4 +1,4 @@
-import { Card, Empty, Progress, Space, Tag, Typography } from 'antd';
+﻿import { Card, Empty, Progress, Space, Tag, Typography } from 'antd';
 import type { CollaborationTask } from '@/api/dw/collaborations';
 
 interface ParallelProgressProps {
@@ -19,10 +19,10 @@ export default function ParallelProgress({ task }: ParallelProgressProps) {
 
   return (
     <Card title="并行子任务进度">
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         {task.subtasks.map((st) => (
           <Card key={st.id} type="inner" size="small" title={st.title}>
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <Space>
                 <Tag color="blue">{st.employeeId}</Tag>
                 <Tag color={STATUS_COLOR[st.status]}>{st.status}</Tag>

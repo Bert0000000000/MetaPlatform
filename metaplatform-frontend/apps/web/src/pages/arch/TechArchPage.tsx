@@ -17,7 +17,7 @@ export default function TechArchPage() {
 
   const load = async () => {
     const [s, i] = await Promise.all([listTechStacks(), listInfrastructure()]);
-    setStacks(s); setInfra(i);
+    setStacks(Array.isArray(s) ? s : ((s as { items?: TechStack[] }).items ?? [])); setInfra(Array.isArray(i) ? i : ((i as { items?: Infrastructure[] }).items ?? []));
   };
 
   useEffect(() => { load(); }, []);
@@ -44,13 +44,13 @@ export default function TechArchPage() {
         { key: 'stacks', label: '技术栈', children: (
           <div>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setStackModalOpen(true)} style={{ marginBottom: 16 }}>新增技术栈</Button>
-            <Table rowKey="id" columns={stackColumns} dataSource={stacks} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+            <Table rowKey="id" columns={stackColumns} dataSource={stacks ?? []} size="small" pagination={false} scroll={{ x: 'max-content' }} />
           </div>
         )},
         { key: 'infra', label: '基础设施', children: (
           <div>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setInfraModalOpen(true)} style={{ marginBottom: 16 }}>新增基础设施</Button>
-            <Table rowKey="id" columns={infraColumns} dataSource={infra} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+            <Table rowKey="id" columns={infraColumns} dataSource={infra ?? []} size="small" pagination={false} scroll={{ x: 'max-content' }} />
           </div>
         )},
       ]} />

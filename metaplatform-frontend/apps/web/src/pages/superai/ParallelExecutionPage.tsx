@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Card, Empty, Progress, Space, Tag, Typography } from 'antd';
 
 interface SubStep {
@@ -47,10 +47,10 @@ export default function ParallelExecutionPage() {
         {steps.length === 0 ? (
           <Empty />
         ) : (
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
             {steps.map((s) => (
               <Card key={s.id} type="inner" title={s.name}>
-                <Space direction="vertical" style={{ width: '100%' }}>
+                <Space orientation="vertical" style={{ width: '100%' }}>
                   <Space>
                     <Tag color={COLOR[s.status]}>{s.status}</Tag>
                     {s.duration && <Tag>耗时 {s.duration}s</Tag>}

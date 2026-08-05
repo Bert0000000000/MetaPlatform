@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dw', '/v1') });
+const client = createApiClient({ baseURL: '/api' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 
@@ -33,7 +33,7 @@ export interface TraceDetail {
 }
 
 // TODO: /v1/obs was not in the original DW mapping table; remapped to /v1/dw/traces
-const BASE = '/v1/dw/traces';
+const BASE = '/dw/traces';
 
 export async function getTraceDetail(traceId: string): Promise<TraceDetail> {
   return get<TraceDetail>(`${BASE}/${traceId}`);

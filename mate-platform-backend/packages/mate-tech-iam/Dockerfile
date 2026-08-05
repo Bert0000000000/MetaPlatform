@@ -24,6 +24,8 @@ RUN uv pip install --python .venv/bin/python structlog aiosqlite redis pydantic-
 
 RUN mkdir -p /app/.venv/lib/python3.12/site-packages
 RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-tech-iam/src/mate_tech_iam "$SITE/"
+RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-tech-dw/src/mate_tech_dw "$SITE/"
+RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-tech-db/src/mate_tech_db "$SITE/"
 RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-common/src/mate_common "$SITE/"
 RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-platform/src/mate_platform "$SITE/"
 

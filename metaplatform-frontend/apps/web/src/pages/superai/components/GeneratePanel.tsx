@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 import {
   Button,
   Input,
@@ -219,7 +219,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
     if (!reviewResult) return null;
     return (
       <Card size="small" title="代码审查报告">
-        <Space direction="vertical" style={{ width: '100%' }} size="small">
+        <Space orientation="vertical" style={{ width: '100%' }} size="small">
           <Alert
             type={reviewResult.overallScore >= 80 ? 'success' : reviewResult.overallScore >= 50 ? 'warning' : 'error'}
             message={`综合评分：${reviewResult.overallScore}/100`}
@@ -324,7 +324,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
 
   return (
     <Card size="small" style={{ marginBottom: 8 }}>
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <Segmented
           value={mode}
           onChange={(v) => setMode(v as GenMode)}

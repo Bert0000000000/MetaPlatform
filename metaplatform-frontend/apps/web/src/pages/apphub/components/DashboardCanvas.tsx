@@ -75,7 +75,7 @@ export function useDataSource(binding: DataSourceBinding | undefined): DataSourc
             result = await get<unknown[]>(`/v1/ont/concepts/${sourceId}/entities`);
             break;
           case 'rag':
-            result = await post<unknown[]>('/v1/rag/search', { query, ...binding.filter });
+            result = await post<unknown[]>('/rag/search', { query, ...binding.filter });
             break;
           case 'data':
             result = await post<unknown[]>(

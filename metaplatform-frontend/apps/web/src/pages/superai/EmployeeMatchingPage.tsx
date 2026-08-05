@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Card, Empty, Input, Progress, Space, Table, Typography, Button } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ThunderboltOutlined } from '@ant-design/icons';
@@ -26,7 +26,7 @@ export default function EmployeeMatchingPage() {
       title: '置信度',
       dataIndex: 'confidence',
       render: (v) => (
-        <Space direction="vertical" size={0} style={{ width: 200 }}>
+        <Space orientation="vertical" size={0} style={{ width: 200 }}>
           <Progress percent={Math.round(v * 100)} size="small" />
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {(v * 100).toFixed(1)}%

@@ -31,7 +31,7 @@ export default function TechComponentPage() {
   const load = async () => {
     setLoading(true);
     const data = await listTechnologyComponents(filteredType === 'all' ? undefined : filteredType);
-    setComponents(data);
+    setComponents(Array.isArray(data) ? data : ((data as { items?: TechnologyComponent[] }).items ?? []));
     setLoading(false);
   };
 
@@ -97,7 +97,7 @@ export default function TechComponentPage() {
             options={[{ value: 'all', label: '全部分类' }, ...COMPONENT_TYPES.map((t) => ({ value: t.value, label: t.label }))]}
           />
         </Space>
-        <Table rowKey="id" columns={columns} dataSource={components} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+        <Table rowKey="id" columns={columns} dataSource={components ?? []} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
       </Card>
 
       <Modal title={editing ? '编辑技术组件' : '新增技术组件'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }}>

@@ -1,4 +1,4 @@
-﻿"""Mate Platform - API Gateway entry.
+"""Mate Platform - API Gateway entry.
 
 L7 路由: path 前缀匹配 -> 上游服务
 聚合: 多服务结果组合 (后续可加)
@@ -30,6 +30,9 @@ SERVICES: dict[str, str] = {
     "iam":    os.getenv("IAM_URL",    "http://mate-auth-service:8101"),
     "iam-admin": os.getenv("IAM_ADMIN_URL", "http://mate-tech-iam:8102"),
     "obs":     os.getenv("OBS_URL",     "http://mate-tech-obs:8083"),
+    "copilot": os.getenv("COPILOT_URL", "http://mate-app-copilot:8601"),
+    "arch":    os.getenv("ARCH_URL",    "http://mate-app-arch:8321"),
+    "dw":      os.getenv("DW_URL",      "http://mate-tech-dw:8021"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -41,12 +44,18 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/rag/",  "rag"),
     ("/api/v1/agent/", "agent"),
     ("/api/v1/llm/",  "llmgw"),
+    ("/api/v1/llmgw/", "llmgw"),
     ("/api/v1/kb/",   "app-kb"),
     ("/api/v1/ont/",  "ont"),
     ("/api/v1/mcp/",  "mcp"),
+    ("/api/v1/dw/",   "dw"),        # DW (digital workforce) routes served by mate-tech-dw
+    ("/api/v1/dashboard/", "iam-admin"),
     ("/api/v1/admin/operations/", "obs"),
     ("/api/v1/admin/", "iam-admin"),
     ("/api/v1/iam/",  "iam-admin"),  # TECH-IAM owns all /api/v1/iam/* (login, sso, users, roles...)
+    ("/api/v1/copilot/", "copilot"),
+    ("/api/v1/superai/", "copilot"),
+    ("/api/v1/arch/", "arch"),
 ]
 
 

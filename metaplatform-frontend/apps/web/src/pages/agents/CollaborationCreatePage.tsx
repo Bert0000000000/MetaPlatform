@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -62,7 +62,7 @@ export default function CollaborationCreatePage() {
         splitStrategy: values.splitStrategy,
       });
       message.success('协作任务已创建，系统已根据员工能力自动分工');
-      navigate(`/dw/collaborations/${created.collaborationId}`);
+      navigate(`/agents/collab/${created.collaborationId}`);
     } finally {
       setSubmitting(false);
     }
@@ -144,7 +144,7 @@ export default function CollaborationCreatePage() {
               optionRender={(option) => {
                 const emp = employees.find((e) => e.employeeId === option.value);
                 return (
-                  <Space direction="vertical" size={0}>
+                  <Space orientation="vertical" size={0}>
                     <Typography.Text strong>{option.label}</Typography.Text>
                     {emp?.capability?.tools && emp.capability.tools.length > 0 && (
                       <Space size={4} wrap>

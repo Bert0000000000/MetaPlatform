@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Button, Card, Input, Modal, Space, Tag, Typography, message } from 'antd';
 import { RobotOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { generateForm } from '@/api/apphub/generate';
@@ -55,7 +55,7 @@ export default function AIGenerateButton({
         okButtonProps={{ disabled: !result }}
         width={680}
       >
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Input.TextArea
             rows={3}
             placeholder={promptPlaceholder}

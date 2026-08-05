@@ -1,4 +1,4 @@
-import { Card, Empty, Space, Tag, Timeline, Typography } from 'antd';
+﻿import { Card, Empty, Space, Tag, Timeline, Typography } from 'antd';
 import type { ReactNode } from 'react';
 import ReplayPlayer from './ReplayPlayer';
 import type { ConversationRecord } from '@/api/dw/evaluations';
@@ -35,7 +35,7 @@ export default function ReplayPanel(props: ReplayPanelProps) {
             color: m.role === 'user' ? 'blue' : m.role === 'assistant' ? 'green' : 'purple',
             children: (
               <div>
-                <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                <Space orientation="vertical" size={0} style={{ width: '100%' }}>
                   <Typography.Text strong>
                     {ICON[m.role] ?? null} {m.role}
                     <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>

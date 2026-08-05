@@ -85,7 +85,7 @@ export default function AppLayout() {
         placement="left"
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        width={240}
+        size={240}
         styles={{ body: { padding: 0 } }}
       >
         {menu}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -208,7 +208,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
 
   return (
     <Card title={`执行回放 - ${trace.traceId}`}>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Space style={{ width: '100%', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <Space>
             <Button
@@ -287,7 +287,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
           </Card>
 
           <Card type="inner" size="small" title={`当前步骤：${step.title}`}>
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <Space>
                 <Tag color={colorMap[step.type]}>
                   {step.type === 'llm' ? 'AI 调用' : step.type === 'tool' ? '工具调用' : '系统调用'}

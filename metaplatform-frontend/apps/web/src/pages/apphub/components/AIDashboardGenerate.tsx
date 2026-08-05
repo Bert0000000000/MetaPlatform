@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Button, Card, Empty, Input, Space, Tag, Typography, message, Spin } from 'antd';
 import { ThunderboltOutlined, BarChartOutlined } from '@ant-design/icons';
 import { generateDashboard } from '@/api/apphub/generate';
@@ -51,7 +51,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
 
   return (
     <div>
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Typography.Title level={5}>
           <BarChartOutlined /> AI 仪表盘生成
         </Typography.Title>

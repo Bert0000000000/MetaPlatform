@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 import {
   Button,
   Input,
@@ -116,7 +116,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
   const renderAuditResult = () => {
     if (!auditResult) return <Typography.Text type="secondary">点击"安全检查"执行 SQL 安全校验</Typography.Text>;
     return (
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Alert
           type={auditResult.level === 'safe' ? 'success' : auditResult.level === 'warning' ? 'warning' : 'error'}
           message={auditResult.level === 'safe' ? 'SQL 安全检查通过' : auditResult.level === 'warning' ? '存在安全警告' : '存在严重安全风险'}
@@ -227,7 +227,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
 
   return (
     <Card size="small" style={{ marginBottom: 8 }}>
-      <Space direction="vertical" style={{ width: '100%' }} size="small">
+      <Space orientation="vertical" style={{ width: '100%' }} size="small">
         <TextArea
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -251,7 +251,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
                   key: 'sql',
                   label: 'SQL 语句',
                   children: (
-                    <Space direction="vertical" style={{ width: '100%' }} size="small">
+                    <Space orientation="vertical" style={{ width: '100%' }} size="small">
                       {sqlResult.explanation && (
                         <Typography.Text type="secondary">{sqlResult.explanation}</Typography.Text>
                       )}
@@ -303,7 +303,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
                   key: 'result',
                   label: '查询结果',
                   children: execResult ? (
-                    <Space direction="vertical" style={{ width: '100%' }} size="small">
+                    <Space orientation="vertical" style={{ width: '100%' }} size="small">
                       <Space>
                         <Tag color="blue">{execResult.rowCount} 行</Tag>
                         <Tag>{execResult.executionTime}ms</Tag>

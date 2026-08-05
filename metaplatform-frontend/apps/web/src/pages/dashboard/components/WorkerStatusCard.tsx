@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, List, Tag, Typography, Space, Empty, Button, Statistic, Row, Col } from 'antd';
+import { Card, Tag, Typography, Space, Empty, Button, Statistic, Row, Col } from 'antd';
 import { ArrowRightOutlined, RobotOutlined } from '@ant-design/icons';
 import { getEmployeeStatus } from '@/api/dashboard/employees';
 import type { WorkerStatus } from '@/api/dashboard/types';
@@ -49,34 +49,46 @@ export default function WorkerStatusCard() {
       {workers.length === 0 ? (
         <Empty description="暂无数字员工" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
-        <List
-          dataSource={workers.slice(0, 5)}
-          renderItem={(w) => (
-            <List.Item
-              actions={[
-                <Tag key="status" color={w.status === 'ACTIVE' ? 'green' : 'default'}>
-                  {w.status === 'ACTIVE' ? '在线' : '离线'}
-                </Tag>,
-              ]}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {workers.slice(0, 5).map((w) => (
+            <div
+              key={w.code ?? w.name}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '8px 0',
+                borderBottom: '1px solid #f0f0f0',
+              }}
             >
-              <List.Item.Meta
-                avatar={<RobotOutlined style={{ fontSize: 24, color: w.status === 'ACTIVE' ? '#52c41a' : '#999' }} />}
-                title={
-                  <Space>
-                    <Typography.Text strong>{w.name}</Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{w.code}</Typography.Text>
-                  </Space>
-                }
-                description={
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    运行中 {w.runningTasks} · 今日完成 {w.completedToday}
-                    {w.lastActiveAt && ` · 最后活跃 ${new Date(w.lastActiveAt).toLocaleString('zh-CN')}`}
-                  </Typography.Text>
-                }
-              />
-            </List.Item>
-          )}
-        />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
+                <div style={{ flexShrink: 0 }}>
+                  <RobotOutlined style={{ fontSize: 24, color: w.status === 'ACTIVE' ? '#52c41a' : '#999' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div>
+                    <Space>
+                      <Typography.Text strong>{w.name}</Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{w.code}</Typography.Text>
+                    </Space>
+                  </div>
+                  <div style={{ color: '#999', fontSize: 12 }}>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      运行中 {w.runningTasks} · 今日完成 {w.completedToday}
+                      {w.lastActiveAt && ` · 最后活跃 ${new Date(w.lastActiveAt).toLocaleString('zh-CN')}`}
+                    </Typography.Text>
+                  </div>
+                </div>
+              </div>
+              <div style={{ flexShrink: 0 }}>
+                <Tag color={w.status === 'ACTIVE' ? 'green' : 'default'}>
+                  {w.status === 'ACTIVE' ? '在线' : '离线'}
+                </Tag>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </Card>
   );

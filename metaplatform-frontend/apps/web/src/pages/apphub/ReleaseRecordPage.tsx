@@ -263,7 +263,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
         ) : activeTasks.length === 0 ? (
           <Empty description="暂无待处理审批任务" />
         ) : (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             {activeTasks.map((task) => (
               <TaskApprovalCard
                 key={task.id}
@@ -393,7 +393,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
             <Tag>{selectedRelease?.version}</Tag>
           </Space>
         }
-        width={720}
+        size={720}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
       >

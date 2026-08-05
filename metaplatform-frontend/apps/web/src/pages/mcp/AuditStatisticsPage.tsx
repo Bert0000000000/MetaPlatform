@@ -379,7 +379,7 @@ export default function AuditStatisticsPage() {
       title: '工具',
       key: 'tool',
       render: (_, l) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <AuditOutlined /> {l.toolName}
           </Typography.Text>
@@ -406,7 +406,7 @@ export default function AuditStatisticsPage() {
       title: 'Token',
       key: 'tokens',
       render: (_, l) => (
-        <Space direction="vertical" size={0} style={{ fontSize: 12 }}>
+        <Space orientation="vertical" size={0} style={{ fontSize: 12 }}>
           <span>输入：{l.inputTokens || 0}</span>
           <span>输出：{l.outputTokens || 0}</span>
           <Typography.Text strong>总计：{l.totalTokens || 0}</Typography.Text>
@@ -534,7 +534,7 @@ export default function AuditStatisticsPage() {
   );
 
   const renderTrendsTab = () => (
-    <Space direction="vertical" style={{ width: '100%' }} size="large">
+    <Space orientation="vertical" style={{ width: '100%' }} size="large">
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <Card title="调用量 / 错误数趋势" size="small" loading={loadingTrends}>
@@ -829,7 +829,7 @@ export default function AuditStatisticsPage() {
 
       <Drawer
         title="调用详情"
-        width={720}
+        size={720}
         open={drawerOpen}
         onClose={closeDrawer}
         extra={
@@ -839,7 +839,7 @@ export default function AuditStatisticsPage() {
         }
       >
         {selectedLog && (
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <Space orientation="vertical" style={{ width: '100%' }} size="large">
             <Card title="基本信息" size="small">
               <Row gutter={[16, 8]}>
                 <Col span={12}>工具：{selectedLog.toolName}</Col>
@@ -873,7 +873,7 @@ export default function AuditStatisticsPage() {
                   items={traceLogs.map((l) => ({
                     label: formatTime(l.timestamp || ''),
                     children: (
-                      <Space direction="vertical" size={0}>
+                      <Space orientation="vertical" size={0}>
                         <Typography.Text strong>
                           {l.toolName || '调用节点'}
                         </Typography.Text>

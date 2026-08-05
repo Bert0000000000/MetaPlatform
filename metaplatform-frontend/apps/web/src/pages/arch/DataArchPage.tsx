@@ -17,8 +17,8 @@ export default function DataArchPage() {
 
   const load = async () => {
     const [d, e] = await Promise.all([listDomains(), listEntities()]);
-    setDomains(d);
-    setEntities(e);
+    setDomains(Array.isArray(d) ? d : ((d as { items?: DataDomain[] }).items ?? []));
+    setEntities(Array.isArray(e) ? e : ((e as { items?: DataEntity[] }).items ?? []));
   };
 
   useEffect(() => { load(); }, []);
@@ -83,16 +83,16 @@ export default function DataArchPage() {
         { key: 'domains', label: '数据域', children: (
           <div>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setDomainModalOpen(true)} style={{ marginBottom: 16 }}>新建数据域</Button>
-            <Table rowKey="id" columns={domainColumns} dataSource={domains} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+            <Table rowKey="id" columns={domainColumns} dataSource={domains ?? []} size="small" pagination={false} scroll={{ x: 'max-content' }} />
           </div>
         )},
         { key: 'entities', label: '数据实体', children: (
           <div>
             <Space style={{ marginBottom: 16 }}>
               <Button type="primary" icon={<PlusOutlined />} onClick={() => setEntityModalOpen(true)}>新建实体</Button>
-              <Select placeholder="筛选数据域" allowClear style={{ width: 200 }} value={selectedDomain} onChange={(v) => { setSelectedDomain(v); listEntities(v).then(setEntities); }} options={domains.map((d) => ({ label: d.name, value: d.id }))} />
+              <Select placeholder="筛选数据域" allowClear style={{ width: 200 }} value={selectedDomain} onChange={(v) => { setSelectedDomain(v); listEntities(v).then((data) => setEntities(Array.isArray(data) ? data : ((data as { items?: DataEntity[] }).items ?? []))); }} options={domains.map((d) => ({ label: d.name, value: d.id }))} />
             </Space>
-            <Table rowKey="id" columns={entityColumns} dataSource={entities} size="small" pagination={false} scroll={{ x: 'max-content' }} />
+            <Table rowKey="id" columns={entityColumns} dataSource={entities ?? []} size="small" pagination={false} scroll={{ x: 'max-content' }} />
           </div>
         )},
       ]} />

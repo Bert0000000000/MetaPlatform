@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
@@ -217,7 +217,7 @@ export default function DataAnalysisPage() {
     <div style={{ height: '100%', display: 'flex', gap: 16 }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Card size="small">
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
             <Row gutter={16} align="middle">
               <Col flex="auto">
                 <Space>

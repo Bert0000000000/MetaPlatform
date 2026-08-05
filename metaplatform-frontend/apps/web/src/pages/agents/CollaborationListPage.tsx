@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -60,7 +60,7 @@ export default function CollaborationListPage() {
       title: '协作任务',
       key: 'title',
       render: (_, t) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>{t.title}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t.goal}
@@ -97,7 +97,7 @@ export default function CollaborationListPage() {
         <Button
           type="link"
           icon={<EyeOutlined />}
-          onClick={() => navigate(`/dw/collaborations/${t.collaborationId}`)}
+          onClick={() => navigate(`/agents/collab/${t.collaborationId}`)}
         >
           监控
         </Button>

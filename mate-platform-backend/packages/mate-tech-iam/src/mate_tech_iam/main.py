@@ -112,6 +112,15 @@ app.include_router(logs_router)
 app.include_router(configs_router)
 app.include_router(dashboard_router)
 
+# DW (digital workforce) router - mounted here so api-gateway can proxy /api/v1/dw/* to this service.
+# In dev mode, dev_server.py mounts it separately; in Docker, we mount it here to avoid a separate container.
+try:
+    from mate_tech_dw.api import router as dw_router
+    app.include_router(dw_router)
+    logger.info("Mounted dw router (%d routes)", len(dw_router.routes))
+except Exception as e:
+    logger.warning("Failed to mount dw router: %s", e)
+
 
 # Portal compatibility shim: portal admin pages call /api/v1/iam/users, /api/v1/iam/orgs, etc.
 # (matching the old auth-service prefix). mate-tech-iam registers these at /api/v1/admin/*.

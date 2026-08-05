@@ -21,6 +21,7 @@ class ConfigCategory(StrEnum):
     RATE_LIMIT = "RATE_LIMIT"
     SECURITY = "SECURITY"
     BRANDING = "BRANDING"
+    AI_PROVIDER = "AI_PROVIDER"
     OTHER = "OTHER"
 
 

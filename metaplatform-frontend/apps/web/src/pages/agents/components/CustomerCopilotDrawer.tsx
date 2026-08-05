@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
-import { Drawer, Input, Button, List, Empty, Spin, Tag, Space, message } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Drawer, Input, Button, Empty, Spin, Tag, Space, message } from 'antd';
 import { SendOutlined, RobotOutlined } from '@mate/shared';
 import {
   InteractionProvider, useInteractionContext, toInteractionContextJson,
@@ -72,39 +72,42 @@ function CustomerCopilotInner({ customerId, customerName }: { customerId: string
         </Space>
       </div>
 
-      <List
-        style={{ flex: 1, overflowY: 'auto' }}
-        dataSource={messages}
-        renderItem={(msg, idx) => (
-          <List.Item key={idx} style={{ border: 'none', padding: '8px 0' }}>
-            {msg.role === 'user' ? (
-              <div style={{ background: '#1677ff', color: 'white', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
-                {msg.content}
-              </div>
-            ) : (
-              <div style={{ maxWidth: '90%' }}>
-                {msg.content && (
-                  <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, marginBottom: 8 }}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {messages.length === 0 ? (
+          <Empty description="开始提问，让 AI 帮你分析当前客户" />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {messages.map((msg, idx) => (
+              <div key={idx} style={{ border: 'none', padding: '8px 0' }}>
+                {msg.role === 'user' ? (
+                  <div style={{ background: '#1677ff', color: 'white', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
                     {msg.content}
                   </div>
-                )}
-                {msg.claims?.map((c: any, i: number) => <ClaimRenderer key={i} claim={c} />)}
-                {(msg.evidences ?? []).length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <strong>证据：</strong>
-                    <div style={{ marginTop: 4 }}>
-                      {(msg.evidences ?? []).map((e: any, i: number) => (
-                        <EvidenceRenderer key={i} evidence={e} />
-                      ))}
-                    </div>
+                ) : (
+                  <div style={{ maxWidth: '90%' }}>
+                    {msg.content && (
+                      <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, marginBottom: 8 }}>
+                        {msg.content}
+                      </div>
+                    )}
+                    {msg.claims?.map((c: any, i: number) => <ClaimRenderer key={i} claim={c} />)}
+                    {(msg.evidences ?? []).length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <strong>证据：</strong>
+                        <div style={{ marginTop: 4 }}>
+                          {(msg.evidences ?? []).map((e: any, i: number) => (
+                            <EvidenceRenderer key={i} evidence={e} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </List.Item>
+            ))}
+          </div>
         )}
-        locale={{ emptyText: <Empty description="开始提问，让 AI 帮你分析当前客户" /> }}
-      />
+      </div>
 
       <Input.Group compact style={{ marginTop: 8 }}>
         <Input
@@ -136,7 +139,7 @@ export function CustomerCopilotDrawer(props: CustomerCopilotDrawerProps) {
       title="SuperAI 客户分析"
       open={props.open}
       onClose={props.onClose}
-      width={560}
+      size={560}
       destroyOnClose
     >
       <InteractionProvider appCode="dw" pageCode="customer-detail">

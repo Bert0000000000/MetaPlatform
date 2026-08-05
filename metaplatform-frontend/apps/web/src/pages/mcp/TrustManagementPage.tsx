@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -137,7 +137,7 @@ export default function TrustManagementPage() {
       title: '信任关系',
       key: 'agent',
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space orientation="vertical" size={0}>
           <Typography.Text strong>
             <SafetyOutlined /> {record.agentName || record.agentId}
           </Typography.Text>

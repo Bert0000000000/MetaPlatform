@@ -66,7 +66,7 @@ export default function ApplicationManagementPage() {
     { title: '编码', dataIndex: 'code', key: 'code' },
     { title: '技术栈', dataIndex: 'technologyStack', key: 'technologyStack' },
     { title: '负责人', dataIndex: 'owner', key: 'owner' },
-    { title: '关联能力', key: 'caps', render: (_: unknown, r: ArchApplication) => r.capabilityIds.map((id) => <Tag key={id} color="blue">{caps.find((c) => c.capabilityId === id)?.name || id}</Tag>) },
+    { title: '关联能力', key: 'caps', render: (_: unknown, r: ArchApplication) => (r.capabilityIds ?? []).map((id) => <Tag key={id} color="blue">{caps.find((c) => c.capabilityId === id)?.name || id}</Tag>) },
     { title: '状态', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={STATUS_TAG[s]?.color}>{STATUS_TAG[s]?.label}</Tag> },
     {
       title: '操作', key: 'action',
@@ -87,7 +87,7 @@ export default function ApplicationManagementPage() {
         extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>注册应用</Button>}
         bodyPadding={0}
       >
-        <Table rowKey="appId" columns={columns} dataSource={apps} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
+        <Table rowKey="appId" columns={columns} dataSource={apps ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
       </SectionCard>
       <SectionCard title="依赖拓扑图" style={{ marginTop: 16 }}>
         {apps.length > 0 ? <DependencyGraph applications={apps} /> : <Typography.Text type="secondary">暂无应用数据</Typography.Text>}

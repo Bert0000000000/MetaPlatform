@@ -5,3 +5,4 @@ export * from "./orgs";
 export * from "./logs";
 export * from "./configs";
 export * from "./operations";
+export * from "./analytics";
