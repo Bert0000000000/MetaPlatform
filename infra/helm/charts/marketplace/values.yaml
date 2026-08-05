@@ -1,0 +1,39 @@
+# Default values for marketplace chart.
+# 实际部署通过 values-local.yaml / values-staging.yaml / values-production.yaml 覆盖。
+
+image:
+  registry: docker.io
+  repository: mate/marketplace
+  tag: latest
+  pullPolicy: IfNotPresent
+
+saas:
+  # 公有 SaaS marketplace HTTP API(控制面)
+  baseUrl: https://market.example
+  # OCI Distribution Spec v2 数据面
+  registry: registry.example.com
+  # 允许的 Egress CIDR(NetworkPolicy 中白名单)
+  allowedEgressCidrs:
+    - 0.0.0.0/0
+
+audit:
+  logFile: /var/log/marketplace/audit.log
+
+worker:
+  replicas: 2
+  resources:
+    limits: { cpu: "1", memory: 1Gi }
+    requests: { cpu: 200m, memory: 256Mi }
+
+api:
+  replicas: 1
+  resources:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 128Mi }
+
+secrets:
+  # 由 SealedSecret / ExternalSecret 注入,chart 仅声明引用
+  marketplaceLicenseKey: ""
+
+networkPolicy:
+  enabled: true

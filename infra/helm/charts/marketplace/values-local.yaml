@@ -1,0 +1,12 @@
+# Local dev overrides
+saas:
+  baseUrl: http://localhost:8088
+  registry: localhost:5000
+  allowedEgressCidrs:
+    - 0.0.0.0/0
+
+worker:
+  replicas: 1
+
+api:
+  replicas: 1

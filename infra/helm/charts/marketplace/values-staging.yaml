@@ -1,0 +1,12 @@
+# Staging overrides
+saas:
+  baseUrl: https://market.staging.example
+  registry: registry.staging.example.com
+  allowedEgressCidrs:
+    - 10.10.0.0/16
+
+worker:
+  replicas: 2
+
+api:
+  replicas: 2

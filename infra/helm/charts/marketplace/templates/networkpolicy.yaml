@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "marketplace.fullname" . }}
+  labels:
+    {{- include "marketplace.selectorLabels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "marketplace.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  # 默认隐式 deny;只放行 api-gateway 的入站 + 白名单 SaaS 的出站
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # 1. SaaS 控制面 + 数据面(由 values.allowedEgressCidrs 注入)
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.saas.allowedEgressCidrs | quote }}
+      ports:
+        - protocol: TCP
+          port: 443
+    # 2. 内部依赖:postgres + redis
+    - to:
+        - namespaceSelector: {}
+          podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+    # 3. DNS(由 kube-dns 提供)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

@@ -1,0 +1,21 @@
+apiVersion: v2
+name: marketplace
+description: |
+  Mate Platform Cloud Marketplace Consumer — API + Worker 双 deployment。
+  拉 SaaS marketplace HTTP API + OCI Distribution Spec v2 数据面,
+  把 MCP / Agent / Ontology 三类资产 install 到本地 mate-tech-* 服务。
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - marketplace
+  - consumer
+  - oci
+  - mcp
+  - agent
+  - ontology
+
+maintainers:
+  - name: MetaPlatform Marketplace Owner
+    email: marketplace@metaplatform.local
