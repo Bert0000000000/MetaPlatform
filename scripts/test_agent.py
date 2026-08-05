@@ -15,9 +15,9 @@ from fastapi.testclient import TestClient
 
 from mate_tech_agent import __version__
 from mate_tech_agent.api.app import create_app
-from mate_tech_agent.tools import set_rag_tool
+from mate_tech_agent.graph import answer_node, build_s1_graph, retrieve_node, should_continue
 from mate_tech_agent.state import AgentState
-from mate_tech_agent.graph import build_s1_graph, retrieve_node, answer_node, should_continue
+from mate_tech_agent.tools import set_rag_tool
 
 
 class FakeRAGTool:

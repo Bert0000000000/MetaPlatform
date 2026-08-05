@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import yaml
+
 WORKSPACE=Path(__file__).parents[3]
 
 def test_docs_services_are_profile_gated() -> None:

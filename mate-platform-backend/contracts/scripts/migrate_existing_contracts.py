@@ -1,7 +1,9 @@
 from __future__ import annotations
+
+import re
 from copy import deepcopy
 from pathlib import Path
-import re
+
 import yaml
 from openapi_normalize import sanitize_document
 

@@ -10,7 +10,6 @@ import re
 import sys
 from pathlib import Path
 
-
 # Match `httpx.Client(` or `httpx.AsyncClient(` in business code.
 # Tests and client modules themselves are excluded by the caller
 # (the hook is registered with `files:` regex that scopes to src/).

@@ -58,8 +58,7 @@ def _switch_service(svc_dir: Path) -> None:
 # 模块加载时预先切换到 TECH-AGENT，导入 create_token 并缓存为模块级变量。
 # 这样后续 tenant_headers fixture 不依赖 sys.modules 中的 app 包。
 _switch_service(_TECH_AGENT_DIR)
-from app.common.jwt_auth import create_token as _agent_create_token  # type: ignore  # noqa: E402
-
+from app.common.jwt_auth import create_token as _agent_create_token  # type: ignore
 
 # --------------------------------------------------------------- 共享常量
 
@@ -119,31 +118,31 @@ def _build_data_app() -> FastAPI:
     """构建 TECH-DATA FastAPI app（使用内存 registry）。"""
     _switch_service(_TECH_DATA_DIR)
     from app.api.v1.router import router as v1_router  # type: ignore
+    from app.catalog.service import CatalogService  # type: ignore
     from app.common.middleware import (  # type: ignore
         install_exception_handlers,
         install_trace_id_middleware,
     )
+    from app.dbt.repository import InMemoryDbtRepository  # type: ignore
+    from app.dbt.service import DbtService  # type: ignore
+    from app.deliverables.service import DeliverableService  # type: ignore
     from app.deps import Registry  # type: ignore
+    from app.etl.repository import InMemoryEtlTaskRepository  # type: ignore
+    from app.etl.service import EtlTaskService  # type: ignore
+    from app.lakehouse.repository import InMemoryLakehouseRepository  # type: ignore
+    from app.lakehouse.service import LakehouseService  # type: ignore
+    from app.lineage.service import LineageService  # type: ignore
     from app.models.repository import InMemoryDataSourceRepository  # type: ignore
+    from app.monitoring.service import MonitoringService  # type: ignore
+    from app.quality.service import QualityService  # type: ignore
+    from app.search.service import SearchService  # type: ignore
     from app.services.connectors import (  # type: ignore
         MockConnectionTester,
         MockSchemaExplorer,
     )
     from app.services.datasource_service import DataSourceService  # type: ignore
     from app.services.schema_discovery_service import SchemaDiscoveryService  # type: ignore
-    from app.etl.repository import InMemoryEtlTaskRepository  # type: ignore
-    from app.etl.service import EtlTaskService  # type: ignore
-    from app.dbt.repository import InMemoryDbtRepository  # type: ignore
-    from app.dbt.service import DbtService  # type: ignore
-    from app.lakehouse.repository import InMemoryLakehouseRepository  # type: ignore
-    from app.lakehouse.service import LakehouseService  # type: ignore
     from app.warehouse.service import WarehouseService  # type: ignore
-    from app.catalog.service import CatalogService  # type: ignore
-    from app.deliverables.service import DeliverableService  # type: ignore
-    from app.lineage.service import LineageService  # type: ignore
-    from app.quality.service import QualityService  # type: ignore
-    from app.monitoring.service import MonitoringService  # type: ignore
-    from app.search.service import SearchService  # type: ignore
 
     repository = InMemoryDataSourceRepository()
     tester = MockConnectionTester()
@@ -433,7 +432,7 @@ def _build_java_mock_app(
         response = await call_next(request)
         # 透传 trace_id
         trace_id = request.headers.get("X-Trace-Id")
-        if trace_id and "x-trace-id" not in {k.lower() for k in response.headers.keys()}:
+        if trace_id and "x-trace-id" not in {k.lower() for k in response.headers}:
             response.headers["X-Trace-Id"] = trace_id
         return response
 

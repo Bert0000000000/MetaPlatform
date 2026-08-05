@@ -1,4 +1,5 @@
 from pathlib import Path
+
 WORKSPACE=Path(__file__).parents[3]
 CANONICAL=(WORKSPACE/"mate-platform-backend/contracts/openapi").resolve()
 

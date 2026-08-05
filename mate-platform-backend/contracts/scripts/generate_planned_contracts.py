@@ -1,8 +1,12 @@
 from __future__ import annotations
+
+import re
 from copy import deepcopy
 from pathlib import Path
-import re,yaml
+
+import yaml
 from openapi_normalize import sanitize_document
+
 BACKEND=Path(__file__).parents[2]
 WORKSPACE=BACKEND.parent
 SOURCE=WORKSPACE/"docs/legacy/api/openapi-pre-api-gov-01.yaml"

@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import yaml
+
 WORKSPACE=Path(__file__).parents[3]
 
 def test_openapi_workflow_has_required_gates() -> None:

@@ -10,6 +10,7 @@
 import re
 import sys
 from pathlib import Path
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 # All remaining 4 modules

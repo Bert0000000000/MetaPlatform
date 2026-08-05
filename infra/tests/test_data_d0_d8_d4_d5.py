@@ -44,7 +44,8 @@ class TestDataD5CrossTenantAuditModule:
 
     def test_audit_emits_no_op_in_tenant(self) -> None:
         from mate_platform.auth.audit import (
-            InMemoryAuditSink, emit_cross_tenant_data_access,
+            InMemoryAuditSink,
+            emit_cross_tenant_data_access,
         )
         sink = InMemoryAuditSink()
         emit_cross_tenant_data_access(
@@ -55,7 +56,8 @@ class TestDataD5CrossTenantAuditModule:
 
     def test_audit_emits_cross_tenant(self) -> None:
         from mate_platform.auth.audit import (
-            InMemoryAuditSink, emit_cross_tenant_data_access,
+            InMemoryAuditSink,
+            emit_cross_tenant_data_access,
         )
         sink = InMemoryAuditSink()
         emit_cross_tenant_data_access(
@@ -66,7 +68,8 @@ class TestDataD5CrossTenantAuditModule:
 
     def test_audit_has_trace_id(self) -> None:
         from mate_platform.auth.audit import (
-            InMemoryAuditSink, emit_cross_tenant_data_access,
+            InMemoryAuditSink,
+            emit_cross_tenant_data_access,
         )
         sink = InMemoryAuditSink()
         emit_cross_tenant_data_access(

@@ -58,7 +58,7 @@ def test_create_clients_no_op_when_rag_mode_memory():
     """create_clients with RAG_MODE=memory keeps InMemory defaults."""
     import os
     os.environ["RAG_MODE"] = "memory"
-    from mate_tech_rag.api.retrieval import create_clients, get_hybrid, get_graph
+    from mate_tech_rag.api.retrieval import create_clients, get_graph, get_hybrid
     create_clients()
     assert type(get_hybrid()).__name__ == "InMemoryHybridClient"
     assert type(get_graph()).__name__ == "InMemoryGraphRAGClient"

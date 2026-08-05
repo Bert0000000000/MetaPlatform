@@ -95,3 +95,32 @@ testpaths = ["packages"]
 pythonpath = ["packages", "packages/mate-common/src", "packages/mate-kernel/src", "packages/mate-platform/src", "packages/mate-clients/src", "packages/mate-tech-db/src", "packages/mate-tech-iam/src", "packages/mate-tech-agent/src", "packages/mate-tech-llmgw/src", "packages/mate-tech-mcp/src", "packages/mate-tech-msg/src", "packages/mate-tech-obs/src", "packages/mate-tech-ont/src", "packages/mate-tech-rag/src", "packages/mate-app-kb/src", "packages/mate-app-hub/src", "packages/mate-app-arch/src", "packages/mate-app-copilot/src", "packages/mate-app-a2a/src", "packages/mate-tech-dw/src", "packages/mate-app-wfe/src", "packages/mate-tech-data/src", "packages/mate-tech-etl/src", "packages/mate-tech-metrics/src", "packages/mate-tech-scheduler/src", "packages/mate-tech-deep-research/src"]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 norecursedirs = ["src", ".venv", "build", "dist", "node_modules", ".pytest_cache", ".git"]
+
+# Mirror ruff.toml so newer ruff versions (>=0.8) discover the
+# config via pyproject when invoked from the repo root. The canonical
+# config still lives in ruff.toml; this section exists for tooling
+# compatibility only.
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".venv", "node_modules", "dist", "build"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "SIM", "PTH", "ERA", "PL", "RUF", "ASYNC", "S", "TCH"]
+ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+"**/conftest.py" = ["E402", "F401", "PTH118"]
+"tests/architecture/**" = ["S603"]
+"**/clients/*.py" = ["PLR0913"]
+"scripts/**/*.py" = ["T201", "S"]
+"**/tests/architecture/**" = ["S603"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mate_common", "mate_tech_rag", "mate_tech_agent", "mate_tech_llmgw", "mate_tech_msg", "mate_tech_obs", "mate_tech_ont", "mate_tech_mcp", "mate_app_kb", "mate_kernel", "mate_platform", "mate_clients"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

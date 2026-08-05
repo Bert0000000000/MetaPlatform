@@ -1,4 +1,5 @@
 ﻿from pathlib import Path
+
 for p in ['TECH-LLMGW/src/main/resources/application-dev.yml','TECH-RAG/src/main/resources/application-dev.yml','TECH-ONT/src/main/resources/application-dev.yml']:
     text=Path(p).read_text(encoding='utf-8')
     old='      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration\n  ai:'

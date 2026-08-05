@@ -125,15 +125,6 @@ async def test_e2e_09_apphub_marketplace_full_flow(
     assert list_cmt_resp.json()["traceId"] == trace_id
 
     # 8. 验证 Mock 调用顺序符合业务链路定义
-    expected_paths = [
-        f"{APPHUB_BASE}/templates",                              # GET 列表
-        f"{APPHUB_BASE}/templates?keyword=客服",                 # GET keyword 过滤
-        f"{APPHUB_BASE}/templates?category=service",             # GET category 过滤
-        f"{APPHUB_BASE}/templates/{template_id}",                # GET 详情
-        f"{APPHUB_BASE}/templates/{template_id}/install",        # POST 安装
-        f"{APPHUB_BASE}/templates/{template_id}/comments",       # POST 评论
-        f"{APPHUB_BASE}/templates/{template_id}/comments",       # GET 评论列表
-    ]
     # Mock call_log 记录的是 path（不含 query string），所以需要调整断言
     expected_paths_no_query = [
         f"{APPHUB_BASE}/templates",

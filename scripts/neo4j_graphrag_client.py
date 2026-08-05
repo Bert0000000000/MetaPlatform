@@ -83,9 +83,8 @@ class Neo4jGraphRAGClient:
         if not entities:
             return []
         cypher = "UNWIND $ents AS e_name MATCH (e:Entity {name:e_name})-[r:MENTIONED_IN]->(c:Chunk) WITH c, count(DISTINCT e) AS hits, sum(r.freq) AS freq ORDER BY hits DESC, freq DESC LIMIT $limit RETURN c.id AS cid, c.document_id AS did, c.snippet AS snip, hits AS score"
-        with self._lock:
-            with self._driver.session(database=self._database) as sess:
-                records = list(sess.run(cypher, ents=list(entities), limit=max(1, top_k)))
+        with self._lock, self._driver.session(database=self._database) as sess:
+            records = list(sess.run(cypher, ents=list(entities), limit=max(1, top_k)))
         hits = []
         for r in records:
             hits.append(

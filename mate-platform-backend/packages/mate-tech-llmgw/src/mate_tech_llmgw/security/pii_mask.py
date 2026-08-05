@@ -11,12 +11,20 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 # 常见 PII 模式
+#
+# We deliberately avoid \b in the patterns because PII values
+# commonly appear adjacent to CJK characters (e.g. "我的手机是
+# 13800138000"), and \b in Python's re module is an ASCII
+# word-boundary: a CJK character is itself a \w so \b never fires
+# at the transition. Instead we use lookarounds anchored on the
+# non-digit / non-letter boundary so we match the phone number
+# regardless of which script flanks it.
 PII_PATTERNS: dict[str, re.Pattern[str]] = {
-    "phone_cn": re.compile(r"\b1[3-9]\d{9}\b"),
-    "id_card_cn": re.compile(r"\b\d{17}[\dXx]\b"),
-    "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
-    "credit_card": re.compile(r"\b(?:\d[ -]*?){13,19}\b"),
-    "ip_v4": re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"),
+    "phone_cn": re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"),
+    "id_card_cn": re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)"),
+    "email": re.compile(r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![A-Za-z0-9])"),
+    "credit_card": re.compile(r"(?<!\d)(?:\d[ -]*?){13,19}(?!\d)"),
+    "ip_v4": re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)"),
 }
 
 # 默认打码替换

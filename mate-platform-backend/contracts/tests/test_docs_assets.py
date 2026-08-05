@@ -1,4 +1,5 @@
 from pathlib import Path
+
 WORKSPACE=Path(__file__).parents[3]
 
 def test_swagger_and_redoc_share_bundle() -> None:

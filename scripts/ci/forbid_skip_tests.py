@@ -10,7 +10,6 @@ import re
 import sys
 from pathlib import Path
 
-
 PATTERNS = [
     re.compile(r"pytest\.skip\s*\("),
     re.compile(r"@pytest\.mark\.skip"),

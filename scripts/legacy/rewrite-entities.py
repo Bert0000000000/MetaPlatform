@@ -1,7 +1,8 @@
-import subprocess
 import re
+import subprocess
 import sys
 from pathlib import Path
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 def get_tables(db):
@@ -35,7 +36,7 @@ def get_columns(db, table):
 
 def pg_to_java(pg_type, module=None):
     pg_type = pg_type.lower()
-    if "character varying" in pg_type or pg_type == "text" or pg_type == "varchar":
+    if "character varying" in pg_type or pg_type in {"text", "varchar"}:
         return "String"
     if "jsonb" in pg_type or pg_type == "json":
         return "String"
@@ -45,9 +46,9 @@ def pg_to_java(pg_type, module=None):
         return "LocalDate"
     if pg_type == "boolean":
         return "Boolean"
-    if "integer" in pg_type or pg_type == "int" or pg_type == "int4":
+    if "integer" in pg_type or pg_type in {"int", "int4"}:
         return "Integer"
-    if "bigint" in pg_type or pg_type == "int8" or pg_type == "bigserial":
+    if "bigint" in pg_type or pg_type in {"int8", "bigserial"}:
         return "Long"
     if pg_type == "double precision":
         return "Double"
@@ -73,7 +74,7 @@ def to_camel(name):
 
 def jdbc_type_for(pg_type):
     pg_type = pg_type.lower()
-    if "jsonb" in pg_type or pg_type == "json" or pg_type == "text":
+    if "jsonb" in pg_type or pg_type in {"json", "text"}:
         return "LONGVARCHAR"
     if "character varying" in pg_type or pg_type == "varchar":
         return "VARCHAR"
@@ -81,7 +82,7 @@ def jdbc_type_for(pg_type):
 
 def needs_lob(pg_type):
     pg_type = pg_type.lower()
-    return "jsonb" in pg_type or pg_type == "json" or pg_type == "text"
+    return "jsonb" in pg_type or pg_type in {"json", "text"}
 
 MODULES = {
     "TECH-AGENT": "metaplatform_agent",

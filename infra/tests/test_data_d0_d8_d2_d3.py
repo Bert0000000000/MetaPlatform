@@ -6,7 +6,6 @@ D0 chart stubs and turn them on.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]

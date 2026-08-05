@@ -225,7 +225,7 @@ def test_local_tiny_embedder_similar_texts_close() -> None:
     v2 = e.embed("FastAPI Python backend web framework")
     v3 = e.embed("Completely unrelated topic about cooking recipes")
     def cos(a, b):
-        dot = sum(x * y for x, y in zip(a, b))
+        dot = sum(x * y for x, y in zip(a, b, strict=False))
         na = sum(x * x for x in a) ** 0.5
         nb = sum(x * x for x in b) ** 0.5
         return dot / (na * nb) if na and nb else 0.0
@@ -240,6 +240,7 @@ def test_openai_embedder_requires_api_key() -> None:
 
 def test_openai_embedder_calls_api(respx_mock) -> None:
     import respx
+
     from mate_tech_rag.embedder import OpenAIEmbedder
     fake_vector = [0.1] * 1536
     respx_mock.post("https://api.openai.com/v1/embeddings").mock(return_value=respx.MockResponse(200, json={"data": [{"embedding": fake_vector, "index": 0, "object": "embedding"}]}))
