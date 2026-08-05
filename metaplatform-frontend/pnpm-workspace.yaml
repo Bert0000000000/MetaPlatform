@@ -2,9 +2,11 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
-allowBuilds:
-  esbuild: true
-  puppeteer: set this to true or false
+# NOTE: This file used to carry an invalid `allowBuilds:` block (not a
+# pnpm field). pnpm 11 freezes the allow-list into the lockfile, so the
+# actual fix lives in `.github/workflows/ci.yml` (install step) which
+# runs `pnpm install --ignore-scripts` followed by
+# `pnpm rebuild puppeteer esbuild`.
 
 overrides:
   react: ^19.0.0
