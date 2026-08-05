@@ -21,10 +21,11 @@ RUN uv sync --frozen --no-dev
 # Workaround: root pyproject has package=false so uv sync by default does not materialize
 # workspace member runtime deps into the venv. Reinstall DW-specific runtime deps.
 # 不要 install 内部包（mate-platform / mate-clients），这些是 workspace 内部包，下面通过 cp 注入。
-RUN uv pip install --python .venv/bin/python fastapi pydantic httpx uvicorn structlog "pyjwt[crypto]" python-multipart opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc opentelemetry-instrumentation-fastapi
+RUN uv pip install --python .venv/bin/python fastapi pydantic httpx uvicorn structlog "pyjwt[crypto]" python-multipart opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc opentelemetry-instrumentation-fastapi sqlalchemy aiosqlite
 
 RUN SITE=/app/.venv/lib/python3.12/site-packages && \
     cp -r packages/mate-tech-dw/src/mate_tech_dw "$SITE/" && \
+    cp -r packages/mate-tech-db/src/mate_tech_db "$SITE/" && \
     cp -r packages/mate-common/src/mate_common "$SITE/" && \
     cp -r packages/mate-platform/src/mate_platform "$SITE/" && \
     cp -r packages/mate-clients/src/mate_clients "$SITE/"

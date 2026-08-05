@@ -923,9 +923,11 @@ export default function ChatPage() {
     <div
       style={{
         display: 'flex',
-        height: '100%',
+        flex: 1,
+        minHeight: 0,
+        alignSelf: 'stretch',
         background: '#0a0a0a',
-        margin: '0 -24px',
+        width: '100%',
       }}
     >
       {/* 中间 - 会话列表 */}

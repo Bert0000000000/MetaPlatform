@@ -2,9 +2,13 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
-allowBuilds:
-  esbuild: true
-  puppeteer: set this to true or false
+# pnpm 11 reads `onlyBuiltDependencies` (NOT `allowBuilds`) from
+# pnpm-workspace.yaml to decide which packages may run install scripts.
+# `allowBuilds` is silently ignored, leading to
+# [ERR_PNPM_IGNORED_BUILDS] puppeteer@25.4.0 in CI.
+onlyBuiltDependencies:
+  - esbuild
+  - puppeteer
 
 overrides:
   react: ^19.0.0

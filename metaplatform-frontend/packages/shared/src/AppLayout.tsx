@@ -24,7 +24,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <Layout className="v-app-layout" style={{ minHeight: '100vh', background: 'var(--background)' }}>
+    <Layout className="v-app-layout" style={{ height: '100vh', background: 'var(--background)' }}>
       <aside
         className="v-sider"
         style={{
@@ -198,7 +198,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         className="v-main-layout"
         style={{
           marginLeft: SIDEBAR_W,
-          minHeight: '100vh',
+          height: '100vh',
           background: 'var(--background)',
           transition: 'margin-left 0.2s ease',
         }}
@@ -207,9 +207,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
           className="v-content"
           style={{
             padding: '0 24px',
-            minHeight: '100vh',
+            height: '100vh',
             overflow: 'auto',
             background: 'var(--background)',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           {children ?? <Outlet />}
