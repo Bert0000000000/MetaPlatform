@@ -36,7 +36,7 @@
 
 | Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 |
 |---|---|---:|---:|---:|---:|---|
-| **MARKETPLACE-CONSUMER-01** | **In Progress**（PRR 用户需求） | ⏳ | ⏳ | ⏳ | ⏳ | `evidence/MARKETPLACE-CONSUMER-ACCEPTANCE.md`（待生成） |
+| **MARKETPLACE-CONSUMER-01** | **Pending**（35 tests pass；待 3 个 register 子 spec + SEC-TENANT-01 豁免签字 + CI 把 helm/E2E/OTel 跑绿）| ✓ | ✓ | ✓ 35/35 | ⏳ helm/E2E Pending | `evidence/MARKETPLACE-CONSUMER-ACCEPTANCE.md` ✅ |
 
 - **设计稿**：[`docs/superpowers/specs/2026-08-05-marketplace-consumer-design.md`](../specs/2026-08-05-marketplace-consumer-design.md)
 - **实施计划**：[`docs/superpowers/plans/2026-08-05-marketplace-consumer.md`](../plans/2026-08-05-marketplace-consumer.md)
