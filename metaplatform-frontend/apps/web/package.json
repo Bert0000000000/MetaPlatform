@@ -42,6 +42,7 @@
     "@monaco-editor/react": "^4.6.0",
     "antd": "^6.0.0",
     "axios": "^1.18.1",
+    "dayjs": "^1.11.21",
     "lucide-react": "^0.468.0",
     "monaco-editor": "^0.45.0",
     "nanoid": "^6.0.0",

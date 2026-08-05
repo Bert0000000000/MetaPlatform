@@ -9,8 +9,8 @@ interface Props {
 
 function buildNodes(caps: Capability[], parentId?: string, x = 0, y = 0, level = 0): Array<{ id: string; name: string; parentId?: string; level: number }> {
   const result: Array<{ id: string; name: string; parentId?: string; level: number }> = [];
-  const getId = (c: Capability) => c.capabilityId || (c as Record<string, unknown>).id as string || '';
-  const getParent = (c: Capability) => c.parentCapabilityId || (c as Record<string, unknown>).parent_id as string || '';
+  const getId = (c: Capability) => c.capabilityId || (c as unknown as Record<string, unknown>).id as string || '';
+  const getParent = (c: Capability) => c.parentCapabilityId || (c as unknown as Record<string, unknown>).parent_id as string || '';
   const visited = new Set<string>();
 
   const children = caps.filter((c) => getParent(c) === (parentId ?? '') && !visited.has(getId(c)));

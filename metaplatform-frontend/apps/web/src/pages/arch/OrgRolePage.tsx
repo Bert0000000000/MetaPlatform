@@ -8,8 +8,8 @@ import type { OrgUnit, ArchRole, CreateRoleRequest, UpdateRoleRequest } from '@/
 function buildOrgTree(orgs: OrgUnit[]): DataNode[] {
   const safeOrgs = Array.isArray(orgs) ? orgs : [];
   const visited = new Set<string>();
-  const getId = (o: OrgUnit) => o.id || (o as Record<string, unknown>).org_id as string || '';
-  const getParent = (o: OrgUnit) => o.parentId || (o as Record<string, unknown>).parent_id as string || '';
+  const getId = (o: OrgUnit) => o.id || (o as unknown as Record<string, unknown>).org_id as string || '';
+  const getParent = (o: OrgUnit) => o.parentId || (o as unknown as Record<string, unknown>).parent_id as string || '';
   const build = (parentId: string): DataNode[] =>
     safeOrgs.filter((o) => getParent(o) === parentId && !visited.has(getId(o))).map((o) => {
       const id = getId(o);

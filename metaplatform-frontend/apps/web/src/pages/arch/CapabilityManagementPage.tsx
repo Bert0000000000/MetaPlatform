@@ -7,8 +7,16 @@ import CapabilityGraph from './components/CapabilityGraph';
 import type { Capability, CapabilityCreateRequest } from '@/api/arch/types';
 
 function buildTreeData(caps: Capability[]): DataNode[] {
-  const idField = (c: Capability) => c.capabilityId || (c as Record<string, unknown>).capability_id || (c as Record<string, unknown>).id as string || '';
-  const parentField = (c: Capability) => c.parentCapabilityId || (c as Record<string, unknown>).parent_capability_id || (c as Record<string, unknown>).parent_id as string || '';
+  const idField = (c: Capability) =>
+    c.capabilityId ||
+    (c as unknown as Record<string, unknown>).capability_id ||
+    (c as unknown as Record<string, unknown>).id as string ||
+    '';
+  const parentField = (c: Capability) =>
+    c.parentCapabilityId ||
+    (c as unknown as Record<string, unknown>).parent_capability_id ||
+    (c as unknown as Record<string, unknown>).parent_id as string ||
+    '';
   const visited = new Set<string>();
   const build = (parentId: string): DataNode[] =>
     caps
@@ -52,7 +60,9 @@ export default function CapabilityManagementPage() {
         getCapabilityTree().catch(() => []),
       ]);
       const listItems = Array.isArray(listRes) ? listRes : (listRes?.items ?? []);
-      const treeItems = Array.isArray(treeRes) ? treeRes : ((treeRes as Record<string, unknown>)?.tree as Capability[] ?? []);
+      const treeItems = Array.isArray(treeRes)
+        ? treeRes
+        : (((treeRes as unknown as Record<string, unknown>)?.tree as Capability[]) ?? []);
       setCaps(listItems.length > 0 ? listItems : treeItems);
     } catch (err) {
       message.error(err instanceof Error ? err.message : '加载能力列表失败');
@@ -130,7 +140,7 @@ export default function CapabilityManagementPage() {
         </Col>
         <Col span={18}>
           <Card title="能力列表" size="small" extra={<Input.Search placeholder="搜索" allowClear onSearch={() => load()} style={{ width: 200 }} />}>
-            <Table rowKey={(r) => r.capabilityId || (r as Record<string, unknown>).id as string || Math.random().toString()} columns={columns} dataSource={filtered ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
+            <Table rowKey={(r) => r.capabilityId || (r as unknown as Record<string, unknown>).id as string || Math.random().toString()} columns={columns} dataSource={filtered ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
           </Card>
         </Col>
       </Row>

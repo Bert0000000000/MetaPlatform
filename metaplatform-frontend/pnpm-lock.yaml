@@ -148,6 +148,9 @@ importers:
       axios:
         specifier: ^1.18.1
         version: 1.18.1(debug@4.4.3)
+      dayjs:
+        specifier: ^1.11.21
+        version: 1.11.21
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.7)

@@ -140,7 +140,7 @@ export default function ArchLayout({ children }: { children: ReactNode }) {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', paddingTop: 4 }}>
         {currentTab.subTabs.length > 0 && (
           <Tabs
-            tabPlacement="left"
+            tabPlacement="start"
             activeKey={activeSubTab}
             onChange={(key) => {
               const sub = currentTab.subTabs.find((s) => s.key === key);

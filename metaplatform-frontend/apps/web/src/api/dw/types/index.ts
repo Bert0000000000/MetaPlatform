@@ -152,6 +152,8 @@ export interface DocumentItem {
   fileSize: number;
   status: DocumentStatus;
   uploadedAt: string;
+  /** Display name / id of the user who uploaded the document (optional). */
+  uploader?: string;
   processedAt?: string;
   errorMessage?: string;
 }

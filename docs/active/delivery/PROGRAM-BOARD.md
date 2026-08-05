@@ -32,6 +32,19 @@
 | **BUSINESS-SLICES P2 W2** | dashboard / apphub / arch / copilot（4 域，99 endpoints / 93 tests）| `codex/p2-wave-2` → PR #12 | P2 W1 | ✅ Accepted（2026-07-31，PR #12 合入 main，commit `833a809d`） |
 | **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | ✅ Accepted（dw / a2a / wfe / ont / data 已全部接入） |
 
+### In Progress — 云服务市场（MARKETPLACE-CONSUMER-01）
+
+| Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 |
+|---|---|---:|---:|---:|---:|---|
+| **MARKETPLACE-CONSUMER-01** | **In Progress**（PRR 用户需求） | ⏳ | ⏳ | ⏳ | ⏳ | `evidence/MARKETPLACE-CONSUMER-ACCEPTANCE.md`（待生成） |
+
+- **设计稿**：[`docs/superpowers/specs/2026-08-05-marketplace-consumer-design.md`](../specs/2026-08-05-marketplace-consumer-design.md)
+- **实施计划**：[`docs/superpowers/plans/2026-08-05-marketplace-consumer.md`](../plans/2026-08-05-marketplace-consumer.md)
+- **ADR**：[`ADR-0020`](../decisions/ADR-0020-marketplace-consumer.md)（跳号 0018，因被 `business-slices-slo` 占用）
+- **前置阻塞**：`MP-MCP-REGISTER-01` / `MP-AGENT-REGISTER-01` / `MP-ONT-REGISTER-01` 三个子 spec 必须先 Accepted，本 Batch 才能转 Accepted。
+- **新增硬规则 14**：市场资产 digest → 本地 instance 一致性（installer 内 `registered_digest == expected_digest` 校验 + 失败回滚 + 审计告警）。
+- **SEC-TENANT-01 豁免点**：`marketplace_install` 是平台级资源但带 `tenant_id` 留痕，由 SEC-TENANT-01 owner 在 ACCEPTANCE 显式签字。
+
 ### In Progress — TECH-SERVICES 16 域接入
 
 `TECH-SERVICES` 仅完成 `mate-app-kb` canonical reference；其余 16 域按 P0/P1/P2 优先级在后续 sub-batch 接力：

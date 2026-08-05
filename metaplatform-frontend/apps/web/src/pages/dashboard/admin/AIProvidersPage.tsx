@@ -393,7 +393,7 @@ export default function AIProvidersPage() {
         <StatCard
           label="默认生效"
           value={PROVIDER_META[defaultActive as ProviderId]?.name ?? defaultActive}
-          color="primary"
+          color="default"
         />
       </StatGrid>
 

@@ -35,7 +35,7 @@ export default function EmployeeCloneButton({
     const v = await form.validateFields();
     setLoading(true);
     try {
-      const created = await cloneEmployee(source, v.name, v.code);
+      const created = await cloneEmployee(source, v.name);
       message.success(`已克隆为「${created.name}」`);
       onCloned?.(created);
       setOpen(false);
