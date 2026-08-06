@@ -20,6 +20,7 @@ from .repos.neo4j_repo import create_neo4j_repository
 from .sparql.api import router as sparql_router
 from .sparql.explain import router as explain_router
 from .versioning.api import router as versioning_router
+from .v2_kernel.api import router as v2_kernel_router
 
 logger = structlog.get_logger(__name__)
 
@@ -79,6 +80,7 @@ app.include_router(versioning_router)
 app.include_router(inference_router)
 app.include_router(shacl_router)
 app.include_router(federation_router)
+app.include_router(v2_kernel_router)
 
 
 @app.get("/healthz")
@@ -103,6 +105,23 @@ async def on_startup() -> None:
         await neo4j.connect()
     except Exception as e:
         logger.warning("neo4j.connect_failed", error=str(e))
+
+    # RUNTIME-HTTP-01: 根据 KERNEL_BACKEND env 选择 kernel repo
+    #  - "memory"（默认 dev） → InMemoryOntologyRepository（MAT-KERNEL/01）
+    #  - "pg"（prod）         → PgOntologyRepository（待 RUNTIME-PG-03）
+    backend = os.getenv("KERNEL_BACKEND", "memory").lower()
+    if backend == "memory":
+        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+        app.state.kernel_repo = InMemoryOntologyRepository()
+        logger.info("kernel_repo.initialized", backend="memory")
+    elif backend == "pg":
+        from .v2_kernel.pg_repo import PgOntologyRepository
+        dsn = os.getenv("KERNEL_PG_DSN", "postgresql://localhost/ontology")
+        app.state.kernel_repo = PgOntologyRepository(dsn=dsn)
+        logger.info("kernel_repo.initialized", backend="pg")
+    else:
+        raise RuntimeError(f"unknown KERNEL_BACKEND={backend!r}")
+
     logger.info("mate-tech-ont.startup", version=app.version)
 
 
