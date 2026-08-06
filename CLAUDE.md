@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-07-30（**v3.0 GA 收口** — 8 个核心 Delivery Batch 全部 Accepted，§13 硬规则 1-13 全部闭环）；上一版 2026-07-29（新增 Cowork ↔ Claude Code 交接约定）
+> **最近更新**：2026-08-06（**v3.1 Ontology 子计划启动** — 12 决策点 + 3 锁死问题收口，20 Batch / 38 周路线落地）；上一版 2026-07-30（v3.0 GA 收口）
 >
-> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**，v3.1 Data-Ready Baseline 同步中
+> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** 增量并行：Data-Ready Baseline + **Ontology Kernel / 数字员工 / SuperAI 子计划**（M1 启动中）
 
 ## v3.0 GA 状态
 
@@ -137,3 +137,76 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 4. 提交风格遵循 Conventional Commits。
 5. PR 必须包含 ADR 引用 + operationId 引用 + 验收证据链接。
 6. v3.1 增量工作（BUSINESS-SLICES / DATA-D0-D8）按 ADR-0016 / ADR-0017 推进。
+
+## v3.1 Ontology / 数字员工 / SuperAI 子计划（2026-08-06 启动）
+
+> **总览**：20 Batch / 38 周 ≈ 9 个月到 GA-Ready。AI 不直连业务表，通过 `ActionType.apply` / `Function` 访问 Ontology；用户确认后落库；多用户多 Agent 全程双层沙箱隔离。
+>
+> **自建原则（v0.4 强约束）**：不引入 Palantir 任何官方开源组件（foundry-platform-python/ts、foundry-dev-tools、Magritte、Conjure）。所有 Ontology 服务端能力、SDK 形态、协议描述符全部自建。客户端统一用 OpenAPI Generator 封装在 `mate-clients/sdk/`。
+
+### 三大顶层原理
+
+1. **Operational Layer** —— 本体 = 组织级操作层（Palantir overview 原文）
+2. **Digital Twin = Semantics + Kinetics** —— 业务由不可变类型 + 可变行为构成
+3. **AI 穿透本体** —— AI 输出 = proposal，用户确认后由 ActionType 落库
+
+### 12 Kernel 基元（MP-ONT-KERNEL-01 交付，ADR-0021 冻结）
+
+| 层 | 基元 |
+|---|---|
+| 标识 | `ClassRef` / `Version` |
+| 类型 | `Property` / `ObjectType` / `LinkType` / `ActionType` / `Interface` |
+| 实例 | `Individual` / `LinkInstance` |
+| 推理 | `Axiom` / `Function` |
+| 查询 | `ObjectSet` |
+
+`rid` 形如 `ont.<tenant>.<kind>.<slug>.<version>`。
+
+### 7 + 1 类数字员工
+
+Ontology / Workflow / App / Data Product / OBS / Security / Knowledge Library + **SuperAI (COPILOT)** 编排平面。**7 + N**：7 内置共享 + Marketplace 第三方订阅。
+
+### 三层沙箱（用户提的"必须沙箱"已对位）
+
+- **Session Sandbox**（用户级，决策 ADR-0041）—— L2 容器，每用户每会话独占
+- **Function Sandbox**（调用级，决策 ADR-0040）—— L2 容器（K8s Job），每次调用独立
+- **第三方 Sandbox** —— L3 MicroVM（Firecracker），Marketplace 强制
+
+### 12 决策点 + 3 锁死问题（已收口）
+
+A1=b (RAG+规则+偶发微调)｜A2=7+N｜A3=新建 orchestrator｜A4=混合
+B1=Function L2+第三方 L3｜B2=会话级短期 token｜B3=每次 ≥1 HITL｜B4=SANDBOX-01 进 M1
+C1=可配置（30min/24h）｜C2=opt-in｜C3=默认 discard 可 opt-in 7d｜C4=同步
+L1=直接迁移 v2｜L2=K8s Job/Pod（最佳实践）｜L3=PG 表
+
+### Batch 路线（依赖图）
+
+```
+M1 (8 周, 6 Batch)         M2 (10 周, 6 Batch)         M3 (12 周, 8 Batch)
+─────────────────────      ──────────────────────      ─────────────────────
+KERNEL-01        ┐         ACTION-03          ┐         AGENT-WF-01
+MODEL-02         │         OBJECTSET-04       │         AGENT-APP-01
+SANDBOX-01       │         MANAGER-05         │         AGENT-DATA-01
+SESSION-01       │         AGENT-ONT-01       │         AGENT-OBS-01
+AIP-GATEWAY-01   │         AGENT-SEC-01       │         AGENT-KB-01
+AGENT-ORCH-01    ┘         RAG-ONT-01         ┘         AGENT-EXT-01
+                                                        SANDBOX-02
+                                                        SUPER-COPILOT-01
+```
+
+### 配套文档
+
+- 蓝图：`docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4
+- ADR-0021（Kernel 12 基元）：`docs/active/decisions/ADR-0021-kernel-12-primitives.md`
+- ADR-0040（沙箱架构）：`docs/active/decisions/ADR-0040-sandbox-architecture.md`
+- ADR-0041（Session Sandbox）：`docs/active/decisions/ADR-0041-session-sandbox.md`
+- 决策纪要：`docs/active/decisions/PENDING-DECISIONS.md`
+- 评审记录：`docs/active/decisions/ADR-REVIEW-2026-08-06.md`
+- 任务板：`docs/active/delivery/V31-ONTOLOGY-BOARD.md`
+
+### 接力指引（v3.1 Ontology）
+
+1. 切到 `.worktrees/mp-ont-kernel-01`（已就绪，分支 `refactor/mp-ont-kernel-01`，基于 main）
+2. 起 M1 启动包：12 基元 Protocol/dataclass 骨架 + 60 tests 列表
+3. 提交风格遵循 Conventional Commits；PR 引用 ADR-0021 + operationId + `MP-ONT-KERNEL-01-ACCEPTANCE.md`
+4. v0.5 任务：补抓 Palantir 官方 7 个核心页正文，替换"可证伪"行
