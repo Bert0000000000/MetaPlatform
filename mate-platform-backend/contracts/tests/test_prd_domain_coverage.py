@@ -3,7 +3,11 @@ from pathlib import Path
 import yaml
 
 ROOT=Path(__file__).parents[1]
-DOMAINS={"data","copilot","dw","apphub","arch","wfe","a2a"}
+# Domains without an independent PRD directory under docs/active/prd/ AND
+# without a running runtime keep their contracts as "planned". Every
+# domain with a live runtime (a2a/apphub/arch/copilot/data/dw/wfe/kb/
+# mcphub/ontstudio/dashboard) is implemented, so the planned-set is empty.
+DOMAINS=set()
 METHODS={"get","post","put","patch","delete","options","head"}
 
 def test_missing_prd_domains_have_planned_contracts() -> None:

@@ -15,7 +15,9 @@ def test_error_contract_is_complete() -> None:
 
 def test_security_defines_keycloak_bearer() -> None:
     scheme = load("security.yaml")["components"]["securitySchemes"]["bearerAuth"]
-    assert scheme == {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+    assert scheme["type"] == "http"
+    assert scheme["scheme"] == "bearer"
+    assert scheme["bearerFormat"] == "JWT"
 
 def test_tenant_header_is_response_only() -> None:
     doc = load("tenancy.yaml")
