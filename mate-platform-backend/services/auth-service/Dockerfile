@@ -13,6 +13,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /usr/local/bin/
 
 WORKDIR /app
 
+ENV UV_HTTP_TIMEOUT=300 UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+
 COPY pyproject.toml uv.lock ./
 COPY packages/ packages/
 COPY services/ services/
@@ -24,7 +26,11 @@ RUN SITE=/app/.venv/lib/python3.12/site-packages && \
     cp -r packages/mate-common/src/mate_common "$SITE/"
 
 # Workaround: root pyproject sets package=false so ensure IAM auth-service runtime deps
-RUN .venv/bin/python -m pip install --no-cache-dir --quiet pyjwt[crypto] redis tenacity pydantic-settings opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc opentelemetry-instrumentation-fastapi || true
+RUN .venv/bin/python -m pip install --no-cache-dir --quiet \
+    pyjwt[crypto] redis tenacity pydantic-settings \
+    opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc \
+    opentelemetry-instrumentation-fastapi structlog httpx \
+    && echo "AUTH_DEPS_OK" || (echo "AUTH_DEPS_FAIL"; exit 1)
 
 FROM python:3.12 AS runtime
 

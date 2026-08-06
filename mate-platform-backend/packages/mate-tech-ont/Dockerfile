@@ -16,11 +16,12 @@ COPY packages/ /tmp/build/packages/
 # structlog 已经在 api-gateway 的 system site-packages 里
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install --no-cache-dir \
-        neo4j owlready2 rdflib sqlalchemy sqlmodel
+        neo4j owlready2 rdflib sqlalchemy sqlmodel psycopg2-binary
 
-# 把 ont / common 源码拷到 gate 镜像的 system site-packages
+# 把 ont / kernel / common / platform 源码拷到 gate 镜像的 system site-packages
 RUN SITE=/usr/local/lib/python3.12/site-packages && \
     cp -r /tmp/build/packages/mate-tech-ont/src/mate_tech_ont "$SITE/" && \
+    cp -r /tmp/build/packages/mate-kernel/src/mate_kernel "$SITE/" && \
     cp -r /tmp/build/packages/mate-common/src/mate_common "$SITE/" && \
     cp -r /tmp/build/packages/mate-platform/src/mate_platform "$SITE/" 2>/dev/null || true
 

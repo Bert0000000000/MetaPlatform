@@ -51,20 +51,21 @@ test.describe('RUNTIME-MVP-02 docker backend smoke', () => {
   }
 });
 
-test.describe('RUNTIME-MVP-02 v2 kernel surface', () => {
-  test('ont /openapi.json declares /api/v1/ont namespace (v0 kernel legacy)', async ({ request: ctx }) => {
-    // MVP-01 之前：容器镜像只含 legacy v0 路由；本断言确认 namespace 健全。
-    // post-rebuild：v2 kernel endpoint 会出现，see runtime-mvp-02-smoke-post-rebuild.spec.ts
+test.describe('RUNTIME-MVP-02 v2 kernel surface (post-rebuild)', () => {
+  test('ont /openapi.json declares v2 kernel endpoints', async ({ request: ctx }) => {
+    // post-rebuild (容器含 RUNTIME-MVP-01/02 代码)：v2 kernel 5 endpoint 应在 path 列表
     const res = await ctx.get('http://localhost:8007/openapi.json');
     expect(res.status()).toBe(200);
     const body = await res.json();
     const paths = Object.keys(body.paths ?? {});
-    expect(paths.some((p) => p.startsWith('/api/v1/ont'))).toBeTruthy();
-    expect(paths.some((p) => p.startsWith('/api/v1/ont/instances'))).toBeTruthy();
+    expect(paths.some((p) => p.includes('/api/v1/ont/v2/object-types'))).toBeTruthy();
+    expect(paths.some((p) => p.includes('/api/v1/ont/v2/individuals'))).toBeTruthy();
+    expect(paths.some((p) => p.includes('/api/v1/ont/v2/object-sets:evaluate'))).toBeTruthy();
+    expect(paths.some((p) => p.includes('/api/v1/ont/v2/action-types:apply'))).toBeTruthy();
   });
 
-  test('ont /api/v1/ont/instances requires auth (401)', async ({ request: ctx }) => {
-    const res = await ctx.get('http://localhost:8007/api/v1/ont/instances');
+  test('ont /api/v1/ont/v2/object-types requires auth (401)', async ({ request: ctx }) => {
+    const res = await ctx.get('http://localhost:8007/api/v1/ont/v2/object-types?limit=5');
     expect(res.status()).toBe(401);
   });
 
