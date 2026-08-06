@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-06（**v3.1 Ontology 子计划启动** — 12 决策点 + 3 锁死问题收口，20 Batch / 38 周路线落地）；上一版 2026-07-30（v3.0 GA 收口）
+> **最近更新**：2026-08-06（**v3.1 Ontology / 数字员工 / SuperAI 子计划 20/20 Batch 收口** — M1+M2+M3 = 364/364 tests pass；v4 runtime 路线规划中）；上一版 2026-08-06（v3.1 子计划启动）
 >
-> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** 增量并行：Data-Ready Baseline + **Ontology Kernel / 数字员工 / SuperAI 子计划**（M1 启动中）
+> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** 增量并行：Data-Ready Baseline + **Ontology Kernel / 数字员工 / SuperAI 子计划**（**M1+M2+M3 Accepted**，v4 runtime 路线规划中）
 
 ## v3.0 GA 状态
 
@@ -138,9 +138,11 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 5. PR 必须包含 ADR 引用 + operationId 引用 + 验收证据链接。
 6. v3.1 增量工作（BUSINESS-SLICES / DATA-D0-D8）按 ADR-0016 / ADR-0017 推进。
 
-## v3.1 Ontology / 数字员工 / SuperAI 子计划（2026-08-06 启动）
+## v3.1 Ontology / 数字员工 / SuperAI 子计划（2026-08-06 启动 / 同日 20/20 收口）
 
-> **总览**：20 Batch / 38 周 ≈ 9 个月到 GA-Ready。AI 不直连业务表，通过 `ActionType.apply` / `Function` 访问 Ontology；用户确认后落库；多用户多 Agent 全程双层沙箱隔离。
+> **总览**：**20 Batch / 38 周 ≈ 9 个月到 GA-Ready**。AI 不直连业务表，通过 `ActionType.apply` / `Function` 访问 Ontology；用户确认后落库；多用户多 Agent 全程双层沙箱隔离。
+>
+> **收口状态**：**M1+M2+M3 = 20/20 Batch Accepted · 364/364 tests pass · 端到端 kitchen sink 11 步通过**。
 >
 > **自建原则（v0.4 强约束）**：不引入 Palantir 任何官方开源组件（foundry-platform-python/ts、foundry-dev-tools、Magritte、Conjure）。所有 Ontology 服务端能力、SDK 形态、协议描述符全部自建。客户端统一用 OpenAPI Generator 封装在 `mate-clients/sdk/`。
 

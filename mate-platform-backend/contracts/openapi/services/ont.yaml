@@ -12,10 +12,10 @@ servers:
 tags:
 - name: ont
   description: ont domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /healthz:
     get:
@@ -526,6 +526,520 @@ paths:
       x-mate-requirements:
       - FR-ONT-ONTGETFEDERATIONMAPPINGS
       x-mate-implementation-status: implemented
+  # ────────────────────────────────────────────────────────────────────
+  # v3.1 KERNEL-01 · 12 基元端点（ADR-0021 冻结）
+  # 增量追加，旧 OWL/SPARQL 端点保留以保持后向兼容
+  # ────────────────────────────────────────────────────────────────────
+  /api/v1/ont/v2/object-types:
+    parameters:
+    - in: query
+      name: limit
+      schema: {type: integer, minimum: 1, maximum: 1000, default: 100}
+    - in: query
+      name: offset
+      schema: {type: integer, minimum: 0, default: 0}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List ObjectTypes (v2 不可变类型层)
+      operationId: ontListV2ObjectTypes
+      description: List immutable ObjectTypes registered for the tenant.
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTOBJECTTYPES]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ObjectTypeV2'}
+        '400': {$ref: ../common/errors.yaml#/components/responses/Error400}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Create ObjectType (v2 不可变类型层)
+      operationId: ontCreateV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATEOBJECTTYPE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ObjectTypeCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ObjectTypeV2'}
+        '409': {$ref: ../common/errors.yaml#/components/responses/Error409}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/object-types/{rid}:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.obj\.[a-z0-9_:\-.]+$'}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Read ObjectType by rid
+      operationId: ontGetV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-GETOBJECTTYPE]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ObjectTypeV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/link-types:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List LinkTypes
+      operationId: ontListV2LinkTypes
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTLINKTYPES]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/LinkTypeV2'}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Create LinkType
+      operationId: ontCreateV2LinkType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATELINKTYPE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LinkTypeCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LinkTypeV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/link-types/{rid}:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.link\.[a-z0-9_:\-.]+$'}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Read LinkType
+      operationId: ontGetV2LinkType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-GETLINKTYPE]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LinkTypeV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/action-types:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List ActionTypes (all write operations route through here)
+      operationId: ontListV2ActionTypes
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTACTIONTYPES]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ActionTypeV2'}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Create ActionType (write the only legal entry point)
+      operationId: ontCreateV2ActionType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATEACTIONTYPE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ActionTypeCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ActionTypeV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/action-types/{rid}/apply:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.act\.[a-z0-9_:\-.]+$'}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Apply ActionType — only legal write entry (AI/Function/SDK all converge here)
+      operationId: ontApplyV2ActionType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-APPLYACTIONTYPE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ActionApplyRequest'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ActionApplyResponse'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/interfaces:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List Interfaces (polymorphic surface)
+      operationId: ontListV2Interfaces
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTINTERFACES]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/InterfaceV2'}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Create Interface
+      operationId: ontCreateV2Interface
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATEINTERFACE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InterfaceCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterfaceV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/individuals:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List Individuals (mutable)
+      operationId: ontListV2Individuals
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTINDIVIDUALS]
+      x-mate-implementation-status: implemented
+      parameters:
+      - in: query
+        name: class_rid
+        schema: {type: string}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/IndividualV2'}
+        '400': {$ref: ../common/errors.yaml#/components/responses/Error400}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Create Individual (use ActionType.apply for any side-effect-bearing change)
+      operationId: ontCreateV2Individual
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATEINDIVIDUAL]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IndividualCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IndividualV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/individuals/{rid}:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema: {type: string, pattern: '^ont\.[a-z0-9_-]{1,64}\.ind\.[a-z0-9_:\-.]+$'}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Read Individual
+      operationId: ontGetV2Individual
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-GETINDIVIDUAL]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IndividualV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/link-instances:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List LinkInstances
+      operationId: ontListV2LinkInstances
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTLINKINSTANCES]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/LinkInstanceV2'}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Create LinkInstance
+      operationId: ontCreateV2LinkInstance
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATELINKINSTANCE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LinkInstanceCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LinkInstanceV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/axioms:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List Axioms
+      operationId: ontListV2Axioms
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTAXIOMS]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/AxiomV2'}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Create Axiom
+      operationId: ontCreateV2Axiom
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATEAXIOM]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AxiomCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AxiomV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/functions:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List Functions
+      operationId: ontListV2Functions
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTFUNCTIONS]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/FunctionV2'}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Register Function (referenced by ActionType)
+      operationId: ontCreateV2Function
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATEFUNCTION]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/FunctionCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FunctionV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/object-sets/query:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Evaluate ObjectSet → bindings
+      operationId: ontEvaluateV2ObjectSet
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-EVALUATEOBJECTSET]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ObjectSetV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ObjectSetResult'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/versions/{class_rid}:
+    parameters:
+    - in: path
+      name: class_rid
+      required: true
+      schema: {type: string}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: List Versions of a class
+      operationId: ontListV2Versions
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-LISTVERSIONS]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/VersionV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Snapshot new Version (immutable history)
+      operationId: ontCreateV2Version
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-KERNEL01-CREATEVERSION]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/VersionCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VersionV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
 components:
   securitySchemes:
     bearerAuth:
@@ -791,3 +1305,369 @@ components:
             type: object
         count:
           type: integer
+    # ────────────────────────────────────────────────────────────────────
+    # v3.1 KERNEL-01 · 12 基元 schemas（ADR-0021 冻结）
+    # ────────────────────────────────────────────────────────────────────
+    RidString:
+      type: string
+      pattern: '^ont\.[a-z0-9_-]{1,64}\.[a-z]+\.[a-z0-9_:\-.]{1,200}$'
+      description: Canonical rid (e.g. ont.<tenant>.<kind>.<rest>).
+    PropertyFormatV2:
+      type: string
+      enum: [string, integer, double, boolean, date, timestamp, marking]
+    CardinalityV2:
+      type: string
+      enum: ['1:1', '1:N', 'N:1', 'N:N']
+    DirectionalityV2:
+      type: string
+      enum: [undirected, directed, bidirectional]
+    AxiomKindV2:
+      type: string
+      enum: [subclass, transitivity, same_as, functional, domain_range, cardinality]
+    FunctionLanguageV2:
+      type: string
+      enum: [python, typescript, sql, rest]
+    PropertyV2:
+      type: object
+      additionalProperties: false
+      required: [rid, type_id, nullable, primary_key, title, format]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        type_id: {type: string, minLength: 1}
+        nullable: {type: boolean}
+        primary_key: {type: boolean}
+        title: {type: string, minLength: 1}
+        format: {$ref: '#/components/schemas/PropertyFormatV2'}
+    ObjectTypeV2:
+      type: object
+      additionalProperties: false
+      required: [rid, primary_key, properties]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        primary_key:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RidString'}
+        properties:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+        interfaces:
+          type: array
+          items: {$ref: '#/components/schemas/RidString'}
+        display_name: {type: string}
+    ObjectTypeCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, primary_key, properties]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        primary_key:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RidString'}
+        properties:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/PropertyV2'}
+        interfaces:
+          type: array
+          items: {$ref: '#/components/schemas/RidString'}
+        display_name: {type: string}
+    LinkTypeV2:
+      type: object
+      additionalProperties: false
+      required: [rid, src, dst, cardinality, directionality]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        src: {$ref: '#/components/schemas/RidString'}
+        dst: {$ref: '#/components/schemas/RidString'}
+        cardinality: {$ref: '#/components/schemas/CardinalityV2'}
+        directionality: {$ref: '#/components/schemas/DirectionalityV2'}
+        link_properties:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+    LinkTypeCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, src, dst, cardinality, directionality]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        src: {$ref: '#/components/schemas/RidString'}
+        dst: {$ref: '#/components/schemas/RidString'}
+        cardinality: {$ref: '#/components/schemas/CardinalityV2'}
+        directionality: {$ref: '#/components/schemas/DirectionalityV2'}
+        link_properties:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+    ActionTypeV2:
+      type: object
+      additionalProperties: false
+      required: [rid, parameters, function_ref, on]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        parameters:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+        submission_criteria:
+          type: array
+          items: {type: string}
+        side_effects:
+          type: array
+          items: {type: string}
+        function_ref: {$ref: '#/components/schemas/RidString'}
+        on:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RidString'}
+    ActionTypeCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, parameters, function_ref, on]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        parameters:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+        submission_criteria:
+          type: array
+          items: {type: string}
+        side_effects:
+          type: array
+          items: {type: string}
+        function_ref: {$ref: '#/components/schemas/RidString'}
+        on:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RidString'}
+    ActionApplyRequest:
+      type: object
+      additionalProperties: false
+      required: [parameters]
+      properties:
+        parameters: {type: object, additionalProperties: true}
+        target_iid: {type: string}
+        provenance:
+          type: object
+          properties:
+            actor: {type: string}
+            sandbox_id: {type: string}
+            hitl_token: {type: string}
+    ActionApplyResponse:
+      type: object
+      additionalProperties: false
+      required: [action_rid, applied_at]
+      properties:
+        action_rid: {$ref: '#/components/schemas/RidString'}
+        applied_at: {type: string, format: date-time}
+        side_effects_emitted:
+          type: array
+          items: {type: string}
+    InterfaceV2:
+      type: object
+      additionalProperties: false
+      required: [rid]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        properties:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+        required_links:
+          type: array
+          items: {$ref: '#/components/schemas/RidString'}
+        polymorphic_action_constraints:
+          type: array
+          items: {type: string}
+    InterfaceCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        properties:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+        required_links:
+          type: array
+          items: {$ref: '#/components/schemas/RidString'}
+        polymorphic_action_constraints:
+          type: array
+          items: {type: string}
+    IndividualV2:
+      type: object
+      additionalProperties: false
+      required: [rid, class_rid, primary_key, tenant_id]
+      properties:
+        rid: {type: string}
+        class_rid: {$ref: '#/components/schemas/RidString'}
+        props:
+          type: array
+          items:
+            type: array
+            items: 2
+        primary_key: {type: string}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        tenant_id: {type: string}
+        marking:
+          type: array
+          items: {type: string}
+    IndividualCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, class_rid, primary_key]
+      properties:
+        rid: {type: string}
+        class_rid: {$ref: '#/components/schemas/RidString'}
+        props:
+          type: array
+          items:
+            type: array
+            items: 2
+        primary_key: {type: string}
+        marking:
+          type: array
+          items: {type: string}
+    LinkInstanceV2:
+      type: object
+      additionalProperties: false
+      required: [rid, link_type_rid, src, dst, tenant_id]
+      properties:
+        rid: {type: string}
+        link_type_rid: {$ref: '#/components/schemas/RidString'}
+        src: {type: string}
+        dst: {type: string}
+        props:
+          type: array
+          items:
+            type: array
+            items: 2
+        created_at: {type: string, format: date-time}
+        tenant_id: {type: string}
+        marking:
+          type: array
+          items: {type: string}
+    LinkInstanceCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, link_type_rid, src, dst]
+      properties:
+        rid: {type: string}
+        link_type_rid: {$ref: '#/components/schemas/RidString'}
+        src: {type: string}
+        dst: {type: string}
+        props:
+          type: array
+          items:
+            type: array
+            items: 2
+        marking:
+          type: array
+          items: {type: string}
+    AxiomV2:
+      type: object
+      additionalProperties: false
+      required: [rid, kind, operands, rule_ref]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        kind: {$ref: '#/components/schemas/AxiomKindV2'}
+        operands:
+          type: array
+          items: {$ref: '#/components/schemas/RidString'}
+        rule_ref: {type: string}
+        metadata:
+          type: array
+          items:
+            type: array
+            items: 2
+    AxiomCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, kind, operands, rule_ref]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        kind: {$ref: '#/components/schemas/AxiomKindV2'}
+        operands:
+          type: array
+          items: {$ref: '#/components/schemas/RidString'}
+        rule_ref: {type: string}
+        metadata:
+          type: array
+          items:
+            type: array
+            items: 2
+    FunctionV2:
+      type: object
+      additionalProperties: false
+      required: [rid, language, version, source_ref]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        language: {$ref: '#/components/schemas/FunctionLanguageV2'}
+        version: {type: string, minLength: 1}
+        source_ref: {type: string, minLength: 1}
+        signatures:
+          type: array
+          items:
+            type: array
+            items: 2
+    FunctionCreateV2:
+      type: object
+      additionalProperties: false
+      required: [rid, language, version, source_ref]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        language: {$ref: '#/components/schemas/FunctionLanguageV2'}
+        version: {type: string, minLength: 1}
+        source_ref: {type: string, minLength: 1}
+        signatures:
+          type: array
+          items:
+            type: array
+            items: 2
+    ObjectSetV2:
+      type: object
+      additionalProperties: false
+      required: [class_rid]
+      properties:
+        class_rid: {$ref: '#/components/schemas/RidString'}
+        filter_expr: {type: string}
+        sort:
+          type: array
+          items: {type: string}
+        paging_offset: {type: integer, minimum: 0, default: 0}
+        paging_limit: {type: integer, minimum: 1, maximum: 10000, default: 100}
+        view_config: {type: object, additionalProperties: true}
+    ObjectSetResult:
+      type: object
+      additionalProperties: false
+      required: [results, count]
+      properties:
+        results:
+          type: array
+          items: {$ref: '#/components/schemas/IndividualV2'}
+        count: {type: integer}
+    VersionV2:
+      type: object
+      additionalProperties: false
+      required: [rid, class_ref, created_at, author]
+      properties:
+        rid: {type: string}
+        class_ref: {$ref: '#/components/schemas/RidString'}
+        parent_rid:
+          type: [string, 'null']
+        created_at: {type: string, format: date-time}
+        author: {type: string}
+        change_set:
+          type: array
+          items: {type: string}
+    VersionCreateV2:
+      type: object
+      additionalProperties: false
+      required: [class_ref, author]
+      properties:
+        class_ref: {$ref: '#/components/schemas/RidString'}
+        parent_rid:
+          type: [string, 'null']
+        author: {type: string}
+        change_set:
+          type: array
+          items: {type: string}

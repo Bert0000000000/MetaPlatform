@@ -2,18 +2,21 @@
 
 > 起草：2026-08-06 · 关联：蓝图 v0.4 / ADR-0021 / ADR-0040 / ADR-0041
 >
+> 状态：**v3.1 子计划 20/20 Batch Accepted · 364/364 tests pass · M1+M2+M3 全部收口**
+>
 > 总览：M1（8 周 / 6 Batch）+ M2（10 周 / 6 Batch）+ M3（12 周 / 8 Batch）= **20 Batch / 38 周 ≈ 9 个月**到 GA-Ready。
 
 ## 1. M1 — 地基（8 周 / 6 Batch 并行）
 
 | Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 | 依赖 |
 |---|---|---|---|---|---|---|---|
-| **MP-ONT-KERNEL-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-ONT-KERNEL-01-ACCEPTANCE.md` | — |
-| **MP-ONT-MODEL-02** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-ONT-MODEL-02-ACCEPTANCE.md` | KERNEL-01 |
-| **MP-SANDBOX-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-SANDBOX-01-ACCEPTANCE.md` | — |
-| **MP-SESSION-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-SESSION-01-ACCEPTANCE.md` | — |
-| **MP-AIP-GATEWAY-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AIP-GATEWAY-01-ACCEPTANCE.md` | KERNEL-01 / SANDBOX-01 |
-| **MP-AGENT-ORCH-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-ORCH-01-ACCEPTANCE.md` | KERNEL-01 / SESSION-01 / AIP-GATEWAY-01 |
+| **MP-ONT-KERNEL-01** | ✅ Accepted | ☑ | ☑ | ☑ (111) | — | `evidence/MP-ONT-KERNEL-01-ACCEPTANCE.md` | — |
+| **MP-ONT-MODEL-02** | ✅ Accepted | ☑ | ☑ | ☑ (4) | — | （含于 M1-ACCEPTANCE） | KERNEL-01 |
+| **MP-SANDBOX-01** | ✅ Accepted | ☑ | ☑ | ☑ (12) | L1 | （含于 M1-ACCEPTANCE） | — |
+| **MP-SESSION-01** | ✅ Accepted | ☑ | ☑ | ☑ (15) | — | （含于 M1-ACCEPTANCE） | — |
+| **MP-AIP-GATEWAY-01** | ✅ Accepted | ☑ | ☑ | ☑ (15) | — | （含于 M1-ACCEPTANCE） | KERNEL-01 / SANDBOX-01 |
+| **MP-AGENT-ORCH-01** | ✅ Accepted | ☑ | ☑ | ☑ (15) | — | （含于 M1-ACCEPTANCE） | KERNEL-01 / SESSION-01 / AIP-GATEWAY-01 |
+| **M1 收口** | ✅ **Accepted** | — | — | **174/174** | — | `evidence/M1-ACCEPTANCE.md` | — |
 
 **M1 退出标准**：
 - 12 基元 API 签名冻结（ADR-0021 Accepted）
@@ -26,12 +29,13 @@
 
 | Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 | 依赖 |
 |---|---|---|---|---|---|---|---|
-| **MP-ONT-ACTION-03** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-ONT-ACTION-03-ACCEPTANCE.md` | KERNEL-01 / SANDBOX-01 |
-| **MP-ONT-OBJECTSET-04** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-ONT-OBJECTSET-04-ACCEPTANCE.md` | KERNEL-01 / MODEL-02 |
-| **MP-ONT-MANAGER-05** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-ONT-MANAGER-05-ACCEPTANCE.md` | KERNEL-01 / SANDBOX-01 |
-| **MP-AGENT-ONT-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-ONT-01-ACCEPTANCE.md` | KERNEL-01 / MODEL-02 / MANAGER-05 / AGENT-ORCH-01 / AIP-GATEWAY-01 |
-| **MP-AGENT-SEC-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-SEC-01-ACCEPTANCE.md` | SESSION-01 / AIP-GATEWAY-01 |
-| **MP-RAG-ONT-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-RAG-ONT-01-ACCEPTANCE.md` | KERNEL-01 / MODEL-02 |
+| **MP-ONT-ACTION-03** | ✅ Accepted | ☑ | ☑ | ☑ (14) | — | （含于 M2-ACCEPTANCE） | KERNEL-01 / SANDBOX-01 |
+| **MP-ONT-OBJECTSET-04** | ✅ Accepted | ☑ | ☑ | ☑ (31) | — | （含于 M2-ACCEPTANCE） | KERNEL-01 / MODEL-02 |
+| **MP-ONT-MANAGER-05** | ✅ Accepted | ☑ | ☑ | ☑ (17) | — | （含于 M2-ACCEPTANCE） | KERNEL-01 / SANDBOX-01 |
+| **MP-AGENT-ONT-01** | ✅ Accepted | ☑ | ☑ | ☑ (11) | — | （含于 M2-ACCEPTANCE） | KERNEL-01 / MANAGER-05 |
+| **MP-AGENT-SEC-01** | ✅ Accepted | ☑ | ☑ | ☑ (11) | — | （含于 M2-ACCEPTANCE） | SESSION-01 / AIP-GATEWAY-01 |
+| **MP-RAG-ONT-01** | ✅ Accepted | ☑ | ☑ | ☑ (9) | — | （含于 M2-ACCEPTANCE） | KERNEL-01 / MODEL-02 |
+| **M2 收口** | ✅ **Accepted** | — | — | **93/93** | — | `evidence/M2-ACCEPTANCE.md` | — |
 
 **M2 退出标准**：
 - ActionType / Function / Interface 端点全部入 `ont.yaml`
@@ -44,14 +48,15 @@
 
 | Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 | 依赖 |
 |---|---|---|---|---|---|---|---|
-| **MP-AGENT-WF-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-WF-01-ACCEPTANCE.md` | AGENT-ORCH-01 / MODEL-02 |
-| **MP-AGENT-APP-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-APP-01-ACCEPTANCE.md` | AGENT-ORCH-01 / MODEL-02 |
-| **MP-AGENT-DATA-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-DATA-01-ACCEPTANCE.md` | AGENT-ORCH-01 / MANAGER-05 |
-| **MP-AGENT-OBS-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-OBS-01-ACCEPTANCE.md` | AGENT-ORCH-01 |
-| **MP-AGENT-KB-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-KB-01-ACCEPTANCE.md` | AGENT-ORCH-01 / RAG-ONT-01 |
-| **MP-AGENT-EXT-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-AGENT-EXT-01-ACCEPTANCE.md` | SANDBOX-02 / AGENT-ORCH-01 |
-| **MP-SANDBOX-02** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-SANDBOX-02-ACCEPTANCE.md` | SANDBOX-01 |
-| **MP-SUPER-COPILOT-01** | Pending | ☐ | ☐ | ☐ | ☐ | `evidence/MP-SUPER-COPILOT-01-ACCEPTANCE.md` | AGENT-ORCH-01 / SESSION-01 / 全部 Agent |
+| **MP-AGENT-WF-01** | ✅ Accepted | ☑ | ☑ | ☑ (11) | — | （含于 M3-ACCEPTANCE） | AGENT-ORCH-01 / MODEL-02 |
+| **MP-AGENT-APP-01** | ✅ Accepted | ☑ | ☑ | ☑ (11) | — | （含于 M3-ACCEPTANCE） | AGENT-ORCH-01 / MODEL-02 |
+| **MP-AGENT-DATA-01** | ✅ Accepted | ☑ | ☑ | ☑ (10) | — | （含于 M3-ACCEPTANCE） | AGENT-ORCH-01 / MANAGER-05 |
+| **MP-AGENT-OBS-01** | ✅ Accepted | ☑ | ☑ | ☑ (12) | — | （含于 M3-ACCEPTANCE） | AGENT-ORCH-01 |
+| **MP-AGENT-KB-01** | ✅ Accepted | ☑ | ☑ | ☑ (9) | — | （含于 M3-ACCEPTANCE） | AGENT-ORCH-01 / RAG-ONT-01 |
+| **MP-AGENT-EXT-01** | ✅ Accepted | ☑ | ☑ | ☑ (12) | L3 强制 | （含于 M3-ACCEPTANCE） | SANDBOX-02 / AGENT-ORCH-01 |
+| **MP-SANDBOX-02** | ✅ Accepted | ☑ | ☑ | ☑ (11) | K8s Job | （含于 M3-ACCEPTANCE） | SANDBOX-01 |
+| **MP-SUPER-COPILOT-01** | ✅ Accepted | ☑ | ☑ | ☑ (21) | — | （含于 M3-ACCEPTANCE） | AGENT-ORCH-01 / SESSION-01 / 全部 Agent |
+| **M3 收口** | ✅ **Accepted** | — | — | **97/97** | — | `evidence/M3-ACCEPTANCE.md` | — |
 
 **M3 退出标准**：
 - 7 类 Agent 全部落地
@@ -106,10 +111,29 @@ SANDBOX-01 → SANDBOX-02
 | ⑫ Secret 不进 git | SESSION-01 | — | SANDBOX-02 |
 | ⑬ NetworkPolicy default-deny | SANDBOX-01 | — | SANDBOX-02 |
 
-## 6. 关联文档
+## 6. v4 runtime 路线（规划中，不在 v3.1 收口范围）
+
+| Batch | 范围 | 周 | 依赖 |
+|---|---|---|---|
+| **RUNTIME-HTTP-01** | FastAPI runtime：把 23 v2 operationId 落到路由；OpenAPI 真契约 | 4 | 全部 M3 |
+| **RUNTIME-K8S-02** | K8s Job / Pod 真集成（替换 InMemoryK8sRunner） | 4 | SANDBOX-02 + PLATFORM-K8S-01 |
+| **RUNTIME-PG-03** | PG 持久化（替换 InMemoryOntologyRepository + Persistence row） | 4 | MODEL-02 + SEC-TENANT-01 |
+| **IAM-COPILOT-04** | Keycloak 真接入（替换 ManagerContext 占位） | 3 | SEC-IAM-01 |
+| **MARKETPLACE-05** | 上架 / 签名 / 计费 / vendor 注册 | 4 | AGENT-EXT-01 |
+| **合计** | 5 Batch / 19 周 | — | — |
+
+详见 v4 详细设计（待起 blueprint v1.0）。
+
+## 7. 关联文档
 
 - 蓝图：`docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4
 - ADR-0021：`docs/active/decisions/ADR-0021-kernel-12-primitives.md`
 - ADR-0040：`docs/active/decisions/ADR-0040-sandbox-architecture.md`
 - ADR-0041：`docs/active/decisions/ADR-0041-session-sandbox.md`
 - 决策纪要：`docs/active/decisions/PENDING-DECISIONS.md`
+- 验收证据：
+  - `evidence/MP-ONT-KERNEL-01-ACCEPTANCE.md`
+  - `evidence/M1-ACCEPTANCE.md`（174 tests）
+  - `evidence/M2-ACCEPTANCE.md`（+93 = 267 tests）
+  - `evidence/M3-ACCEPTANCE.md`（+97 = **364 tests**）
+- 端到端示例：`packages/mate-kernel/examples/01_kitchen_sink.py`
