@@ -26,7 +26,7 @@ RUN SITE=/app/.venv/lib/python3.12/site-packages && \
     cp -r packages/mate-common/src/mate_common "$SITE/"
 
 # Workaround: root pyproject sets package=false so ensure IAM auth-service runtime deps
-RUN .venv/bin/python -m pip install --no-cache-dir --quiet \
+RUN uv pip install --python /app/.venv/bin/python --no-cache \
     pyjwt[crypto] redis tenacity pydantic-settings \
     opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc \
     opentelemetry-instrumentation-fastapi structlog httpx \
