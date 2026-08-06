@@ -3,10 +3,17 @@
 P2-W5 shipped an in-memory BPMN structural validator. P3-W8 adds a
 real ``FlowableClient`` that proxies to the Flowable 8.0 REST API when
 ``FLOWABLE_BASE_URL`` is set, and gracefully degrades to an in-memory
-deployment record when the engine is unreachable or unconfigured. The
-client uses ``httpx`` directly (the Flowable REST API does not need
-service-to-service bearer auth in the local profile; production wiring
-adds ``mate_clients.security.BearerAuth`` per ADR-0014 step 4).
+deployment record when the engine is unreachable or unconfigured.
+
+ACL (ADR-0014 step 4 / 13 硬规则 #4):
+  - ``BearerAuth``: client_credentials token cache.
+  - ``OutgoingAuthMiddleware``: injects Authorization + X-Tenant-Id.
+
+The client constructor takes an optional ``auth`` (BearerAuth) and
+``tenant_id`` so the caller can scope calls to a specific tenant.
+In the FastAPI handler the auth is read from ``app.state.bearer_auth``
+and the tenant_id from ``request.state.ctx.tenant_id`` (set by the
+auth middleware).
 """
 from __future__ import annotations
 
@@ -16,6 +23,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+
+from mate_clients.security import BearerAuth, OutgoingAuthMiddleware
 
 
 class FlowableClient:
@@ -39,17 +48,32 @@ class FlowableClient:
         base_url: str | None = None,
         *,
         timeout: float = 5.0,
+        auth: BearerAuth | None = None,
+        tenant_id: str = "",
     ) -> None:
         resolved = base_url if base_url is not None else os.environ.get(
             "FLOWABLE_BASE_URL", ""
         )
         self.base_url = (resolved or "").strip().rstrip("/")
         self.timeout = timeout
+        # Build the AsyncClient once; attach OutgoingAuthMiddleware so
+        # every outbound call carries Authorization + X-Tenant-Id.
+        self._client = httpx.AsyncClient(timeout=timeout)
+        if auth is not None and tenant_id:
+            self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
+        self._auth = auth
+        self._tenant_id = tenant_id
 
     @property
     def mode(self) -> str:
         """Return ``flowable`` when a base_url is set, else ``in-memory``."""
         return "flowable" if self.base_url else "in-memory"
+
+    def set_tenant(self, tenant_id: str) -> None:
+        """Re-bind the client to a different tenant."""
+        self._tenant_id = tenant_id
+        if self._auth is not None and tenant_id:
+            self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
     async def deploy(self, name: str, bpmn_xml: str) -> dict[str, Any]:
         """Deploy a BPMN definition to Flowable (with in-memory fallback).
@@ -62,20 +86,19 @@ class FlowableClient:
             return self._in_memory_deploy()
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as http:
-                resp = await http.post(
-                    f"{self.base_url}/process-engine/repository/deployments",
-                    data={"name": name},
-                    files={
-                        "file": (
-                            f"{name}.bpmn20.xml",
-                            bpmn_xml.encode("utf-8"),
-                            "application/xml",
-                        )
-                    },
-                )
-                resp.raise_for_status()
-                data = resp.json()
+            resp = await self._client.post(
+                f"{self.base_url}/process-engine/repository/deployments",
+                data={"name": name},
+                files={
+                    "file": (
+                        f"{name}.bpmn20.xml",
+                        bpmn_xml.encode("utf-8"),
+                        "application/xml",
+                    )
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
         except (httpx.HTTPError, OSError, ValueError):
             # Engine unreachable / bad response -> degrade to in-memory.
             dep = self._in_memory_deploy()
@@ -87,6 +110,10 @@ class FlowableClient:
             "engine": "flowable",
             "status": "deployed",
         }
+
+    async def aclose(self) -> None:
+        """Close the underlying httpx client."""
+        await self._client.aclose()
 
     @staticmethod
     def _in_memory_deploy() -> dict[str, Any]:
