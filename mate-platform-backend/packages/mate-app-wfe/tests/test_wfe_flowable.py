@@ -132,3 +132,63 @@ def test_deploy_flow_tenant_isolation(
     assert all(d.tenant_id == "tenant-globex" for d in globex_deps)
     assert len(acme_deps) >= 1
     assert len(globex_deps) >= 1
+
+
+# ---------------------------------------------------------------------------
+# ADR-0014 step 4 / 13 硬规则 #4 — BearerAuth + X-Tenant-Id injection
+# ---------------------------------------------------------------------------
+def test_flowable_client_injects_bearer_and_tenant_header(monkeypatch) -> None:
+    """FlowableClient.attach BearerAuth + tenant_id so every outbound
+    request carries Authorization and X-Tenant-Id (ACL Client contract)."""
+    from mate_clients.security import BearerAuth, OutgoingAuthMiddleware
+
+    monkeypatch.setenv("FLOWABLE_BASE_URL", "http://flowable:8080")
+
+    class _StaticAuth(BearerAuth):
+        def __init__(self) -> None:
+            self._token = "test-bearer-token"
+
+        def token(self) -> str:  # type: ignore[override]
+            return self._token
+
+    captured: dict[str, str] = {}
+
+    async def _handler(request: httpx.Request) -> httpx.Response:
+        captured["authorization"] = request.headers.get("authorization", "")
+        captured["x_tenant_id"] = request.headers.get("x-tenant-id", "")
+        return httpx.Response(200, json={"id": "dep-from-test"})
+
+    auth = _StaticAuth()
+    client = FlowableClient(auth=auth, tenant_id="tenant-acme")
+    with respx.mock:
+        route = respx.post(
+            "http://flowable:8080/process-engine/repository/deployments"
+        ).mock(side_effect=_handler)
+        result = asyncio.run(client.deploy("ACL Test", _VALID_BPMN))
+    asyncio.run(client.aclose())
+
+    assert route.called
+    assert result["engine"] == "flowable"
+    assert result["deployment_id"] == "dep-from-test"
+    # OutgoingAuthMiddleware injects Bearer header verbatim.
+    assert captured["authorization"] == "Bearer test-bearer-token"
+    # And tenant header.
+    assert captured["x_tenant_id"] == "tenant-acme"
+
+
+def test_flowable_client_set_tenant_rebinds_auth() -> None:
+    """set_tenant rebinds the OutgoingAuthMiddleware to the new tenant_id."""
+    from mate_clients.security import BearerAuth
+
+    class _StaticAuth(BearerAuth):
+        def __init__(self) -> None:
+            self._token = "tkn"
+
+        def token(self) -> str:  # type: ignore[override]
+            return self._token
+
+    c = FlowableClient(base_url="http://flowable:8080", auth=_StaticAuth(), tenant_id="acme")
+    assert c._tenant_id == "acme"
+    c.set_tenant("globex")
+    assert c._tenant_id == "globex"
+    asyncio.run(c.aclose())

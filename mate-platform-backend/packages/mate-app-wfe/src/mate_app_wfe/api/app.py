@@ -385,8 +385,14 @@ async def deploy_flow_endpoint(
     elif not flow_id:
         flow_id = f"adhoc-{uuid.uuid4().hex[:8]}"
 
-    client = FlowableClient()
-    result = await client.deploy(body.name, bpmn_xml)
+    client = FlowableClient(
+        auth=getattr(request.app.state, "bearer_auth", None),
+        tenant_id=tid,
+    )
+    try:
+        result = await client.deploy(body.name, bpmn_xml)
+    finally:
+        await client.aclose()
 
     rec = deploy_flow(
         tenant_id=tid,
