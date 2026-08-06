@@ -18,17 +18,19 @@ tags:
   description: app publish operations
 - name: shortlink
   description: shortlink operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+- bearerAuth: []
+  tenantHeader: []
+  oidcScopes:
+  - platform.read
 paths:
   /api/v1/apphub/apps:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - apphub
       summary: /v1/apphub/apps
@@ -63,7 +65,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Create application
@@ -104,7 +107,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - apphub
       summary: /v1/apphub/apps/groups
@@ -140,7 +144,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - apphub
       summary: /v1/apphub/modules
@@ -175,7 +180,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Create business module
@@ -216,7 +222,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - apphub
       summary: /v1/apphub/pages
@@ -251,7 +258,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Create page template
@@ -290,7 +298,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - apphub
       summary: /v1/apphub/templates
@@ -325,7 +334,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Create workflow / form / approval template
@@ -366,7 +376,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Update application metadata
@@ -414,7 +425,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Delete application
@@ -451,7 +463,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Create application group
@@ -477,12 +490,15 @@ paths:
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - FR-APP-HUB
   /api/v1/apphub/groups/{code}:
     delete:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - apphub
       summary: Delete application group
@@ -508,12 +524,15 @@ paths:
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - FR-APP-HUB
   /api/v1/apphub/apps/{appId}/runtime:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - runtime
       summary: Get app runtime status
@@ -555,7 +574,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - runtime
       summary: Execute app runtime action
@@ -605,7 +625,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - publish
       summary: Publish application version
@@ -655,7 +676,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - shortlink
       summary: List shortlinks
@@ -693,7 +715,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - shortlink
       summary: Create shortlink
@@ -737,7 +760,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - shortlink
       summary: Resolve shortlink

@@ -13,16 +13,18 @@ tags:
 - name: analytics
   description: analytics domain operations
 security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+- bearerAuth: []
+  tenantHeader: []
+  oidcScopes:
+  - platform.read
 paths:
   /api/v1/analytics/overview:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       summary: 平台概览 (总用户/总 App/总请求数/活跃租户数)
       tags:
       - analytics
@@ -51,12 +53,15 @@ paths:
                 $ref: '#/components/schemas/OverviewStats'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-mate-requirements:
+      - MP-CONSUMER
   /api/v1/analytics/usage:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       summary: API 使用量 (按服务/时间窗口)
       tags:
       - analytics
@@ -85,12 +90,15 @@ paths:
                 $ref: '#/components/schemas/UsageResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-mate-requirements:
+      - MP-CONSUMER
   /api/v1/analytics/users:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       summary: 用户活跃度 (DAU/MAU/增长趋势)
       tags:
       - analytics
@@ -119,12 +127,15 @@ paths:
                 $ref: '#/components/schemas/UserActivityResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-mate-requirements:
+      - MP-CONSUMER
   /api/v1/analytics/services:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       summary: 服务调用排行 (top N + 延迟/错误率)
       tags:
       - analytics
@@ -153,12 +164,15 @@ paths:
                 $ref: '#/components/schemas/ServiceRankingResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-mate-requirements:
+      - MP-CONSUMER
   /api/v1/analytics/trends:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       summary: 趋势分析 (请求量/Token 消耗/存储增长 7-30 天序列)
       tags:
       - analytics
@@ -187,11 +201,18 @@ paths:
                 $ref: '#/components/schemas/TrendResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-mate-requirements:
+      - MP-CONSUMER
 components:
   schemas:
     OverviewStats:
       type: object
-      required: [total_users, total_apps, total_requests, active_tenants, period_days]
+      required:
+      - total_users
+      - total_apps
+      - total_requests
+      - active_tenants
+      - period_days
       properties:
         total_users:
           type: integer
@@ -205,7 +226,11 @@ components:
           type: integer
     UsagePoint:
       type: object
-      required: [date, service, request_count, token_count]
+      required:
+      - date
+      - service
+      - request_count
+      - token_count
       properties:
         date:
           type: string
@@ -217,7 +242,9 @@ components:
           type: integer
     UsageResponse:
       type: object
-      required: [points, summary]
+      required:
+      - points
+      - summary
       properties:
         points:
           type: array
@@ -227,7 +254,10 @@ components:
           type: object
     UserActivityPoint:
       type: object
-      required: [date, dau, new_users]
+      required:
+      - date
+      - dau
+      - new_users
       properties:
         date:
           type: string
@@ -237,7 +267,10 @@ components:
           type: integer
     UserActivityResponse:
       type: object
-      required: [points, mau, growth_rate]
+      required:
+      - points
+      - mau
+      - growth_rate
       properties:
         points:
           type: array
@@ -249,7 +282,11 @@ components:
           type: number
     ServiceRanking:
       type: object
-      required: [service, request_count, avg_latency_ms, error_rate]
+      required:
+      - service
+      - request_count
+      - avg_latency_ms
+      - error_rate
       properties:
         service:
           type: string
@@ -261,7 +298,8 @@ components:
           type: number
     ServiceRankingResponse:
       type: object
-      required: [rankings]
+      required:
+      - rankings
       properties:
         rankings:
           type: array
@@ -269,7 +307,11 @@ components:
             $ref: '#/components/schemas/ServiceRanking'
     TrendPoint:
       type: object
-      required: [date, requests, tokens, storage_gb]
+      required:
+      - date
+      - requests
+      - tokens
+      - storage_gb
       properties:
         date:
           type: string
@@ -281,7 +323,9 @@ components:
           type: number
     TrendResponse:
       type: object
-      required: [points, period_days]
+      required:
+      - points
+      - period_days
       properties:
         points:
           type: array
