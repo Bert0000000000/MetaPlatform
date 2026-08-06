@@ -87,11 +87,11 @@ export async function getAssetCatalog(groupBy?: string): Promise<DataAssetCatalo
   // 后端返回 {items:[...]}，按 groupBy 分组组装成前端 catalog 结构
   const res = await get<{ items?: DataAsset[] }>('/data-assets/catalog', { groupBy });
   const assets = res?.items ?? [];
+  // DataAsset 无 domain/layer/owner 字段，用 assetType/classification 分组
   const keyOf = (a: DataAsset): string => {
-    if (groupBy === 'domain') return a.domain || '其他';
-    if (groupBy === 'layer') return a.layer || '其他';
-    if (groupBy === 'owner') return a.owner || '其他';
-    return a.domain || '其他';
+    if (groupBy === 'layer') return a.classification || '其他';
+    if (groupBy === 'owner') return a.assetType || '其他';
+    return a.assetType || '其他';
   };
   const groupsMap = new Map<string, DataAsset[]>();
   for (const a of assets) {
@@ -103,7 +103,7 @@ export async function getAssetCatalog(groupBy?: string): Promise<DataAssetCatalo
     label: key,
     assets: list,
   }));
-  return { groupBy: groupBy ?? 'domain', groups };
+  return { groupBy: groupBy ?? 'assetType', groups };
 }
 
 export async function createAsset(req: Partial<DataAsset>): Promise<DataAsset> {

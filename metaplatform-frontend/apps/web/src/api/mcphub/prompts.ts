@@ -7,12 +7,12 @@ async function post<T>(url: string, body?: unknown): Promise<T> { return data(aw
 async function put<T>(url: string, body?: unknown): Promise<T> { return data(await client.put<T>(url, body)); }
 async function del<T>(url: string): Promise<T> { return data(await client.delete<T>(url)); }
 
-import type { PromptTemplate, PromptTemplateCreateRequest, PageResponse } from './types';
+import type { PromptTemplate, PromptTemplateCreateRequest, PromptVariable, PageResponse } from './types';
 
 /** 后端 /prompts 返回 {prompts:[...]} 且字段为 arguments/role，包装成前端结构 */
 function normalizePrompt(p: Partial<PromptTemplate> & { arguments?: unknown[] }): PromptTemplate {
-  const variables = Array.isArray((p as { variables?: unknown[] }).variables)
-    ? (p as { variables: unknown[] }).variables
+  const variables: PromptVariable[] = Array.isArray((p as { variables?: PromptVariable[] }).variables)
+    ? (p as { variables: PromptVariable[] }).variables
     : Array.isArray(p.arguments)
       ? (p.arguments as Array<{ name?: string; required?: boolean; description?: string }>).map((a) => ({
           name: a.name ?? '',
@@ -37,7 +37,7 @@ function normalizePrompt(p: Partial<PromptTemplate> & { arguments?: unknown[] })
 /** 后端 /prompts 返回 {prompts:[...]}，包装成前端 PageResponse 结构 */
 function toPage(raw: { prompts?: PromptTemplate[]; items?: PromptTemplate[] } | null): PageResponse<PromptTemplate> {
   const items = (raw?.items ?? raw?.prompts ?? []).map(normalizePrompt);
-  return { items, total: items.length, page: 1, pageSize: items.length || 1, totalPages: 1 };
+  return { items, total: items.length, page: 1, size: items.length || 1, totalPages: 1 };
 }
 
 export async function listPrompts(params?: { keyword?: string }): Promise<PageResponse<PromptTemplate>> {

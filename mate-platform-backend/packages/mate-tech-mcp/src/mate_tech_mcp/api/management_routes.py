@@ -12,12 +12,13 @@ Tenant-scoped via ``require_tenant`` (ADR-0014 step 2).
 from __future__ import annotations
 
 import uuid
+from datetime import UTC
 from typing import Any
 
-from fastapi import APIRouter, Body, HTTPException, Query, Request
-from pydantic import BaseModel, Field
-
+import structlog
+from fastapi import APIRouter, HTTPException, Query, Request
 from mate_platform.tenancy.guards import require_tenant
+from pydantic import BaseModel, Field
 
 from ..management_repo import (
     AgentTrust,
@@ -37,6 +38,8 @@ from ..management_repo import (
     put_trust,
 )
 
+logger = structlog.get_logger(__name__)
+
 router = APIRouter(prefix="/api/v1/mcp", tags=["mcp-management"])
 
 
@@ -45,8 +48,8 @@ def _tid(request: Request) -> str:
 
 
 def _now() -> str:
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).isoformat()
+    from datetime import datetime
+    return datetime.now(UTC).isoformat()
 
 
 def _gen(prefix: str) -> str:
@@ -338,8 +341,9 @@ async def connection_monitor(request: Request) -> dict[str, Any]:
     try:
         from ..clients_repo import list_clients
         clients = list_clients(tid)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("clients_repo unavailable: %s", exc)
+        clients = []
     servers = [
         {"id": a.id, "name": a.name, "type": "server", "transportType": a.protocol_type,
          "status": a.status, "connectionStatus": "online" if a.status == "ACTIVE" else "error",
@@ -379,11 +383,6 @@ async def connection_monitor(request: Request) -> dict[str, Any]:
 @router.get("/overview")
 async def overview(request: Request) -> dict[str, Any]:
     tid = _tid(request)
-    try:
-        from .clients_repo import list_clients
-        clients = list_clients(tid)
-    except Exception:
-        clients = []
     agents = list_external_agents(tid)
     total_servers = len(agents)
     online_servers = sum(1 for a in agents if a.status == "ACTIVE")
@@ -410,15 +409,16 @@ _DEBUG_SESSIONS: list[dict[str, Any]] = []
 
 @router.get("/debug/history")
 async def debug_history(request: Request, page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=200)) -> dict[str, Any]:
-    tid = _tid(request)
+    _tid(request)
     start = (page - 1) * size
     items = _DEBUG_SESSIONS[start:start + size]
     return {"items": items, "total": len(_DEBUG_SESSIONS)}
 
 
 @router.post("/debug/execute")
-async def debug_execute(request: Request, payload: dict = Body(...)) -> dict[str, Any]:
-    tid = _tid(request)
+async def debug_execute(request: Request) -> dict[str, Any]:
+    _tid(request)
+    payload = await request.json()
     session = {
         "id": f"dbg-{uuid.uuid4().hex[:8]}",
         "method": payload.get("method", "tools/call"),
@@ -462,13 +462,14 @@ _API_KEYS: list[dict[str, Any]] = []
 
 @router.get("/integrations")
 async def list_integrations(request: Request) -> list[dict[str, Any]]:
-    tid = _tid(request)
+    _tid(request)
     return _INTEGRATIONS
 
 
 @router.post("/integrations", status_code=201)
-async def create_integration(request: Request, payload: dict = Body(...)) -> dict[str, Any]:
-    tid = _tid(request)
+async def create_integration(request: Request) -> dict[str, Any]:
+    _tid(request)
+    payload = await request.json()
     item = {
         "id": f"int-{uuid.uuid4().hex[:8]}",
         "name": payload.get("name", ""),
@@ -485,6 +486,7 @@ async def create_integration(request: Request, payload: dict = Body(...)) -> dic
 
 @router.delete("/integrations/{iid}")
 async def delete_integration(request: Request, iid: str) -> dict[str, Any]:
+    _tid(request)
     global _INTEGRATIONS
     _INTEGRATIONS = [i for i in _INTEGRATIONS if i["id"] != iid]
     return {"deleted": iid}
@@ -492,13 +494,14 @@ async def delete_integration(request: Request, iid: str) -> dict[str, Any]:
 
 @router.get("/api-keys")
 async def list_api_keys(request: Request) -> list[dict[str, Any]]:
-    tid = _tid(request)
+    _tid(request)
     return _API_KEYS
 
 
 @router.post("/api-keys", status_code=201)
-async def create_api_key(request: Request, payload: dict = Body(...)) -> dict[str, Any]:
-    tid = _tid(request)
+async def create_api_key(request: Request) -> dict[str, Any]:
+    _tid(request)
+    payload = await request.json()
     item = {
         "id": f"ak-{uuid.uuid4().hex[:8]}",
         "name": payload.get("name", ""),

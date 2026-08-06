@@ -12,7 +12,7 @@ import type { McpResource, McpResourceCreateRequest, PageResponse } from './type
 /** 后端 /resources 返回 {resources:[...]}，包装成前端 PageResponse 结构 */
 function toPage(raw: { resources?: McpResource[]; items?: McpResource[] } | null): PageResponse<McpResource> {
   const items = raw?.items ?? raw?.resources ?? [];
-  return { items, total: items.length, page: 1, pageSize: items.length || 1, totalPages: 1 };
+  return { items, total: items.length, page: 1, size: items.length || 1, totalPages: 1 };
 }
 
 export async function listResources(params?: { keyword?: string }): Promise<PageResponse<McpResource>> {

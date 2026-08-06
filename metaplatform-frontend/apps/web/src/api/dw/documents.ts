@@ -23,6 +23,7 @@ function normalizeDocument(raw: any): DocumentItem {
     ext === 'md' ? 'md' : 'other';
   return {
     id: raw.id,
+    employeeId: raw.employeeId ?? raw.employee_id ?? raw.kb_id ?? '',
     filename: raw.filename ?? raw.name,
     fileType,
     fileSize: raw.fileSize ?? raw.size_bytes ?? 0,

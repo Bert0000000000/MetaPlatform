@@ -25,10 +25,10 @@ from __future__ import annotations
 import re
 import uuid
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from mate_platform.messaging.events import Event
@@ -91,8 +91,7 @@ def _serialize(rows: list) -> list[dict]:
 
 def _now_iso() -> str:
     """Current UTC timestamp in ISO format."""
-    from datetime import timezone
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _tenant_id(request: Request) -> str:
@@ -651,7 +650,8 @@ async def get_form_definition(request: Request, form_id: str) -> dict:
 
 
 @router.put("/v1/wfe/forms/{form_id}/settings")
-async def save_form_settings(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+async def save_form_settings(request: Request, form_id: str) -> dict:
+    body = await request.json()
     tid = _tenant_id(request)
     key = f"{tid}:{form_id}"
     form = _FORMS.get(key) or await get_form_definition(request, form_id)
@@ -662,7 +662,8 @@ async def save_form_settings(request: Request, form_id: str, body: dict = Body(.
 
 
 @router.put("/v1/wfe/forms/{form_id}/linkage-rules")
-async def save_form_linkage_rules(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+async def save_form_linkage_rules(request: Request, form_id: str) -> dict:
+    body = await request.json()
     tid = _tenant_id(request)
     key = f"{tid}:{form_id}"
     form = _FORMS.get(key) or await get_form_definition(request, form_id)
@@ -673,7 +674,8 @@ async def save_form_linkage_rules(request: Request, form_id: str, body: dict = B
 
 
 @router.put("/v1/wfe/forms/{form_id}/scripts")
-async def save_form_scripts(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+async def save_form_scripts(request: Request, form_id: str) -> dict:
+    body = await request.json()
     tid = _tenant_id(request)
     key = f"{tid}:{form_id}"
     form = _FORMS.get(key) or await get_form_definition(request, form_id)
@@ -684,7 +686,7 @@ async def save_form_scripts(request: Request, form_id: str, body: dict = Body(..
 
 
 @router.post("/v1/wfe/forms/{form_id}/validate")
-async def validate_form(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+async def validate_form(request: Request, form_id: str) -> dict:
     return {"valid": True, "errors": []}
 
 
@@ -706,7 +708,8 @@ async def get_flow(request: Request, module_id: str) -> dict:
 
 
 @router.put("/v1/wfe/flows/{module_id}")
-async def save_flow(request: Request, module_id: str, body: dict = Body(...)) -> dict:
+async def save_flow(request: Request, module_id: str) -> dict:
+    body = await request.json()
     tid = _tenant_id(request)
     key = f"{tid}:{module_id}"
     flow = body
@@ -716,7 +719,8 @@ async def save_flow(request: Request, module_id: str, body: dict = Body(...)) ->
 
 
 @router.post("/wfe/flows/validate")
-async def validate_flow(request: Request, body: dict = Body(...)) -> dict:
+async def validate_flow(request: Request) -> dict:
+    body = await request.json()
     nodes = body.get("nodes", [])
     errors = []
     if not nodes:
@@ -725,7 +729,8 @@ async def validate_flow(request: Request, body: dict = Body(...)) -> dict:
 
 
 @router.post("/wfe/flows/test")
-async def test_flow(request: Request, body: dict = Body(...)) -> dict:
+async def test_flow(request: Request) -> dict:
+    body = await request.json()
     nodes = body.get("nodes", [])
     steps = [
         {"stepIndex": i + 1, "nodeId": n.get("id", ""), "nodeName": n.get("name", ""),
@@ -737,7 +742,8 @@ async def test_flow(request: Request, body: dict = Body(...)) -> dict:
 
 
 @router.post("/v1/wfe/flows/{module_id}/publish")
-async def publish_flow(request: Request, module_id: str, body: dict = Body(...)) -> dict:
+async def publish_flow(request: Request, module_id: str) -> dict:
+    body = await request.json()
     tid = _tenant_id(request)
     key = f"{tid}:{module_id}"
     flow = body
@@ -761,7 +767,8 @@ async def list_app_versions(request: Request, app_id: str) -> dict:
 
 
 @router.post("/apps/{app_id}/versions", status_code=201)
-async def create_app_version(request: Request, app_id: str, body: dict = Body(...)) -> dict:
+async def create_app_version(request: Request, app_id: str) -> dict:
+    body = await request.json()
     tid = _tenant_id(request)
     key = f"{tid}:{app_id}"
     now = _now_iso()

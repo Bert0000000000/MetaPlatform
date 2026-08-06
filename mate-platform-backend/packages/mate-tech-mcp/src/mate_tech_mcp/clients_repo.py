@@ -6,15 +6,14 @@ MCP center UI). Follows the same tenant-scoped store pattern as
 """
 from __future__ import annotations
 
-import re
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _gen_id(prefix: str) -> str:

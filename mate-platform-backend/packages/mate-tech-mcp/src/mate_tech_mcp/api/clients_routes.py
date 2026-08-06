@@ -14,13 +14,11 @@ Tenant-scoped via ``require_tenant`` (ADR-0014 step 2).
 """
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel, Field
-
 from mate_platform.tenancy.guards import require_tenant
+from pydantic import BaseModel, Field
 
 from ..clients_repo import (
     create_client,
