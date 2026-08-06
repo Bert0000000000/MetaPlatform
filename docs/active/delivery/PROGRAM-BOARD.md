@@ -15,6 +15,7 @@
 | **BUSINESS-SLICES-WFE-P0**（ADR-0024） | FlowableClient 升级 BearerAuth + OutgoingAuthMiddleware（13 硬规则 #4 闭环）+ 47/47 tests | ✅ Accepted 2026-08-06 | `evidence/BUSINESS-SLICES-WFE-P0-ACCEPTANCE.md` |
 | **MP-MCP-REGISTER-01**（ADR-0025） | McpMarketplaceClient 调 mate-tech-mcp `/api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ McpInstaller 去 blocked-on + 8/8 tests | ✅ Accepted 2026-08-06 | `evidence/MP-MCP-REGISTER-ACCEPTANCE.md` |
 | **MP-AGENT-REGISTER-01**（ADR-0026） | AgentMarketplaceClient 调 mate-tech-agent `/api/v1/agent/registry/agents` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ AgentInstaller 去 blocked-on + 9/9 tests | ✅ Accepted 2026-08-06 | `evidence/MP-AGENT-REGISTER-ACCEPTANCE.md` |
+| **MP-ONT-REGISTER-01**（ADR-0027） | OntologyMarketplaceClient 调 mate-tech-ont `/api/v1/ont/v2/object-types` (ObjectTypeDTO) + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ OntologyInstaller 去 blocked-on + 10/10 tests | ✅ Accepted 2026-08-06 | `evidence/MP-ONT-REGISTER-ACCEPTANCE.md` |
 
 **main HEAD**：`ecb9e2b5`（合并 refactor/mp-agent-register-01 后）；origin 同步推送。
 
@@ -71,6 +72,7 @@
 - **SEC-TENANT-01 豁免点**：`marketplace_install` 是平台级资源但带 `tenant_id` 留痕，由 SEC-TENANT-01 owner 在 ACCEPTANCE 显式签字。
 - **MP-MCP-REGISTER-01** ✅ 2026-08-06 — ADR-0025：`McpMarketplaceClient` 调 `POST /api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 8/8 tests + ruff 0 errors；commit `78ca0c0b`。
 - **MP-AGENT-REGISTER-01** ✅ 2026-08-06 — ADR-0026：`AgentMarketplaceClient` 调 `POST /api/v1/agent/registry/agents` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 9/9 tests + ruff 0 errors；commit `ecb9e2b5`。
+- **MP-ONT-REGISTER-01** ✅ 2026-08-06 — ADR-0027：`OntologyMarketplaceClient` 调 `POST /api/v1/ont/v2/object-types` (ObjectTypeDTO: rid/primary_key/properties/display_name/interfaces) + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 10/10 tests + ruff 0 errors；commit 待补。MARKETPLACE-CONSUMER-01 最后一个子 spec 闭环。
 
 ### In Progress — TECH-SERVICES 16 域接入
 
