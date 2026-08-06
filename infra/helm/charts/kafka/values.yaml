@@ -52,14 +52,30 @@ autoScaling:
 
 # Producer / consumer defaults.
 config:
-  auto.create.topics.enable: "false"   # topics are explicit (PLATFORM-EVENT-01)
-  default.replication.factor: "1"      # 3 in production
-  num.partitions: "6"
-  log.retention.hours: "72"
-  compression.type: "producer"
-  inter.broker.listener.names: "INTERNAL,CLIENT"
-  advertised.listeners: "INTERNAL://kafka:9092,CLIENT://kafka:9092"
-  listener.security.protocol.map: "INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
+  auto:
+    create:
+      topics:
+        enable: "false"   # topics are explicit (PLATFORM-EVENT-01)
+  default:
+    replication:
+      factor: "1"      # 3 in production
+  num:
+    partitions: "6"
+  log:
+    retention:
+      hours: "72"
+  compression:
+    type: "producer"
+  inter:
+    broker:
+      listener:
+        names: "INTERNAL,CLIENT"
+  advertised:
+    listeners: "INTERNAL://kafka:9092,CLIENT://kafka:9092"
+  listener:
+    security:
+      protocol:
+        map: "INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
 
 # 17-domain topic declarations. PLATFORM-EVENT-01 publish path
 # resolves topics from event.type + tenant_id; this list is the
