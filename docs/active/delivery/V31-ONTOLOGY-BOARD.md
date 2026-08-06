@@ -2,9 +2,10 @@
 
 > 起草：2026-08-06 · 关联：蓝图 v0.4 / ADR-0021 / ADR-0040 / ADR-0041
 >
-> 状态：**v3.1 子计划 20/20 Batch Accepted · 364/364 tests pass · M1+M2+M3 全部收口**
+> 状态：**v3.1 子计划 20/20 Batch Accepted · 364/364 tests pass · M1+M2+M3 全部收口 · v4 RUNTIME 5/5 Batch Accepted · WFE P0 模板落地**
 >
 > 总览：M1（8 周 / 6 Batch）+ M2（10 周 / 6 Batch）+ M3（12 周 / 8 Batch）= **20 Batch / 38 周 ≈ 9 个月**到 GA-Ready。
+> 后续：v4 RUNTIME（5 Batch / 19 周 合并提速收口）+ BUSINESS-SLICES P0 模板（ADR-0024 wfe 收口；剩余 16 域按 P0/P1/P2 接力）。
 
 ## 1. M1 — 地基（8 周 / 6 Batch 并行）
 

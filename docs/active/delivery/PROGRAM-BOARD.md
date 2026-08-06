@@ -1,7 +1,20 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-08-03（含 v3.1 增量 sub-batch + P3-W6/W7 wave + PR 治理状态 + K2/K3 APPHUB-RUNTIME-01 收口 + mcp Fix-1/P3-W10 测试闭环 + v3.2 W2/W3 验证闭环 + v3.2-α G6 应用层增强 + D1 staging smoke 独立化 + G6 RLS PgClient 集成 + v3.2-γ Iceberg/Trino sub-chart + G6 RLS FastAPI Depends + 历史 ruff 收尾 + StarRocks sub-chart + v3.2-δ 多模态数据产品 (Iceberg ADS) 控制面 + 工作流 + 审计；G1-G8 全 Accepted + M-v3.2-α + M-v3.2-γ + M-v3.2-δ 控制面 + 工作流 + 审计 内容全部闭环）
+> 更新时间：2026-08-06（含 v3.1 Ontology 20/20 Batch + v4 RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速收口 + mp-ont-bugfix-01 + Dockerfile 修复 + BUSINESS-SLICES-WFE-P0 模板收口 ADR-0024；G1-G8 全 Accepted + M-v3.2-α + M-v3.2-γ + M-v3.2-δ 控制面 + 工作流 + 审计 + v3.1 子计划 + v4 RUNTIME + WFE P0 模板 内容全部闭环）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
+
+## v3.1 + v4 RUNTIME + BUSINESS-SLICES P0 增量收口（2026-08-06）
+
+| 增量 | 范围 | 状态 | 证据 |
+|---|---|---|---|
+| **v3.1 Ontology 子计划** | 20/20 Batch（KERNEL/MODEL/SANDBOX/SESSION/AIP-GATEWAY/AGENT-ORCH + ACTION/OBJECTSET/MANAGER/AGENT-ONT/AGENT-SEC/RAG-ONT + AGENT-WF/AGENT-APP/AGENT-DATA/AGENT-OBS/AGENT-KB/AGENT-EXT/SANDBOX-02/SUPER-COPILOT） | ✅ Accepted | `evidence/M{1,2,3}-ACCEPTANCE.md`（364/364 tests） |
+| **mp-ont-bugfix-01** | 3 bug 修复（repo.evaluate_object_set 接入编译器 / FilterCompiler 识别连字符 slug / ResourceLimits 上下限）+ 27 e2e 固化 | ✅ Accepted | `evidence/V3.1-FINAL-STATUS.md` |
+| **v4 RUNTIME-MVP-01**（ADR-0022） | RUNTIME-HTTP-01 + RUNTIME-PG-03 合并提速：FastAPI 5 endpoint + PgOntologyRepository + 7 e2e + curl 脚本 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-01-ACCEPTANCE.md` |
+| **v4 RUNTIME-MVP-02**（ADR-0023） | RUNTIME-OPT + RUNTIME-K8S-02 + IAM-COPILOT-04 + MARKETPLACE-05 合并提速：SQLCompiler PG filter + SubprocessExecutor + 5 PG e2e + Playwright 17/17 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-02-ACCEPTANCE.md` |
+| **Dockerfile 修复** | auth-service 加 structlog+httpx+aliyun mirror；ont 加 mate_kernel+psycopg2-binary | ✅ Accepted | commit `677a8697` |
+| **BUSINESS-SLICES-WFE-P0**（ADR-0024） | FlowableClient 升级 BearerAuth + OutgoingAuthMiddleware（13 硬规则 #4 闭环）+ 47/47 tests | ✅ Accepted 2026-08-06 | `evidence/BUSINESS-SLICES-WFE-P0-ACCEPTANCE.md` |
+
+**main HEAD**：`ea4197f7`（合并 refactor/wfe-p0-template-01 后）；origin 同步推送。
 
 ## v3.0 GA 状态（9/9 核心 + D0-D8 全部 Accepted）
 
