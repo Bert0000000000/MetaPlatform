@@ -2343,3 +2343,255 @@ requirements:
     tests: []
     implementationStatus: planned
     acceptanceStatus: notAccepted
+  FR-MARKETPLACE-ACTIVATELICENSE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - activateLicense
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-GETINSTALLSTATUS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - getInstallStatus
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-GETMARKETPLACEARTIFACT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - getMarketplaceArtifact
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-INSTALLARTIFACT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - installArtifact
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-LISTINSTALLEDARTIFACTS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - listInstalledArtifacts
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-LISTMARKETPLACEARTIFACTS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - listMarketplaceArtifacts
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-LISTSUBSCRIPTIONS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - listSubscriptions
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-RETRYINSTALL:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - retryInstall
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-STREAMINSTALLEVENTS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - streamInstallEvents
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-MARKETPLACE-UNINSTALLARTIFACT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - uninstallArtifact
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBDELETEAPPHUBAPPSCODE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubDeleteApphubAppsCode
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBDELETEAPPHUBGROUPSCODE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubDeleteApphubGroupsCode
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETAPPRUNTIME:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetAppRuntime
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETSHORTLINK:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetShortlink
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBLISTSHORTLINKS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubListShortlinks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPATCHAPPHUBAPPSCODE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPatchApphubAppsCode
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPPUBLISH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostAppPublish
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPRUNTIMEEXECUTE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostAppRuntimeExecute
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBAPPS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubApps
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBGROUPS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubGroups
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBMODULES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubModules
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBPAGES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubPages
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBTEMPLATES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubTemplates
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTSHORTLINK:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostShortlink
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-LLMGW-LLMGWPOSTCHATMULTIMODAL:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: llmgw
+    operationIds:
+    - llmgwPostChatMultimodal
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTGETFEDERATIONMAPPINGS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: ont
+    operationIds:
+    - ontGetFederationMappings
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTFEDERATIONMAPPINGS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: ont
+    operationIds:
+    - ontPostFederationMappings
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTFEDERATIONQUERY:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: ont
+    operationIds:
+    - ontPostFederationQuery
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
