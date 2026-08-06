@@ -33,6 +33,8 @@ SERVICES: dict[str, str] = {
     "copilot": os.getenv("COPILOT_URL", "http://mate-app-copilot:8601"),
     "arch":    os.getenv("ARCH_URL",    "http://mate-app-arch:8321"),
     "dw":      os.getenv("DW_URL",      "http://mate-tech-dw:8021"),
+    "apphub":  os.getenv("APPHUB_URL",  "http://mate-app-hub:8301"),
+    "data":    os.getenv("DATA_URL",    "http://mate-tech-data:8701"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -56,6 +58,10 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/copilot/", "copilot"),
     ("/api/v1/superai/", "copilot"),
     ("/api/v1/arch/", "arch"),
+    ("/api/v1/apphub/", "apphub"),
+    ("/api/v1/data/", "data"),
+    ("/api/v1/etl/", "data"),
+    ("/api/v1/scheduler/", "data"),
 ]
 
 

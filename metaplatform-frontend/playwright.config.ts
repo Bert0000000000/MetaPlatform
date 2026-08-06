@@ -17,7 +17,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'web', use: { ...devices['Desktop Chrome'] } },
+    { name: 'auth-setup', testMatch: /auth\.setup\.ts/, },
+    { name: 'web', use: { ...devices['Desktop Chrome'], storageState: 'tests/e2e/.auth/state.json' }, dependencies: ['auth-setup'] },
   ],
   webServer: {
     command: `pnpm --filter @mate/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,

@@ -24,6 +24,28 @@ export interface KbEntity {
   chunkCount: number;
 }
 
+/** Raw shape returned by the backend TECH-KB /api/v1/kb/collections endpoint. */
+interface KbCollectionRaw {
+  id: string;
+  name: string;
+  description?: string;
+  document_count: number;
+  status: string;
+  config?: Record<string, unknown>;
+}
+
+function mapCollection(raw: KbCollectionRaw): KbEntity {
+  return {
+    id: raw.id,
+    kbCode: raw.id,
+    displayName: raw.name,
+    description: raw.description,
+    kbKind: String(raw.config?.kind ?? 'GENERAL'),
+    enabled: raw.status === 'active',
+    chunkCount: raw.document_count,
+  };
+}
+
 export interface KbDocument {
   id: string;
   kbId: string;
@@ -31,6 +53,27 @@ export interface KbDocument {
   status: string;
   chunkCount: number;
   fileSize?: number;
+}
+
+/** Raw shape returned by the backend TECH-KB /api/v1/kb/documents endpoint. */
+interface KbDocumentRaw {
+  id: string;
+  collection_id: string;
+  filename: string;
+  status: string;
+  chunk_count: number;
+  size_bytes: number;
+}
+
+function mapDocument(raw: KbDocumentRaw): KbDocument {
+  return {
+    id: raw.id,
+    kbId: raw.collection_id,
+    title: raw.filename,
+    status: raw.status,
+    chunkCount: raw.chunk_count,
+    fileSize: raw.size_bytes,
+  };
 }
 
 export interface Evidence {
@@ -51,14 +94,14 @@ export interface SearchPayload {
 
 /** 列出所有知識庫 */
 export async function listKb(): Promise<KbEntity[]> {
-  const resp = await kbClient.get<KbEntity[]>('/knowledge-bases');
-  return resp.data;
+  const resp = await kbClient.get<KbCollectionRaw[]>('/collections');
+  return (resp.data ?? []).map(mapCollection);
 }
 
 /** 列出某個知識庫下的文檔 */
 export async function listDocuments(kbId: string): Promise<KbDocument[]> {
-  const resp = await kbClient.get<KbDocument[]>('/documents', { params: { kbId } });
-  return resp.data;
+  const resp = await kbClient.get<KbDocumentRaw[]>('/documents', { params: { collection_id: kbId } });
+  return (resp.data ?? []).map(mapDocument);
 }
 
 /** 混合檢索(BM25 + 向量) */
@@ -69,8 +112,12 @@ export async function search(payload: SearchPayload): Promise<Evidence[]> {
 
 /** 新建知識庫 */
 export async function createKb(payload: Partial<KbEntity>): Promise<KbEntity> {
-  const resp = await kbClient.post<KbEntity>('/knowledge-bases', payload);
-  return resp.data;
+  const resp = await kbClient.post<KbCollectionRaw>('/collections', {
+    name: payload.displayName || payload.kbCode,
+    description: payload.description,
+    config: { kind: payload.kbKind },
+  });
+  return mapCollection(resp.data);
 }
 
 /** 上傳文檔(由後端負責文件內容) */

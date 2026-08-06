@@ -96,8 +96,10 @@ app.state.rate_limiter = _rate_limiter
 # P3-W10 Fix-1: 5 spec endpoints mounted via the explicit origin router
 # (api/origin_routes.py) so that spec-level scanners can discover them.
 from .api.origin_routes import router as origin_router  # noqa: E402
+from .api.clients_routes import router as clients_router  # noqa: E402
 
 app.include_router(origin_router)
+app.include_router(clients_router)
 # 扩展能力 (backlog §3.8): MCP Federation endpoints.
 app.include_router(federation_router_routes)
 

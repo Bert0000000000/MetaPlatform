@@ -87,6 +87,16 @@ META-INF/
 
 # Temporary scripts and JSON outputs
 docs/006-TMP/*.json
+
+# Playwright E2E auth state (contains session tokens — never commit)
+metaplatform-frontend/tests/e2e/.auth/
+
+# Local Claude config (not project source)
+.claude/
+
+# Local skills lock (machine-specific)
+skills-lock.json
+.agents/
 docs/006-TMP/*.txt
 docs/006-TMP/jwt.txt
 # Temporary screenshots and images produced during verification

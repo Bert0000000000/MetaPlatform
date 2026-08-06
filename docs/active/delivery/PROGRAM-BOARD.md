@@ -22,6 +22,16 @@
 
 ## v3.1 增量 sub-batch（进行中）
 
+### E2E 联调闭环（2026-08-06，Web 页面端到端验证）
+
+| Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 |
+|---|---|---:|---:|---:|---:|---|
+| **E2E-INTEGRATION-01** | **Accepted** ✅ | ✓ | ✓ | ✓ 46/46 Playwright E2E | ✓ Docker 全栈 | `evidence/E2E-INTEGRATION-ACCEPTANCE.md` |
+
+- **模式**：前端对接后端 Docker 服务，Playwright 浏览器逐页面验证真实前后端对接 + 后端业务逻辑。
+- **本批修复**：apphub/data 服务部署 + 网关路由、KB/AppHub 前后端字段映射、MCP clients CRUD 开发、llmgw/obs/msg/mcp 镜像缺模块修复、dw healthz、多服务 auth env 补齐。
+- **遗留**：obs/msg 镜像重建受 Docker registry 网络限制；真实 LLM 外部网络不可达。
+
 ### In Progress — 业务域 P2 wave
 
 | sub-batch | 域 | 接力分支 | 依赖 | 状态 |

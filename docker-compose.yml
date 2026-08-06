@@ -369,6 +369,9 @@ services:
     container_name: mate-tech-rag
     environment:
       # === 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳娼￠弻鐔衡偓鐢殿焾瀛濈紓浣界堪閸婃繈寮婚敃鈧灒濞撴凹鍨遍敍鍡涙偡濠婂懎顣奸悽顖涘笧婢规洘绺介崨濠勫幗闂佸綊鍋婇崹浼存儍濞差亝鐓熸繛鎴炵墪閸旓附鎱ㄦ繝鍐┿仢鐎规洦鍋婂畷鐔碱敇濞戞瑧鈧亶姊? 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛銈呭閺屾盯顢曢敐鍡欙紩闂侀€炲苯澧剧紒鐘虫尭閻ｉ攱绺界粙娆炬綂闂佺偨鍎遍崯璺ㄨ姳閵夆晜鈷掑ù锝囶焾椤ュ繘鏌涚€ｂ晝绐旂€规洘娲樺蹇涘煛閸愵亞鍔跺┑鐘灱閸╂牠宕濋弽顓熷亗婵炲棙鎸哥痪褔鏌涢锝囩畵闁抽攱妫冮弻锝夋晲閸粌鎯堥梺姹囧労娴滎亪鐛崱姘兼Ъ闂佺顑冮崕鐢稿蓟閳ュ磭鏆嗛柍褜鍓熷畷浼村箻閼告娼熼梺鍦劋椤ㄥ懘锝為崨瀛樼厽婵☆垵娅ｉ敍宥吤瑰鍐煟婵﹦绮幏鍛瑹椤栨粌濮兼俊鐐€栭崹鐢稿疮閺夋垹鏆︽繝闈涱儏缁狅綁鏌ㄩ弴妤€浜鹃梺钘夊暟閸犳牠寮婚敓鐘茬倞闁宠桨鐒﹂悘浣虹磽娴ｅ弶顎嗛柛瀣崌濮婄粯绻濇惔鈥茬盎濠电偠顕滄俊鍥╁垝濞嗘挸绠虫俊銈咃攻閺呮盯鎮楅獮鍨姎婵炲眰鍔庢竟鏇㈡寠婢规繂缍婇弫鎰板川椤旇棄鍓甸梺鍝勭▌缁绘繂顫忓ú顏呭€婚柍鍝勫€归悵锕傛⒑閹肩偛濮€婵炲鐩、姘舵晲閸ャ劌鐝板┑鐐存綑椤戝棝锝炲澶嬧拺闂傚牊绋撶粻鍐测攽椤旂偓鏆挊鐔哥節闂堟侗鍎愰柣鎾跺枛閺岋綁骞囬澶婃闂佸磭绮幑鍥蓟瀹ュ牜妾ㄩ梺鍛婃尰閻熲晛鐣烽姀銈呭唨闁靛ě鍛獎闂備礁鎼ú銏ゅ垂濞差亜鐓曢柟杈鹃檮閻撴瑦銇勯弽褎顥滈悗姘煎櫍閵嗗懏瀵肩€涙ǚ鎷虹紓浣割儐椤戞瑩宕曡箛娑欏€垫慨姗嗗亜瀹撳棛鈧娲樺浠嬪春閳? 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳顭烽弻锝夊箛椤掍焦鍎撻梺鎼炲妼閸婂潡寮诲☉銏╂晝闁挎繂妫涢ˇ銉х磽娴ｅ搫小闁告濞婂璇测槈濡攱鏂€闂佸憡娲﹂崑鍕叏閵忋倖鈷戞繛鑼额嚙楠炴鏌熼悷鐗堝枠鐎殿喖顭烽幃銏ゆ惞閸︻叏绱查梻渚€娼х换鎺撴叏閻㈠憡鍊堕柛顐犲劜閳锋垶鎱ㄩ悷鐗堟悙闁逞屽厵閸婃繂鐣烽幎鑺ユ櫜濠㈣泛锕ㄩ幗?host.docker.internal ===
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       RAG_MODE: ${RAG_MODE:-full}
       EMBEDDER_PROVIDER: ${EMBEDDER_PROVIDER:-local}
       MILVUS_HOST: milvus
@@ -411,6 +414,9 @@ services:
     image: mate-tech-agent:dev
     container_name: mate-tech-agent
     environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       RAG_URL: http://mate-tech-rag:8001
       AGENT_PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_agent
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
@@ -441,6 +447,9 @@ services:
     image: mate-app-kb:dev
     container_name: mate-app-kb
     environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       RAG_URL: http://mate-tech-rag:8001
       AGENT_URL: http://mate-tech-agent:8002
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
@@ -469,6 +478,9 @@ services:
     image: mate-tech-llmgw:dev
     container_name: mate-tech-llmgw
     environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_kb
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -560,6 +572,72 @@ services:
       retries: 5
       start_period: 30s
 
+  # mate-app-hub: Application hub (app registry / groups / modules / pages / templates)
+  # Serves /api/v1/apphub/* (FR-APP-HUB-001..005)
+  mate-app-hub:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-app-hub/Dockerfile
+    image: mate-app-hub:dev
+    container_name: mate-app-hub
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      REDIS_URL: redis://redis:6379/0
+      PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-app-hub
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_APPHUB_PORT:-8301}:8301"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8301/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # mate-tech-data: Data platform control plane (CDC tasks + data sources + ETL)
+  # Serves /api/v1/data/* (DATA-D0..D8)
+  mate-tech-data:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-data/Dockerfile
+    image: mate-tech-data:dev
+    container_name: mate-tech-data
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      REDIS_URL: redis://redis:6379/0
+      PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-data
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_DATA_PORT:-8701}:8701"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8701/api/v1/data/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # mate-tech-ont: 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴鐔虹瘈闁汇垽娼у瓭闂佹寧娲忛崐婵嬪箖瑜斿畷鍗炩枎閹寸姷鍔堕梻浣侯焾閺堫剛绮欓幘鍓佷笉濡わ絽鍟悡娆撴倵閻㈡鐒惧ù鐙呯畵閺岋綁濡搁敃鈧悘鈺冪磼鏉堛劌娴柛鈹惧亾濡炪倖甯婇懗鍓佸姬閳ь剟姊洪幖鐐插姌闁告柨鐭傞崺鈧い鎺戝€归弳顒勬煛鐏炶濡奸柍瑙勫灴瀹曞崬鈻庤箛鎾寸槗闂傚倷娴囬～澶愭偂閿涘嫮涓嶉柡宥庡幖閽冪喐绻涢幋娆忕仼閸ユ挳姊虹化鏇炲⒉妞ゎ厼娲棟濞寸厧鐡ㄩ埛鎴︽煕濠靛棗顏柣鎺曟硶缁辨帞绱掑Ο鑲╃暤闂佷紮绲块崗妯虹暦婵傜鍗抽柣鎰版涧楠炴劕鈹戦悙鑸靛涧缂佽尪妫勯敃銏ゆ焼瀹ュ懐鍔﹀銈嗗笒鐎氼噣鎮鹃悜妯诲弿?(Neo4j backed)
   mate-tech-ont:
     <<: [*restart, *logging]
@@ -569,6 +647,9 @@ services:
     image: mate-tech-ont:dev
     container_name: mate-tech-ont
     environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USER: ${NEO4J_USER:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-mate-pass}
@@ -599,6 +680,9 @@ services:
     image: mate-tech-msg:dev
     container_name: mate-tech-msg
     environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP: kafka:9092
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
@@ -627,6 +711,9 @@ services:
     image: mate-tech-mcp:dev
     container_name: mate-tech-mcp
     environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
       MCP_SERVER_NAME: mate-tech-mcp
       REDIS_URL: redis://redis:6379/0
@@ -658,6 +745,9 @@ services:
     image: mate-tech-obs:dev
     container_name: mate-tech-obs
     environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
       LOKI_ENDPOINT: http://loki:3100/loki/api/v1/push
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-obs
@@ -888,6 +978,8 @@ services:
       COPILOT_URL: http://mate-app-copilot:8601
       ARCH_URL: http://mate-app-arch:8321
       DW_URL: http://mate-tech-dw:8021
+      APPHUB_URL: http://mate-app-hub:8301
+      DATA_URL: http://mate-tech-data:8701
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-api-gateway
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

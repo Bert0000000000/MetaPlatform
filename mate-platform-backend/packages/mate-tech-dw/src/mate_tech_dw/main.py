@@ -9,7 +9,7 @@ cross-service aggregation land in P2-W5 (TD-6).
 """
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 
 from mate_platform.auth import install_auth
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -30,7 +30,12 @@ def create_app() -> FastAPI:
     # Step 1 of ADR-0014 5-step pattern: install bearer-token auth
     # middleware. All dw endpoints read tenant-bound state, so none
     # of them is widened into the anonymous set.
-    install_auth(app)
+    install_auth(app, extra_anonymous_paths={"/healthz"})
+
+    @app.get("/healthz")
+    async def healthz() -> Response:
+        return Response(content='{"status":"ok"}', media_type="application/json")
+
     # Step 3: default outbox writer (no-op until a test attaches one).
     if not hasattr(app.state, "outbox_writer"):
         app.state.outbox_writer = InMemoryOutboxWriter()
