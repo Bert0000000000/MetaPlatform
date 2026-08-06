@@ -51,7 +51,7 @@ repos:
       - id: hadolint-docker
         files: ^mate-platform-backend/.*Dockerfile.*$
 
-  - repo: https://github.com/koalaman/shellcheck
+  - repo: https://github.com/koalaman/shellcheck-precommit
     rev: v0.10.0
     hooks:
       - id: shellcheck
