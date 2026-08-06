@@ -20,6 +20,7 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from mate_platform.auth import install_auth
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.observability import journey_span
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 from mate_tech_rag import __version__
@@ -270,67 +271,74 @@ def create_app() -> FastAPI:
         _require_ctx(request)
         require_tenant(request.state.ctx)
         tenant_id = str(request.state.ctx.tenant_id)
-        try:
-            result = retrieve(req)
-            # Tenant-scoped hit filtering: only return hits from documents
-            # owned by this tenant (ADR-0014 cross-tenant isolation).
-            owned = tenant_document_ids(tenant_id)
-            if owned:
-                filtered = [h for h in result.hits if h.document_id in owned]
-            else:
-                filtered = []
-            # metadata_filter: keep only hits whose metadata matches all
-            # key-value pairs in the filter (task 3).
-            if req.metadata_filter:
-                filtered = [
-                    h for h in filtered
-                    if all(h.metadata.get(k) == v for k, v in req.metadata_filter.items())
+        user_id = str(getattr(request.state.ctx, "user_id", "anonymous"))
+        with journey_span(
+            "rag.retrieve",
+            tenant_id=tenant_id,
+            user_id=user_id,
+            attributes={"rag.top_k": req.top_k, "rag.mode": req.mode},
+        ):
+            try:
+                result = retrieve(req)
+                # Tenant-scoped hit filtering: only return hits from documents
+                # owned by this tenant (ADR-0014 cross-tenant isolation).
+                owned = tenant_document_ids(tenant_id)
+                if owned:
+                    filtered = [h for h in result.hits if h.document_id in owned]
+                else:
+                    filtered = []
+                # metadata_filter: keep only hits whose metadata matches all
+                # key-value pairs in the filter (task 3).
+                if req.metadata_filter:
+                    filtered = [
+                        h for h in filtered
+                        if all(h.metadata.get(k) == v for k, v in req.metadata_filter.items())
+                    ]
+                # Reranker: second-pass reordering of filtered hits (task 2).
+                reranker = create_reranker(req.rerank_strategy)
+                hit_map = {h.chunk_id: h for h in filtered}
+                candidates = [
+                    RerankCandidate(
+                        chunk_id=h.chunk_id,
+                        text=h.text,
+                        score=h.score,
+                        metadata=dict(h.metadata),
+                    )
+                    for h in filtered
                 ]
-            # Reranker: second-pass reordering of filtered hits (task 2).
-            reranker = create_reranker(req.rerank_strategy)
-            hit_map = {h.chunk_id: h for h in filtered}
-            candidates = [
-                RerankCandidate(
-                    chunk_id=h.chunk_id,
-                    text=h.text,
-                    score=h.score,
-                    metadata=dict(h.metadata),
+                reranked = reranker.rerank(req.query, candidates, req.top_k)
+                reranked_hits = [
+                    ChunkHit(
+                        chunk_id=c.chunk_id,
+                        document_id=hit_map[c.chunk_id].document_id,
+                        score=c.score,
+                        text=c.text,
+                        metadata=hit_map[c.chunk_id].metadata,
+                    )
+                    for c in reranked
+                ]
+                filtered_resp = RetrievalResponse(
+                    query=result.query,
+                    hits=reranked_hits,
+                    total=len(reranked_hits),
+                    latency_ms=result.latency_ms,
+                    mode=result.mode,
                 )
-                for h in filtered
-            ]
-            reranked = reranker.rerank(req.query, candidates, req.top_k)
-            reranked_hits = [
-                ChunkHit(
-                    chunk_id=c.chunk_id,
-                    document_id=hit_map[c.chunk_id].document_id,
-                    score=c.score,
-                    text=c.text,
-                    metadata=hit_map[c.chunk_id].metadata,
+                # Hook 3 of 5: emit search-executed event.
+                _emit(
+                    request, "rag.search.executed", req.query[:64],
+                    {
+                        "query": req.query[:200],
+                        "top_k": req.top_k,
+                        "mode": result.mode,
+                        "hits": len(reranked_hits),
+                        "total_indexed": len(owned),
+                    },
+                    tenant_id,
                 )
-                for c in reranked
-            ]
-            filtered_resp = RetrievalResponse(
-                query=result.query,
-                hits=reranked_hits,
-                total=len(reranked_hits),
-                latency_ms=result.latency_ms,
-                mode=result.mode,
-            )
-            # Hook 3 of 5: emit search-executed event.
-            _emit(
-                request, "rag.search.executed", req.query[:64],
-                {
-                    "query": req.query[:200],
-                    "top_k": req.top_k,
-                    "mode": result.mode,
-                    "hits": len(reranked_hits),
-                    "total_indexed": len(owned),
-                },
-                tenant_id,
-            )
-            return filtered_resp
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
+                return filtered_resp
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.get("/api/v1/rag/stats", response_model=StatsResponse)
     async def stats(request: Request) -> StatsResponse:  # pyright: ignore[reportUnusedFunction]

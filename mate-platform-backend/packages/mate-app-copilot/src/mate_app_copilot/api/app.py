@@ -32,6 +32,7 @@ from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports
 from mate_clients.security.bearer import BearerAuth
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.observability import journey_span  # noqa: F401  (used in handlers)
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 from mate_tech_db.base import get_session
@@ -660,6 +661,24 @@ async def chat_completions_stream(
     request: Request, body: dict = Body(...),
 ) -> StreamingResponse:
     tid = _tid(request)
+    uid = str(getattr(request.state, "user_id", "anonymous")) if hasattr(request, "state") else "anonymous"
+    # ADR-0018 §2.2: open copilot.invoke journey span. The span lives
+    # for the duration of this request; outcome is set before close.
+    # We deliberately do NOT wrap the 140-line handler in a `with`
+    # block (would force re-indent); instead we manually `.end()` in
+    # the StreamingResponse teardown.
+    from opentelemetry import trace as _ot_trace
+
+    _span = _ot_trace.get_tracer("mate_app_copilot.journey").start_span(
+        "copilot.invoke",
+        attributes={
+            "tenant.id": tid,
+            "user.id": uid,
+            "copilot.endpoint": "chat/completions/stream",
+        },
+    )
+    _span.set_attribute("outcome", "success")
+    request.state.copilot_span = _span
     messages = body.get("messages", [])
     model = body.get("model", "doubao-pro-32k")
     temperature = body.get("temperature", 0.7)
@@ -798,6 +817,15 @@ async def chat_completions_stream(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
     )
+
+
+def _copilot_span_finalize(span: Any, outcome: str) -> None:
+    """Mark outcome + end the copilot.invoke span."""
+    try:
+        span.set_attribute("outcome", outcome)
+        span.end()
+    except Exception:  # pragma: no cover - defensive
+        pass
 
 
 # --- Datasources (1) --------------------------------------------------------
