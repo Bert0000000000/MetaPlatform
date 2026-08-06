@@ -61,12 +61,12 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: postgres
-          - podSelector:
-              matchLabels:
-                app.kubernetes.io/name: redis
-          - podSelector:
-              matchLabels:
-                app.kubernetes.io/name: kafka
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kafka
       ports:
         - protocol: TCP
           port: 5432
