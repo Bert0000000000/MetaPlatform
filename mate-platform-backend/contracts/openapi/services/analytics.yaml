@@ -33,7 +33,7 @@ paths:
       x-mate-owner: analytics
       x-mate-permission: analytics.read
       x-mate-required-tenant: true
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       parameters:
       - in: query
         name: days
@@ -70,7 +70,7 @@ paths:
       x-mate-owner: analytics
       x-mate-permission: analytics.read
       x-mate-required-tenant: true
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       parameters:
       - in: query
         name: days
@@ -107,7 +107,7 @@ paths:
       x-mate-owner: analytics
       x-mate-permission: analytics.read
       x-mate-required-tenant: true
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       parameters:
       - in: query
         name: days
@@ -144,7 +144,7 @@ paths:
       x-mate-owner: analytics
       x-mate-permission: analytics.read
       x-mate-required-tenant: true
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       parameters:
       - in: query
         name: days
@@ -181,7 +181,7 @@ paths:
       x-mate-owner: analytics
       x-mate-permission: analytics.read
       x-mate-required-tenant: true
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       parameters:
       - in: query
         name: days

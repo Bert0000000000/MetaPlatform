@@ -3,38 +3,47 @@ info:
   title: Deep Research Agent API
   version: 1.0.0
   x-mate-owner: ai-protocols
-  description: |
-    Canonical contract for the Deep Research A2A agent. Delegates deep
+  description: 'Canonical contract for the Deep Research A2A agent. Delegates deep
+
     web research tasks to the DeerFlow Engine.
+
+    '
   contact:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local
 servers:
-  - url: /
+- url: /
 tags:
-  - name: deep-research
-    description: Deep Research agent operations
+- name: deep-research
+  description: Deep Research agent operations
 security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.write]
+- bearerAuth: []
+  tenantHeader: []
+  oidcScopes:
+  - platform.write
 paths:
   /api/v1/a2a/agent/deep-research/invoke:
     post:
       security:
-        - bearerAuth: []
-          tenantHeader: []
-          oidcScopes: [platform.write]
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
       tags:
-        - deep-research
+      - deep-research
       summary: Delegate a deep research task to DeerFlow
       operationId: deepResearchInvokeDeepResearch
-      description: |
-        Invokes the Deep Research agent. The caller supplies a
+      description: 'Invokes the Deep Research agent. The caller supplies a
+
         capability id (currently only `web-research`) and an input
+
         payload describing the query, depth, and source budget. The
+
         agent delegates to DeerFlow Engine and returns a markdown
+
         report plus the sources used.
+
+        '
       requestBody:
         required: true
         content:
@@ -67,8 +76,8 @@ paths:
       x-mate-owner: ai-protocols
       x-mate-permission: deep-research.invoke
       x-mate-requirements:
-        - FR-DEEP-RESEARCH-INVOKE
-      x-mate-implementation-status: implemented
+      - FR-DEEP-RESEARCH-INVOKE
+      x-mate-implementation-status: planned
 components:
   securitySchemes:
     bearerAuth:
@@ -89,24 +98,31 @@ components:
   schemas:
     DeepResearchInvokeRequest:
       type: object
-      required: [capability_id, input]
+      required:
+      - capability_id
+      - input
       properties:
         capability_id:
           type: string
-          enum: [web-research]
+          enum:
+          - web-research
           description: The capability to invoke.
         input:
           $ref: '#/components/schemas/DeepResearchInput'
     DeepResearchInput:
       type: object
-      required: [query]
+      required:
+      - query
       properties:
         query:
           type: string
           description: The research question.
         depth:
           type: string
-          enum: [shallow, medium, deep]
+          enum:
+          - shallow
+          - medium
+          - deep
           default: deep
         max_sources:
           type: integer
@@ -114,7 +130,9 @@ components:
           minimum: 1
         output_format:
           type: string
-          enum: [markdown, json]
+          enum:
+          - markdown
+          - json
           default: markdown
     DeepResearchInvokeResponse:
       type: object
@@ -140,7 +158,10 @@ components:
           type: string
         reliability:
           type: string
-          enum: [high, medium, low]
+          enum:
+          - high
+          - medium
+          - low
         fetched_at:
           type: string
           format: date-time

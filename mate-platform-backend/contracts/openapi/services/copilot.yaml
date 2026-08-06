@@ -13,20 +13,18 @@ tags:
 - name: copilot
   description: copilot domain operations
 security:
-
-  - bearerAuth: []
-
-    tenantHeader: []
-
-    oidcScopes: [platform.read]
-
+- bearerAuth: []
+  tenantHeader: []
+  oidcScopes:
+  - platform.read
 paths:
   /api/v1/copilot:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot
@@ -62,7 +60,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/a2a/delegate
@@ -102,7 +101,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/a2a/external
@@ -138,7 +138,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/actions
@@ -174,7 +175,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/actions/execute
@@ -214,7 +216,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/actions/match
@@ -254,7 +257,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/analysis/audit-sql
@@ -294,7 +298,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/analysis/execute-sql
@@ -330,11 +335,12 @@ paths:
       - FR-COPILOT-COPILOTPOSTCOPILOTANALYSISEXECUTESQL
       x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/explain-sql:
-    get:
+    post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/analysis/explain-sql
@@ -370,7 +376,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/analysis/generate-sql
@@ -410,7 +417,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/auth/login
@@ -450,7 +458,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/chat/multimodal/upload
@@ -490,7 +499,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/code
@@ -526,7 +536,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/conversations
@@ -562,7 +573,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/datasources
@@ -598,7 +610,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/generate/dashboard
@@ -638,7 +651,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/generate/explain-code
@@ -678,7 +692,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/generate/form
@@ -714,11 +729,12 @@ paths:
       - FR-COPILOT-COPILOTPOSTCOPILOTGENERATEFORM
       x-mate-implementation-status: implemented
   /api/v1/copilot/generate/process:
-    get:
+    post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/generate/process
@@ -754,7 +770,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/generate/review-code
@@ -794,7 +811,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/knowledge-bases
@@ -830,7 +848,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/models/multimodal
@@ -866,7 +885,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/ontology/concepts/search
@@ -902,7 +922,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/ontology/graph/expand
@@ -934,11 +955,12 @@ paths:
       - FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHEXPAND
       x-mate-implementation-status: implemented
   /api/v1/copilot/ontology/graph/query:
-    get:
+    post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/ontology/graph/query
@@ -974,7 +996,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/plans
@@ -1010,7 +1033,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/queries/execute
@@ -1050,7 +1074,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/queries/history
@@ -1082,11 +1107,12 @@ paths:
       - FR-COPILOT-COPILOTGETCOPILOTQUERIESHISTORY
       x-mate-implementation-status: implemented
   /api/v1/copilot/scheduling/employees/match:
-    get:
+    post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/scheduling/employees/match
@@ -1122,7 +1148,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/scheduling/execution/start
@@ -1162,7 +1189,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/scheduling/intent/detect
@@ -1202,7 +1230,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/scheduling/intents
@@ -1238,7 +1267,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - copilot
       summary: /v1/copilot/scheduling/plan/generate
@@ -1278,7 +1308,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/scheduling/templates
@@ -1310,11 +1341,12 @@ paths:
       - FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES
       x-mate-implementation-status: implemented
   /api/v1/copilot/search:
-    get:
+    post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - copilot
       summary: /v1/copilot/search

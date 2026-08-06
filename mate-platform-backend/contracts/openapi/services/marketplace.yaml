@@ -81,7 +81,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
@@ -125,7 +125,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
@@ -176,7 +176,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstallList'
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
@@ -213,7 +213,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
@@ -242,7 +242,7 @@ paths:
                 $ref: '#/components/schemas/InstallState'
         '404':
           $ref: '#/components/responses/NotFound'
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
@@ -279,7 +279,7 @@ paths:
                   install_id:
                     type: string
                     format: uuid
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
@@ -307,7 +307,7 @@ paths:
       responses:
         '202':
           description: 重试已触发
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
@@ -332,7 +332,7 @@ paths:
           description: SSE 流
           content:
             text/event-stream: {}
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:
@@ -363,7 +363,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LicenseActivationResult'
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-requirements:
@@ -383,7 +383,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubscriptionList'
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-requirements:

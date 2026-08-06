@@ -13,20 +13,18 @@ tags:
 - name: data
   description: data domain operations
 security:
-
-  - bearerAuth: []
-
-    tenantHeader: []
-
-    oidcScopes: [platform.read]
-
+- bearerAuth: []
+  tenantHeader: []
+  oidcScopes:
+  - platform.read
 paths:
   /api/v1/data/sources:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 列表 大数据源
@@ -55,7 +53,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 新建 大数据源
@@ -85,7 +84,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 详情 大数据源
@@ -119,7 +119,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 更新 大数据源
@@ -153,7 +154,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 删除 大数据源
@@ -188,7 +190,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 测试 测试连接
@@ -223,7 +226,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 发现 发现schema
@@ -258,7 +262,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 列表 CDC任务
@@ -287,7 +292,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 新建 CDC任务
@@ -317,7 +323,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 详情 CDC任务
@@ -351,7 +358,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 更新 CDC任务
@@ -385,7 +393,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 删除 CDC任务
@@ -420,7 +429,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 状态 CDC状态
@@ -455,7 +465,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 暂停 暂停CDC
@@ -490,7 +501,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 恢复 恢复CDC
@@ -525,7 +537,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 列表 ETL任务
@@ -549,12 +562,13 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETETLTASKS
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 新建 ETL任务
@@ -578,13 +592,14 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTETLTASKS
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 详情 ETL任务
@@ -613,12 +628,13 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETETLTASKSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     put:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 更新 ETL任务
@@ -647,12 +663,13 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTETLTASKSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     delete:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 删除 ETL任务
@@ -681,13 +698,14 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETEETLTASKSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/run:
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 运行 运行ETL
@@ -716,13 +734,14 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTETLTASKSIDRUN
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/stop:
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 停止 停止ETL
@@ -751,13 +770,14 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTETLTASKSIDSTOP
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/status:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 状态 ETL状态
@@ -786,13 +806,14 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETETLTASKSIDSTATUS
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/scheduler/tasks:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 列表 调度任务
@@ -816,12 +837,13 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETSCHEDULERTASKS
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 新建 调度任务
@@ -845,13 +867,14 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTSCHEDULERTASKS
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 详情 调度任务
@@ -880,12 +903,13 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETSCHEDULERTASKSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     put:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 更新 调度任务
@@ -914,12 +938,13 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTSCHEDULERTASKSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     delete:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 删除 调度任务
@@ -948,13 +973,14 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETESCHEDULERTASKSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}/trigger:
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 触发 触发调度
@@ -983,13 +1009,14 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTSCHEDULERTASKSIDTRIGGER
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}/pause:
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 暂停 暂停调度
@@ -1018,13 +1045,14 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTSCHEDULERTASKSIDPAUSE
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/scheduler/dag:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: DAG 调度DAG
@@ -1048,13 +1076,14 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETSCHEDULERDAG
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/metrics:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 列表 数据指标
@@ -1078,12 +1107,13 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICS
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 新建 数据指标
@@ -1107,13 +1137,14 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTMETRICS
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/metrics/{id}:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 详情 数据指标
@@ -1142,12 +1173,13 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     put:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 更新 数据指标
@@ -1176,12 +1208,13 @@ paths:
       x-mate-permission: data.put
       x-mate-requirements:
       - FR-DATA-DATAPUTMETRICSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
     delete:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 删除 数据指标
@@ -1210,13 +1243,14 @@ paths:
       x-mate-permission: data.delete
       x-mate-requirements:
       - FR-DATA-DATADELETEMETRICSID
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/metrics/{id}/values:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 值 指标值
@@ -1245,13 +1279,14 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICSIDVALUES
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/metrics/{id}/lineage:
     get:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes:
+        - platform.read
       tags:
       - data
       summary: 血缘 指标血缘
@@ -1280,13 +1315,14 @@ paths:
       x-mate-permission: data.get
       x-mate-requirements:
       - FR-DATA-DATAGETMETRICSIDLINEAGE
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
   /api/v1/metrics/{id}/compute:
     post:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.write]
+        oidcScopes:
+        - platform.write
       tags:
       - data
       summary: 计算 手动计算
@@ -1315,7 +1351,7 @@ paths:
       x-mate-permission: data.post
       x-mate-requirements:
       - FR-DATA-DATAPOSTMETRICSIDCOMPUTE
-      x-mate-implementation-status: implemented
+      x-mate-implementation-status: planned
 components:
   securitySchemes:
     bearerAuth:

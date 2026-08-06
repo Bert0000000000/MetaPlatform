@@ -13,7 +13,10 @@ META={"/healthz","/readyz","/metrics","/openapi.json","/docs","/docs/oauth2-redi
 def normalize_path(path:str)->str:
  path=re.sub(r"^/api/v1/app-kb(?=/|$)","/api/v1/kb",path)
  path=re.sub(r"^/api/v1/llm(?=/|$)","/api/v1/llmgw",path)
- return re.sub(r"\{([^}:]+):path\}",r"{\1}",path)
+ path=re.sub(r"\{([^}:]+):path\}",r"{\1}",path)
+ # Unify path-parameter names ({task_id}/{source_id}/{appId} -> {id}) so
+ # contract and runtime match regardless of the parameter's semantic name.
+ return re.sub(r"\{[^}]+\}", "{id}", path)
 
 def compare_operations(contracts:dict[tuple[str,str],str],runtime:set[tuple[str,str]])->dict[str,list[str]]:
  c={(m.lower(),normalize_path(p)):s for (m,p),s in contracts.items()}; r={(m.lower(),normalize_path(p)) for m,p in runtime if p not in META}
