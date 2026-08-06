@@ -9,8 +9,14 @@ async function del<T>(url: string): Promise<T> { return data(await client.delete
 
 import type { McpResource, McpResourceCreateRequest, PageResponse } from './types';
 
+/** 后端 /resources 返回 {resources:[...]}，包装成前端 PageResponse 结构 */
+function toPage(raw: { resources?: McpResource[]; items?: McpResource[] } | null): PageResponse<McpResource> {
+  const items = raw?.items ?? raw?.resources ?? [];
+  return { items, total: items.length, page: 1, pageSize: items.length || 1, totalPages: 1 };
+}
+
 export async function listResources(params?: { keyword?: string }): Promise<PageResponse<McpResource>> {
-  return get<PageResponse<McpResource>>('/resources', params);
+  return toPage(await get<{ resources?: McpResource[]; items?: McpResource[] }>('/resources', params));
 }
 export async function getResource(id: string): Promise<McpResource> {
   return get<McpResource>(`/resources/${id}`);

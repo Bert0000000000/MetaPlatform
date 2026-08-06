@@ -97,9 +97,11 @@ app.state.rate_limiter = _rate_limiter
 # (api/origin_routes.py) so that spec-level scanners can discover them.
 from .api.origin_routes import router as origin_router  # noqa: E402
 from .api.clients_routes import router as clients_router  # noqa: E402
+from .api.management_routes import router as management_router  # noqa: E402
 
 app.include_router(origin_router)
 app.include_router(clients_router)
+app.include_router(management_router)
 # 扩展能力 (backlog §3.8): MCP Federation endpoints.
 app.include_router(federation_router_routes)
 

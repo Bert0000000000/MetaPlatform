@@ -9,8 +9,39 @@ async function del<T>(url: string): Promise<T> { return data(await client.delete
 
 import type { PromptTemplate, PromptTemplateCreateRequest, PageResponse } from './types';
 
+/** 后端 /prompts 返回 {prompts:[...]} 且字段为 arguments/role，包装成前端结构 */
+function normalizePrompt(p: Partial<PromptTemplate> & { arguments?: unknown[] }): PromptTemplate {
+  const variables = Array.isArray((p as { variables?: unknown[] }).variables)
+    ? (p as { variables: unknown[] }).variables
+    : Array.isArray(p.arguments)
+      ? (p.arguments as Array<{ name?: string; required?: boolean; description?: string }>).map((a) => ({
+          name: a.name ?? '',
+          required: a.required ?? false,
+          description: a.description,
+        }))
+      : [];
+  return {
+    id: p.id ?? p.name ?? '',
+    name: p.name ?? '',
+    description: p.description,
+    role: p.role ?? 'assistant',
+    template: p.template ?? '',
+    variables,
+    category: p.category ?? 'general',
+    tags: p.tags,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
+
+/** 后端 /prompts 返回 {prompts:[...]}，包装成前端 PageResponse 结构 */
+function toPage(raw: { prompts?: PromptTemplate[]; items?: PromptTemplate[] } | null): PageResponse<PromptTemplate> {
+  const items = (raw?.items ?? raw?.prompts ?? []).map(normalizePrompt);
+  return { items, total: items.length, page: 1, pageSize: items.length || 1, totalPages: 1 };
+}
+
 export async function listPrompts(params?: { keyword?: string }): Promise<PageResponse<PromptTemplate>> {
-  return get<PageResponse<PromptTemplate>>('/prompts', params);
+  return toPage(await get<{ prompts?: PromptTemplate[]; items?: PromptTemplate[] }>('/prompts', params));
 }
 export async function getPrompt(id: string): Promise<PromptTemplate> {
   return get<PromptTemplate>(`/prompts/${id}`);

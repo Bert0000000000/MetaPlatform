@@ -35,6 +35,7 @@ SERVICES: dict[str, str] = {
     "dw":      os.getenv("DW_URL",      "http://mate-tech-dw:8021"),
     "apphub":  os.getenv("APPHUB_URL",  "http://mate-app-hub:8301"),
     "data":    os.getenv("DATA_URL",    "http://mate-tech-data:8701"),
+    "a2a":     os.getenv("A2A_URL",     "http://mate-app-a2a:8502"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -62,6 +63,7 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/data/", "data"),
     ("/api/v1/etl/", "data"),
     ("/api/v1/scheduler/", "data"),
+    ("/api/v1/a2a/", "a2a"),
 ]
 
 

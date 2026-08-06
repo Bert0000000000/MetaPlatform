@@ -23,11 +23,12 @@ The router is mounted by `mate_app_hub.main.create_app()` after
 from __future__ import annotations
 
 import re
+import uuid
 from dataclasses import asdict
 from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Body, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from mate_platform.messaging.events import Event
@@ -86,6 +87,12 @@ _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 def _serialize(rows: list) -> list[dict]:
     """Convert dataclass rows to JSON-friendly dicts."""
     return [asdict(r) for r in rows]
+
+
+def _now_iso() -> str:
+    """Current UTC timestamp in ISO format."""
+    from datetime import timezone
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _tenant_id(request: Request) -> str:
@@ -151,6 +158,21 @@ async def list_app_groups(request: Request) -> dict:
     return {"items": items, "total": len(items)}
 
 
+@router.get("/apps/{app_id}")
+async def get_app_detail(request: Request, app_id: str) -> dict:
+    """Get a single application detail by id or code."""
+    tid = _tenant_id(request)
+    # 优先按 id 匹配；fallback 按 code 匹配（get_app 以 code 为 key）
+    app = None
+    for a in list_apps(tid):
+        if a.id == app_id or a.code == app_id:
+            app = a
+            break
+    if app is None:
+        raise HTTPException(status_code=404, detail="app not found")
+    return _serialize([app])[0]
+
+
 @router.get("/modules")
 async def list_business_modules(
     request: Request,
@@ -161,6 +183,16 @@ async def list_business_modules(
     if app_code:
         items = [m for m in items if m["app_code"] == app_code]
     return {"items": items, "total": len(items)}
+
+
+@router.get("/modules/{module_id}")
+async def get_module_detail(request: Request, module_id: str) -> dict:
+    """Get a single business module detail."""
+    tid = _tenant_id(request)
+    for m in list_modules(tid):
+        if m.id == module_id:
+            return _serialize([m])[0]
+    raise HTTPException(status_code=404, detail="module not found")
 
 
 @router.get("/pages")
@@ -599,3 +631,197 @@ async def list_shortlinks_endpoint(request: Request) -> dict:
             for e in entries
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# WFE embedded: Form Designer (联调 integration)
+# ---------------------------------------------------------------------------
+_FORMS: dict[str, dict[str, Any]] = {}
+
+
+@router.get("/v1/wfe/forms/{form_id}")
+async def get_form_definition(request: Request, form_id: str) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{form_id}"
+    form = _FORMS.get(key)
+    if form is None:
+        form = {"formId": form_id, "appId": "", "globalSettings": {}, "linkageRules": [], "scripts": {}, "fields": [], "createdAt": "", "updatedAt": ""}
+        _FORMS[key] = form
+    return form
+
+
+@router.put("/v1/wfe/forms/{form_id}/settings")
+async def save_form_settings(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{form_id}"
+    form = _FORMS.get(key) or await get_form_definition(request, form_id)
+    form["globalSettings"] = body
+    form["updatedAt"] = _now_iso()
+    _FORMS[key] = form
+    return form
+
+
+@router.put("/v1/wfe/forms/{form_id}/linkage-rules")
+async def save_form_linkage_rules(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{form_id}"
+    form = _FORMS.get(key) or await get_form_definition(request, form_id)
+    form["linkageRules"] = body.get("rules", [])
+    form["updatedAt"] = _now_iso()
+    _FORMS[key] = form
+    return form
+
+
+@router.put("/v1/wfe/forms/{form_id}/scripts")
+async def save_form_scripts(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{form_id}"
+    form = _FORMS.get(key) or await get_form_definition(request, form_id)
+    form["scripts"] = body
+    form["updatedAt"] = _now_iso()
+    _FORMS[key] = form
+    return form
+
+
+@router.post("/v1/wfe/forms/{form_id}/validate")
+async def validate_form(request: Request, form_id: str, body: dict = Body(...)) -> dict:
+    return {"valid": True, "errors": []}
+
+
+# ---------------------------------------------------------------------------
+# WFE embedded: Flow Designer (联调 integration)
+# ---------------------------------------------------------------------------
+_FLOWS: dict[str, dict[str, Any]] = {}
+
+
+@router.get("/v1/wfe/flows/{module_id}")
+async def get_flow(request: Request, module_id: str) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{module_id}"
+    flow = _FLOWS.get(key)
+    if flow is None:
+        flow = {"moduleId": module_id, "name": "", "nodes": [], "edges": [], "bpmnXml": ""}
+        _FLOWS[key] = flow
+    return flow
+
+
+@router.put("/v1/wfe/flows/{module_id}")
+async def save_flow(request: Request, module_id: str, body: dict = Body(...)) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{module_id}"
+    flow = body
+    flow["moduleId"] = module_id
+    _FLOWS[key] = flow
+    return flow
+
+
+@router.post("/wfe/flows/validate")
+async def validate_flow(request: Request, body: dict = Body(...)) -> dict:
+    nodes = body.get("nodes", [])
+    errors = []
+    if not nodes:
+        errors.append({"code": "NO_NODES", "message": "流程至少需要一个节点"})
+    return {"valid": len(errors) == 0, "errors": errors, "warnings": []}
+
+
+@router.post("/wfe/flows/test")
+async def test_flow(request: Request, body: dict = Body(...)) -> dict:
+    nodes = body.get("nodes", [])
+    steps = [
+        {"stepIndex": i + 1, "nodeId": n.get("id", ""), "nodeName": n.get("name", ""),
+         "nodeType": n.get("type", "start"), "action": "complete", "actionLabel": "模拟执行",
+         "timestamp": _now_iso(), "status": "completed"}
+        for i, n in enumerate(nodes[:3])
+    ]
+    return {"steps": steps, "finalStatus": "approved", "duration": 0}
+
+
+@router.post("/v1/wfe/flows/{module_id}/publish")
+async def publish_flow(request: Request, module_id: str, body: dict = Body(...)) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{module_id}"
+    flow = body
+    flow["moduleId"] = module_id
+    flow["published"] = True
+    _FLOWS[key] = flow
+    return {"success": True, "message": "流程已发布"}
+
+
+# ---------------------------------------------------------------------------
+# App versions (联调 integration)
+# ---------------------------------------------------------------------------
+_VERSIONS: dict[str, list[dict[str, Any]]] = {}
+
+
+@router.get("/apps/{app_id}/versions")
+async def list_app_versions(request: Request, app_id: str) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{app_id}"
+    return {"items": _VERSIONS.get(key, []), "total": len(_VERSIONS.get(key, []))}
+
+
+@router.post("/apps/{app_id}/versions", status_code=201)
+async def create_app_version(request: Request, app_id: str, body: dict = Body(...)) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{app_id}"
+    now = _now_iso()
+    item = {
+        "versionId": f"ver-{uuid.uuid4().hex[:8]}",
+        "appId": app_id,
+        "version": body.get("version", "1.0.0"),
+        "status": "DRAFT",
+        "changeLog": body.get("changeLog", ""),
+        "snapshot": body.get("snapshot", "{}"),
+        "createdAt": now,
+    }
+    _VERSIONS.setdefault(key, []).insert(0, item)
+    return item
+
+
+@router.post("/apps/{app_id}/versions/{version_id}/publish")
+async def publish_app_version(request: Request, app_id: str, version_id: str) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{app_id}"
+    for v in _VERSIONS.get(key, []):
+        if v["versionId"] == version_id:
+            v["status"] = "PUBLISHED"
+            v["publishedAt"] = _now_iso()
+            return v
+    raise HTTPException(status_code=404, detail="version not found")
+
+
+@router.post("/apps/{app_id}/versions/{version_id}/rollback")
+async def rollback_app_version(request: Request, app_id: str, version_id: str) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{app_id}"
+    for v in _VERSIONS.get(key, []):
+        if v["versionId"] == version_id:
+            v["status"] = "ROLLBACK"
+            v["rolledBackAt"] = _now_iso()
+            return v
+    raise HTTPException(status_code=404, detail="version not found")
+
+
+@router.delete("/apps/{app_id}/versions/{version_id}")
+async def delete_app_version(request: Request, app_id: str, version_id: str) -> dict:
+    tid = _tenant_id(request)
+    key = f"{tid}:{app_id}"
+    _VERSIONS[key] = [v for v in _VERSIONS.get(key, []) if v["versionId"] != version_id]
+    return {"deleted": version_id}
+
+
+@router.get("/pages/{page_id}")
+async def get_page_detail(request: Request, page_id: str) -> dict:
+    tid = _tenant_id(request)
+    for p in list_pages(tid):
+        if p.id == page_id:
+            raw = asdict(p)
+            return {
+                "id": raw.get("id", page_id),
+                "name": raw.get("name", ""),
+                "description": raw.get("description", ""),
+                "layout": raw.get("layout", "grid"),
+                "widgets": raw.get("widgets", []) or [],
+                "scripts": raw.get("scripts", {}) or {},
+            }
+    raise HTTPException(status_code=404, detail="page not found")

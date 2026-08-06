@@ -7,6 +7,12 @@ async function post<T>(url: string, body?: unknown): Promise<T> { return data(aw
 async function put<T>(url: string, body?: unknown): Promise<T> { return data(await client.put<T>(url, body)); }
 async function del<T>(url: string): Promise<T> { return data(await client.delete<T>(url)); }
 
+/** Backend list endpoints return {items:[...], total}; unwrap to a bare array. */
+async function list<T>(url: string, params?: Record<string, unknown>): Promise<T[]> {
+  const res = await get<{ items?: T[] }>(url, params);
+  return (res?.items ?? []) as T[];
+}
+
 import type {
   Principle,
   PrincipleCategory,
@@ -57,7 +63,7 @@ export function normalizeTechDebt(raw: TechDebt): TechDebt {
 
 // ---------- 原则分类 ----------
 export async function listPrincipleCategories(): Promise<PrincipleCategory[]> {
-  return get<PrincipleCategory[]>('/governance/principle-categories');
+  return list<PrincipleCategory>('/governance/principle-categories');
 }
 
 export async function createPrincipleCategory(req: Partial<PrincipleCategory>): Promise<PrincipleCategory> {
@@ -74,7 +80,7 @@ export async function deletePrincipleCategory(id: string): Promise<void> {
 
 // ---------- 架构原则 ----------
 export async function listPrinciples(categoryId?: string): Promise<Principle[]> {
-  const items = await get<Principle[]>('/governance/principles', categoryId ? { categoryId } : undefined);
+  const items = await list<Principle>('/governance/principles', categoryId ? { categoryId } : undefined);
   return items.map(normalizePrinciple);
 }
 
@@ -92,7 +98,7 @@ export async function deletePrinciple(id: string): Promise<void> {
 
 // ---------- 评审模板 ----------
 export async function listReviewTemplates(): Promise<ReviewTemplate[]> {
-  const items = await get<ReviewTemplate[]>('/governance/review-templates');
+  const items = await list<ReviewTemplate>('/governance/review-templates');
   return items.map(normalizeReviewTemplate);
 }
 
@@ -110,7 +116,7 @@ export async function deleteReviewTemplate(id: string): Promise<void> {
 
 // ---------- 评审工单 ----------
 export async function listReviewTickets(status?: string): Promise<ReviewTicket[]> {
-  const items = await get<ReviewTicket[]>('/governance/review-tickets', status ? { status } : undefined);
+  const items = await list<ReviewTicket>('/governance/review-tickets', status ? { status } : undefined);
   return items.map(normalizeReviewTicket);
 }
 
@@ -164,7 +170,7 @@ export async function addReviewTicketComment(id: string, reviewer: string, comme
 
 // ---------- 技术债务 ----------
 export async function listTechDebt(level?: string, status?: string): Promise<TechDebt[]> {
-  const items = await get<TechDebt[]>('/governance/tech-debts', { level, status });
+  const items = await list<TechDebt>('/governance/tech-debts', { level, status });
   return items.map(normalizeTechDebt);
 }
 

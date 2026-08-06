@@ -637,6 +637,15 @@ async def create_data_entity(request: Request, body: dict = Body(...)) -> dict:
     return _ok(asdict(item))
 
 
+@router.get("/data-entities/{item_id}")
+async def get_data_entity(request: Request, item_id: str) -> dict:
+    tid = _tid(request)
+    item = store_get(tid, "data_entities", item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    return _ok(asdict(item))
+
+
 @router.put("/data-entities/{item_id}")
 async def update_data_entity(
     request: Request, item_id: str, body: dict = Body(...),

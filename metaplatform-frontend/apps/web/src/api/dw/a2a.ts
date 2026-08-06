@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('a2a', '/v1') });
+const client = createApiClient({ baseURL: '/api/v1/a2a' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -105,10 +105,12 @@ export async function listExternalAgents(params?: {
   name?: string;
   capability?: string;
 }): Promise<ExternalAgent[]> {
-  const cards = await get<Record<string, unknown>[]>('/a2a/agent-cards/search', {
+  // 后端返回 {items:[...]}，解包成数组
+  const res = await get<{ items?: Record<string, unknown>[] }>('/agent-cards/search', {
     status: 'PUBLISHED',
     ...params,
   });
+  const cards = res?.items ?? [];
   return cards.map(mapCardToExternalAgent);
 }
 
@@ -117,7 +119,7 @@ export async function discoverAgents(): Promise<ExternalAgent[]> {
 }
 
 export async function createDelegation(body: CreateDelegationRequest): Promise<Delegation> {
-  return post<Delegation>('/a2a/delegations', {
+  return post<Delegation>('/delegations', {
     taskType: 'a2a-delegation',
     payload: {},
     ...body,
@@ -133,7 +135,7 @@ export async function listDelegations(params?: {
   page?: number;
   pageSize?: number;
 }): Promise<PageResponse<Delegation>> {
-  return get<PageResponse<Delegation>>('/a2a/delegations', params as Record<string, unknown>);
+  return get<PageResponse<Delegation>>('/delegations', params as Record<string, unknown>);
 }
 
 export async function cancelDelegation(taskId: string): Promise<Delegation> {

@@ -7,10 +7,16 @@ async function post<T>(url: string, body?: unknown): Promise<T> { return data(aw
 async function put<T>(url: string, body?: unknown): Promise<T> { return data(await client.put<T>(url, body)); }
 async function del<T>(url: string): Promise<T> { return data(await client.delete<T>(url)); }
 
+/** Backend list endpoints return {items:[...], total}; unwrap to a bare array. */
+async function list<T>(url: string, params?: Record<string, unknown>): Promise<T[]> {
+  const res = await get<{ items?: T[] }>(url, params);
+  return (res?.items ?? []) as T[];
+}
+
 import type { DataDomain, DataEntity, DataFlow, DataStandard, DataAsset, DataAssetCatalog } from './types';
 
 export async function listDomains(): Promise<DataDomain[]> {
-  return get<DataDomain[]>('/data/domains');
+  return list<DataDomain>('/data/domains');
 }
 
 export async function createDomain(req: Partial<DataDomain>): Promise<DataDomain> {
@@ -22,7 +28,7 @@ export async function deleteDomain(id: string): Promise<void> {
 }
 
 export async function listEntities(domainId?: string): Promise<DataEntity[]> {
-  return get<DataEntity[]>('/data-entities', { domainId });
+  return list<DataEntity>('/data-entities', domainId ? { domainId } : undefined);
 }
 
 export async function getEntity(id: string): Promise<DataEntity> {
@@ -42,7 +48,7 @@ export async function deleteEntity(id: string): Promise<void> {
 }
 
 export async function listFlows(): Promise<DataFlow[]> {
-  return get<DataFlow[]>('/data-flows');
+  return list<DataFlow>('/data-flows');
 }
 
 export async function createFlow(req: Partial<DataFlow>): Promise<DataFlow> {
@@ -58,7 +64,7 @@ export async function deleteFlow(id: string): Promise<void> {
 }
 
 export async function listStandards(): Promise<DataStandard[]> {
-  return get<DataStandard[]>('/data-standards');
+  return list<DataStandard>('/data-standards');
 }
 
 export async function createStandard(req: Partial<DataStandard>): Promise<DataStandard> {
@@ -74,11 +80,30 @@ export async function deleteStandard(id: string): Promise<void> {
 }
 
 export async function listAssets(params?: { keyword?: string; assetType?: string; classification?: string }): Promise<DataAsset[]> {
-  return get<DataAsset[]>('/data-assets', params);
+  return list<DataAsset>('/data-assets', params);
 }
 
 export async function getAssetCatalog(groupBy?: string): Promise<DataAssetCatalog> {
-  return get<DataAssetCatalog>('/data-assets/catalog', { groupBy });
+  // 后端返回 {items:[...]}，按 groupBy 分组组装成前端 catalog 结构
+  const res = await get<{ items?: DataAsset[] }>('/data-assets/catalog', { groupBy });
+  const assets = res?.items ?? [];
+  const keyOf = (a: DataAsset): string => {
+    if (groupBy === 'domain') return a.domain || '其他';
+    if (groupBy === 'layer') return a.layer || '其他';
+    if (groupBy === 'owner') return a.owner || '其他';
+    return a.domain || '其他';
+  };
+  const groupsMap = new Map<string, DataAsset[]>();
+  for (const a of assets) {
+    const k = keyOf(a);
+    groupsMap.set(k, [...(groupsMap.get(k) ?? []), a]);
+  }
+  const groups = [...groupsMap.entries()].map(([key, list]) => ({
+    key,
+    label: key,
+    assets: list,
+  }));
+  return { groupBy: groupBy ?? 'domain', groups };
 }
 
 export async function createAsset(req: Partial<DataAsset>): Promise<DataAsset> {

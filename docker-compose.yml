@@ -638,6 +638,36 @@ services:
       retries: 5
       start_period: 30s
 
+  # mate-app-a2a: Agent-to-Agent protocol (delegation + discovery)
+  # Serves /api/v1/a2a/* (FR-A2A-001..)
+  mate-app-a2a:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-app-a2a/Dockerfile
+    image: mate-app-a2a:dev
+    container_name: mate-app-a2a
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      REDIS_URL: redis://redis:6379/0
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-app-a2a
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_A2A_PORT:-8502}:8502"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8502/api/v1/a2a/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # mate-tech-ont: 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴鐔虹瘈闁汇垽娼у瓭闂佹寧娲忛崐婵嬪箖瑜斿畷鍗炩枎閹寸姷鍔堕梻浣侯焾閺堫剛绮欓幘鍓佷笉濡わ絽鍟悡娆撴倵閻㈡鐒惧ù鐙呯畵閺岋綁濡搁敃鈧悘鈺冪磼鏉堛劌娴柛鈹惧亾濡炪倖甯婇懗鍓佸姬閳ь剟姊洪幖鐐插姌闁告柨鐭傞崺鈧い鎺戝€归弳顒勬煛鐏炶濡奸柍瑙勫灴瀹曞崬鈻庤箛鎾寸槗闂傚倷娴囬～澶愭偂閿涘嫮涓嶉柡宥庡幖閽冪喐绻涢幋娆忕仼閸ユ挳姊虹化鏇炲⒉妞ゎ厼娲棟濞寸厧鐡ㄩ埛鎴︽煕濠靛棗顏柣鎺曟硶缁辨帞绱掑Ο鑲╃暤闂佷紮绲块崗妯虹暦婵傜鍗抽柣鎰版涧楠炴劕鈹戦悙鑸靛涧缂佽尪妫勯敃銏ゆ焼瀹ュ懐鍔﹀銈嗗笒鐎氼噣鎮鹃悜妯诲弿?(Neo4j backed)
   mate-tech-ont:
     <<: [*restart, *logging]
@@ -980,6 +1010,7 @@ services:
       DW_URL: http://mate-tech-dw:8021
       APPHUB_URL: http://mate-app-hub:8301
       DATA_URL: http://mate-tech-data:8701
+      A2A_URL: http://mate-app-a2a:8502
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-api-gateway
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

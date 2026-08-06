@@ -19,7 +19,7 @@ async function del<T>(url: string): Promise<T> {
 import type { ModuleItem, ModuleCreateRequest, ModuleUpdateRequest, PageResponse } from './types';
 
 export async function listModules(appId?: string): Promise<PageResponse<ModuleItem>> {
-  return get<PageResponse<ModuleItem>>('/modules', appId ? { appId } : undefined);
+  return get<PageResponse<ModuleItem>>('/modules', appId ? { app_code: appId } : undefined);
 }
 
 export async function getModule(moduleId: string): Promise<ModuleItem> {

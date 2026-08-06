@@ -106,11 +106,10 @@ export async function listTools(params?: {
   keyword?: string;
   category?: string;
 }): Promise<PageResponse<McpTool>> {
-  const data = await get<PageResponse<BackendTool>>('/tools', params);
-  return {
-    ...data,
-    items: data.items.map(fromBackendTool),
-  };
+  // 后端 /tools 返回 {tools:[...]}，包装成前端 PageResponse 结构
+  const raw = await get<{ tools?: BackendTool[]; items?: BackendTool[] }>('/tools', params);
+  const items = (raw?.items ?? raw?.tools ?? []).map(fromBackendTool);
+  return { items, total: items.length, page: 1, pageSize: items.length || 1, totalPages: 1 };
 }
 export async function getTool(id: string): Promise<McpTool> {
   const data = await get<BackendTool>(`/tools/${id}`);
