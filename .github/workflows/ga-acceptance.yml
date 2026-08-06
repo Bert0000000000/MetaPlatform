@@ -88,9 +88,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: oasdiff/oasdiff-action@v0.1.11
         with:
-          spec: mate-platform-backend/contracts/openapi/services
+          fetch-depth: 0
+      - name: Extract base spec
+        run: |
+          git show origin/main:mate-platform-backend/contracts/openapi/generated/bundled.yaml > /tmp/base.yaml || echo "{}" > /tmp/base.yaml
+      - uses: oasdiff/oasdiff-action/breaking@v0.1.11
+        with:
+          base: /tmp/base.yaml
+          revision: mate-platform-backend/contracts/openapi/generated/bundled.yaml
           fail-on: "ERR"
 
   # rule 8: helm template + kubeconform
