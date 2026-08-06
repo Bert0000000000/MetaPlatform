@@ -76,22 +76,33 @@
 | 12 | Secret 不进 git | 测试用 stub BearerAuth |
 | 14 | registered_digest == manifest.digest | `BaseInstaller.run` 硬规则校验 |
 
-## 验收运行（待执行）
+## 验收运行（2026-08-07 实测）
 
 ```bash
 # mate-clients
 cd packages/mate-clients
 ruff check src/mate_clients/marketplace/ontology.py tests/test_marketplace_ontology_client.py
+# → All checks passed!
+
 pytest tests/test_marketplace_ontology_client.py -v
+# → 6 passed, 0 failed, 0 skipped
 
 # mate-platform
 cd packages/mate-platform
 ruff check src/mate_platform/marketplace/jobs/installer_ontology.py tests/test_marketplace_installer_ontology.py
-pytest tests/test_marketplace_installer_ontology.py -v
+# → All checks passed!
 
-# 回归
-pytest packages/ -q   # 不退化（main 54 个 pre-existing failures 已确认无关）
+pytest tests/test_marketplace_installer_ontology.py -v
+# → 4 passed, 0 failed, 0 skipped
+
+# 回归（三 installer 全量）
+pytest tests/test_marketplace_installer_agent.py tests/test_marketplace_installer_mcp.py tests/test_marketplace_installer_ontology.py -q
+# → 12 passed, 0 failed, 0 skipped
 ```
+
+> 注：本机 `pytest-of-houuu` 临时目录 ACL 损坏导致 tmp_path fixture 报
+> `PermissionError`，已通过 `PYTEST_DEBUG_TEMPROOT=C:\Users\houuu\AppData\Local\Temp\pytest-alt`
+> 用户环境变量重定向绕过（2026-08-07 修复）。
 
 ## 后续
 

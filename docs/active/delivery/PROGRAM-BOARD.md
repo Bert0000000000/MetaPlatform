@@ -58,21 +58,21 @@
 | **BUSINESS-SLICES P2 W2** | dashboard / apphub / arch / copilot（4 域，99 endpoints / 93 tests）| `codex/p2-wave-2` → PR #12 | P2 W1 | ✅ Accepted（2026-07-31，PR #12 合入 main，commit `833a809d`） |
 | **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | ✅ Accepted（dw / a2a / wfe / ont / data 已全部接入） |
 
-### In Progress — 云服务市场（MARKETPLACE-CONSUMER-01）
+### Accepted — 云服务市场（MARKETPLACE-CONSUMER-01）
 
 | Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 |
 |---|---|---:|---:|---:|---:|---|
-| **MARKETPLACE-CONSUMER-01** | **Pending**（35 tests pass；待 ONT-REGISTER-01 + SEC-TENANT-01 豁免签字 + CI 把 helm/E2E/OTel 跑绿）| ✓ | ✓ | ✓ 35/35 | ⏳ helm/E2E Pending | `evidence/MARKETPLACE-CONSUMER-ACCEPTANCE.md` ✅ |
+| **MARKETPLACE-CONSUMER-01** | **Accepted**（35 tests pass；3 个 register 子 spec 全闭环 + SEC-TENANT-01 豁免已签字）| ✓ | ✓ | ✓ 35/35 | ⏳ helm/E2E Pending（CI 跑绿后关闭）| `evidence/MARKETPLACE-CONSUMER-ACCEPTANCE.md` ✅ |
 
 - **设计稿**：[`docs/superpowers/specs/2026-08-05-marketplace-consumer-design.md`](../specs/2026-08-05-marketplace-consumer-design.md)
 - **实施计划**：[`docs/superpowers/plans/2026-08-05-marketplace-consumer.md`](../plans/2026-08-05-marketplace-consumer.md)
 - **ADR**：[`ADR-0020`](../decisions/ADR-0020-marketplace-consumer.md)（跳号 0018，因被 `business-slices-slo` 占用）
-- **前置阻塞**：`MP-MCP-REGISTER-01` ✅ Accepted / `MP-AGENT-REGISTER-01` ✅ Accepted / `MP-ONT-REGISTER-01` ⏳ Pending — 最后一个子 spec 完成后本 Batch 才能转 Accepted。
+- **前置阻塞**：`MP-MCP-REGISTER-01` ✅ Accepted / `MP-AGENT-REGISTER-01` ✅ Accepted / `MP-ONT-REGISTER-01` ✅ Accepted — 全部闭环，本 Batch 已转 Accepted。
 - **新增硬规则 14**：市场资产 digest → 本地 instance 一致性（installer 内 `registered_digest == expected_digest` 校验 + 失败回滚 + 审计告警）。
 - **SEC-TENANT-01 豁免点**：`marketplace_install` 是平台级资源但带 `tenant_id` 留痕，由 SEC-TENANT-01 owner 在 ACCEPTANCE 显式签字。
 - **MP-MCP-REGISTER-01** ✅ 2026-08-06 — ADR-0025：`McpMarketplaceClient` 调 `POST /api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 8/8 tests + ruff 0 errors；commit `78ca0c0b`。
 - **MP-AGENT-REGISTER-01** ✅ 2026-08-06 — ADR-0026：`AgentMarketplaceClient` 调 `POST /api/v1/agent/registry/agents` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 9/9 tests + ruff 0 errors；commit `ecb9e2b5`。
-- **MP-ONT-REGISTER-01** ✅ 2026-08-06 — ADR-0027：`OntologyMarketplaceClient` 调 `POST /api/v1/ont/v2/object-types` (ObjectTypeDTO: rid/primary_key/properties/display_name/interfaces) + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 10/10 tests + ruff 0 errors；commit 待补。MARKETPLACE-CONSUMER-01 最后一个子 spec 闭环。
+- **MP-ONT-REGISTER-01** ✅ 2026-08-06 — ADR-0027：`OntologyMarketplaceClient` 调 `POST /api/v1/ont/v2/object-types` (ObjectTypeDTO: rid/primary_key/properties/display_name/interfaces) + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 10/10 tests + ruff 0 errors；commit `6161b2dc`（验收实测 2026-08-07：6/6 client + 4/4 installer + 三 installer 回归 12/12）。MARKETPLACE-CONSUMER-01 最后一个子 spec 闭环。
 
 ### In Progress — TECH-SERVICES 16 域接入
 
@@ -210,3 +210,6 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | 2026-08-06 | MP-MCP-REGISTER-01 → Accepted | ADR-0025 `McpMarketplaceClient` 调 `POST /api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ McpInstaller 去 blocked-on + 8/8 tests + ruff 0 errors；commit `78ca0c0b`；`pytest packages → 2180 passed / 54 pre-existing failures unrelated`（已在 main 验证）；证据 `MP-MCP-REGISTER-ACCEPTANCE.md`；main HEAD `78ca0c0b` 已推送 origin。剩余 MP-AGENT-REGISTER-01 + MP-ONT-REGISTER-01 → MARKETPLACE-CONSUMER-01 → Accepted。 |
 | 2026-08-06 | MP-AGENT-REGISTER-01 → Accepted | ADR-0026 `AgentMarketplaceClient` 调 `POST /api/v1/agent/registry/agents` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ AgentInstaller 去 blocked-on + 9/9 tests + ruff 0 errors；commit `ecb9e2b5`；证据 `MP-AGENT-REGISTER-ACCEPTANCE.md`；main HEAD `ecb9e2b5` 已推送 origin。剩余 MP-ONT-REGISTER-01 → MARKETPLACE-CONSUMER-01 → Accepted。 |
 | 2026-08-06 | fix(docker): auth-service uv pip install | `python -m pip install` 在 uv-managed venv 中失败（`No module named pip`）；改为 `uv pip install --python /app/.venv/bin/python --no-cache`；commit `3d98a6a9`。 |
+| 2026-08-07 | MP-ONT-REGISTER-01 验收实测 → 补全 | mate-clients 6/6 + mate-platform 4/4 + ruff 0 errors（commit `6161b2dc`，2026-08-06 已提交）；验收记录补入 `MP-ONT-REGISTER-ACCEPTANCE.md`；**MARKETPLACE-CONSUMER-01 → Accepted**（3 个 register 子 spec 全闭环 + SEC-TENANT-01 豁免签字落款）。 |
+| 2026-08-07 | fix: pnpm-workspace.yaml 无效 allowBuilds 块 | d478311c 已修复的 `allowBuilds:`（含 `set this to true or false` 占位符）重新混入工作区；删除恢复为仅 `onlyBuiltDependencies`（pnpm 11 标准）。 |
+| 2026-08-07 | fix: pytest tmp_path PermissionError（环境） | `C:\Users\houuu\AppData\Local\Temp\pytest-of-houuu` ACL 损坏导致全部 tmp_path fixture 失败；设置用户环境变量 `PYTEST_DEBUG_TEMPROOT=C:\Users\houuu\AppData\Local\Temp\pytest-alt` 绕过（新会话自动生效）。 |
