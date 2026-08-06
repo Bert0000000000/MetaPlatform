@@ -32,6 +32,7 @@ dependencies = [
     "mate-common",
     "mate-platform",
     "mate-clients",
+    "mate-kernel",
     "rdflib>=7.0",
 ]
 
@@ -40,6 +41,7 @@ dependencies = [
 mate-common = { workspace = true }
 mate-platform = { workspace = true }
 mate-clients = { workspace = true }
+mate-kernel = { workspace = true }
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

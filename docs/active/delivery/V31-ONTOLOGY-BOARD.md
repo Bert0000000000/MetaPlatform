@@ -115,9 +115,9 @@ SANDBOX-01 → SANDBOX-02
 
 | Batch | 范围 | 周 | 依赖 |
 |---|---|---|---|
-| **RUNTIME-HTTP-01** | FastAPI runtime：把 23 v2 operationId 落到路由；OpenAPI 真契约 | 4 | 全部 M3 |
+| **RUNTIME-HTTP-01** | FastAPI runtime：把 23 v2 operationId 落到路由；OpenAPI 真契约 | 4 | 全部 M3 | **Accepted 2026-08-06**（合并提速 RUNTIME-MVP-01，ADR-0022；先 7 endpoint 落 23 中的核心 5 类） |
 | **RUNTIME-K8S-02** | K8s Job / Pod 真集成（替换 InMemoryK8sRunner） | 4 | SANDBOX-02 + PLATFORM-K8S-01 |
-| **RUNTIME-PG-03** | PG 持久化（替换 InMemoryOntologyRepository + Persistence row） | 4 | MODEL-02 + SEC-TENANT-01 |
+| **RUNTIME-PG-03** | PG 持久化（替换 InMemoryOntologyRepository + Persistence row） | 4 | MODEL-02 + SEC-TENANT-01 | **Accepted 2026-08-06**（合并提速 RUNTIME-MVP-01，ADR-0022） |
 | **IAM-COPILOT-04** | Keycloak 真接入（替换 ManagerContext 占位） | 3 | SEC-IAM-01 |
 | **MARKETPLACE-05** | 上架 / 签名 / 计费 / vendor 注册 | 4 | AGENT-EXT-01 |
 | **合计** | 5 Batch / 19 周 | — | — |
@@ -136,4 +136,7 @@ SANDBOX-01 → SANDBOX-02
   - `evidence/M1-ACCEPTANCE.md`（174 tests）
   - `evidence/M2-ACCEPTANCE.md`（+93 = 267 tests）
   - `evidence/M3-ACCEPTANCE.md`（+97 = **364 tests**）
-- 端到端示例：`packages/mate-kernel/examples/01_kitchen_sink.py`
+  - `evidence/RUNTIME-MVP-01-ACCEPTANCE.md`（RUNTIME-HTTP-01 + RUNTIME-PG-03 合并提速版，+7 e2e tests）
+- 端到端示例：
+  - `packages/mate-kernel/examples/01_kitchen_sink.py`（kernel 闭环）
+  - `examples/02_curl_walkthrough.sh`（v2 HTTP curl 验收）
