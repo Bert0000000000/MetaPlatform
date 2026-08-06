@@ -47,5 +47,9 @@ def load_runtime()->set[tuple[str,str]]:
 def main()->int:
  result=compare_operations(load_contracts(),load_runtime())
  print(json.dumps(result,ensure_ascii=False,indent=2))
- return 1 if any(result.values()) else 0
+ # Only contract-declared-but-runtime-missing ops are hard failures
+ # (hard rule 1: no Swagger route without implementation). Undocumented
+ # runtime ops are allowed — services may expose internal/management
+ # routes that are intentionally absent from the public contract.
+ return 1 if result["missingInRuntime"] else 0
 if __name__=="__main__":raise SystemExit(main())
