@@ -73,6 +73,12 @@ otel-collector:
     repository: otel/opentelemetry-collector-contrib
     tag: 0.104.0
     pullPolicy: IfNotPresent
+
+# Observability alerts (ADR-0018 §2.1)
+# -----------------------------------------------------------------------------
+observability-alerts:
+  enabled: true
+  fullnameOverride: obs-alerts
   resources:
     requests:
       cpu: 100m

@@ -1,0 +1,114 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "observability-alerts.fullname" . }}
+  labels:
+    {{- include "observability-alerts.labels" . | nindent 4 }}
+    prometheus: metaplatform
+spec:
+  groups:
+  # ---------------------------------------------------------------------------
+  # §13 硬规则 9 — every state is justified by audit + metrics + trace.
+  # ADR-0018 §2.1 SLO table.
+  # ---------------------------------------------------------------------------
+  - name: business-slices-slo
+    interval: 30s
+    rules:
+
+      # 1. RAG TTFT p95 (本地 ≤ 1.5s)
+      - alert: RagTTFTLocalP95TooHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, tenant_id) (
+              rate(rag_retrieve_latency_ms_bucket{scope="local"}[5m])
+            )
+          ) > 1500
+        for: 3m
+        labels:
+          severity: warning
+          slo: rag.ttft.local.p95
+          owner: rag
+        annotations:
+          summary: "RAG TTFT p95 (local) 越线 > 1.5s"
+          description: |
+            当前租户 {{ $labels.tenant_id }} RAG 本地检索 p95 > 1.5s 持续 3 分钟。
+            看 rag.retrieve span + retrieval cache 命中率 + vector store 延迟。
+          runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/llmgw.html#rag-ttft-%E8%B6%8A%E7%BA%BF
+
+      # 2. Agent / Copilot 任务錯誤率 > 5%
+      - alert: CopilotChatErrorRateTooHigh
+        expr: |
+          (
+            sum by (tenant_id) (
+              rate(copilot_invoke_total{outcome="error"}[5m])
+            )
+            /
+            sum by (tenant_id) (
+              rate(copilot_invoke_total[5m])
+            )
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          slo: copilot.error_rate
+          owner: copilot
+        annotations:
+          summary: "Copilot chat 错误率 > 5%"
+          description: |
+            租户 {{ $labels.tenant_id }} Copilot 5min 错误率越线；检查 llmgw 上游 + tool execute span。
+          runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/llmgw.html#copilot-%E9%94%99%E8%AF%AF%E7%8E%87%E8%B6%8A%E7%BA%BF
+
+      # 3. MCP 工具未授权调用 > 1 次/5min
+      - alert: MCPToolDenySpike
+        expr: |
+          sum by (tenant_id) (
+            rate(mcp_tool_deny_total[5m])
+          ) > 0
+        for: 0m
+        labels:
+          severity: warning
+          slo: mcp.deny_rate
+          owner: mcp
+        annotations:
+          summary: "MCP 工具未授权调用"
+          description: |
+            租户 {{ $labels.tenant_id }} 触发了 MCP tool 拒绝（hard rule 3 触发）。
+            看 mate_platform_tenancy_cross_tenant_attempt_total 同期 counter。
+          runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/mcp.html#tool-deny-spike
+
+      # 4. LLMGW 月度 token 超限（任何租户一次/小时即告警）
+      - alert: LLMGWMonthlyQuotaExceeded
+        expr: |
+          sum by (tenant_id) (
+            increase(llmgw_quota_exceeded_total{reason="monthly"}[1h])
+          ) > 0
+        for: 0m
+        labels:
+          severity: info
+          slo: llmgw.monthly_quota
+          owner: llmgw
+        annotations:
+          summary: "LLMGW 月度 token 上限触发"
+          description: |
+            租户 {{ $labels.tenant_id }} 当月累计 token 撞月度上限。
+            429 + Retry-After 已下发；考虑月度 cap 调高或引导用户清理缓存。
+          runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/llmgw.html#monthly-quota
+
+      # 5. 跨租户越权（hard rule 3 — 单次即 P0）
+      - alert: CrossTenantAttemptP0
+        expr: |
+          sum by (tenant_id, reason) (
+            increase(mate_platform_tenancy_cross_tenant_attempt_total[5m])
+          ) > 0
+        for: 0m
+        labels:
+          severity: critical
+          slo: tenancy.cross_tenant
+          owner: security
+        annotations:
+          summary: "P0 跨租户越权告警"
+          description: |
+            tenant_guard 在 5min 内捕获 reason={{ $labels.reason }} 越权尝试。
+            立即查调用方 IP / JWT claim / 越权路径，确认是否为攻击。
+          runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/secrets-tenancy.html#cross-tenant-p0

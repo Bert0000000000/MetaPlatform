@@ -1,0 +1,5 @@
+# Default values for observability-alerts.
+# These settings control which alert groups are enabled.
+enabled: true
+# The interval at which Prometheus evaluates the rules in this group.
+interval: 30s
