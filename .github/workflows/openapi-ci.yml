@@ -47,9 +47,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.2"
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
-      - run: pip install -r mate-platform-backend/requirements.txt
+      - name: Sync backend deps (uv.lock)
+        run: |
+          cd mate-platform-backend
+          uv sync --frozen --no-dev
       - run: python mate-platform-backend/contracts/scripts/runtime_openapi.py
       - run: python mate-platform-backend/contracts/scripts/compare_runtime.py
 

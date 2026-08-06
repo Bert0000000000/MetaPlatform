@@ -67,8 +67,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          curl -sSLO https://github.com/norwoodj/helm-docs/releases/latest/download/helm-docs_Linux_x86_64.tar.gz
-          tar xf helm-docs_Linux_x86_64.tar.gz
+          curl -fsSL -o /tmp/helm-docs.tar.gz https://github.com/norwoodj/helm-docs/releases/download/v1.14.2/helm-docs_1.14.2_Linux_x86_64.tar.gz
+          tar xf /tmp/helm-docs.tar.gz
           sudo mv helm-docs /usr/local/bin/
       - run: |
           cd infra/helm
