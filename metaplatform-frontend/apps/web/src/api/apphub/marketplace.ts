@@ -47,7 +47,24 @@ export async function listTemplates(params?: {
   keyword?: string;
   category?: string;
 }): Promise<TemplateItem[]> {
-  return get<TemplateItem[]>('/templates', params as Record<string, unknown> | undefined);
+  // 后端返回 {items:[...]} 且字段为 id/template_type/description/content，映射到前端结构
+  const res = await get<{ items?: Array<Record<string, unknown>> }>('/templates', params as Record<string, unknown> | undefined);
+  return (res?.items ?? []).map(mapTemplate);
+}
+
+function mapTemplate(raw: Record<string, unknown>): TemplateItem {
+  return {
+    templateId: String(raw.id ?? raw.code ?? ''),
+    name: String(raw.name ?? ''),
+    category: String(raw.template_type ?? raw.category ?? 'workflow'),
+    description: String(raw.description ?? ''),
+    icon: 'appstore',
+    tags: [],
+    downloadCount: 0,
+    rating: 0,
+    preview: String(raw.content ?? ''),
+    createdAt: '',
+  };
 }
 
 export async function getTemplate(id: string): Promise<TemplateItem> {

@@ -73,10 +73,10 @@ export async function listDocuments(employeeId: string): Promise<DocumentItem[]>
 }
 
 export async function deleteDocument(docId: string): Promise<void> {
-  return del<void>(`/v1/dw/documents/${docId}`);
+  return del<void>(`/dw/documents/${docId}`);
 }
 
 export async function getDocument(docId: string): Promise<DocumentItem> {
-  const raw = await get<any>(`/v1/dw/documents/${docId}`);
+  const raw = await get<any>(`/dw/documents/${docId}`);
   return normalizeDocument(raw);
 }

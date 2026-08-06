@@ -27,6 +27,7 @@ test('authenticate against live backend', async ({ page, request }) => {
     },
   );
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(1000);
   await page.context().storageState({ path: 'tests/e2e/.auth/state.json' });
 });

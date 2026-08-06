@@ -19,7 +19,7 @@ export async function listEmployees(params?: {
 }
 
 export async function getEmployee(id: string): Promise<Employee> {
-  return get<Employee>(`/v1/dw/employees/${id}`);
+  return get<Employee>(`/dw/employees/${id}`);
 }
 
 export async function createEmployee(request: EmployeeCreateRequest): Promise<Employee> {
@@ -27,20 +27,20 @@ export async function createEmployee(request: EmployeeCreateRequest): Promise<Em
 }
 
 export async function updateEmployee(id: string, request: EmployeeCreateRequest): Promise<Employee> {
-  return put<Employee>(`/v1/dw/employees/${id}`, request);
+  return put<Employee>(`/dw/employees/${id}`, request);
 }
 
 export async function deleteEmployee(id: string): Promise<void> {
   // V12-07: 后端使用 /agents 路径，软删除（deleted_at 字段），并记录审计日志。
-  return del<void>(`/v1/dw/employees/${id}`);
+  return del<void>(`/dw/employees/${id}`);
 }
 
 export async function activateEmployee(id: string): Promise<Employee> {
-  return put<Employee>(`/v1/dw/employees/${id}/status`, { status: 'ACTIVE' });
+  return put<Employee>(`/dw/employees/${id}/status`, { status: 'ACTIVE' });
 }
 
 export async function deactivateEmployee(id: string): Promise<Employee> {
-  return put<Employee>(`/v1/dw/employees/${id}/status`, { status: 'INACTIVE' });
+  return put<Employee>(`/dw/employees/${id}/status`, { status: 'INACTIVE' });
 }
 
 /**
@@ -57,7 +57,7 @@ export async function cloneEmployee(
   source: Employee,
   newName: string,
 ): Promise<Employee> {
-  return post<Employee>(`/v1/dw/employees/${source.employeeId}/clone`, {
+  return post<Employee>(`/dw/employees/${source.employeeId}/clone`, {
     name: newName,
   });
 }
@@ -74,14 +74,14 @@ export async function cloneEmployee(
  */
 export async function getEmployeeVersions(employeeId: string): Promise<EmployeeVersion[]> {
   const res = await get<PageResponse<EmployeeVersion>>(
-    `/v1/dw/employees/${employeeId}/versions`,
+    `/dw/employees/${employeeId}/versions`,
   );
   return res?.items ?? [];
 }
 
 export async function getEmployeeOperationLogs(employeeId: string): Promise<EmployeeOperationLog[]> {
   const res = await get<PageResponse<EmployeeOperationLog>>(
-    `/v1/dw/employees/${employeeId}/logs`,
+    `/dw/employees/${employeeId}/logs`,
   );
   return res?.items ?? [];
 }

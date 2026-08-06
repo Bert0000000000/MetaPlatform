@@ -27,7 +27,7 @@ export async function listFeedback(params?: {
 }
 
 export async function updateFeedbackTags(feedbackId: string, tags: string[]): Promise<FeedbackRecord> {
-  return put<FeedbackRecord>(`/v1/dw/learning/feedback/${feedbackId}/tags`, { tags });
+  return put<FeedbackRecord>(`/dw/learning/feedback/${feedbackId}/tags`, { tags });
 }
 
 export async function extractKnowledge(employeeId: string): Promise<{
@@ -41,7 +41,7 @@ export async function listKnowledge(
   syncedOnly = false,
 ): Promise<{ items: LearnedKnowledge[] }> {
   return get<{ items: LearnedKnowledge[] }>(
-    `/v1/dw/learning/employees/${employeeId}/knowledge`,
+    `/dw/learning/employees/${employeeId}/knowledge`,
     { syncedOnly },
   );
 }
@@ -55,9 +55,9 @@ export async function syncToKnowledgeBase(employeeId: string): Promise<{
     employeeId: string;
     syncedCount: number;
     documentIds: string[];
-  }>(`/v1/dw/learning/employees/${employeeId}/sync-to-kb`);
+  }>(`/dw/learning/employees/${employeeId}/sync-to-kb`);
 }
 
 export async function getLearningStats(employeeId: string): Promise<LearningStats> {
-  return get<LearningStats>(`/v1/dw/learning/employees/${employeeId}/stats`);
+  return get<LearningStats>(`/dw/learning/employees/${employeeId}/stats`);
 }

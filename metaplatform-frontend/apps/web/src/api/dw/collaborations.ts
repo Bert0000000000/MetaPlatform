@@ -95,13 +95,13 @@ export async function createCollaboration(
 }
 
 export async function getCollaboration(id: string): Promise<CollaborationTask> {
-  return get<CollaborationTask>(`/v1/dw/collaborations/${id}`);
+  return get<CollaborationTask>(`/dw/collaborations/${id}`);
 }
 
 export async function executeCollaboration(id: string): Promise<CollaborationTask> {
-  return post<CollaborationTask>(`/v1/dw/collaborations/${id}/execute`);
+  return post<CollaborationTask>(`/dw/collaborations/${id}/execute`);
 }
 
 export async function getCollaborationReport(id: string): Promise<CollaborationReport> {
-  return get<CollaborationReport>(`/v1/dw/collaborations/${id}/report`);
+  return get<CollaborationReport>(`/dw/collaborations/${id}/report`);
 }

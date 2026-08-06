@@ -127,6 +127,14 @@ test.describe('联调-数字员工子模块（任务/协作/评估/外部）', (
     expect(tracker.failures.length, tracker.report()).toBe(0);
   });
 
+  test('员工详情页渲染（真实 ID）', async ({ page }) => {
+    const tracker = trackApiFailures(page);
+    await page.goto('/agents/dw-emp-3');
+    await expect(page.getByText(/员工|数字员工/).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/能力|任务|版本|操作日志/).first()).toBeVisible({ timeout: 15000 });
+    expect(tracker.failures.length, tracker.report()).toBe(0);
+  });
+
   test('创建员工页渲染', async ({ page }) => {
     const tracker = trackApiFailures(page);
     await page.goto('/agents/create');

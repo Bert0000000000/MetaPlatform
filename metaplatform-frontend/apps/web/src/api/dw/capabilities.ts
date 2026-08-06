@@ -42,7 +42,7 @@ export async function updateCapability(
   employeeId: string,
   capability: EmployeeCapability,
 ): Promise<Employee> {
-  return post<Employee>(`/v1/dw/employees/${employeeId}/capability`, capability);
+  return post<Employee>(`/dw/employees/${employeeId}/capability`, capability);
 }
 
 export async function testCapability(
@@ -50,7 +50,7 @@ export async function testCapability(
   testMessage: string,
 ): Promise<{ reply: string; tokensUsed: number }> {
   return post<{ reply: string; tokensUsed: number }>(
-    `/v1/dw/employees/${employeeId}/test`,
+    `/dw/employees/${employeeId}/test`,
     { message: testMessage },
   );
 }

@@ -17,14 +17,14 @@ export async function extractFromDocument(
 }
 
 export async function getExtractionResults(documentId: string): Promise<ExtractionResult> {
-  return get<ExtractionResult>(`/v1/dw/extract/${documentId}`);
+  return get<ExtractionResult>(`/dw/extract/${documentId}`);
 }
 
 export async function reviewExtractionItem(
   itemId: string,
   status: 'approved' | 'rejected',
 ): Promise<ExtractionItem> {
-  return put<ExtractionItem>(`/v1/dw/extract/items/${itemId}`, { status });
+  return put<ExtractionItem>(`/dw/extract/items/${itemId}`, { status });
 }
 
 export async function batchReview(
