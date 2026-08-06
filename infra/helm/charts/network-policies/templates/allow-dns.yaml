@@ -16,7 +16,6 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: {{ .Values.allowedEgress.dns.namespace }}
-              kubernetes.io/metadata.name: kube-system
       ports:
         {{- range .Values.allowedEgress.dns.ports }}
         - protocol: {{ .protocol }}
