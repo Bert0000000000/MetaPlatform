@@ -56,10 +56,10 @@ jobs:
       - name: Install backend deps
         run: |
           pip install -r mate-platform-backend/requirements.txt
-          # requirements.txt (7/28 export) 缺 structlog；runtime_openapi 导入的
-          # 服务模块依赖它。uv sync 会尝试构建 deep-research 等 workspace 成员
+          # requirements.txt (7/28 export) 缺 structlog 等；runtime_openapi 导入的
+          # 服务模块依赖它们。uv sync 会尝试构建 deep-research 等 workspace 成员
           # 触发 Failed to parse entry，故用 requirements + 补装。
-          pip install structlog PyYAML
+          pip install structlog PyYAML prometheus_client prometheus-fastapi-instrumentator
       - run: python mate-platform-backend/contracts/scripts/runtime_openapi.py
       - run: python mate-platform-backend/contracts/scripts/compare_runtime.py
 
