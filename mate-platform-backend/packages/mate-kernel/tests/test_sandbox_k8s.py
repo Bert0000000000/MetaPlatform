@@ -68,9 +68,10 @@ class TestK8sSandboxRunner:
         assert "ZeroDivisionError" in r.stderr
 
     def test_submit_no_callable(self) -> None:
+        # Subprocess executor 提示 "NO_HANDLER"；SimplePython 提示 "no callable"
         r = self._r().submit(_spec(source="x = 1\n"))
         assert r.phase == JobPhase.FAILED
-        assert "no callable" in r.stderr
+        assert "no callable" in r.stderr or "NO_HANDLER" in r.stderr
 
     def test_get_unknown_raises(self) -> None:
         r = self._r()

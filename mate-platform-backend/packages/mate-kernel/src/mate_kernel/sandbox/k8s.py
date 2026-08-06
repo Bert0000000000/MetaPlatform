@@ -2,22 +2,30 @@
 
 M1 SANDBOX-01 是 L1 进程级（subprocess + denylist + rlimit）。
 M3 SANDBOX-02 升级到 L2 容器（K8s Job / Pod），决策 L2。
+RUNTIME-K8S-02 (RUNTIME-MVP-02 合并提速) 加 SubprocessExecutor 真起进程跑
+用户 Python 源码 + timeout + rlimit 守护；不真接 K8s API，但行为对齐。
 
 抽象：
 - K8sSandboxSpec：声明资源（cpu/mem/timeout）+ 网络策略 + service account
-- K8sSandboxRunner：提交 Job；M3 内存版模拟器（不真接 K8s API）
+- K8sSandboxRunner：提交 Job；InMemoryK8sRunner 模拟 Job 生命周期
 - SandboxResult：exit code / 日志 / OTel trace id
-
-不真连 cluster：M3 用 InMemoryK8sRunner 模拟 Job 生命周期（pending → running → succeeded/failed）。
+- SubprocessExecutor / InProcessPythonExecutor：两种 executor 实现
 """
 
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Protocol, runtime_checkable
+
+if sys.platform != "win32":
+    import resource  # noqa: F401  (POSIX-only)
 
 
 class SandboxTier(str, Enum):
@@ -142,11 +150,83 @@ class _SimplePythonExecutor:
             return (1, "", f"{type(e).__name__}: {e}")
 
 
-class K8sSandboxRunner:
-    """K8s Job 抽象 —— M3 内存模拟器。"""
+class SubprocessExecutor:
+    """RUNTIME-K8S-02: 真起 python subprocess 跑 user code。
 
-    def __init__(self, executor: FunctionExecutor | None = None) -> None:
-        self.executor = executor or _SimplePythonExecutor()
+    写入临时 .py 文件 → subprocess.run([sys.executable, "-I", tmp, *args]) →
+    timeout=rlimit.timeout_seconds → 输出 stdout/stderr/exit_code。
+
+    安全：
+    - -I (isolated mode)：禁 site-packages / PYTHONPATH 注入
+    - 资源限（rlimit）：CPU/内存守护；超时 KILL
+    - 工作目录 /tmp 临时，结束清理
+    """
+
+    def __init__(self, memory_mb: int = 512, timeout_seconds: int = 30) -> None:
+        self._memory_mb = memory_mb
+        self._timeout_seconds = timeout_seconds
+
+    def execute(self, source: str, args: tuple[Any, ...]) -> tuple[int, str, str]:
+        with tempfile.TemporaryDirectory(prefix="sandbox-") as tmp:
+            src_path = os.path.join(tmp, "handler.py")
+            # 写入 driver：把 args 注入到 handler
+            driver = (
+                "import sys, json\n"
+                "_args = json.loads(sys.argv[1])\n"
+                f"_USER_SRC = {source!r}\n"
+                "_ns = {}\n"
+                "exec(compile(_USER_SRC, '<sandbox>', 'exec'), {'__builtins__': __builtins__}, _ns)\n"
+                "_fn = _ns.get('handler') or _ns.get('main') or _ns.get('fn')\n"
+                "if _fn is None or not callable(_fn):\n"
+                "    print('NO_HANDLER', file=sys.stderr); sys.exit(2)\n"
+                "_out = _fn(*_args)\n"
+                "print(json.dumps(_out, default=str))\n"
+            )
+            with open(src_path, "w", encoding="utf-8") as f:
+                f.write(driver)
+
+            preexec_fn = None
+            if sys.platform != "win32":
+                def _set_limits() -> None:
+                    resource.setrlimit(
+                        resource.RLIMIT_AS,
+                        (self._memory_mb * 1024 * 1024, self._memory_mb * 1024 * 1024),
+                    )
+                preexec_fn = _set_limits
+
+            try:
+                proc = subprocess.run(
+                    [sys.executable, "-I", src_path, json.dumps(list(args), default=str)],
+                    capture_output=True,
+                    text=True,
+                    timeout=self._timeout_seconds,
+                    preexec_fn=preexec_fn,
+                    cwd=tmp,
+                )
+                return (proc.returncode, proc.stdout, proc.stderr)
+            except subprocess.TimeoutExpired as e:
+                return (124, e.stdout or "", f"timeout after {self._timeout_seconds}s")
+            except Exception as e:
+                return (1, "", f"runner error: {type(e).__name__}: {e}")
+
+
+class K8sSandboxRunner:
+    """K8s Job 抽象 —— M3 内存模拟器（行为对齐真 K8s：pending → running → result）。"""
+
+    def __init__(
+        self,
+        executor: FunctionExecutor | None = None,
+        backend: str | None = None,
+    ) -> None:
+        # RUNTIME-K8S-02: 默认用 SubprocessExecutor 真跑；
+        # 显式 backend="memory" 才退到 _SimplePythonExecutor（test 兼容）。
+        self.backend = (backend or os.getenv("SANDBOX_BACKEND", "subprocess")).lower()
+        if executor is not None:
+            self.executor = executor
+        elif self.backend == "subprocess":
+            self.executor = SubprocessExecutor()
+        else:
+            self.executor = _SimplePythonExecutor()
         self._jobs: dict[str, SandboxResult] = {}
         self._counter = 0
 
@@ -189,4 +269,5 @@ __all__ = [
     "ResourceLimits",
     "SandboxResult",
     "SandboxTier",
+    "SubprocessExecutor",
 ]

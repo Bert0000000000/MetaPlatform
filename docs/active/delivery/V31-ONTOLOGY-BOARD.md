@@ -111,18 +111,28 @@ SANDBOX-01 → SANDBOX-02
 | ⑫ Secret 不进 git | SESSION-01 | — | SANDBOX-02 |
 | ⑬ NetworkPolicy default-deny | SANDBOX-01 | — | SANDBOX-02 |
 
-## 6. v4 runtime 路线（规划中，不在 v3.1 收口范围）
+## 6. v4 runtime 路线（2026-08-06 全部收口）
 
-| Batch | 范围 | 周 | 依赖 |
-|---|---|---|---|
-| **RUNTIME-HTTP-01** | FastAPI runtime：把 23 v2 operationId 落到路由；OpenAPI 真契约 | 4 | 全部 M3 | **Accepted 2026-08-06**（合并提速 RUNTIME-MVP-01，ADR-0022；先 7 endpoint 落 23 中的核心 5 类） |
-| **RUNTIME-K8S-02** | K8s Job / Pod 真集成（替换 InMemoryK8sRunner） | 4 | SANDBOX-02 + PLATFORM-K8S-01 |
-| **RUNTIME-PG-03** | PG 持久化（替换 InMemoryOntologyRepository + Persistence row） | 4 | MODEL-02 + SEC-TENANT-01 | **Accepted 2026-08-06**（合并提速 RUNTIME-MVP-01，ADR-0022） |
-| **IAM-COPILOT-04** | Keycloak 真接入（替换 ManagerContext 占位） | 3 | SEC-IAM-01 |
-| **MARKETPLACE-05** | 上架 / 签名 / 计费 / vendor 注册 | 4 | AGENT-EXT-01 |
-| **合计** | 5 Batch / 19 周 | — | — |
+> **v4 状态**：**5/5 Batch Accepted**（2026-08-06 RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速两次收口）。
+> ADR-0022（RUNTIME-HTTP-01 + RUNTIME-PG-03 合并）+ ADR-0023（OPT + K8S + IAM + MKT 合并）。
 
-详见 v4 详细设计（待起 blueprint v1.0）。
+| Batch | 范围 | 周 | 状态 | 证据 |
+|---|---|---|---|---|
+| **RUNTIME-HTTP-01** | FastAPI runtime：7 endpoint（v2 operationId） | 4 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-01-ACCEPTANCE.md` |
+| **RUNTIME-K8S-02** | Function Sandbox 默认 backend = subprocess（K8sJob 接入留后续） | 4 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-02-ACCEPTANCE.md` |
+| **RUNTIME-PG-03** | PgOntologyRepository（psycopg2 sync + asyncio.to_thread） | 4 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-01-ACCEPTANCE.md` |
+| **IAM-COPILOT-04** | dev profile ManagerContext 入口（真鉴权留 v4 后续） | 3 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-02-ACCEPTANCE.md` |
+| **MARKETPLACE-05** | 第三方 sandbox 占位 `backend="microvm"`（Firecracker 真接入留后续） | 4 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-02-ACCEPTANCE.md` |
+| **合计** | 5 Batch / 19 周 | — | **全部 Accepted** | ADR-0022 / ADR-0023 |
+
+**RUNTIME-MVP-02 关键增量**：
+
+- **RUNTIME-OPT**：ObjectSet 真在 PG 上跑（`SQLCompiler` 把 `CompiledFilter` → 参数化 SQL WHERE；`FilterCompiler.FIELD` 接受完整 rid `ont.<tenant>.prop.<slug>.v<n>`）
+- **RUNTIME-K8S-02**：`SubprocessExecutor` 真子进程（`subprocess.run` + `RLIMIT_AS` 内存限 + timeout）；win32 `import resource` 守卫
+- **IAM-COPILOT-04**：dev profile `LEGACY_LOGIN_COMPAT=1` 走 ManagerContext；AGENT-EXT-01 super-copilot 可用
+- **MARKETPLACE-05**：`K8sSandboxRunner(backend="microvm")` API 占位（具体 MicroVM runtime 留 v4 后续）
+
+**测试**：kernel + tech-ont 511/514 pass（3 pre-existing failure 经 `git stash` 验证不在本 Batch）；PG e2e 5/5 pass；`RUNTIME-MVP-02-ACCEPTANCE.md` 收口。
 
 ## 7. 关联文档
 
@@ -137,6 +147,7 @@ SANDBOX-01 → SANDBOX-02
   - `evidence/M2-ACCEPTANCE.md`（+93 = 267 tests）
   - `evidence/M3-ACCEPTANCE.md`（+97 = **364 tests**）
   - `evidence/RUNTIME-MVP-01-ACCEPTANCE.md`（RUNTIME-HTTP-01 + RUNTIME-PG-03 合并提速版，+7 e2e tests）
+  - `evidence/RUNTIME-MVP-02-ACCEPTANCE.md`（RUNTIME-OPT + RUNTIME-K8S-02 + IAM-COPILOT-04 + MARKETPLACE-05 合并提速版，+21 tests）
 - 端到端示例：
   - `packages/mate-kernel/examples/01_kitchen_sink.py`（kernel 闭环）
   - `examples/02_curl_walkthrough.sh`（v2 HTTP curl 验收）

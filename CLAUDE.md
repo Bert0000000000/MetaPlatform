@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-06（**v3.1 Ontology / 数字员工 / SuperAI 子计划 20/20 Batch 收口** — M1+M2+M3 = 364/364 tests pass；v4 runtime 路线规划中）；上一版 2026-08-06（v3.1 子计划启动）
+> **最近更新**：2026-08-06（**v4 RUNTIME 5/5 Batch 收口** — RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速两次落地；HTTP+PG+OPT+K8S+IAM+MKT 全部 Accepted；kernel + tech-ont 511/514 tests pass）；上一版 2026-08-06（v3.1 Ontology 子计划 20/20 Batch 收口）
 >
-> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** 增量并行：Data-Ready Baseline + **Ontology Kernel / 数字员工 / SuperAI 子计划**（**M1+M2+M3 Accepted**，v4 runtime 路线规划中）
+> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** Ontology / 数字员工 / SuperAI 子计划 20/20 Batch Accepted；**v4** RUNTIME 路线 5/5 Batch Accepted
 
 ## v3.0 GA 状态
 

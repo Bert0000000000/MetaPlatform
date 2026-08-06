@@ -13,6 +13,7 @@ app.state.kernel_repo。每个 endpoint 通过 `app.state.kernel_repo` 获取，
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 
@@ -109,6 +110,15 @@ def _repo(request: Request) -> OntologyRepository:
     return repo
 
 
+async def _call(repo: OntologyRepository, method_name: str, /, *args, **kwargs):
+    """把 sync repo 调用推到 threadpool；FastAPI 仍可 await。
+
+    InMemory 也是 sync，跑 threadpool 也无害。
+    """
+    method = getattr(repo, method_name)
+    return await asyncio.to_thread(method, *args, **kwargs)
+
+
 def _ctx(request: Request) -> Any:
     """从 AuthMiddleware 注入的 ctx 中取 tenant（13 硬规则 #3 守门）。"""
     ctx = getattr(request.state, "ctx", None)
@@ -173,7 +183,7 @@ async def upsert_object_type(
     """Upsert an ObjectType — registers Property + Class in kernel repo."""
     ctx = _ctx(request)
     ot = _dto_to_ot(payload)
-    saved = _repo(request).upsert_object_type(ot)
+    saved = await _call(_repo(request), "upsert_object_type", ot)
     return _ot_to_dto(saved)
 
 
@@ -187,7 +197,7 @@ async def list_object_types(
 ) -> list[ObjectTypeResponse]:
     """List ObjectTypes with pagination."""
     _ctx(request)
-    items = _repo(request).list_object_types(limit=limit, offset=offset)
+    items = await _call(_repo(request), "list_object_types", limit=limit, offset=offset)
     return [_ot_to_dto(i) for i in items]
 
 
@@ -199,7 +209,7 @@ async def list_object_types(
 async def get_object_type(rid: str, request: Request) -> ObjectTypeResponse:
     _ctx(request)
     try:
-        ot = _repo(request).get_object_type(ClassRef(rid))
+        ot = await _call(_repo(request), "get_object_type", ClassRef(rid))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _ot_to_dto(ot)
@@ -246,7 +256,7 @@ async def create_individual(
         tenant_id=tenant_id,
         marking=tuple(payload.marking),
     )
-    saved = _repo(request).create_individual(ind)
+    saved = await _call(_repo(request), "create_individual", ind)
     return IndividualResponse(
         rid=saved.rid,
         class_rid=saved.class_rid.rid,
@@ -271,7 +281,7 @@ async def list_individuals(
     cls_ref = ClassRef(class_rid) if class_rid else None
     if cls_ref and not cls_ref.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
-    items = _repo(request).list_individuals(cls_ref)
+    items = await _call(_repo(request), "list_individuals", cls_ref)
     return [
         IndividualResponse(
             rid=i.rid,
@@ -309,7 +319,7 @@ async def evaluate_object_set(
         paging_offset=payload.paging_offset,
         paging_limit=payload.paging_limit,
     )
-    results = _repo(request).evaluate_object_set(os_)
+    results = await _call(_repo(request), "evaluate_object_set", os_)
     return [
         IndividualResponse(
             rid=i.rid,
@@ -344,7 +354,8 @@ async def apply_action(
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
     provenance = {**payload.provenance, "actor": ctx.user_id}  # type: ignore[attr-defined]
     try:
-        applied_at, side_effects = _repo(request).apply_action(
+        applied_at, side_effects = await _call(
+            _repo(request), "apply_action",
             action_rid=action_rid,
             target_iid=payload.target_iid,
             parameters=payload.parameters,
