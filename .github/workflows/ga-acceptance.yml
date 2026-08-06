@@ -92,10 +92,11 @@ jobs:
           fetch-depth: 0
       - name: Extract base spec
         run: |
-          git show origin/main:mate-platform-backend/contracts/openapi/generated/bundled.yaml > /tmp/base.yaml || echo "{}" > /tmp/base.yaml
+          mkdir -p .ci
+          git show origin/main:mate-platform-backend/contracts/openapi/generated/bundled.yaml > .ci/base.yaml 2>/dev/null || echo "{}" > .ci/base.yaml
       - uses: oasdiff/oasdiff-action/breaking@v0.1.11
         with:
-          base: /tmp/base.yaml
+          base: .ci/base.yaml
           revision: mate-platform-backend/contracts/openapi/generated/bundled.yaml
           fail-on: "ERR"
 
