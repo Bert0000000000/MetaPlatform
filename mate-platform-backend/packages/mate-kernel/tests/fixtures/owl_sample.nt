@@ -1,0 +1,14 @@
+# Sample OWL/RDF N-Triples for v1→v2 migration test
+<http://example.org/Order> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/Order> <http://example.org/hasPK> <http://example.org/order_id> .
+<http://example.org/Order> <http://example.org/hasProperty> <http://example.org/order_id> .
+<http://example.org/Order> <http://example.org/hasProperty> <http://example.org/status> .
+<http://example.org/order_id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/status> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/hasCustomer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://example.org/hasCustomer> <http://www.w3.org/2000/01/rdf-schema#domain> <http://example.org/Order> .
+<http://example.org/hasCustomer> <http://www.w3.org/2000/01/rdf-schema#range> <http://example.org/Customer> .
+<http://example.org/Customer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/Customer> <http://example.org/hasProperty> <http://example.org/customer_name> .
+<http://example.org/customer_name> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://example.org/relatedTo> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#TransitiveProperty> .
