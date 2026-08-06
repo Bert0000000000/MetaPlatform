@@ -55,7 +55,7 @@ tenantScoping:
 # DDL migration / pipeline gate must pass. Each entry carries a
 # ``blocking`` flag: blocking failures stop the Airflow DAG;
 # non-blocking failures emit alerts only.
-# See infra/helm/charts/ge/templates/dag-template.py for the DAG
+# See infra/helm/charts/ge/files/dag-template.py for the DAG
 # that runs these checkpoints.
 checkpoints:
   - name: "tenant_id_not_null"

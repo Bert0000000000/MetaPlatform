@@ -48,7 +48,17 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: python -c "import yaml; d = yaml.safe_load(open('infra/helm/charts/otel-collector/templates/configmap.yaml').read().replace('{{- if .Values.receivers.otlp.grpc.enabled }}', 'True').replace('{{- end }}', '')); assert 'otlp/grpc' in str(d.get('data', {}).get('relay.yaml', '')) or 'otlp' in str(d); print('OK')"
+      - name: Install helm
+        run: |
+          curl -fsSL https://get.helm.sh/helm-v3.15.4-linux-amd64.tar.gz -o /tmp/helm.tgz
+          tar -xzf /tmp/helm.tgz -C /tmp
+          sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
+      - name: Render OTel configmap and verify otlp
+        run: |
+          helm template otel-collector infra/helm/charts/otel-collector -f infra/helm/charts/otel-collector/values.yaml \
+            --set receivers.otlp.grpc.enabled=true \
+            > /tmp/otel-rendered.yaml
+          grep -q "otlp/grpc" /tmp/otel-rendered.yaml && echo "OK: otlp/grpc receiver present" || (echo "FAIL: otlp/grpc missing"; exit 1)
 
   # rule 11: helm-docs sync
   ga-011-helm-docs:

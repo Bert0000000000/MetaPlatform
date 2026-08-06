@@ -72,3 +72,9 @@ dependencies:
   - name: starrocks
     version: 0.1.0
     condition: starrocks.enabled
+  - name: marketplace
+    version: 0.1.0
+    condition: marketplace.enabled
+  - name: deerflow-engine
+    version: 0.1.0
+    condition: deerflow-engine.enabled
