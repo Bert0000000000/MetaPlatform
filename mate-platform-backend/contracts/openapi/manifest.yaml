@@ -49,7 +49,7 @@ domains:
     contract: services/data.yaml
     owner: data-platform
     visibility: external
-    runtimeModule: null
+    runtimeModule: mate_tech_data.main:app
   kb:
     contract: services/kb.yaml
     owner: knowledge-platform
@@ -59,34 +59,34 @@ domains:
     contract: services/copilot.yaml
     owner: agent-experience
     visibility: external
-    runtimeModule: null
+    runtimeModule: mate_app_copilot.main:app
   dw:
     contract: services/dw.yaml
     owner: digital-workforce
     visibility: external
-    runtimeModule: null
+    runtimeModule: mate_tech_dw.main:app
   apphub:
     contract: services/apphub.yaml
     owner: application-platform
     visibility: external
-    runtimeModule: null
+    runtimeModule: mate_app_hub.main:app
   arch:
     contract: services/arch.yaml
     owner: enterprise-architecture
     visibility: external
-    runtimeModule: null
+    runtimeModule: mate_app_arch.main:app
   wfe:
     contract: services/wfe.yaml
     owner: workflow-platform
     visibility: external
-    runtimeModule: null
+    runtimeModule: mate_app_wfe.main:app
   a2a:
     contract: services/a2a.yaml
     owner: ai-protocols
     visibility: external
-    runtimeModule: null
+    runtimeModule: mate_app_a2a.main:app
   marketplace:
     contract: services/marketplace.yaml
     owner: marketplace-consumer
     visibility: external
-    runtimeModule: null  # 部署为 mate-marketplace-api / mate-marketplace-worker 双 pod
+    runtimeModule: mate_app_copilot.main:app
