@@ -72,3 +72,8 @@ attributes:
     - key: deployment.environment
       value: dev
       action: upsert
+# ServiceMonitor integration (Prometheus Operator). When enabled and the
+# Prometheus CRDs are installed, a ServiceMonitor is rendered so the
+# collector's self metrics are scraped automatically.
+serviceMonitor:
+  enabled: true
