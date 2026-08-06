@@ -1,6 +1,6 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-08-06（含 v3.1 Ontology 20/20 Batch + v4 RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速收口 + mp-ont-bugfix-01 + Dockerfile 修复 + BUSINESS-SLICES-WFE-P0 模板收口 ADR-0024；G1-G8 全 Accepted + M-v3.2-α + M-v3.2-γ + M-v3.2-δ 控制面 + 工作流 + 审计 + v3.1 子计划 + v4 RUNTIME + WFE P0 模板 内容全部闭环）
+> 更新时间：2026-08-06（含 v3.1 Ontology 20/20 Batch + v4 RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速收口 + mp-ont-bugfix-01 + Dockerfile 修复 + BUSINESS-SLICES-WFE-P0 模板收口 ADR-0024 + MP-MCP-REGISTER-01；G1-G8 全 Accepted + M-v3.2-α + M-v3.2-γ + M-v3.2-δ 控制面 + 工作流 + 审计 + v3.1 子计划 + v4 RUNTIME + WFE P0 模板 + MP-MCP-REGISTER-01 内容全部闭环）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
 
 ## v3.1 + v4 RUNTIME + BUSINESS-SLICES P0 增量收口（2026-08-06）
@@ -13,8 +13,9 @@
 | **v4 RUNTIME-MVP-02**（ADR-0023） | RUNTIME-OPT + RUNTIME-K8S-02 + IAM-COPILOT-04 + MARKETPLACE-05 合并提速：SQLCompiler PG filter + SubprocessExecutor + 5 PG e2e + Playwright 17/17 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-02-ACCEPTANCE.md` |
 | **Dockerfile 修复** | auth-service 加 structlog+httpx+aliyun mirror；ont 加 mate_kernel+psycopg2-binary | ✅ Accepted | commit `677a8697` |
 | **BUSINESS-SLICES-WFE-P0**（ADR-0024） | FlowableClient 升级 BearerAuth + OutgoingAuthMiddleware（13 硬规则 #4 闭环）+ 47/47 tests | ✅ Accepted 2026-08-06 | `evidence/BUSINESS-SLICES-WFE-P0-ACCEPTANCE.md` |
+| **MP-MCP-REGISTER-01**（ADR-0025） | McpMarketplaceClient 调 mate-tech-mcp `/api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ McpInstaller 去 blocked-on + 8/8 tests | ✅ Accepted 2026-08-06 | `evidence/MP-MCP-REGISTER-ACCEPTANCE.md` |
 
-**main HEAD**：`ea4197f7`（合并 refactor/wfe-p0-template-01 后）；origin 同步推送。
+**main HEAD**：`78ca0c0b`（合并 refactor/mp-mcp-register-01 后）；origin 同步推送。
 
 ## v3.0 GA 状态（9/9 核心 + D0-D8 全部 Accepted）
 
@@ -59,14 +60,15 @@
 
 | Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 |
 |---|---|---:|---:|---:|---:|---|
-| **MARKETPLACE-CONSUMER-01** | **Pending**（35 tests pass；待 3 个 register 子 spec + SEC-TENANT-01 豁免签字 + CI 把 helm/E2E/OTel 跑绿）| ✓ | ✓ | ✓ 35/35 | ⏳ helm/E2E Pending | `evidence/MARKETPLACE-CONSUMER-ACCEPTANCE.md` ✅ |
+| **MARKETPLACE-CONSUMER-01** | **Pending**（35 tests pass；待 AGENT-REGISTER-01 + ONT-REGISTER-01 + SEC-TENANT-01 豁免签字 + CI 把 helm/E2E/OTel 跑绿）| ✓ | ✓ | ✓ 35/35 | ⏳ helm/E2E Pending | `evidence/MARKETPLACE-CONSUMER-ACCEPTANCE.md` ✅ |
 
 - **设计稿**：[`docs/superpowers/specs/2026-08-05-marketplace-consumer-design.md`](../specs/2026-08-05-marketplace-consumer-design.md)
 - **实施计划**：[`docs/superpowers/plans/2026-08-05-marketplace-consumer.md`](../plans/2026-08-05-marketplace-consumer.md)
 - **ADR**：[`ADR-0020`](../decisions/ADR-0020-marketplace-consumer.md)（跳号 0018，因被 `business-slices-slo` 占用）
-- **前置阻塞**：`MP-MCP-REGISTER-01` / `MP-AGENT-REGISTER-01` / `MP-ONT-REGISTER-01` 三个子 spec 必须先 Accepted，本 Batch 才能转 Accepted。
+- **前置阻塞**：`MP-MCP-REGISTER-01` ✅ Accepted / `MP-AGENT-REGISTER-01` Pending / `MP-ONT-REGISTER-01` Pending — 后两个子 spec 完成后本 Batch 才能转 Accepted。
 - **新增硬规则 14**：市场资产 digest → 本地 instance 一致性（installer 内 `registered_digest == expected_digest` 校验 + 失败回滚 + 审计告警）。
 - **SEC-TENANT-01 豁免点**：`marketplace_install` 是平台级资源但带 `tenant_id` 留痕，由 SEC-TENANT-01 owner 在 ACCEPTANCE 显式签字。
+- **MP-MCP-REGISTER-01** ✅ 2026-08-06 — ADR-0025：`McpMarketplaceClient` 调 `POST /api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ 8/8 tests + ruff 0 errors；commit `78ca0c0b`。
 
 ### In Progress — TECH-SERVICES 16 域接入
 
@@ -201,3 +203,4 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | 2026-08-03 | v3.2-α G6 RLS PgClient 集成 + v3.2-γ Iceberg/Trino sub-chart → Accepted | `0d9a96cc06c6`（`mate_clients/pg.PgClient.session` 改写：真实 `RequestContext` + `install_rls_session` 集成 + 3 integration tests；`infra/helm/charts/iceberg/` 9 文件 sub-chart + `infra/helm/charts/trino/` 10 文件 sub-chart (coordinator+worker 联邦 3 catalog) + umbrella `Chart.yaml` 注册 + CI workflow `g4-d1-staging-e2e.yml` + `infra/tests/test_iceberg_trino_chart.py` 22 tests + chart_structure REQUIRED_SUB_CHARTS 扩展）；`pytest packages → 1587 passed`，`pytest infra/tests/ → 1549 passed / 5 skipped`；证据 `G6-RLS-PGCLIENT-INTEGRATION-ACCEPTANCE.md` + `V32-GAMMA-ACCEPTANCE.md` |
 | 2026-08-03 | G6 RLS FastAPI Depends + 历史 ruff 收尾 + StarRocks sub-chart → Accepted | `rls_session.py` 加 `rls_db_session` + `rls_db_session_for` FastAPI 集成函数 + 7 tests；`mate-clients/pg.py` + `test_pg_client.py` 历史 7 个 ruff 错误清零 (UP035/PLW0603/F401/PTH110/PTH107/SIM117 + ruff.toml ignore)；`infra/helm/charts/starrocks/` 7 文件 sub-chart (FE+BE+external catalogs+tenant 隔离+NetworkPolicy) + umbrella 注册 + `infra/tests/test_starrocks_chart.py` 16 tests + chart_structure REQUIRED_SUB_CHARTS 扩展；`pytest packages → 1594 passed`，`pytest infra/tests/ → 1579 passed / 5 skipped`；`ruff check mate-clients → All checks passed!`；证据 `RLS-DEPENDENCY-MIDDLEWARE-ACCEPTANCE.md` |
 | 2026-08-03 | v3.2-δ 多模态数据产品 (Iceberg ADS) 控制面 + 工作流 + 审计 → Accepted | 3 sub-agent 并行交付：① DataProduct 域 9 endpoints (CRUD + publish/certify/suspend lifecycle + 多模态 modality + 版本) + 15 tests；② IcebergRestAdapter + AdsPublisher 4 步工作流 (resolve → validate status → iceberg create_namespace+register_table → bump version+emit outbox) + 22 tests；③ AdsAuditMiddleware ASGI 中间件 (cross_tenant_data_access outbox event on tagged ADS reads) + 8 tests；历史 ruff 收尾 (debezium_engine SIM105, tenancy __init__ RUF022/F401)；`pytest packages → 1639 passed` (从 1594 → 1639, +45)；`ruff check → 0 errors`；证据 `V32-DELTA-DATA-PRODUCT-ACCEPTANCE.md` |
+| 2026-08-06 | MP-MCP-REGISTER-01 → Accepted | ADR-0025 `McpMarketplaceClient` 调 `POST /api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ McpInstaller 去 blocked-on + 8/8 tests + ruff 0 errors；commit `78ca0c0b`；`pytest packages → 2180 passed / 54 pre-existing failures unrelated`（已在 main 验证）；证据 `MP-MCP-REGISTER-ACCEPTANCE.md`；main HEAD `78ca0c0b` 已推送 origin。剩余 MP-AGENT-REGISTER-01 + MP-ONT-REGISTER-01 → MARKETPLACE-CONSUMER-01 → Accepted。 |
