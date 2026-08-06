@@ -26,7 +26,74 @@ logger = structlog.get_logger(__name__)
 
 # P3-W9: management API helpers (cache / quota / cost singletons).
 from ..quota.bucket import QuotaExceededError  # noqa: E402
-from ..router import get_cache, get_cost_recorder, get_quota_bucket  # noqa: E402
+from ..router import (  # noqa: E402
+    get_cache,
+    get_cost_recorder,
+    get_monthly_bucket,
+    get_quota_bucket,
+    get_user_daily_cap,
+)
+from mate_platform.observability import journey_span  # noqa: E402
+
+
+# ADR-0018 §2.4: monthly token ceiling.
+async def _enforce_monthly_ceiling(req: ChatRequest | RealChatRequest) -> None:
+    bucket = get_monthly_bucket()
+    if bucket is None:
+        return
+    estimated_tokens = 0
+    for msg in req.messages or []:
+        content = getattr(msg, "content", "") or ""
+        estimated_tokens += max(len(content) // 4, 1)
+    try:
+        await bucket.check_and_record(
+            tenant_id=req.tenant_id or "default",
+            estimated_tokens=estimated_tokens,
+        )
+    except QuotaExceededError as e:
+        logger.warning(
+            "llmgw.quota.exceeded.monthly",
+            tenant_id=req.tenant_id,
+            retry_after=e.retry_after,
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="monthly token quota exceeded",
+            headers={"Retry-After": str(e.retry_after)},
+        ) from e
+
+
+# ADR-0018 §2.4: per-user daily cost cap.
+def _enforce_user_daily_cap(req: ChatRequest | RealChatRequest, *, user_id: str) -> None:
+    from ..cost.ceiling import UserDailyCapExceeded
+
+    cap = get_user_daily_cap()
+    if cap is None:
+        return
+    estimated_tokens = 0
+    for msg in req.messages or []:
+        content = getattr(msg, "content", "") or ""
+        estimated_tokens += max(len(content) // 4, 1)
+    # 4 chars ~ 1 token,模型价格取保守上限 $0.015/1k completion。
+    estimated_cost_usd = max(estimated_tokens, 0) / 1000.0 * 0.015
+    try:
+        cap.check_and_record(
+            tenant_id=req.tenant_id or "default",
+            user_id=user_id,
+            cost_usd=estimated_cost_usd,
+        )
+    except UserDailyCapExceeded as e:
+        logger.warning(
+            "llmgw.user_daily_cap.exceeded",
+            tenant_id=req.tenant_id,
+            user_id=user_id,
+            retry_after=e.retry_after,
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="user daily cost cap exceeded; using stub provider",
+            headers={"Retry-After": str(e.retry_after)},
+        ) from e
 
 # Canonical prefix per the spec.
 router = APIRouter(prefix="/api/v1/llmgw", tags=["llmgw"])
@@ -60,23 +127,29 @@ class ChatResponseAPI(BaseModel):
 @router.post("/chat", response_model=ChatResponseAPI)
 async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
     """非流式 chat 端点."""
-    try:
-        resp = await router_chat(
-            req.model,
-            req.messages,
-            temperature=req.temperature,
-            max_tokens=req.max_tokens,
-            tools=req.tools,
-            tenant_id=req.tenant_id,
-        )
-        return ChatResponseAPI(**resp.__dict__)
-    except HTTPException:
-        raise
-    except (NotImplementedError, ValueError) as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logger.error("llmgw.chat.error", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    await _enforce_monthly_ceiling(req)
+    with journey_span(
+        "llmgw.chat",
+        tenant_id=req.tenant_id or "default",
+        attributes={"llmgw.model": req.model, "llmgw.endpoint": "chat"},
+    ):
+        try:
+            resp = await router_chat(
+                req.model,
+                req.messages,
+                temperature=req.temperature,
+                max_tokens=req.max_tokens,
+                tools=req.tools,
+                tenant_id=req.tenant_id,
+            )
+            return ChatResponseAPI(**resp.__dict__)
+        except HTTPException:
+            raise
+        except (NotImplementedError, ValueError) as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except Exception as e:
+            logger.error("llmgw.chat.error", error=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def _mock_stream(*, messages=None, model=None, temperature=1.0, **kwargs):
@@ -218,48 +291,54 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
     failure the provider returns a deterministic stub response so the
     caller always gets a reply.
     """
-    from ..providers.real_anthropic_provider import RealAnthropicProvider
-    from ..providers.real_openai_provider import RealOpenAIProvider
+    await _enforce_monthly_ceiling(req)
+    with journey_span(
+        "llmgw.chat.real",
+        tenant_id=req.tenant_id or "default",
+        attributes={"llmgw.provider": req.provider, "llmgw.endpoint": "chat/real"},
+    ):
+        from ..providers.real_anthropic_provider import RealAnthropicProvider
+        from ..providers.real_openai_provider import RealOpenAIProvider
 
-    if req.provider == "anthropic":
-        model = req.model or "claude-3-5-sonnet-20241022"
-        provider = RealAnthropicProvider(model=model)
-    elif req.provider == "openai":
-        model = req.model or "gpt-4o-mini"
-        provider = RealOpenAIProvider(model=model)
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=f"unknown provider: {req.provider!r} (expected 'openai' or 'anthropic')",
-        )
+        if req.provider == "anthropic":
+            model = req.model or "claude-3-5-sonnet-20241022"
+            provider = RealAnthropicProvider(model=model)
+        elif req.provider == "openai":
+            model = req.model or "gpt-4o-mini"
+            provider = RealOpenAIProvider(model=model)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"unknown provider: {req.provider!r} (expected 'openai' or 'anthropic')",
+            )
 
-    try:
-        resp = await provider.chat(
-            req.messages,
-            temperature=req.temperature,
-            max_tokens=req.max_tokens,
-            tenant_id=req.tenant_id,
-        )
-    finally:
-        await provider.aclose()
+        try:
+            resp = await provider.chat(
+                req.messages,
+                temperature=req.temperature,
+                max_tokens=req.max_tokens,
+                tenant_id=req.tenant_id,
+            )
+        finally:
+            await provider.aclose()
 
-    # Detect fallback by checking for the stub marker in content
-    is_fallback = "[stub-fallback]" in resp.content
-    if is_fallback:
-        logger.warning(
-            "llmgw.chat.real.fallback",
+        # Detect fallback by checking for the stub marker in content
+        is_fallback = "[stub-fallback]" in resp.content
+        if is_fallback:
+            logger.warning(
+                "llmgw.chat.real.fallback",
+                provider=req.provider,
+                tenant_id=req.tenant_id,
+            )
+
+        return RealChatResponseAPI(
+            content=resp.content,
+            model=resp.model,
+            finish_reason=resp.finish_reason,
+            usage=resp.usage,
             provider=req.provider,
-            tenant_id=req.tenant_id,
+            fallback=is_fallback,
         )
-
-    return RealChatResponseAPI(
-        content=resp.content,
-        model=resp.model,
-        finish_reason=resp.finish_reason,
-        usage=resp.usage,
-        provider=req.provider,
-        fallback=is_fallback,
-    )
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,34 @@
+apiVersion: v2
+name: observability-alerts
+description: |
+  Prometheus alert rules covering ADR-0018 §2.1 SLOs:
+    * RAG TTFT p95 ≤ 1.5s (local) / ≤ 4s (含 LLM 上游)
+    * Agent / Copilot 任务完成率 ≥ 99%
+    * MCP 工具调用授权失败率 < 0.5%
+    * LLM 网关月度 token 上限（per tenant）触发 → 429
+    * 跨租户越权（hard rule 3）— 任何一次即 P0 阻断
+
+  These are loaded by the Prometheus operator via the
+  ``PrometheusRule`` CRD and fire into Alertmanager. Each alert
+  links to the runbook in ``docs/active/runbooks/``.
+
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+home: https://prometheus.io
+sources:
+  - https://github.com/prometheus-operator/prometheus-operator
+keywords:
+  - prometheus
+  - alerts
+  - slo
+  - observability
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: Observability
+  licenses: Apache-2.0

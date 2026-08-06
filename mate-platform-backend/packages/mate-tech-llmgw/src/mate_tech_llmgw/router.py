@@ -13,6 +13,7 @@ from fastapi import HTTPException
 
 from .cache.llm_cache import LLMCache, cache_key
 from .chat import ChatMessage, ChatProvider, ChatResponse
+from .cost.ceiling import MonthlyTokenBucket, UserDailyCap
 from .cost.recorder import CostRecorder
 from .providers.anthropic import AnthropicChatProvider
 from .providers.doubao import DoubaoChatProvider
@@ -103,6 +104,8 @@ _providers: dict[str, ChatProvider] = {}
 _cache: LLMCache | None = None
 _quota_bucket: RedisTokenBucket | None = None
 _cost_recorder: CostRecorder | None = None
+_monthly_bucket: MonthlyTokenBucket | None = None
+_user_daily_cap: UserDailyCap | None = None
 
 
 def set_cache(cache: LLMCache | None) -> None:
@@ -123,6 +126,18 @@ def set_cost_recorder(recorder: CostRecorder | None) -> None:
     _cost_recorder = recorder
 
 
+def set_monthly_bucket(bucket: MonthlyTokenBucket | None) -> None:
+    """注入 MonthlyTokenBucket 实例 (ADR-0018 §2.4)."""
+    global _monthly_bucket
+    _monthly_bucket = bucket
+
+
+def set_user_daily_cap(cap: UserDailyCap | None) -> None:
+    """注入 UserDailyCap 实例 (ADR-0018 §2.4)."""
+    global _user_daily_cap
+    _user_daily_cap = cap
+
+
 def get_cache() -> LLMCache | None:
     """获取当前 cache 单例(管理 API 使用)."""
     return _cache
@@ -136,6 +151,26 @@ def get_quota_bucket() -> RedisTokenBucket | None:
 def get_cost_recorder() -> CostRecorder | None:
     """获取当前 cost recorder 单例."""
     return _cost_recorder
+
+
+def get_monthly_bucket() -> MonthlyTokenBucket | None:
+    """获取当前 monthly bucket 单例 (ADR-0018 §2.4)."""
+    return _monthly_bucket
+
+
+def get_user_daily_cap() -> UserDailyCap | None:
+    """获取当前 user daily cap 单例 (ADR-0018 §2.4)."""
+    return _user_daily_cap
+
+
+def reset_state() -> None:
+    """重置所有单例(测试用)."""
+    global _cache, _quota_bucket, _cost_recorder, _monthly_bucket, _user_daily_cap
+    _cache = None
+    _quota_bucket = None
+    _cost_recorder = None
+    _monthly_bucket = None
+    _user_daily_cap = None
 
 
 def get_provider(model: str) -> ChatProvider:

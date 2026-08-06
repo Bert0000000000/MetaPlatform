@@ -35,6 +35,7 @@ class UsageRecord:
 
     model: str
     tenant_id: str
+    user_id: str
     prompt_tokens: int
     completion_tokens: int
     cost_usd: float
@@ -77,12 +78,14 @@ class CostRecorder:
         model: str,
         tenant_id: str,
         usage: dict[str, int],
+        user_id: str = "anonymous",
     ) -> UsageRecord:
         """记录一次调用的成本.
 
         Args:
             model: LLM 模型名
             tenant_id: 租户 id
+            user_id: 用户 id(用于 per-user daily cap + denial-of-wallet)
             usage: {prompt_tokens, completion_tokens, total_tokens}
 
         Returns:
@@ -94,6 +97,7 @@ class CostRecorder:
         record = UsageRecord(
             model=model,
             tenant_id=tenant_id,
+            user_id=user_id,
             prompt_tokens=pt,
             completion_tokens=ct,
             cost_usd=cost,

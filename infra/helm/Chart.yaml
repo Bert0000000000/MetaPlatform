@@ -78,3 +78,6 @@ dependencies:
   - name: deerflow-engine
     version: 0.1.0
     condition: deerflow-engine.enabled
+  - name: observability-alerts
+    version: 0.1.0
+    condition: observability-alerts.enabled
