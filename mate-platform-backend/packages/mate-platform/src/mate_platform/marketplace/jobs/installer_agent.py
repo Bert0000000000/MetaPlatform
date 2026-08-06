@@ -1,4 +1,4 @@
-"""Agent installer — [blocked-on: MP-AGENT-REGISTER-01]。"""
+"""Agent installer — registers an Agent artifact with ``mate-tech-agent``."""
 from __future__ import annotations
 
 from ._base import BaseInstaller
