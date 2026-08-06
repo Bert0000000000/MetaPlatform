@@ -35,10 +35,45 @@ class JobPhase(str, Enum):
 
 @dataclass(frozen=True, slots=True)
 class ResourceLimits:
+    """K8s Job 资源上限声明 —— 越界直接拒，避免单任务抢光节点。
+
+    上下限对位 K8s LimitRange / ResourceQuota 经验值（生产通常 1 节点 ≤ 16 CPU / 64Gi）。
+    """
     cpu_millicores: int = 500      # 0.5 CPU
     memory_mb: int = 512
     timeout_seconds: int = 60
     ephemeral_storage_mb: int = 256
+
+    _CPU_MIN = 50          # 0.05 CPU
+    _CPU_MAX = 16000       # 16 CPU
+    _MEM_MIN = 64          # 64 Mi
+    _MEM_MAX = 65536       # 64 Gi
+    _TIME_MIN = 1
+    _TIME_MAX = 3600       # 1h
+    _STORAGE_MIN = 64
+    _STORAGE_MAX = 10240   # 10 Gi
+
+    def __post_init__(self) -> None:
+        if not (self._CPU_MIN <= self.cpu_millicores <= self._CPU_MAX):
+            raise ValueError(
+                f"cpu_millicores={self.cpu_millicores} 越界 "
+                f"[{self._CPU_MIN}, {self._CPU_MAX}]"
+            )
+        if not (self._MEM_MIN <= self.memory_mb <= self._MEM_MAX):
+            raise ValueError(
+                f"memory_mb={self.memory_mb} 越界 "
+                f"[{self._MEM_MIN}, {self._MEM_MAX}]"
+            )
+        if not (self._TIME_MIN <= self.timeout_seconds <= self._TIME_MAX):
+            raise ValueError(
+                f"timeout_seconds={self.timeout_seconds} 越界 "
+                f"[{self._TIME_MIN}, {self._TIME_MAX}]"
+            )
+        if not (self._STORAGE_MIN <= self.ephemeral_storage_mb <= self._STORAGE_MAX):
+            raise ValueError(
+                f"ephemeral_storage_mb={self.ephemeral_storage_mb} 越界 "
+                f"[{self._STORAGE_MIN}, {self._STORAGE_MAX}]"
+            )
 
 
 @dataclass(frozen=True, slots=True)
