@@ -11,8 +11,6 @@
 global:
   labels:
     app.kubernetes.io/part-of: metaplatform
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/version: "3.0.0"
   podSecurityStandards:
     enforce: restricted
     audit: restricted
