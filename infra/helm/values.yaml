@@ -50,9 +50,15 @@ network-policies:
     dataPlane:
       enabled: true
       targets:
-        - postgres
-        - redis
-        - kafka
+        - name: postgres
+          port: 5432
+          protocol: TCP
+        - name: redis
+          port: 6379
+          protocol: TCP
+        - name: kafka
+          port: 9092
+          protocol: TCP
   allowedIngress:
     apiGateway:
       enabled: true
