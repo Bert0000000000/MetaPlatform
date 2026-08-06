@@ -7,16 +7,14 @@ import CapabilityGraph from './components/CapabilityGraph';
 import type { Capability, CapabilityCreateRequest } from '@/api/arch/types';
 
 function buildTreeData(caps: Capability[]): DataNode[] {
-  const idField = (c: Capability) =>
+  const idField = (c: Capability): string =>
     c.capabilityId ||
-    (c as unknown as Record<string, unknown>).capability_id ||
-    (c as unknown as Record<string, unknown>).id as string ||
-    '';
-  const parentField = (c: Capability) =>
+    String((c as unknown as Record<string, unknown>).capability_id ?? '') ||
+    String((c as unknown as Record<string, unknown>).id ?? '');
+  const parentField = (c: Capability): string =>
     c.parentCapabilityId ||
-    (c as unknown as Record<string, unknown>).parent_capability_id ||
-    (c as unknown as Record<string, unknown>).parent_id as string ||
-    '';
+    String((c as unknown as Record<string, unknown>).parent_capability_id ?? '') ||
+    String((c as unknown as Record<string, unknown>).parent_id ?? '');
   const visited = new Set<string>();
   const build = (parentId: string): DataNode[] =>
     caps
