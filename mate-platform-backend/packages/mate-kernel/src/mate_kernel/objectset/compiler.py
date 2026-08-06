@@ -98,36 +98,42 @@ class FilterCompiler:
         # strip outer parens
         if atom.startswith("(") and atom.endswith(")"):
             return self.compile(atom[1:-1])
+        # slug 含 `-`（rid 第 4 段，e.g. `po-qty`）；\w 不够，用 [A-Za-z0-9_\-]+
+        SLUG = r"[A-Za-z0-9_\-]+"
         # contains
-        m = re.match(r"^(\w+)\s+contains\s+['\"](.+?)['\"]$", atom)
+        m = re.match(rf"^({SLUG})\s+contains\s+['\"](.+?)['\"]$", atom)
         if m:
             return CompiledFilter(kind="contains", field_name=m.group(1), value=m.group(2))
         # startswith
-        m = re.match(r"^(\w+)\s+startswith\s+['\"](.+?)['\"]$", atom)
+        m = re.match(rf"^({SLUG})\s+startswith\s+['\"](.+?)['\"]$", atom)
         if m:
             return CompiledFilter(kind="startswith", field_name=m.group(1), value=m.group(2))
         # == 'literal'
-        m = re.match(r"^(\w+)\s*==\s*['\"](.+?)['\"]$", atom)
+        m = re.match(rf"^({SLUG})\s*==\s*['\"](.+?)['\"]$", atom)
         if m:
             return CompiledFilter(kind="compare_eq", field_name=m.group(1), value=m.group(2))
         # == number
-        m = re.match(r"^(\w+)\s*==\s*(-?\d+(?:\.\d+)?)$", atom)
+        m = re.match(rf"^({SLUG})\s*==\s*(-?\d+(?:\.\d+)?)$", atom)
         if m:
             return CompiledFilter(kind="compare_eq", field_name=m.group(1), value=float(m.group(2)))
         # > number
-        m = re.match(r"^(\w+)\s*>\s*(-?\d+(?:\.\d+)?)$", atom)
+        m = re.match(rf"^({SLUG})\s*>\s*(-?\d+(?:\.\d+)?)$", atom)
         if m:
             return CompiledFilter(kind="compare_gt", field_name=m.group(1), value=float(m.group(2)))
         # >= number
-        m = re.match(r"^(\w+)\s*>=\s*(-?\d+(?:\.\d+)?)$", atom)
+        m = re.match(rf"^({SLUG})\s*>=\s*(-?\d+(?:\.\d+)?)$", atom)
         if m:
             return CompiledFilter(kind="compare_gte", field_name=m.group(1), value=float(m.group(2)))
         # < number
-        m = re.match(r"^(\w+)\s*<\s*(-?\d+(?:\.\d+)?)$", atom)
+        m = re.match(rf"^({SLUG})\s*<\s*(-?\d+(?:\.\d+)?)$", atom)
         if m:
             return CompiledFilter(kind="compare_lt", field_name=m.group(1), value=float(m.group(2)))
+        # <= number
+        m = re.match(rf"^({SLUG})\s*<=\s*(-?\d+(?:\.\d+)?)$", atom)
+        if m:
+            return CompiledFilter(kind="compare_lte", field_name=m.group(1), value=float(m.group(2)))
         # != literal
-        m = re.match(r"^(\w+)\s*!=\s*['\"](.+?)['\"]$", atom)
+        m = re.match(rf"^({SLUG})\s*!=\s*['\"](.+?)['\"]$", atom)
         if m:
             return CompiledFilter(kind="compare_ne", field_name=m.group(1), value=m.group(2))
         # truthy field
@@ -156,6 +162,9 @@ class FilterEvaluator:
         if kind == "compare_lt":
             v = row.get(f.field_name)
             return v is not None and float(v) < f.value
+        if kind == "compare_lte":
+            v = row.get(f.field_name)
+            return v is not None and float(v) <= f.value
         if kind == "startswith":
             return str(row.get(f.field_name, "")).startswith(str(f.value))
         if kind == "contains":
@@ -219,7 +228,19 @@ class InMemoryObjectSetExecutor:
             # 支持 "field" 或 "-field"（降序）
             reverse = plan.sort[0].startswith("-")
             key_name = plan.sort[0].lstrip("-")
-            out.sort(key=lambda i: str(individual_to_row(i).get(key_name, "")), reverse=reverse)
+
+            def _sort_key(i: Individual) -> tuple[int, object]:
+                v = individual_to_row(i).get(key_name)
+                # 数字 → 数值比较；其余 → 字典序；混合类型用 (type_rank, value)
+                if isinstance(v, bool):
+                    return (2, int(v))
+                if isinstance(v, (int, float)):
+                    return (1, float(v))
+                if v is None:
+                    return (3, "")
+                return (0, str(v))
+
+            out.sort(key=_sort_key, reverse=reverse)
         return out[plan.paging_offset : plan.paging_offset + plan.paging_limit]
 
 

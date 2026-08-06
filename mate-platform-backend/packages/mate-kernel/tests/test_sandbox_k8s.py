@@ -90,3 +90,29 @@ class TestSandboxTierEnum:
         assert SandboxTier.L1_PROCESS.value == "l1_process"
         assert SandboxTier.L2_CONTAINER.value == "l2_container"
         assert SandboxTier.L3_MICROVM.value == "l3_microvm"
+
+
+class TestResourceLimitsBounds:
+    """Bug C 回归：ResourceLimits 必须有上下限校验。"""
+
+    def test_default_valid(self) -> None:
+        ResourceLimits()  # 不 raise
+
+    def test_cpu_too_high(self) -> None:
+        with pytest.raises(ValueError, match="cpu_millicores"):
+            ResourceLimits(cpu_millicores=200_000)
+
+    def test_memory_too_high(self) -> None:
+        with pytest.raises(ValueError, match="memory_mb"):
+            ResourceLimits(memory_mb=999_999)
+
+    def test_timeout_too_high(self) -> None:
+        with pytest.raises(ValueError, match="timeout_seconds"):
+            ResourceLimits(timeout_seconds=86_400)
+
+    def test_cpu_too_low(self) -> None:
+        with pytest.raises(ValueError, match="cpu_millicores"):
+            ResourceLimits(cpu_millicores=0)
+
+    def test_max_boundary_ok(self) -> None:
+        ResourceLimits(cpu_millicores=16_000, memory_mb=65_536, timeout_seconds=3600)

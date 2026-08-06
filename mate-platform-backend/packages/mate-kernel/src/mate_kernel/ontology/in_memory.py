@@ -150,11 +150,10 @@ class InMemoryOntologyRepository(OntologyRepository):
     # ───── query / apply ─────
 
     def evaluate_object_set(self, os_: ObjectSet) -> list[Individual]:
-        # dev runtime: 只按 class_rid 过滤；filter_expr / sort 留给 KERNEL-02+
-        items = [
-            i for i in self._individuals.values() if i.class_rid == os_.class_rid
-        ]
-        return items[os_.paging_offset : os_.paging_offset + os_.paging_limit]
+        # dev runtime: 委托给 InMemoryObjectSetExecutor，filter_expr / sort 真正生效
+        from mate_kernel.objectset.compiler import InMemoryObjectSetExecutor
+        items = list(self._individuals.values())
+        return InMemoryObjectSetExecutor(items).execute(os_)
 
     def apply_action(self, action_rid: ClassRef, target_iid: str, parameters: dict[str, Any], provenance: dict[str, Any]) -> tuple[datetime, list[str]]:
         # dev runtime: 校验 action 存在并返回审计占位
