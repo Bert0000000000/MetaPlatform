@@ -88,7 +88,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: oasdiff/oasdiff-action@v0.1.0
+      - uses: oasdiff/oasdiff-action@v0.1.11
         with:
           spec: mate-platform-backend/contracts/openapi/services
           fail-on: "ERR"

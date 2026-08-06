@@ -38,7 +38,7 @@ repos:
         files: uv.lock|pyproject.toml
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0
+    rev: v3.1.0
     hooks:
       - id: prettier
         types_or: [yaml, json, markdown]
