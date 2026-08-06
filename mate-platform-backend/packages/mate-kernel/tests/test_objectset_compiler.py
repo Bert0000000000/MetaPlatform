@@ -278,3 +278,90 @@ class TestSQLExecutorStub:
     def test_raises_not_implemented(self) -> None:
         with pytest.raises(NotImplementedError, match="SQLObjectSetExecutor"):
             SQLObjectSetExecutor().execute(self._plan())
+
+
+class TestHyphenSlugRegression:
+    """Bug B 回归：rid 第 4 段含连字符的 slug（e.g. `po-qty`）。"""
+
+    def test_compare_gte_hyphen(self) -> None:
+        fc, ev = FilterCompiler(), FilterEvaluator()
+        cf = fc.compile("po-qty >= 15")
+        assert cf.kind == "compare_gte"
+        assert cf.field_name == "po-qty"
+        assert ev.evaluate(cf, {"po-qty": 20})
+        assert not ev.evaluate(cf, {"po-qty": 10})
+
+    def test_compare_lte_hyphen(self) -> None:
+        fc, ev = FilterCompiler(), FilterEvaluator()
+        cf = fc.compile("po-qty <= 5")
+        assert cf.kind == "compare_lte"
+        assert ev.evaluate(cf, {"po-qty": 5})
+        assert not ev.evaluate(cf, {"po-qty": 6})
+
+    def test_logical_and_hyphen(self) -> None:
+        fc, ev = FilterCompiler(), FilterEvaluator()
+        cf = fc.compile("po-qty >= 10 AND po-qty < 25")
+        rows = [{"po-qty": v} for v in (5, 10, 15, 20, 25)]
+        out = [r for r in rows if ev.evaluate(cf, r)]
+        assert out == [{"po-qty": 10}, {"po-qty": 15}, {"po-qty": 20}]
+
+    def test_startswith_hyphen(self) -> None:
+        fc, ev = FilterCompiler(), FilterEvaluator()
+        cf = fc.compile("po-id startswith 'PO-'")
+        assert cf.kind == "startswith"
+        assert cf.field_name == "po-id"
+        assert ev.evaluate(cf, {"po-id": "PO-001"})
+        assert not ev.evaluate(cf, {"po-id": "SO-001"})
+
+
+class TestRepoEvaluateFilterRegression:
+    """Bug A 回归：InMemoryRepository.evaluate_object_set 必须消费 filter_expr。"""
+
+    def _seed(self):
+        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+        from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+        from mate_kernel.ontology.types.object_type import ObjectType
+
+        repo = InMemoryOntologyRepository()
+        cls = _cls("po")
+        prop_pk = Property(
+            rid=ClassRef(rid="ont.acme.prop.po-id.v1"),
+            type_id="string", nullable=False, primary_key=True,
+            title="id", format=PropertyFormat.STRING,
+        )
+        prop_qty = Property(
+            rid=ClassRef(rid="ont.acme.prop.po-qty.v1"),
+            type_id="integer", nullable=False, primary_key=False,
+            title="qty", format=PropertyFormat.INTEGER,
+        )
+        repo.upsert_object_type(ObjectType(
+            rid=cls, primary_key=(prop_pk.rid,),
+            properties=(prop_pk, prop_qty), display_name="PO",
+        ))
+        now = datetime.now(timezone.utc)
+        for i, q in enumerate([5, 10, 15, 20, 25]):
+            repo.create_individual(Individual(
+                rid=f"ont.acme.ind.po.{i}", class_rid=cls,
+                props=((prop_qty.rid, q),), primary_key=str(i),
+                created_at=now, updated_at=now, tenant_id="acme",
+            ))
+        return repo, cls
+
+    def test_filter_expr_now_consumed(self) -> None:
+        repo, cls = self._seed()
+        res = repo.evaluate_object_set(ObjectSet(class_rid=cls, filter_expr="po-qty >= 15"))
+        assert {i.primary_key for i in res} == {"2", "3", "4"}
+
+    def test_sort_desc(self) -> None:
+        repo, cls = self._seed()
+        res = repo.evaluate_object_set(ObjectSet(
+            class_rid=cls, filter_expr="po-qty >= 10", sort=("-po-qty",),
+        ))
+        assert [i.primary_key for i in res] == ["4", "3", "2", "1"]
+
+    def test_paging(self) -> None:
+        repo, cls = self._seed()
+        res = repo.evaluate_object_set(ObjectSet(
+            class_rid=cls, filter_expr="po-qty >= 5", paging_limit=2, paging_offset=1,
+        ))
+        assert len(res) == 2
