@@ -164,7 +164,7 @@ async def get_app_detail(request: Request, app_id: str) -> dict:
     # 优先按 id 匹配；fallback 按 code 匹配（get_app 以 code 为 key）
     app = None
     for a in list_apps(tid):
-        if a.id == app_id or a.code == app_id:
+        if app_id in (a.id, a.code):
             app = a
             break
     if app is None:
