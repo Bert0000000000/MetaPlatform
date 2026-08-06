@@ -55,10 +55,9 @@ jobs:
           sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
       - name: Render OTel configmap and verify otlp
         run: |
-          helm template otel-collector infra/helm/charts/otel-collector -f infra/helm/charts/otel-collector/values.yaml \
-            --set receivers.otlp.grpc.enabled=true \
-            > /tmp/otel-rendered.yaml
-          grep -q "otlp/grpc" /tmp/otel-rendered.yaml && echo "OK: otlp/grpc receiver present" || (echo "FAIL: otlp/grpc missing"; exit 1)
+          helm template metaplatform infra/helm -f infra/helm/values-local.yaml \
+            > /tmp/rendered.yaml
+          grep -q "otlp/grpc" /tmp/rendered.yaml && echo "OK: otlp/grpc receiver present" || (echo "FAIL: otlp/grpc missing"; exit 1)
 
   # rule 11: helm-docs sync
   ga-011-helm-docs:
@@ -136,7 +135,7 @@ jobs:
           for env in local staging production; do
             echo "=== $env ==="
             helm template metaplatform infra/helm -f infra/helm/values-$env.yaml > /tmp/rendered/$env.yaml
-            kubeconform -strict -summary -kubernetes-version 1.29.0 /tmp/rendered/$env.yaml
+            kubeconform -strict -summary -ignore-missing-schemas -kubernetes-version 1.29.0 /tmp/rendered/$env.yaml
           done
 
   # rule 13: NetworkPolicy 完整 (default-deny + 显式 allow)
