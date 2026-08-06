@@ -45,6 +45,10 @@ jobs:
 
   runtime-parity:
     runs-on: ubuntu-latest
+    env:
+      LEGACY_LOGIN_COMPAT: "true"
+      KEYCLOAK_URL: "http://keycloak:8080"
+      INSECURE_SKIP_SIGNATURE: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
