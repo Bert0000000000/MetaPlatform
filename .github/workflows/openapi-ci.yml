@@ -55,7 +55,7 @@ jobs:
       - name: Sync backend deps (uv.lock)
         run: |
           cd mate-platform-backend
-          uv sync --frozen --no-dev
+          uv sync --no-dev
       - run: python mate-platform-backend/contracts/scripts/runtime_openapi.py
       - run: python mate-platform-backend/contracts/scripts/compare_runtime.py
 
