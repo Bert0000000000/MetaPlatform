@@ -26,7 +26,7 @@ info:
     - /v1/etl/* -> MATE-DATA
     - /v1/scheduler/* -> MATE-DATA
     - /v1/metrics/* -> MATE-DATA
-    
+
   contact:
     name: Mate Platform Team
     email: team@metaplatform.io
