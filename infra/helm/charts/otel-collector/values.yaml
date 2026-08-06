@@ -1,4 +1,8 @@
 # otel-collector sub-chart values
+global:
+  serviceAccount:
+    name: default
+
 image:
   repository: otel/opentelemetry-collector-contrib
   tag: 0.104.0

@@ -17,7 +17,7 @@ spec:
         component: otel-collector
         app.kubernetes.io/component: observability
     spec:
-      serviceAccountName: {{ .Values.global.serviceAccount.name | default "default" }}
+      serviceAccountName: {{ default "default" .Values.global.serviceAccount.name }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
