@@ -1,14 +1,23 @@
 ﻿import { useEffect, useState } from 'react';
-import { Card, Empty, Modal, Space, Tag, Typography, message, Spin, Result, Button } from 'antd';
+import { Card, Empty, Modal, Space, Tag, Typography, message, Spin, Result, Button, Table, Badge } from 'antd';
 import { AppstoreOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   listTemplates,
   installTemplate,
+  listInstalled,
 } from '@/api/apphub/marketplace';
 import TemplateCard from './components/TemplateCard';
 import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
-import type { TemplateItem } from '@/api/apphub/marketplace';
+import type { TemplateItem, InstallResult, InstalledItem } from '@/api/apphub/marketplace';
+
+const INSTALL_STATE_MAP: Record<string, { label: string; badge: 'success' | 'processing' | 'warning' | 'error' | 'default' }> = {
+  installed: { label: '已安装', badge: 'success' },
+  downloading: { label: '下载中', badge: 'processing' },
+  verifying: { label: '校验中', badge: 'processing' },
+  failed: { label: '失败', badge: 'error' },
+  uninstalled: { label: '已卸载', badge: 'default' },
+};
 
 export default function MarketplacePage() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
@@ -18,6 +27,8 @@ export default function MarketplacePage() {
   const [category, setCategory] = useState<TemplateItem['category']>();
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'rating'>('newest');
   const [previewing, setPreviewing] = useState<TemplateItem | null>(null);
+  const [installed, setInstalled] = useState<InstalledItem[]>([]);
+  const [installedLoading, setInstalledLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -40,16 +51,33 @@ export default function MarketplacePage() {
     load();
   }, [keyword, category, sortBy]);
 
-  const handleInstall = async (t: TemplateItem) => {
+  const loadInstalled = async () => {
+    setInstalledLoading(true);
     try {
-      const res = await installTemplate(t.templateId);
-      if (res.success) {
-        message.success(`已安装模板：${t.name}（AppID: ${res.appId}）`);
+      const items = await listInstalled();
+      setInstalled(items);
+    } catch {
+      setInstalled([]);
+    } finally {
+      setInstalledLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInstalled();
+  }, []);
+
+  const handleInstall = async (t: TemplateItem) => {
+    const res: InstallResult = await installTemplate(t.templateId);
+    if (res.success) {
+      if (res.alreadyInstalled) {
+        message.info(`「${t.name}」已安装`);
       } else {
-        message.error('安装失败');
+        message.success(`已安装「${t.name}」（Install ID: ${res.installId}）`);
       }
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '安装失败');
+      loadInstalled();
+    } else {
+      message.error(res.error || '安装失败');
     }
   };
 
@@ -106,6 +134,45 @@ export default function MarketplacePage() {
           ))}
         </div>
       )}
+
+      {/* 我的安装 */}
+      <Card size="small" title={`我的安装 (${installed.length})`} style={{ marginTop: 24 }}>
+        <Spin spinning={installedLoading}>
+          {installed.length === 0 ? (
+            <Empty description="还没有安装记录，安装后的本体/Agent/MCP 会显示在这里" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          ) : (
+            <Table
+              size="small"
+              dataSource={installed}
+              rowKey="id"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              columns={[
+                { title: '类型', dataIndex: 'kind', key: 'kind', render: (k: string) => <Tag color="blue">{k}</Tag> },
+                { title: 'Artifact ID', dataIndex: 'artifactId', key: 'artifactId', ellipsis: true },
+                { title: '版本', dataIndex: 'version', key: 'version', width: 100 },
+                {
+                  title: '状态',
+                  dataIndex: 'state',
+                  key: 'state',
+                  width: 110,
+                  render: (s: string) => {
+                    const m = INSTALL_STATE_MAP[s] ?? { label: s, badge: 'default' as const };
+                    return <Badge status={m.badge} text={m.label} />;
+                  },
+                },
+                {
+                  title: '安装时间',
+                  dataIndex: 'installedAt',
+                  key: 'installedAt',
+                  width: 170,
+                  render: (v?: string) => (v ? new Date(v).toLocaleString() : '-'),
+                },
+              ]}
+            />
+          )}
+        </Spin>
+      </Card>
 
       <Modal
         title={previewing?.name}

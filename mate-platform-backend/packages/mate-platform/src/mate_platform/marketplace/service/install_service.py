@@ -5,14 +5,14 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from ..domain.install import Install
 
 
-async def create_install(
+def create_install(
     *,
-    session: AsyncSession,
+    session: Session,
     kind: str,
     artifact_id: uuid.UUID,
     version: str,
@@ -23,7 +23,7 @@ async def create_install(
 
     命中 partial unique → 返回现有;否则新建并落 downloading 状态。
     """
-    existing = await session.scalar(
+    existing = session.scalar(
         select(Install).where(
             Install.kind == kind,
             Install.artifact_id == artifact_id,
@@ -50,5 +50,5 @@ async def create_install(
         created_at=datetime.now(timezone.utc),
     )
     session.add(install)
-    await session.flush()
+    session.flush()
     return install.id, False

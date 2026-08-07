@@ -53,7 +53,7 @@ async def list_installed(
         # 租户过滤
         stmt = stmt.where(Install.tenant_id == user.tenant_id)
 
-    rows = (await session.scalars(stmt)).all()
+    rows = session.scalars(stmt).all()
     return {
         "items": [
             {

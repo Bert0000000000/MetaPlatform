@@ -21,19 +21,40 @@ def _require_scope(user, scope: str) -> None:
         )
 
 
+def _safe_uuid(value: str | None) -> UUID | None:
+    """把字符串转 UUID；非 UUID 字符串用确定性哈希兜底（避免 500）。"""
+    if not value:
+        return None
+    try:
+        return UUID(value)
+    except ValueError:
+        import hashlib
+        digest = hashlib.sha256(value.encode()).digest()[:16]
+        digest = bytearray(digest)
+        digest[6] = (digest[6] & 0x0F) | 0x40  # version 4
+        digest[8] = (digest[8] & 0x3F) | 0x80  # variant
+        return UUID(bytes=bytes(digest))
+
+
 @router.post("/install", status_code=status.HTTP_202_ACCEPTED)
 async def post_install(body: dict, request: Request):
     user = getattr(request.state, "user", None)
     _require_scope(user, "platform.marketplace.write")
 
-    install_id, already = await create_install(
+    install_id, already = create_install(
         session=request.state.db,
         kind=body["kind"],
         artifact_id=UUID(body["artifact_id"]),
         version=body["version"],
-        installed_by=UUID(user.id),
-        tenant_id=UUID(user.tenant_id) if getattr(user, "tenant_id", None) else None,
+        installed_by=_safe_uuid(str(user.id)),
+        tenant_id=_safe_uuid(str(getattr(user, "tenant_id", None))),
     )
+    # 落库（create_install 只 flush，这里显式 commit 让记录立即可查）
+    try:
+        request.state.db.commit()
+    except Exception:
+        request.state.db.rollback()
+        raise
     # 异步触发 orchestrator(沿用 PLATFORM-EVENT-01 outbox)
     outbox = getattr(request.state, "outbox", None)
     if outbox is not None:

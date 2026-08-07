@@ -16,6 +16,7 @@ from mate_platform.auth import install_auth
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 from .api import router as apphub_router
+from .marketplace import install_marketplace_state, router as marketplace_router
 
 
 def create_app() -> FastAPI:
@@ -41,6 +42,9 @@ def create_app() -> FastAPI:
     if not hasattr(app.state, "outbox_writer"):
         app.state.outbox_writer = InMemoryOutboxWriter()
     app.include_router(apphub_router)
+    # Marketplace 域（browse/install/installed）挂载到 apphub（gateway /marketplace → apphub）
+    install_marketplace_state(app)
+    app.include_router(marketplace_router)
     return app
 
 

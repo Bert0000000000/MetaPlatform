@@ -60,6 +60,7 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/superai/", "copilot"),
     ("/api/v1/arch/", "arch"),
     ("/api/v1/apphub/", "apphub"),
+    ("/api/v1/marketplace/", "apphub"),
     ("/api/v1/data/", "data"),
     ("/api/v1/etl/", "data"),
     ("/api/v1/scheduler/", "data"),

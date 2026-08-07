@@ -49,7 +49,7 @@ async def test_install_returns_202_with_id(monkeypatch):
 
     fake_id = uuid.uuid4()
 
-    async def fake_create(*args, **kwargs):
+    def fake_create(*args, **kwargs):
         return fake_id, False
 
     monkeypatch.setattr(

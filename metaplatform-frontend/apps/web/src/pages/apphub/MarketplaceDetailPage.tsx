@@ -22,7 +22,7 @@ import {
   installTemplate,
   listTemplateComments,
 } from '@/api/apphub/marketplace';
-import type { TemplateComment, TemplateItem } from '@/api/apphub/marketplace';
+import type { TemplateComment, TemplateItem, InstallResult } from '@/api/apphub/marketplace';
 
 interface CommentFormValues {
   rating: number;
@@ -37,6 +37,7 @@ export default function MarketplaceDetailPage() {
   const [comments, setComments] = useState<TemplateComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [lastInstall, setLastInstall] = useState<InstallResult | null>(null);
   const [form] = Form.useForm<CommentFormValues>();
 
   useEffect(() => {
@@ -70,9 +71,16 @@ export default function MarketplaceDetailPage() {
   if (!template) return <Empty />;
 
   const handleInstall = async () => {
-    const res = await installTemplate(template.templateId);
+    const res: InstallResult = await installTemplate(template.templateId);
     if (res.success) {
-      message.success('已安装');
+      if (res.alreadyInstalled) {
+        message.info('该本体已安装，无需重复安装');
+      } else {
+        message.success(`已安装到本体引擎（Install ID: ${res.installId}）`);
+      }
+      setLastInstall(res);
+    } else {
+      message.error(res.error || '安装失败');
     }
   };
 
@@ -127,8 +135,20 @@ export default function MarketplaceDetailPage() {
           style={{ marginTop: 16 }}
           onClick={handleInstall}
         >
-          安装到我的应用
+          安装到本体引擎
         </Button>
+        {lastInstall?.success && lastInstall.installId && (
+          <div style={{ marginTop: 12, fontSize: 12 }}>
+            <Typography.Text type="success">
+              ✓ 已安装到本体引擎（Install ID: {lastInstall.installId}）
+            </Typography.Text>
+            <div style={{ marginTop: 4 }}>
+              <Typography.Text type="secondary">
+                可在「云市场 → 我的安装」中查看安装记录与状态。
+              </Typography.Text>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Card title="评分与评论" style={{ marginBottom: 16 }}>
