@@ -70,7 +70,29 @@ async def get_caller(
 
     The dev headers are intended for local development and the BFF layer.
     Production deployments must rely on the ``Authorization`` bearer token.
+
+    Priority: install_auth 已验证的 ``request.state.ctx``（role 准确）>
+    JWT 解码 > dev headers。
     """
+    # 1) install_auth 中间件已填充 ctx（SEC-IAM-01 已验证 token 并注入 roles）
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is not None and getattr(ctx, "is_authenticated", False):
+        return CallerIdentity(
+            user_id=str(getattr(ctx, "user_id", "") or ""),
+            username=str(getattr(ctx, "user_id", "") or ""),
+            real_name=None,
+            tenant_id=str(getattr(ctx, "tenant_id", "") or ""),
+            roles=list(getattr(ctx, "roles", frozenset())),
+            is_platform_admin=any(
+                r in getattr(ctx, "roles", frozenset())
+                for r in ("PLATFORM_ADMIN", "PLATFORM_ADMIN_VIEWER", "ROLE_PLATFORM_ADMIN")
+            ),
+            is_super_admin=(
+                "PLATFORM_SUPER_ADMIN" in getattr(ctx, "roles", frozenset())
+                or bool(getattr(ctx, "is_super_admin", False))
+            ),
+        )
+
     claims: dict[str, Any] = {}
     token = _extract_bearer_token(authorization)
     if token:
