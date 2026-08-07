@@ -68,6 +68,8 @@ __pycache__/
 
 # Pytest cache
 .pytest_cache/
+# pytest 临时目录重定向（规避 %TEMP%\pytest-of-<user> 的 ACL 损坏 WinError 5）
+.pytest-tmp/
 
 # Build artifacts
 BOOT-INF/
