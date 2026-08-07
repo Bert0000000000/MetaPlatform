@@ -46,7 +46,7 @@
 | **GOVERN-02** | mate-tech-iam DEPRECATED 落地 | **In Progress** | ADR-0011 / SEC-IAM-01 | `docs/active/specs/2026-08-07-iam-deprecation-finalize.md` |
 | **GOVERN-03** | mate-tech-ont v1 router 退役 + sparql tenant guard | **Accepted** ✅ | ADR-0021 / ADR-0027 | `evidence/GOVERN-03-SUBSPEC.md` + `evidence/MP-ONT-V1-SUNSET-NOTICE.md` |
 | **GOVERN-04** | KERNEL-01 12 基元 PG 持久化补齐 | **Accepted** ✅ | ADR-0021 / MP-ONT-KERNEL-01-ACCEPTANCE | `evidence/GOVERN-04-SUBSPEC.md` |
-| GOVERN-05 | Function 基元执行器接通 | Planned | ADR-0021 / ADR-0040 §2.5.1 | (待 GOVERN-05 ACCEPTANCE) |
+| **GOVERN-05** | Function 基元执行器接通 | **Accepted** ✅ | ADR-0021 / ADR-0040 §2.5.1 | `evidence/GOVERN-05-SUBSPEC.md` |
 | GOVERN-06 | tenant 隔离硬化（PG RLS） | Planned | ADR-0012 / SEC-TENANT-01-ACCEPTANCE | (待 GOVERN-06 ACCEPTANCE) |
 | GOVERN-07 | 死模块清理 | Planned | G8-FULL-ACCEPTANCE | (待 GOVERN-07 ACCEPTANCE) |
 | GOVERN-08 | 前端路由与契约闭环 | Planned | API-GOV-01 | (待 GOVERN-08 ACCEPTANCE) |
