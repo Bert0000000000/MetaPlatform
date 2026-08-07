@@ -260,7 +260,7 @@ class RealChatRequest(BaseModel):
     """``/chat/real`` 请求体 (TD-6)."""
 
     provider: str = Field(
-        ..., description="openai | anthropic — selects the real backend"
+        ..., description="openai | anthropic | custom — selects the real backend"
     )
     model: str = Field(
         default="", description="模型名 (defaults to provider default)"
@@ -269,6 +269,14 @@ class RealChatRequest(BaseModel):
     temperature: float = 1.0
     max_tokens: int | None = None
     tenant_id: str = Field(default="", description="租户 ID (for tenant-scoped API key)")
+    # 后台 AI Provider 配置（openai 兼容端点）透传：base_url + api_key
+    # 由 copilot 从 IAM ai.provider.* 读取，优先于环境变量。
+    base_url: str | None = Field(
+        default=None, description="OpenAI 兼容 base URL（如 MiniMax / DeepSeek 等第三方）"
+    )
+    api_key: str | None = Field(
+        default=None, description="第三方 API Key（如用户后台配置的 MiniMax key）"
+    )
 
 
 class RealChatResponseAPI(BaseModel):
@@ -303,13 +311,18 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
         if req.provider == "anthropic":
             model = req.model or "claude-3-5-sonnet-20241022"
             provider = RealAnthropicProvider(model=model)
-        elif req.provider == "openai":
+        elif req.provider in ("openai", "custom"):
+            # custom = OpenAI 兼容第三方（MiniMax/DeepSeek 等），base_url/api_key 透传
             model = req.model or "gpt-4o-mini"
-            provider = RealOpenAIProvider(model=model)
+            provider = RealOpenAIProvider(
+                model=model,
+                base_url=req.base_url,
+                api_key=req.api_key,
+            )
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"unknown provider: {req.provider!r} (expected 'openai' or 'anthropic')",
+                detail=f"unknown provider: {req.provider!r} (expected 'openai', 'anthropic', or 'custom')",
             )
 
         try:

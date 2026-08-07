@@ -103,6 +103,9 @@ class LlmgwStreamClient:
         model: str,
         temperature: float = 0.7,
         max_tokens: int | None = None,
+        provider: str = "openai",
+        base_url: str | None = None,
+        api_key: str | None = None,
     ) -> AsyncIterator[str]:
         """Open ``POST /api/v1/llmgw/chat/real`` and yield SSE ``data:`` lines.
 
@@ -112,16 +115,23 @@ class LlmgwStreamClient:
         ``data:`` payload so the caller can transform it into the
         OpenAI-style SSE chunk the frontend expects.
 
+        ``base_url``/``api_key`` 透传后台 AI Provider 配置（如 MiniMax）给
+        llmgw，使第三方 OpenAI 兼容端点可用。
+
         Yields raw ``data: <payload>\\n\\n`` lines (without the
         trailing ``[DONE]`` marker — the caller appends that).
         """
         body: dict[str, Any] = {
-            "provider": "openai",  # TD-6: real endpoint requires provider field
+            "provider": provider,  # openai / custom
             "model": model,
             "messages": messages,
             "temperature": temperature,
             "tenant_id": self._tenant_id,
         }
+        if base_url:
+            body["base_url"] = base_url
+        if api_key:
+            body["api_key"] = api_key
         if max_tokens is not None:
             body["max_tokens"] = max_tokens
 
@@ -153,19 +163,27 @@ class LlmgwStreamClient:
         messages: list[dict[str, Any]],
         model: str,
         temperature: float = 0.7,
+        provider: str = "openai",
+        base_url: str | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
-        """Non-streaming fallback: ``POST /api/v1/llmgw/chat``.
+        """Non-streaming fallback: ``POST /api/v1/llmgw/chat/real``.
 
         Returns the parsed JSON body. Raises `LlmgwStreamError` on
         any transport / decode failure.
         """
         body = {
+            "provider": provider,
             "model": model,
             "messages": messages,
             "temperature": temperature,
             "tenant_id": self._tenant_id,
         }
-        url = f"{self._base_url}/api/v1/llmgw/chat"
+        if base_url:
+            body["base_url"] = base_url
+        if api_key:
+            body["api_key"] = api_key
+        url = f"{self._base_url}/api/v1/llmgw/chat/real"
         try:
             headers = self._headers_for()
             async with httpx.AsyncClient(timeout=self._timeout) as http:

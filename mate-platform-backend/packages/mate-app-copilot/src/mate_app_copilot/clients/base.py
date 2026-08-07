@@ -153,3 +153,45 @@ class AsyncCopilotClient:
         data = body.get("data", body)
         items = data.get("items", []) if isinstance(data, dict) else []
         return [dict(i) for i in items]
+
+    # --- AI Provider 配置（IAM ai.provider.*，经 gateway） --------------------
+    async def get_provider_config(
+        self,
+        tenant_id: str,
+        provider_id: str,
+        fallback_token: str | None = None,
+    ) -> dict[str, str]:
+        """GET /api/v1/admin/configs → 取该 provider 的 base_url + api_key。
+
+        返回 {base_url, api_key, default_model}（缺失字段为空串）。
+        """
+        import httpx
+
+        url = f"{self.base_url}/api/v1/admin/configs?pageSize=200"
+        headers = {"X-Tenant-Id": tenant_id}
+        if fallback_token:
+            headers["Authorization"] = f"Bearer {fallback_token}"
+        async with httpx.AsyncClient(
+            auth=self._middleware(tenant_id) if not fallback_token else None,
+            timeout=self.timeout_seconds,
+        ) as client:
+            resp = await client.get(url, headers=headers)
+        resp.raise_for_status()
+        body = resp.json()
+        data = body.get("data", body)
+        items = data.get("items", []) if isinstance(data, dict) else []
+        result: dict[str, str] = {}
+        prefix = f"ai.provider.{provider_id}."
+        for cfg in items:
+            key = str(cfg.get("key", ""))
+            if not key.startswith(prefix):
+                continue
+            suffix = key[len(prefix):]
+            val = str(cfg.get("value") or "")
+            if suffix == "base_url":
+                result["base_url"] = val
+            elif suffix == "api_key":
+                result["api_key"] = val
+            elif suffix == "default_model":
+                result["default_model"] = val
+        return result

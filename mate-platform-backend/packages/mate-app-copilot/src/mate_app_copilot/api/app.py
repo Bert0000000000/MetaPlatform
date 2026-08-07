@@ -801,17 +801,39 @@ async def chat_completions_stream(
             tenant_id=tid,
             user_token=user_token or None,
         )
+        # 后台 AI Provider 配置：按模型 provider 从 IAM 读 base_url + api_key
+        # （如 MiniMax custom provider），透传给 llmgw 使真实调用可用。
+        provider_cfg: dict[str, str] = {}
+        try:
+            client = _get_client(request)
+            provider_cfg = await client.get_provider_config(
+                tid, "custom", user_token or None
+            )
+        except Exception:  # noqa: BLE001
+            provider_cfg = {}
+        llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
+        llm_base_url = provider_cfg.get("base_url") or None
+        llm_api_key = provider_cfg.get("api_key") or None
         try:
             async for line in stream_client.stream_chat_real(
                 messages=messages,
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                provider=llm_provider,
+                base_url=llm_base_url,
+                api_key=llm_api_key,
             ):
-                if line.startswith("data: "):
-                    data = line[6:]
+                # llmgw /chat/real 返回裸 JSON（{"content": "..."}）而非 SSE data: 行
+                raw = line
+                data = None
+                if raw.startswith("data: "):
+                    data = raw[6:]
                     if data == "[DONE]":
                         break
+                elif raw.startswith("{"):
+                    data = raw
+                if data:
                     try:
                         chunk = json.loads(data)
                     except json.JSONDecodeError:
@@ -819,7 +841,7 @@ async def chat_completions_stream(
                     text = ""
                     if "choices" in chunk:
                         text = chunk["choices"][0].get("delta", {}).get("content", "")
-                    elif "data" in chunk:
+                    elif "data" in chunk and isinstance(chunk["data"], dict):
                         text = chunk["data"].get("text", "")
                     elif "content" in chunk:
                         text = chunk["content"]
@@ -838,6 +860,9 @@ async def chat_completions_stream(
                         messages=messages,
                         model=model,
                         temperature=temperature,
+                        provider=llm_provider,
+                        base_url=llm_base_url,
+                        api_key=llm_api_key,
                     )
                     full_response = data.get(
                         "content",
