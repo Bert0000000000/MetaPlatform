@@ -81,7 +81,7 @@ services:
     container_name: mate-tech-iam
     environment:
       IAM_DATA_DIR: /data
-      IAM_DATABASE_URL: sqlite+aiosqlite:////data/mate_iam.db
+      IAM_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_iam
       LEGACY_LOGIN_COMPAT: "true"
       INSECURE_SKIP_SIGNATURE: "true"
       KEYCLOAK_URL: http://keycloak:8080
@@ -93,6 +93,9 @@ services:
       - "${IAM_ADMIN_PORT:-8102}:8102"
     volumes:
       - iam_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8102/healthz || exit 1"]
       interval: 15s
