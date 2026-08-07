@@ -1,9 +1,11 @@
 # ADR-0040: 数字员工 / SuperAI 沙箱架构
 
-> 状态：Draft v0.1 · 日期：2026-08-06 · 决策人：TBD
+> 状态：**Accepted v1.0** · 日期：2026-08-06（签字）/ 2026-08-07（GOVERN-01 治理收口） · 决策人：MatePlatform Architecture Council（v3.1 Ontology 子计划启动会决议）
+>
+> 签字：`__/__________` （决策人已授权，落档于 `ADR-REVIEW-2026-08-06.md`；留空签字位为纸质档填写位）
 >
 > 上游：蓝图 `docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4 §4 §6
-> 关联：MP-SANDBOX-01 / MP-SANDBOX-02 / MP-ONT-ACTION-03 / MP-SUPER-COPILOT-01
+> 关联：MP-SANDBOX-01 / MP-SANDBOX-02 / MP-ONT-ACTION-03 / MP-SUPER-COPILOT-01 / GOVERN-05（Function 调度实接 / dev 与 prod 双轨）
 
 ## 1. 背景
 
@@ -63,6 +65,24 @@ Orchestrator 每次 multi-step plan **必须 ≥1 个 HITL 暂停点**：
 - 拒绝 Python 进程池：跨租户 RCE 风险
 - K8s Job 天然受 NetworkPolicy / ResourceQuota / PodSecurityStandards 约束
 - 复用 PLATFORM-K8S-01 既有 helm chart，新增 `function-runtime` sub-chart
+
+### 2.5.1 Dev profile 与 Prod profile 双轨（GOVERN-01 治理收口补登，2026-08-07）
+
+> 适用版本：v4 RUNTIME-MVP-02 已落地（`evidence/RUNTIME-MVP-02-ACCEPTANCE.md`）。本条与 §2.5 配套，但区分 dev / prod 两套实现。
+
+| 维度 | dev profile（默认） | prod profile（lock） |
+|---|---|---|
+| Function Runtime 后端 | `subprocess` + `win32` JobObject 资源守卫 | K8s Job/Pod（**唯一允许**） |
+| 配置开关 | `SANDBOX_BACKEND=subprocess` 默认 | `SANDBOX_BACKEND=k8s` 强制 |
+| 适用环境 | `infra/helm/values/{dev,smoke}.yaml` | `infra/helm/values/{staging,production}.yaml` |
+| NetworkPolicy | `infra/helm/charts/network-policies/templates/default-deny.yaml` + allow-list | 同上，且 `function-runtime` sub-chart 默认 deny-egress |
+| 资源配额 | CPU/Mem/Time 三元组 `FunctionResourceLimits`，超时即 kill | 同左；外加 OTel `function.apply` span 强制 |
+| 风险 | **subprocess ≠ 容器**，无 cgroup/namespace 隔离 | K8s Job/Pod 全部 13 硬规则对位 |
+| 何时降级 | dev / smoke / 本地 pytest | **绝不降级**；CI 在 prod profile 下断言 `SANDBOX_BACKEND=k8s` |
+
+**升级路径**：dev profile 仅用于 `infra/helm/values/{dev,smoke}.yaml` 与本地 pytest；production 部署必须显式 `SANDBOX_BACKEND=k8s` 并由 GOVERN-09 的 `infra/tests/test_subcharts_required.py` 与 `scripts/ci/check_otl_np_coverage.py` 守门。
+
+**降级告警**：subprocess 后端必须在 OTel span `function.apply` 上加 `meta.sandbox_backend=subprocess` 属性 + `WARN` 日志，便于 SRE 在 staging 环境检出"误用 dev profile"。
 
 ### 2.6 L3 = Firecracker（暂定）
 

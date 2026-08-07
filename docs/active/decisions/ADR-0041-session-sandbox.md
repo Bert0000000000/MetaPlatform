@@ -1,6 +1,8 @@
 # ADR-0041: Session Sandbox（用户级会话沙箱）
 
-> 状态：Draft v0.1 · 日期：2026-08-06 · 决策人：TBD
+> 状态：**Accepted v1.0** · 日期：2026-08-06（签字）/ 2026-08-07（GOVERN-01 治理收口） · 决策人：MatePlatform Architecture Council（v3.1 Ontology 子计划启动会决议）
+>
+> 签字：`__/__________` （决策人已授权，落档于 `ADR-REVIEW-2026-08-06.md`；留空签字位为纸质档填写位）
 >
 > 上游：蓝图 `docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4 §5
 > 关联：MP-SESSION-01 / MP-SUPER-COPILOT-01 / MP-AGENT-ORCH-01

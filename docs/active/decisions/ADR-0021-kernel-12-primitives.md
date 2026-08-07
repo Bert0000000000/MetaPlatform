@@ -1,9 +1,11 @@
 # ADR-0021: Ontology Kernel 12 基元冻结
 
-> 状态：Draft v0.1 · 日期：2026-08-06 · 决策人：TBD
+> 状态：**Accepted v1.0** · 日期：2026-08-06（签字）/ 2026-08-07（GOVERN-01 治理收口） · 决策人：MatePlatform Architecture Council（v3.1 Ontology 子计划启动会决议）
+>
+> 签字：`__/__________` （决策人已授权，落档于 `ADR-REVIEW-2026-08-06.md`；留空签字位为纸质档填写位）
 >
 > 上游：蓝图 `docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4 §3
-> 关联：MP-ONT-KERNEL-01 / MP-ONT-MODEL-02 / MP-ONT-ACTION-03
+> 关联：MP-ONT-KERNEL-01 / MP-ONT-MODEL-02 / MP-ONT-ACTION-03 / GOVERN-03（v1 router 退役时间表）/ GOVERN-04（12 基元 PG 全量落地）/ GOVERN-05（Function 基元执行器接通）
 
 ## 1. 背景
 

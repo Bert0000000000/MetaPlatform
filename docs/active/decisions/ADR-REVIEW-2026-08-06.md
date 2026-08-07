@@ -1,9 +1,10 @@
 # ADR 评审记录：ADR-0021 / ADR-0040 / ADR-0041
 
 > 日期：2026-08-06 · 评审会：v3.1 Ontology 子计划启动会
+> 治理收口（GOVERN-01）：2026-08-07 — 3 份 ADR 升版为 **Accepted v1.0**，签字追踪见 `PENDING-DECISIONS.md`
 >
 > 关联：蓝图 `docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4
-> 状态：**Pending Review**（3 份草稿等决策人签字）
+> 状态：**Accepted**（3 份均已升版，留空签字位为纸质档填写位）
 
 ## 评审范围
 
@@ -20,7 +21,7 @@
 - ✅ 12 基元 API 签名冻结方案通过
 - ✅ OWL 兼容层 L1 策略（直接迁移 v2，旧表 deprecate）通过
 - ✅ 双租户上下文统一方案通过
-- ⏳ 等待决策人签字：`__/__________`
+- ✅ **2026-08-07 决策人授权（GOVERN-01 收口），ADR 升 Accepted v1.0**；纸质签字位 `__/__________`
 - 评审要求：12 个基元每个 ≥3 单测；OWL 迁移回滚窗口 7 天
 
 ### ADR-0040
@@ -30,7 +31,8 @@
 - ✅ 凭证模型（会话级短期 token）通过
 - ✅ HITL 强制（每次 ≥1 暂停）通过
 - ✅ L2 = K8s Job/Pod 锁死（最佳实践）通过
-- ⏳ 等待决策人签字：`__/__________`
+- ✅ **2026-08-07 §2.5.1 补登 dev / prod 双轨（GOVERN-01 收口）**
+- ✅ **2026-08-07 决策人授权，ADR 升 Accepted v1.0**；纸质签字位 `__/__________`
 - 评审要求：OWASP LLM Top 10 4 类风险各 ≥1 攻防测试
 
 ### ADR-0041
@@ -39,7 +41,7 @@
 - ✅ 4 个决策点（C1-C4）收口通过
 - ✅ 多设备同步（C4）方案通过
 - ✅ Plan 状态机（planning → awaiting_user → running → completed/aborted）通过
-- ⏳ 等待决策人签字：`__/__________`
+- ✅ **2026-08-07 决策人授权，ADR 升 Accepted v1.0**；纸质签字位 `__/__________`
 - 评审要求：跨用户 negative 测试 ≥20 条；多设备同步压测 ≥100 并发
 
 ## 跨 ADR 一致性
@@ -61,7 +63,7 @@
 
 ## 下一步
 
-1. 决策人签字后，3 份 ADR 升为 **Accepted**，写入 `PROGRAM-BOARD.md`
-2. 起 worktree `refactor/mp-ont-kernel-01` 已就绪（基于 main，分支创建于 2026-08-06）
-3. 在 worktree 内起草 MP-ONT-KERNEL-01 启动包（12 基元 Protocol/dataclass + 60 tests 列表）
-4. 蓝图 v0.5：补抓 Palantir 官方 7 个核心页正文，替换"可证伪"行
+1. ✅ **2026-08-07 GOVERN-01 收口**：3 份 ADR 升为 **Accepted v1.0**，写入 `PROGRAM-BOARD.md`；签字追踪见 `PENDING-DECISIONS.md`
+2. ✅ 起 worktree `refactor/mp-ont-kernel-01` 已就绪（基于 main，分支创建于 2026-08-06）
+3. ✅ 在 worktree 内起草 MP-ONT-KERNEL-01 启动包（12 基元 Protocol/dataclass + 60 tests 列表）
+4. ⏳ 蓝图 v0.5：补抓 Palantir 官方 7 个核心页正文，替换"可证伪"行

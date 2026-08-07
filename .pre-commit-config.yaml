@@ -157,6 +157,28 @@ repos:
       - id: require-evidence-on-accept
         name: refuse delivery/*.md to be merged without an evidence/*-ACCEPTANCE.md
         entry: python scripts/ci/require_evidence.py
+
         language: system
         pass_filenames: false
         files: ^docs/active/delivery/PROGRAM-BOBOARD\.md$
+
+  # GOVERN-02 (2026-08-07): 拒绝生产代码 import 退役的 mate-tech-iam 包
+  # 退役时间表见 docs/active/specs/2026-08-07-iam-deprecation-finalize.md
+  - repo: local
+    hooks:
+      - id: forbid-iam-dep-imports
+        name: forbid production imports of DEPRECATED mate_tech_iam
+        entry: python scripts/ci/forbid_iam_dep_imports.py
+        language: system
+        pass_filenames: false
+
+  # GOVERN-07 (2026-08-07): 拒绝 Spring 时代产物（acceptance/scripts/e2e_smoke.ps1、
+  # acceptance/logs/TECH-*.log、start-{dashboard-dev,swagger,tech-services}.ps1、
+  # build-all-7.bat、Dockerfile.agent / .app-kb）出现在仓库根
+  - repo: local
+    hooks:
+      - id: forbid-legacy-artifacts
+        name: refuse Spring-era artefacts outside _archive/
+        entry: python scripts/ci/forbid_legacy_artifacts.py
+        language: system
+        pass_filenames: false

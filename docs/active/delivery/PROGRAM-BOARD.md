@@ -36,6 +36,23 @@
 
 **说明**：TECH-SERVICES 与 BUSINESS-SLICES 是 v3.0 GA 收口的"模式就位 + 部分接入"状态，剩余域的接入属于 v3.1 sub-batch。
 
+## 架构治理路线（GOVERN-01 立项，2026-08-07）
+
+> 完整盘点见 `C:\Users\houuu\.claude\plans\cozy-orbiting-wombat.md`；矩阵见 `docs/active/governance/HARD-RULES-MATRIX.md`。
+
+| Batch | 名称 | 状态 | 关联 | 证据路径 |
+|---|---|---|---|---|
+| **GOVERN-01** | 文档与治理收口（ADR 签字 + HARD-RULES-MATRIX + 状态机单一权威） | **Accepted** ✅ | ADR-0021/0040/0041 升 v1.0；PENDING-DECISIONS 签字追踪 | `docs/active/governance/HARD-RULES-MATRIX.md` |
+| **GOVERN-02** | mate-tech-iam DEPRECATED 落地 | **In Progress** | ADR-0011 / SEC-IAM-01 | `docs/active/specs/2026-08-07-iam-deprecation-finalize.md` |
+| GOVERN-03 | mate-tech-ont v1 router 退役 + sparql tenant guard | Planned | ADR-0021 / ADR-0027 | (待 GOVERN-03 ACCEPTANCE) |
+| GOVERN-04 | KERNEL-01 12 基元 PG 持久化补齐 | Planned | ADR-0021 / MP-ONT-KERNEL-01-ACCEPTANCE | (待 GOVERN-04 ACCEPTANCE) |
+| GOVERN-05 | Function 基元执行器接通 | Planned | ADR-0021 / ADR-0040 §2.5.1 | (待 GOVERN-05 ACCEPTANCE) |
+| GOVERN-06 | tenant 隔离硬化（PG RLS） | Planned | ADR-0012 / SEC-TENANT-01-ACCEPTANCE | (待 GOVERN-06 ACCEPTANCE) |
+| GOVERN-07 | 死模块清理 | Planned | G8-FULL-ACCEPTANCE | (待 GOVERN-07 ACCEPTANCE) |
+| GOVERN-08 | 前端路由与契约闭环 | Planned | API-GOV-01 | (待 GOVERN-08 ACCEPTANCE) |
+| GOVERN-09 | Helm + NetworkPolicy + OTel 一致性 | Planned | ADR-0010 / PLATFORM-K8S-01-ACCEPTANCE | (待 GOVERN-09 ACCEPTANCE) |
+| GOVERN-10 | 测试基线与回归保护 | Planned | ADR-0015 / GA-ACCEPTANCE | (待 GOVERN-10 ACCEPTANCE) |
+
 ## v3.1 增量 sub-batch（进行中）
 
 ### E2E 联调闭环（2026-08-06，Web 页面端到端验证）

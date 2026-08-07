@@ -1,9 +1,11 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-06（**v4 RUNTIME 5/5 Batch 收口** — RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速两次落地；HTTP+PG+OPT+K8S+IAM+MKT 全部 Accepted；kernel + tech-ont 511/514 tests pass）；上一版 2026-08-06（v3.1 Ontology 子计划 20/20 Batch 收口）
+> **最近更新**：2026-08-07（**架构治理盘点 + GOVERN-01 收口** — 31 条偏差盘点 → 10 治理批次 GOVERN-01~10 已立项；ADR-0021/0040/0041 升 Accepted v1.0；HARD-RULES-MATRIX.md 新建）；上一版 2026-08-06（v4 RUNTIME 5/5 Batch 收口 — RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速两次落地；HTTP+PG+OPT+K8S+IAM+MKT 全部 Accepted；kernel + tech-ont 511/514 tests pass）
 >
 > **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** Ontology / 数字员工 / SuperAI 子计划 20/20 Batch Accepted；**v4** RUNTIME 路线 5/5 Batch Accepted
+>
+> **架构治理路线（2026-08-07 GOVERN-01 立项）**：`docs/active/governance/HARD-RULES-MATRIX.md` + 计划文件 `cozy-orbiting-wombat.md`。10 个治理批次（GOVERN-01~10）覆盖文档收口、iam 退役、Ontology v1 退役、KERNEL-01 PG 补齐、Function 执行器、tenant RLS、死模块清理、前端契约、Helm/NP/OTel、测试基线。详见 §"13 硬规则 × CI 矩阵"。
 
 ## v3.0 GA 状态
 
@@ -111,23 +113,27 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 docs/ADR → contract → failing tests → feature → infrastructure → deploy → acceptance evidence
 ```
 
-## 13 条硬规则（production-readiness §13，已 GA 收口）
+## 13 条硬规则（production-readiness §13）
 
-| # | 硬规则 | 守门 | 收口证据 |
-|---|---|---|---|
-| 1 | Swagger 没有接口，不写 route | oasdiff | `ga-001-openapi` CI job |
-| 2 | PRD 没有 Requirement ID | 17 service contracts | `ga-002-requirement-ids` |
-| 3 | **没有 tenant 上下文，不访问 repository** | `forbid_raw_sql` | `mate-platform/tenancy/db_filter.py` + 19 tests |
-| 4 | **外部系统没有 ACL Client** | `forbid_bare_httpx` | `mate-clients/{kafka,redis,minio}` + BearerAuth |
-| 5 | **Production profile 禁止 fallback** | `forbid_legacy_fallback` | SEC-IAM-01 startup guard |
-| 6 | **静态检查失败不合并** | `pyright-strict` | ruff + pyright in `ga-006-static` |
-| 7 | **契约或集成测试跳过不标记 Accepted** | `forbid_skip_tests` | 251 tests pass |
-| 8 | **没有 K8s readiness + 回滚** | helm/kubeconform | `ga-008-helm` + default-deny NetworkPolicy |
-| 9 | **没有审计、指标、trace** | OTel collector | tenant.id 注入 + 17 OTel tests |
-| 10 | **所有状态以验收证据为准** | `require_evidence` | 8 ACCEPTANCE.md + 1 GA-ACCEPTANCE.md |
-| 11 | **helm-docs 同步每个子 chart 的 README** | `helm-docs-sync` | `ga-011-helm-docs` |
-| 12 | **Secret 不进 git** | gitleaks | `ga-012-secret-scan` + SealedSecret/ExternalSecret |
-| 13 | **NetworkPolicy 缺失 = prod 不通过** | default-deny | `ga-013-networkpolicy` |
+> **语义对齐（GOVERN-01 治理收口，2026-08-07）**：源文档 `docs/superpowers/specs/2026-07-30-backend-production-readiness-design.md:1-3` 自标「已完成方案讨论，待书面评审」。本项目"GA 收口"指的是 **「规则全部实现 + CI gate 在跑 + 证据档 ACCEPTANCE」**，而不是「设计文档本身书面评审签字」。两套语义并存；下游 Codex 接力以 **CI 全绿 + ACCEPTANCE.md 落地** 为准。
+
+完整对位矩阵（13 × 9 workflow × owner × 状态）见 `docs/active/governance/HARD-RULES-MATRIX.md`。
+
+| # | 硬规则 | 守门 | 收口证据 | 状态 |
+|---|---|---|---|---|
+| 1 | Swagger 没有接口，不写 route | oasdiff | `ga-001-openapi` CI job | ✅ |
+| 2 | PRD 没有 Requirement ID | 17 service contracts | `ga-002-requirement-ids` | ✅ |
+| 3 | **没有 tenant 上下文，不访问 repository** | `forbid_raw_sql` | `mate-platform/tenancy/db_filter.py` + 19 tests | 🟡 GOVERN-06 硬化 |
+| 4 | **外部系统没有 ACL Client** | `forbid_bare_httpx` | `mate-clients/{kafka,redis,minio}` + BearerAuth | ✅ |
+| 5 | **Production profile 禁止 fallback** | `forbid_legacy_fallback` | SEC-IAM-01 startup guard | ✅ |
+| 6 | **静态检查失败不合并** | `pyright-strict` | ruff + pyright in `ga-006-static` | ✅ |
+| 7 | **契约或集成测试跳过不标记 Accepted** | `forbid_skip_tests` | 251 tests pass | 🟡 GOVERN-10 拆 job |
+| 8 | **没有 K8s readiness + 回滚** | helm/kubeconform | `ga-008-helm` + default-deny NetworkPolicy | ✅ |
+| 9 | **没有审计、指标、trace** | OTel collector | tenant.id 注入 + 17 OTel tests | 🟡 GOVERN-09 compose≠Helm |
+| 10 | **所有状态以验收证据为准** | `require_evidence` | 8 ACCEPTANCE.md + 1 GA-ACCEPTANCE.md | 🟡 GOVERN-01/-10 收口 |
+| 11 | **helm-docs 同步每个子 chart 的 README** | `helm-docs-sync` | `ga-011-helm-docs` | ✅ |
+| 12 | **Secret 不进 git** | gitleaks | `ga-012-secret-scan` + SealedSecret/ExternalSecret | ✅ |
+| 13 | **NetworkPolicy 缺失 = prod 不通过** | default-deny | `ga-013-networkpolicy` | 🟡 GOVERN-09 21 Python 服务未覆盖 |
 
 ## 新 Codex / AI 会话接力
 
