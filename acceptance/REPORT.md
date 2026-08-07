@@ -1,6 +1,15 @@
 # Ontology-Native DeerFlow 閳?Final Acceptance Evidence
 Date: 2026-07-27 11:15 UTC+8
 
+> ⚠️ **OUTDATED — 2026-07-27 v1.67（GOVERN-07 治理收口，2026-08-07）**
+>
+> 本文件来自 v2.5 Java Spring Boot 时代；端口 8101/8201/8210/8511/8901 等已全部迁移到 Python：
+> 真实后端端口见 `docker-compose.yml`（mate-tech-iam DEPRECATED → mate-auth-service:8101 / mate-tech-ont:8007 / mate-tech-llmgw:8008 / mate-tech-agent:8002 / mate-tech-rag:8001）。
+>
+> **当前 GA 验收证据**：`docs/active/delivery/evidence/<BATCH>-ACCEPTANCE.md`（CLAUDE.md L37 引用）。本文件仅作 v2.5 → v3.0 迁移历史档案，**不再作为部署验收依据**。
+>
+> Spring 时代 smoke 脚本 `acceptance/scripts/e2e_smoke.ps1` 与 9 个 `acceptance/logs/TECH-*.log` 已移入 `acceptance/scripts/_archive_spring_2026-07-27/` 与 `acceptance/logs/_archive_spring_2026-07-27/`；CI 由 `scripts/ci/forbid_legacy_artifacts.py` 守门，禁止再次出现在根路径。
+
 ## Live backend ports (verified)
 - 8101 TECH-IAM         (login, /me verified 200)
 - 8201 TECH-ONT         (actuator 500 閳?debug in progress)
