@@ -81,10 +81,11 @@ class DwEmployee:
     tenant_id: str
     name: str
     code: str
-    role: str  # CS_AGENT / SALES / ANALYST / OPS
+    role: str  # CS_AGENT / SALES / ANALYST / OPS / ONTOLOGY_MODELER / ...
     status: str  # active / idle / offline
     model_id: str
     kb_ids: tuple[str, ...] = field(default_factory=tuple)
+    is_builtin: bool = False  # 内置共享员工（CLAUDE.md 7+1 类）
 
 
 @dataclass(frozen=True)
@@ -261,20 +262,27 @@ def _seed_documents(tenant_id: str) -> dict[str, DwDocument]:
 
 
 def _seed_employees(tenant_id: str) -> dict[str, DwEmployee]:
+    # CLAUDE.md 7 + 1 类数字员工：前 7 个为内置共享员工（is_builtin=True），
+    # 覆盖 Ontology / Workflow / App / Data Product / OBS / Security / Knowledge Library。
     rows = [
-        ("dw-emp-1", "客服小艾", "EMP-CS-001", "CS_AGENT", "active", "model-openai", ("dw-kb-1",)),
-        ("dw-emp-2", "销售小博", "EMP-SALES-001", "SALES", "active", "model-anthropic", ("dw-kb-2",)),
-        ("dw-emp-3", "分析小查", "EMP-AN-001", "ANALYST", "idle", "model-doubao", ("dw-kb-3",)),
-        ("dw-emp-4", "运维小卫", "EMP-OPS-001", "OPS", "active", "model-qwen", ("dw-kb-1", "dw-kb-2")),
-        ("dw-emp-5", "客服小贝", "EMP-CS-002", "CS_AGENT", "offline", "model-openai", ("dw-kb-1",)),
-        ("dw-emp-6", "销售小诚", "EMP-SALES-002", "SALES", "active", "model-anthropic", ("dw-kb-2",)),
+        # 内置 7 类（按文档 7+1 分类）
+        ("dw-emp-1", "客服小艾", "EMP-CS-001", "CS_AGENT", "active", "model-openai", ("dw-kb-1",), True),
+        ("dw-emp-2", "销售小博", "EMP-SALES-001", "SALES", "active", "model-anthropic", ("dw-kb-2",), True),
+        ("dw-emp-3", "分析小查", "EMP-AN-001", "ANALYST", "idle", "model-doubao", ("dw-kb-3",), True),
+        ("dw-emp-4", "运维小卫", "EMP-OPS-001", "OPS", "active", "model-qwen", ("dw-kb-1", "dw-kb-2"), True),
+        ("dw-emp-5", "客服小贝", "EMP-CS-002", "CS_AGENT", "offline", "model-openai", ("dw-kb-1",), True),
+        ("dw-emp-6", "销售小诚", "EMP-SALES-002", "SALES", "active", "model-anthropic", ("dw-kb-2",), True),
+        # 第 7 个：Ontology 本体建模师（文档 7 类的 Ontology 类）
+        ("dw-emp-7", "本体小启", "EMP-ONT-001", "ONTOLOGY_MODELER", "active", "model-doubao", ("dw-kb-4",), True),
+        # 第 8 个：Workflow 流程自动化（7+1 的 +1 类）
+        ("dw-emp-8", "流程小流", "EMP-WF-001", "WORKFLOW", "active", "model-openai", ("dw-kb-4",), True),
     ]
     return {
         rid: DwEmployee(
             id=rid, tenant_id=tenant_id, name=name, code=code,
-            role=role, status=st, model_id=mid, kb_ids=kbs,
+            role=role, status=st, model_id=mid, kb_ids=kbs, is_builtin=builtin,
         )
-        for rid, name, code, role, st, mid, kbs in rows
+        for rid, name, code, role, st, mid, kbs, builtin in rows
     }
 
 

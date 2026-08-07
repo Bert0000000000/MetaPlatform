@@ -182,6 +182,7 @@ export default function EmployeeListPage() {
           <a onClick={() => navigate(`/agents/${record.code}`)} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 500 }}>
             {record.name}
           </a>
+          {record.builtin && <Tag color="gold" style={{ fontSize: 10 }}>内置</Tag>}
         </Space>
       ),
     },

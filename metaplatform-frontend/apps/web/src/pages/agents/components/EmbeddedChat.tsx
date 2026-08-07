@@ -31,9 +31,11 @@ const MOCK_REPLIES = [
 
 interface EmbeddedChatProps {
   employee: Employee;
+  /** 高度：默认 500；传 'fill' 时撑满父容器（详情页中间栏） */
+  heightMode?: 'fixed' | 'fill';
 }
 
-export default function EmbeddedChat({ employee }: EmbeddedChatProps) {
+export default function EmbeddedChat({ employee, heightMode = 'fixed' }: EmbeddedChatProps) {
   const {
     token: { colorBgContainer },
   } = theme.useToken();
@@ -223,7 +225,14 @@ export default function EmbeddedChat({ employee }: EmbeddedChatProps) {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 500 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: heightMode === 'fill' ? '100%' : 500,
+        minHeight: heightMode === 'fill' ? 0 : undefined,
+      }}
+    >
       <div style={{ marginBottom: 8 }}>
         <Space>
           <Typography.Text strong>与 {employee.name} 对话</Typography.Text>

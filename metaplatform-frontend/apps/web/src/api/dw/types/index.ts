@@ -21,6 +21,8 @@ export type RoleCategory =
   | 'LEGAL'
   | 'DATA_ANALYST'
   | 'CUSTOMER_SERVICE'
+  | 'ONTOLOGY_MODELER'
+  | 'WORKFLOW'
   | 'CUSTOM';
 
 export interface EmployeeCapability {
@@ -46,6 +48,7 @@ export interface Employee {
   description: string;
   avatar?: string;
   status: EmployeeStatus;
+  builtin?: boolean;
   capability: EmployeeCapability;
   createdAt?: string;
   updatedAt?: string;
@@ -90,6 +93,8 @@ export const ROLE_CATEGORY_OPTIONS: { label: string; value: RoleCategory; color:
   { label: '法务类', value: 'LEGAL', color: 'purple' },
   { label: '数据分析类', value: 'DATA_ANALYST', color: 'cyan' },
   { label: '客服类', value: 'CUSTOMER_SERVICE', color: 'orange' },
+  { label: '本体建模', value: 'ONTOLOGY_MODELER', color: 'magenta' },
+  { label: '流程自动化', value: 'WORKFLOW', color: 'geekblue' },
   { label: '自定义', value: 'CUSTOM', color: 'default' },
 ];
 
@@ -99,6 +104,8 @@ export const ROLE_CATEGORY_MAP: Record<RoleCategory, { label: string; color: str
   LEGAL: { label: '法务类', color: 'purple' },
   DATA_ANALYST: { label: '数据分析类', color: 'cyan' },
   CUSTOMER_SERVICE: { label: '客服类', color: 'orange' },
+  ONTOLOGY_MODELER: { label: '本体建模', color: 'magenta' },
+  WORKFLOW: { label: '流程自动化', color: 'geekblue' },
   CUSTOM: { label: '自定义', color: 'default' },
 };
 

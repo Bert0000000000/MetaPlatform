@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Tabs,
   Tag,
   Space,
   Avatar,
@@ -14,9 +13,7 @@ import {
   Switch,
   Popconfirm,
   Dropdown,
-  Table,
   Badge,
-  Empty,
   Row,
   Col,
   Input,
@@ -36,11 +33,8 @@ import {
 import { getEmployee, updateEmployee, activateEmployee, deactivateEmployee, deleteEmployee, cloneEmployee } from '@/api/dw/employees';
 import { listTasks } from '@/api/dw/tasks';
 import EmbeddedChat from './components/EmbeddedChat';
-import DocumentUpload from './components/DocumentUpload';
-import ExtractionPanel from './components/ExtractionPanel';
 import EmployeeVersionHistory from './components/EmployeeVersionHistory';
 import OperationLogPanel from './components/OperationLogPanel';
-import LearningRecordsPanel from './components/LearningRecordsPanel';
 import type { Employee, EmployeeTask } from '@/api/dw/types';
 import {
   ROLE_CATEGORY_MAP,
@@ -227,7 +221,7 @@ export default function EmployeeDetailPage() {
   const kbNames = employee.capability.ragKnowledgeBaseIds.map((kid) => MOCK_KNOWLEDGE_BASES.find((k) => k.id === kid)?.name).filter(Boolean);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 48px)', minHeight: 0 }}>
       {/* 顶部导航栏 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={goBack}>返回列表</Button>
@@ -242,7 +236,7 @@ export default function EmployeeDetailPage() {
       </div>
 
       {/* 员工信息卡片 */}
-      <Card style={{ marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16, flexShrink: 0 }}>
         <Row gutter={24} align="middle">
           <Col>
             <Badge status={isRunning ? 'success' : 'default'}>
@@ -257,6 +251,7 @@ export default function EmployeeDetailPage() {
                 <Text strong style={{ fontSize: 20 }}>{employee.name}</Text>
                 {role && <Tag color={role.color}>{role.label}</Tag>}
                 {status && <Tag color={status.color}>{status.label}</Tag>}
+                {employee.builtin && <Tag color="gold">内置</Tag>}
               </Space>
               <Space size="large">
                 <Text type="secondary">编码: {employee.code}</Text>
@@ -276,252 +271,83 @@ export default function EmployeeDetailPage() {
         </Row>
       </Card>
 
-      {/* 详情 Tabs */}
-      <Card>
-        <Tabs
-          defaultActiveKey="overview"
-          items={[
-            {
-              key: 'overview',
-              label: '概览',
-              children: (
-                <Space orientation="vertical" size="large" style={{ width: '100%' }}>
-                  {/* 基本信息 - 支持编辑模式 */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <Text strong style={{ fontSize: 14 }}>配置信息</Text>
-                      {!editing ? (
-                        <Button size="small" icon={<EditOutlined />} onClick={startEdit}>编辑</Button>
-                      ) : (
-                        <Space>
-                          <Button size="small" icon={<CheckOutlined />} type="primary" loading={savingInfo} onClick={handleSaveInfo}>保存</Button>
-                          <Button size="small" icon={<CloseOutlined />} onClick={() => setEditing(false)}>取消</Button>
-                        </Space>
-                      )}
-                    </div>
-                    {!editing ? (
-                      <Descriptions bordered column={2} size="small">
-                        <Descriptions.Item label="员工名称">{employee.name}</Descriptions.Item>
-                        <Descriptions.Item label="员工编码">{employee.code}</Descriptions.Item>
-                        <Descriptions.Item label="角色分类">{role?.label ?? '-'}</Descriptions.Item>
-                        <Descriptions.Item label="角色身份">{employee.roleIdentity}</Descriptions.Item>
-                        <Descriptions.Item label="状态">
-                          <Badge status={isRunning ? 'success' : 'default'} text={status?.label} />
-                        </Descriptions.Item>
-                        <Descriptions.Item label="创建时间">
-                          {employee.createdAt ? new Date(employee.createdAt).toLocaleString() : '-'}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="职责描述" span={2}>
-                          {employee.description || '-'}
-                        </Descriptions.Item>
-                      </Descriptions>
-                    ) : (
-                      <Form form={infoForm} layout="vertical">
-                        <Row gutter={24}>
-                          <Col span={12}>
-                            <Form.Item name="name" label="员工名称" rules={[{ required: true }]}>
-                              <Input placeholder="请输入员工名称" />
-                            </Form.Item>
-                          </Col>
-                          <Col span={12}>
-                            <Form.Item name="roleCategory" label="角色分类" rules={[{ required: true }]}>
-                              <Select>
-                                {ROLE_CATEGORY_OPTIONS.map((opt) => (
-                                  <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
-                                ))}
-                              </Select>
-                            </Form.Item>
-                          </Col>
-                        </Row>
-                        <Row gutter={24}>
-                          <Col span={12}>
-                            <Form.Item name="roleIdentity" label="角色身份">
-                              <Input placeholder="请输入角色身份" />
-                            </Form.Item>
-                          </Col>
-                          <Col span={12}>
-                            <Form.Item label="员工编码">
-                              <Input value={employee.code} disabled />
-                            </Form.Item>
-                          </Col>
-                        </Row>
-                        <Form.Item name="description" label="职责描述">
-                          <Input.TextArea rows={3} placeholder="请输入职责描述" />
-                        </Form.Item>
-                      </Form>
-                    )}
-                  </div>
+      {/* 三列布局：中间对话 + 右侧分类 */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 16 }}>
+        {/* 中间：对话交互（撑满） */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <Card
+            size="small"
+            title="对话交互"
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+            styles={{ body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } }}
+          >
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <EmbeddedChat employee={employee} heightMode="fill" />
+            </div>
+          </Card>
+        </div>
 
-                  {/* 能力摘要 */}
-                  <div>
-                    <Text strong style={{ fontSize: 14, marginBottom: 12, display: 'block' }}>能力摘要</Text>
-                    <Descriptions bordered column={2} size="small">
-                      <Descriptions.Item label="LLM 模型">{modelName}</Descriptions.Item>
-                      <Descriptions.Item label="Temperature">{employee.capability.temperature}</Descriptions.Item>
-                      <Descriptions.Item label="Max Tokens">{employee.capability.maxTokens}</Descriptions.Item>
-                      <Descriptions.Item label="Top P">{employee.capability.topP}</Descriptions.Item>
-                      <Descriptions.Item label="已选工具" span={2}>
-                        {toolNames.length > 0 ? toolNames.join('、') : '未选择'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="System Prompt" span={2}>
-                        {employee.capability.systemPrompt || '-'}
-                      </Descriptions.Item>
-                    </Descriptions>
-                  </div>
-
-                  {/* 知识库配置 */}
-                  <div>
-                    <Text strong style={{ fontSize: 14, marginBottom: 12, display: 'block' }}>知识库配置</Text>
-                    <Descriptions bordered column={2} size="small">
-                      <Descriptions.Item label="已绑定知识库" span={2}>
-                        {kbNames.length > 0 ? kbNames.join('、') : '未绑定'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="检索策略">
-                        {employee.capability.retrievalMethod === 'hybrid' ? '混合检索' :
-                         employee.capability.retrievalMethod === 'vector' ? '纯向量检索' : '纯关键词检索'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Top-K">{employee.capability.topK}</Descriptions.Item>
-                      <Descriptions.Item label="重排序" span={2}>
-                        {employee.capability.rerank ? '开启' : '关闭'}
-                      </Descriptions.Item>
-                    </Descriptions>
-                  </div>
-
-                  {/* 最近任务 */}
-                  <div>
-                    <Text strong style={{ fontSize: 14, marginBottom: 12, display: 'block' }}>最近任务</Text>
-                    {tasks.length === 0 ? (
-                      <Empty description="暂无任务" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                    ) : (
-                      <Table
-                        size="small"
-                        dataSource={tasks.slice(0, 5)}
-                        rowKey="id"
-                        pagination={false}
-                        scroll={{ x: 'max-content' }}
-                        columns={[
-                          { title: '任务', dataIndex: 'title', key: 'title' },
-                          {
-                            title: '状态',
-                            dataIndex: 'status',
-                            key: 'status',
-                            width: 100,
-                            render: (s: string) => {
-                              const m = TASK_STATUS_MAP[s] ?? { color: 'default', label: s, badge: 'default' as const };
-                              return <Badge status={m.badge} text={m.label} />;
-                            },
-                          },
-                          {
-                            title: '优先级',
-                            dataIndex: 'priority',
-                            key: 'priority',
-                            width: 80,
-                            render: (p: string) => <Tag color={PRIORITY_MAP[p]?.color}>{PRIORITY_MAP[p]?.label}</Tag>,
-                          },
-                          {
-                            title: '创建时间',
-                            dataIndex: 'createdAt',
-                            key: 'createdAt',
-                            width: 160,
-                            render: (v: string) => new Date(v).toLocaleString(),
-                          },
-                        ]}
-                      />
-                    )}
-                  </div>
+        {/* 右侧：基本信息 / 版本历史 / 操作日志 分类查看 */}
+        <div style={{ width: 380, flexShrink: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Card size="small" title="基本信息">
+            {!editing ? (
+              <Descriptions bordered column={1} size="small">
+                <Descriptions.Item label="员工名称">{employee.name}</Descriptions.Item>
+                <Descriptions.Item label="员工编码">{employee.code}</Descriptions.Item>
+                <Descriptions.Item label="角色分类">{role?.label ?? '-'}</Descriptions.Item>
+                <Descriptions.Item label="角色身份">{employee.roleIdentity}</Descriptions.Item>
+                <Descriptions.Item label="状态">
+                  <Badge status={isRunning ? 'success' : 'default'} text={status?.label} />
+                </Descriptions.Item>
+                <Descriptions.Item label="职责描述">{employee.description || '-'}</Descriptions.Item>
+              </Descriptions>
+            ) : (
+              <Form form={infoForm} layout="vertical" size="small">
+                <Form.Item name="name" label="员工名称" rules={[{ required: true }]}>
+                  <Input placeholder="请输入员工名称" />
+                </Form.Item>
+                <Form.Item name="roleCategory" label="角色分类" rules={[{ required: true }]}>
+                  <Select>
+                    {ROLE_CATEGORY_OPTIONS.map((opt) => (
+                      <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item name="roleIdentity" label="角色身份">
+                  <Input placeholder="请输入角色身份" />
+                </Form.Item>
+                <Form.Item name="description" label="职责描述">
+                  <Input.TextArea rows={3} placeholder="请输入职责描述" />
+                </Form.Item>
+                <Space>
+                  <Button size="small" icon={<CheckOutlined />} type="primary" loading={savingInfo} onClick={handleSaveInfo}>保存</Button>
+                  <Button size="small" icon={<CloseOutlined />} onClick={() => setEditing(false)}>取消</Button>
                 </Space>
-              ),
-            },
-            {
-              key: 'tasks',
-              label: `任务列表 (${tasks.length})`,
-              children: tasks.length === 0 ? (
-                <Empty description="暂无任务" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-              ) : (
-                <Table
-                  size="small"
-                  dataSource={tasks}
-                  rowKey="id"
-                  pagination={{ pageSize: 10 }}
-                  scroll={{ x: 'max-content' }}
-                  columns={[
-                    { title: '任务', dataIndex: 'title', key: 'title' },
-                    { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
-                    {
-                      title: '状态',
-                      dataIndex: 'status',
-                      key: 'status',
-                      width: 100,
-                      render: (s: string) => {
-                        const m = TASK_STATUS_MAP[s] ?? { color: 'default', label: s, badge: 'default' as const };
-                        return <Badge status={m.badge} text={m.label} />;
-                      },
-                    },
-                    {
-                      title: '优先级',
-                      dataIndex: 'priority',
-                      key: 'priority',
-                      width: 80,
-                      render: (p: string) => <Tag color={PRIORITY_MAP[p]?.color}>{PRIORITY_MAP[p]?.label}</Tag>,
-                    },
-                    {
-                      title: '进度',
-                      dataIndex: 'progress',
-                      key: 'progress',
-                      width: 100,
-                      render: (v?: number) => (v !== undefined ? `${v}%` : '-'),
-                    },
-                    {
-                      title: '创建时间',
-                      dataIndex: 'createdAt',
-                      key: 'createdAt',
-                      width: 160,
-                      render: (v: string) => new Date(v).toLocaleString(),
-                    },
-                    {
-                      title: '结果',
-                      dataIndex: 'result',
-                      key: 'result',
-                      ellipsis: true,
-                      render: (v?: string) => v || '-',
-                    },
-                  ]}
-                />
-              ),
-            },
-            {
-              key: 'chat',
-              label: '对话交互',
-              children: <EmbeddedChat employee={employee} />,
-            },
-            {
-              key: 'documents',
-              label: '知识文档',
-              children: <DocumentUpload employeeId={employee.employeeId} />,
-            },
-            {
-              key: 'extraction',
-              label: 'AI 抽取',
-              children: <ExtractionPanel employeeId={employee.employeeId} />,
-            },
-            {
-              key: 'learning',
-              label: '学习记录',
-              children: <LearningRecordsPanel employee={employee} />,
-            },
-            {
-              key: 'versions',
-              label: '版本历史',
-              children: <EmployeeVersionHistory employeeId={employee.employeeId} />,
-            },
-            {
-              key: 'logs',
-              label: '操作日志',
-              children: <OperationLogPanel employeeId={employee.employeeId} />,
-            },
-          ]}
-        />
-      </Card>
+              </Form>
+            )}
+            {!editing && (
+              <Button size="small" icon={<EditOutlined />} onClick={startEdit} style={{ marginTop: 8 }}>编辑</Button>
+            )}
+          </Card>
+
+          <Card size="small" title="能力摘要">
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="LLM 模型">{modelName}</Descriptions.Item>
+              <Descriptions.Item label="Temperature">{employee.capability.temperature}</Descriptions.Item>
+              <Descriptions.Item label="Max Tokens">{employee.capability.maxTokens}</Descriptions.Item>
+              <Descriptions.Item label="已选工具">
+                {toolNames.length > 0 ? toolNames.join('、') : '未选择'}
+              </Descriptions.Item>
+              <Descriptions.Item label="已绑定知识库">
+                {kbNames.length > 0 ? kbNames.join('、') : '未绑定'}
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          <EmployeeVersionHistory employeeId={employee.employeeId} />
+          <OperationLogPanel employeeId={employee.employeeId} />
+        </div>
+      </div>
     </div>
   );
 }

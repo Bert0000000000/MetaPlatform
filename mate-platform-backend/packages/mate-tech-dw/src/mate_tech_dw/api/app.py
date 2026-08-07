@@ -903,6 +903,9 @@ def _serialize_employee(emp) -> dict:
     role_map = {
         "CS_AGENT": "CUSTOMER_SERVICE", "SALES": "CUSTOM",
         "ANALYST": "DATA_ANALYST", "OPS": "CUSTOM",
+        # 内置 7+1 类（CLAUDE.md）
+        "ONTOLOGY_MODELER": "ONTOLOGY_MODELER",
+        "WORKFLOW": "WORKFLOW",
     }
     import time as _t
     return {
@@ -913,6 +916,7 @@ def _serialize_employee(emp) -> dict:
         "roleIdentity": emp.role,
         "description": f"{emp.name} - {emp.role}",
         "status": status_map.get(emp.status, "DRAFT"),
+        "builtin": bool(getattr(emp, "is_builtin", False)),
         "capability": {
             "model": emp.model_id,
             "temperature": 0.7,
