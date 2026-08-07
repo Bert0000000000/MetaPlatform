@@ -122,6 +122,12 @@ async def on_startup() -> None:
     else:
         raise RuntimeError(f"unknown KERNEL_BACKEND={backend!r}")
 
+    # /goal 端到端验收：ONT_SEED_DEMO=1 时注入员工请假审批 demo 数据（幂等）。
+    if os.getenv("ONT_SEED_DEMO", "0") == "1":
+        from .v2_kernel.seed import seed_demo
+        created = seed_demo(app.state.kernel_repo)
+        logger.info("kernel_seed.demo", created=created)
+
     logger.info("mate-tech-ont.startup", version=app.version)
 
 

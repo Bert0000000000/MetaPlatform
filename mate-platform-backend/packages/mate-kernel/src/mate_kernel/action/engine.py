@@ -60,10 +60,19 @@ class RuleEvaluator(Protocol):
 
 
 class SimpleRuleEvaluator:
-    """支持 `field == 'literal'` / `field != x` / `field startswith x` 三种表达式。"""
+    """支持 `field == 'literal'` / `field != x` / `field startswith x` /
+    `field in (a, b)` 四种表达式。"""
 
     def evaluate(self, expr: str, parameters: dict[str, Any], target_props: dict[str, Any]) -> bool:
         e = expr.strip()
+        # field in (a, b, c)
+        import re
+        in_match = re.match(r"^(\w+)\s+in\s+\((.*)\)\s*$", e)
+        if in_match:
+            field, vals = in_match.group(1), in_match.group(2)
+            allowed = [v.strip().strip("'").strip('"') for v in vals.split(",")]
+            actual = parameters.get(field, target_props.get(field))
+            return str(actual) in allowed
         # == 'literal'
         if "==" in e:
             field, val = e.split("==", 1)

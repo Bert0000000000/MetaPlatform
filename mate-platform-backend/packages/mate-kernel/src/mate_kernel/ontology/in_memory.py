@@ -10,6 +10,7 @@ from mate_kernel.ontology.identity import ClassRef, Version
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
 from mate_kernel.ontology.reasoning import Axiom, Function
+from mate_kernel.action.engine import ActionService, SubmissionContext
 from mate_kernel.ontology.types import (
     ActionType,
     Interface,
@@ -33,6 +34,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._link_instances: dict[str, LinkInstance] = {}
         self._axioms: dict[ClassRef, Axiom] = {}
         self._functions: dict[ClassRef, Function] = {}
+        self._action_service = ActionService()
 
     # ───── identity ─────
 
@@ -156,9 +158,49 @@ class InMemoryOntologyRepository(OntologyRepository):
         return InMemoryObjectSetExecutor(items).execute(os_)
 
     def apply_action(self, action_rid: ClassRef, target_iid: str, parameters: dict[str, Any], provenance: dict[str, Any]) -> tuple[datetime, list[str]]:
-        # dev runtime: 校验 action 存在并返回审计占位
+        # ACTION-03 协议：submission_criteria 求值 → Function 落库 → side_effects。
+        # 参数即提案结果：parameters 中键为 Property rid 的写进目标 individual
+        # （Approved-by / resolution 等状态字段），与 PgOntologyRepository 对齐。
         if action_rid not in self._action_types:
             raise KeyError(f"action not found: {action_rid}")
-        now = datetime.now(timezone.utc)
-        side_effects = list(self._action_types[action_rid].side_effects)
-        return now, side_effects
+        at = self._action_types[action_rid]
+        target = self._individuals.get(target_iid)
+        if target is None:
+            raise KeyError(f"target not found: {target_iid}")
+        target_props: dict[str, Any] = {
+            k.rid: v for k, v in target.props
+        }
+        outcome = self._action_service.apply(
+            action_rid=at.rid.rid,
+            submission_criteria=at.submission_criteria,
+            function_ref=at.function_ref.rid,
+            on_rid=at.on[0].rid if at.on else "",
+            target_iid=target_iid,
+            parameters=parameters,
+            side_effects=at.side_effects,
+            ctx=SubmissionContext(
+                actor=str(provenance.get("actor", "?")),
+                tenant_id=str(provenance.get("tenant_id", "")),
+            ),
+            target_props=target_props,
+        )
+        now = outcome.applied_at
+        if parameters:
+            # 短名（decision / reason）→ 完整 Property rid（at.parameters 声明的参数表）。
+            # rid 形如 ont.<tenant>.prop.<slug>.v1，slug 在版本后缀之前。
+            param_rids: dict[str, ClassRef] = {}
+            for p in at.parameters:
+                parts = p.rid.rid.split(".")
+                slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
+                param_rids[slug] = p.rid
+            from dataclasses import replace
+            merged = dict(target.props)
+            for key, value in parameters.items():
+                resolved = ClassRef(key) if key.startswith("ont.") else param_rids.get(key)
+                if resolved is None:
+                    raise KeyError(f"unknown parameter {key!r} for action={action_rid}")
+                merged[resolved] = value
+            self._individuals[target_iid] = replace(
+                target, props=tuple(merged.items()), updated_at=now,
+            )
+        return now, outcome.side_effects_emitted

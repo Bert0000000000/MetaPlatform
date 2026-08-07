@@ -262,6 +262,16 @@ class TestQueryAndApply:
             on=(ClassRef("ont.acme.obj.order"),),
         )
         repo.upsert_action_type(at)
+        # ACTION-03：apply 需要目标 individual 存在
+        repo.create_individual(Individual(
+            rid="ont.acme.ind.order.1",
+            class_rid=ClassRef("ont.acme.obj.order"),
+            props=(),
+            primary_key="1",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+            tenant_id="acme",
+        ))
         now, se = repo.apply_action(
             ClassRef("ont.acme.act.notify"),
             target_iid="ont.acme.ind.order.1",

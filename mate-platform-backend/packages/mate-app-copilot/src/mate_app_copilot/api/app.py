@@ -153,6 +153,11 @@ def _get_client(request: Request) -> AsyncCopilotClient:
     `app.state.copilot_client`. In tests / single-binary deployment it
     falls back to an in-process stub provider. Either way the call
     surface (embed / chat / generate_sql) is identical.
+
+    The default base_url targets the API gateway (docker-compose service
+    name + port 8100) so ontology bridge calls route to mate-tech-ont —
+    the previous `http://localhost` fallback pointed at the copilot
+    itself and every outbound call hit a dead endpoint.
     """
     client: AsyncCopilotClient | None = getattr(
         request.app.state, "copilot_client", None
@@ -161,7 +166,7 @@ def _get_client(request: Request) -> AsyncCopilotClient:
         return client
 
     return AsyncCopilotClient(
-        base_url="http://localhost",
+        base_url=os.getenv("MATE_GATEWAY_URL", "http://mate-api-gateway:8100"),
         auth=BearerAuth(
             token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
             client_id="metaplatform-backend",
@@ -170,6 +175,53 @@ def _get_client(request: Request) -> AsyncCopilotClient:
         ),
         provider=stub_provider,
     )
+
+
+# Copilot 静态 action id → kernel ActionType rid 后缀映射（三大原理 #3）。
+# 命中的 action 走 kernel apply（唯一合法写路径）；未命中的保持 emit-only
+# （兼容既有 copilot 测试与纯通知类 action）。
+_ONT_ACTION_SUFFIX: dict[str, str] = {
+    "act-approve-leave": "approve-leave.v1",
+    "act-close-ticket": "close-ticket.v1",
+}
+
+
+async def _apply_action_to_kernel(
+    request: Request,
+    action_id: str,
+    params: dict[str, Any],
+    tid: str,
+) -> dict[str, Any] | None:
+    """Try to apply the action in the kernel; return None if not mapped/failed.
+
+    三大原理 #3：AI 输出 = proposal，用户确认后由 ActionType 落库。
+    任何异常都吞掉并返回 None，调用方降级为 emit-only —— 桥接失败
+    不能让用户可见的动作执行也失败。
+    """
+    suffix = _ONT_ACTION_SUFFIX.get(action_id)
+    if not suffix:
+        return None
+    rid = f"ont.{tid}.act.{suffix}"
+    try:
+        client = _get_client(request)
+        # 透传入站用户 token 作为降级认证（dev 环境 client_secret=stub
+        # 无法通过 keycloak client_credentials；INSECURE_SKIP_SIGNATURE 下
+        # gateway 直接接受）。生产环境配了真实 secret 后走服务身份。
+        fallback_token = str(getattr(request.state.ctx, "authorization", "") or "")
+        if not fallback_token:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.lower().startswith("bearer "):
+                fallback_token = auth_header[7:].strip()
+        return await client.ont_apply_action(
+            rid=rid,
+            tenant_id=tid,
+            parameters=params,
+            target_iid=params.pop("target_iid", "") if isinstance(params, dict) else "",
+            provenance={"actor": str(getattr(request.state.ctx, "user_id", ""))},
+            fallback_token=fallback_token or None,
+        )
+    except Exception:  # noqa: BLE001 — bridge failure degrades to emit-only
+        return None
 
 
 # --- Root (1) ---------------------------------------------------------------
@@ -318,8 +370,17 @@ async def execute_action(
     target = next((a for a in actions if a.id == action_id), None)
     if target is None:
         raise HTTPException(status_code=404, detail="action not found")
-    params = body.get("params", {})
+    params = dict(body.get("params", {}))
     result_id = f"res-{uuid.uuid4().hex[:8]}"
+    kernel = await _apply_action_to_kernel(request, action_id, params, tid)
+    output: dict[str, Any] = {"params": params}
+    if kernel:
+        # 三大原理 #3：kernel 落库成功 → 回显 applied_at + side_effects
+        output.update({
+            "applied_at": kernel.get("applied_at", ""),
+            "side_effects_emitted": kernel.get("side_effects_emitted", []),
+            "action_rid": kernel.get("action_rid", ""),
+        })
     _emit(
         request,
         "copilot.action.executed",
@@ -331,7 +392,7 @@ async def execute_action(
         "action_id": action_id,
         "result_id": result_id,
         "status": "completed",
-        "output": {"params": params},
+        "output": output,
     }
 
 
@@ -341,13 +402,16 @@ async def execute_action_by_body(
 ) -> dict[str, Any]:
     """Execute an action identified by body (FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE).
 
-    Accepts ``action_id`` (preferred) or ``action_name`` in the request
-    body so callers can fire an action without embedding the id in the
-    path. Emits ``copilot.action.executed`` outbox event.
+    Accepts ``action_id`` / ``actionId`` (preferred) or ``action_name``
+    in the request body so callers can fire an action without embedding
+    the id in the path. The frontend SuperAI Action 面板 sends camelCase
+    ``actionId`` — both spellings are accepted. Mapped actions are
+    applied in the ontology kernel (三大原理 #3); unmapped actions stay
+    emit-only. Emits ``copilot.action.executed`` outbox event.
     """
     tid = _tid(request)
     actions = list_actions(tid)
-    action_id = str(body.get("action_id", ""))
+    action_id = str(body.get("action_id") or body.get("actionId", ""))
     target = next((a for a in actions if a.id == action_id), None) if action_id else None
     if target is None:
         name = str(body.get("action_name", ""))
@@ -356,8 +420,17 @@ async def execute_action_by_body(
             action_id = target.id
     if target is None:
         raise HTTPException(status_code=404, detail="action not found")
-    params = body.get("params", {})
+    params = dict(body.get("params", {}))
     result_id = f"res-{uuid.uuid4().hex[:8]}"
+    kernel = await _apply_action_to_kernel(request, action_id, params, tid)
+    output: dict[str, Any] = {"params": params}
+    if kernel:
+        # 三大原理 #3：kernel 落库成功 → 回显 applied_at + side_effects
+        output.update({
+            "applied_at": kernel.get("applied_at", ""),
+            "side_effects_emitted": kernel.get("side_effects_emitted", []),
+            "action_rid": kernel.get("action_rid", ""),
+        })
     _emit(
         request,
         "copilot.action.executed",
@@ -369,7 +442,7 @@ async def execute_action_by_body(
         "action_id": action_id,
         "result_id": result_id,
         "status": "completed",
-        "output": {"params": params},
+        "output": output,
     }
 
 
