@@ -14,9 +14,11 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
+from mate_kernel.objectset.compiler import FilterCompiler
+from mate_kernel.objectset.sql_compiler import SQLCompiler
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.identity import ClassRef, Version
 from mate_kernel.ontology.instances import Individual, LinkInstance
@@ -30,10 +32,6 @@ from mate_kernel.ontology.types import (
     Property,
     PropertyFormat,
 )
-
-from mate_kernel.objectset.compiler import FilterCompiler
-from mate_kernel.objectset.sql_compiler import SQLCompiler
-
 
 DDL: tuple[str, ...] = (
     """
@@ -75,6 +73,83 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_at_tenant ON ont_action_type (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_link_type (
+        rid             TEXT PRIMARY KEY,
+        tenant_id       TEXT NOT NULL,
+        src_rid         TEXT NOT NULL,
+        dst_rid         TEXT NOT NULL,
+        cardinality     TEXT NOT NULL,
+        directionality  TEXT NOT NULL,
+        link_properties JSONB NOT NULL DEFAULT '[]'::jsonb,
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_lt_tenant ON ont_link_type (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_interface (
+        rid                              TEXT PRIMARY KEY,
+        tenant_id                        TEXT NOT NULL,
+        properties                       JSONB NOT NULL DEFAULT '[]'::jsonb,
+        required_links                   TEXT[] NOT NULL DEFAULT '{}',
+        polymorphic_action_constraints   TEXT[] NOT NULL DEFAULT '{}',
+        updated_at                       TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_if_tenant ON ont_interface (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_property (
+        rid          TEXT PRIMARY KEY,
+        tenant_id    TEXT NOT NULL,
+        type_id      TEXT NOT NULL DEFAULT 'string',
+        nullable     BOOLEAN NOT NULL DEFAULT TRUE,
+        primary_key  BOOLEAN NOT NULL DEFAULT FALSE,
+        title        TEXT NOT NULL DEFAULT '',
+        format       TEXT NOT NULL DEFAULT 'string',
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_prop_tenant ON ont_property (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_link_instance (
+        rid            TEXT PRIMARY KEY,
+        tenant_id      TEXT NOT NULL,
+        link_type_rid  TEXT NOT NULL,
+        src            TEXT NOT NULL,
+        dst            TEXT NOT NULL,
+        props          JSONB NOT NULL DEFAULT '{}'::jsonb,
+        marking        TEXT[] NOT NULL DEFAULT '{}',
+        created_at     TIMESTAMPTZ NOT NULL,
+        updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_li_tenant ON ont_link_instance (tenant_id)",
+    "CREATE INDEX IF NOT EXISTS ix_ont_li_src ON ont_link_instance (src)",
+    "CREATE INDEX IF NOT EXISTS ix_ont_li_dst ON ont_link_instance (dst)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_axiom (
+        rid        TEXT PRIMARY KEY,
+        tenant_id  TEXT NOT NULL,
+        kind       TEXT NOT NULL,
+        operands   TEXT[] NOT NULL DEFAULT '{}',
+        rule_ref   TEXT NOT NULL DEFAULT '',
+        metadata   JSONB NOT NULL DEFAULT '[]'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_ax_tenant ON ont_axiom (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_function (
+        rid        TEXT PRIMARY KEY,
+        tenant_id  TEXT NOT NULL,
+        language   TEXT NOT NULL,
+        version    INTEGER NOT NULL DEFAULT 1,
+        source_ref TEXT NOT NULL DEFAULT '',
+        signatures JSONB NOT NULL DEFAULT '[]'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_fn_tenant ON ont_function (tenant_id)",
 )
 
 
@@ -137,6 +212,192 @@ def _row_to_individual(row: dict[str, Any]) -> Individual:
     )
 
 
+def _lt_to_row(lt: LinkType) -> dict[str, Any]:
+    return {
+        "rid": lt.rid.rid,
+        "tenant_id": lt.rid.rid.split(".")[1] if "." in lt.rid.rid else "",
+        "src_rid": lt.src.rid,
+        "dst_rid": lt.dst.rid,
+        "cardinality": lt.cardinality.value,
+        "directionality": lt.directionality.value,
+        "link_properties": [
+            {
+                "rid": p.rid.rid,
+                "type_id": p.type_id,
+                "nullable": p.nullable,
+                "primary_key": p.primary_key,
+                "title": p.title,
+                "format": p.format.value,
+            }
+            for p in lt.link_properties
+        ],
+    }
+
+
+def _row_to_lt(row: dict[str, Any]) -> LinkType:
+    return LinkType(
+        rid=ClassRef(row["rid"]),
+        src=ClassRef(row["src_rid"]),
+        dst=ClassRef(row["dst_rid"]),
+        cardinality=row["cardinality"],
+        directionality=row["directionality"],
+        link_properties=tuple(
+            Property(
+                rid=ClassRef(p["rid"]),
+                type_id=p["type_id"],
+                nullable=p["nullable"],
+                primary_key=p["primary_key"],
+                title=p["title"],
+                format=PropertyFormat(p["format"]),
+            )
+            for p in row["link_properties"]
+        ),
+    )
+
+
+def _if_to_row(i: Interface) -> dict[str, Any]:
+    return {
+        "rid": i.rid.rid,
+        "tenant_id": i.rid.rid.split(".")[1] if "." in i.rid.rid else "",
+        "properties": [
+            {
+                "rid": p.rid.rid,
+                "type_id": p.type_id,
+                "nullable": p.nullable,
+                "primary_key": p.primary_key,
+                "title": p.title,
+                "format": p.format.value,
+            }
+            for p in i.properties
+        ],
+        "required_links": [r.rid for r in i.required_links],
+        "polymorphic_action_constraints": list(i.polymorphic_action_constraints),
+    }
+
+
+def _row_to_if(row: dict[str, Any]) -> Interface:
+    return Interface(
+        rid=ClassRef(row["rid"]),
+        properties=tuple(
+            Property(
+                rid=ClassRef(p["rid"]),
+                type_id=p["type_id"],
+                nullable=p["nullable"],
+                primary_key=p["primary_key"],
+                title=p["title"],
+                format=PropertyFormat(p["format"]),
+            )
+            for p in row["properties"]
+        ),
+        required_links=tuple(ClassRef(r) for r in row.get("required_links") or []),
+        polymorphic_action_constraints=tuple(
+            row.get("polymorphic_action_constraints") or []
+        ),
+    )
+
+
+def _prop_to_row(p: Property) -> dict[str, Any]:
+    return {
+        "rid": p.rid.rid,
+        "tenant_id": p.rid.rid.split(".")[1] if "." in p.rid.rid else "",
+        "type_id": p.type_id,
+        "nullable": p.nullable,
+        "primary_key": p.primary_key,
+        "title": p.title,
+        "format": p.format.value,
+    }
+
+
+def _row_to_prop(row: dict[str, Any]) -> Property:
+    return Property(
+        rid=ClassRef(row["rid"]),
+        type_id=row["type_id"],
+        nullable=row["nullable"],
+        primary_key=row["primary_key"],
+        title=row["title"],
+        format=PropertyFormat(row["format"]),
+    )
+
+
+def _li_to_row(li: LinkInstance) -> dict[str, Any]:
+    return {
+        "rid": li.rid,
+        "tenant_id": li.tenant_id,
+        "link_type_rid": li.link_type_rid.rid,
+        "src": li.src,
+        "dst": li.dst,
+        "props": {k.rid: v for k, v in li.props},
+        "marking": list(li.marking),
+        "created_at": li.created_at,
+    }
+
+
+def _row_to_li(row: dict[str, Any]) -> LinkInstance:
+    props_dict: dict[str, Any] = row["props"] if isinstance(row["props"], dict) else {}
+    return LinkInstance(
+        rid=row["rid"],
+        link_type_rid=ClassRef(row["link_type_rid"]),
+        src=row["src"],
+        dst=row["dst"],
+        props=tuple((ClassRef(k), v) for k, v in props_dict.items()),
+        created_at=row["created_at"],
+        tenant_id=row["tenant_id"],
+        marking=tuple(row.get("marking", []) or []),
+    )
+
+
+def _ax_to_row(ax: Axiom) -> dict[str, Any]:
+    return {
+        "rid": ax.rid.rid,
+        "tenant_id": ax.rid.rid.split(".")[1] if "." in ax.rid.rid else "",
+        "kind": ax.kind.value,
+        "operands": [o.rid for o in ax.operands],
+        "rule_ref": ax.rule_ref,
+        "metadata": [[k, v] for k, v in ax.metadata],
+    }
+
+
+def _row_to_ax(row: dict[str, Any]) -> Axiom:
+    metadata_raw = row.get("metadata") or []
+    metadata: list[tuple[str, str]] = []
+    for item in metadata_raw:
+        if isinstance(item, (list, tuple)) and len(item) == 2:
+            metadata.append((str(item[0]), str(item[1])))
+    return Axiom(
+        rid=ClassRef(row["rid"]),
+        kind=row["kind"],
+        operands=tuple(ClassRef(o) for o in row.get("operands") or []),
+        rule_ref=row.get("rule_ref") or "",
+        metadata=tuple(metadata),
+    )
+
+
+def _fn_to_row(f: Function) -> dict[str, Any]:
+    return {
+        "rid": f.rid.rid,
+        "tenant_id": f.rid.rid.split(".")[1] if "." in f.rid.rid else "",
+        "language": f.language.value,
+        "version": f.version,
+        "source_ref": f.source_ref,
+        "signatures": [[n, t] for n, t in f.signatures],
+    }
+
+
+def _row_to_fn(row: dict[str, Any]) -> Function:
+    signatures_raw = row.get("signatures") or []
+    signatures: list[tuple[str, str]] = []
+    for item in signatures_raw:
+        if isinstance(item, (list, tuple)) and len(item) == 2:
+            signatures.append((str(item[0]), str(item[1])))
+    return Function(
+        rid=ClassRef(row["rid"]),
+        language=row["language"],
+        version=row["version"],
+        source_ref=row.get("source_ref") or "",
+        signatures=tuple(signatures),
+    )
+
+
 class PgOntologyRepository(OntologyRepository):
     """psycopg2 sync 接口（FastAPI sync def OK）。
 
@@ -147,6 +408,8 @@ class PgOntologyRepository(OntologyRepository):
         self._dsn = dsn
         self._lock = threading.Lock()
         self._initialized = False
+        from mate_kernel.action.engine import ActionService
+        self._action_service = ActionService()
 
     def _connect(self):
         import psycopg2  # type: ignore
@@ -209,7 +472,7 @@ class PgOntologyRepository(OntologyRepository):
             rid=rid,
             class_ref=class_rid,
             parent_rid=parent or (existing[-1].rid if existing else None),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             author=author,
             change_set=change_set,
         )
@@ -280,8 +543,38 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def upsert_link_type(self, lt: LinkType) -> LinkType:
-        # MVP: 不持久化 LinkType（保留接口兼容）
-        return lt
+        self._ensure_schema()
+        row = _lt_to_row(lt)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_link_type
+                        (rid, tenant_id, src_rid, dst_rid, cardinality, directionality, link_properties, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, now())
+                    ON CONFLICT (rid) DO UPDATE SET
+                        src_rid = EXCLUDED.src_rid,
+                        dst_rid = EXCLUDED.dst_rid,
+                        cardinality = EXCLUDED.cardinality,
+                        directionality = EXCLUDED.directionality,
+                        link_properties = EXCLUDED.link_properties,
+                        updated_at = now()
+                    """,
+                    (
+                        row["rid"],
+                        row["tenant_id"],
+                        row["src_rid"],
+                        row["dst_rid"],
+                        row["cardinality"],
+                        row["directionality"],
+                        json.dumps(row["link_properties"]),
+                    ),
+                )
+            conn.commit()
+            return lt
+        finally:
+            conn.close()
 
     def upsert_action_type(self, at: ActionType) -> ActionType:
         self._ensure_schema()
@@ -318,13 +611,79 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def upsert_interface(self, i: Interface) -> Interface:
-        return i
+        self._ensure_schema()
+        row = _if_to_row(i)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_interface
+                        (rid, tenant_id, properties, required_links, polymorphic_action_constraints, updated_at)
+                    VALUES (%s, %s, %s::jsonb, %s, %s, now())
+                    ON CONFLICT (rid) DO UPDATE SET
+                        properties = EXCLUDED.properties,
+                        required_links = EXCLUDED.required_links,
+                        polymorphic_action_constraints = EXCLUDED.polymorphic_action_constraints,
+                        updated_at = now()
+                    """,
+                    (
+                        row["rid"],
+                        row["tenant_id"],
+                        json.dumps(row["properties"]),
+                        row["required_links"],
+                        row["polymorphic_action_constraints"],
+                    ),
+                )
+            conn.commit()
+            return i
+        finally:
+            conn.close()
 
     def upsert_property(self, p: Property) -> Property:
-        return p
+        self._ensure_schema()
+        row = _prop_to_row(p)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_property
+                        (rid, tenant_id, type_id, nullable, primary_key, title, format, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                    ON CONFLICT (rid) DO UPDATE SET
+                        type_id = EXCLUDED.type_id,
+                        nullable = EXCLUDED.nullable,
+                        primary_key = EXCLUDED.primary_key,
+                        title = EXCLUDED.title,
+                        format = EXCLUDED.format,
+                        updated_at = now()
+                    """,
+                    (
+                        row["rid"],
+                        row["tenant_id"],
+                        row["type_id"],
+                        row["nullable"],
+                        row["primary_key"],
+                        row["title"],
+                        row["format"],
+                    ),
+                )
+            conn.commit()
+            return p
+        finally:
+            conn.close()
 
     def list_link_types(self) -> list[LinkType]:
-        return []
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_link_type ORDER BY rid")
+                rows = cur.fetchall()
+            return [_row_to_lt(r) for r in rows]
+        finally:
+            conn.close()
 
     def list_action_types(self) -> list[ActionType]:
         self._ensure_schema()
@@ -351,10 +710,28 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def list_interfaces(self) -> list[Interface]:
-        return []
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_interface ORDER BY rid")
+                rows = cur.fetchall()
+            return [_row_to_if(r) for r in rows]
+        finally:
+            conn.close()
 
     def get_link_type(self, rid: ClassRef) -> LinkType:
-        raise KeyError(rid.rid)
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_link_type WHERE rid = %s", (rid.rid,))
+                row = cur.fetchone()
+            if row is None:
+                raise KeyError(f"LinkType not found: {rid.rid}")
+            return _row_to_lt(row)
+        finally:
+            conn.close()
 
     def get_action_type(self, rid: ClassRef) -> ActionType:
         self._ensure_schema()
@@ -366,9 +743,22 @@ class PgOntologyRepository(OntologyRepository):
             if row is None:
                 raise KeyError(f"ActionType not found: {rid.rid}")
             from mate_kernel.ontology.types.action_type import ActionType
+            # GOVERN-04: parameters 字段在 JSONB 存的是 rid 字符串列表。
+            # 重建时仅需 rid 元数据（slug 解析）；format/type_id 等不影响 apply。
+            param_rids = row.get("parameters") or []
             return ActionType(
                 rid=ClassRef(row["rid"]),
-                parameters=(),
+                parameters=tuple(
+                    Property(
+                        rid=ClassRef(p),
+                        type_id="string",
+                        nullable=False,
+                        primary_key=False,
+                        title="",
+                        format=PropertyFormat.STRING,
+                    )
+                    for p in param_rids
+                ),
                 submission_criteria=tuple(row.get("submission_criteria", []) or []),
                 side_effects=tuple(row.get("side_effects", []) or []),
                 function_ref=ClassRef(row.get("function_ref") or "ont.system.fn.noop.v1"),
@@ -441,24 +831,138 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
 
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
-        return li
+        self._ensure_schema()
+        row = _li_to_row(li)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_link_instance
+                        (rid, tenant_id, link_type_rid, src, dst, props, marking, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, now())
+                    ON CONFLICT (rid) DO UPDATE SET
+                        link_type_rid = EXCLUDED.link_type_rid,
+                        src = EXCLUDED.src,
+                        dst = EXCLUDED.dst,
+                        props = EXCLUDED.props,
+                        marking = EXCLUDED.marking,
+                        updated_at = now()
+                    """,
+                    (
+                        row["rid"],
+                        row["tenant_id"],
+                        row["link_type_rid"],
+                        row["src"],
+                        row["dst"],
+                        json.dumps(row["props"], default=str),
+                        row["marking"],
+                        row["created_at"],
+                    ),
+                )
+            conn.commit()
+            return li
+        finally:
+            conn.close()
 
     def list_link_instances(self) -> list[LinkInstance]:
-        return []
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_link_instance ORDER BY rid")
+                rows = cur.fetchall()
+            return [_row_to_li(r) for r in rows]
+        finally:
+            conn.close()
 
     # ───── reasoning ─────
 
     def upsert_axiom(self, ax: Axiom) -> Axiom:
-        return ax
+        self._ensure_schema()
+        row = _ax_to_row(ax)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_axiom
+                        (rid, tenant_id, kind, operands, rule_ref, metadata, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s::jsonb, now())
+                    ON CONFLICT (rid) DO UPDATE SET
+                        kind = EXCLUDED.kind,
+                        operands = EXCLUDED.operands,
+                        rule_ref = EXCLUDED.rule_ref,
+                        metadata = EXCLUDED.metadata,
+                        updated_at = now()
+                    """,
+                    (
+                        row["rid"],
+                        row["tenant_id"],
+                        row["kind"],
+                        row["operands"],
+                        row["rule_ref"],
+                        json.dumps(row["metadata"]),
+                    ),
+                )
+            conn.commit()
+            return ax
+        finally:
+            conn.close()
 
     def list_axioms(self) -> list[Axiom]:
-        return []
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_axiom ORDER BY rid")
+                rows = cur.fetchall()
+            return [_row_to_ax(r) for r in rows]
+        finally:
+            conn.close()
 
     def upsert_function(self, f: Function) -> Function:
-        return f
+        self._ensure_schema()
+        row = _fn_to_row(f)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_function
+                        (rid, tenant_id, language, version, source_ref, signatures, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s::jsonb, now())
+                    ON CONFLICT (rid) DO UPDATE SET
+                        language = EXCLUDED.language,
+                        version = EXCLUDED.version,
+                        source_ref = EXCLUDED.source_ref,
+                        signatures = EXCLUDED.signatures,
+                        updated_at = now()
+                    """,
+                    (
+                        row["rid"],
+                        row["tenant_id"],
+                        row["language"],
+                        row["version"],
+                        row["source_ref"],
+                        json.dumps(row["signatures"]),
+                    ),
+                )
+            conn.commit()
+            return f
+        finally:
+            conn.close()
 
     def list_functions(self) -> list[Function]:
-        return []
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_function ORDER BY rid")
+                rows = cur.fetchall()
+            return [_row_to_fn(r) for r in rows]
+        finally:
+            conn.close()
 
     # ───── query / apply ─────
 
@@ -479,8 +983,10 @@ class PgOntologyRepository(OntologyRepository):
             order_by = f" ORDER BY {col}::numeric DESC" if reverse else f" ORDER BY {col}::numeric ASC"
             # 简化：MVP 全当 numeric 排；后续按 type_id 分支
 
+        # where_sql comes from SQLCompiler (not user input); order_by is a
+        # controlled sort spec. Safe to compose via f-string.
         sql = (
-            f"SELECT * FROM ont_individual "
+            f"SELECT * FROM ont_individual "  # noqa: S608
             f"WHERE class_rid = %s AND ({where_sql})"
             f"{order_by} "
             f"LIMIT %s OFFSET %s"
@@ -503,28 +1009,54 @@ class PgOntologyRepository(OntologyRepository):
         parameters: dict[str, Any],
         provenance: dict[str, Any],
     ) -> tuple[datetime, list[str]]:
-        # MVP: 校验 action 注册过；记录 audit_id；落 updated_at
+        """ActionType.apply — InMemory 与 PG 走同一 ActionService。
+
+        流程：submission_criteria 求值 → Function 落库 → side_effects → 审计。
+        """
+        from dataclasses import replace
+
+        from mate_kernel.action.engine import SubmissionContext
+
+        self._ensure_schema()
         at = self.get_action_type(action_rid)
         ind = self.get_individual(target_iid)
-        now = datetime.now(timezone.utc)
-        side_effects = [
+        target_props = {k.rid: v for k, v in ind.props}
+        outcome = self._action_service.apply(
+            action_rid=at.rid.rid,
+            submission_criteria=at.submission_criteria,
+            function_ref=at.function_ref.rid,
+            on_rid=at.on[0].rid if at.on else "",
+            target_iid=target_iid,
+            parameters=parameters,
+            side_effects=at.side_effects,
+            ctx=SubmissionContext(
+                actor=str(provenance.get("actor", "?")),
+                tenant_id=str(provenance.get("tenant_id", ind.tenant_id)),
+            ),
+            target_props=target_props,
+        )
+        now = outcome.applied_at
+        if parameters:
+            param_rids: dict[str, ClassRef] = {}
+            for p in at.parameters:
+                parts = p.rid.rid.split(".")
+                slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
+                param_rids[slug] = p.rid
+            merged = dict(ind.props)
+            for key, value in parameters.items():
+                resolved = ClassRef(key) if key.startswith("ont.") else param_rids.get(key)
+                if resolved is None:
+                    raise KeyError(f"unknown parameter {key!r} for action={action_rid}")
+                merged[resolved] = value
+            self.create_individual(replace(ind, props=tuple(merged.items()), updated_at=now))
+        # 兼容既有调用方的 side_effects 字符串格式（PG 路径既往用 actor=…/target=…）
+        legacy = [
             f"action={at.rid.rid}",
             f"target={ind.rid}",
             f"actor={provenance.get('actor', '?')}",
             f"params={json.dumps(parameters, default=str)}",
         ]
-        self._ensure_schema()
-        conn, _ = self._connect()
-        try:
-            with self._cursor(conn) as cur:
-                cur.execute(
-                    "UPDATE ont_individual SET updated_at = %s WHERE rid = %s",
-                    (now, target_iid),
-                )
-            conn.commit()
-        finally:
-            conn.close()
-        return now, side_effects
+        return now, outcome.side_effects_emitted + legacy
 
 
 async def run_in_thread(repo_method, /, *args, **kwargs):  # pyright: ignore[reportUnusedFunction]
@@ -532,4 +1064,4 @@ async def run_in_thread(repo_method, /, *args, **kwargs):  # pyright: ignore[rep
     return await asyncio.to_thread(repo_method, *args, **kwargs)
 
 
-__all__ = ["PgOntologyRepository", "DDL"]
+__all__ = ["DDL", "PgOntologyRepository"]
