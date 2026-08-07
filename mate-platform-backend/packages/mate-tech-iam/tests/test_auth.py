@@ -196,3 +196,31 @@ async def test_login_log_writes_success_and_failure(client):
     items = r.json()["data"]["items"]
     results = [it["result"] for it in items]
     assert "SUCCESS" in results
+
+
+@pytest.mark.asyncio
+async def test_refresh_reachable_with_stale_access_token(client):
+    """Refresh must be exempt from the bearer middleware.
+
+    Regression: /api/v1/iam/auth/refresh was missing from
+    `extra_anonymous_paths` in mate_tech_iam.main. After the access token
+    expires (1h TTL), the frontend's auto-refresh calls this endpoint with
+    the stale access token in the Authorization header — the bearer
+    middleware would reject it with 401 before the handler could exchange
+    the (still valid, 30-day) refresh token, leaving users stuck in an
+    expired session (admin pages showing 403).
+    """
+    login = await client.post(
+        "/api/v1/iam/auth/login",
+        json={"username": "operator", "password": "operator123", "tenantId": "tenant-default"},
+    )
+    refresh_token = login.json()["refreshToken"]
+    stale = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjF9.invalid"
+
+    r = await client.post(
+        "/api/v1/iam/auth/refresh",
+        json={"refreshToken": refresh_token},
+        headers={"Authorization": "Bearer " + stale},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["accessToken"]

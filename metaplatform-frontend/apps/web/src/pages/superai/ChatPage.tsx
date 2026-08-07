@@ -27,6 +27,7 @@ import {
   LikeOutlined,
   DislikeOutlined,
   RightOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { streamChat, listMultimodalModels, multimodalUploadChat } from '@/api/superai/chat';
 import { listKnowledgeBases, search as ragSearch } from '@/api/superai/rag';
@@ -40,6 +41,7 @@ import {
 } from '@/api/superai/conversations';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import KnowledgeGraph from './components/KnowledgeGraph';
+import ActionPanel from './components/ActionPanel';
 import type {
   ChatSession,
   ChatMessage,
@@ -47,6 +49,7 @@ import type {
   KnowledgeBase,
   ChatImage,
   MultimodalModel,
+  ActionResult,
 } from '@/api/superai/types';
 
 const UNIFIED_SYSTEM_PROMPT = `你是 Mate Platform 的智能助手 SuperAI。你会自动识别用户意图并用最合适的方式回答：
@@ -259,12 +262,40 @@ function MessageActions({ onCopy, onRegenerate }: { onCopy: () => void; onRegene
   );
 }
 
+/** Action 执行结果卡（kernel 落库回显：applied_at / side_effects / action_rid） */
+function ActionResultCard({ result }: { result: ActionResult }) {
+  const output = (result.output ?? {}) as Record<string, unknown>;
+  const fields: Array<[string, string]> = [
+    ['Action', result.actionName || result.actionId],
+    ['状态', result.success ? '成功' : '失败'],
+    ['消息', result.message],
+  ];
+  const kernelFields = Object.entries(output)
+    .filter(([k]) => ['applied_at', 'side_effects_emitted', 'action_rid', 'audit_id'].includes(k))
+    .map(([k, v]) => [k, Array.isArray(v) ? (v as string[]).join(', ') : String(v)] as [string, string]);
+  return (
+    <div style={{ marginTop: 8, background: '#1a1a1a', border: '1px solid #262626', borderRadius: 4, padding: 12, fontSize: 12 }}>
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 }}>
+        <ThunderboltOutlined style={{ fontSize: 12, color: result.success ? '#52c41a' : '#ff4d4f' }} />
+        <Typography.Text style={{ fontSize: 12, color: '#fafafa' }}>执行结果</Typography.Text>
+      </div>
+      {[...fields, ...kernelFields].map(([k, v]) => (
+        <div key={k} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
+          <Typography.Text style={{ fontSize: 11, color: '#a1a1a1', minWidth: 120, display: 'inline-block' }}>{k}</Typography.Text>
+          <Typography.Text style={{ fontSize: 11, color: '#fafafa', wordBreak: 'break-all' }}>{v}</Typography.Text>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** 单条消息渲染（贴合设计稿） */
 function MessageRow({ msg, onCopy }: { msg: ChatMessage; onCopy: (text: string) => void }) {
   const isUser = msg.role === 'user';
   const graphData = !isUser ? msg.metadata?.graphData : undefined;
   const thinkingContent = !isUser ? msg.metadata?.thinking : undefined;
   const thinkingDuration = !isUser ? msg.metadata?.thinkingDuration : undefined;
+  const actionResult = !isUser ? msg.metadata?.actionResult : undefined;
 
   const time = msg.createdAt
     ? new Date(msg.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -377,6 +408,7 @@ function MessageRow({ msg, onCopy }: { msg: ChatMessage; onCopy: (text: string) 
               </div>
             )}
             <CitationList citations={msg.citations} />
+            {actionResult && <ActionResultCard result={actionResult} />}
             {!msg.streaming && msg.content && (
               <MessageActions onCopy={() => onCopy(msg.content)} />
             )}
@@ -418,6 +450,7 @@ export default function ChatPage() {
   ]);
   const [activeId, setActiveId] = useState<string>(sessions[1].id);
   const [input, setInput] = useState('');
+  const [actionQuery, setActionQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
@@ -1203,6 +1236,24 @@ export default function ChatPage() {
             </>
           )}
         </div>
+
+        {/* Action 面板：AI → ActionType 落库（三大原理 #3） */}
+        <ActionPanel
+          query={actionQuery}
+          onQueryChange={setActionQuery}
+          onResult={({ actionResult }) => {
+            if (actionResult) {
+              updateSession(activeSession.id, (session) => ({
+                ...session,
+                messages: [...session.messages, createMessage('assistant', '', {
+                  status: 'success',
+                  metadata: { actionResult },
+                })],
+                updatedAt: now(),
+              }));
+            }
+          }}
+        />
 
         {/* input-bar */}
         <div

@@ -68,6 +68,10 @@ app.add_middleware(
 # workbench login, IAM auth login, and SSO providers list must be
 # reachable without a token (the user has not authenticated yet), so
 # they widen the default ANONYMOUS set via `extra_anonymous_paths`.
+# `/api/v1/iam/auth/refresh` is a pure refresh-token exchange (contract
+# `security: []`): the caller's access token may already be expired, and
+# the bearer middleware would reject the stale access token before the
+# handler can run.
 # Every other endpoint requires a valid bearer + tenant binding.
 install_auth(
     app,
@@ -75,6 +79,7 @@ install_auth(
         "/api/v1/dashboard/auth/login",
         "/api/v1/iam/auth/login",
         "/api/v1/iam/sso-providers",
+        "/api/v1/iam/auth/refresh",
     },
 )
 

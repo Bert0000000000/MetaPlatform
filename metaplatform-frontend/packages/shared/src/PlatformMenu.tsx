@@ -10,6 +10,7 @@ import {
   Plug,
   Bot,
   Settings,
+  Store,
   type LucideIcon,
 } from './icons';
 
@@ -20,13 +21,14 @@ export interface NavItem {
   path: string;
 }
 
-/** 9 个一级导航菜单，与 UI 设计稿完全一致 */
+/** 10 个一级导航菜单，与 UI 设计稿完全一致 */
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', label: '工作台', icon: LayoutDashboard, path: '/dashboard' },
   { key: 'superai', label: 'SuperAI', icon: Sparkles, path: '/superai' },
   { key: 'arch', label: '架构中心', icon: GitBranch, path: '/arch' },
   { key: 'apps', label: '应用中心', icon: Boxes, path: '/apps' },
   { key: 'ontology', label: '本体引擎', icon: Database, path: '/ontology' },
+  { key: 'marketplace', label: '云市场', icon: Store, path: '/marketplace' },
   { key: 'knowledge', label: '知识库', icon: BookOpen, path: '/knowledge' },
   { key: 'mcp', label: 'MCP 中心', icon: Plug, path: '/mcp' },
   { key: 'agent', label: '数字员工', icon: Bot, path: '/agents' },

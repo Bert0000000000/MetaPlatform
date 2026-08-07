@@ -3,6 +3,7 @@
 // 网络错误时返回空结果，不返回 mock 数据
 
 import axios from 'axios';
+import { getToken } from '@/utils/auth';
 import {
   BigDataSource, CDCTask, ETLTask, SchedulerTask, Metric,
   SourceType, CDCSyncMode, CDCStartPosition, CDCTargetType,
@@ -23,6 +24,15 @@ const apiClient = axios.create({
   baseURL: '/api/v1',
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
+});
+
+// 请求拦截器：注入 Bearer token（与 src/api/client.ts 保持一致，否则 data 域 401）
+apiClient.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 // 响应拦截器：解包 ApiResponse 格式
