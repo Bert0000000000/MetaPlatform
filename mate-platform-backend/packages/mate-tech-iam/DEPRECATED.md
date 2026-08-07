@@ -1,8 +1,10 @@
 # DEPRECATED — `mate-tech-iam` 包
 
-> **状态：DEPRECATED** — SEC-IAM-01 起弃用
-> **替换路径：** `mate-platform.auth.*`（入站 JWT 验证）+ `mate-clients.security.*`（出站 Bearer）
-> **移除计划：** 计划在下一次大版本（v3.1 / v4.0）时从主构建中完全删除。本包仍可独立运行（仅 dev profile），供历史回滚与对比测试使用。
+> **状态：DEPRECATED v2.0**（GOVERN-02 治理收口，2026-08-07） · SEC-IAM-01 起弃用
+> **替换路径：** `mate-auth-service:8101`（服务身份）+ `mate-platform.auth.*`（入站 JWT 验证）+ `mate-clients.security.*`（出站 Bearer）
+> **退役时间表：** 见 `docs/active/specs/2026-08-07-iam-deprecation-finalize.md` —— T0=2026-08-07 / T1=2026-09-30 / T2=2026-11-30 / T3=2026-12-31 物理移除
+> **移除计划：** T3 物理移除包；之前由 `profiles: ["deprecated-iam", "audit"]` 守门，默认不启动。
+> **CI 守门：** `python scripts/ci/forbid_iam_dep_imports.py`（GOVERN-02 新增，2026-08-07）
 
 ## 为什么弃用
 

@@ -70,10 +70,16 @@ services:
       retries: 10
       start_period: 30s
 
-  # mate-tech-iam: 后台管理服务 (TECH-IAM)
-  # 用户/角色/权限/组织/审计/系统配置；FR-DASH-006-01~05
+  # mate-tech-iam: DEPRECATED（GOVERN-02，2026-08-07）
+  # 后台管理服务原归这里；SEC-IAM-01 起，新 IAM 由 mate-auth-service:8101 承担。
+  # 默认不启动；审计 / 迁移场景显式 `--profile deprecated-iam` 才拉起。
+  # 退役时间表见 docs/active/specs/2026-08-07-iam-deprecation-finalize.md
+  # ────────────────────────────────────────────────────────────────
+  # DEPRECATED — 新 IAM 已迁至 mate-auth-service:8101（SEC-IAM-01 / ADR-0011）。
+  # ────────────────────────────────────────────────────────────────
   mate-tech-iam:
     <<: [*restart, *logging]
+    profiles: ["deprecated-iam", "audit"]
     build:
       context: ./mate-platform-backend
       dockerfile: packages/mate-tech-iam/Dockerfile
@@ -1007,7 +1013,8 @@ services:
       ONT_URL: http://mate-tech-ont:8007
       MCP_URL: http://mate-tech-mcp:8081
       IAM_URL: http://mate-auth-service:8101
-      IAM_ADMIN_URL: http://mate-tech-iam:8102
+      # IAM_ADMIN_URL 已弃用（GOVERN-02）：新 IAM 由 mate-auth-service:8101 承担；保留兼容项指向同一上游，避免误启 mate-tech-iam:8102。
+      IAM_ADMIN_URL: http://mate-auth-service:8101
       OBS_URL: http://mate-tech-obs:8083
       COPILOT_URL: http://mate-app-copilot:8601
       ARCH_URL: http://mate-app-arch:8321
@@ -1031,8 +1038,9 @@ services:
         condition: service_healthy
       mate-auth-service:
         condition: service_started
-      mate-tech-iam:
-        condition: service_started
+      # mate-tech-iam 已退役（GOVERN-02）；如需 audit profile 才解注下面这行
+      # mate-tech-iam:
+      #   condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8100/healthz || exit 1"]
       interval: 15s
