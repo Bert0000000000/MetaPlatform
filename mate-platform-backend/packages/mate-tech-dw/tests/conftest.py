@@ -25,6 +25,21 @@ from mate_tech_dw.repositories import in_memory as in_memory_repo
 JWT_SECRET = "test-secret"
 
 
+# Tenant-scoped employee id constants. Tests reference these instead of
+# hard-coded `dw-emp-N` so that the seed's tenant-prefixed ids
+# (e.g. dw-emp-acme-1, dw-emp-globex-1) can change without rewriting
+# dozens of test callsites.
+ACME_E1 = "dw-emp-acme-1"
+ACME_E2 = "dw-emp-acme-2"
+ACME_E3 = "dw-emp-acme-3"
+ACME_E4 = "dw-emp-acme-4"
+ACME_E5 = "dw-emp-acme-5"
+ACME_E6 = "dw-emp-acme-6"
+ACME_E7 = "dw-emp-acme-7"
+GLOBEX_E1 = "dw-emp-globex-1"
+GLOBEX_E2 = "dw-emp-globex-2"
+
+
 def _keycloak_token(
     *,
     sub: str = "u-1",
@@ -76,3 +91,24 @@ def auth_headers_globex() -> dict[str, str]:
     return {
         "Authorization": f"Bearer {_keycloak_token(tenant_id='tenant-globex')}",
     }
+
+
+@pytest.fixture
+def acme_emp_id() -> callable:
+    """Resolve an acme-tenant employee seed id by its slot number (1..7).
+
+    Mirrors `mate_tech_dw.repositories.in_memory._emp_id` so tests can
+    reference `dw-emp-1` (slot) instead of `dw-emp-acme-1` (concrete
+    tenant-scoped id).
+    """
+    def _resolve(n: int) -> str:
+        return f"dw-emp-acme-{n}"
+    return _resolve
+
+
+@pytest.fixture
+def globex_emp_id() -> callable:
+    """Same as `acme_emp_id` but for the globex tenant."""
+    def _resolve(n: int) -> str:
+        return f"dw-emp-globex-{n}"
+    return _resolve

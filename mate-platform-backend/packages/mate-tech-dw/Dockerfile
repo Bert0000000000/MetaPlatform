@@ -28,7 +28,8 @@ RUN SITE=/app/.venv/lib/python3.12/site-packages && \
     cp -r packages/mate-tech-db/src/mate_tech_db "$SITE/" && \
     cp -r packages/mate-common/src/mate_common "$SITE/" && \
     cp -r packages/mate-platform/src/mate_platform "$SITE/" && \
-    cp -r packages/mate-clients/src/mate_clients "$SITE/"
+    cp -r packages/mate-clients/src/mate_clients "$SITE/" && \
+    cp -r packages/mate-kernel/src/mate_kernel "$SITE/"
 
 FROM python:3.12 AS runtime
 

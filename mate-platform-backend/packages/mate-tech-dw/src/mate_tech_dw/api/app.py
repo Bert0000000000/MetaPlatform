@@ -42,6 +42,10 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
+# 数字员工身份 prompt 单一数据源：kernel SYSTEM_PROMPTS（蓝图 §4.1 的 7+1 类 AgentRole）。
+from mate_kernel.agent.orchestrator import AgentRole
+from mate_kernel.agent.prompts import SYSTEM_PROMPTS
+
 from ..repositories import (
     DwCollaboration,
     DwDocument,
@@ -899,20 +903,15 @@ def _serialize_employee(emp) -> dict:
     """Transform DwEmployee to frontend Employee format."""
     # Map backend status to frontend status
     status_map = {"active": "ACTIVE", "idle": "ACTIVE", "offline": "INACTIVE"}
-    # Map backend role to frontend roleCategory
-    role_map = {
-        "CS_AGENT": "CUSTOMER_SERVICE", "SALES": "CUSTOM",
-        "ANALYST": "DATA_ANALYST", "OPS": "CUSTOM",
-        # 内置 7+1 类（CLAUDE.md）
-        "ONTOLOGY_MODELER": "ONTOLOGY_MODELER",
-        "WORKFLOW": "WORKFLOW",
-    }
+    # role 字段即 kernel AgentRole slug（ontology/workflow/app/data_product/obs/security/knowledge）；
+    # roleCategory 统一为大写形式，与前端 RoleCategory 对齐。未知 role → CUSTOM。
     import time as _t
+    role_category = emp.role.upper() if emp.role in _KERNEL_ROLE_SLUGS else "CUSTOM"
     return {
         "employeeId": emp.id,
         "name": emp.name,
         "code": emp.code,
-        "roleCategory": role_map.get(emp.role, "CUSTOM"),
+        "roleCategory": role_category,
         "roleIdentity": emp.role,
         "description": f"{emp.name} - {emp.role}",
         "status": status_map.get(emp.status, "DRAFT"),
@@ -922,7 +921,7 @@ def _serialize_employee(emp) -> dict:
             "temperature": 0.7,
             "maxTokens": 4096,
             "topP": 0.9,
-            "systemPrompt": "",
+            "systemPrompt": _system_prompt_for(emp),
             "tools": [],
             "ragKnowledgeBaseIds": list(emp.kb_ids),
             "retrievalMethod": "hybrid",
@@ -934,12 +933,31 @@ def _serialize_employee(emp) -> dict:
     }
 
 
+# kernel 7 类 AgentRole slug（内置员工身份集合）。role 命中此集合即视为内置 kernel 员工。
+_KERNEL_ROLE_SLUGS: frozenset[str] = frozenset(
+    role.value for role in AgentRole if role != AgentRole.SUPERAI
+)
+
+
+def _system_prompt_for(emp) -> str:
+    """内置员工返回 kernel 身份 prompt；用户显式保存的非空 prompt 优先。"""
+    custom = getattr(emp, "system_prompt", "")
+    if custom:
+        return custom
+    if emp.role not in _KERNEL_ROLE_SLUGS:
+        return ""
+    return SYSTEM_PROMPTS[AgentRole(emp.role)]
+
+
+# roleCategory（大写）→ employee code 前缀，用于自动生成 EMP-{PREFIX}-{NNNN}。
 _ROLE_CODE_PREFIX: dict[str, str] = {
-    "FINANCE": "FIN",
-    "HR": "HR",
-    "LEGAL": "LEG",
-    "DATA_ANALYST": "DA",
-    "CUSTOMER_SERVICE": "CS",
+    "ONTOLOGY": "ONT",
+    "WORKFLOW": "WF",
+    "APP": "APP",
+    "DATA_PRODUCT": "DATA",
+    "OBS": "OBS",
+    "SECURITY": "SEC",
+    "KNOWLEDGE": "KB",
     "CUSTOM": "X",
 }
 
@@ -999,10 +1017,13 @@ async def dw_create_employee(request: Request, body: EmployeeCreateBody) -> dict
     kb_ids = ()
     if body.capability and "ragKnowledgeBaseIds" in body.capability:
         kb_ids = tuple(body.capability["ragKnowledgeBaseIds"])
+    system_prompt = ""
+    if body.capability and "systemPrompt" in body.capability:
+        system_prompt = body.capability["systemPrompt"]
     emp = DwEmployee(
         id=emp_id, tenant_id=tid, name=body.name, code=code,
         role=body.roleIdentity or "CUSTOM", status="active",
-        model_id=model_id, kb_ids=kb_ids,
+        model_id=model_id, kb_ids=kb_ids, system_prompt=system_prompt,
     )
     create_employee(tid, emp)
     _emit(request, "dw.employee.created", emp_id, {"name": body.name, "code": code}, tid)
@@ -1025,6 +1046,8 @@ async def dw_update_employee(request: Request, employee_id: str, body: EmployeeC
         updates["model_id"] = body.capability["model"]
     if body.capability and "ragKnowledgeBaseIds" in body.capability:
         updates["kb_ids"] = tuple(body.capability["ragKnowledgeBaseIds"])
+    if body.capability and "systemPrompt" in body.capability:
+        updates["system_prompt"] = body.capability["systemPrompt"]
     updated = update_employee(tid, emp.id, **updates)
     return _ok(_serialize_employee(updated))
 

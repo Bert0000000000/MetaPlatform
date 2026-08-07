@@ -71,35 +71,47 @@ const initialValues: Partial<FormValues> = {
 };
 
 const roleTemplates: Record<string, Partial<FormValues>> = {
-  finance: {
-    roleCategory: 'FINANCE',
-    roleIdentity: '报销审批助手',
-    description: '协助员工完成报销政策咨询、报销单初审及审批进度查询。',
-    systemPrompt: '你是财务助手，熟悉公司报销制度，能够准确回答报销政策问题。',
+  ont: {
+    roleCategory: 'ONTOLOGY',
+    roleIdentity: '本体建模师',
+    description: '解释 ClassRef / ObjectType / LinkType / ActionType，把自然语言需求映射为 ObjectSet 查询计划。',
+    systemPrompt: '你是 Mate Platform 的「本体员工」，Ontology 语义建模与查询引擎。',
   },
-  hr: {
-    roleCategory: 'HR',
-    roleIdentity: '薪酬查询专员',
-    description: '为员工提供薪酬、社保、公积金及假期政策咨询服务。',
-    systemPrompt: '你是 HR 助手，熟悉公司人力资源政策，保护员工隐私数据。',
+  wf: {
+    roleCategory: 'WORKFLOW',
+    roleIdentity: '流程工程师',
+    description: '解析 BPMN-lite 流程定义，按 Action / Gateway / WaitUser / End 节点调度 ActionType.apply。',
+    systemPrompt: '你是 Mate Platform 的「工作流员工」，BPMN 流程编排引擎。',
+  },
+  app: {
+    roleCategory: 'APP',
+    roleIdentity: '应用构建师',
+    description: '把 ObjectType 及其 ActionType 映射为前端可渲染的 UI manifest（list/detail/form/dashboard）。',
+    systemPrompt: '你是 Mate Platform 的「应用员工」，低代码应用生成器。',
   },
   data: {
-    roleCategory: 'DATA_ANALYST',
-    roleIdentity: '数据分析师',
-    description: '根据业务需求查询数据、生成分析报告并提供决策建议。',
-    systemPrompt: '你是数据分析助手，擅长从多数据源提取信息并生成清晰结论。',
+    roleCategory: 'DATA_PRODUCT',
+    roleIdentity: '数据产品师',
+    description: '维护 data.* 数据产品（湖仓表 / 物化视图 / 报告 / 流）与 ObjectType 的双向 link、血缘与质量告警。',
+    systemPrompt: '你是 Mate Platform 的「数据产品员工」，数据资产与血缘管理员。',
   },
-  legal: {
-    roleCategory: 'LEGAL',
-    roleIdentity: '法务顾问',
-    description: '解答合同、合规及法律风险相关问题，提供制度依据。',
-    systemPrompt: '你是法务助手，能够提供合规建议并提示潜在法律风险。',
+  obs: {
+    roleCategory: 'OBS',
+    roleIdentity: '可观测工程师',
+    description: '订阅 OTel metric/log，定义告警规则，命中阈值触发 ActionType.apply 实现自动告警与自愈。',
+    systemPrompt: '你是 Mate Platform 的「可观测员工」，监控、告警与自愈引擎。',
   },
-  cs: {
-    roleCategory: 'CUSTOMER_SERVICE',
-    roleIdentity: '客服专员',
-    description: '面向客户解答产品使用问题，处理常见咨询与投诉。',
-    systemPrompt: '你是客服助手，态度友好，能够准确解答产品与服务问题。',
+  sec: {
+    roleCategory: 'SECURITY',
+    roleIdentity: '安全合规官',
+    description: '在每次 ActionType.apply / 资源访问前做 allow / deny 决策，保证租户隔离与 Mandatory Marking 合规。',
+    systemPrompt: '你是 Mate Platform 的「安全员工」，权限、合规与标记（Marking）检查官。',
+  },
+  kb: {
+    roleCategory: 'KNOWLEDGE',
+    roleIdentity: '知识管理员',
+    description: '维护 KbDocument 库链接到 ObjectType，与 RAG-ONT-01 联合检索（class link 优先 + token overlap 补充）。',
+    systemPrompt: '你是 Mate Platform 的「知识库员工」，企业知识检索与 RAG 联合引擎。',
   },
 };
 

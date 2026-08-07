@@ -35,6 +35,8 @@ import {
   CustomerServiceOutlined,
   FileSearchOutlined,
   BarChartOutlined,
+  AppstoreOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import { listEmployees, deleteEmployee, activateEmployee, deactivateEmployee } from '@/api/dw/employees';
 import type { Employee } from '@/api/dw/types';
@@ -45,6 +47,7 @@ import {
 } from '@/api/dw/types';
 import type { MenuProps } from 'antd';
 import EmployeeCloneButton from './components/EmployeeCloneButton';
+import EmployeeCard from './components/EmployeeCard';
 
 const { Text } = Typography;
 
@@ -71,6 +74,7 @@ export default function EmployeeListPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roleCategory, setRoleCategory] = useState('');
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   const load = async () => {
     setLoading(true);
@@ -313,6 +317,18 @@ export default function EmployeeListPage() {
             onPressEnter={(e) => setKeyword((e.target as HTMLInputElement).value)}
             onChange={(e) => { if (!e.target.value) setKeyword(''); }}
           />
+          <Button
+            size="small"
+            type={viewMode === 'table' ? 'text' : 'default'}
+            icon={<UnorderedListOutlined />}
+            onClick={() => setViewMode('table')}
+          />
+          <Button
+            size="small"
+            type={viewMode === 'card' ? 'default' : 'text'}
+            icon={<AppstoreOutlined />}
+            onClick={() => setViewMode('card')}
+          />
           <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/create')}>
             创建数字员工
           </Button>
@@ -337,6 +353,19 @@ export default function EmployeeListPage() {
             </Button>
           </Empty>
         </Card>
+      ) : viewMode === 'card' ? (
+        <Row gutter={[16, 16]}>
+          {employees.map((emp) => (
+            <Col key={emp.employeeId} xs={24} sm={12} lg={8} xl={6}>
+              <EmployeeCard
+                employee={emp}
+                onToggle={handleToggleStatus}
+                onDelete={handleDelete}
+                onCloned={handleCloned}
+              />
+            </Col>
+          ))}
+        </Row>
       ) : (
         <Table
           dataSource={employees}

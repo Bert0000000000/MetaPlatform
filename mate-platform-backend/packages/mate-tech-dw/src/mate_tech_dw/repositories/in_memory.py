@@ -81,11 +81,12 @@ class DwEmployee:
     tenant_id: str
     name: str
     code: str
-    role: str  # CS_AGENT / SALES / ANALYST / OPS / ONTOLOGY_MODELER / ...
+    role: str  # kernel AgentRole slug: ontology/workflow/app/data_product/obs/security/knowledge（+ 自定义）
     status: str  # active / idle / offline
     model_id: str
     kb_ids: tuple[str, ...] = field(default_factory=tuple)
     is_builtin: bool = False  # 内置共享员工（CLAUDE.md 7+1 类）
+    system_prompt: str = ""  # 系统提示词（能力配置 systemPrompt）
 
 
 @dataclass(frozen=True)
@@ -192,11 +193,27 @@ class DwTrace:
 # ---------------------------------------------------------------------------
 # Seed builders
 # ---------------------------------------------------------------------------
+def _tenant_alias(tenant_id: str) -> str:
+    """Short tenant id for prefixing seed entities (e.g. 'tenant-acme' -> 'acme').
+
+    Used to namespace employee / dependent ids so that two tenants cannot
+    collide on a shared in-memory store. Real persistence would key on
+    (tenant_id, id) instead, but the in-memory seed must look distinct.
+    """
+    return tenant_id.split("tenant-", 1)[-1]
+
+
+def _emp_id(tenant_id: str, n: int) -> str:
+    """Tenant-scoped employee id: dw-emp-<alias>-<n>."""
+    return f"dw-emp-{_tenant_alias(tenant_id)}-{n}"
+
+
 def _seed_auth_logins(tenant_id: str) -> dict[str, DwAuthLogin]:
+    e1, e2, e3 = _emp_id(tenant_id, 1), _emp_id(tenant_id, 2), _emp_id(tenant_id, 3)
     rows = [
-        ("dw-auth-1", "dw-emp-1", "2026-07-30T09:00:00Z", "10.0.0.1", "success"),
-        ("dw-auth-2", "dw-emp-2", "2026-07-30T09:05:00Z", "10.0.0.2", "success"),
-        ("dw-auth-3", "dw-emp-3", "2026-07-30T09:10:00Z", "10.0.0.3", "failed"),
+        ("dw-auth-1", e1, "2026-07-30T09:00:00Z", "10.0.0.1", "success"),
+        ("dw-auth-2", e2, "2026-07-30T09:05:00Z", "10.0.0.2", "success"),
+        ("dw-auth-3", e3, "2026-07-30T09:10:00Z", "10.0.0.3", "failed"),
     ]
     return {
         rid: DwAuthLogin(
@@ -208,11 +225,12 @@ def _seed_auth_logins(tenant_id: str) -> dict[str, DwAuthLogin]:
 
 
 def _seed_collaborations(tenant_id: str) -> dict[str, DwCollaboration]:
+    e1, e2, e3 = _emp_id(tenant_id, 1), _emp_id(tenant_id, 2), _emp_id(tenant_id, 3)
     rows = [
-        ("dw-collab-1", "dw-emp-1", "dw-emp-2", "sess-1", "2026-07-30T10:00:00Z", 120_000),
-        ("dw-collab-2", "dw-emp-2", "dw-emp-3", "sess-2", "2026-07-30T11:00:00Z", 240_000),
-        ("dw-collab-3", "dw-emp-1", "dw-emp-3", "sess-3", "2026-07-30T12:00:00Z", 90_000),
-        ("dw-collab-4", "dw-emp-3", "dw-emp-2", "sess-4", "2026-07-30T13:00:00Z", 180_000),
+        ("dw-collab-1", e1, e2, "sess-1", "2026-07-30T10:00:00Z", 120_000),
+        ("dw-collab-2", e2, e3, "sess-2", "2026-07-30T11:00:00Z", 240_000),
+        ("dw-collab-3", e1, e3, "sess-3", "2026-07-30T12:00:00Z", 90_000),
+        ("dw-collab-4", e3, e2, "sess-4", "2026-07-30T13:00:00Z", 180_000),
     ]
     return {
         rid: DwCollaboration(
@@ -225,12 +243,13 @@ def _seed_collaborations(tenant_id: str) -> dict[str, DwCollaboration]:
 
 
 def _seed_commits(tenant_id: str) -> dict[str, DwCommit]:
+    e1, e2, e3 = _emp_id(tenant_id, 1), _emp_id(tenant_id, 2), _emp_id(tenant_id, 3)
     rows = [
-        ("dw-commit-1", "dw-emp-1", "kb", "kb-doc-1", "新增文档", "2026-07-30T10:30:00Z"),
-        ("dw-commit-2", "dw-emp-2", "agent", "agent-1", "更新 prompt", "2026-07-30T11:30:00Z"),
-        ("dw-commit-3", "dw-emp-3", "flow", "flow-1", "发布流程", "2026-07-30T12:30:00Z"),
-        ("dw-commit-4", "dw-emp-1", "form", "form-1", "新增表单字段", "2026-07-30T13:30:00Z"),
-        ("dw-commit-5", "dw-emp-2", "kb", "kb-doc-2", "修订文档", "2026-07-30T14:30:00Z"),
+        ("dw-commit-1", e1, "kb", "kb-doc-1", "新增文档", "2026-07-30T10:30:00Z"),
+        ("dw-commit-2", e2, "agent", "agent-1", "更新 prompt", "2026-07-30T11:30:00Z"),
+        ("dw-commit-3", e3, "flow", "flow-1", "发布流程", "2026-07-30T12:30:00Z"),
+        ("dw-commit-4", e1, "form", "form-1", "新增表单字段", "2026-07-30T13:30:00Z"),
+        ("dw-commit-5", e2, "kb", "kb-doc-2", "修订文档", "2026-07-30T14:30:00Z"),
     ]
     return {
         rid: DwCommit(
@@ -242,15 +261,16 @@ def _seed_commits(tenant_id: str) -> dict[str, DwCommit]:
 
 
 def _seed_documents(tenant_id: str) -> dict[str, DwDocument]:
+    e1, e2, e3 = _emp_id(tenant_id, 1), _emp_id(tenant_id, 2), _emp_id(tenant_id, 3)
     rows = [
-        ("dw-doc-1", "产品白皮书.pdf", "pdf", 524_288, "dw-emp-1", "2026-07-30T10:00:00Z", "dw-kb-1"),
-        ("dw-doc-2", "用户手册.docx", "docx", 1_048_576, "dw-emp-1", "2026-07-30T10:10:00Z", "dw-kb-1"),
-        ("dw-doc-3", "API 文档.md", "md", 32_768, "dw-emp-2", "2026-07-30T10:20:00Z", "dw-kb-2"),
-        ("dw-doc-4", "FAQ.html", "html", 16_384, "dw-emp-2", "2026-07-30T10:30:00Z", "dw-kb-2"),
-        ("dw-doc-5", "架构设计.pdf", "pdf", 2_097_152, "dw-emp-3", "2026-07-30T10:40:00Z", "dw-kb-3"),
-        ("dw-doc-6", "运维手册.docx", "docx", 768_000, "dw-emp-3", "2026-07-30T10:50:00Z", "dw-kb-3"),
-        ("dw-doc-7", "变更记录.md", "md", 24_576, "dw-emp-1", "2026-07-30T11:00:00Z", "dw-kb-1"),
-        ("dw-doc-8", "测试报告.html", "html", 48_000, "dw-emp-2", "2026-07-30T11:10:00Z", "dw-kb-2"),
+        ("dw-doc-1", "产品白皮书.pdf", "pdf", 524_288, e1, "2026-07-30T10:00:00Z", "dw-kb-1"),
+        ("dw-doc-2", "用户手册.docx", "docx", 1_048_576, e1, "2026-07-30T10:10:00Z", "dw-kb-1"),
+        ("dw-doc-3", "API 文档.md", "md", 32_768, e2, "2026-07-30T10:20:00Z", "dw-kb-2"),
+        ("dw-doc-4", "FAQ.html", "html", 16_384, e2, "2026-07-30T10:30:00Z", "dw-kb-2"),
+        ("dw-doc-5", "架构设计.pdf", "pdf", 2_097_152, e3, "2026-07-30T10:40:00Z", "dw-kb-3"),
+        ("dw-doc-6", "运维手册.docx", "docx", 768_000, e3, "2026-07-30T10:50:00Z", "dw-kb-3"),
+        ("dw-doc-7", "变更记录.md", "md", 24_576, e1, "2026-07-30T11:00:00Z", "dw-kb-1"),
+        ("dw-doc-8", "测试报告.html", "html", 48_000, e2, "2026-07-30T11:10:00Z", "dw-kb-2"),
     ]
     return {
         rid: DwDocument(
@@ -262,20 +282,18 @@ def _seed_documents(tenant_id: str) -> dict[str, DwDocument]:
 
 
 def _seed_employees(tenant_id: str) -> dict[str, DwEmployee]:
-    # CLAUDE.md 7 + 1 类数字员工：前 7 个为内置共享员工（is_builtin=True），
-    # 覆盖 Ontology / Workflow / App / Data Product / OBS / Security / Knowledge Library。
+    # CLAUDE.md 7 + 1 类数字员工：7 个内置共享员工（is_builtin=True），
+    # 严格对齐 kernel AgentRole（ontology/workflow/app/data_product/obs/security/knowledge）。
+    # role 字段即 kernel AgentRole slug；system prompt 由 app.py 从 kernel SYSTEM_PROMPTS 取。
+    # 员工 id 带 tenant 前缀（_emp_id），保证不同 tenant 不共享同一份员工数据。
     rows = [
-        # 内置 7 类（按文档 7+1 分类）
-        ("dw-emp-1", "客服小艾", "EMP-CS-001", "CS_AGENT", "active", "model-openai", ("dw-kb-1",), True),
-        ("dw-emp-2", "销售小博", "EMP-SALES-001", "SALES", "active", "model-anthropic", ("dw-kb-2",), True),
-        ("dw-emp-3", "分析小查", "EMP-AN-001", "ANALYST", "idle", "model-doubao", ("dw-kb-3",), True),
-        ("dw-emp-4", "运维小卫", "EMP-OPS-001", "OPS", "active", "model-qwen", ("dw-kb-1", "dw-kb-2"), True),
-        ("dw-emp-5", "客服小贝", "EMP-CS-002", "CS_AGENT", "offline", "model-openai", ("dw-kb-1",), True),
-        ("dw-emp-6", "销售小诚", "EMP-SALES-002", "SALES", "active", "model-anthropic", ("dw-kb-2",), True),
-        # 第 7 个：Ontology 本体建模师（文档 7 类的 Ontology 类）
-        ("dw-emp-7", "本体小启", "EMP-ONT-001", "ONTOLOGY_MODELER", "active", "model-doubao", ("dw-kb-4",), True),
-        # 第 8 个：Workflow 流程自动化（7+1 的 +1 类）
-        ("dw-emp-8", "流程小流", "EMP-WF-001", "WORKFLOW", "active", "model-openai", ("dw-kb-4",), True),
+        (_emp_id(tenant_id, 1), "本体建模师", "EMP-ONT-001", "ontology", "active", "model-doubao", ("dw-kb-1",), True),
+        (_emp_id(tenant_id, 2), "流程工程师", "EMP-WF-001", "workflow", "active", "model-openai", ("dw-kb-2",), True),
+        (_emp_id(tenant_id, 3), "应用构建师", "EMP-APP-001", "app", "idle", "model-openai", ("dw-kb-3",), True),
+        (_emp_id(tenant_id, 4), "数据产品师", "EMP-DATA-001", "data_product", "active", "model-qwen", ("dw-kb-1", "dw-kb-2"), True),
+        (_emp_id(tenant_id, 5), "可观测工程师", "EMP-OBS-001", "obs", "offline", "model-qwen", ("dw-kb-3",), True),
+        (_emp_id(tenant_id, 6), "安全合规官", "EMP-SEC-001", "security", "active", "model-anthropic", ("dw-kb-2",), True),
+        (_emp_id(tenant_id, 7), "知识管理员", "EMP-KB-001", "knowledge", "active", "model-doubao", ("dw-kb-4",), True),
     ]
     return {
         rid: DwEmployee(
@@ -287,19 +305,20 @@ def _seed_employees(tenant_id: str) -> dict[str, DwEmployee]:
 
 
 def _seed_employee_tasks(tenant_id: str) -> dict[str, DwEmployeeTask]:
+    e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     base = [
-        ("dw-task-1", "dw-emp-1", "回复客户咨询", "success", "2026-07-30T10:00:00Z", "2026-07-30T10:02:00Z", 120_000),
-        ("dw-task-2", "dw-emp-1", "处理退款", "success", "2026-07-30T10:30:00Z", "2026-07-30T10:35:00Z", 300_000),
-        ("dw-task-3", "dw-emp-2", "发送报价", "success", "2026-07-30T11:00:00Z", "2026-07-30T11:01:00Z", 60_000),
-        ("dw-task-4", "dw-emp-2", "跟进意向", "running", "2026-07-30T11:30:00Z", "", 0),
-        ("dw-task-5", "dw-emp-3", "生成日报", "success", "2026-07-30T12:00:00Z", "2026-07-30T12:05:00Z", 300_000),
-        ("dw-task-6", "dw-emp-3", "异常分析", "failed", "2026-07-30T12:30:00Z", "2026-07-30T12:31:00Z", 60_000),
-        ("dw-task-7", "dw-emp-4", "巡检任务", "success", "2026-07-30T13:00:00Z", "2026-07-30T13:10:00Z", 600_000),
-        ("dw-task-8", "dw-emp-4", "告警处理", "success", "2026-07-30T13:30:00Z", "2026-07-30T13:32:00Z", 120_000),
-        ("dw-task-9", "dw-emp-1", "知识整理", "pending", "2026-07-30T14:00:00Z", "", 0),
-        ("dw-task-10", "dw-emp-2", "客户回访", "success", "2026-07-30T14:30:00Z", "2026-07-30T14:33:00Z", 180_000),
-        ("dw-task-11", "dw-emp-3", "指标监控", "running", "2026-07-30T15:00:00Z", "", 0),
-        ("dw-task-12", "dw-emp-4", "故障恢复", "failed", "2026-07-30T15:30:00Z", "2026-07-30T15:31:00Z", 60_000),
+        ("dw-task-1", e1, "回复客户咨询", "success", "2026-07-30T10:00:00Z", "2026-07-30T10:02:00Z", 120_000),
+        ("dw-task-2", e1, "处理退款", "success", "2026-07-30T10:30:00Z", "2026-07-30T10:35:00Z", 300_000),
+        ("dw-task-3", e2, "发送报价", "success", "2026-07-30T11:00:00Z", "2026-07-30T11:01:00Z", 60_000),
+        ("dw-task-4", e2, "跟进意向", "running", "2026-07-30T11:30:00Z", "", 0),
+        ("dw-task-5", e3, "生成日报", "success", "2026-07-30T12:00:00Z", "2026-07-30T12:05:00Z", 300_000),
+        ("dw-task-6", e3, "异常分析", "failed", "2026-07-30T12:30:00Z", "2026-07-30T12:31:00Z", 60_000),
+        ("dw-task-7", e4, "巡检任务", "success", "2026-07-30T13:00:00Z", "2026-07-30T13:10:00Z", 600_000),
+        ("dw-task-8", e4, "告警处理", "success", "2026-07-30T13:30:00Z", "2026-07-30T13:32:00Z", 120_000),
+        ("dw-task-9", e1, "知识整理", "pending", "2026-07-30T14:00:00Z", "", 0),
+        ("dw-task-10", e2, "客户回访", "success", "2026-07-30T14:30:00Z", "2026-07-30T14:33:00Z", 180_000),
+        ("dw-task-11", e3, "指标监控", "running", "2026-07-30T15:00:00Z", "", 0),
+        ("dw-task-12", e4, "故障恢复", "failed", "2026-07-30T15:30:00Z", "2026-07-30T15:31:00Z", 60_000),
     ]
     return {
         rid: DwEmployeeTask(
@@ -312,11 +331,12 @@ def _seed_employee_tasks(tenant_id: str) -> dict[str, DwEmployeeTask]:
 
 
 def _seed_evaluations(tenant_id: str) -> dict[str, DwEvaluation]:
+    e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     rows = [
-        ("dw-eval-1", "dw-emp-1", "qa-cs-1", 92.5, True, "2026-07-30T16:00:00Z"),
-        ("dw-eval-2", "dw-emp-2", "qa-sales-1", 88.0, True, "2026-07-30T16:10:00Z"),
-        ("dw-eval-3", "dw-emp-3", "qa-an-1", 75.0, False, "2026-07-30T16:20:00Z"),
-        ("dw-eval-4", "dw-emp-4", "qa-ops-1", 95.0, True, "2026-07-30T16:30:00Z"),
+        ("dw-eval-1", e1, "qa-cs-1", 92.5, True, "2026-07-30T16:00:00Z"),
+        ("dw-eval-2", e2, "qa-sales-1", 88.0, True, "2026-07-30T16:10:00Z"),
+        ("dw-eval-3", e3, "qa-an-1", 75.0, False, "2026-07-30T16:20:00Z"),
+        ("dw-eval-4", e4, "qa-ops-1", 95.0, True, "2026-07-30T16:30:00Z"),
     ]
     return {
         rid: DwEvaluation(
@@ -328,12 +348,13 @@ def _seed_evaluations(tenant_id: str) -> dict[str, DwEvaluation]:
 
 
 def _seed_extracts(tenant_id: str) -> dict[str, DwExtract]:
+    e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     rows = [
-        ("dw-extract-1", "dw-emp-1", "kb", "dw-kb-1", 15, "2026-07-30T17:00:00Z"),
-        ("dw-extract-2", "dw-emp-2", "conversation", "sess-1", 8, "2026-07-30T17:10:00Z"),
-        ("dw-extract-3", "dw-emp-3", "document", "dw-doc-5", 23, "2026-07-30T17:20:00Z"),
-        ("dw-extract-4", "dw-emp-4", "kb", "dw-kb-2", 11, "2026-07-30T17:30:00Z"),
-        ("dw-extract-5", "dw-emp-1", "document", "dw-doc-2", 17, "2026-07-30T17:40:00Z"),
+        ("dw-extract-1", e1, "kb", "dw-kb-1", 15, "2026-07-30T17:00:00Z"),
+        ("dw-extract-2", e2, "conversation", "sess-1", 8, "2026-07-30T17:10:00Z"),
+        ("dw-extract-3", e3, "document", "dw-doc-5", 23, "2026-07-30T17:20:00Z"),
+        ("dw-extract-4", e4, "kb", "dw-kb-2", 11, "2026-07-30T17:30:00Z"),
+        ("dw-extract-5", e1, "document", "dw-doc-2", 17, "2026-07-30T17:40:00Z"),
     ]
     return {
         rid: DwExtract(
@@ -345,12 +366,13 @@ def _seed_extracts(tenant_id: str) -> dict[str, DwExtract]:
 
 
 def _seed_knowledge_bases(tenant_id: str) -> dict[str, DwKnowledgeBase]:
+    e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     rows = [
-        ("dw-kb-1", "客服知识库", "kb-cs", 128, 4096, "dw-emp-1", "2026-07-30T09:00:00Z"),
-        ("dw-kb-2", "销售知识库", "kb-sales", 96, 3072, "dw-emp-2", "2026-07-30T09:10:00Z"),
-        ("dw-kb-3", "分析知识库", "kb-an", 64, 2048, "dw-emp-3", "2026-07-30T09:20:00Z"),
-        ("dw-kb-4", "运维知识库", "kb-ops", 80, 2560, "dw-emp-4", "2026-07-30T09:30:00Z"),
-        ("dw-kb-5", "通用知识库", "kb-general", 200, 6144, "dw-emp-1", "2026-07-30T09:40:00Z"),
+        ("dw-kb-1", "客服知识库", "kb-cs", 128, 4096, e1, "2026-07-30T09:00:00Z"),
+        ("dw-kb-2", "销售知识库", "kb-sales", 96, 3072, e2, "2026-07-30T09:10:00Z"),
+        ("dw-kb-3", "分析知识库", "kb-an", 64, 2048, e3, "2026-07-30T09:20:00Z"),
+        ("dw-kb-4", "运维知识库", "kb-ops", 80, 2560, e4, "2026-07-30T09:30:00Z"),
+        ("dw-kb-5", "通用知识库", "kb-general", 200, 6144, e1, "2026-07-30T09:40:00Z"),
     ]
     return {
         rid: DwKnowledgeBase(
@@ -362,13 +384,14 @@ def _seed_knowledge_bases(tenant_id: str) -> dict[str, DwKnowledgeBase]:
 
 
 def _seed_learning_extracts(tenant_id: str) -> dict[str, DwLearningExtract]:
+    e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     rows = [
-        ("dw-learn-ext-1", "dw-emp-1", "cs-refund", "2026-07-30T18:00:00Z", 5),
-        ("dw-learn-ext-2", "dw-emp-2", "sales-quote", "2026-07-30T18:10:00Z", 7),
-        ("dw-learn-ext-3", "dw-emp-3", "an-report", "2026-07-30T18:20:00Z", 4),
-        ("dw-learn-ext-4", "dw-emp-4", "ops-inspect", "2026-07-30T18:30:00Z", 6),
-        ("dw-learn-ext-5", "dw-emp-1", "cs-faq", "2026-07-30T18:40:00Z", 9),
-        ("dw-learn-ext-6", "dw-emp-2", "sales-followup", "2026-07-30T18:50:00Z", 3),
+        ("dw-learn-ext-1", e1, "cs-refund", "2026-07-30T18:00:00Z", 5),
+        ("dw-learn-ext-2", e2, "sales-quote", "2026-07-30T18:10:00Z", 7),
+        ("dw-learn-ext-3", e3, "an-report", "2026-07-30T18:20:00Z", 4),
+        ("dw-learn-ext-4", e4, "ops-inspect", "2026-07-30T18:30:00Z", 6),
+        ("dw-learn-ext-5", e1, "cs-faq", "2026-07-30T18:40:00Z", 9),
+        ("dw-learn-ext-6", e2, "sales-followup", "2026-07-30T18:50:00Z", 3),
     ]
     return {
         rid: DwLearningExtract(
@@ -380,13 +403,14 @@ def _seed_learning_extracts(tenant_id: str) -> dict[str, DwLearningExtract]:
 
 
 def _seed_learning_feedback(tenant_id: str) -> dict[str, DwLearningFeedback]:
+    e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     rows = [
-        ("dw-learn-fb-1", "dw-emp-1", "cs-refund", 5, "处理准确", "2026-07-30T19:00:00Z"),
-        ("dw-learn-fb-2", "dw-emp-2", "sales-quote", 4, "可优化语气", "2026-07-30T19:10:00Z"),
-        ("dw-learn-fb-3", "dw-emp-3", "an-report", 3, "缺少数据源", "2026-07-30T19:20:00Z"),
-        ("dw-learn-fb-4", "dw-emp-4", "ops-inspect", 5, "巡检覆盖全面", "2026-07-30T19:30:00Z"),
-        ("dw-learn-fb-5", "dw-emp-1", "cs-faq", 4, "可补充更多场景", "2026-07-30T19:40:00Z"),
-        ("dw-learn-fb-6", "dw-emp-2", "sales-followup", 5, "时机把握精准", "2026-07-30T19:50:00Z"),
+        ("dw-learn-fb-1", e1, "cs-refund", 5, "处理准确", "2026-07-30T19:00:00Z"),
+        ("dw-learn-fb-2", e2, "sales-quote", 4, "可优化语气", "2026-07-30T19:10:00Z"),
+        ("dw-learn-fb-3", e3, "an-report", 3, "缺少数据源", "2026-07-30T19:20:00Z"),
+        ("dw-learn-fb-4", e4, "ops-inspect", 5, "巡检覆盖全面", "2026-07-30T19:30:00Z"),
+        ("dw-learn-fb-5", e1, "cs-faq", 4, "可补充更多场景", "2026-07-30T19:40:00Z"),
+        ("dw-learn-fb-6", e2, "sales-followup", 5, "时机把握精准", "2026-07-30T19:50:00Z"),
     ]
     return {
         rid: DwLearningFeedback(
@@ -435,17 +459,18 @@ def _seed_tools(tenant_id: str) -> dict[str, DwTool]:
 
 
 def _seed_traces(tenant_id: str) -> dict[str, DwTrace]:
+    e1, e2, e3, e4 = (_emp_id(tenant_id, n) for n in (1, 2, 3, 4))
     rows = [
-        ("dw-trace-1", "dw-emp-1", "trace-001", 12, "ok", 1200, "2026-07-30T10:00:00Z"),
-        ("dw-trace-2", "dw-emp-1", "trace-002", 8, "ok", 800, "2026-07-30T10:30:00Z"),
-        ("dw-trace-3", "dw-emp-2", "trace-003", 15, "ok", 1500, "2026-07-30T11:00:00Z"),
-        ("dw-trace-4", "dw-emp-2", "trace-004", 6, "error", 600, "2026-07-30T11:30:00Z"),
-        ("dw-trace-5", "dw-emp-3", "trace-005", 10, "ok", 1000, "2026-07-30T12:00:00Z"),
-        ("dw-trace-6", "dw-emp-3", "trace-006", 4, "timeout", 30000, "2026-07-30T12:30:00Z"),
-        ("dw-trace-7", "dw-emp-4", "trace-007", 20, "ok", 2000, "2026-07-30T13:00:00Z"),
-        ("dw-trace-8", "dw-emp-4", "trace-008", 9, "ok", 900, "2026-07-30T13:30:00Z"),
-        ("dw-trace-9", "dw-emp-1", "trace-009", 7, "ok", 700, "2026-07-30T14:00:00Z"),
-        ("dw-trace-10", "dw-emp-2", "trace-010", 11, "ok", 1100, "2026-07-30T14:30:00Z"),
+        ("dw-trace-1", e1, "trace-001", 12, "ok", 1200, "2026-07-30T10:00:00Z"),
+        ("dw-trace-2", e1, "trace-002", 8, "ok", 800, "2026-07-30T10:30:00Z"),
+        ("dw-trace-3", e2, "trace-003", 15, "ok", 1500, "2026-07-30T11:00:00Z"),
+        ("dw-trace-4", e2, "trace-004", 6, "error", 600, "2026-07-30T11:30:00Z"),
+        ("dw-trace-5", e3, "trace-005", 10, "ok", 1000, "2026-07-30T12:00:00Z"),
+        ("dw-trace-6", e3, "trace-006", 4, "timeout", 30000, "2026-07-30T12:30:00Z"),
+        ("dw-trace-7", e4, "trace-007", 20, "ok", 2000, "2026-07-30T13:00:00Z"),
+        ("dw-trace-8", e4, "trace-008", 9, "ok", 900, "2026-07-30T13:30:00Z"),
+        ("dw-trace-9", e1, "trace-009", 7, "ok", 700, "2026-07-30T14:00:00Z"),
+        ("dw-trace-10", e2, "trace-010", 11, "ok", 1100, "2026-07-30T14:30:00Z"),
     ]
     return {
         rid: DwTrace(
@@ -580,6 +605,7 @@ def update_employee(tenant_id: str, employee_id: str, **kwargs) -> DwEmployee | 
         'id': emp.id, 'tenant_id': emp.tenant_id, 'name': emp.name,
         'code': emp.code, 'role': emp.role, 'status': emp.status,
         'model_id': emp.model_id, 'kb_ids': emp.kb_ids,
+        'is_builtin': emp.is_builtin, 'system_prompt': emp.system_prompt,
     }
     data.update(kwargs)
     updated = DwEmployee(**data)

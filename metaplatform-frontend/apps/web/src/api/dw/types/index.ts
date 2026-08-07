@@ -16,13 +16,13 @@ export interface PageResponse<T> {
 export type EmployeeStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
 export type RoleCategory =
-  | 'FINANCE'
-  | 'HR'
-  | 'LEGAL'
-  | 'DATA_ANALYST'
-  | 'CUSTOMER_SERVICE'
-  | 'ONTOLOGY_MODELER'
+  | 'ONTOLOGY'
   | 'WORKFLOW'
+  | 'APP'
+  | 'DATA_PRODUCT'
+  | 'OBS'
+  | 'SECURITY'
+  | 'KNOWLEDGE'
   | 'CUSTOM';
 
 export interface EmployeeCapability {
@@ -88,24 +88,24 @@ export interface EmployeeOperationLog {
 export * from './evaluation';
 
 export const ROLE_CATEGORY_OPTIONS: { label: string; value: RoleCategory; color: string }[] = [
-  { label: '财务类', value: 'FINANCE', color: 'blue' },
-  { label: 'HR类', value: 'HR', color: 'green' },
-  { label: '法务类', value: 'LEGAL', color: 'purple' },
-  { label: '数据分析类', value: 'DATA_ANALYST', color: 'cyan' },
-  { label: '客服类', value: 'CUSTOMER_SERVICE', color: 'orange' },
-  { label: '本体建模', value: 'ONTOLOGY_MODELER', color: 'magenta' },
+  { label: '本体建模', value: 'ONTOLOGY', color: 'magenta' },
   { label: '流程自动化', value: 'WORKFLOW', color: 'geekblue' },
+  { label: '应用构建', value: 'APP', color: 'blue' },
+  { label: '数据产品', value: 'DATA_PRODUCT', color: 'cyan' },
+  { label: '可观测', value: 'OBS', color: 'green' },
+  { label: '安全合规', value: 'SECURITY', color: 'red' },
+  { label: '知识库', value: 'KNOWLEDGE', color: 'purple' },
   { label: '自定义', value: 'CUSTOM', color: 'default' },
 ];
 
 export const ROLE_CATEGORY_MAP: Record<RoleCategory, { label: string; color: string }> = {
-  FINANCE: { label: '财务类', color: 'blue' },
-  HR: { label: 'HR类', color: 'green' },
-  LEGAL: { label: '法务类', color: 'purple' },
-  DATA_ANALYST: { label: '数据分析类', color: 'cyan' },
-  CUSTOMER_SERVICE: { label: '客服类', color: 'orange' },
-  ONTOLOGY_MODELER: { label: '本体建模', color: 'magenta' },
+  ONTOLOGY: { label: '本体建模', color: 'magenta' },
   WORKFLOW: { label: '流程自动化', color: 'geekblue' },
+  APP: { label: '应用构建', color: 'blue' },
+  DATA_PRODUCT: { label: '数据产品', color: 'cyan' },
+  OBS: { label: '可观测', color: 'green' },
+  SECURITY: { label: '安全合规', color: 'red' },
+  KNOWLEDGE: { label: '知识库', color: 'purple' },
   CUSTOM: { label: '自定义', color: 'default' },
 };
 

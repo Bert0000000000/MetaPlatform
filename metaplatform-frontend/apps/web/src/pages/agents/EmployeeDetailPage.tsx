@@ -341,6 +341,18 @@ export default function EmployeeDetailPage() {
               <Descriptions.Item label="已绑定知识库">
                 {kbNames.length > 0 ? kbNames.join('、') : '未绑定'}
               </Descriptions.Item>
+              <Descriptions.Item label="系统提示词">
+                {employee.capability.systemPrompt ? (
+                  <Typography.Paragraph
+                    style={{ marginBottom: 0, whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: 12 }}
+                    ellipsis={{ rows: 4, expandable: true, symbol: '展开/收起' }}
+                  >
+                    {employee.capability.systemPrompt}
+                  </Typography.Paragraph>
+                ) : (
+                  <Text type="secondary">未配置</Text>
+                )}
+              </Descriptions.Item>
             </Descriptions>
           </Card>
 
