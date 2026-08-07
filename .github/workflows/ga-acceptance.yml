@@ -176,6 +176,10 @@ jobs:
       - name: mate-app-kb/tests (TECH-SERVICES canonical)
         run: pytest -q
         working-directory: mate-platform-backend/packages/mate-app-kb
+      - name: GOVERN-02 forbid_iam_dep_imports (rule 5 DEPRECATED mate_tech_iam)
+        run: python scripts/ci/forbid_iam_dep_imports.py
+      - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
+        run: python scripts/ci/forbid_legacy_artifacts.py
 
   # rule 2: requirement ID coverage
   ga-002-requirement-ids:
