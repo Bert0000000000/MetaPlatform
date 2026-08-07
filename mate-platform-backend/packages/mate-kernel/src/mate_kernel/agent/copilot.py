@@ -32,6 +32,7 @@ from mate_kernel.agent.orchestrator import (
     StepStatus,
     SuperAIOrchestrator,
 )
+from mate_kernel.agent.prompts import SYSTEM_PROMPTS
 from mate_kernel.manager.protocol import Manager, ManagerContext
 
 
@@ -129,6 +130,10 @@ class IntentRouter:
         if scores[best_role] == 0:
             return AgentRole.SUPERAI
         return best_role
+
+    def prompt(self, role: AgentRole) -> str:
+        """数字员工 system prompt：M3 接 AIP-GATEWAY-01 后由员工 LLM 包装器取用。"""
+        return SYSTEM_PROMPTS[role]
 
     def plan(self, query: str, author_user_id: str, plan_id: str) -> PlanSpec:
         """自然语言 → PlanSpec（每个 query 一个 PROPOSE 步骤 + 一个 APPLY_ACTION 占位）。"""

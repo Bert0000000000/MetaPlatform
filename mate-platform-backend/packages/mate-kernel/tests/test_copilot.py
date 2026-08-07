@@ -90,6 +90,16 @@ class TestIntentRouter:
         # 必须有 HITL
         assert any(s.requires_hitl for s in plan.steps)
 
+    def test_prompt_for_routed_role(self) -> None:
+        # 路由结果对应的员工 system prompt 应可取到（7 内置 + COPILOT）
+        router = self._r()
+        for role in AgentRole:
+            assert router.prompt(role).strip()
+        # 路由后按 role 取 prompt，身份一致
+        role = router.route("查看订单对象")
+        assert "本体员工" in router.prompt(role)
+        assert "SuperAI Copilot" in router.prompt(AgentRole.SUPERAI)
+
 
 class TestAuditRetention:
     def _plan_state(self):
