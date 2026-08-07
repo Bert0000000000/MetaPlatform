@@ -45,6 +45,19 @@ class ConfigUpdate(BaseModel):
     note: str | None = Field(default=None, max_length=512, description="变更原因")
 
 
+class ConfigCreateItem(BaseModel):
+    key: str = Field(..., max_length=128, description="配置键")
+    value: str = Field(default="", description="配置值")
+    value_type: str = Field(default="string", description="string/int/bool/json")
+    category: str = Field(default="AI_PROVIDER", description="配置分类")
+    label: str | None = Field(default=None, max_length=256)
+    is_sensitive: bool = Field(default=False)
+
+
+class ConfigBatchCreate(BaseModel):
+    items: list[ConfigCreateItem]
+
+
 # ---- helpers ----
 SAFE_KEY_RE = re.compile(r"^[a-zA-Z0-9_.\-:]{1,128}$")
 
@@ -194,3 +207,37 @@ async def update_config(
     await session.commit()
     await session.refresh(cfg)
     return ok(_config_to_out(cfg).model_dump(mode="json"))
+
+
+@router.post("/batch", status_code=status.HTTP_201_CREATED)
+async def batch_create_configs(
+    caller: AdminDep,
+    session: SessionDep,
+    request: Request,
+    body: ConfigBatchCreate,
+) -> dict[str, Any]:
+    """批量创建配置项（添加自定义 AI Provider 时用）。已存在的 key 跳过。"""
+    created: list[dict[str, Any]] = []
+    for item in body.items:
+        if not SAFE_KEY_RE.match(item.key):
+            continue
+        existing = await _load_cfg(session, item.key, caller.tenant_id)
+        if existing:
+            continue
+        try:
+            cat = ConfigCategory(item.category)
+        except ValueError:
+            cat = ConfigCategory.AI_PROVIDER
+        cfg = SystemConfig(
+            tenant_id=caller.tenant_id,
+            key=item.key,
+            value=item.value,
+            value_type=item.value_type,
+            category=cat,
+            label=item.label,
+            is_sensitive=item.is_sensitive,
+        )
+        session.add(cfg)
+        created.append({"key": item.key, "label": item.label})
+    await session.commit()
+    return ok({"created": created, "count": len(created)})

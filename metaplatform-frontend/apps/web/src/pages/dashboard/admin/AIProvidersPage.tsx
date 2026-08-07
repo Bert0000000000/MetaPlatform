@@ -12,6 +12,7 @@ import {
   Card,
   Form,
   Input,
+  Modal,
   Radio,
   Select,
   Space,
@@ -28,20 +29,23 @@ import {
   KeyOutlined,
   LoadingOutlined,
   MessageOutlined,
+  PlusOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
   CloudDownloadOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
 import type { AdminSystemConfig } from "@/types";
-import { listConfigs, updateConfig } from "@/api/admin/configs";
+import { listConfigs, updateConfig, batchCreateConfigs } from "@/api/admin/configs";
 import { listAiModels, saveAiModelsBulk, updateAiModel, deleteAiModel, type AiModelItem } from "@/api/admin/models";
 import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 import { formatDateTime } from "@/utils/datetime";
 import { useSettings } from "@/contexts/SettingsContext";
 import { testProvider, fetchProviderModels } from "@mate/shared/api";
 
-type ProviderId = "openai" | "azure" | "ollama" | "custom";
+type ProviderId = string;
+
+const BUILTIN_PROVIDERS = ["openai", "azure", "ollama"];
 
 const PROVIDER_META: Record<
   ProviderId,
@@ -93,6 +97,26 @@ const PROVIDER_META: Record<
   },
 };
 
+// 自定义 provider 的 metadata fallback（动态 instanceId 用）
+const customLabels: Record<string, string> = {};
+
+function getProviderMeta(id: string) {
+  if (PROVIDER_META[id as keyof typeof PROVIDER_META]) {
+    return PROVIDER_META[id as keyof typeof PROVIDER_META];
+  }
+  // custom_{instanceId} → 从 config label 生成
+  const label = customLabels[id] || id.replace(/^custom_/, "");
+  return {
+    name: label,
+    description: "自定义 OpenAI 兼容 API",
+    docs: "",
+    icon: <MessageOutlined />,
+    color: "#f59e0b",
+    baseUrlExample: "https://api.example.com/v1",
+    defaultModelExample: "model-name",
+  };
+}
+
 interface TestState {
   status: "idle" | "loading" | "ok" | "fail";
   message?: string;
@@ -105,6 +129,10 @@ export default function AIProvidersPage() {
   const [items, setItems] = useState<AdminSystemConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [defaultActive, setDefaultActive] = useState<string>("openai");
+  const [customProviderIds, setCustomProviderIds] = useState<string[]>([]);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [newProviderName, setNewProviderName] = useState("");
+  const [adding, setAdding] = useState(false);
   const [testStates, setTestStates] = useState<Record<ProviderId, TestState>>({
     openai: { status: "idle" },
     azure: { status: "idle" },
@@ -133,12 +161,28 @@ export default function AIProvidersPage() {
   const load = async () => {
     setLoading(true);
     try {
-      // 不传 category：兼容尚未重启的旧后端（无 AI_PROVIDER enum 时 422）
       const res = await listConfigs({ pageSize: 200 });
       const aiItems = (res.items ?? []).filter((c) => c.category === "AI_PROVIDER");
       setItems(aiItems);
       const active = aiItems.find((c) => c.key === "ai.provider.default_active");
       if (active && typeof active.value === "string") setDefaultActive(active.value);
+      // 发现自定义 provider：从 config key 前缀 ai.provider.custom_* 提取
+      const customs = new Set<string>();
+      for (const c of aiItems) {
+        const m = c.key.match(/^ai\.provider\.(custom_\w+)\./);
+        if (m) {
+          customs.add(m[1]);
+          // 从 label 或 key 提取显示名
+          const labelCfg = aiItems.find((x) => x.key === `ai.provider.${m[1]}.label`);
+          customLabels[m[1]] = (labelCfg?.value as string) || m[1].replace(/^custom_/, "");
+        }
+      }
+      // 也保留旧版单一 custom（向后兼容）
+      if (aiItems.some((c) => c.key.startsWith("ai.provider.custom."))) {
+        customs.add("custom");
+        customLabels["custom"] = "自定义第三方";
+      }
+      setCustomProviderIds([...customs].sort());
     } catch {
       // 静默降级：保留空卡片 UI
     } finally {
@@ -149,6 +193,41 @@ export default function AIProvidersPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // 添加自定义 Provider
+  const handleAddCustom = async () => {
+    const name = newProviderName.trim();
+    if (!name) {
+      message.warning("请输入名称");
+      return;
+    }
+    const instanceId = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").slice(0, 20);
+    if (customProviderIds.includes(instanceId)) {
+      message.warning("该 Provider 已存在");
+      return;
+    }
+    setAdding(true);
+    try {
+      await batchCreateConfigs([
+        { key: `ai.provider.${instanceId}.enabled`, value: "true", value_type: "bool", label: `${name} 启用` },
+        { key: `ai.provider.${instanceId}.base_url`, value: "", value_type: "string", label: `${name} Base URL` },
+        { key: `ai.provider.${instanceId}.api_key`, value: "", value_type: "string", label: `${name} API Key`, is_sensitive: true },
+        { key: `ai.provider.${instanceId}.default_model`, value: "", value_type: "string", label: `${name} 默认模型` },
+        { key: `ai.provider.${instanceId}.label`, value: name, value_type: "string", label: `${name} 显示名` },
+      ]);
+      message.success(`已添加 ${name}`);
+      setAddModalOpen(false);
+      setNewProviderName("");
+      await load();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "添加失败");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  // provider ID → LLMGW provider type（自定义都映射为 custom）
+  const llmgwProvider = (id: string) => id.startsWith("custom") ? "custom" : id;
 
   // 加载已配置的模型清单
   useEffect(() => {
@@ -204,7 +283,7 @@ export default function AIProvidersPage() {
         return;
       }
       await saveAiModelsBulk(
-        provider,
+        llmgwProvider(provider),
         result.models.map((mid) => ({
           modelId: mid,
           displayName: result.display_names?.[mid] || undefined,
@@ -253,7 +332,7 @@ export default function AIProvidersPage() {
     items.find((c) => c.key === `ai.provider.${provider}.${suffix}`);
 
   const providerSummary = useMemo(() => {
-    const list: ProviderId[] = ["openai", "azure", "ollama", "custom"];
+    const list: ProviderId[] = [...BUILTIN_PROVIDERS, ...customProviderIds];
     const enabledCount = list.filter((id) => pickByKey(id, "enabled")?.value === "true").length;
     const configured = list.filter((id) => {
       const base = pickByKey(id, "base_url");
@@ -269,15 +348,21 @@ export default function AIProvidersPage() {
       for (const s of suffixes) {
         const cfg = pickByKey(provider, s);
         if (!cfg) continue;
-        const raw = (document.querySelector(`[data-cfg-key="${cfg.key}"]`) as HTMLInputElement | null)?.value;
-        if (raw === undefined) continue;
+        // 从 DOM 读最新值：antd Input / Input.Password 渲染为 <input>
+        const el = document.querySelector(`[data-cfg-key="${cfg.key}"]`) as HTMLInputElement | null;
+        if (!el) continue;
+        const raw = el.value;
+        if (raw === undefined || raw === "") {
+          // 空值：API Key 等敏感字段可能保留原值（不改空）
+          if (s === "api_key") continue;
+        }
         let payload: unknown = raw;
         if (cfg.valueType === "bool") payload = raw === "true" || raw === "on";
         if (cfg.valueType === "int") payload = parseInt(raw, 10);
         await updateConfig(cfg.key, payload, "AI Provider 配置调整");
       }
       message.success("已保存");
-      load();
+      await load();
     } catch {
       /* ignore */
     } finally {
@@ -294,7 +379,7 @@ export default function AIProvidersPage() {
   const handleToggle = async (provider: ProviderId, enabled: boolean) => {
     try {
       await setField(provider, "enabled", enabled, "bool");
-      message.success((enabled ? "已启用 " : "已禁用 ") + PROVIDER_META[provider].name);
+      message.success((enabled ? "已启用 " : "已禁用 ") + getProviderMeta(provider).name);
       load();
     } catch {
       /* ignore */
@@ -335,7 +420,7 @@ export default function AIProvidersPage() {
     })();
     try {
       const result = await testProvider({
-        provider,
+        provider: llmgwProvider(provider) as any,
         base_url: baseUrl,
         api_key: apiKeyValue,
         api_version: apiVersion,
@@ -367,7 +452,7 @@ export default function AIProvidersPage() {
   };
 
   const renderProviderCard = (id: ProviderId) => {
-    const meta = PROVIDER_META[id];
+    const meta = getProviderMeta(id);
     const enabled = pickByKey(id, "enabled");
     const baseUrl = pickByKey(id, "base_url");
     const apiKey = pickByKey(id, "api_key");
@@ -534,6 +619,13 @@ export default function AIProvidersPage() {
       title="AI 提供方"
       extra={
         <Space>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setAddModalOpen(true)}
+          >
+            添加自定义 Provider
+          </Button>
           <Button icon={<ReloadOutlined />} onClick={load}>
             刷新
           </Button>
@@ -569,10 +661,8 @@ export default function AIProvidersPage() {
                 onChange={handleDefaultChange}
                 style={{ marginLeft: 8, minWidth: 200 }}
                 options={[
-                  { value: "openai", label: "OpenAI (默认)" },
-                  { value: "azure", label: "Azure OpenAI" },
-                  { value: "ollama", label: "Ollama（本地）" },
-                  { value: "custom", label: "自定义 OpenAI 兼容" },
+                  ...BUILTIN_PROVIDERS.map((id) => ({ value: id, label: `${PROVIDER_META[id as keyof typeof PROVIDER_META].name}（内置）` })),
+                  ...customProviderIds.map((id) => ({ value: id, label: getProviderMeta(id).name })),
                   { value: "disabled", label: "禁用（临时下线）" },
                 ]}
               />
@@ -589,13 +679,39 @@ export default function AIProvidersPage() {
             gap: 16,
           }}
         >
-          {(["openai", "azure", "ollama", "custom"] as ProviderId[]).map(renderProviderCard)}
+          {([...BUILTIN_PROVIDERS, ...customProviderIds] as ProviderId[]).map(renderProviderCard)}
         </div>
       </Spin>
 
       <p style={{ color: "var(--muted-foreground)", fontSize: 12, marginTop: 16 }}>
         最后更新：{formatDateTime(items[0]?.updatedAt ?? "", settings)}
       </p>
+
+      <Modal
+        title="添加自定义 Provider"
+        open={addModalOpen}
+        onCancel={() => setAddModalOpen(false)}
+        onOk={handleAddCustom}
+        confirmLoading={adding}
+        okText="添加"
+        cancelText="取消"
+      >
+        <Form layout="vertical">
+          <Form.Item
+            label="Provider 名称"
+            help="输入显示名称（如「智谱 GLM」「DeepSeek」「公司自建」），系统自动生成 instanceId"
+            required
+          >
+            <Input
+              value={newProviderName}
+              onChange={(e) => setNewProviderName(e.target.value)}
+              placeholder="例如：智谱 GLM"
+              maxLength={20}
+              onPressEnter={handleAddCustom}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </AdminLayout>
   );
 }

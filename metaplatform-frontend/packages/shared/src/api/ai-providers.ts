@@ -8,7 +8,7 @@
  */
 import { apiClient } from './client';
 
-export type ProviderId = 'openai' | 'azure' | 'ollama' | 'custom';
+export type ProviderId = string;
 
 export interface ProviderTestRequest {
     provider: ProviderId;
