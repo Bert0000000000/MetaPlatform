@@ -37,3 +37,17 @@ export async function updateConfig(key: string, value: unknown, note?: string): 
   const { data } = await apiClient.put(ADMIN_BASE + "/configs/" + key, { value, note });
   return unwrap<AdminSystemConfig>(data as ApiEnvelope<AdminSystemConfig>);
 }
+
+export interface ConfigCreateItem {
+  key: string;
+  value?: string;
+  value_type?: string;
+  category?: string;
+  label?: string;
+  is_sensitive?: boolean;
+}
+
+export async function batchCreateConfigs(items: ConfigCreateItem[]): Promise<{ created: Array<{ key: string; label: string | null }>; count: number }> {
+  const { data } = await apiClient.post(ADMIN_BASE + "/configs/batch", { items });
+  return unwrap<{ created: Array<{ key: string; label: string | null }>; count: number }>(data as ApiEnvelope<{ created: Array<{ key: string; label: string | null }>; count: number }>);
+}

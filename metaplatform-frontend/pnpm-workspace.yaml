@@ -2,6 +2,10 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+allowBuilds:
+  esbuild: set this to true or false
+  puppeteer: set this to true or false
+
 # pnpm 11 reads `onlyBuiltDependencies` (NOT `allowBuilds`) from
 # pnpm-workspace.yaml to decide which packages may run install scripts.
 # `allowBuilds` is silently ignored, leading to
