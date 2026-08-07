@@ -33,6 +33,13 @@ from mate_kernel.ontology.types import (
     PropertyFormat,
 )
 
+# GOVERN-05: 默认 inline 源码 —— apply 没注册源码时 fallback，让 dev / 旧测试
+# 仍可走通。最简 main(target, params) → params 原样返回。
+_PG_DEFAULT_INLINE_FN = "def main(target, params):\n    return params\n"
+
+# source_ref → source 命名注册表（seed / 测试可用）
+_PG_INLINE_FUNCTIONS: dict[str, str] = {}
+
 DDL: tuple[str, ...] = (
     """
     CREATE TABLE IF NOT EXISTS ont_object_type (
@@ -410,6 +417,17 @@ class PgOntologyRepository(OntologyRepository):
         self._initialized = False
         from mate_kernel.action.engine import ActionService
         self._action_service = ActionService()
+        # GOVERN-05: FunctionResolver + FunctionExecutor 注入
+        from mate_kernel.ontology.function_resolver import InMemoryFunctionResolver
+        self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
+        self._function_executor: object | None = None
+
+    def set_function_executor(self, executor: object) -> None:
+        """GOVERN-05: 注入 FunctionExecutor；同步到 ActionService 内 _executors + _resolver。"""
+        self._function_executor = executor
+        # 注册已知 function_ref 到 ActionService；upsert_function 时也会调。
+        # 同步 resolver 让 register_function_ref 内部能找到
+        self._action_service.set_resolver(self._function_resolver)
 
     def _connect(self):
         import psycopg2  # type: ignore
@@ -949,6 +967,19 @@ class PgOntologyRepository(OntologyRepository):
                     ),
                 )
             conn.commit()
+            # GOVERN-05: 同步注册到 FunctionResolver + ActionService
+            if f.source_ref.startswith("inline://"):
+                self._function_resolver.register(
+                    f.language,
+                    f.source_ref,
+                    _PG_INLINE_FUNCTIONS.get(f.source_ref, _PG_DEFAULT_INLINE_FN),
+                )
+                if self._function_executor is not None:
+                    self._action_service.register_function_ref(
+                        f.rid.rid,
+                        self._function_executor,
+                        self._function_resolver,
+                    )
             return f
         finally:
             conn.close()
@@ -1036,7 +1067,7 @@ class PgOntologyRepository(OntologyRepository):
             target_props=target_props,
         )
         now = outcome.applied_at
-        if parameters:
+        if parameters or outcome.function_result is not None:
             param_rids: dict[str, ClassRef] = {}
             for p in at.parameters:
                 parts = p.rid.rid.split(".")
@@ -1048,6 +1079,13 @@ class PgOntologyRepository(OntologyRepository):
                 if resolved is None:
                     raise KeyError(f"unknown parameter {key!r} for action={action_rid}")
                 merged[resolved] = value
+            # GOVERN-05: function_result (dict) 字段填到 at.parameters 短名对应 prop
+            # parameters 显式值优先；缺位用 fn_result
+            if isinstance(outcome.function_result, dict):
+                for slug, value in outcome.function_result.items():
+                    rid_for_slug = param_rids.get(slug)
+                    if rid_for_slug is not None and slug not in parameters:
+                        merged[rid_for_slug] = value
             self.create_individual(replace(ind, props=tuple(merged.items()), updated_at=now))
         # 兼容既有调用方的 side_effects 字符串格式（PG 路径既往用 actor=…/target=…）
         legacy = [

@@ -207,7 +207,34 @@ async def on_startup() -> None:
         created = seed_demo(app.state.kernel_repo)
         logger.info("kernel_seed.demo", created=created)
 
+    # GOVERN-05: 注入 FunctionExecutor（dev=memory / test=subprocess / prod=k8s 占位）
+    _inject_function_executor(app.state.kernel_repo)
+
     logger.info("mate-tech-ont.startup", version=app.version)
+
+
+def _inject_function_executor(repo: object) -> None:
+    """GOVERN-05: 根据 FUNCTION_BACKEND 注入 FunctionExecutor。
+
+    - memory（默认 dev）: _SimplePythonExecutor（无 subprocess，最快）
+    - subprocess（CI/test）: SubprocessExecutor（真起 python -I 隔离）
+    - k8s（prod 占位）: 同 subprocess；K8s Job 提交归 SANDBOX-02 后续
+    """
+    backend = os.getenv("FUNCTION_BACKEND", "memory").lower()
+    if backend == "memory":
+        from mate_kernel.sandbox.k8s import _SimplePythonExecutor
+        repo.set_function_executor(_SimplePythonExecutor())  # type: ignore[attr-defined]
+    elif backend in ("subprocess", "k8s"):
+        from mate_kernel.sandbox.k8s import SubprocessExecutor
+        repo.set_function_executor(  # type: ignore[attr-defined]
+            SubprocessExecutor(
+                memory_mb=int(os.getenv("FUNCTION_MEM_MB", "256")),
+                timeout_seconds=int(os.getenv("FUNCTION_TIMEOUT_S", "10")),
+            )
+        )
+    else:
+        raise RuntimeError(f"unknown FUNCTION_BACKEND={backend!r}")
+    logger.info("function_executor.initialized", backend=backend)
 
 
 @app.on_event("shutdown")  # pyright: ignore[reportDeprecated]

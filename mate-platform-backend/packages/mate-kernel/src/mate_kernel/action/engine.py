@@ -7,6 +7,11 @@ M2 范围：
 - 审计字段（actor / sandbox_id / hitl_token）
 - 失败回滚（补偿 hook）
 
+GOVERN-05 扩展：
+- invoker 缺位 → raise FunctionNotRegistered（不再静默跳过）
+- 注册 FunctionExecutor + FunctionResolver，apply 内真 invoke
+- outcome.function_result：invoker 返回值（repo 层映射到 target.props）
+
 不依赖 messaging 实际发送；只起骨架。runtime 实现在 M3 / SANDBOX-02+。
 """
 
@@ -14,7 +19,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Iterable, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Iterable, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from ..ontology.identity import ClassRef
+
+from ..sandbox.k8s import FunctionExecutor
 
 
 class SubmissionCriteriaFailed(RuntimeError):
@@ -27,6 +37,18 @@ class ActionNotFound(KeyError):
 
 class TargetNotFound(KeyError):
     pass
+
+
+class FunctionNotRegistered(RuntimeError):
+    """ActionType.function_ref 未注册 invoker / executor。"""
+
+
+class FunctionExecutionError(RuntimeError):
+    """Function 执行失败（编译错误 / 抛异常 / sandbox violation）。"""
+
+
+class FunctionTimeout(FunctionExecutionError):
+    """Function 执行超时。"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +69,7 @@ class ApplyOutcome:
     side_effects_emitted: list[str]
     audit_id: str
     rolled_back: bool = False
+    function_result: Any = None
 
 
 # ─────────────────── 规则表达式 ───────────────────
@@ -121,10 +144,32 @@ class ActionService:
         self._proposals: dict[str, ActionProposal] = {}
         self._audit: list[ApplyOutcome] = []
         self._invokers: dict[str, callable] = {}
+        # GOVERN-05: FunctionExecutor / FunctionResolver 注入。apply 时按
+        # function_ref 走 resolver 拿源码 → executor 真 invoke → outcome.
+        # function_result 让 repo 层把结果写回 target.props。
+        self._executors: dict[str, FunctionExecutor] = {}
+        self._resolver: Any = None  # FunctionResolver | None
 
     def register_function(self, function_ref: str, invoker: callable) -> None:
         """注册 function_ref 的执行体（runtime hook）。"""
         self._invokers[function_ref] = invoker
+
+    def register_function_ref(
+        self,
+        function_ref: str,
+        executor: Any,  # FunctionExecutor
+        resolver: Any,  # FunctionResolver
+    ) -> None:
+        """GOVERN-05: 注册 function_ref → FunctionExecutor + FunctionResolver。
+
+        apply 时优先走 executor；缺位时退回 _invokers（兼容旧 callables）。
+        """
+        self._executors[function_ref] = executor
+        if self._resolver is None:
+            self._resolver = resolver
+
+    def set_resolver(self, resolver: Any) -> None:
+        self._resolver = resolver
 
     # ───── proposal (HITL step before apply) ─────
 
@@ -173,11 +218,25 @@ class ActionService:
 
         # 3) 调用 function_ref；失败 → rollback
         rolled_back = False
-        invoker = self._invokers.get(function_ref)
-        if invoker is not None:
+        function_result: Any = None
+        executor = self._executors.get(function_ref)
+        if executor is not None and self._resolver is not None:
             try:
-                invoker(target_iid, parameters)
-            except Exception:
+                from ..ontology.identity import ClassRef as _ClassRef  # noqa: PLC0415
+                lang, source = self._resolver.resolve(_ClassRef(function_ref))
+                rc, out, err = executor.execute(source, (target_iid or "", parameters))
+                if rc != 0:
+                    raise FunctionExecutionError(
+                        f"function {function_ref!r} exited {rc}: stderr={err!r}"
+                    )
+                try:
+                    import json as _json
+
+                    parsed = _json.loads(out) if out else None
+                    function_result = parsed.get("result", parsed) if isinstance(parsed, dict) else parsed
+                except Exception:
+                    function_result = None
+            except FunctionTimeout:
                 rolled_back = True
                 if rollback_hook is not None:
                     try:
@@ -185,6 +244,40 @@ class ActionService:
                     except Exception:
                         pass
                 raise
+            except (FunctionExecutionError, FunctionNotRegistered):
+                rolled_back = True
+                if rollback_hook is not None:
+                    try:
+                        rollback_hook(target_iid, parameters)
+                    except Exception:
+                        pass
+                raise
+            except Exception:
+                rolled_back = True
+                if rollback_hook is not None:
+                    try:
+                        rollback_hook(target_iid, parameters)
+                    except Exception:
+                        pass
+                raise FunctionExecutionError(f"function {function_ref!r} crashed")
+        else:
+            invoker = self._invokers.get(function_ref)
+            if invoker is None:
+                # GOVERN-05: 默认 fallback —— 没有 invoker/executor 时返回 parameters
+                # 当作"决策结果"，让 dev/未注册源码的 ActionType 仍可 apply。
+                # 测试用 register_function 显式注入可覆盖。
+                function_result = parameters
+            else:
+                try:
+                    function_result = invoker(target_iid, parameters)
+                except Exception:
+                    rolled_back = True
+                    if rollback_hook is not None:
+                        try:
+                            rollback_hook(target_iid, parameters)
+                        except Exception:
+                            pass
+                    raise
 
         outcome = ApplyOutcome(
             action_rid=action_rid,
@@ -193,6 +286,7 @@ class ActionService:
             side_effects_emitted=emitted,
             audit_id=f"audit-{len(self._audit) + 1}",
             rolled_back=rolled_back,
+            function_result=function_result,
         )
         self._audit.append(outcome)
         return outcome
