@@ -197,7 +197,133 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
             marking=(),
         ))
 
+    # ── 企业核心本体（领域分组 → 前端一级/二级本体） ──
+    # 概念 rid 形如 ont.<tenant>.obj.<领域>.<概念>.v1，前端按领域段分组生成
+    # 一级本体列表，领域内 ObjectType 即二级本体/概念。
+    _seed_enterprise_ontology(repo, t, now)
+
     return 3 + 5 + 2 + 2 + 1 + 3  # obj types + individuals + action types + functions + link type + link instances
+
+
+def _seed_enterprise_ontology(
+    repo: OntologyRepository, t: str, now: datetime,
+) -> int:
+    """企业核心本体：5 领域 × 9 概念 + 属性 + 2 下钻 ActionType + 关联 LinkType。
+
+    领域（前端一级本体）→ 概念（二级本体/概念）：
+      crm 客户关系：customer / order / product / contract
+      scm 供应链：  supplier / warehouse
+      fin 财务核算： invoice
+      org 组织人力： organization / person
+    """
+    domain_concepts: dict[str, list[tuple[str, str, list[tuple[str, str, str]]]]] = {
+        "crm": [
+            ("customer", "客户", [
+                ("customer-code", "string", "customer code"),
+                ("customer-name", "string", "customer name"),
+                ("industry", "string", "industry"),
+                ("region", "string", "region"),
+                ("credit-level", "string", "credit level"),
+            ]),
+            ("order", "订单", [
+                ("order-id", "string", "order id"),
+                ("order-qty", "integer", "quantity"),
+                ("order-amount", "integer", "amount"),
+                ("order-status", "string", "status"),
+            ]),
+            ("product", "产品", [
+                ("product-code", "string", "product code"),
+                ("product-name", "string", "product name"),
+                ("category", "string", "category"),
+            ]),
+            ("contract", "合同", [
+                ("contract-id", "string", "contract id"),
+                ("contract-name", "string", "contract name"),
+                ("start-date", "string", "start date"),
+                ("end-date", "string", "end date"),
+            ]),
+        ],
+        "scm": [
+            ("supplier", "供应商", [
+                ("supplier-code", "string", "supplier code"),
+                ("supplier-name", "string", "supplier name"),
+                ("qualification", "string", "qualification"),
+            ]),
+            ("warehouse", "仓库", [
+                ("warehouse-code", "string", "warehouse code"),
+                ("warehouse-name", "string", "warehouse name"),
+                ("capacity", "integer", "capacity"),
+            ]),
+        ],
+        "fin": [
+            ("invoice", "发票", [
+                ("invoice-id", "string", "invoice id"),
+                ("invoice-amount", "integer", "amount"),
+                ("invoice-status", "string", "status"),
+            ]),
+        ],
+        "org": [
+            ("organization", "组织", [
+                ("org-code", "string", "org code"),
+                ("org-name", "string", "org name"),
+                ("parent-org", "string", "parent org"),
+            ]),
+            ("person", "人员", [
+                ("person-id", "string", "person id"),
+                ("person-name", "string", "person name"),
+                ("person-dept", "string", "department"),
+            ]),
+        ],
+    }
+
+    # ObjectTypes + properties（PK 取第一个属性）
+    created = 0
+    for domain, concepts in domain_concepts.items():
+        for slug, display, props in concepts:
+            prop_defs = tuple(
+                _prop(f"ont.{t}.prop.{slug}-{p}.v1", typ, title, pk=(i == 0))
+                for i, (p, typ, title) in enumerate(props)
+            )
+            repo.upsert_object_type(ObjectType(
+                rid=ClassRef(f"ont.{t}.obj.{domain}.{slug}.v1"),
+                primary_key=(prop_defs[0].rid,),
+                properties=prop_defs,
+                display_name=display,
+            ))
+            created += 1
+
+    # 下钻 ActionType：合同审批（contract）
+    repo.upsert_action_type(ActionType(
+        rid=ClassRef(f"ont.{t}.act.approve-contract.v1"),
+        parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
+        submission_criteria=("decision in (approve, reject)",),
+        side_effects=("notify_email", "audit_log"),
+        function_ref=ClassRef(f"ont.{t}.fn.approve-contract.v1"),
+        on=(ClassRef(f"ont.{t}.obj.crm.contract.v1"),),
+    ))
+    repo.upsert_function(_function_placeholder(t, "approve-contract.v1"))
+    created += 2
+
+    # 关联 LinkType：customer→order 1:N、organization→person 1:N
+    repo.upsert_link_type(LinkType(
+        rid=ClassRef(f"ont.{t}.link.customer-order.v1"),
+        src=ClassRef(f"ont.{t}.obj.crm.customer.v1"),
+        dst=ClassRef(f"ont.{t}.obj.crm.order.v1"),
+        cardinality=Cardinality.ONE_TO_MANY,
+        directionality=Directionality.DIRECTED,
+        link_properties=(),
+    ))
+    repo.upsert_link_type(LinkType(
+        rid=ClassRef(f"ont.{t}.link.org-person.v1"),
+        src=ClassRef(f"ont.{t}.obj.org.organization.v1"),
+        dst=ClassRef(f"ont.{t}.obj.org.person.v1"),
+        cardinality=Cardinality.ONE_TO_MANY,
+        directionality=Directionality.DIRECTED,
+        link_properties=(),
+    ))
+    created += 2
+
+    return created
 
 
 __all__ = ["seed_demo", "TENANT"]
