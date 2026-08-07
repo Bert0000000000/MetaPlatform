@@ -133,6 +133,7 @@ async def bulk_save_ai_models(caller: AdminDep, session: SessionDep, body: AiMod
     ).all()
     for m in existing:
         await session.delete(m)
+    await session.flush()  # 让删除在 PG 层生效，避免插入时唯一约束冲突
     now = datetime.now(UTC)
     created = 0
     for item in body.items:

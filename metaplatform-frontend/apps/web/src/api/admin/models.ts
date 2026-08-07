@@ -38,7 +38,15 @@ export async function listAiModels(params?: {
     params: params ?? undefined,
   });
   const resp = unwrap<AiModelListResponse>(data);
-  return resp?.items ?? [];
+  // IAM 返回 snake_case（model_id/display_name），映射到前端 camelCase
+  return (resp?.items ?? []).map((m: any) => ({
+    id: m.id ?? m.model_id,
+    provider: m.provider,
+    modelId: m.modelId ?? m.model_id ?? '',
+    displayName: m.displayName ?? m.display_name ?? null,
+    modality: m.modality ?? 'text',
+    enabled: m.enabled ?? true,
+  }));
 }
 
 export async function saveAiModelsBulk(
