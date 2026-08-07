@@ -1,4 +1,5 @@
 """Domain models (SQLModel) for IAM admin."""
+from .ai_model import AiModel
 from .audit import AuditAction, AuditLog
 from .login_log import LoginLog, LoginResult
 from .org import EmployeePosition, Org, OrgType, Position
@@ -8,6 +9,7 @@ from .system_config import ConfigCategory, SystemConfig
 from .user import User, UserStatus
 
 __all__ = [
+    "AiModel",
     "AuditAction",
     "AuditLog",
     "ConfigCategory",

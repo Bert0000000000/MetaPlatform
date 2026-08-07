@@ -648,3 +648,108 @@ async def providers_test_endpoint(req: ProviderTestRequest) -> ProviderTestRespo
             )
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# 拉取 provider 模型清单（后台「获取模型」按钮）。
+#
+# 复用 providers/test 的 probe 逻辑 GET 上游 /models，解析响应里的模型
+# 列表返回给前端，由前端批量写入 IAM ai_model 表。
+# ---------------------------------------------------------------------------
+class ProviderModelsRequest(BaseModel):
+    """``POST /api/v1/llmgw/providers/models`` request body."""
+
+    provider: str = Field(..., description="openai / azure / ollama / custom")
+    base_url: str = Field(..., description="Provider base URL")
+    api_key: str | None = Field(default=None, description="Optional API key")
+    api_version: str | None = Field(default=None, description="Azure api-version")
+    timeout_sec: float = Field(default=10.0, description="Probe timeout")
+
+
+class ProviderModelsResponse(BaseModel):
+    ok: bool
+    provider: str
+    models: list[str] = Field(default_factory=list)
+    display_names: dict[str, str] = Field(default_factory=dict)
+    message: str = ""
+
+
+@router.post("/providers/models", response_model=ProviderModelsResponse)
+async def providers_models_endpoint(req: ProviderModelsRequest) -> ProviderModelsResponse:
+    """获取上游 provider 的模型清单（OpenAI 兼容 /models、Ollama /api/tags、Azure deployments）。
+
+    API key 在请求体传入，从不持久化（同 ADR-0019）。解析失败时返回空清单。
+    """
+    provider = req.provider.lower().strip()
+    if provider not in _ALLOWED_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown provider: {provider!r}",
+        )
+    import httpx as _httpx
+    from ..providers.test import default_probe_url
+
+    timeout_sec = max(1.0, min(req.timeout_sec, 30.0))
+    url = default_probe_url(provider, req.base_url)  # type: ignore[arg-type]
+    headers = {"accept": "application/json"}
+    if req.api_key:
+        headers["authorization"] = f"Bearer {req.api_key}"
+
+    try:
+        async with _httpx.AsyncClient(timeout=timeout_sec) as client:
+            resp = await client.get(url, headers=headers)
+        if resp.status_code != 200:
+            return ProviderModelsResponse(
+                ok=False,
+                provider=provider,
+                message=f"HTTP {resp.status_code}",
+            )
+        payload = resp.json()
+    except Exception as exc:  # noqa: BLE001
+        return ProviderModelsResponse(
+            ok=False,
+            provider=provider,
+            message=f"获取失败: {type(exc).__name__}",
+        )
+
+    models: list[str] = []
+    display_names: dict[str, str] = {}
+    if isinstance(payload, dict):
+        # OpenAI 兼容: {"data": [{"id": "gpt-4o", ...}]}
+        data = payload.get("data")
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and item.get("id"):
+                    mid = str(item["id"])
+                    models.append(mid)
+                    name = item.get("name") or item.get("display_name")
+                    if name:
+                        display_names[mid] = str(name)
+        # Ollama: {"models": [{"name": "llama3.2:latest", ...}]}
+        ol = payload.get("models")
+        if isinstance(ol, list):
+            for item in ol:
+                if isinstance(item, dict) and item.get("name"):
+                    models.append(str(item["name"]))
+        # Azure deployments: {"value": [{"id": "...", "model": "..."}]}
+        val = payload.get("value")
+        if isinstance(val, list):
+            for item in val:
+                if isinstance(item, dict) and item.get("model"):
+                    models.append(str(item["model"]))
+    elif isinstance(payload, list):
+        for item in payload:
+            if isinstance(item, str):
+                models.append(item)
+            elif isinstance(item, dict) and item.get("id"):
+                models.append(str(item["id"]))
+
+    # 去重保序
+    seen: set[str] = set()
+    deduped = [m for m in models if not (m in seen or seen.add(m))]
+    return ProviderModelsResponse(
+        ok=True,
+        provider=provider,
+        models=deduped,
+        display_names={k: v for k, v in display_names.items() if k in seen},
+    )

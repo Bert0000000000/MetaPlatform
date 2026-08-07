@@ -48,6 +48,7 @@ async def init_db() -> None:
     from sqlmodel import SQLModel
 
     from .domain import (  # noqa: F401  pylint: disable=import-outside-toplevel
+        AiModel,
         AuditLog,
         EmployeePosition,
         LoginLog,

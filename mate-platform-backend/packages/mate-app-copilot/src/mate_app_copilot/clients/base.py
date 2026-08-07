@@ -124,3 +124,32 @@ class AsyncCopilotClient:
                 resp = await client.post(url, json=payload)
         resp.raise_for_status()
         return resp.json()
+
+    # --- AI model registry (IAM ai_model 表，经 gateway) ----------------------
+    async def list_ai_models(
+        self,
+        tenant_id: str,
+        fallback_token: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """GET /api/v1/admin/ai/models through the gateway → IAM 模型注册表。
+
+        返回 [{id, provider, model_id, display_name, modality, enabled}]；
+        非 2xx 抛异常，调用方回退到 in_memory seed。
+        """
+        import httpx
+
+        url = f"{self.base_url}/api/v1/admin/ai/models"
+        headers = {"X-Tenant-Id": tenant_id}
+        if fallback_token:
+            headers["Authorization"] = f"Bearer {fallback_token}"
+        async with httpx.AsyncClient(
+            auth=self._middleware(tenant_id) if not fallback_token else None,
+            timeout=self.timeout_seconds,
+        ) as client:
+            resp = await client.get(url, headers=headers)
+        resp.raise_for_status()
+        body = resp.json()
+        # IAM 响应信封 {code, message, data: {items, total}}
+        data = body.get("data", body)
+        items = data.get("items", []) if isinstance(data, dict) else []
+        return [dict(i) for i in items]

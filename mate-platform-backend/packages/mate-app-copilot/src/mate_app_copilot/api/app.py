@@ -1028,7 +1028,37 @@ async def get_knowledge_bases(request: Request) -> dict[str, Any]:
 # --- Models (1) -------------------------------------------------------------
 @router.get("/models/multimodal")
 async def get_multimodal_models(request: Request) -> dict[str, Any]:
-    return _resp(list_models(_tid(request)))
+    """返回可用模型清单。
+
+    优先读 IAM ai_model 注册表（后台「获取模型」配置的真实模型），
+    IAM 不可用时回退到 in_memory seed（保持既有行为）。
+    """
+    tid = _tid(request)
+    try:
+        client = _get_client(request)
+        fallback_token = str(getattr(request.state.ctx, "authorization", "") or "")
+        if not fallback_token:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.lower().startswith("bearer "):
+                fallback_token = auth_header[7:].strip()
+        items = await client.list_ai_models(tid, fallback_token or None)
+        if items:
+            mapped = [
+                {
+                    "modelId": i.get("model_id") or i.get("modelId") or "",
+                    "name": i.get("display_name") or i.get("displayName")
+                    or i.get("model_id") or i.get("modelId") or "",
+                    "provider": i.get("provider", ""),
+                    "modality": i.get("modality", "text"),
+                    "enabled": i.get("enabled", True),
+                }
+                for i in items
+                if i.get("enabled", True)
+            ]
+            return {"items": mapped, "total": len(mapped)}
+    except Exception:  # noqa: BLE001 — IAM 不可用降级到 seed
+        pass
+    return _resp(list_models(tid))
 
 
 # --- Ontology (3) -----------------------------------------------------------

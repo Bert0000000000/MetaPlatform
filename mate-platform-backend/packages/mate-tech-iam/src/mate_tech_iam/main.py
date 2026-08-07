@@ -17,6 +17,7 @@ from .api import (
     configs_router,
     dashboard_router,
     logs_router,
+    models_router,
     orgs_router,
     permissions_router,
     users_router,
@@ -115,6 +116,7 @@ app.include_router(permissions_router)
 app.include_router(orgs_router)
 app.include_router(logs_router)
 app.include_router(configs_router)
+app.include_router(models_router)
 app.include_router(dashboard_router)
 
 # DW (digital workforce) router - mounted here so api-gateway can proxy /api/v1/dw/* to this service.
