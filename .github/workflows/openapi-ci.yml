@@ -41,6 +41,10 @@ jobs:
       - run: pip install pytest PyYAML
       - run: python contracts/scripts/validate_contracts.py
       - run: python contracts/scripts/validate_traceability.py
+      # GOVERN-03 / 03-05: every v1 ontology endpoint must carry
+      # x-sunset + x-migration-target. Fail on missing annotations.
+      - name: Lint ontology sunset headers (GOVERN-03)
+        run: python contracts/scripts/lint_sunset_headers.py
       - run: python -m pytest contracts/tests -q
 
   runtime-parity:

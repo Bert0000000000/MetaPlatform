@@ -49,26 +49,40 @@ def test_assert_raises_on_cross_tenant() -> None:
 
 
 def test_instance_creation_within_tenant() -> None:
-    """同租户下创建 + 读取实例."""
-    instance_store.create_instance("Concept", {"name": "X"})
-    instances = instance_store.list_instances("Concept")
+    """同租户下创建 + 读取实例.
+
+    GOVERN-03: store APIs require an explicit tenant ctx; payload
+    fields are no longer accepted as a fallback.
+    """
+    acme = TenantContext(tenant_id="acme", user_id="alice")
+    instance_store.create_instance(acme, "Concept", {"name": "X"})
+    instances = instance_store.list_instances(acme, "Concept")
     assert len(instances) == 1
 
 
 def test_instance_deletion_cascades_relations() -> None:
     """删除实例级联删除关系."""
-    a = instance_store.create_instance("Concept", {})
-    b = instance_store.create_instance("Object", {})
-    instance_store.create_relation("type_of", a.id, b.id)
-    assert len(instance_store.list_relations()) == 1
-    instance_store.delete_instance(a.id)
-    assert len(instance_store.list_relations()) == 0
+    acme = TenantContext(tenant_id="acme", user_id="alice")
+    a = instance_store.create_instance(acme, "Concept", {})
+    b = instance_store.create_instance(acme, "Object", {})
+    instance_store.create_relation(acme, "type_of", a.id, b.id)
+    assert len(instance_store.list_relations(acme)) == 1
+    instance_store.delete_instance(acme, a.id)
+    assert len(instance_store.list_relations(acme)) == 0
 
 
 def test_relation_to_missing_src_raises(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    """关系指向不存在的源实例 → 400."""
+    """关系指向不存在的源实例 → 403 (GOVERN-03: 不可见 = 403).
+
+    The previous behaviour returned 400 because the store raised a
+    generic ValueError; the tenant-aware store now classifies
+    ``src instance not visible to tenant`` as a tenant access violation
+    (TenantAccessError → HTTP 403) which is the more accurate response
+    for an authenticated caller that cannot see the referenced
+    instance.
+    """
     resp = client.post(
         "/api/v1/ont/instances",
         json={"class_id": "Concept", "properties": {}},
@@ -81,4 +95,4 @@ def test_relation_to_missing_src_raises(
         json={"type": "type_of", "src_id": "missing", "dst_id": real_id, "properties": {}},
         headers=auth_headers,
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 403

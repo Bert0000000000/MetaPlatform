@@ -12,6 +12,7 @@ from mate_tech_ont.inference.engine import (
 from mate_tech_ont.instances.store import store as instance_store
 from mate_tech_ont.sparql.cypher import execute_sparql
 from mate_tech_ont.versioning.store import version_store
+from mate_tech_ont.security.tenant import TenantContext
 
 
 # ---------------------------------------------------------------------------
@@ -28,8 +29,13 @@ def client() -> TestClient:
 TENANT = "acme"
 
 
+def _ctx_for(ns: str) -> TenantContext:
+    """GOVERN-03: every store call now requires a tenant ctx."""
+    return TenantContext(tenant_id=ns, user_id=f"u-{ns}", roles=("editor",))
+
+
 def _mk_inst(class_id: str, props: dict | None = None, ns: str = TENANT):
-    return instance_store.create_instance(class_id, props or {}, namespace=ns)
+    return instance_store.create_instance(_ctx_for(ns), class_id, props or {})
 
 
 # ---------------------------------------------------------------------------
@@ -46,7 +52,7 @@ class TestSparqlInMemory:
 
         results = execute_sparql(
             "SELECT ?s ?o WHERE { ?s rdf:type ?o }",
-            tenant_id=TENANT,
+            ctx=_ctx_for(TENANT),
         )
         assert len(results) == 3
         # Every binding should have s and o mapped
@@ -62,7 +68,7 @@ class TestSparqlInMemory:
 
         results = execute_sparql(
             "SELECT ?s WHERE { ?s rdf:type ?o }",
-            tenant_id=TENANT,
+            ctx=_ctx_for(TENANT),
         )
         assert len(results) == 1
 
@@ -71,7 +77,7 @@ class TestSparqlInMemory:
         _mk_inst("Concept", {"label": "X"})
         results = execute_sparql(
             "SELECT ?s WHERE { ?s rdf:type NonExistent }",
-            tenant_id=TENANT,
+            ctx=_ctx_for(TENANT),
         )
         assert results == []
 
@@ -81,7 +87,7 @@ class TestSparqlInMemory:
         _mk_inst("Concept", {"label": "Y"})
         results = execute_sparql(
             "SELECT ?s WHERE { ?s label X }",
-            tenant_id=TENANT,
+            ctx=_ctx_for(TENANT),
         )
         assert len(results) == 1
 
@@ -96,7 +102,7 @@ class TestInferenceSubclass:
         """SubclassRule: child instance inherits parent's properties."""
         parent = _mk_inst("Animal", {"has_skin": "true", "legs": "4"})
         child = _mk_inst("Dog", {"bark": "loud"})
-        instance_store.create_relation("subclass_of", child.id, parent.id)
+        instance_store.create_relation(_ctx_for(TENANT), "subclass_of", child.id, parent.id)
 
         engine = InferenceEngine(instance_store)
         result = engine.apply_rules(TENANT, [SubclassRule(rel_type="subclass_of")])
@@ -117,8 +123,8 @@ class TestInferenceTransitivity:
         a = _mk_inst("Node")
         b = _mk_inst("Node")
         c = _mk_inst("Node")
-        instance_store.create_relation("related_to", a.id, b.id)
-        instance_store.create_relation("related_to", b.id, c.id)
+        instance_store.create_relation(_ctx_for(TENANT), "related_to", a.id, b.id)
+        instance_store.create_relation(_ctx_for(TENANT), "related_to", b.id, c.id)
 
         engine = InferenceEngine(instance_store)
         result = engine.apply_rules(
@@ -140,9 +146,9 @@ class TestFindPath:
         b = _mk_inst("N")
         c = _mk_inst("N")
         d = _mk_inst("N")
-        instance_store.create_relation("related_to", a.id, b.id)
-        instance_store.create_relation("related_to", b.id, c.id)
-        instance_store.create_relation("related_to", c.id, d.id)
+        instance_store.create_relation(_ctx_for(TENANT), "related_to", a.id, b.id)
+        instance_store.create_relation(_ctx_for(TENANT), "related_to", b.id, c.id)
+        instance_store.create_relation(_ctx_for(TENANT), "related_to", c.id, d.id)
 
         engine = InferenceEngine(instance_store)
         path = engine.find_path(TENANT, a.id, d.id, max_depth=10)
@@ -170,10 +176,10 @@ class TestGetNeighbors:
         c = _mk_inst("N")
         d = _mk_inst("N")
         e = _mk_inst("N")
-        instance_store.create_relation("r", a.id, b.id)
-        instance_store.create_relation("r", b.id, c.id)
-        instance_store.create_relation("r", c.id, d.id)
-        instance_store.create_relation("r", a.id, e.id)
+        instance_store.create_relation(_ctx_for(TENANT), "r", a.id, b.id)
+        instance_store.create_relation(_ctx_for(TENANT), "r", b.id, c.id)
+        instance_store.create_relation(_ctx_for(TENANT), "r", c.id, d.id)
+        instance_store.create_relation(_ctx_for(TENANT), "r", a.id, e.id)
 
         engine = InferenceEngine(instance_store)
 
@@ -299,8 +305,8 @@ class TestInferenceApi:
         a = _mk_inst("N", ns="tenant-acme")
         b = _mk_inst("N", ns="tenant-acme")
         c = _mk_inst("N", ns="tenant-acme")
-        instance_store.create_relation("r", a.id, b.id)
-        instance_store.create_relation("r", b.id, c.id)
+        instance_store.create_relation(_ctx_for("tenant-acme"), "r", a.id, b.id)
+        instance_store.create_relation(_ctx_for("tenant-acme"), "r", b.id, c.id)
 
         resp = client.get(
             "/api/v1/ont/inference/path",
@@ -319,7 +325,7 @@ class TestInferenceApi:
         """GET /inference/neighbors returns K-hop neighbors."""
         a = _mk_inst("N", ns="tenant-acme")
         b = _mk_inst("N", ns="tenant-acme")
-        instance_store.create_relation("r", a.id, b.id)
+        instance_store.create_relation(_ctx_for("tenant-acme"), "r", a.id, b.id)
 
         resp = client.get(
             "/api/v1/ont/inference/neighbors",
@@ -341,14 +347,14 @@ class TestTenantIsolationInference:
         # Tenant acme
         a1 = _mk_inst("Node", {}, ns="acme")
         a2 = _mk_inst("Node", {}, ns="acme")
-        instance_store.create_relation("related_to", a1.id, a2.id)
+        instance_store.create_relation(_ctx_for("acme"), "related_to", a1.id, a2.id)
 
         # Tenant bob
         b1 = _mk_inst("Node", {}, ns="bob")
         b2 = _mk_inst("Node", {}, ns="bob")
         b3 = _mk_inst("Node", {}, ns="bob")
-        instance_store.create_relation("related_to", b1.id, b2.id)
-        instance_store.create_relation("related_to", b2.id, b3.id)
+        instance_store.create_relation(_ctx_for("bob"), "related_to", b1.id, b2.id)
+        instance_store.create_relation(_ctx_for("bob"), "related_to", b2.id, b3.id)
 
         engine = InferenceEngine(instance_store)
 

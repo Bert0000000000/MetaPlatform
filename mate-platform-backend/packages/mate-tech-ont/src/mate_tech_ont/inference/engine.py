@@ -11,7 +11,9 @@ from typing import Any
 
 import structlog
 
-from mate_tech_ont.instances.store import InstanceStore, store as default_store
+from mate_tech_ont.instances.store import InstanceStore
+from mate_tech_ont.instances.store import store as default_store
+from mate_tech_ont.security.tenant import TenantContext
 
 logger = structlog.get_logger(__name__)
 
@@ -181,16 +183,24 @@ class InferenceEngine:
 
     # -- internals --
 
+    def _ctx_for(self, tenant_id: str) -> TenantContext:
+        """GOVERN-03: build a tenant ctx for internal queries.
+
+        The inference engine historically accepted ``tenant_id`` as a
+        string. The store APIs now require a ``RequestContext``-like
+        object, so we wrap the legacy parameter. Callers in the
+        inference API router still pass the raw tenant_id (extracted
+        from the auth middleware), and we project it here.
+        """
+        return TenantContext(tenant_id=tenant_id, user_id=f"inference-{tenant_id}")
+
     def _tenant_instance_ids(self, tenant_id: str) -> set[str]:
-        return {
-            i.id for i in self._store.list_instances() if i.namespace == tenant_id
-        }
+        ctx = self._ctx_for(tenant_id)
+        return {i.id for i in self._store.list_instances(ctx)}
 
     def _tenant_relations(self, tenant_id: str) -> list[Any]:
-        ids = self._tenant_instance_ids(tenant_id)
-        return [
-            r for r in self._store.list_relations() if r.src_id in ids and r.dst_id in ids
-        ]
+        ctx = self._ctx_for(tenant_id)
+        return list(self._store.list_relations(ctx))
 
     def _build_adjacency(self, tenant_id: str) -> dict[str, list[tuple[str, str]]]:
         """Build undirected adjacency graph scoped to *tenant_id*."""
@@ -212,9 +222,10 @@ class InferenceEngine:
         """
         rels = [r for r in self._tenant_relations(tenant_id) if r.type == rule.rel_type]
         inherited: list[InheritedProperty] = []
+        ctx = self._ctx_for(tenant_id)
         for rel in rels:
-            parent = self._store.get_instance(rel.dst_id)
-            child = self._store.get_instance(rel.src_id)
+            parent = self._store.get_instance(ctx, rel.dst_id)
+            child = self._store.get_instance(ctx, rel.src_id)
             if parent is None or child is None:
                 continue
             new_props = {

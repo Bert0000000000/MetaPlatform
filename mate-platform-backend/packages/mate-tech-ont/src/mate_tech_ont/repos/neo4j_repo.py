@@ -1,10 +1,18 @@
 """Neo4j GraphRepository (ST-5.4.2).
 
 实现 W2-3.5 Protocol：节点 / 边 CRUD + 简单查询。
+
+GOVERN-03 (2026-08-07): deprecated. v3.1 ontology now writes through
+``v2_kernel.pg_repo`` (PostgreSQL-only) using the 12 KERNEL-01 primitives
+(ADR-0021). Neo4j remains as a read-only legacy adaptor and is gated by
+the ``legacy-ont`` compose profile. The methods below emit a
+``DeprecationWarning`` on every call so production traffic is visible
+during the Sunset window (2026-12-31).
 """
 from __future__ import annotations
 
 import os
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,6 +20,27 @@ import structlog
 from neo4j import AsyncGraphDatabase
 
 logger = structlog.get_logger(__name__)
+
+
+def _deprecated_neo4j_method(method_name: str) -> None:
+    """Emit a DeprecationWarning for a Neo4jGraphRepository method.
+
+    GOVERN-03: v3.1 ontology persists through KERNEL-01 v2_kernel.pg_repo
+    (ADR-0021). Neo4jGraphRepository is kept only as a legacy adaptor and
+    will be removed in the Sunset window end (2026-12-31).
+    """
+    warnings.warn(
+        f"Neo4jGraphRepository.{method_name} is deprecated; use mate-tech-ont "
+        f"v2_kernel router / pg_repo (ADR-0021 + GOVERN-03). Sunset 2026-12-31.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    logger.warning(
+        "neo4j_repo.deprecated_call",
+        method=method_name,
+        sunset="2026-12-31",
+        replacement="v2_kernel.pg_repo",
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +89,7 @@ class Neo4jGraphRepository:
         return self._driver.session()
 
     async def create_node(self, label: str, properties: dict[str, Any]) -> GraphNode:
+        _deprecated_neo4j_method("create_node")
         async with await self._session() as session:
             result = await session.run(
                 "CREATE (n:$label $props) RETURN id(n) AS id",
@@ -72,6 +102,7 @@ class Neo4jGraphRepository:
         return GraphNode(id=node_id, label=label, properties=properties)
 
     async def get_node(self, node_id: str) -> GraphNode | None:
+        _deprecated_neo4j_method("get_node")
         async with await self._session() as session:
             result = await session.run(
                 "MATCH (n) WHERE id(n) = $id RETURN n, labels(n) AS labels",
@@ -94,6 +125,7 @@ class Neo4jGraphRepository:
         dst_id: str,
         properties: dict[str, Any] | None = None,
     ) -> GraphEdge:
+        _deprecated_neo4j_method("create_edge")
         async with await self._session() as session:
             result = await session.run(
                 """
@@ -120,6 +152,7 @@ class Neo4jGraphRepository:
     async def find_path(
         self, src_id: str, dst_id: str, *, max_depth: int = 5
     ) -> list[list[str]]:
+        _deprecated_neo4j_method("find_path")
         async with await self._session() as session:
             result = await session.run(
                 """

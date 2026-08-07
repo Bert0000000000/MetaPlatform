@@ -120,13 +120,35 @@ def _match_pattern(
     return False
 
 
-def _execute_inmemory(parsed: ParsedQuery, tenant_id: str | None) -> list[dict[str, str]]:
-    """In-memory SPARQL SELECT execution against InstanceStore."""
-    from mate_tech_ont.instances.store import store as instance_store
+def _execute_inmemory(parsed: ParsedQuery, ctx: Any) -> list[dict[str, str]]:
+    """In-memory SPARQL SELECT execution against InstanceStore.
 
-    instances = instance_store.list_instances()
-    if tenant_id is not None:
-        instances = [i for i in instances if i.namespace == tenant_id]
+    GOVERN-03 (2026-08-07): ``ctx`` is required — the module-level
+    InstanceStore singleton is no longer accepted. Reads/writes are
+    filtered by ``f"ont.{ctx.tenant_id}."`` namespace prefix; payload
+    namespace fields cannot be used to forge a foreign tenant.
+    """
+    from mate_tech_ont.instances.store import (
+        TenantAccessError,
+    )
+    from mate_tech_ont.instances.store import (
+        store as instance_store,
+    )
+
+    if ctx is None:
+        raise TenantAccessError("sparql requires tenant context")
+
+    if not hasattr(ctx, "tenant_id") or not getattr(ctx, "tenant_id", None):
+        raise TenantAccessError("sparql requires tenant_id on ctx")
+
+    tenant_prefix = f"ont.{ctx.tenant_id}."
+
+    instances = instance_store.list_instances(ctx)
+
+    # GOVERN-03: defence in depth — even if InstanceStore ever relaxed
+    # its tenant filter, the in-memory result is re-projected through
+    # the canonical ``ont.<tenant>.`` prefix.
+    instances = [i for i in instances if i.namespace.startswith(tenant_prefix)]
 
     results: list[dict[str, str]] = []
     for inst in instances:
@@ -199,16 +221,25 @@ def _delete_to_cypher(p: ParsedQuery) -> str:
 
 def execute_sparql(
     sparql: str,
+    ctx: Any,
     neo4j_session: Any | None = None,
-    *,
-    tenant_id: str | None = None,
 ) -> list[dict[str, str]]:
     """Execute a SPARQL query.
+
+    GOVERN-03 (2026-08-07): ``ctx`` is **required**. The legacy
+    ``tenant_id`` keyword argument has been removed; callers must pass
+    the request :class:`RequestContext`. The ``payload.tenant_id``
+    field is ignored — only ``ctx.tenant_id`` is trusted.
 
     When *neo4j_session* is available, delegates to Neo4j (future).
     Otherwise falls back to in-memory pattern matching against
     ``InstanceStore``.
     """
+    if ctx is None:
+        from mate_tech_ont.instances.store import TenantAccessError
+
+        raise TenantAccessError("sparql requires tenant context")
+
     parsed = parse_sparql(sparql)
 
     # Neo4j execution path (future).  When a real session is wired,
@@ -224,4 +255,4 @@ def execute_sparql(
     logger.info("sparql.executed.inmemory", qtype=parsed.query_type, triples=len(parsed.triples))
     if parsed.query_type != "SELECT":
         return []
-    return _execute_inmemory(parsed, tenant_id)
+    return _execute_inmemory(parsed, ctx)

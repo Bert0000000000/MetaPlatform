@@ -61,6 +61,9 @@ paths:
                 $ref: '#/components/schemas/Ontology'
         '409':
           description: Ontology already exists
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontPostOntOntologies
       description: Create ontology
       x-mate-owner: ontology-platform
@@ -92,6 +95,9 @@ paths:
                 $ref: '#/components/schemas/Ontology'
         '404':
           description: not found
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontGetOntOntologiesOntologyId
       description: Read ontology
       x-mate-owner: ontology-platform
@@ -129,6 +135,9 @@ paths:
                 $ref: '#/components/schemas/ClassResponse'
         '409':
           description: Class already exists
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontPostOntClasses
       description: Create class
       x-mate-owner: ontology-platform
@@ -160,6 +169,9 @@ paths:
                 $ref: '#/components/schemas/ClassResponse'
         '404':
           description: not found
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-types"
       operationId: ontGetOntClassesClassId
       description: Read class
       x-mate-owner: ontology-platform
@@ -198,6 +210,9 @@ paths:
                   $ref: '#/components/schemas/InstanceResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontGetOntInstances
       description: List instances (optional class_id filter)
       x-mate-owner: ontology-platform
@@ -228,6 +243,9 @@ paths:
                 $ref: '#/components/schemas/InstanceResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontPostOntInstances
       description: Create instance
       x-mate-owner: ontology-platform
@@ -259,6 +277,9 @@ paths:
                 $ref: '#/components/schemas/InstanceResponse'
         '404':
           description: not found
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontGetOntInstancesIid
       description: Read instance
       x-mate-owner: ontology-platform
@@ -285,6 +306,9 @@ paths:
           description: OK
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontDeleteOntInstancesIid
       description: Delete instance
       x-mate-owner: ontology-platform
@@ -318,6 +342,9 @@ paths:
                   $ref: '#/components/schemas/RelationResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontGetOntInstancesRelations
       description: List relations
       x-mate-owner: ontology-platform
@@ -348,6 +375,9 @@ paths:
                 $ref: '#/components/schemas/RelationResponse'
         '400':
           description: Bad payload
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/individuals"
       operationId: ontPostOntInstancesRelations
       description: Create relation
       x-mate-owner: ontology-platform
@@ -379,6 +409,9 @@ paths:
                 $ref: '#/components/schemas/SparqlResponse'
         '400':
           description: SPARQL parse / transpile failure
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostOntSparql
       description: SPARQL -> Cypher -> execute
       x-mate-owner: ontology-platform
@@ -426,6 +459,9 @@ paths:
                       type: string
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostOntExplain
       description: SPARQL EXPLAIN (parse + transpile only)
       x-mate-owner: ontology-platform
@@ -459,6 +495,9 @@ paths:
           $ref: ../common/errors.yaml#/components/responses/Error400
         '500':
           description: Internal federation error
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostFederationQuery
       description: Execute a federated SPARQL query across multiple ontologies and merge results
       x-mate-owner: ontology-platform
@@ -491,6 +530,9 @@ paths:
                 $ref: '#/components/schemas/MappingResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontPostFederationMappings
       description: Register a class/property mapping between two ontologies
       x-mate-owner: ontology-platform
@@ -518,6 +560,9 @@ paths:
                   $ref: '#/components/schemas/MappingResponse'
         '400':
           $ref: ../common/errors.yaml#/components/responses/Error400
+      x-sunset: 2026-12-31
+      x-sunset: 2026-12-31
+      x-migration-target: "/api/v1/ont/v2/object-sets:evaluate"
       operationId: ontGetFederationMappings
       description: List all registered cross-ontology mappings for the current tenant
       x-mate-owner: ontology-platform
