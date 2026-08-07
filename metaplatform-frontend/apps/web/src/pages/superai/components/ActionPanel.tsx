@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Button,
   Input,
@@ -14,7 +14,8 @@ import {
   Modal,
   Descriptions,
   Table,
-message, } from 'antd';
+  message,
+} from 'antd';
 import {
   ThunderboltOutlined,
   SearchOutlined,
@@ -22,40 +23,36 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from '@ant-design/icons';
-import { matchAction, executeAction, listActions } from '@/api/superai/actions';
+import { executeAction, matchAction } from '@/api/superai/actions';
 import type { ActionItem, ActionMatchResult, ActionResult, ActionParam } from '@/api/superai/types';
 
-const { TextArea } = Input;
-
-interface ActionPanelProps {
+/**
+ * 对话内 Action 匹配卡（三大原理 #3）。
+ *
+ * 作为一条 assistant 消息内联渲染（不占用输入框上方的固定空间）：
+ * 输入 query 后自动匹配 Action → 选择 → 参数表单 → 确认执行 → onResult
+ * 把 kernel 落库结果交回消息流（由 ActionResultCard 渲染）。
+ */
+interface ActionMatchCardProps {
   query: string;
-  onQueryChange: (q: string) => void;
-  onResult: (metadata: { actionResult?: ActionResult }) => void;
+  onResult: (result: ActionResult) => void;
 }
 
-export default function ActionPanel({ query, onQueryChange, onResult }: ActionPanelProps) {
-  const [loading, setLoading] = useState(false);
+export default function ActionMatchCard({ query, onResult }: ActionMatchCardProps) {
   const [matches, setMatches] = useState<ActionMatchResult[]>([]);
-  const [allActions, setAllActions] = useState<ActionItem[]>([]);
   const [selectedAction, setSelectedAction] = useState<ActionItem | null>(null);
   const [executing, setExecuting] = useState(false);
-  const [result, setResult] = useState<ActionResult | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
-    listActions().then(setAllActions).catch((error) => { console.warn('[ActionPanel] listActions failed', error); message.warning('Action 列表加载失败，请检查后端服务状态'); });
-  }, []);
-
-  const handleMatch = useCallback(async () => {
     if (!query.trim()) return;
-    setLoading(true);
-    try {
-      const results = await matchAction(query);
-      setMatches(results);
-    } finally {
-      setLoading(false);
-    }
+    matchAction(query)
+      .then((results) => setMatches(results))
+      .catch((error) => {
+        console.warn('[ActionMatchCard] match failed', error);
+        message.warning('Action 匹配失败');
+      });
   }, [query]);
 
   const handleSelectAction = useCallback((action: ActionItem) => {
@@ -67,7 +64,6 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
       }
     });
     form.setFieldsValue(formValues);
-    setResult(null);
   }, [form]);
 
   const handleExecute = useCallback(async () => {
@@ -77,8 +73,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
       setConfirmOpen(false);
       setExecuting(true);
       const res = await executeAction(selectedAction.id, values);
-      setResult(res);
-      onResult({ actionResult: res });
+      onResult(res);
     } catch (error) {
       if (error instanceof Error && error.message.includes('validated')) return;
     } finally {
@@ -95,129 +90,47 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
       case 'boolean':
         return <Switch />;
       case 'select':
-        return (
-          <Select
-            placeholder={`请选择${param.label}`}
-            options={param.options}
-          />
-        );
+        return <Select placeholder={`请选择${param.label}`} options={param.options} />;
       default:
         return <Input />;
     }
   };
 
-  const renderResult = () => {
-    if (!result) return null;
-    return (
-      <Card size="small" title={<Space><CheckCircleOutlined style={{ color: '#52c41a' }} />执行结果</Space>}>
-        <Descriptions size="small" column={1} bordered>
-          <Descriptions.Item label="Action">{result.actionName}</Descriptions.Item>
-          <Descriptions.Item label="状态">
-            {result.success ? (
-              <Tag color="success" icon={<CheckCircleOutlined />}>成功</Tag>
-            ) : (
-              <Tag color="error" icon={<CloseCircleOutlined />}>失败</Tag>
-            )}
-          </Descriptions.Item>
-          <Descriptions.Item label="消息">{result.message}</Descriptions.Item>
-          <Descriptions.Item label="时间">{new Date(result.executedAt).toLocaleString()}</Descriptions.Item>
-        </Descriptions>
-        {result.output && typeof result.output === 'object' && !Array.isArray(result.output) ? (
-          <Table
-            size="small"
-            style={{ marginTop: 8 }}
-            dataSource={Object.entries(result.output as Record<string, unknown>).map(([k, v]) => ({ key: k, field: k, value: String(v) }))}
-            columns={[
-              { title: '字段', dataIndex: 'field', key: 'field' },
-              { title: '值', dataIndex: 'value', key: 'value' },
-            ]}
-            pagination={false}
-            scroll={{ x: 'max-content' }}
-          />
-        ) : null}
-        {Array.isArray(result.output) && (
-          <Table
-            size="small"
-            style={{ marginTop: 8 }}
-            dataSource={result.output as Record<string, unknown>[]}
-            columns={result.output.length > 0 ? Object.keys(result.output[0] as Record<string, unknown>).map((k) => ({ title: k, dataIndex: k, key: k })) : []}
-            rowKey={(_, i) => String(i)}
-            pagination={{ pageSize: 5 }}
-            scroll={{ x: 'max-content' }}
-          />
-        )}
-        {typeof result.output === 'string' && (
-          <Typography.Paragraph style={{ marginTop: 8 }}>{result.output}</Typography.Paragraph>
-        )}
-      </Card>
-    );
-  };
-
   return (
-    <Card size="small" style={{ marginBottom: 8 }}>
+    <Card size="small" style={{ marginTop: 8, maxWidth: 480 }}>
       <Space orientation="vertical" style={{ width: '100%' }} size="small">
-        <TextArea
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="描述您想执行的操作，如：给合同快到期的客户发送提醒"
-          rows={2}
-        />
         <Space>
-          <Button type="primary" icon={<SearchOutlined />} loading={loading} onClick={handleMatch}>
-            匹配 Action
-          </Button>
+          <ThunderboltOutlined style={{ color: '#1677ff' }} />
+          <Typography.Text strong>匹配「{query}」的 Action</Typography.Text>
         </Space>
 
-        {matches.length > 0 && (
-          <div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>匹配到的 Action：</Typography.Text>
-            <Space wrap style={{ marginTop: 4 }}>
-              {matches.map((m) => (
-                <Card
-                  key={m.action.id}
-                  size="small"
-                  hoverable
-                  style={{
-                    width: 220,
-                    border: selectedAction?.id === m.action.id ? '2px solid #1677ff' : '1px solid #d9d9d9',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => handleSelectAction(m.action)}
-                >
-                  <Space orientation="vertical" size="small" style={{ width: '100%' }}>
-                    <Space>
-                      <ThunderboltOutlined style={{ color: '#1677ff' }} />
-                      <Typography.Text strong>{m.action.name}</Typography.Text>
-                    </Space>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{m.action.description}</Typography.Text>
-                    <Space>
-                      <Tag color="blue">{m.action.category}</Tag>
-                      <Tag color={m.confidence > 70 ? 'green' : 'orange'}>{m.confidence}% 匹配</Tag>
-                    </Space>
+        {matches.length === 0 ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>未匹配到可执行的 Action</Typography.Text>
+        ) : (
+          <Space wrap>
+            {matches.map((m) => (
+              <Card
+                key={m.action.id}
+                size="small"
+                hoverable
+                style={{
+                  width: 220,
+                  border: selectedAction?.id === m.action.id ? '2px solid #1677ff' : '1px solid #d9d9d9',
+                  cursor: 'pointer',
+                }}
+                onClick={() => handleSelectAction(m.action)}
+              >
+                <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+                  <Typography.Text strong>{m.action.name}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>{m.action.description}</Typography.Text>
+                  <Space>
+                    <Tag color="blue">{m.action.category}</Tag>
+                    <Tag color={m.confidence > 70 ? 'green' : 'orange'}>{m.confidence}% 匹配</Tag>
                   </Space>
-                </Card>
-              ))}
-            </Space>
-          </div>
-        )}
-
-        {matches.length === 0 && allActions.length > 0 && !loading && (
-          <div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>所有可用 Action：</Typography.Text>
-            <Space wrap style={{ marginTop: 4 }}>
-              {allActions.map((action) => (
-                <Button
-                  key={action.id}
-                  size="small"
-                  icon={<ThunderboltOutlined />}
-                  onClick={() => handleSelectAction(action)}
-                  type={selectedAction?.id === action.id ? 'primary' : 'default'}
-                >
-                  {action.name}
-                </Button>
-              ))}
-            </Space>
-          </div>
+                </Space>
+              </Card>
+            ))}
+          </Space>
         )}
 
         {selectedAction && (
@@ -250,8 +163,6 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
             </Button>
           </Card>
         )}
-
-        {result && renderResult()}
       </Space>
 
       <Modal

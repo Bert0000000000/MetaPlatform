@@ -41,7 +41,8 @@ import {
 } from '@/api/superai/conversations';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import KnowledgeGraph from './components/KnowledgeGraph';
-import ActionPanel from './components/ActionPanel';
+import ActionMatchCard from './components/ActionPanel';
+import { matchAction } from '@/api/superai/actions';
 import type {
   ChatSession,
   ChatMessage,
@@ -290,12 +291,21 @@ function ActionResultCard({ result }: { result: ActionResult }) {
 }
 
 /** 单条消息渲染（贴合设计稿） */
-function MessageRow({ msg, onCopy }: { msg: ChatMessage; onCopy: (text: string) => void }) {
+function MessageRow({
+  msg,
+  onCopy,
+  onActionResult,
+}: {
+  msg: ChatMessage;
+  onCopy: (text: string) => void;
+  onActionResult?: (result: ActionResult) => void;
+}) {
   const isUser = msg.role === 'user';
   const graphData = !isUser ? msg.metadata?.graphData : undefined;
   const thinkingContent = !isUser ? msg.metadata?.thinking : undefined;
   const thinkingDuration = !isUser ? msg.metadata?.thinkingDuration : undefined;
   const actionResult = !isUser ? msg.metadata?.actionResult : undefined;
+  const actionMatch = !isUser ? msg.metadata?.actionMatch : undefined;
 
   const time = msg.createdAt
     ? new Date(msg.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -408,6 +418,12 @@ function MessageRow({ msg, onCopy }: { msg: ChatMessage; onCopy: (text: string) 
               </div>
             )}
             <CitationList citations={msg.citations} />
+            {actionMatch && (
+              <ActionMatchCard
+                query={actionMatch.query}
+                onResult={(result) => onActionResult?.(result)}
+              />
+            )}
             {actionResult && <ActionResultCard result={actionResult} />}
             {!msg.streaming && msg.content && (
               <MessageActions onCopy={() => onCopy(msg.content)} />
@@ -450,7 +466,6 @@ export default function ChatPage() {
   ]);
   const [activeId, setActiveId] = useState<string>(sessions[1].id);
   const [input, setInput] = useState('');
-  const [actionQuery, setActionQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
@@ -762,6 +777,33 @@ export default function ChatPage() {
 
       setLoading(true);
       setInput('');
+
+      // 三大原理 #3：检测 Action 意图 → 消息流内联 Action 匹配卡（不占用输入框上方空间）
+      try {
+        const matched = await matchAction(trimmed);
+        if (matched && matched.length > 0) {
+          const actionMatchId = generateId();
+          updateSession(sessionId, (session) => ({
+            ...session,
+            messages: [...session.messages, createMessage('assistant', '', {
+              status: 'success',
+              metadata: { actionMatch: { query: trimmed, matched } },
+            })],
+            updatedAt: now(),
+          }));
+          updateMessage(sessionId, assistantId, (msg) => ({
+            ...msg,
+            status: 'success',
+            streaming: false,
+            content: '已匹配到可执行的 Action，请在下方面板选择并确认执行。',
+          }));
+          setLoading(false);
+          abortRef.current = null;
+          return;
+        }
+      } catch {
+        // Action 匹配失败时继续走普通 LLM 对话
+      }
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -1230,30 +1272,22 @@ export default function ChatPage() {
                   key={msg.id}
                   msg={msg}
                   onCopy={handleCopyMessage}
+                  onActionResult={(result) => {
+                    updateSession(activeSession.id, (session) => ({
+                      ...session,
+                      messages: [...session.messages, createMessage('assistant', '', {
+                        status: 'success',
+                        metadata: { actionResult: result },
+                      })],
+                      updatedAt: now(),
+                    }));
+                  }}
                 />
               ))}
               <div ref={messagesEndRef} />
             </>
           )}
         </div>
-
-        {/* Action 面板：AI → ActionType 落库（三大原理 #3） */}
-        <ActionPanel
-          query={actionQuery}
-          onQueryChange={setActionQuery}
-          onResult={({ actionResult }) => {
-            if (actionResult) {
-              updateSession(activeSession.id, (session) => ({
-                ...session,
-                messages: [...session.messages, createMessage('assistant', '', {
-                  status: 'success',
-                  metadata: { actionResult },
-                })],
-                updatedAt: now(),
-              }));
-            }
-          }}
-        />
 
         {/* input-bar */}
         <div

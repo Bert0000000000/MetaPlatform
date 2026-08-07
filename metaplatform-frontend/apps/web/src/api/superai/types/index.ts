@@ -87,6 +87,7 @@ export interface ChatMessageMetadata {
   chartData?: ChartDataSet;
   chartType?: ChartType;
   actionResult?: ActionResult;
+  actionMatch?: { query: string; matched: ActionMatchResult[] };
   graphData?: GraphData;
   generatedConfig?: GeneratedConfig;
   codeReview?: CodeReviewResult;
