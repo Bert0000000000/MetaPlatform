@@ -9,6 +9,7 @@ Implements the management surfaces the MCP center UI calls:
 
 Tenant-scoped via ``require_tenant`` (ADR-0014 step 2).
 """
+
 from __future__ import annotations
 
 import uuid
@@ -16,7 +17,7 @@ from datetime import UTC
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from mate_platform.tenancy.guards import require_tenant
 from pydantic import BaseModel, Field
 
@@ -24,15 +25,21 @@ from ..management_repo import (
     AgentTrust,
     ExternalAgent,
     Policy,
+    ToolCategory,
+    delete_category,
     delete_external_agent,
     delete_policy,
     delete_trust,
+    get_category,
+    get_category_by_code,
     get_external_agent,
     get_policy,
     get_trust,
+    list_categories,
     list_external_agents,
     list_policies,
     list_trusts,
+    put_category,
     put_external_agent,
     put_policy,
     put_trust,
@@ -49,6 +56,7 @@ def _tid(request: Request) -> str:
 
 def _now() -> str:
     from datetime import datetime
+
     return datetime.now(UTC).isoformat()
 
 
@@ -84,14 +92,19 @@ def _trust_to_dict(t: AgentTrust) -> dict[str, Any]:
 
 
 @router.get("/trusts")
-async def list_trusts_ep(request: Request, page: int = Query(1, ge=1), size: int = Query(10, ge=1, le=1000), keyword: str = "") -> dict[str, Any]:
+async def list_trusts_ep(
+    request: Request,
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=1000),
+    keyword: str = "",
+) -> dict[str, Any]:
     tid = _tid(request)
     items = list_trusts(tid)
     if keyword:
         kw = keyword.lower()
         items = [t for t in items if kw in t.agent_name.lower() or kw in t.agent_id.lower()]
     start = (page - 1) * size
-    return {"items": [_trust_to_dict(t) for t in items[start:start + size]], "total": len(items)}
+    return {"items": [_trust_to_dict(t) for t in items[start : start + size]], "total": len(items)}
 
 
 @router.post("/trusts", status_code=201)
@@ -99,10 +112,16 @@ async def create_trust_ep(request: Request, req: TrustCreate) -> dict[str, Any]:
     tid = _tid(request)
     now = _now()
     trust = AgentTrust(
-        id=_gen("trust"), tenant_id=tid, agent_id=req.agent_id,
-        agent_name=req.agent_name, trust_level=req.trust_level,
-        reason=req.reason, allowed_operations=req.allowed_operations,
-        expires_at=req.expires_at, created_at=now, updated_at=now,
+        id=_gen("trust"),
+        tenant_id=tid,
+        agent_id=req.agent_id,
+        agent_name=req.agent_name,
+        trust_level=req.trust_level,
+        reason=req.reason,
+        allowed_operations=req.allowed_operations,
+        expires_at=req.expires_at,
+        created_at=now,
+        updated_at=now,
     )
     return _trust_to_dict(put_trust(tid, trust))
 
@@ -114,10 +133,16 @@ async def update_trust_ep(request: Request, tid: str, req: TrustCreate) -> dict[
     if existing is None:
         raise HTTPException(status_code=404, detail="trust not found")
     updated = AgentTrust(
-        id=existing.id, tenant_id=existing.tenant_id, agent_id=req.agent_id or existing.agent_id,
-        agent_name=req.agent_name or existing.agent_name, trust_level=req.trust_level or existing.trust_level,
-        reason=req.reason or existing.reason, allowed_operations=req.allowed_operations or existing.allowed_operations,
-        expires_at=req.expires_at or existing.expires_at, created_at=existing.created_at, updated_at=_now(),
+        id=existing.id,
+        tenant_id=existing.tenant_id,
+        agent_id=req.agent_id or existing.agent_id,
+        agent_name=req.agent_name or existing.agent_name,
+        trust_level=req.trust_level or existing.trust_level,
+        reason=req.reason or existing.reason,
+        allowed_operations=req.allowed_operations or existing.allowed_operations,
+        expires_at=req.expires_at or existing.expires_at,
+        created_at=existing.created_at,
+        updated_at=_now(),
     )
     return _trust_to_dict(put_trust(tenant, updated))
 
@@ -166,14 +191,19 @@ def _agent_to_dict(a: ExternalAgent) -> dict[str, Any]:
 
 
 @router.get("/external-agents")
-async def list_agents_ep(request: Request, page: int = Query(1, ge=1), size: int = Query(100, ge=1, le=1000), keyword: str = "") -> dict[str, Any]:
+async def list_agents_ep(
+    request: Request,
+    page: int = Query(1, ge=1),
+    size: int = Query(100, ge=1, le=1000),
+    keyword: str = "",
+) -> dict[str, Any]:
     tid = _tid(request)
     items = list_external_agents(tid)
     if keyword:
         kw = keyword.lower()
         items = [a for a in items if kw in a.name.lower()]
     start = (page - 1) * size
-    return {"items": [_agent_to_dict(a) for a in items[start:start + size]], "total": len(items)}
+    return {"items": [_agent_to_dict(a) for a in items[start : start + size]], "total": len(items)}
 
 
 @router.post("/external-agents", status_code=201)
@@ -181,10 +211,19 @@ async def create_agent_ep(request: Request, req: ExternalAgentCreate) -> dict[st
     tid = _tid(request)
     now = _now()
     agent = ExternalAgent(
-        id=_gen("ext-agent"), tenant_id=tid, name=req.name, description=req.description,
-        endpoint=req.endpoint, protocol_type=req.protocol_type, status=req.status,
-        trust_level=req.trust_level, auth_type=req.auth_type, auth_config=req.auth_config,
-        capabilities=req.capabilities, created_at=now, updated_at=now,
+        id=_gen("ext-agent"),
+        tenant_id=tid,
+        name=req.name,
+        description=req.description,
+        endpoint=req.endpoint,
+        protocol_type=req.protocol_type,
+        status=req.status,
+        trust_level=req.trust_level,
+        auth_type=req.auth_type,
+        auth_config=req.auth_config,
+        capabilities=req.capabilities,
+        created_at=now,
+        updated_at=now,
     )
     return _agent_to_dict(put_external_agent(tid, agent))
 
@@ -196,13 +235,21 @@ async def update_agent_ep(request: Request, aid: str, req: ExternalAgentCreate) 
     if existing is None:
         raise HTTPException(status_code=404, detail="external agent not found")
     updated = ExternalAgent(
-        id=existing.id, tenant_id=existing.tenant_id, name=req.name or existing.name,
-        description=req.description or existing.description, endpoint=req.endpoint or existing.endpoint,
-        protocol_type=req.protocol_type or existing.protocol_type, status=req.status or existing.status,
-        trust_level=req.trust_level or existing.trust_level, auth_type=req.auth_type or existing.auth_type,
-        auth_config=req.auth_config or existing.auth_config, capabilities=req.capabilities or existing.capabilities,
-        last_connected_at=existing.last_connected_at, last_error_message=existing.last_error_message,
-        created_at=existing.created_at, updated_at=_now(),
+        id=existing.id,
+        tenant_id=existing.tenant_id,
+        name=req.name or existing.name,
+        description=req.description or existing.description,
+        endpoint=req.endpoint or existing.endpoint,
+        protocol_type=req.protocol_type or existing.protocol_type,
+        status=req.status or existing.status,
+        trust_level=req.trust_level or existing.trust_level,
+        auth_type=req.auth_type or existing.auth_type,
+        auth_config=req.auth_config or existing.auth_config,
+        capabilities=req.capabilities or existing.capabilities,
+        last_connected_at=existing.last_connected_at,
+        last_error_message=existing.last_error_message,
+        created_at=existing.created_at,
+        updated_at=_now(),
     )
     return _agent_to_dict(put_external_agent(tenant, updated))
 
@@ -265,11 +312,13 @@ def _policy_to_dict(p: Policy) -> dict[str, Any]:
 
 
 @router.get("/iam/policies")
-async def list_policies_ep(request: Request, page: int = Query(1, ge=1), size: int = Query(100, ge=1, le=1000)) -> dict[str, Any]:
+async def list_policies_ep(
+    request: Request, page: int = Query(1, ge=1), size: int = Query(100, ge=1, le=1000)
+) -> dict[str, Any]:
     tid = _tid(request)
     items = list_policies(tid)
     start = (page - 1) * size
-    return {"items": [_policy_to_dict(p) for p in items[start:start + size]], "total": len(items)}
+    return {"items": [_policy_to_dict(p) for p in items[start : start + size]], "total": len(items)}
 
 
 @router.get("/iam/policies/condition-syntax")
@@ -278,7 +327,13 @@ async def policy_condition_syntax() -> dict[str, Any]:
         "syntax": "field operator value AND/OR/NOT comparison",
         "description": "Policy condition expressions combine comparisons with logical operators.",
         "examples": ["resource.type == 'tool' and subject.trust == 'TRUSTED'"],
-        "variables": ["resource.type", "resource.id", "subject.type", "subject.trust", "request.method"],
+        "variables": [
+            "resource.type",
+            "resource.id",
+            "subject.type",
+            "subject.trust",
+            "request.method",
+        ],
     }
 
 
@@ -292,12 +347,22 @@ async def create_policy_ep(request: Request, req: PolicyCreate) -> dict[str, Any
     tid = _tid(request)
     now = _now()
     policy = Policy(
-        id=_gen("pol"), tenant_id=tid, name=req.name, subject_type=req.subject_type,
-        subject_id=req.subject_id, resource_type=req.resource_type,
-        resource_ids=tuple(req.resource_ids), action=req.action, effect=req.effect,
-        condition_expression=req.condition_expression, effective_start_at=req.effective_start_at,
-        effective_end_at=req.effective_end_at, priority=req.priority, enabled=req.enabled,
-        created_at=now, updated_at=now,
+        id=_gen("pol"),
+        tenant_id=tid,
+        name=req.name,
+        subject_type=req.subject_type,
+        subject_id=req.subject_id,
+        resource_type=req.resource_type,
+        resource_ids=tuple(req.resource_ids),
+        action=req.action,
+        effect=req.effect,
+        condition_expression=req.condition_expression,
+        effective_start_at=req.effective_start_at,
+        effective_end_at=req.effective_end_at,
+        priority=req.priority,
+        enabled=req.enabled,
+        created_at=now,
+        updated_at=now,
     )
     return _policy_to_dict(put_policy(tid, policy))
 
@@ -309,15 +374,22 @@ async def update_policy_ep(request: Request, pid: str, req: PolicyCreate) -> dic
     if existing is None:
         raise HTTPException(status_code=404, detail="policy not found")
     updated = Policy(
-        id=existing.id, tenant_id=existing.tenant_id, name=req.name or existing.name,
-        subject_type=req.subject_type or existing.subject_type, subject_id=req.subject_id or existing.subject_id,
-        resource_type=req.resource_type or existing.resource_type, resource_ids=tuple(req.resource_ids) or existing.resource_ids,
-        action=req.action or existing.action, effect=req.effect or existing.effect,
+        id=existing.id,
+        tenant_id=existing.tenant_id,
+        name=req.name or existing.name,
+        subject_type=req.subject_type or existing.subject_type,
+        subject_id=req.subject_id or existing.subject_id,
+        resource_type=req.resource_type or existing.resource_type,
+        resource_ids=tuple(req.resource_ids) or existing.resource_ids,
+        action=req.action or existing.action,
+        effect=req.effect or existing.effect,
         condition_expression=req.condition_expression or existing.condition_expression,
         effective_start_at=req.effective_start_at or existing.effective_start_at,
         effective_end_at=req.effective_end_at or existing.effective_end_at,
         priority=req.priority if req.priority != 0 else existing.priority,
-        enabled=req.enabled, created_at=existing.created_at, updated_at=_now(),
+        enabled=req.enabled,
+        created_at=existing.created_at,
+        updated_at=_now(),
     )
     return _policy_to_dict(put_policy(tenant, updated))
 
@@ -331,6 +403,97 @@ async def delete_policy_ep(request: Request, pid: str) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Tool categories
+# ---------------------------------------------------------------------------
+class ToolCategoryCreate(BaseModel):
+    model_config = {"extra": "ignore"}
+    name: str = Field(min_length=1)
+    code: str = Field(min_length=1)
+    description: str = ""
+    sort_order: int = 0
+    parent_id: str = ""
+
+
+def _category_to_dict(c: ToolCategory) -> dict[str, Any]:
+    return {
+        "id": c.id,
+        "name": c.name,
+        "code": c.code,
+        "description": c.description,
+        "sortOrder": c.sort_order,
+        "parentId": c.parent_id or None,
+        "createdAt": c.created_at,
+        "updatedAt": c.updated_at,
+    }
+
+
+def _category_from_dict(d: ToolCategoryCreate) -> ToolCategory:
+    now = _now()
+    return ToolCategory(
+        id=_gen("cat"),
+        tenant_id="",
+        name=d.name,
+        code=d.code,
+        description=d.description,
+        sort_order=d.sort_order,
+        parent_id=d.parent_id,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+@router.get("/tool-categories")
+async def list_categories_ep(request: Request) -> list[dict[str, Any]]:
+    """列出所有工具分类 (工具注册中心分类树数据源, 直接返回数组)。"""
+    tenant = _tid(request)
+    return [_category_to_dict(c) for c in list_categories(tenant)]
+
+
+@router.post("/tool-categories", status_code=201)
+async def create_category_ep(request: Request, body: ToolCategoryCreate) -> dict[str, Any]:
+    tenant = _tid(request)
+    if get_category_by_code(tenant, body.code) is not None:
+        raise HTTPException(status_code=400, detail=f"category code already exists: {body.code}")
+    cat = _category_from_dict(body)
+    put_category(tenant, cat)
+    return _category_to_dict(cat)
+
+
+@router.put("/tool-categories/{category_id}")
+async def update_category_ep(
+    request: Request, category_id: str, body: ToolCategoryCreate
+) -> dict[str, Any]:
+    tenant = _tid(request)
+    existing = get_category(tenant, category_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="category not found")
+    dup = get_category_by_code(tenant, body.code)
+    if dup is not None and dup.id != category_id:
+        raise HTTPException(status_code=400, detail=f"category code already exists: {body.code}")
+    updated = ToolCategory(
+        id=existing.id,
+        tenant_id=tenant,
+        name=body.name,
+        code=body.code,
+        description=body.description,
+        sort_order=body.sort_order,
+        parent_id=body.parent_id,
+        created_at=existing.created_at,
+        updated_at=_now(),
+    )
+    put_category(tenant, updated)
+    return _category_to_dict(updated)
+
+
+@router.delete("/tool-categories/{category_id}", status_code=204)
+async def delete_category_ep(request: Request, category_id: str) -> Response:
+    tenant = _tid(request)
+    if not delete_category(tenant, category_id):
+        raise HTTPException(status_code=404, detail="category not found")
+    return Response(status_code=204)
+
+
+# ---------------------------------------------------------------------------
 # Connection monitor
 # ---------------------------------------------------------------------------
 @router.get("/connection-monitor")
@@ -340,23 +503,35 @@ async def connection_monitor(request: Request) -> dict[str, Any]:
     clients = []
     try:
         from ..clients_repo import list_clients
+
         clients = list_clients(tid)
     except Exception as exc:
         logger.warning("clients_repo unavailable: %s", exc)
         clients = []
     servers = [
-        {"id": a.id, "name": a.name, "type": "server", "transportType": a.protocol_type,
-         "status": a.status, "connectionStatus": "online" if a.status == "ACTIVE" else "error",
-         "lastHeartbeatAt": a.last_connected_at or None,
-         "lastErrorMessage": a.last_error_message or None,
-         "endpoint": a.endpoint}
+        {
+            "id": a.id,
+            "name": a.name,
+            "type": "server",
+            "transportType": a.protocol_type,
+            "status": a.status,
+            "connectionStatus": "online" if a.status == "ACTIVE" else "error",
+            "lastHeartbeatAt": a.last_connected_at or None,
+            "lastErrorMessage": a.last_error_message or None,
+            "endpoint": a.endpoint,
+        }
         for a in agents
     ]
     client_rows = [
-        {"id": c.id, "name": c.name, "type": "client",
-         "status": c.status, "connectionStatus": "online" if c.status == "connected" else "offline",
-         "lastHeartbeatAt": c.last_sync_at or None,
-         "endpoint": c.endpoint}
+        {
+            "id": c.id,
+            "name": c.name,
+            "type": "client",
+            "status": c.status,
+            "connectionStatus": "online" if c.status == "connected" else "offline",
+            "lastHeartbeatAt": c.last_sync_at or None,
+            "endpoint": c.endpoint,
+        }
         for c in clients
     ]
     online = sum(1 for s in servers if s["connectionStatus"] == "online")
@@ -388,8 +563,10 @@ async def overview(request: Request) -> dict[str, Any]:
     online_servers = sum(1 for a in agents if a.status == "ACTIVE")
     return {
         "serverStats": {
-            "total": total_servers, "online": online_servers,
-            "offline": total_servers - online_servers, "error": 0,
+            "total": total_servers,
+            "online": online_servers,
+            "offline": total_servers - online_servers,
+            "error": 0,
         },
         "toolStats": {"total": 0, "enabled": 0, "disabled": 0},
         "callStats": {"todayCalls": 0, "successRate": 0, "avgDuration": 0},
@@ -408,10 +585,12 @@ _DEBUG_SESSIONS: list[dict[str, Any]] = []
 
 
 @router.get("/debug/history")
-async def debug_history(request: Request, page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=200)) -> dict[str, Any]:
+async def debug_history(
+    request: Request, page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=200)
+) -> dict[str, Any]:
     _tid(request)
     start = (page - 1) * size
-    items = _DEBUG_SESSIONS[start:start + size]
+    items = _DEBUG_SESSIONS[start : start + size]
     return {"items": items, "total": len(_DEBUG_SESSIONS)}
 
 
@@ -437,20 +616,31 @@ async def debug_execute(request: Request) -> dict[str, Any]:
 # the management UI calls /servers)
 # ---------------------------------------------------------------------------
 @router.get("/servers")
-async def list_servers_ep(request: Request, page: int = Query(1, ge=1), size: int = Query(100, ge=1, le=1000), keyword: str = "") -> dict[str, Any]:
+async def list_servers_ep(
+    request: Request,
+    page: int = Query(1, ge=1),
+    size: int = Query(100, ge=1, le=1000),
+    keyword: str = "",
+) -> dict[str, Any]:
     tid = _tid(request)
     agents = list_external_agents(tid)
     items = [
-        {"id": a.id, "name": a.name, "description": a.description,
-         "transportType": a.protocol_type, "status": "online" if a.status == "ACTIVE" else "offline",
-         "endpoint": a.endpoint, "createdAt": a.created_at}
+        {
+            "id": a.id,
+            "name": a.name,
+            "description": a.description,
+            "transportType": a.protocol_type,
+            "status": "online" if a.status == "ACTIVE" else "offline",
+            "endpoint": a.endpoint,
+            "createdAt": a.created_at,
+        }
         for a in agents
     ]
     if keyword:
         kw = keyword.lower()
         items = [s for s in items if kw in s["name"].lower()]
     start = (page - 1) * size
-    return {"items": items[start:start + size], "total": len(items)}
+    return {"items": items[start : start + size], "total": len(items)}
 
 
 # ---------------------------------------------------------------------------

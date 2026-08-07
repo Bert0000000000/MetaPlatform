@@ -18,6 +18,7 @@ class KbSearchTool:
 
     name = "kb_search"
     description = "在知识库中检索相关文档(走 tech-rag 的 /api/v1/rag/search 端点)"
+    category = "知识检索"
     handler: Any = None
     input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",

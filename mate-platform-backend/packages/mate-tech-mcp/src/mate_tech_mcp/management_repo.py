@@ -3,6 +3,7 @@
 Entities: AgentTrust, ExternalAgent, Policy, plus a connection-monitor view.
 Follows the same tenant-scoped store pattern as clients_repo.py.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -71,9 +72,23 @@ class Policy:
     updated_at: str = ""
 
 
+@dataclass(frozen=True)
+class ToolCategory:
+    id: str
+    tenant_id: str
+    name: str
+    code: str
+    description: str = ""
+    sort_order: int = 0
+    parent_id: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+
+
 _TRUSTS: dict[str, dict[str, AgentTrust]] = {}
 _AGENTS: dict[str, dict[str, ExternalAgent]] = {}
 _POLICIES: dict[str, dict[str, Policy]] = {}
+_CATEGORIES: dict[str, dict[str, ToolCategory]] = {}
 
 
 def list_trusts(tenant_id: str) -> list[AgentTrust]:
@@ -145,7 +160,39 @@ def delete_policy(tenant_id: str, pid: str) -> bool:
     return True
 
 
+def list_categories(tenant_id: str) -> list[ToolCategory]:
+    if not tenant_id:
+        return []
+    return sorted(_CATEGORIES.get(tenant_id, {}).values(), key=lambda c: (c.sort_order, c.name))
+
+
+def get_category(tenant_id: str, cid: str) -> ToolCategory | None:
+    return _CATEGORIES.get(tenant_id, {}).get(cid)
+
+
+def get_category_by_code(tenant_id: str, code: str) -> ToolCategory | None:
+    store = _CATEGORIES.get(tenant_id, {})
+    for c in store.values():
+        if c.code == code:
+            return c
+    return None
+
+
+def put_category(tenant_id: str, category: ToolCategory) -> ToolCategory:
+    _CATEGORIES.setdefault(tenant_id, {})[category.id] = category
+    return category
+
+
+def delete_category(tenant_id: str, cid: str) -> bool:
+    store = _CATEGORIES.get(tenant_id)
+    if not store or cid not in store:
+        return False
+    del store[cid]
+    return True
+
+
 def reset_management_store() -> None:
     _TRUSTS.clear()
     _AGENTS.clear()
     _POLICIES.clear()
+    _CATEGORIES.clear()

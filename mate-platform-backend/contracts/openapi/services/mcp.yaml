@@ -14,10 +14,10 @@ tags:
   description: mcp domain operations
 - name: federation
   description: MCP federation (external MCP server registry & cross-server tool routing)
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /healthz:
     get:
@@ -38,6 +38,124 @@ paths:
       x-mate-permission: mcp.get
       x-mate-requirements:
       - FR-MCP-MCPGETHEALTHZ
+      x-mate-implementation-status: implemented
+  /api/v1/mcp/tool-categories:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: 列出所有工具分类
+      tags:
+      - mcp
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ToolCategory'
+      operationId: mcpGetMcpToolCategories
+      description: 列出所有工具分类（工具注册中心的分类树数据源）
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-MCPGETMCPTOOLCATEGORIES
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 创建工具分类
+      tags:
+      - mcp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCategoryCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCategory'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: mcpPostMcpToolCategory
+      description: 创建工具分类（code 重复返回 400）
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-MCPPOSTMCPTOOLCATEGORY
+      x-mate-implementation-status: implemented
+  /api/v1/mcp/tool-categories/{category_id}:
+    put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 更新工具分类
+      tags:
+      - mcp
+      parameters:
+      - name: category_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolCategoryCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolCategory'
+        '404':
+          $ref: ../common/errors.yaml#/components/responses/Error404
+      operationId: mcpPutMcpToolCategory
+      description: 更新工具分类的名称/描述/排序
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-MCPPUTMCPTOOLCATEGORY
+      x-mate-implementation-status: implemented
+    delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 删除工具分类
+      tags:
+      - mcp
+      parameters:
+      - name: category_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '404':
+          $ref: ../common/errors.yaml#/components/responses/Error404
+      operationId: mcpDeleteMcpToolCategory
+      description: 删除工具分类（无工具引用时）
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-MCPDELETEMCPTOOLCATEGORY
       x-mate-implementation-status: implemented
   /api/v1/mcp/tools:
     get:
@@ -471,8 +589,48 @@ components:
           type: string
         description:
           type: string
+        category:
+          type: string
         inputSchema:
           type: object
+    ToolCategory:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        sort_order:
+          type: integer
+        parent_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, name, code]
+    ToolCategoryCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        sort_order:
+          type: integer
+        parent_id:
+          type: string
+          nullable: true
+      required: [name, code]
     # ---- Federation schemas (mirror federation.py FederatedServer) ----
     FederatedServer:
       type: object

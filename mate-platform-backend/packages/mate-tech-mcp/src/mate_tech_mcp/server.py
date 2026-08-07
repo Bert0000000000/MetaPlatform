@@ -50,6 +50,7 @@ class MCPServer:
             {
                 "name": getattr(t, "name", "?"),
                 "description": getattr(t, "description", ""),
+                "category": getattr(t, "category", ""),
                 "inputSchema": getattr(t, "input_schema", {}),
             }
             for t in self._tools

@@ -1,4 +1,5 @@
 """Edge case tests for mate-tech-mcp (ST-5.3.6.2)."""
+
 from __future__ import annotations
 
 import pytest
@@ -63,12 +64,17 @@ def test_resources_endpoint(client: TestClient, auth_headers: dict[str, str]) ->
 
 def test_tools_endpoint_empty(client: TestClient, auth_headers: dict[str, str]) -> None:
     """GET /api/v1/mcp/tools (无 tools 时仍 200)."""
-    # 重置全局以避免污染
+    # 清空并恢复, 避免污染共享 mcp_server (否则后续测试 kb_search 404)
     from mate_tech_mcp.main import mcp_server
+
+    tools = list(mcp_server._tools)
     mcp_server._tools.clear()
-    resp = client.get("/api/v1/mcp/tools", headers=auth_headers)
-    assert resp.status_code == 200
-    assert resp.json()["tools"] == []
+    try:
+        resp = client.get("/api/v1/mcp/tools", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["tools"] == []
+    finally:
+        mcp_server._tools[:] = tools
 
 
 def test_kb_search_tool_metadata() -> None:
