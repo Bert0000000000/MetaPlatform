@@ -168,7 +168,7 @@ def _get_client(request: Request) -> AsyncCopilotClient:
     return AsyncCopilotClient(
         base_url=os.getenv("MATE_GATEWAY_URL", "http://mate-api-gateway:8100"),
         auth=BearerAuth(
-            token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+            token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
             client_id="metaplatform-backend",
             client_secret="stub",  # noqa: S106
             scope="platform.read platform.write",
@@ -783,16 +783,23 @@ async def chat_completions_stream(
         # (default targets the docker-compose service name + port 8008).
         llmgw_host = os.getenv("MATE_LLMGW_HOST", "mate-tech-llmgw")
         llmgw_port = int(os.getenv("MATE_LLMGW_PORT", "8008"))
+        # dev 模式：keycloak client_credentials（stub secret）被拒，透传入站用户 token
+        user_token = str(getattr(request.state.ctx, "authorization", "") or "")
+        if not user_token:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.lower().startswith("bearer "):
+                user_token = auth_header[7:].strip()
         stream_client = LlmgwStreamClient(
             host=llmgw_host,
             port=llmgw_port,
             auth=BearerAuth(
-                token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+                token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
                 client_id="metaplatform-backend",
                 client_secret="stub",  # noqa: S106
                 scope="platform.read platform.write",
             ),
             tenant_id=tid,
+            user_token=user_token or None,
         )
         try:
             async for line in stream_client.stream_chat_real(

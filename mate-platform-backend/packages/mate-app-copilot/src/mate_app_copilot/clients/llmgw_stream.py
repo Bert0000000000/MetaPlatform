@@ -68,11 +68,15 @@ class LlmgwStreamClient:
         auth: BearerAuth,
         tenant_id: str,
         timeout_seconds: float = 120.0,
+        user_token: str | None = None,
     ) -> None:
         self._base_url = _base_url(host, port)
         self._auth = auth
         self._tenant_id = tenant_id
         self._timeout = timeout_seconds
+        # dev 模式透传：keycloak client_credentials（stub secret）被拒时，
+        # 直接用入站用户 token 调 llmgw（llmgw 侧 INSECURE_SKIP_SIGNATURE）。
+        self._user_token = user_token
 
     @property
     def tenant_id(self) -> str:
@@ -84,6 +88,13 @@ class LlmgwStreamClient:
 
     def _auth_for(self) -> OutgoingAuthMiddleware:
         return OutgoingAuthMiddleware(self._auth, tenant_id=self._tenant_id)
+
+    def _headers_for(self) -> dict[str, str]:
+        """返回请求头：优先透传用户 token，否则走 service auth。"""
+        headers: dict[str, str] = {"X-Tenant-Id": self._tenant_id}
+        if self._user_token:
+            headers["Authorization"] = f"Bearer {self._user_token}"
+        return headers
 
     async def stream_chat_real(
         self,
@@ -116,13 +127,15 @@ class LlmgwStreamClient:
 
         url = f"{self._base_url}/api/v1/llmgw/chat/real"
         try:
+            headers = self._headers_for()
             async with (
                 httpx.AsyncClient(timeout=self._timeout) as http,
                 http.stream(
                     "POST",
                     url,
                     json=body,
-                    auth=self._auth_for(),
+                    headers=headers,
+                    auth=None if self._user_token else self._auth_for(),
                 ) as resp,
             ):
                 if resp.status_code != 200:
@@ -154,11 +167,13 @@ class LlmgwStreamClient:
         }
         url = f"{self._base_url}/api/v1/llmgw/chat"
         try:
+            headers = self._headers_for()
             async with httpx.AsyncClient(timeout=self._timeout) as http:
                 resp = await http.post(
                     url,
                     json=body,
-                    auth=self._auth_for(),
+                    headers=headers,
+                    auth=None if self._user_token else self._auth_for(),
                 )
         except httpx.HTTPError as exc:
             raise LlmgwStreamError(f"llmgw chat transport error: {exc}") from exc
