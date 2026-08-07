@@ -473,7 +473,7 @@ export default function ChatPage() {
   const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
-  const [currentModel, setCurrentModel] = useState('doubao-pro-32k');
+  const [currentModel, setCurrentModel] = useState('');
   const [availableModels, setAvailableModels] = useState<{ label: string; value: string }[]>([]);
   const loadedHistoryRef = useRef<Set<string>>(new Set());
   const modelsLoadedRef = useRef(false);

@@ -38,3 +38,21 @@ export async function testProvider(
     );
     return resp.data;
 }
+
+export interface ProviderModelsResponse {
+    ok: boolean;
+    provider: string;
+    models: string[];
+    display_names: Record<string, string>;
+    message: string;
+}
+
+export async function fetchProviderModels(
+    payload: ProviderTestRequest,
+): Promise<ProviderModelsResponse> {
+    const resp = await apiClient.post<ProviderModelsResponse>(
+        '/api/v1/llmgw/providers/models',
+        payload,
+    );
+    return resp.data;
+}

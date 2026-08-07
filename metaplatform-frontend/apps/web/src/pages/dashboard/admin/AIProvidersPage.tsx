@@ -30,13 +30,16 @@ import {
   MessageOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
+  CloudDownloadOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import type { AdminSystemConfig } from "@/types";
 import { listConfigs, updateConfig } from "@/api/admin/configs";
+import { listAiModels, saveAiModelsBulk, updateAiModel, deleteAiModel, type AiModelItem } from "@/api/admin/models";
 import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
 import { formatDateTime } from "@/utils/datetime";
 import { useSettings } from "@/contexts/SettingsContext";
-import { testProvider } from "@mate/shared/api";
+import { testProvider, fetchProviderModels } from "@mate/shared/api";
 
 type ProviderId = "openai" | "azure" | "ollama" | "custom";
 
@@ -114,6 +117,18 @@ export default function AIProvidersPage() {
     ollama: false,
     custom: false,
   });
+  const [models, setModels] = useState<Record<ProviderId, AiModelItem[]>>({
+    openai: [],
+    azure: [],
+    ollama: [],
+    custom: [],
+  });
+  const [fetchingModels, setFetchingModels] = useState<Record<ProviderId, boolean>>({
+    openai: false,
+    azure: false,
+    ollama: false,
+    custom: false,
+  });
 
   const load = async () => {
     setLoading(true);
@@ -134,6 +149,105 @@ export default function AIProvidersPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // 加载已配置的模型清单
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await listAiModels();
+        const grouped: Record<ProviderId, AiModelItem[]> = {
+          openai: [],
+          azure: [],
+          ollama: [],
+          custom: [],
+        };
+        for (const m of all) {
+          const p = m.provider as ProviderId;
+          if (grouped[p]) grouped[p].push(m);
+        }
+        setModels(grouped);
+      } catch {
+        // 静默：模型清单不可用时保留空
+      }
+    })();
+  }, []);
+
+  // 「获取模型」：调 LLMGW providers/models 拉上游模型 → 批量存 IAM
+  const handleFetchModels = async (provider: ProviderId) => {
+    const cfg = pickByKey(provider, "base_url");
+    const baseUrl = cfg && typeof cfg.value === "string" ? cfg.value : "";
+    if (!baseUrl) {
+      message.warning("请先填写 Base URL");
+      return;
+    }
+    const apiKeyCfg = pickByKey(provider, "api_key");
+    const apiKeyValue =
+      apiKeyCfg && typeof apiKeyCfg.value === "string" && apiKeyCfg.value.length > 0
+        ? apiKeyCfg.value
+        : null;
+    const apiVersion = (() => {
+      if (provider !== "azure") return undefined;
+      const v = pickByKey(provider, "api_version");
+      return v && typeof v.value === "string" ? v.value : undefined;
+    })();
+    setFetchingModels((s) => ({ ...s, [provider]: true }));
+    try {
+      const result = await fetchProviderModels({
+        provider,
+        base_url: baseUrl,
+        api_key: apiKeyValue,
+        api_version: apiVersion,
+        timeout_sec: 15,
+      });
+      if (!result.ok || result.models.length === 0) {
+        message.warning(result.message || "未获取到模型");
+        return;
+      }
+      await saveAiModelsBulk(
+        provider,
+        result.models.map((mid) => ({
+          modelId: mid,
+          displayName: result.display_names?.[mid] || undefined,
+          modality: provider === "azure" || provider === "ollama" ? "text" : "text",
+          enabled: true,
+        })),
+      );
+      message.success(`已获取 ${result.models.length} 个模型并保存`);
+      const refreshed = await listAiModels({ provider });
+      setModels((s) => ({ ...s, [provider]: refreshed }));
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "获取模型失败");
+    } finally {
+      setFetchingModels((s) => ({ ...s, [provider]: false }));
+    }
+  };
+
+  const handleToggleModel = async (model: AiModelItem) => {
+    if (model.id == null) return;
+    try {
+      await updateAiModel(model.id, { enabled: !model.enabled });
+      const provider = model.provider as ProviderId;
+      const refreshed = await listAiModels({ provider });
+      setModels((s) => ({ ...s, [provider]: refreshed }));
+    } catch {
+      message.error("更新失败");
+    }
+  };
+
+  const handleDeleteModel = async (model: AiModelItem) => {
+    if (model.id == null) return;
+    try {
+      await deleteAiModel(model.id);
+      const provider = model.provider as ProviderId;
+      setModels((s) => ({
+        ...s,
+        [provider]: s[provider].filter((m) => m.id !== model.id),
+      }));
+      message.success("已删除模型");
+    } catch {
+      message.error("删除失败");
+    }
+  };
 
   const pickByKey = (provider: ProviderId, suffix: string): AdminSystemConfig | undefined =>
     items.find((c) => c.key === `ai.provider.${provider}.${suffix}`);
@@ -361,6 +475,14 @@ export default function AIProvidersPage() {
               测试连接
             </Button>
             <Button
+              icon={<CloudDownloadOutlined />}
+              onClick={() => handleFetchModels(id)}
+              loading={fetchingModels[id]}
+              disabled={!isEnabled}
+            >
+              获取模型
+            </Button>
+            <Button
               type="primary"
               icon={<CheckCircleOutlined />}
               onClick={() => handleSave(id)}
@@ -371,6 +493,38 @@ export default function AIProvidersPage() {
             </Button>
           </Space>
         </div>
+
+        {/* 已配置模型清单 */}
+        {(models[id]?.length ?? 0) > 0 && (
+          <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "var(--muted-foreground)" }}>
+              已配置模型（{models[id].length}）
+            </div>
+            <Space wrap size={[4, 4]}>
+              {models[id].map((m) => (
+                <Tag
+                  key={m.id}
+                  closable
+                  onClose={(e) => {
+                    e.preventDefault();
+                    handleDeleteModel(m);
+                  }}
+                  icon={
+                    <Switch
+                      size="small"
+                      checked={m.enabled}
+                      onChange={() => handleToggleModel(m)}
+                      style={{ marginRight: 4 }}
+                    />
+                  }
+                  style={{ display: "inline-flex", alignItems: "center", cursor: "default" }}
+                >
+                  {m.displayName || m.modelId}
+                </Tag>
+              ))}
+            </Space>
+          </div>
+        )}
       </Card>
     );
   };
