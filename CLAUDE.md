@@ -1,11 +1,11 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-07（**架构治理盘点 + GOVERN-01 收口** — 31 条偏差盘点 → 10 治理批次 GOVERN-01~10 已立项；ADR-0021/0040/0041 升 Accepted v1.0；HARD-RULES-MATRIX.md 新建）；上一版 2026-08-06（v4 RUNTIME 5/5 Batch 收口 — RUNTIME-MVP-01 + RUNTIME-MVP-02 合并提速两次落地；HTTP+PG+OPT+K8S+IAM+MKT 全部 Accepted；kernel + tech-ont 511/514 tests pass）
+> **最近更新**：2026-08-10（**GOVERN-10 收口（10/10 治理批次完结）** — 3 个 named race failure 根因（`app.middleware_stack = None` 在 `test_v2_kernel_seed.py` / `test_v2_kernel_e2e.py` 中不还原）已修；2 GBK + 1 NP 编码/断言 bug 修；ga-acceptance.yml 拆 5 个独立 job（ga-003/004/005/007/010）；HARD-RULES-MATRIX ③⑨ 翻牌 ✅；9 ✅ / 2 🟡 / 0 ⏳ / 0 🔧；`tests/governance/test_hard_rules_ci.py` 5/5 绿；67 个未收口失败入 `FOLLOW-UP-BOARD.md`）；上一版 2026-08-07（架构治理盘点 + GOVERN-01 收口）
 >
 > **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** Ontology / 数字员工 / SuperAI 子计划 20/20 Batch Accepted；**v4** RUNTIME 路线 5/5 Batch Accepted
 >
-> **架构治理路线（2026-08-07 GOVERN-01 立项）**：`docs/active/governance/HARD-RULES-MATRIX.md` + 计划文件 `cozy-orbiting-wombat.md`。10 个治理批次（GOVERN-01~10）覆盖文档收口、iam 退役、Ontology v1 退役、KERNEL-01 PG 补齐、Function 执行器、tenant RLS、死模块清理、前端契约、Helm/NP/OTel、测试基线。详见 §"13 硬规则 × CI 矩阵"。
+> **架构治理路线（2026-08-10 GOVERN-10 完结）**：`docs/active/governance/HARD-RULES-MATRIX.md` + `docs/active/governance/FOLLOW-UP-BOARD.md` + 计划文件 `cozy-orbiting-wombat.md`。**10/10 治理批次（GOVERN-01~10）全部完结**，13 硬规则状态 9 ✅ / 2 🟡 / 0 ⏳ / 0 🔧。67 个未收口测试失败入 FOLLOW-UP-BOARD（A: OpenAPI parity 40 / B: MCP PG 15 / C: copilot 10 / D: llmgw 3）。详见 §"13 硬规则 × CI 矩阵"。
 
 ## v3.0 GA 状态
 

@@ -51,7 +51,8 @@
 | GOVERN-07 | 死模块清理 | Planned | G8-FULL-ACCEPTANCE | (待 GOVERN-07 ACCEPTANCE) |
 | GOVERN-08 | 前端路由与契约闭环 | Accepted ✅ | API-GOV-01 | [evidence/GOVERN-08-SUBSPEC.md](evidence/GOVERN-08-SUBSPEC.md) (commit 1aa8b2c1) |
 | GOVERN-09 | Helm + NetworkPolicy + OTel 一致性 | Accepted ✅ | ADR-0010 / PLATFORM-K8S-01-ACCEPTANCE | [evidence/GOVERN-09-SUBSPEC.md](evidence/GOVERN-09-SUBSPEC.md) (commit db0c5d3a) |
-| GOVERN-10 | 测试基线与回归保护 | Planned | ADR-0015 / GA-ACCEPTANCE | (待 GOVERN-10 ACCEPTANCE) |
+| GOVERN-10 | 测试基线与回归保护 | Accepted ✅ | ADR-0015 / GA-ACCEPTANCE | [evidence/GOVERN-10-SUBSPEC.md](evidence/GOVERN-10-SUBSPEC.md) + [governance/FOLLOW-UP-BOARD.md](governance/FOLLOW-UP-BOARD.md) |
+| GOVERN-10 FOLLOW-UP | 67 个未收口失败（A 40 / B 15 / C 10 / D 3） | Planned | HARD-RULES-MATRIX §3 | [governance/FOLLOW-UP-BOARD.md](governance/FOLLOW-UP-BOARD.md) |
 
 ## v3.1 增量 sub-batch（进行中）
 
