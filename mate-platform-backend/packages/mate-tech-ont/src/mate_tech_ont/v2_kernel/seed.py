@@ -18,6 +18,7 @@ from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.reasoning import Function, FunctionLanguage
 from mate_kernel.ontology.types.action_type import ActionType
+from mate_kernel.ontology.types.interface import Interface
 from mate_kernel.ontology.types.link_type import Cardinality, Directionality, LinkType
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
@@ -326,4 +327,192 @@ def _seed_enterprise_ontology(
     return created
 
 
-__all__ = ["seed_demo", "TENANT"]
+# 7+1 数字员工本体（GOVERN-11 Step 2：跨域 Ontology 业务闭环 seed）
+#
+# 7 域（HR/IT/FINANCE/SALES + 子域）+ 1 编排者 SuperAI：
+#   HR Recruiter / HR Payroll / IT Helpdesk / IT DevOps /
+#   Finance AR / Finance Expense / Sales CRM / SuperAI Orchestrator
+#
+# 每个 employee 同时创建 1 Function + 1 ActionType（GOVERN-05 真 invoke 链路）。
+# 全部走 OntologyRepository Protocol 方法（13 硬规则 #3：无裸 SQL）。
+# 业务语义字段（HR 工单天数、加班费、发票金额、合同金额、优先级）来自 GOVERN-11 §B.2.2。
+#
+# 幂等：list_interfaces() 已含 dw-employee-if 视为已 seed，返回 0。
+
+_DW_EMPLOYEES: tuple[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...]], ...] = (
+    ("hr-recruiter", "HR Recruiter", "HR", "agent",
+     ("screen_resume", "schedule_interview", "initiate_onboarding"),
+     ("ont.{t}.obj.employee.v1", "ont.{t}.obj.leave-request.v1")),
+    ("hr-payroll", "HR Payroll Specialist", "HR", "executor",
+     ("calculate_salary", "verify_social_insurance", "compute_overtime_fee"),
+     ("ont.{t}.obj.leave-request.v1",)),
+    ("it-helpdesk", "IT Service Desk", "IT", "agent",
+     ("classify_ticket", "reset_password", "request_device"),
+     ("ont.{t}.obj.ticket.v1",)),
+    ("it-devops", "IT DevOps Engineer", "IT", "executor",
+     ("trigger_ci", "approve_deploy", "alert_monitoring"),
+     ("ont.{t}.obj.ticket.v1",)),
+    ("finance-ar", "Finance AR Specialist", "FINANCE", "analyst",
+     ("issue_invoice", "reconcile_payment", "aging_analysis"),
+     ("ont.{t}.obj.fin.invoice.v1",)),
+    ("finance-expense", "Finance Expense Auditor", "FINANCE", "executor",
+     ("audit_expense", "reimburse", "generate_voucher"),
+     ("ont.{t}.obj.fin.invoice.v1",)),
+    ("sales-crm", "Sales CRM Assistant", "SALES", "agent",
+     ("follow_customer", "draft_contract", "advance_opportunity"),
+     ("ont.{t}.obj.crm.contract.v1",)),
+)
+
+
+def seed_hr_it_finance_orchestrator(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
+    """幂等注入 7+1 数字员工本体；返回创建资源数。"""
+    t = tenant_id
+    interface_rid = ClassRef(f"ont.{t}.if.dw-employee.v1")
+    if any(i.rid == interface_rid for i in repo.list_interfaces()):
+        return 0
+
+    now = datetime.now(timezone.utc)
+
+    # ── Interface（dw-employee 契约） ──
+    repo.upsert_interface(Interface(
+        rid=interface_rid,
+        properties=(
+            _prop(f"ont.{t}.prop.dw-role.v1", "string", "role"),
+            _prop(f"ont.{t}.prop.dw-role-category.v1", "string", "roleCategory"),
+            _prop(f"ont.{t}.prop.dw-capabilities.v1", "string", "capabilities (CSV)"),
+            _prop(f"ont.{t}.prop.dw-endpoint.v1", "string", "endpoint_url"),
+        ),
+        required_links=(ClassRef(f"ont.{t}.obj.employee.v1"),),
+    ))
+
+    # ── LinkType 3 条 ──
+    repo.upsert_link_type(LinkType(
+        rid=ClassRef(f"ont.{t}.link.dw-employee-of.v1"),
+        src=ClassRef(f"ont.{t}.obj.employee.v1"),
+        dst=ClassRef(f"ont.{t}.if.dw-employee.v1"),
+        cardinality=Cardinality.ONE_TO_MANY,
+        directionality=Directionality.DIRECTED,
+    ))
+    repo.upsert_link_type(LinkType(
+        rid=ClassRef(f"ont.{t}.link.dw-executes-function.v1"),
+        src=ClassRef(f"ont.{t}.if.dw-employee.v1"),
+        dst=ClassRef(f"ont.{t}.fn.dw-execute.v1"),
+        cardinality=Cardinality.ONE_TO_MANY,
+        directionality=Directionality.DIRECTED,
+    ))
+    repo.upsert_link_type(LinkType(
+        rid=ClassRef(f"ont.{t}.link.dw-orchestrated-by.v1"),
+        src=ClassRef(f"ont.{t}.if.dw-employee.v1"),
+        dst=ClassRef(f"ont.{t}.obj.superai.v1"),
+        cardinality=Cardinality.MANY_TO_ONE,
+        directionality=Directionality.DIRECTED,
+    ))
+
+    # ── ObjectType: obj.superai.v1（编排者本体） ──
+    superai_ot = ObjectType(
+        rid=ClassRef(f"ont.{t}.obj.superai.v1"),
+        primary_key=(ClassRef(f"ont.{t}.prop.superai-id.v1"),),
+        properties=(
+            _prop(f"ont.{t}.prop.superai-id.v1", "string", "orchestrator id", pk=True),
+            _prop(f"ont.{t}.prop.superai-name.v1", "string", "name"),
+            _prop(f"ont.{t}.prop.superai-capabilities.v1", "string", "capabilities (CSV)"),
+        ),
+        display_name="SuperAI 编排者",
+    )
+    repo.upsert_object_type(superai_ot)
+
+    created = 0
+    # ── 7 域数字员工：1 个 ObjectType(if.dw-employee.v1 已是 Interface，再加 1 个 ObjectType.obj.dw-digital-employee.v1 给个体) ──
+    dw_ot = ObjectType(
+        rid=ClassRef(f"ont.{t}.obj.dw-digital-employee.v1"),
+        primary_key=(ClassRef(f"ont.{t}.prop.dw-emp-id.v1"),),
+        properties=(
+            _prop(f"ont.{t}.prop.dw-emp-id.v1", "string", "digital employee id", pk=True),
+            _prop(f"ont.{t}.prop.dw-emp-name.v1", "string", "name"),
+            _prop(f"ont.{t}.prop.dw-role.v1", "string", "role"),
+            _prop(f"ont.{t}.prop.dw-role-category.v1", "string", "roleCategory"),
+            _prop(f"ont.{t}.prop.dw-capabilities.v1", "string", "capabilities (CSV)"),
+            _prop(f"ont.{t}.prop.dw-endpoint.v1", "string", "endpoint_url"),
+        ),
+        display_name="数字员工",
+    )
+    repo.upsert_object_type(dw_ot)
+    created += 1
+
+    # ── 每个员工：Individual + Function + ActionType ──
+    for slug, name, role_category, role, capabilities, _targets in _DW_EMPLOYEES:
+        endpoint = f"http://localhost:8021/api/v1/dw/employees/dw-{slug}/execute"
+        cap_csv = ",".join(capabilities)
+        repo.create_individual(_ind(
+            f"ont.{t}.ind.dw-{slug}.v1",
+            f"ont.{t}.obj.dw-digital-employee.v1",
+            [
+                (f"ont.{t}.prop.dw-emp-id.v1", f"dw-{slug}"),
+                (f"ont.{t}.prop.dw-emp-name.v1", name),
+                (f"ont.{t}.prop.dw-role.v1", role),
+                (f"ont.{t}.prop.dw-role-category.v1", role_category),
+                (f"ont.{t}.prop.dw-capabilities.v1", cap_csv),
+                (f"ont.{t}.prop.dw-endpoint.v1", endpoint),
+            ],
+            f"dw-{slug}",
+            t,
+        ))
+        # 每个员工 1 个 Function + 1 个 ActionType
+        fn_rid = f"ont.{t}.fn.dw-{slug}-execute.v1"
+        repo.upsert_function(Function(
+            rid=ClassRef(fn_rid),
+            language=FunctionLanguage.PYTHON,
+            version=1,
+            source_ref=f"ref://dw_{slug.replace('-', '_')}_execute",
+            signatures=(("intent", "string"), ("payload", "string")),
+        ))
+        repo.upsert_action_type(ActionType(
+            rid=ClassRef(f"ont.{t}.act.dw-{slug}-execute.v1"),
+            parameters=(
+                _prop(f"ont.{t}.prop.intent.v1", "string", "intent"),
+                _prop(f"ont.{t}.prop.payload.v1", "string", "payload"),
+            ),
+            submission_criteria=("len(intent) > 0",),
+            side_effects=("audit_log", "notify_email"),
+            function_ref=ClassRef(fn_rid),
+            on=(ClassRef(f"ont.{t}.obj.dw-digital-employee.v1"),),
+        ))
+        created += 3
+
+    # ── SuperAI 编排者 ──
+    sa_caps = ("detect_intent", "match_employee", "plan_task", "aggregate_result")
+    repo.create_individual(_ind(
+        f"ont.{t}.ind.superai-orchestrator.v1",
+        f"ont.{t}.obj.superai.v1",
+        [
+            (f"ont.{t}.prop.superai-id.v1", "superai-orchestrator"),
+            (f"ont.{t}.prop.superai-name.v1", "SuperAI Orchestrator"),
+            (f"ont.{t}.prop.superai-capabilities.v1", ",".join(sa_caps)),
+        ],
+        "superai-orchestrator",
+        t,
+    ))
+    sa_fn_rid = f"ont.{t}.fn.superai-orchestrate.v1"
+    repo.upsert_function(Function(
+        rid=ClassRef(sa_fn_rid),
+        language=FunctionLanguage.PYTHON,
+        version=1,
+        source_ref="ref://superai_orchestrate",
+        signatures=(("user_intent", "string"), ("tenant_id", "string")),
+    ))
+    repo.upsert_action_type(ActionType(
+        rid=ClassRef(f"ont.{t}.act.superai-orchestrate.v1"),
+        parameters=(
+            _prop(f"ont.{t}.prop.user-intent.v1", "string", "user intent"),
+        ),
+        submission_criteria=("len(user_intent) > 0",),
+        side_effects=("audit_log",),
+        function_ref=ClassRef(sa_fn_rid),
+        on=(ClassRef(f"ont.{t}.obj.superai.v1"),),
+    ))
+    created += 3
+
+    return created
+
+
+__all__ = ["seed_demo", "seed_hr_it_finance_orchestrator", "TENANT"]
