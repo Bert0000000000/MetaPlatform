@@ -49,7 +49,7 @@
 | **GOVERN-05** | Function 基元执行器接通 | **Accepted** ✅ | ADR-0021 / ADR-0040 §2.5.1 | `evidence/GOVERN-05-SUBSPEC.md` |
 | GOVERN-06 | tenant 隔离硬化（PG RLS） | **Accepted** ✅ | ADR-0012 / SEC-TENANT-01-ACCEPTANCE | `evidence/GOVERN-06-SUBSPEC.md` |
 | GOVERN-07 | 死模块清理 | Planned | G8-FULL-ACCEPTANCE | (待 GOVERN-07 ACCEPTANCE) |
-| GOVERN-08 | 前端路由与契约闭环 | Planned | API-GOV-01 | (待 GOVERN-08 ACCEPTANCE) |
+| GOVERN-08 | 前端路由与契约闭环 | Accepted ✅ | API-GOV-01 | [evidence/GOVERN-08-SUBSPEC.md](evidence/GOVERN-08-SUBSPEC.md) (commit 1aa8b2c1) |
 | GOVERN-09 | Helm + NetworkPolicy + OTel 一致性 | Planned | ADR-0010 / PLATFORM-K8S-01-ACCEPTANCE | (待 GOVERN-09 ACCEPTANCE) |
 | GOVERN-10 | 测试基线与回归保护 | Planned | ADR-0015 / GA-ACCEPTANCE | (待 GOVERN-10 ACCEPTANCE) |
 
