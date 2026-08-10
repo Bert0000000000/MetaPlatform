@@ -5,7 +5,7 @@ import { type APIRequestContext, type Page } from '@playwright/test';
  * then injects the real token + user into the page so every page load is
  * authenticated against the actual backend (not mocks).
  */
-export const GATEWAY = process.env.E2E_GATEWAY_URL ?? 'http://localhost:9250/api/v1';
+export const GATEWAY = process.env.E2E_GATEWAY_URL ?? 'http://localhost:8100/api/v1';
 
 export async function loginViaApi(
   page: Page,
