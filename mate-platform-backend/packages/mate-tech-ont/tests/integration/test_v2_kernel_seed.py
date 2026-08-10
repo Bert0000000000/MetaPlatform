@@ -47,8 +47,15 @@ def client_with_ctx(monkeypatch):
     # BaseHTTPMiddleware binds self.dispatch_func at construction time and the
     # app caches the middleware stack on first request — reset the stack so the
     # patched dispatch is picked up even when a previous test module built it.
-    app.middleware_stack = None
-    return TestClient(app)
+    # GOVERN-10: save+restore around the test so subsequent tests don't see
+    # a stale middleware_stack that lost its install_auth binding.
+    from mate_tech_ont.main import app as _app
+    saved_stack = _app.middleware_stack
+    _app.middleware_stack = None
+    try:
+        yield TestClient(_app)
+    finally:
+        _app.middleware_stack = saved_stack
 
 
 class TestSeedDemo:

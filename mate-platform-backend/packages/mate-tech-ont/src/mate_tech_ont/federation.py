@@ -186,6 +186,11 @@ class FederationExecutor:
     def clear_mappings(self) -> None:
         self._mappings.clear()
 
+    def reset(self) -> None:
+        """GOVERN-10: clear mappings + loaded data. Test-only."""
+        self.clear_mappings()
+        self.clear_data()
+
     # -- data loading --
 
     def load_ontology(

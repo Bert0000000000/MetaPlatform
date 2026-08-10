@@ -13,13 +13,13 @@ ROOT = Path(__file__).parents[1] / "helm" / "charts" / "marketplace"
 
 
 def test_chart_metadata_present():
-    chart = yaml.safe_load((ROOT / "Chart.yaml").read_text())
+    chart = yaml.safe_load((ROOT / "Chart.yaml").read_text(encoding="utf-8"))
     assert chart["name"] == "marketplace"
     assert chart["type"] == "application"
 
 
 def test_networkpolicy_default_deny_exists():
-    tpl = (ROOT / "templates" / "networkpolicy.yaml").read_text()
+    tpl = (ROOT / "templates" / "networkpolicy.yaml").read_text(encoding="utf-8")
     assert "kind: NetworkPolicy" in tpl
     # 默认 deny baseline:podSelector 选择 marketplace pod,
     # 但 policyTypes 同时声明 Ingress + Egress,默认所有 inbound/outbound 都隐式拒绝
@@ -29,7 +29,7 @@ def test_networkpolicy_default_deny_exists():
 
 
 def test_networkpolicy_egress_to_saas_whitelisted():
-    tpl = (ROOT / "templates" / "networkpolicy.yaml").read_text()
+    tpl = (ROOT / "templates" / "networkpolicy.yaml").read_text(encoding="utf-8")
     # egress 必须放行 SaaS(由 values 注入)
     assert "egress" in tpl
     # values.allowedEgressCidrs 必须被引用
@@ -39,7 +39,7 @@ def test_networkpolicy_egress_to_saas_whitelisted():
 def test_no_secrets_in_chart():
     """硬规则 #12:不允许 KMS 密文/密钥泄露到 chart。"""
     for f in ROOT.rglob("*.yaml"):
-        text = f.read_text()
+        text = f.read_text(encoding="utf-8")
         # 不允许 ENC[] 形式密文(数据库 connection string 也不会用 ENC[])
         if "ENC[" in text:
             raise AssertionError(

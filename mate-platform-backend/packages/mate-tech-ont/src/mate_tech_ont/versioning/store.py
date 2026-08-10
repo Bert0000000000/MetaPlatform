@@ -85,6 +85,11 @@ class VersionStore:
         self._versions.pop((v.ontology_id, v.version), None)
         return True
 
+    def reset(self) -> None:
+        """GOVERN-10: clear all in-memory state. Test-only."""
+        self._versions.clear()
+        self._by_id.clear()
+
 
 # 全局单例
 version_store = VersionStore()

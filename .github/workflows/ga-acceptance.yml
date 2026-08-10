@@ -154,6 +154,42 @@ jobs:
           grep -q "name: .*-default-deny-egress" /tmp/rendered.yaml
           echo "OK: default-deny ingress + egress present"
 
+  # rule 3: 没有 tenant 上下文，不访问 repository（forbid_raw_sql）
+  ga-003-tenant:
+    name: ga-003 forbid_raw_sql (rule 3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pre-commit
+      - run: python scripts/ci/forbid_raw_sql.py
+
+  # rule 4: 外部系统没有 ACL Client（forbid_bare_httpx）
+  ga-004-acl:
+    name: ga-004 forbid_bare_httpx (rule 4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pre-commit
+      - run: python scripts/ci/forbid_bare_httpx.py
+
+  # rule 5: Production profile 禁止 fallback（forbid_legacy_fallback）
+  ga-005-fallback:
+    name: ga-005 forbid_legacy_fallback (rule 5)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pre-commit
+      - run: python scripts/ci/forbid_legacy_fallback.py
+
   # rule 3 + 4 + 5 + 7 + 10: pre-commit hooks + pytest (all in one)
   ga-hooks-and-tests:
     name: ga pre-commit + infra pytest + mate-platform pytest
@@ -180,6 +216,30 @@ jobs:
         run: python scripts/ci/forbid_iam_dep_imports.py
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
         run: python scripts/ci/forbid_legacy_artifacts.py
+
+  # rule 7: 契约或集成测试跳过不标记 Accepted（forbid_skip_tests）
+  ga-007-skip-tests:
+    name: ga-007 forbid_skip_tests (rule 7)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pre-commit
+      - run: python scripts/ci/forbid_skip_tests.py
+
+  # rule 10: 所有状态以验收证据为准（require_evidence）
+  ga-010-evidence:
+    name: ga-010 require_evidence (rule 10)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pre-commit
+      - run: python scripts/ci/require_evidence.py
 
   # rule 2: requirement ID coverage
   ga-002-requirement-ids:

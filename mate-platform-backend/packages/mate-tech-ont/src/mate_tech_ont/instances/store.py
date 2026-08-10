@@ -210,6 +210,11 @@ class InstanceStore:
         visible = {i.id for i in self.list_instances(ctx)}
         return [r for r in self._relations.values() if r.src_id in visible and r.dst_id in visible]
 
+    def reset(self) -> None:
+        """GOVERN-10: clear all in-memory state. Test-only; not for production use."""
+        self._instances.clear()
+        self._relations.clear()
+
 
 # GOVERN-03: module-level ``store`` singleton removed. Callers must
 # instantiate via DI. Re-exported for the (deprecated) v1 sparql path

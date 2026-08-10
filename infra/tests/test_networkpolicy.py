@@ -49,7 +49,11 @@ class TestExplicitAllow:
     def test_allow_dns_template(self) -> None:
         text = _read_template("allow-dns.yaml")
         assert "kind: NetworkPolicy" in text
-        assert "kube-system" in text
+        # Template renders namespace via {{ .Values.allowedEgress.dns.namespace }}.
+        # Verify the variable is referenced and the values default to kube-system.
+        assert "allowedEgress.dns.namespace" in text
+        vals = _read_values()
+        assert vals["allowedEgress"]["dns"]["namespace"] == "kube-system"
 
     def test_allow_dns_values_contain_port_53(self) -> None:
         vals = _read_values()
