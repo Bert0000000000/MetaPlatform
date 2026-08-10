@@ -3,7 +3,16 @@ info:
   title: Mate Platform wfe API
   version: 1.0.0
   x-mate-owner: workflow-platform
-  description: Canonical contract for Mate Platform wfe API.
+  x-sunset: 2026-12-31
+  description: |
+    Canonical contract for Mate Platform wfe API.
+
+    **GOVERN-08 sunset notice (2026-08-10)**: WFE domain has zero
+    frontend consumer routes (`/wfe/*` absent in `App.tsx`) and no
+    client under `apps/web/src/api/wfe/`. The contract is retained
+    only because the backend service is still running. It will be
+    archived on 2026-12-31 unless product re-prioritises the
+    workflow-front-end surface.
   contact:
     name: Mate Platform API Governance
     email: api-governance@metaplatform.local

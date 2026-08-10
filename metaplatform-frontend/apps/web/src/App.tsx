@@ -140,6 +140,17 @@ const EvaluationPage = lazy(() => import('./pages/agents/EvaluationPage'));
 const CapabilityConfigPage = lazy(() => import('./pages/agents/CapabilityConfigPage'));
 const ExternalAgentsPage = lazy(() => import('./pages/agents/ExternalAgentsPage'));
 
+// DW API consumption routes (GOVERN-08)
+const DwEmployeesPage = lazy(() => import('./pages/dw/EmployeesPage'));
+const DwEvaluationsPage = lazy(() => import('./pages/dw/EvaluationsPage'));
+const DwCollaborationsPage = lazy(() => import('./pages/dw/CollaborationsPage'));
+const DwA2APage = lazy(() => import('./pages/dw/A2APage'));
+const DwTasksPage = lazy(() => import('./pages/dw/TasksPage'));
+const DwLearningPage = lazy(() => import('./pages/dw/LearningPage'));
+const DwDocumentsPage = lazy(() => import('./pages/dw/DocumentsPage'));
+const DwExtractionPage = lazy(() => import('./pages/dw/ExtractionPage'));
+const DwObsPage = lazy(() => import('./pages/dw/ObsPage'));
+
 
 function Loading() {
   return (
@@ -298,6 +309,17 @@ function AppRoutes() {
           <Route path="agents/evaluation" element={<EvaluationPage />} />
           <Route path="agents/:employeeId/capabilities" element={<CapabilityConfigPage />} />
           <Route path="agents/external" element={<ExternalAgentsPage />} />          {/* 鍚庡彴绠＄悊锛氱粺涓€浣跨敤 dashboard/admin 椤甸潰锛岄伩鍏嶉噸澶嶈矾鐢卞拰鏈畾涔夌粍浠?*/}
+
+          {/* DW API consumption routes (GOVERN-08) */}
+          <Route path="dw/employees" element={<DwEmployeesPage />} />
+          <Route path="dw/evaluations" element={<DwEvaluationsPage />} />
+          <Route path="dw/collaborations" element={<DwCollaborationsPage />} />
+          <Route path="dw/a2a" element={<DwA2APage />} />
+          <Route path="dw/tasks" element={<DwTasksPage />} />
+          <Route path="dw/learning" element={<DwLearningPage />} />
+          <Route path="dw/documents" element={<DwDocumentsPage />} />
+          <Route path="dw/extraction" element={<DwExtractionPage />} />
+          <Route path="dw/obs" element={<DwObsPage />} />
         </Route>
       </Routes>
     </Suspense>
