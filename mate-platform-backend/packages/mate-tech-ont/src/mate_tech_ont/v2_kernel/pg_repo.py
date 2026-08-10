@@ -14,6 +14,8 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -415,12 +417,37 @@ class PgOntologyRepository(OntologyRepository):
         self._dsn = dsn
         self._lock = threading.Lock()
         self._initialized = False
+        # GOVERN-06: 线程局部的 tenant_id 上下文；通过 tenant_scope() 临时绑定。
+        # 默认 None 表示"无租户"—— _install_rls 在这种情况下跳过，保留旧行为
+        # （便于一次性脚本 / 迁移场景）。生产请求必须经 tenant_scope() 注入。
+        self._tenant_local = threading.local()
         from mate_kernel.action.engine import ActionService
         self._action_service = ActionService()
         # GOVERN-05: FunctionResolver + FunctionExecutor 注入
         from mate_kernel.ontology.function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
         self._function_executor: object | None = None
+
+    def _current_tenant(self) -> str | None:
+        return getattr(self._tenant_local, "tenant_id", None)
+
+    @contextmanager
+    def tenant_scope(self, tenant_id: str) -> Iterator[PgOntologyRepository]:
+        """GOVERN-06: 在 with 块内所有 _connect() 自动 install_rls(tenant_id)。
+
+        用法（v2_kernel/api.py）::
+
+            with app_state.kernel_repo.tenant_scope(ctx.tenant_id) as repo:
+                result = repo.upsert_object_type(...)
+
+        嵌套调用沿用最内层 tenant；退出 with 自动还原。
+        """
+        prev = getattr(self._tenant_local, "tenant_id", None)
+        self._tenant_local.tenant_id = tenant_id
+        try:
+            yield self
+        finally:
+            self._tenant_local.tenant_id = prev
 
     def set_function_executor(self, executor: object) -> None:
         """GOVERN-05: 注入 FunctionExecutor；同步到 ActionService 内 _executors + _resolver。"""
@@ -430,13 +457,42 @@ class PgOntologyRepository(OntologyRepository):
         self._action_service.set_resolver(self._function_resolver)
 
     def _connect(self):
+        """建立 psycopg2 连接；GOVERN-06: 连接建立后立即 install_rls。
+
+        若当前线程已通过 tenant_scope() 绑定 tenant_id，则执行
+        ``SET LOCAL app.tenant_id = '<tenant>'``，让 RLS 策略生效。
+        没绑定时跳过 —— 走 PG repo 的"全局脚本"路径（迁移 / seed），
+        旧代码行为不变。
+        """
         import psycopg2  # type: ignore
         import psycopg2.extras  # type: ignore
         conn = psycopg2.connect(self._dsn)
         conn.autocommit = False
-        # 全局开启 dict cursor：fetchone/fetchall 返回 dict（row["rid"]）
         psycopg2.extras.register_default_jsonb(conn_or_curs=conn, loads=json.loads)
+        # GOVERN-06: 必须在打开任何 SELECT/INSERT 前设置 GUC；RLS policy
+        # USING/WITH CHECK 在每条语句求值。如果不绑 tenant，策略拒绝所有行。
+        tenant_id = self._current_tenant()
+        if tenant_id is not None:
+            self._install_rls(conn, tenant_id)
         return conn, psycopg2.extras.RealDictCursor
+
+    def _install_rls(self, conn: Any, tenant_id: str) -> None:
+        """psycopg2 版 install_rls_session —— 每次事务前设置 tenant_id GUC。
+
+        等价于 ``mate_platform.tenancy.rls_session.install_rls_session``，
+        但目标是 psycopg2 直连（绕过 SQLAlchemy Session）。用参数化
+        ``%s`` 而不是 f-string 拼接 —— 防止任何 tenant_id 注入面。
+
+        Reuses the escape rule from rls_session to keep semantics aligned
+        (control-character refusal + single-quote doubling).
+        """
+        from mate_platform.tenancy.rls_session import (
+            GUC_TENANT_ID,
+            _escape_pg_string,
+        )
+        safe = _escape_pg_string(tenant_id)
+        with conn.cursor() as cur:
+            cur.execute(f"SET LOCAL {GUC_TENANT_ID} = %s", (safe,))
 
     def _ensure_schema(self) -> None:
         if self._initialized:

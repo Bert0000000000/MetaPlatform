@@ -24,10 +24,26 @@ spec:
         runAsUser: 999
         runAsGroup: 999
         fsGroup: 999
+      # GOVERN-06: postgresql.conf 来自 ConfigMap (postgresql-config.yaml)。
+      # 放在 pod-level volumes（不是 volumeClaimTemplates）—— 不依赖 PVC。
+      volumes:
+        - name: postgresql-config
+          configMap:
+            name: {{ include "postgresql.fullname" . }}-config
+        {{- if not .Values.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
       containers:
         - name: postgresql
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # GOVERN-06: 通过 -c config_file 让 postgres 读取我们的 postgresql.conf
+          # (默认 /var/lib/postgresql/data/postgresql.conf 在 PVC 内覆盖会失败；
+          # 挂 ConfigMap 到 /etc/postgresql 是 Postgres 官方约定路径。)
+          args:
+            - -c
+            - config_file=/etc/postgresql/postgresql.conf
           ports:
             - name: tcp-pg
               containerPort: 5432
@@ -91,16 +107,15 @@ spec:
             - name: data
               mountPath: /var/lib/postgresql/data
               subPath: postgresql
+            # GOVERN-06: postgresql.conf 来自 ConfigMap (postgresql-config.yaml)
+            - name: postgresql-config
+              mountPath: /etc/postgresql
+              readOnly: true
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
             capabilities:
               drop: [ALL]
-      {{- if not .Values.persistence.enabled }}
-      volumes:
-        - name: data
-          emptyDir: {}
-      {{- end }}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgresql.fullname" . }}-config
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+data:
+  # GOVERN-06 (硬规则 #3): row_security=on 让 PG 引擎对非 superuser 强制 RLS。
+  # 此参数必须保持 on，否则即使 ALTER TABLE ... FORCE ROW LEVEL SECURITY 已下发，
+  # table owner 角色（migration role）仍可绕过 policy —— 失去第三层防线。
+  # dev profile (values-local.yaml) 可关，但切 staging/production 前必须 on。
+  postgresql.conf: |
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 100
+    shared_buffers = 128MB
+    log_destination = 'stderr'
+    logging_collector = off
+    {{- if .Values.postgresqlParameters.rowSecurity }}
+    row_security = {{ .Values.postgresqlParameters.rowSecurity }}
+    {{- else }}
+    row_security = on
+    {{- end }}

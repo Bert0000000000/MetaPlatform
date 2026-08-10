@@ -1,4 +1,4 @@
-"""Alembic 0013 — apphub runtime + shortlink schema (APPHUB-RUNTIME-01 Phase A).
+"""Alembic 0014 — apphub runtime + shortlink schema (APPHUB-RUNTIME-01 Phase A).
 
 Adds the ``apphub_shortlinks`` table and extends ``apphub_apps`` /
 ``apphub_modules`` with columns required by the runtime + shortlink
@@ -11,8 +11,9 @@ Tables / columns:
     runtime_status (default 'DRAFT')
   - apphub_modules +1 col: type (default 'PAGE')
 
-Revision ID: 0013_apphub_runtime_shortlink
-Revises: 0012_federation_query
+Revision ID: 0014_apphub_runtime_shortlink  (bumped from 0013 in GOVERN-06 to make
+room for the ont_kernel_rls migration that runs ahead of this one).
+Revises: 0013_ont_kernel_rls
 Create Date: 2026-08-02
 """
 from __future__ import annotations
@@ -22,8 +23,8 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "0013_apphub_runtime_shortlink"
-down_revision: Union[str, Sequence[str], None] = "0012_federation_query"
+revision: str = "0014_apphub_runtime_shortlink"
+down_revision: Union[str, Sequence[str], None] = "0013_ont_kernel_rls"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

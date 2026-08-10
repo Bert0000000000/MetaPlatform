@@ -66,6 +66,14 @@ networkPolicy:
     - metaplatform
     - api-gateway
 
+# GOVERN-06 (硬规则 #3): row_security=on 让 PG 引擎对所有非 superuser 角色
+# 强制 RLS 策略。这与 Alembic 0008 / 0013 的 FORCE ROW LEVEL SECURITY 形成
+# 互补：表级 ALTER TABLE ... FORCE 防表 owner 绕过；服务端 row_security=on
+# 防客户端连接通过 SET ROLE 切换到非 RLS 角色。
+# 任何 profile 都不得在生产配置里改成 off。
+postgresqlParameters:
+  rowSecurity: "on"
+
 # SealedSecret placeholder toggle. When true, the chart renders a
 # SealedSecret template with placeholder encryptedData that MUST be
 # replaced with real kubeseal output before applying to a cluster.

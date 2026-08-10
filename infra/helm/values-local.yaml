@@ -38,6 +38,11 @@ postgresql:
   pool:
     size: 5
     maxOverflow: 10
+  # GOVERN-06: 本地 dev 默认仍开 row_security，但允许一次性脚本绕过。
+  # 测试 RLS 攻击向量（test_tenant_isolation_hard）需要 on。
+  # 若需要手动 ALTER TABLE 跨租户查数据，临时切 off 后 helm upgrade。
+  postgresqlParameters:
+    rowSecurity: "on"
 redis:
   enabled: true
 kafka:

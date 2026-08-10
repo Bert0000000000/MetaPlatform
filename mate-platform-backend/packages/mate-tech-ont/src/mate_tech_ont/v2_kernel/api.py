@@ -15,12 +15,20 @@
 Repository 单例由 main.on_startup 选择（InMemory dev / PG prod）后挂到
 app.state.kernel_repo。每个 endpoint 通过 `app.state.kernel_repo` 获取，
 走 require_tenant(ctx) 守门（mate-platform 13 硬规则 #3）。
+
+GOVERN-06 tenant 三层防线：
+1. **API 字符串前缀**（本文件）: rid.startswith(f"ont.{tenant_id}.") 兜底
+2. **psycopg2 桥**（pg_repo._install_rls）: SET LOCAL app.tenant_id='<t>'
+3. **PG RLS FORCE POLICY**（Alembic 0013）: tenant_isolation policy + FORCE
+
+每层独立 fail-closed：API 拒绝 → 不会到 DB；RLS 拒绝 → 即使绕过 API
+也无数据。handlers 通过 _call_scoped() 走第 2 层。
 """
 
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -36,7 +44,6 @@ from mate_kernel.ontology.types.interface import Interface
 from mate_kernel.ontology.types.link_type import Cardinality, Directionality, LinkType
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
-
 from mate_platform.tenancy.guards import require_tenant
 
 router = APIRouter(prefix="/api/v1/ont/v2", tags=["v2-kernel"])
@@ -210,6 +217,27 @@ def _repo(request: Request) -> OntologyRepository:
     return repo
 
 
+def _scoped_repo(request: Request) -> Any:
+    """GOVERN-06: 返回 tenant_scope(ctx.tenant_id) 上下文管理器。
+
+    仅 PgOntologyRepository 实现 tenant_scope；InMemory / Memory 兼容
+    （调用 scope 不抛但不影响行为）。用法::
+
+        with _scoped_repo(request) as repo:
+            await _call(repo, "upsert_object_type", ...)
+    """
+    repo = _repo(request)
+    ctx = _ctx(request)
+    scope = getattr(repo, "tenant_scope", None)
+    if scope is None:
+        # InMemory / mock —— 无 tenant_scope，直接返回 repo。上下文管理器协议
+        # 由 nullcontext 提供。
+        from contextlib import nullcontext
+
+        return nullcontext(repo)
+    return scope(ctx.tenant_id)
+
+
 async def _call(repo: OntologyRepository, method_name: str, /, *args, **kwargs):
     """把 sync repo 调用推到 threadpool；FastAPI 仍可 await。
 
@@ -217,6 +245,20 @@ async def _call(repo: OntologyRepository, method_name: str, /, *args, **kwargs):
     """
     method = getattr(repo, method_name)
     return await asyncio.to_thread(method, *args, **kwargs)
+
+
+async def _call_scoped(
+    request: Request, method_name: str, /, *args, **kwargs
+):
+    """GOVERN-06: 在 tenant_scope 内调 repo method，自动 install_rls。
+
+    等价于::
+
+        with _scoped_repo(request) as repo:
+            return await _call(repo, method_name, *args, **kwargs)
+    """
+    with _scoped_repo(request) as repo:
+        return await _call(repo, method_name, *args, **kwargs)
 
 
 def _ctx(request: Request) -> Any:
@@ -419,9 +461,8 @@ async def upsert_object_type(
     payload: ObjectTypeDTO, request: Request,
 ) -> ObjectTypeResponse:
     """Upsert an ObjectType — registers Property + Class in kernel repo."""
-    ctx = _ctx(request)
     ot = _dto_to_ot(payload)
-    saved = await _call(_repo(request), "upsert_object_type", ot)
+    saved = await _call_scoped(request, "upsert_object_type", ot)
     return _ot_to_dto(saved)
 
 
@@ -435,7 +476,7 @@ async def list_object_types(
 ) -> list[ObjectTypeResponse]:
     """List ObjectTypes with pagination."""
     _ctx(request)
-    items = await _call(_repo(request), "list_object_types", limit=limit, offset=offset)
+    items = await _call_scoped(request, "list_object_types", limit=limit, offset=offset)
     return [_ot_to_dto(i) for i in items]
 
 
@@ -447,7 +488,7 @@ async def list_object_types(
 async def get_object_type(rid: str, request: Request) -> ObjectTypeResponse:
     _ctx(request)
     try:
-        ot = await _call(_repo(request), "get_object_type", ClassRef(rid))
+        ot = await _call_scoped(request, "get_object_type", ClassRef(rid))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _ot_to_dto(ot)
@@ -479,7 +520,7 @@ async def create_individual(
             status_code=403,
             detail=f"class_rid must be under tenant {tenant_id}",
         )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     props_tuple = tuple(
         (ClassRef(p_rid), payload.props[p_rid].get("value"))
         for p_rid in payload.props
@@ -494,7 +535,7 @@ async def create_individual(
         tenant_id=tenant_id,
         marking=tuple(payload.marking),
     )
-    saved = await _call(_repo(request), "create_individual", ind)
+    saved = await _call_scoped(request, "create_individual", ind)
     return IndividualResponse(
         rid=saved.rid,
         class_rid=saved.class_rid.rid,
@@ -519,7 +560,7 @@ async def list_individuals(
     cls_ref = ClassRef(class_rid) if class_rid else None
     if cls_ref and not cls_ref.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
-    items = await _call(_repo(request), "list_individuals", cls_ref)
+    items = await _call_scoped(request, "list_individuals", cls_ref)
     return [
         IndividualResponse(
             rid=i.rid,
@@ -557,7 +598,7 @@ async def evaluate_object_set(
         paging_offset=payload.paging_offset,
         paging_limit=payload.paging_limit,
     )
-    results = await _call(_repo(request), "evaluate_object_set", os_)
+    results = await _call_scoped(request, "evaluate_object_set", os_)
     return [
         IndividualResponse(
             rid=i.rid,
@@ -584,8 +625,7 @@ async def _apply_action(request: Request, action_rid: str, payload: ActionApplyB
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
     provenance = {**payload.provenance, "actor": ctx.user_id}  # type: ignore[attr-defined]
     try:
-        applied_at, side_effects = await _call(
-            _repo(request), "apply_action",
+        applied_at, side_effects = await _call_scoped(request, "apply_action",
             action_rid=rid_ref,
             target_iid=payload.target_iid,
             parameters=payload.parameters,
@@ -649,7 +689,7 @@ async def upsert_action_type(
     at = _dto_to_action_type(payload)
     if not at.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant action denied")
-    saved = await _call(_repo(request), "upsert_action_type", at)
+    saved = await _call_scoped(request, "upsert_action_type", at)
     return _action_type_to_dto(saved)
 
 
@@ -663,7 +703,7 @@ async def list_action_types(
 ) -> list[ActionTypeDTO]:
     """List registered ActionTypes for the tenant."""
     _ctx(request)
-    items = await _call(_repo(request), "list_action_types")
+    items = await _call_scoped(request, "list_action_types")
     return [_action_type_to_dto(i) for i in items]
 
 
@@ -675,7 +715,7 @@ async def list_action_types(
 async def get_action_type(rid: str, request: Request) -> ActionTypeDTO:
     _ctx(request)
     try:
-        at = await _call(_repo(request), "get_action_type", ClassRef(rid))
+        at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _action_type_to_dto(at)
@@ -696,7 +736,7 @@ async def upsert_link_type(
     lt = _dto_to_link_type(payload)
     if not lt.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant link denied")
-    saved = await _call(_repo(request), "upsert_link_type", lt)
+    saved = await _call_scoped(request, "upsert_link_type", lt)
     return _link_type_to_dto(saved)
 
 
@@ -709,7 +749,7 @@ async def list_link_types(
     request: Request,
 ) -> list[LinkTypeDTO]:
     _ctx(request)
-    items = await _call(_repo(request), "list_link_types")
+    items = await _call_scoped(request, "list_link_types")
     return [_link_type_to_dto(i) for i in items]
 
 
@@ -721,7 +761,7 @@ async def list_link_types(
 async def get_link_type(rid: str, request: Request) -> LinkTypeDTO:
     _ctx(request)
     try:
-        lt = await _call(_repo(request), "get_link_type", ClassRef(rid))
+        lt = await _call_scoped(request, "get_link_type", ClassRef(rid))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _link_type_to_dto(lt)
@@ -742,7 +782,7 @@ async def upsert_interface(
     i = _dto_to_interface(payload)
     if not i.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant interface denied")
-    saved = await _call(_repo(request), "upsert_interface", i)
+    saved = await _call_scoped(request, "upsert_interface", i)
     return _interface_to_dto(saved)
 
 
@@ -755,7 +795,7 @@ async def list_interfaces(
     request: Request,
 ) -> list[InterfaceDTO]:
     _ctx(request)
-    items = await _call(_repo(request), "list_interfaces")
+    items = await _call_scoped(request, "list_interfaces")
     return [_interface_to_dto(i) for i in items]
 
 
@@ -772,7 +812,7 @@ async def get_individual(rid: str, request: Request) -> IndividualResponse:
     if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
     try:
-        ind = await _call(_repo(request), "get_individual", rid)
+        ind = await _call_scoped(request, "get_individual", rid)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _individual_to_response(ind)
@@ -793,7 +833,7 @@ async def upsert_axiom(
     ax = _dto_to_axiom(payload)
     if not ax.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant axiom denied")
-    saved = await _call(_repo(request), "upsert_axiom", ax)
+    saved = await _call_scoped(request, "upsert_axiom", ax)
     return _axiom_to_dto(saved)
 
 
@@ -806,7 +846,7 @@ async def list_axioms(
     request: Request,
 ) -> list[AxiomDTO]:
     _ctx(request)
-    items = await _call(_repo(request), "list_axioms")
+    items = await _call_scoped(request, "list_axioms")
     return [_axiom_to_dto(i) for i in items]
 
 
@@ -825,7 +865,7 @@ async def upsert_function(
     f = _dto_to_function(payload)
     if not f.rid.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant function denied")
-    saved = await _call(_repo(request), "upsert_function", f)
+    saved = await _call_scoped(request, "upsert_function", f)
     return _function_to_dto(saved)
 
 
@@ -838,7 +878,7 @@ async def list_functions(
     request: Request,
 ) -> list[FunctionDTO]:
     _ctx(request)
-    items = await _call(_repo(request), "list_functions")
+    items = await _call_scoped(request, "list_functions")
     return [_function_to_dto(i) for i in items]
 
 
@@ -865,7 +905,7 @@ async def query_object_set(
         paging_offset=payload.paging_offset,
         paging_limit=payload.paging_limit,
     )
-    results = await _call(_repo(request), "evaluate_object_set", os_)
+    results = await _call_scoped(request, "evaluate_object_set", os_)
     items = [_individual_to_response(i) for i in results]
     return ObjectSetResult(results=items, count=len(items))
 
@@ -894,7 +934,7 @@ async def create_link_instance(
             status_code=403,
             detail=f"link_type_rid must be under tenant {tenant_id}",
         )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     props_tuple = tuple(
         (ClassRef(p_rid), payload.props[p_rid].get("value"))
         for p_rid in payload.props
@@ -909,7 +949,7 @@ async def create_link_instance(
         tenant_id=tenant_id,
         marking=tuple(payload.marking),
     )
-    saved = await _call(_repo(request), "create_link_instance", li)
+    saved = await _call_scoped(request, "create_link_instance", li)
     return _link_instance_to_response(saved)
 
 
@@ -922,7 +962,7 @@ async def list_link_instances(
     request: Request,
 ) -> list[LinkInstanceResponse]:
     _ctx(request)
-    items = await _call(_repo(request), "list_link_instances")
+    items = await _call_scoped(request, "list_link_instances")
     return [_link_instance_to_response(i) for i in items]
 
 
@@ -938,7 +978,7 @@ async def list_versions(class_rid: str, request: Request) -> list[VersionDTO]:
     ctx = _ctx(request)
     if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
-    items = await _call(_repo(request), "list_versions", ClassRef(class_rid))
+    items = await _call_scoped(request, "list_versions", ClassRef(class_rid))
     return [_version_to_dto(v) for v in items]
 
 
@@ -953,8 +993,7 @@ async def snapshot_version(
     ctx = _ctx(request)
     if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
-    v = await _call(
-        _repo(request), "snapshot_version",
+    v = await _call_scoped(request, "snapshot_version",
         ClassRef(payload.class_ref),
         payload.author,
         payload.parent_rid,
