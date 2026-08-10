@@ -19,7 +19,7 @@ export default defineConfig({
   },
   outputDir: 'tests/e2e/.artifacts',
   projects: [
-    { name: 'auth-setup', testMatch: /auth\.setup\.ts/ },
+    { name: 'auth-setup', testMatch: /(^|[\\/])auth\.setup\.ts$/, testIgnore: /integration[\\/]/ },
     {
       name: 'ontology-loop-consistency',
       testMatch: /ontology-loop\/consistency\.spec\.ts/,

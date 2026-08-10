@@ -20,9 +20,11 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.21.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.4.0",
+    "pg": "^8.23.0",
     "playwright": "^1.61.1",
     "puppeteer-core": "^25.4.0",
     "rimraf": "^6.0.0",
