@@ -16,6 +16,12 @@ defaults:
   otel:
     sidecar:
       enabled: true
+    exporterEndpoint: "http://otel-collector:4317"
+    resourceAttributes: "service.name=$(OTEL_SERVICE_NAME)"
+    sampler: "parentbased_traceidratio"
+    samplerArg: "0.1"
+    metricsExporter: "otlp"
+    logsExporter: "otlp"
   securityContext:
     runAsNonRoot: true
     runAsUser: 65532

@@ -75,9 +75,12 @@ class TestUmbrellaChartYaml:
         data = yaml.safe_load((helm_dir / "Chart.yaml").read_text(encoding="utf-8"))
         deps = data.get("dependencies", [])
         names = {d["name"] for d in deps}
-        assert names == REQUIRED_SUB_CHARTS, (
-            f"expected {REQUIRED_SUB_CHARTS}, got {names}"
-        )
+        # GOVERN-09: subset check, not equality. The umbrella has added
+        # marketplace / deerflow-engine / observability-alerts since the
+        # original 14-name baseline; require those baselines but allow
+        # additional registered sub-charts.
+        missing = REQUIRED_SUB_CHARTS - names
+        assert not missing, f"umbrella Chart.yaml missing required deps: {missing}"
 
     def test_dependencies_have_conditions(self, helm_dir: Path) -> None:
         data = yaml.safe_load((helm_dir / "Chart.yaml").read_text(encoding="utf-8"))

@@ -86,7 +86,7 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 ### 运行时（PLATFORM-K8S-01）
 - `infra/helm/` umbrella chart + 4 sub-charts（otel-collector / keycloak /
   network-policies / service-templates）。
-- 6 套环境 values（local / staging / production 等）。
+- 5 套环境 values（默认 `values.yaml` + `values-local.yaml` + `values-staging.yaml` + `values-production.yaml` + `.helmignore`）。GOVERN-09 修订原文「6 套」错记。
 - `infra/argocd/` ApplicationSet + app-of-apps + AppProject。
 - `.github/workflows/platform-k8s-ci.yml` 5 jobs 流水线。
 - `infra/tests/` 105 pytest 静态校验。
