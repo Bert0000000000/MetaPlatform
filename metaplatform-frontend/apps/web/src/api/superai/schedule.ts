@@ -60,8 +60,15 @@ export interface ScheduleExecution {
 export async function detectIntent(text: string): Promise<ScheduleIntent> {
   return post<ScheduleIntent>('/scheduling/intent/detect', { text });
 }
-export async function matchEmployees(intent: string): Promise<Array<{ employeeId: string; name: string; confidence: number }>> {
-  return post<Array<{ employeeId: string; name: string; confidence: number }>>('/scheduling/employees/match', { intent });
+export interface MatchedEmployee {
+  employeeId: string;
+  name: string;
+  role?: string;
+  capability?: string;
+  confidence: number;
+}
+export async function matchEmployees(intent: string): Promise<MatchedEmployee[]> {
+  return post<MatchedEmployee[]>('/scheduling/employees/match', { intent });
 }
 export async function generatePlan(intentId: string): Promise<ExecutionPlan> {
   return post<ExecutionPlan>('/scheduling/plan/generate', { intentId });

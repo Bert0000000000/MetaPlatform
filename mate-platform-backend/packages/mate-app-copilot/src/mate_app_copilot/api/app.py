@@ -1198,34 +1198,77 @@ async def match_employees(
     request: Request,
     body: dict = Body(...),
 ) -> dict[str, Any]:
-    _tid(request)
-    task_type = body.get("task_type", body.get("taskType", ""))
-    employees: list[dict[str, Any]] = [
-        {"id": "emp-1", "name": "Finance Recon Bot", "skills": ["finance", "reconciliation"]},
-        {"id": "emp-2", "name": "CRM Archivist", "skills": ["crm", "data"]},
-        {"id": "emp-3", "name": "KB Curator", "skills": ["knowledge", "indexing"]},
-    ]
-    tt = task_type.lower()
-    matched = [e for e in employees if any(tt in s for s in e["skills"])]
-    # P2-W4: if no keyword match, use client.chat to suggest the best employee
-    if not matched and task_type.strip():
+    """意图匹配 → 候选员工列表。
+
+    GOVERN-11 P0：候选池改为从 dw 域主数据 (`GET /api/v1/dw/employees`)
+    实时拉取，**删除** copilot 内部硬编码 employee 影子表。
+
+    命中策略：
+      1) 把 task_type 拆 token，按 token 子串匹配 capabilities/roleCategory
+      2) 全部候选（无 task_type）走全量返回，confidence 全部 1.0
+      3) dw 调用失败 → 回退 in-memory seed（保证不 500）
+    """
+    tenant_id = _tid(request)
+    task_type = str(body.get("task_type", body.get("taskType", "")))
+    tokens = [t for t in re.split(r"[\s,/_-]+", task_type.lower()) if t]
+
+    raw_employees: list[dict[str, Any]] = []
+    try:
         client = _get_client(request)
-        names = ", ".join(e["name"] for e in employees)
-        raw = client.chat(
-            [
-                {
-                    "role": "system",
-                    "content": f"Which of these employees best fits the task? Reply with just the name. Options: {names}",
-                },
-                {"role": "user", "content": task_type[:200]},
-            ]
+        raw_employees = await client.list_dw_employees(
+            tenant_id=tenant_id,
+            keyword="",
+            size=200,
         )
-        raw_lower = raw.strip().lower()
-        for e in employees:
-            if e["name"].lower() in raw_lower:
-                matched = [e]
-                break
-    return {"items": matched, "total": len(matched)}
+    except Exception:
+        # dw 不可达：保留旧行为兜底，保证 API 不 500（dev / 灰度期）。
+        raw_employees = [
+            {"employeeId": "emp-1", "name": "Finance Recon Bot",
+             "roleCategory": "FINANCE", "roleIdentity": "analyst",
+             "capability": "finance,reconciliation"},
+            {"employeeId": "emp-2", "name": "CRM Archivist",
+             "roleCategory": "SALES", "roleIdentity": "agent",
+             "capability": "crm,data"},
+            {"employeeId": "emp-3", "name": "KB Curator",
+             "roleCategory": "PLATFORM", "roleIdentity": "agent",
+             "capability": "knowledge,indexing"},
+        ]
+
+    def _haystack(e: dict[str, Any]) -> str:
+        parts = [
+            str(e.get("roleCategory", "")),
+            str(e.get("roleIdentity", "")),
+            str(e.get("capability", "")),
+            str(e.get("name", "")),
+            str(e.get("code", "")),
+        ]
+        return ",".join(parts).lower()
+
+    items: list[dict[str, Any]] = []
+    for e in raw_employees:
+        if not tokens:
+            items.append({
+                "employeeId": e.get("employeeId"),
+                "name": e.get("name"),
+                "role": e.get("roleIdentity"),
+                "capability": e.get("capability"),
+                "confidence": 1.0,
+            })
+            continue
+        hay = _haystack(e)
+        hits = sum(1 for t in tokens if t in hay)
+        if hits:
+            items.append({
+                "employeeId": e.get("employeeId"),
+                "name": e.get("name"),
+                "role": e.get("roleIdentity"),
+                "capability": e.get("capability"),
+                "confidence": round(hits / len(tokens), 3),
+            })
+
+    # 按 confidence desc 排序，保持稳定
+    items.sort(key=lambda x: x.get("confidence", 0), reverse=True)
+    return {"items": items, "total": len(items)}
 
 
 @router.post("/scheduling/execution/start")

@@ -62,6 +62,14 @@ class AsyncCopilotClient:
     def a2a_url(self) -> str:
         return f"{self.base_url}/api/v1/a2a"
 
+    def dw_url(self) -> str:
+        """Digital Workforce 域主数据 endpoint。
+
+        GOVERN-11 P0：match_employees 必须查 dw 主数据，禁止 copilot 内部
+        employee 影子表。路径与 dw.yaml operationId=dwGetDwEmployees 一致。
+        """
+        return f"{self.base_url}/api/v1/dw"
+
     # --- Real call methods (P2-W4) -----------------------------------------
     def embed(self, texts: list[str]) -> list[list[float]]:
         """Embed a batch of texts via the configured LLM provider."""
@@ -195,3 +203,41 @@ class AsyncCopilotClient:
             elif suffix == "default_model":
                 result["default_model"] = val
         return result
+
+    # --- dw 域主数据（GOVERN-11 P0：消除 copilot employee 影子表） ----------
+    async def list_dw_employees(
+        self,
+        tenant_id: str,
+        keyword: str = "",
+        page: int = 1,
+        size: int = 100,
+        fallback_token: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """GET /api/v1/dw/employees → dw 域主数据。
+
+        候选池由 dw 域主数据驱动，copilot 不再维护 employee 影子表。
+        返回 [{employeeId, name, code, roleCategory, roleIdentity, status, capability}]。
+        非 2xx 抛异常，调用方回退到 in_memory seed。
+        """
+        import httpx
+
+        params: dict[str, Any] = {"page": page, "size": size}
+        if keyword:
+            params["keyword"] = keyword
+        headers = {"X-Tenant-Id": tenant_id}
+        if fallback_token:
+            headers["Authorization"] = f"Bearer {fallback_token}"
+        async with httpx.AsyncClient(
+            auth=self._middleware(tenant_id) if not fallback_token else None,
+            timeout=self.timeout_seconds,
+        ) as client:
+            resp = await client.get(
+                f"{self.dw_url()}/employees",
+                params=params,
+                headers=headers,
+            )
+        resp.raise_for_status()
+        body = resp.json()
+        data = body.get("data", body)
+        items = data.get("items", []) if isinstance(data, dict) else []
+        return [dict(i) for i in items]
