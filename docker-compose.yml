@@ -127,8 +127,12 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-dw
       CORS_ALLOW_ORIGINS: "*"
+      # GOVERN-11: 共享 packages 挂载 + PYTHONPATH
+      PYTHONPATH: "/app/packages/mate-tech-dw/src:/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
     ports:
       - "${MATE_DW_PORT:-8021}:8021"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8021/healthz || exit 1"]
       interval: 15s
@@ -435,8 +439,12 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-agent
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # GOVERN-11
+      PYTHONPATH: "/app/packages/mate-tech-agent/src:/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
     ports:
       - "${MATE_AGENT_PORT:-8002}:8002"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
     depends_on:
       mate-tech-rag:
         condition: service_healthy
@@ -534,8 +542,12 @@ services:
       OTEL_SERVICE_NAME: mate-app-copilot
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: Asia/Shanghai
+      # GOVERN-11
+      PYTHONPATH: "/app/packages/mate-app-copilot/src:/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
     ports:
       - "${MATE_COPILOT_PORT:-8601}:8601"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
     depends_on:
       postgres:
         condition: service_healthy
@@ -600,8 +612,12 @@ services:
       OTEL_SERVICE_NAME: mate-app-hub
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: Asia/Shanghai
+      # GOVERN-11
+      PYTHONPATH: "/app/packages/mate-app-hub/src:/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
     ports:
       - "${MATE_APPHUB_PORT:-8301}:8301"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
     depends_on:
       postgres:
         condition: service_healthy
@@ -665,8 +681,12 @@ services:
       OTEL_SERVICE_NAME: mate-app-a2a
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: Asia/Shanghai
+      # GOVERN-11
+      PYTHONPATH: "/app/packages/mate-app-a2a/src:/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
     ports:
       - "${MATE_A2A_PORT:-8502}:8502"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
     depends_on:
       redis:
         condition: service_healthy
@@ -697,8 +717,13 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-ont
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # GOVERN-11: 挂载 packages 到容器内，绕过 Dockerfile cp 偶发失败；
+      # PYTHONPATH 让 mate_kernel/mate_common/mate_platform/mate_tech_ont 即时可 import。
+      PYTHONPATH: "/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src"
     ports:
       - "${MATE_ONT_PORT:-8007}:8007"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
     depends_on:
       neo4j:
         condition: service_healthy
@@ -1025,8 +1050,12 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-api-gateway
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # GOVERN-11
+      PYTHONPATH: "/app/services/api-gateway/src:/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
     ports:
       - "${API_GW_PORT:-8100}:8100"
+    volumes:
+      - ./mate-platform-backend:/app:rw
     depends_on:
       redis:
         condition: service_healthy

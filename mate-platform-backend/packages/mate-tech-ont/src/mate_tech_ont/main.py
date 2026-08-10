@@ -203,9 +203,12 @@ async def on_startup() -> None:
 
     # /goal 端到端验收：ONT_SEED_DEMO=1 时注入员工请假审批 demo 数据（幂等）。
     if os.getenv("ONT_SEED_DEMO", "0") == "1":
-        from .v2_kernel.seed import seed_demo
+        from .v2_kernel.seed import seed_demo, seed_hr_it_finance_orchestrator
         created = seed_demo(app.state.kernel_repo)
         logger.info("kernel_seed.demo", created=created)
+        # GOVERN-11: 7+1 数字员工本体（HR/IT/FINANCE/SALES + SuperAI orchestrator）
+        orch_created = seed_hr_it_finance_orchestrator(app.state.kernel_repo)
+        logger.info("kernel_seed.orchestrator", created=orch_created)
 
     # GOVERN-05: 注入 FunctionExecutor（dev=memory / test=subprocess / prod=k8s 占位）
     _inject_function_executor(app.state.kernel_repo)
