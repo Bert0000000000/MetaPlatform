@@ -327,6 +327,67 @@ async def dw_get_evaluations(
 
 
 # ---------------------------------------------------------------------------
+# 8a. POST /evaluations (collection-level, GOVERN-12-05)
+# ---------------------------------------------------------------------------
+class EvaluationCollectionCreateRequest(BaseModel):
+    """Body schema for POST /evaluations (collection-level).
+
+    Distinct from per-employee POST /employees/{id}/evaluations — the
+    collection-level variant is intended for bulk imports / cross-employee
+    aggregation writes (e.g. historical evaluation backfill, batch
+    migration). The caller may override `passed`; if omitted, it is
+    derived from `score` using the same `_EVAL_PASS_THRESHOLD` rule.
+    """
+    employee_id: Annotated[str, Field(min_length=1, max_length=256)]
+    score: Annotated[float, Field(ge=0, le=100)]
+    passed: bool | None = None
+    qa_set_id: str | None = None
+    comment: str | None = Field(default=None, max_length=2048)
+
+
+@router.post("/evaluations", status_code=201)
+async def create_evaluation_collection(
+    request: Request, body: EvaluationCollectionCreateRequest,
+) -> dict:
+    """GOVERN-12-05: collection-level POST /evaluations.
+
+    Differs from per-employee POST /employees/{id}/evaluations in that:
+      - the employee lookup is a soft reference (caller may POST for any
+        employee_id, useful for migration / bulk backfill),
+      - `comment` is recorded,
+      - `passed` is optional (derived from score when omitted),
+      - the response is wrapped in the standard ApiResponse envelope.
+
+    Writes go through the same in-memory store + outbox emission
+    (`dw.evaluation.submitted`) used by the per-employee variant.
+    """
+    tid = _tenant_id(request)
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    evaluation = DwEvaluation(
+        id=f"dw-eval-{uuid.uuid4().hex[:8]}",
+        tenant_id=tid,
+        employee_id=body.employee_id,
+        qa_set_id=body.qa_set_id or "",
+        score=body.score,
+        passed=body.score >= _EVAL_PASS_THRESHOLD if body.passed is None else body.passed,
+        evaluated_at=now,
+    )
+    append_evaluation(tid, evaluation)
+    grade = _compute_grade(body.score)
+    _emit(
+        request, "dw.evaluation.submitted", evaluation.id,
+        {"employee_id": body.employee_id, "score": body.score,
+         "passed": evaluation.passed, "grade": grade,
+         "source": "collection"},
+        tid,
+    )
+    payload = asdict(evaluation)
+    payload["comment"] = body.comment
+    payload["grade"] = grade
+    return _ok(payload)
+
+
+# ---------------------------------------------------------------------------
 # 8b. Evaluation conversations / reports / rubrics / suggestions
 # ---------------------------------------------------------------------------
 

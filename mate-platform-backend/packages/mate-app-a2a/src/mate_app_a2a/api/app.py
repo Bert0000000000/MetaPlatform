@@ -14,7 +14,8 @@ the source of truth.
   GET  /api/v1/a2a/external                    — list external (federated) agents
   GET  /api/v1/a2a/tasks                       — list delegation tasks
   GET  /api/v1/a2a/tasks/{task_id}             — get delegation task status
-  POST /api/v1/a2a/delegate                    — create a delegation task
+  POST /api/v1/a2a/messages                    — W3C A2A message envelope
+  POST /api/v1/a2a/delegate                    — create a delegation task (deprecated)
   POST /api/v1/a2a/tasks/{task_id}/result      — submit task result
   POST /api/v1/a2a/register                    — register external agent
 
@@ -24,9 +25,10 @@ Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Response
+from pydantic import BaseModel, Field
 
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -149,10 +151,93 @@ async def get_task_detail(request: Request, task_id: str) -> dict[str, Any]:
     return task_to_dict(task)
 
 
-# --- Delegation (1 POST) ----------------------------------------------------
-@router.post("/delegate")
-async def delegate(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+# ---------------------------------------------------------------------------
+# W3C A2A Message envelope (GOVERN-12-03)
+# ---------------------------------------------------------------------------
+class A2APart(BaseModel):
+    """One content part of a W3C A2A message."""
+
+    kind: Literal["text", "file", "data"]
+    text: str | None = None
+    data: dict[str, Any] | None = None
+
+
+class A2AMessage(BaseModel):
+    """W3C A2A message envelope (the `/messages` request body)."""
+
+    messageId: str = Field(min_length=1)
+    role: Literal["user", "agent"]
+    parts: list[A2APart]
+    contextId: str | None = None
+    taskId: str | None = None
+
+
+def _message_text(msg: A2AMessage) -> str:
+    """Flatten the text parts of a message into the delegation message."""
+    return "\n".join(p.text for p in msg.parts if p.kind == "text" and p.text)
+
+
+def _message_data(msg: A2AMessage) -> dict[str, Any]:
+    """Merge the data parts of a message into the delegation context."""
+    merged: dict[str, Any] = {}
+    for part in msg.parts:
+        if part.kind == "data" and part.data:
+            merged.update(part.data)
+    return merged
+
+
+# --- W3C messages (1 POST) --------------------------------------------------
+@router.post("/messages")
+async def post_message(request: Request, message: A2AMessage) -> dict[str, Any]:
+    """Accept a W3C A2A message and open a delegation task (GOVERN-12-03).
+
+    The envelope is translated into the existing ``DelegationTask``
+    model: text parts become the task message, data parts are merged
+    into the task context (alongside the W3C correlation ids). The
+    response is a W3C Task object rather than the legacy
+    ``{task_id,status}`` shape returned by ``/delegate``.
+    """
     tid = _tid(request)
+    context = _message_data(message)
+    context.update(
+        {
+            "messageId": message.messageId,
+            "role": message.role,
+            "contextId": message.contextId,
+        }
+    )
+    target_agent_id = str(context.get("target_agent_id", "") or "")
+    task = create_delegation(tid, target_agent_id, _message_text(message), context)
+    _emit(
+        request,
+        "a2a.delegation.created",
+        task.id,
+        {
+            "task_id": task.id,
+            "target_agent_id": target_agent_id,
+            "message_id": message.messageId,
+        },
+        tid,
+    )
+    context_id = message.contextId or task.id
+    return {
+        "id": task.id,
+        "contextId": context_id,
+        "status": {"state": "submitted"},
+        "artifacts": [],
+        "history": [message.model_dump()],
+    }
+
+
+# --- Delegation (1 POST, deprecated in favour of /messages) -----------------
+@router.post("/delegate", deprecated=True)
+async def delegate(
+    request: Request, body: dict[str, Any], response: Response,
+) -> dict[str, Any]:
+    tid = _tid(request)
+    # Superseded by the W3C `POST /messages` envelope (GOVERN-12-03).
+    response.headers["Deprecation"] = "true"
+    response.headers["X-Sunset"] = "2026-12-31"
     target_agent_id = str(body.get("target_agent_id", ""))
     message = str(body.get("message", ""))
     context = body.get("context", {})
