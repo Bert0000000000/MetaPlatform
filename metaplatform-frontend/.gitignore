@@ -37,3 +37,8 @@ pnpm-debug.log*
 # Lock files (keep pnpm-lock.yaml)
 package-lock.json
 yarn.lock
+
+# Playwright 运行时产物（tests/e2e/.gitignore 兜底；这里防根目录误生成）
+playwright-report/
+test-results/
+.playwright-cache/
