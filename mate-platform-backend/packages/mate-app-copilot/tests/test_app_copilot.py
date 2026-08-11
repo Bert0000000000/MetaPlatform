@@ -165,3 +165,62 @@ def test_scheduling_templates_paginated(client, auth_headers_acme) -> None:
     assert body["total"] >= 1, body
     assert all(t["tenant_id"] == "tenant-acme" for t in body["items"])
     assert {"page", "size", "pages"} <= set(body.keys())
+
+
+# --- GOVERN-12-01: copilot match_employees fallback_token 透传 ----------------
+def test_match_employees_passes_fallback_token(
+    client, auth_headers_acme, monkeypatch
+) -> None:
+    """GOVERN-12-01: match_employees 必须把入站 Authorization 透传为
+    fallback_token 给 dw client.list_dw_employees，避免 keycloak
+    client_credentials 不可用时 fallback 到 in-memory 伪员工。
+
+    策略：monkeypatch copilot.api.app._get_client 返回一个 stub，记录调用
+    的 fallback_token；POST /scheduling/employees/match → 断言 stub 收到
+    的 fallback_token 与入站 Authorization header 里的 token 一致。
+    """
+    from mate_app_copilot.api import app as copilot_app_module
+
+    captured: dict = {}
+
+    class _StubClient:
+        async def list_dw_employees(self, *, tenant_id, keyword="", size=200, fallback_token=None):
+            captured["tenant_id"] = tenant_id
+            captured["keyword"] = keyword
+            captured["size"] = size
+            captured["fallback_token"] = fallback_token
+            # 模拟 5 条 dw 主数据 employee（含 ontology kernel role）
+            return [
+                {"employeeId": "dw-emp-default-1", "name": "Ontology Engineer",
+                 "roleCategory": "PLATFORM", "roleIdentity": "ontology",
+                 "capability": "kernel,reasoning"},
+            ]
+
+        async def close(self):  # 兼容 AsyncCopilotClient 接口
+            pass
+
+    def _stub_get_client(request):
+        return _StubClient()
+
+    monkeypatch.setattr(copilot_app_module, "_get_client", _stub_get_client)
+
+    r = client.post(
+        "/api/v1/copilot/scheduling/employees/match",
+        json={"taskType": "ontology"},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # match 返回的 employeeId 必须来自 stub（=dw 主数据），不是 in-memory 兜底
+    matched_ids = {m["employeeId"] for m in body.get("items", [])}
+    assert "dw-emp-default-1" in matched_ids, body
+
+    # fallback_token 必须是非空字符串，与入站 Authorization header 的 token 段一致
+    assert captured["fallback_token"], "fallback_token 未透传"
+    inbound_bearer = auth_headers_acme["Authorization"].removeprefix("Bearer ").strip()
+    assert captured["fallback_token"] == inbound_bearer, (
+        f"fallback_token mismatch: got {captured['fallback_token']!r}, "
+        f"expected {inbound_bearer!r}"
+    )
+    # tenant_id 也必须对位 ctx.tenant_id
+    assert captured["tenant_id"] == "tenant-acme"
