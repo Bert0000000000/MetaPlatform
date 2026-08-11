@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Hexagon, Columns3 } from 'lucide-react';
-import { listObjectTypes, type KernelObjectType, domainOfObjectType } from '@/api/ont/kernel';
+import { listObjectTypes, type KernelObjectType, domainOfObjectType, slugAndVersionOfObjectType } from '@/api/ont/kernel';
 
 const DOMAIN_LABELS: Record<string, string> = {
   crm: '客户关系',
@@ -88,7 +88,8 @@ export default function ObjectTypeListPage() {
               <thead>
                 <tr style={{ background: 'var(--muted)' }}>
                   <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>显示名</th>
-                  <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>rid</th>
+                  <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>slug</th>
+                  <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>版本</th>
                   <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>领域</th>
                   <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>属性数</th>
                   <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>操作</th>
@@ -97,6 +98,7 @@ export default function ObjectTypeListPage() {
               <tbody>
                 {filtered.map((ot) => {
                   const domain = domainOfObjectType(ot.rid);
+                  const { slug, version } = slugAndVersionOfObjectType(ot.rid);
                   return (
                     <tr
                       key={ot.rid}
@@ -109,7 +111,8 @@ export default function ObjectTypeListPage() {
                           <span style={{ fontWeight: 500 }}>{ot.display_name}</span>
                         </span>
                       </td>
-                      <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{ot.rid}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{slug}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{version || '—'}</td>
                       <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)' }}>{DOMAIN_LABELS[domain] ?? domain}</td>
                       <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--muted-foreground)' }}>

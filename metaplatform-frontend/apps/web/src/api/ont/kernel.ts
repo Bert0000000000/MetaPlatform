@@ -108,3 +108,30 @@ export function domainOfObjectType(rid: string): string {
   const last = parts[parts.length - 1] ?? '';
   return last.replace(/\.v\d+$/, '');
 }
+
+// 拆 slug + version。返回 {slug: 'obj.<domain>.<slug>', version: 'v1'}。
+// rid 形态 ADR-0021：ont.<tenant>.<kind>.<slug>.<version>，kind=obj/at/lt/...
+// 兜底：整串当 slug，版本空串。
+export function slugAndVersionOfObjectType(rid: string): { slug: string; version: string } {
+  const parts = rid.split('.');
+  // 去掉 ont 与 tenant
+  const tail = parts.slice(2);
+  if (tail.length < 2) return { slug: rid, version: '' };
+  const last = tail[tail.length - 1] ?? '';
+  const m = last.match(/^v\d+$/);
+  if (!m) return { slug: tail.join('.'), version: '' };
+  return { slug: tail.slice(0, -1).join('.'), version: last };
+}
+
+// property rid 形如 ont.<tenant>.prp.<slug>.v<N>。
+// 返回 {slug: 'prp.<slug>', version: 'v1'}。
+export function slugAndVersionOfProperty(rid: string): { slug: string; version: string } {
+  const parts = rid.split('.');
+  // 去掉 ont 与 tenant
+  const tail = parts.slice(2);
+  if (tail.length < 2) return { slug: rid, version: '' };
+  const last = tail[tail.length - 1] ?? '';
+  const m = last.match(/^v\d+$/);
+  if (!m) return { slug: tail.join('.'), version: '' };
+  return { slug: tail.slice(0, -1).join('.'), version: last };
+}

@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Zap } from 'lucide-react';
 import {
   getObjectType,
   listActionTypes,
+  slugAndVersionOfProperty,
   type KernelObjectType,
   type KernelActionType,
 } from '@/api/ont/kernel';
@@ -167,6 +168,7 @@ export default function ObjectTypeDetailPage() {
                 <thead>
                   <tr style={{ background: 'var(--muted)' }}>
                     <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>属性名</th>
+                    <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>版本</th>
                     <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>类型</th>
                     <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>必填</th>
                     <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>主键</th>
@@ -174,15 +176,21 @@ export default function ObjectTypeDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {objectType.properties.map((p) => (
-                    <tr key={p.rid}>
-                      <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, borderBottom: '1px solid var(--border)' }}>{p.rid.split('.').pop()}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)' }}>{p.type_id}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)', color: p.nullable ? 'var(--muted-foreground)' : 'var(--success)' }}>{p.nullable ? '否' : '是'}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)', color: p.primary_key ? 'var(--success)' : 'var(--muted-foreground)' }}>{p.primary_key ? '是' : '否'}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)', color: 'var(--muted-foreground)' }}>{p.title}</td>
-                    </tr>
-                  ))}
+                  {objectType.properties.map((p) => {
+                    const { slug, version } = slugAndVersionOfProperty(p.rid);
+                    // 砍掉 kind 段（prop / prp）—— 后端用 'prop'，统一兼容
+                    const propSlug = slug.replace(/^(prop|prp)\./, '');
+                    return (
+                      <tr key={p.rid}>
+                        <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, borderBottom: '1px solid var(--border)' }}>{propSlug}</td>
+                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{version || '—'}</td>
+                        <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)' }}>{p.type_id}</td>
+                        <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)', color: p.nullable ? 'var(--muted-foreground)' : 'var(--success)' }}>{p.nullable ? '否' : '是'}</td>
+                        <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)', color: p.primary_key ? 'var(--success)' : 'var(--muted-foreground)' }}>{p.primary_key ? '是' : '否'}</td>
+                        <td style={{ padding: '10px 16px', fontSize: 13, borderBottom: '1px solid var(--border)', color: 'var(--muted-foreground)' }}>{p.title}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
