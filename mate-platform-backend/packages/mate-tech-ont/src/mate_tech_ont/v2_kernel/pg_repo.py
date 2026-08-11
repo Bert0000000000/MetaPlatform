@@ -428,6 +428,18 @@ class PgOntologyRepository(OntologyRepository):
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
         self._function_executor: object | None = None
 
+        # GOVERN-12-02: 构造即 bootstrap DDL。任何路径（启动 / 测试 fixture /
+        # 迁移脚本）拿到 PgOntologyRepository 实例即可用；不需要启动序列先
+        # 显式调 ``initialize()``。DSN 不可达时仅 warn，不阻断进程 —— dev
+        # 友好（compose 启动顺序保护），生产期望 K8s readiness 失败。
+        try:
+            self._ensure_schema()
+        except Exception as exc:  # noqa: BLE001 — bootstrap 失败降级
+            import logging
+            logging.getLogger(__name__).warning(
+                "pg_schema_bootstrap_failed", extra={"dsn": dsn, "error": str(exc)},
+            )
+
     def _current_tenant(self) -> str | None:
         return getattr(self._tenant_local, "tenant_id", None)
 
@@ -495,6 +507,11 @@ class PgOntologyRepository(OntologyRepository):
             cur.execute(f"SET LOCAL {GUC_TENANT_ID} = %s", (safe,))
 
     def _ensure_schema(self) -> None:
+        """幂等建表：DDL 全部 ``CREATE TABLE IF NOT EXISTS``，重复调用安全。
+
+        GOVERN-12-02: ``__init__`` 末尾主动调用，使任何 ``PgOntologyRepository``
+        构造路径（启动 / 测试 fixture / 迁移脚本）自动建表。
+        """
         if self._initialized:
             return
         with self._lock:
@@ -514,22 +531,6 @@ class PgOntologyRepository(OntologyRepository):
         """返回 RealDictCursor —— 永远走 dict 路径。"""
         import psycopg2.extras  # type: ignore
         return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-    def _ensure_schema(self) -> None:
-        if self._initialized:
-            return
-        with self._lock:
-            if self._initialized:
-                return
-            conn, _ = self._connect()
-            try:
-                with self._cursor(conn) as cur:
-                    for stmt in DDL:
-                        cur.execute(stmt)
-                conn.commit()
-                self._initialized = True
-            finally:
-                conn.close()
 
     # ───── identity ─────
 

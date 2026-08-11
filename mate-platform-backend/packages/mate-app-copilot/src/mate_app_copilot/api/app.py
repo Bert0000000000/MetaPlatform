@@ -1215,10 +1215,20 @@ async def match_employees(
     raw_employees: list[dict[str, Any]] = []
     try:
         client = _get_client(request)
+        # GOVERN-12-01: 透传入站 Authorization 作为 fallback。
+        # dev 环境 keycloak client_secret=stub 无法 client_credentials，
+        # 走 INSECURE_SKIP_SIGNATURE 时 gateway 直接接受入站 Bearer；
+        # 生产环境配真 secret 后这条 fallback 仍可用作"调用方身份降级"。
+        fallback_token = str(getattr(request.state.ctx, "authorization", "") or "")
+        if not fallback_token:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.lower().startswith("bearer "):
+                fallback_token = auth_header[7:].strip()
         raw_employees = await client.list_dw_employees(
             tenant_id=tenant_id,
             keyword="",
             size=200,
+            fallback_token=fallback_token or None,
         )
     except Exception:
         # dw 不可达：保留旧行为兜底，保证 API 不 500（dev / 灰度期）。
