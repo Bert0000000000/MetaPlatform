@@ -59,6 +59,10 @@ const OntologyModelingPage = lazy(() => import('./pages/ontology/OntologyModelin
 const OntologyDatacenterPage = lazy(() => import('./pages/ontology/OntologyDatacenterPage'));
 const OntologyActionPage = lazy(() => import('./pages/ontology/OntologyActionPage'));
 const OntologyGraphPage = lazy(() => import('./pages/ontology/OntologyGraphPage'));
+const ObjectTypeListPage = lazy(() => import('./pages/ontology/object-types/ObjectTypeListPage'));
+const ObjectTypeDetailPage = lazy(() => import('./pages/ontology/object-types/ObjectTypeDetailPage'));
+const RelationshipTypeListPage = lazy(() => import('./pages/ontology/relationship-types/RelationshipTypeListPage'));
+const ActionTypeListPage = lazy(() => import('./pages/ontology/actions/ActionTypeListPage'));
 
 const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const DashboardMyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
@@ -263,6 +267,11 @@ function AppRoutes() {
           <Route path="ontology/datacenter" element={<OntologyDatacenterPage />} />
           <Route path="ontology/action" element={<OntologyActionPage />} />
           <Route path="ontology/graph" element={<OntologyGraphPage />} />
+          {/* GOVERN-12-04 A 路径：完整 ontology 模型编辑器（拆分路由） */}
+          <Route path="ontology/object-types" element={<ObjectTypeListPage />} />
+          <Route path="ontology/object-types/:rid" element={<ObjectTypeDetailPage />} />
+          <Route path="ontology/relationship-types" element={<RelationshipTypeListPage />} />
+          <Route path="ontology/actions" element={<ActionTypeListPage />} />
 
           {/* 閻儴鐦戞惔?*/}
           <Route path="knowledge" element={<KnowledgeBasePage />} />

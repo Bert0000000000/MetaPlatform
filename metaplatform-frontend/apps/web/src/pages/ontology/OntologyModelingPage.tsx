@@ -224,6 +224,28 @@ export default function OntologyModelingPage() {
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
+      {/* GOVERN-12-04 Deprecation Banner */}
+      <div
+        role="alert"
+        style={{
+          marginTop: 16,
+          padding: '12px 16px',
+          background: 'rgba(245, 158, 11, 0.12)',
+          border: '1px solid rgba(245, 158, 11, 0.4)',
+          borderRadius: 'var(--radius)',
+          color: 'var(--foreground)',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span style={{ color: 'var(--warning)', fontWeight: 600 }}>[Deprecated]</span>
+        <span>
+          请使用 <a href="/ontology/object-types" style={{ color: '#60a5fa', textDecoration: 'underline' }}>/ontology/object-types</a> 新模型编辑器，本页 2026-12-31 后下线。
+        </span>
+      </div>
+
       {/* Page Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
         <div>

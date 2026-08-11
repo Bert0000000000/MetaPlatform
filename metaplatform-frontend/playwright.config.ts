@@ -45,6 +45,12 @@ export default defineConfig({
       dependencies: ['auth-setup'],
     },
     {
+      name: 'ontology-loop-routing',
+      testMatch: /ontology-loop\/ontology-routing\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], storageState: 'tests/e2e/.auth/state.json' },
+      dependencies: ['auth-setup'],
+    },
+    {
       name: 'web',
       use: { ...devices['Desktop Chrome'], storageState: 'tests/e2e/.auth/state.json' },
       dependencies: ['auth-setup'],
