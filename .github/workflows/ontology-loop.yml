@@ -1,0 +1,162 @@
+name: ontology-loop
+
+# GOVERN-11 — 端到端 Ontology 业务闭环 e2e（CI 收口）
+# 触发：spec / 关联后端 / workflow 自身变更
+# 流程：docker compose 启最小栈 → wait-healthy → pnpm playwright →
+#       上传 trace / screenshot / 报告
+# 关联交付：docs/active/delivery/evidence/GOVERN-11-ONTOLOGY-LOOP-ACCEPTANCE.md
+
+on:
+  push:
+    branches: [main, codex/**]
+    paths:
+      - ".github/workflows/ontology-loop.yml"
+      - "metaplatform-frontend/tests/e2e/ontology-loop/**"
+      - "metaplatform-frontend/tests/e2e/helpers/**"
+      - "metaplatform-frontend/tests/e2e/auth.setup.ts"
+      - "metaplatform-frontend/playwright.config.ts"
+      - "metaplatform-frontend/package.json"
+      - "metaplatform-frontend/.npmrc"
+      - "scripts/ci/ontology-loop-wait-healthy.sh"
+      - "mate-platform-backend/packages/mate-tech-ont/**"
+      - "mate-platform-backend/packages/mate-tech-dw/**"
+      - "mate-platform-backend/packages/mate-app-copilot/**"
+      - "mate-platform-backend/packages/mate-app-a2a/**"
+      - "mate-platform-backend/packages/mate-app-hub/**"
+      - "docker-compose.yml"
+      - ".env"
+  pull_request:
+    branches: [main, codex/**]
+    paths:
+      - "metaplatform-frontend/tests/e2e/ontology-loop/**"
+      - "metaplatform-frontend/tests/e2e/helpers/**"
+      - "metaplatform-frontend/tests/e2e/auth.setup.ts"
+      - "metaplatform-frontend/playwright.config.ts"
+      - "metaplatform-frontend/package.json"
+      - "metaplatform-frontend/.npmrc"
+      - "scripts/ci/ontology-loop-wait-healthy.sh"
+      - "mate-platform-backend/packages/mate-tech-ont/**"
+      - "mate-platform-backend/packages/mate-tech-dw/**"
+      - "mate-platform-backend/packages/mate-app-copilot/**"
+      - "mate-platform-backend/packages/mate-app-a2a/**"
+      - "mate-platform-backend/packages/mate-app-hub/**"
+      - "docker-compose.yml"
+      - ".env"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# 同分支取消先前运行（节省 CI 资源）
+concurrency:
+  group: ontology-loop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # 1) 栈启动 + 健康等待
+  # ----------------------------------------------------------------------------
+  boot-stack:
+    name: boot ontology-loop stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free port 8100 (gateway)
+        run: |
+          sudo lsof -ti:8100 | xargs -r sudo kill -9 2>/dev/null || true
+          sudo lsof -ti:5432 | xargs -r sudo kill -9 2>/dev/null || true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Bring up ontology-loop stack
+        run: |
+          set -euo pipefail
+          # 默认 profile 不含 edge/monitoring/ai/java/deprecated-iam/keycloak
+          docker compose up -d \
+            postgres redis neo4j \
+            mate-tech-ont mate-tech-dw mate-tech-agent \
+            mate-app-copilot mate-app-a2a mate-app-hub \
+            mate-api-gateway
+          docker compose ps
+
+      - name: Wait for healthy
+        run: bash scripts/ci/ontology-loop-wait-healthy.sh 240
+        env:
+          COMPOSE_PROJECT_NAME: ${{ github.run_id }}-metaplatform
+
+      - name: Dump failed-container logs on timeout
+        if: failure()
+        run: |
+          docker compose ps
+          for svc in postgres redis neo4j mate-tech-ont mate-tech-dw mate-tech-agent \
+                     mate-app-copilot mate-app-a2a mate-app-hub mate-api-gateway; do
+            echo "===== logs: $svc ====="
+            docker compose logs --tail=200 "$svc" || true
+          done
+
+  # ----------------------------------------------------------------------------
+  # 2) Playwright 端到端
+  # ----------------------------------------------------------------------------
+  e2e-playwright:
+    name: playwright ontology-loop e2e
+    needs: [boot-stack]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+      - name: Install Playwright + Chromium
+        working-directory: metaplatform-frontend
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Run ontology-loop e2e (4 specs)
+        working-directory: metaplatform-frontend
+        run: |
+          E2E_GATEWAY_URL=http://localhost:8100/api/v1 \
+            pnpm exec playwright test \
+              --project=ontology-loop-consistency \
+              --project=ontology-loop-a2a \
+              --project=ontology-loop-evaluation \
+              --project=ontology-loop-model-edit \
+              --workers=1
+
+      - name: Upload playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ontology-loop-e2e-artifacts
+          path: |
+            metaplatform-frontend/tests/e2e/.artifacts/**
+            metaplatform-frontend/playwright-report/**
+            metaplatform-frontend/test-results/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ----------------------------------------------------------------------------
+  # 3) 兜底清理（栈不依赖 e2e 结果）
+  # ----------------------------------------------------------------------------
+  teardown:
+    name: teardown ontology-loop stack
+    needs: [boot-stack, e2e-playwright]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose down -v
+        run: |
+          docker compose down -v --remove-orphans || true
