@@ -13,6 +13,11 @@ const DOMAIN_LABELS: Record<string, string> = {
   fin: '财务核算',
   org: '组织人力',
   hr: '人力资源',
+  employee: '人事档案',
+  'leave-request': '请假申请',
+  ticket: '工单',
+  superai: 'SuperAI',
+  'dw-digital-employee': '数字员工',
 };
 
 export default function ObjectTypeListPage() {
