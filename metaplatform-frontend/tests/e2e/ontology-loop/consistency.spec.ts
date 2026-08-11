@@ -6,19 +6,19 @@ GOVERN-11 架构盘点结论：
 - ont 个体表 = 8 个业务语义员工（HR/IT/Finance/Sales/SuperAI，由
   seed_hr_it_finance_orchestrator 注入；rid 形如
   ont.tenant-default.ind.dw-<slug>.v1）
-- copilot match = P0 同源代码已就位，但运行时 BearerAuth 不可用，fallback 到
-  in-memory 3 条伪员工；这条链路在本场景仅做**形态检查**（endpoint 可达、
-  返回 JSON 形如 {items,total}），不强求 employeeId 与 dw 一致（已知 P0
-  修复未端到端生效，记录到 acceptance 文档）。
+- copilot match 端点：GOVERN-12-01 修复后，`match_employees` 透传入站
+  Authorization Bearer 头，dw client.list_dw_employees 用 fallback_token
+  走真 dw 主数据（dev 环境 keycloak client_secret=stub 不可用场景下）。
 
 跨模块一致性断言（场景 1）：
 1. dw 提供 7 个 kernel role
 2. ont 提供 8 个 dw/superai business-domain individual（HR/IT/Finance/Sales/
    SuperAI 命名空间齐全）
-3. copilot match 端点可达，响应 schema 形如 {items:[{employeeId,name}], total:N}
+3. superai match 返回的 employeeId 集合 ⊆ dw 主数据 employeeId 集合（同源）
 4. dw 字段 employeeId 形如 dw-emp-default-<n>（命名空间规整）
 
-执行依赖：auth-setup 完成 + seed_hr_it_finance_orchestrator 已注入。
+执行依赖：auth-setup 完成 + seed_hr_it_finance_orchestrator 已注入 +
+GOVERN-12-01 fallback_token 修复已合并。
 */
 
 import { test, expect } from '@playwright/test';
@@ -71,10 +71,8 @@ test('cross-module: 3 sources (dw API + superai match + ont individuals) align o
   const dwIds = new Set(dwList.map((e) => e.employeeId));
 
   // --- 2) superai match API（前端通过 /superai/employee-match 调用）
-  // 仅做**形态检查**：endpoint 可达、响应 schema 形如 {items,total}。
-  // 已知 P0 修复代码已就位但运行时 fallback（BearerAuth 不可用 → in-memory
-  // 伪员工 3 条），employeeId 不会落到 dw 主数据；这条路径的真正修复在
-  // acceptance/GOVERN-11-ontology-loop.md 列为 follow-up。
+  // GOVERN-12-01 后端修复 → fallback_token 透传入站 Bearer → dw 域主数据；
+  // employeeId 集合必须 ⊆ dw 主数据（govern12-06 spec 升级到字段级）。
   await page.goto('/superai/employee-match');
   await expect(page).toHaveURL(/\/superai\/employee-match/);
 
@@ -89,9 +87,27 @@ test('cross-module: 3 sources (dw API + superai match + ont individuals) align o
     },
   );
   expect(matchResp.status(), `copilot match ${matchResp.status()}`).toBe(200);
-  const matchBody = (await matchResp.json()) as { items?: unknown[]; total?: number };
+  const matchBody = (await matchResp.json()) as { items?: MatchedEmployee[]; total?: number };
   expect(Array.isArray(matchBody.items), 'match items is array').toBe(true);
   expect(typeof matchBody.total, 'match total is number').toBe('number');
+
+  // --- 断言 6（场景 1，GOVERN-12-01 升级）：superai match 同源 ---
+  // match 返回的每个 employeeId 必须在 dw 主数据命名空间里。
+  // 这条断言保证 copilot 不再 fallback 到 in-memory 3 伪员工。
+  const matched = (matchBody.items ?? []) as MatchedEmployee[];
+  expect(matched.length, `superai match empty for taskType=ontology`).toBeGreaterThan(0);
+  for (const m of matched) {
+    expect(
+      dwIds.has(m.employeeId),
+      `superai match employeeId ${m.employeeId} not in dw main data (govern12-01 同源失败)`,
+    ).toBe(true);
+  }
+  // 至少 1 条必须有 roleIdentity=ontology（任务 type=ontology）
+  const ontologyHits = matched.filter((m) => m.role === 'ontology').length;
+  expect(
+    ontologyHits,
+    `superai match for 'ontology' should return ≥1 with role=ontology (got ${ontologyHits})`,
+  ).toBeGreaterThanOrEqual(1);
 
   // --- 3) ont v2 individuals API（GOVERN-04 12 基元 PG 全量落地的内存镜像）---
   const ontResp = await request.get(
