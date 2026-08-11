@@ -494,6 +494,49 @@ async def get_object_type(rid: str, request: Request) -> ObjectTypeResponse:
     return _ot_to_dto(ot)
 
 
+@router.post(
+    "/object-types/{rid:path}/properties",
+    response_model=ObjectTypeResponse,
+    operation_id="ontAppendV2ObjectTypeProperty",
+)
+async def append_object_type_property(
+    rid: str, payload: PropertyDTO, request: Request,
+) -> ObjectTypeResponse:
+    """增量追加单个 Property 到已存在的 ObjectType。
+
+    实现策略：不引入新 repo method，复用 get + 整体 upsert。
+    1. get_object_type → 取出当前 OT（含既有 properties）
+    2. 检查 payload.rid 不与既有 properties 重名（防重复 409）
+    3. 构造新 OT（properties = 既有 ∪ {new_prop}）
+    4. upsert_object_type 写回
+    5. 返回更新后的 OT
+    """
+    _ctx(request)
+    try:
+        existing = await _call_scoped(request, "get_object_type", ClassRef(rid))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    # 检查 property 是否已存在（rid 重复 → 409）
+    existing_prop_rids = {p.rid.rid for p in existing.properties}
+    if payload.rid in existing_prop_rids:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Property rid already exists on ObjectType {rid}: {payload.rid}",
+        )
+
+    new_prop = _dto_to_prop(payload)
+    merged = ObjectType(
+        rid=existing.rid,
+        primary_key=existing.primary_key,
+        properties=existing.properties + (new_prop,),
+        display_name=existing.display_name,
+        interfaces=existing.interfaces,
+    )
+    saved = await _call_scoped(request, "upsert_object_type", merged)
+    return _ot_to_dto(saved)
+
+
 # ─────────────────── 2) Individual CRUD ───────────────────
 
 
