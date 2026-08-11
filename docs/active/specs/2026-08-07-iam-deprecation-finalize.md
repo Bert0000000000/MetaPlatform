@@ -4,6 +4,8 @@
 >
 > 状态：**DEPRECATED** · 默认 profile 下不启动；`--profile deprecated-iam` / `audit` 才拉起。
 > 退役时间窗口：**2026-08-07 → 2026-12-31**（与 v1 ontology router Sunset 一致）
+>
+> **2026-08-11 GOVERN-02-FIX 修订**：mate-tech-iam 的 7 个 router（dashboard/users/permissions/orgs/logs/configs/models，共 100+ 路由）已完整镜像到 mate-auth-service；api-gateway ROUTE_MAP 已把 `/api/v1/dashboard/` 与 `/api/v1/admin/` 从 `iam-admin` 切换到 `iam`。详见 [SEC-IAM-01-ACCEPTANCE.md §5](../delivery/evidence/SEC-IAM-01-ACCEPTANCE.md#5-2026-08-11-govern-02-fix--dashboardadmin-路由完整迁移到-mate-auth-service)。
 
 ## 1. 退役原因
 

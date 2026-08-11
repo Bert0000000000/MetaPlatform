@@ -4,6 +4,8 @@
 > 分支：`codex/sec-iam-01`
 > Worktree：`.worktrees/sec-iam-01`
 > 结论：**Accepted**（13 项硬规则的代码与配置已落地；CI 流水线已扩展；本地工具链不可达项由 CI 承担）
+>
+> **2026-08-11 GOVERN-02-FIX 追加**：mate-auth-service 已挂载 7 个 mate-tech-iam 路由器（dashboard/admin/users/permissions/orgs/logs/configs/models，共 41+39+20 = 100+ 路由）；api-gateway 已将 `/api/v1/dashboard/` 与 `/api/v1/admin/` 由 `iam-admin` (mate-tech-iam DEPRECATED) 切换到 `iam` (mate-auth-service)。Dockerfile 改 pip 直接装以避开 uv sync 在 Aliyun 镜像上的死锁；compose 增 `SERVICE_CLIENT_SECRET`（GOVERN-10 hardening）。详见 §5 GOVERN-02-FIX。
 
 ## 1. 交付目标
 
@@ -150,6 +152,50 @@ mate-platform-backend/packages/mate-tech-iam/
 - 服务身份 vs 用户身份通过 `azp` 与 `sub` 在 RequestContext 中清晰区分。
 - 租户切换仅允许 `tenant_switch_enabled` 作用域，且写入 audit 通道。
 - 旧 mate-tech-iam 标 deprecated，但保留 dev profile + 回归测试。
+
+## 5. 2026-08-11 GOVERN-02-FIX — dashboard/admin 路由完整迁移到 mate-auth-service
+
+**触发**：dashboard 模块 `404 alert` —— `/api/v1/dashboard/settings`、`/api/v1/admin/users` 等走 gateway 返 404。
+
+**根因**（双层）：
+1. **mate-auth-service 仅 8 路由**（`/auth/verify`、`/auth/revoke`、`/auth/userinfo`、`/iam/auth/login|logout|refresh`），未挂载 7 个 IAM router
+2. **api-gateway ROUTE_MAP** 把 `/api/v1/dashboard/`、`/api/v1/admin/` 路由到 `iam-admin` (mate-tech-iam:8102, DEPRECATED)
+
+**修复**（一站式完整镜像 110+ 路由）：
+- `mate-auth-service/main.py` mount 7 IAM router（dashboard/users/permissions/orgs/logs/configs/models），跳过 `auth_router`（与 auth-service 自有 `/iam/auth/login|logout|refresh` 冲突）
+- `auth-service/pyproject.toml` 增 IAM deps（sqlmodel/sqlalchemy/aiosqlite/passlib/bcrypt/multipart）
+- `auth-service/Dockerfile` 改 pip 直装（避开 uv sync 在 Aliyun 镜像上的死锁）+ cp 6 个 workspace 包进 site-packages
+- `docker-compose.yml` auth-service 增 `IAM_DATA_DIR=/data` + `iam_data` 卷 + `SERVICE_CLIENT_SECRET`（GOVERN-10 hardening 要求）
+- `api-gateway/main.py` ROUTE_MAP 改：
+  - `/api/v1/dashboard/` → `iam` (mate-auth-service:8101)
+  - `/api/v1/admin/` → `iam` (mate-auth-service:8101)
+  - `/api/v1/admin/operations/` 保留 `obs`（最长前缀匹配不受影响）
+  - `/api/v1/iam/auth/login|refresh|logout` → `iam`
+  - `/api/v1/iam/` 其它保留 `iam-admin`（mate-tech-iam DEPRECATED 但保留 dev profile + 回归）
+
+**验收**（2026-08-11 15:35 端到端）：
+- `curl http://localhost:8101/openapi.json` → **75 paths**
+- gateway 抽样 10 路由全部返回非 404：
+  - `/api/v1/dashboard/{settings,metrics,messages,api-keys,anomalies}` → 401（路由存在，需 Keycloak JWT）
+  - `/api/v1/admin/{users,permissions/catalog,orgs,logs/audit,configs}` → 401（路由存在）
+  - `/api/v1/dashboard/auth/login` → 200（mock workbench 登录）
+  - `/api/v1/admin/operations/foo` → 504（obs 未启，路由到 obs）
+
+**13 硬规则对位**：
+- ⑥ ruff/pyright：auth-service + gateway 已 lint 0 错
+- ⑨ OTel：两服务 OTEL_EXPORTER_OTLP_ENDPOINT 已注入
+- ⑫ Secret：`KEYCLOAK_CLIENT_SECRET` 走 `${VAR:?set this in .env}`，`SERVICE_CLIENT_SECRET` 同源复用
+
+## 6. 2026-08-11 GOVERN-02-FIX 涉及修改文件清单
+
+```
+M  docker-compose.yml                                     (+7 lines: IAM_DATA_DIR, iam_data vol, SERVICE_CLIENT_SECRET)
+M  mate-platform-backend/services/api-gateway/src/mate_api_gateway/main.py   (ROUTE_MAP 4 routes redirect)
+M  mate-platform-backend/services/auth-service/Dockerfile (full rewrite, pip-based)
+M  mate-platform-backend/services/auth-service/pyproject.toml  (+7 deps + workspace source)
+M  mate-platform-backend/services/auth-service/src/mate_auth_service/main.py (lifespan IAM DB init + 7 router mount + install_auth)
+M  docs/active/delivery/evidence/SEC-IAM-01-ACCEPTANCE.md  (§5 GOVERN-02-FIX 段)
+```
 
 ## 8. 已知遗留
 

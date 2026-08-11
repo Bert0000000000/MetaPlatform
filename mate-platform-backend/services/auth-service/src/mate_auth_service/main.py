@@ -4,11 +4,12 @@
   - JWT 校验 (RS256, Keycloak JWKS)
   - 租户识别 (从 token claims 提取 tenant_id)
   - token 黑名单 (Redis, 登出/吊销)
+  - (GOVERN-02-FIX) 承接 mate-tech-iam 的 dashboard/admin/users/orgs/permissions/logs/configs/models 路由
+  - (GOVERN-02-FIX) /iam/auth/login|refresh|logout 仍走 Keycloak password grant（auth-service 自有）
 
 不职责 (边界):
   - 不做切流决策 (那是 Traefik 边网关)
   - 不发 token (Keycloak)
-  - 不写用户/角色 (Keycloak admin API)
 """
 from __future__ import annotations
 
@@ -21,7 +22,11 @@ import httpx
 import jwt
 import structlog
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+# GOVERN-02-FIX: import mate_platform.auth.install_auth + mate_tech_iam routers
+from mate_platform.auth import install_auth
 
 logger = structlog.get_logger(__name__)
 
@@ -178,6 +183,16 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("redis.connect_failed", error=str(exc))
         app.state.redis = None
+    # GOVERN-02-FIX: init IAM DB tables (users/orgs/roles/permissions/audit/login_log/ai_model/system_config)
+    try:
+        from mate_tech_iam.db import AsyncSessionMaker, init_db
+        from mate_tech_iam.seed import seed as iam_seed
+        await init_db()
+        async with AsyncSessionMaker() as session:
+            await iam_seed(session)
+        logger.info("iam.db.init_ok")
+    except Exception as exc:
+        logger.warning("iam.db.init_failed", error=str(exc))
     logger.info("mate-auth-service.startup", version=app.version)
     yield
     await app.state.client.aclose()
@@ -432,6 +447,49 @@ async def iam_logout(authorization: str | None = Header(default=None)) -> dict[s
             logger.warning("iam_logout.blacklist_failed", error=str(exc))
     # Best-effort Keycloak logout (no refresh token here, so skip end_session call)
     return {"loggedOut": True, "jti": jti}
+
+
+# ---- GOVERN-02-FIX: CORS + install_auth + IAM router mounting ----
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Step 1 of ADR-0014: bearer-token auth middleware (Keycloak JWT).
+# Anonymous paths cover dashboard auth/login (workbench) and iam auth/refresh (token exchange).
+install_auth(
+    app,
+    extra_anonymous_paths={
+        "/api/v1/dashboard/auth/login",
+        "/api/v1/iam/auth/refresh",
+    },
+)
+
+# Mount 7 IAM routers (skip auth_router — auth-service owns /iam/auth/login|logout|refresh
+# via Keycloak password grant, with its own implementation).
+# Auth login/refresh/logout stay in auth-service; /iam/auth/me and /iam/sso-providers
+# are not currently called by frontend, so they're dropped.
+from mate_tech_iam.api import (  # noqa: E402
+    configs_router,
+    dashboard_router,
+    logs_router,
+    models_router,
+    orgs_router,
+    permissions_router,
+    users_router,
+)
+app.include_router(dashboard_router)
+app.include_router(users_router)
+app.include_router(permissions_router)
+app.include_router(orgs_router)
+app.include_router(logs_router)
+app.include_router(configs_router)
+app.include_router(models_router)
+logger.info("iam.routers.mounted", count=7)
 
 
 if __name__ == "__main__":

@@ -52,10 +52,13 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/ont/",  "ont"),
     ("/api/v1/mcp/",  "mcp"),
     ("/api/v1/dw/",   "dw"),        # DW (digital workforce) routes served by mate-tech-dw
-    ("/api/v1/dashboard/", "iam-admin"),
+    ("/api/v1/dashboard/", "iam"),   # GOVERN-02-FIX: dashboard 41 routes on mate-auth-service
     ("/api/v1/admin/operations/", "obs"),
-    ("/api/v1/admin/", "iam-admin"),
-    ("/api/v1/iam/",  "iam-admin"),  # TECH-IAM owns all /api/v1/iam/* (login, sso, users, roles...)
+    ("/api/v1/admin/", "iam"),       # GOVERN-02-FIX: admin users/orgs/permissions/logs/configs/models on mate-auth-service
+    ("/api/v1/iam/auth/login", "iam"),   # Keycloak password grant on mate-auth-service
+    ("/api/v1/iam/auth/refresh", "iam"),
+    ("/api/v1/iam/auth/logout", "iam"),
+    ("/api/v1/iam/",  "iam-admin"),  # legacy /iam/* (sso, /me) still on deprecated mate-tech-iam until 2026-12-31 sunset
     ("/api/v1/copilot/", "copilot"),
     ("/api/v1/superai/", "copilot"),
     ("/api/v1/arch/", "arch"),

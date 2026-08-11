@@ -20,7 +20,15 @@ dependencies = [
     "opentelemetry-sdk>=1.27.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.27.0",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
+    # GOVERN-02-FIX: IAM package mounted on auth-service (dashboard/admin/users/orgs/...)
+    "sqlmodel>=0.0.22",
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0",
+    "python-multipart>=0.0.20",
     "mate-common",
+    "mate-tech-iam",
 ]
 
 [build-system]

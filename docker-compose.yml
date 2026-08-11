@@ -1090,13 +1090,24 @@ services:
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-metaplatform}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      # GOVERN-10 hardening: install_auth requires SERVICE_CLIENT_SECRET in non-legacy profile.
+      # Reuse KEYCLOAK_CLIENT_SECRET — they're the same backend-services client secret in Keycloak.
+      SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
       REDIS_URL: redis://redis:6379/0
       JWKS_REFRESH_SEC: ${JWKS_REFRESH_SEC:-300}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-auth-service
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # GOVERN-02-FIX: IAM package now mounted on auth-service (dashboard/admin/users/orgs/...)
+      # IAM_DATABASE_URL: leave default (SQLite at /data/mate_iam.db) for dev;
+      # override to asyncpg in prod.
+      IAM_DATA_DIR: /data
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
     ports:
       - "${AUTH_SVC_PORT:-8101}:8101"
+    volumes:
+      - iam_data:/data
     depends_on:
       redis:
         condition: service_healthy
