@@ -49,14 +49,22 @@ tags:
 - name: a2a
   description: a2a domain operations
 - name: marketplace
-  description: 云服务市场消费侧（私有化版）— browse / install / license / events
+  description: marketplace domain operations
 security:
 - bearerAuth: []
 paths:
   /api/v1/a2a/agent-cards/search:
     $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1agent-cards~1search
+  /api/v1/a2a/delegate:
+    $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1delegate
   /api/v1/a2a/delegations:
     $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1delegations
+  /api/v1/a2a/health:
+    $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1health
+  /api/v1/a2a/messages:
+    $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1messages
+  /api/v1/a2a/tasks/{task_id}:
+    $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1tasks~1{task_id}
   /api/v1/admin/configs:
     $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1configs
   /api/v1/admin/configs/categories:
@@ -131,10 +139,26 @@ paths:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps
   /api/v1/apphub/apps/groups:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1groups
+  /api/v1/apphub/apps/{appId}/publish:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{appId}~1publish
+  /api/v1/apphub/apps/{appId}/runtime:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{appId}~1runtime
+  /api/v1/apphub/apps/{appId}/runtime/execute:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{appId}~1runtime~1execute
+  /api/v1/apphub/apps/{code}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1{code}
+  /api/v1/apphub/groups:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1groups
+  /api/v1/apphub/groups/{code}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1groups~1{code}
   /api/v1/apphub/modules:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1modules
   /api/v1/apphub/pages:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1pages
+  /api/v1/apphub/shortlinks:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1shortlinks
+  /api/v1/apphub/shortlinks/{code}:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1shortlinks~1{code}
   /api/v1/apphub/templates:
     $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1templates
   /api/v1/arch/applications:
@@ -403,6 +427,8 @@ paths:
     $ref: ./services/kb.yaml#/paths/~1api~1v1~1kb~1upload
   /api/v1/llmgw/chat:
     $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat
+  /api/v1/llmgw/chat/multimodal:
+    $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat~1multimodal
   /api/v1/llmgw/chat/stream:
     $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat~1stream
   /api/v1/llmgw/embeddings:
@@ -425,12 +451,24 @@ paths:
     $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1license~1activate
   /api/v1/marketplace/subscriptions:
     $ref: ./services/marketplace.yaml#/paths/~1api~1v1~1marketplace~1subscriptions
+  /api/v1/mcp/federation/servers:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1federation~1servers
+  /api/v1/mcp/federation/servers/{server_id}:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1federation~1servers~1{server_id}
+  /api/v1/mcp/federation/tools:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1federation~1tools
+  /api/v1/mcp/federation/tools/{tool_name}/invoke:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1federation~1tools~1{tool_name}~1invoke
   /api/v1/mcp/prompts:
     $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1prompts
   /api/v1/mcp/prompts/{name}:
     $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1prompts~1{name}
   /api/v1/mcp/resources:
     $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1resources
+  /api/v1/mcp/tool-categories:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1tool-categories
+  /api/v1/mcp/tool-categories/{category_id}:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1tool-categories~1{category_id}
   /api/v1/mcp/tools:
     $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1tools
   /api/v1/mcp/tools/{name}:
@@ -459,6 +497,10 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1classes~1{class_id}
   /api/v1/ont/explain:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1explain
+  /api/v1/ont/federation/mappings:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1federation~1mappings
+  /api/v1/ont/federation/query:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1federation~1query
   /api/v1/ont/instances:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1instances
   /api/v1/ont/instances/relations:
@@ -471,6 +513,34 @@ paths:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1ontologies~1{ontology_id}
   /api/v1/ont/sparql:
     $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1sparql
+  /api/v1/ont/v2/action-types:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types
+  /api/v1/ont/v2/action-types/{rid}/apply:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1action-types~1{rid}~1apply
+  /api/v1/ont/v2/axioms:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1axioms
+  /api/v1/ont/v2/functions:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1functions
+  /api/v1/ont/v2/individuals:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1individuals
+  /api/v1/ont/v2/individuals/{rid}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1individuals~1{rid}
+  /api/v1/ont/v2/interfaces:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1interfaces
+  /api/v1/ont/v2/link-instances:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-instances
+  /api/v1/ont/v2/link-types:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-types
+  /api/v1/ont/v2/link-types/{rid}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1link-types~1{rid}
+  /api/v1/ont/v2/object-sets/query:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-sets~1query
+  /api/v1/ont/v2/object-types:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types
+  /api/v1/ont/v2/object-types/{rid}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1object-types~1{rid}
+  /api/v1/ont/v2/versions/{class_rid}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1v2~1versions~1{class_rid}
   /api/v1/rag/admin/pg-stats:
     $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1admin~1pg-stats
   /api/v1/rag/ingest:

@@ -55,6 +55,68 @@ paths:
       x-mate-requirements:
       - FR-A2A-A2AGETA2AAGENTCARDSSEARCH
       x-mate-implementation-status: implemented
+  /api/v1/a2a/delegate:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      tags:
+      - a2a
+      summary: /v1/a2a/delegate (deprecated; use /messages)
+      operationId: a2aPostA2aDelegate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - target_agent_id
+              - message
+              properties:
+                target_agent_id:
+                  type: string
+                message:
+                  type: string
+                context:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - task_id
+                - status
+                properties:
+                  task_id:
+                    type: string
+                  status:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: >-
+        Create a delegation task (deprecated). Superseded by the W3C
+        `POST /api/v1/a2a/messages` envelope (GOVERN-12-03).
+      deprecated: true
+      x-sunset: 2026-12-31
+      x-migration-target: /api/v1/a2a/messages
+      x-mate-owner: ai-protocols
+      x-mate-permission: a2a.post
+      x-mate-requirements:
+      - FR-A2A-A2APOSTA2ADELEGATE
+      x-mate-implementation-status: implemented
   /api/v1/a2a/delegations:
     get:
       security:
@@ -91,6 +153,123 @@ paths:
       x-mate-permission: a2a.get
       x-mate-requirements:
       - FR-A2A-A2AGETA2ADELEGATIONS
+      x-mate-implementation-status: implemented
+  /api/v1/a2a/health:
+    get:
+      security: []
+      tags:
+      - a2a
+      summary: /v1/a2a/health (anonymous liveness probe)
+      operationId: a2aGetA2aHealth
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - status
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - ok
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: >-
+        Anonymous liveness probe — no tenant guard.
+      x-mate-owner: ai-protocols
+      x-mate-permission: a2a.get
+      x-mate-requirements:
+      - FR-A2A-A2AGETA2AHEALTH
+      x-mate-implementation-status: implemented
+  /api/v1/a2a/messages:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      tags:
+      - a2a
+      summary: /v1/a2a/messages (W3C A2A envelope, GOVERN-12-03)
+      operationId: a2aPostA2aMessages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/A2AMessage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/A2ATask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: >-
+        Accept a W3C A2A message and open a delegation task (GOVERN-12-03).
+        The envelope is translated into the existing DelegationTask
+        model: text parts become the task message, data parts are merged
+        into the task context (alongside the W3C correlation ids). The
+        response is a W3C Task object rather than the legacy
+        `{task_id,status}` shape returned by `/delegate`.
+      x-mate-owner: ai-protocols
+      x-mate-permission: a2a.post
+      x-mate-requirements:
+      - FR-A2A-A2APOSTA2AMESSAGES
+      x-mate-implementation-status: implemented
+  /api/v1/a2a/tasks/{task_id}:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      tags:
+      - a2a
+      summary: /v1/a2a/tasks/{task_id} (W3C Task status)
+      operationId: a2aGetA2aTask
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/A2ATask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Get delegation task status (W3C Task schema).
+      x-mate-owner: ai-protocols
+      x-mate-permission: a2a.get
+      x-mate-requirements:
+      - FR-A2A-A2AGETA2ATASK
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -497,3 +676,97 @@ components:
           - ACTIVE
           - INACTIVE
           - ERROR
+    A2APart:
+      type: object
+      description: One content part of a W3C A2A message.
+      required:
+      - kind
+      properties:
+        kind:
+          type: string
+          enum:
+          - text
+          - file
+          - data
+        text:
+          type: string
+          nullable: true
+        data:
+          type: object
+          additionalProperties: true
+          nullable: true
+    A2AMessage:
+      type: object
+      description: W3C A2A message envelope (the `/messages` request body).
+      required:
+      - messageId
+      - role
+      - parts
+      properties:
+        messageId:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          enum:
+          - user
+          - agent
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/A2APart'
+        contextId:
+          type: string
+          nullable: true
+        taskId:
+          type: string
+          nullable: true
+    A2AArtifact:
+      type: object
+      description: A W3C A2A artifact attached to a Task.
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        mimeType:
+          type: string
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/A2APart'
+    A2ATask:
+      type: object
+      description: W3C A2A Task object returned by `/messages` and `/tasks/{task_id}`.
+      required:
+      - id
+      - status
+      properties:
+        id:
+          type: string
+        contextId:
+          type: string
+        status:
+          type: object
+          required:
+          - state
+          properties:
+            state:
+              type: string
+              enum:
+              - submitted
+              - working
+              - input-required
+              - completed
+              - failed
+              - canceled
+            message:
+              $ref: '#/components/schemas/A2AMessage'
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/A2AArtifact'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/A2AMessage'

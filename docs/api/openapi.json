@@ -9519,6 +9519,64 @@
           "FR-DW-DWGETDWEVALUATIONS"
         ],
         "x-mate-implementation-status": "implemented"
+      },
+      "post": {
+        "security": [
+          {
+            "bearerAuth": [],
+            "tenantHeader": [],
+            "oidcScopes": [
+              "platform.write"
+            ]
+          }
+        ],
+        "tags": [
+          "dw"
+        ],
+        "summary": "/v1/dw/evaluations (collection-level)",
+        "operationId": "dwPostDwEvaluations",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResponse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "description": "/v1/dw/evaluations (collection-level, GOVERN-12-05)",
+        "x-mate-owner": "digital-workforce",
+        "x-mate-permission": "dw.post",
+        "x-mate-requirements": [
+          "FR-DW-DWPOSTDWEVALUATIONS"
+        ],
+        "x-mate-implementation-status": "implemented"
       }
     },
     "/api/v1/dw/extract": {
