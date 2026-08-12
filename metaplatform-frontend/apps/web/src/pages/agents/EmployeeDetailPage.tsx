@@ -43,6 +43,7 @@ import {
   MOCK_TOOLS,
   MOCK_MODELS,
   MOCK_KNOWLEDGE_BASES,
+  MOCK_ACTIONS,
 } from '@/api/dw/types';
 import type { MenuProps } from 'antd';
 
@@ -218,6 +219,7 @@ export default function EmployeeDetailPage() {
   const isRunning = employee.status === 'ACTIVE';
   const modelName = MOCK_MODELS.find((m) => m.id === employee.capability.model)?.name || employee.capability.model;
   const toolNames = employee.capability.tools.map((tid) => MOCK_TOOLS.find((t) => t.id === tid)?.name).filter(Boolean);
+  const actionNames = (employee.capability.actionRids || []).map((rid) => MOCK_ACTIONS.find((a) => a.id === rid)?.name).filter(Boolean);
   const kbNames = employee.capability.ragKnowledgeBaseIds.map((kid) => MOCK_KNOWLEDGE_BASES.find((k) => k.id === kid)?.name).filter(Boolean);
 
   return (
@@ -337,6 +339,9 @@ export default function EmployeeDetailPage() {
               <Descriptions.Item label="Max Tokens">{employee.capability.maxTokens}</Descriptions.Item>
               <Descriptions.Item label="已选工具">
                 {toolNames.length > 0 ? toolNames.join('、') : '未选择'}
+              </Descriptions.Item>
+              <Descriptions.Item label="可触发动作">
+                {actionNames.length > 0 ? actionNames.join('、') : '未配置'}
               </Descriptions.Item>
               <Descriptions.Item label="已绑定知识库">
                 {kbNames.length > 0 ? kbNames.join('、') : '未绑定'}

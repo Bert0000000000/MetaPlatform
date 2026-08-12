@@ -32,6 +32,7 @@ export interface EmployeeCapability {
   topP: number;
   systemPrompt: string;
   tools: string[];
+  actionRids: string[];  // 数字员工可触发的 ActionType（ont.<tenant>.act.<slug>）
   ragKnowledgeBaseIds: string[];
   retrievalMethod: 'hybrid' | 'vector' | 'keyword';
   topK: number;
@@ -145,6 +146,16 @@ export const MOCK_KNOWLEDGE_BASES = [
   { id: 'kb-hr', name: 'HR 政策知识库', documentCount: 8 },
   { id: 'kb-legal', name: '法务合规矩阵', documentCount: 5 },
   { id: 'kb-product', name: '产品手册知识库', documentCount: 20 },
+] as const;
+
+// 数字员工可触发的 ActionType（stub：等 MCP 中心优化完成后接真实 skill 注册表）
+export const MOCK_ACTIONS = [
+  { id: 'approve', name: '审批通过', category: '审批', desc: '通过某项待审批记录' },
+  { id: 'reject', name: '审批驳回', category: '审批', desc: '驳回某项待审批记录' },
+  { id: 'notify', name: '发送通知', category: '通知', desc: '向指定对象发送通知' },
+  { id: 'create_order', name: '创建订单', category: '业务', desc: '创建一条订单记录' },
+  { id: 'update_status', name: '更新状态', category: '业务', desc: '更新对象状态字段' },
+  { id: 'escalate', name: '升级处理', category: '流程', desc: '将异常升级到人工处理' },
 ] as const;
 
 // ============ Document Types (P2-DW-06) ============

@@ -30,6 +30,7 @@ import {
   MOCK_TOOLS,
   MOCK_MODELS,
   MOCK_KNOWLEDGE_BASES,
+  MOCK_ACTIONS,
 } from '@/api/dw/types';
 
 const { TextArea } = Input;
@@ -46,6 +47,7 @@ interface FormValues {
   maxTokens: number;
   topP: number;
   tools: string[];
+  actionRids: string[];
   ragKnowledgeBaseIds: string[];
   retrievalMethod: 'hybrid' | 'vector' | 'keyword';
   topK: number;
@@ -59,6 +61,7 @@ const defaultCapability: EmployeeCapability = {
   topP: 0.9,
   systemPrompt: '',
   tools: [],
+  actionRids: [],
   ragKnowledgeBaseIds: [],
   retrievalMethod: 'hybrid',
   topK: 5,
@@ -195,6 +198,7 @@ export default function EmployeeCreatePage() {
           topP: values.topP,
           systemPrompt: values.systemPrompt,
           tools: values.tools,
+          actionRids: values.actionRids,
           ragKnowledgeBaseIds: values.ragKnowledgeBaseIds,
           retrievalMethod: values.retrievalMethod,
           topK: values.topK,
@@ -333,6 +337,21 @@ export default function EmployeeCreatePage() {
               {MOCK_TOOLS.map((tool) => (
                 <Checkbox key={tool.id} value={tool.id}>
                   <Tag>{tool.category}</Tag> {tool.name}
+                </Checkbox>
+              ))}
+            </Space>
+          </Checkbox.Group>
+        </Form.Item>
+
+        <Divider />
+
+        <Typography.Title level={5}>动作选择（可触发 ActionType）</Typography.Title>
+        <Form.Item name="actionRids">
+          <Checkbox.Group style={{ width: '100%' }}>
+            <Space orientation="vertical">
+              {MOCK_ACTIONS.map((act) => (
+                <Checkbox key={act.id} value={act.id}>
+                  <Tag>{act.category}</Tag> {act.name}
                 </Checkbox>
               ))}
             </Space>

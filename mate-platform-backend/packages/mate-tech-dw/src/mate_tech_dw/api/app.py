@@ -979,15 +979,16 @@ def _serialize_employee(emp) -> dict:
         "builtin": bool(getattr(emp, "is_builtin", False)),
         "capability": {
             "model": emp.model_id,
-            "temperature": 0.7,
-            "maxTokens": 4096,
-            "topP": 0.9,
+            "temperature": getattr(emp, "temperature", 0.7),
+            "maxTokens": getattr(emp, "max_tokens", 4096),
+            "topP": getattr(emp, "top_p", 0.9),
             "systemPrompt": _system_prompt_for(emp),
-            "tools": [],
+            "tools": list(getattr(emp, "tools", ())),
+            "actionRids": list(getattr(emp, "action_rids", ())),
             "ragKnowledgeBaseIds": list(emp.kb_ids),
-            "retrievalMethod": "hybrid",
-            "topK": 5,
-            "rerank": True,
+            "retrievalMethod": getattr(emp, "retrieval_method", "hybrid"),
+            "topK": getattr(emp, "top_k", 5),
+            "rerank": getattr(emp, "rerank", True),
         },
         "createdAt": "2026-07-01T00:00:00Z",
         "updatedAt": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()),
@@ -1067,24 +1068,33 @@ class EmployeeCreateBody(BaseModel):
     capability: dict | None = None
 
 
+def _capability_field(cap: dict | None, key: str, default):
+    """从 capability dict 取字段（缺省回退默认值）。"""
+    if not cap or key not in cap:
+        return default
+    return cap[key]
+
+
 @router.post("/employees", status_code=201)
 async def dw_create_employee(request: Request, body: EmployeeCreateBody) -> dict:
     tid = _tenant_id(request)
     emp_id = f"dw-emp-{uuid.uuid4().hex[:8]}"
     code = body.code or _gen_employee_code(body.roleCategory)
-    model_id = "model-openai"
-    if body.capability and "model" in body.capability:
-        model_id = body.capability["model"]
-    kb_ids = ()
-    if body.capability and "ragKnowledgeBaseIds" in body.capability:
-        kb_ids = tuple(body.capability["ragKnowledgeBaseIds"])
-    system_prompt = ""
-    if body.capability and "systemPrompt" in body.capability:
-        system_prompt = body.capability["systemPrompt"]
+    cap = body.capability
     emp = DwEmployee(
         id=emp_id, tenant_id=tid, name=body.name, code=code,
         role=body.roleIdentity or "CUSTOM", status="active",
-        model_id=model_id, kb_ids=kb_ids, system_prompt=system_prompt,
+        model_id=_capability_field(cap, "model", "model-openai"),
+        kb_ids=tuple(_capability_field(cap, "ragKnowledgeBaseIds", ())),
+        system_prompt=_capability_field(cap, "systemPrompt", ""),
+        tools=tuple(_capability_field(cap, "tools", ())),
+        action_rids=tuple(_capability_field(cap, "actionRids", ())),
+        temperature=_capability_field(cap, "temperature", 0.7),
+        max_tokens=_capability_field(cap, "maxTokens", 4096),
+        top_p=_capability_field(cap, "topP", 0.9),
+        retrieval_method=_capability_field(cap, "retrievalMethod", "hybrid"),
+        top_k=_capability_field(cap, "topK", 5),
+        rerank=_capability_field(cap, "rerank", True),
     )
     create_employee(tid, emp)
     _emit(request, "dw.employee.created", emp_id, {"name": body.name, "code": code}, tid)
@@ -1103,12 +1113,30 @@ async def dw_update_employee(request: Request, employee_id: str, body: EmployeeC
     # code 不可变：自动生成后不允许通过 PUT 修改
     if body.roleIdentity:
         updates["role"] = body.roleIdentity
-    if body.capability and "model" in body.capability:
-        updates["model_id"] = body.capability["model"]
-    if body.capability and "ragKnowledgeBaseIds" in body.capability:
-        updates["kb_ids"] = tuple(body.capability["ragKnowledgeBaseIds"])
-    if body.capability and "systemPrompt" in body.capability:
-        updates["system_prompt"] = body.capability["systemPrompt"]
+    cap = body.capability
+    if cap:
+        if "model" in cap:
+            updates["model_id"] = cap["model"]
+        if "ragKnowledgeBaseIds" in cap:
+            updates["kb_ids"] = tuple(cap["ragKnowledgeBaseIds"])
+        if "systemPrompt" in cap:
+            updates["system_prompt"] = cap["systemPrompt"]
+        if "tools" in cap:
+            updates["tools"] = tuple(cap["tools"])
+        if "actionRids" in cap:
+            updates["action_rids"] = tuple(cap["actionRids"])
+        if "temperature" in cap:
+            updates["temperature"] = cap["temperature"]
+        if "maxTokens" in cap:
+            updates["max_tokens"] = cap["maxTokens"]
+        if "topP" in cap:
+            updates["top_p"] = cap["topP"]
+        if "retrievalMethod" in cap:
+            updates["retrieval_method"] = cap["retrievalMethod"]
+        if "topK" in cap:
+            updates["top_k"] = cap["topK"]
+        if "rerank" in cap:
+            updates["rerank"] = cap["rerank"]
     updated = update_employee(tid, emp.id, **updates)
     return _ok(_serialize_employee(updated))
 

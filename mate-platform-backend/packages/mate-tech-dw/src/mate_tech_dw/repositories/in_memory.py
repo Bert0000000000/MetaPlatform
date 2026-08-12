@@ -87,6 +87,14 @@ class DwEmployee:
     kb_ids: tuple[str, ...] = field(default_factory=tuple)
     is_builtin: bool = False  # 内置共享员工（CLAUDE.md 7+1 类）
     system_prompt: str = ""  # 系统提示词（能力配置 systemPrompt）
+    tools: tuple[str, ...] = field(default_factory=tuple)  # 可用工具（skill 注册表就绪前为 stub）
+    action_rids: tuple[str, ...] = field(default_factory=tuple)  # 可触发 ActionType rid
+    temperature: float = 0.7
+    max_tokens: int = 4096
+    top_p: float = 0.9
+    retrieval_method: str = "hybrid"  # hybrid / vector / keyword
+    top_k: int = 5
+    rerank: bool = True
 
 
 @dataclass(frozen=True)
@@ -606,6 +614,10 @@ def update_employee(tenant_id: str, employee_id: str, **kwargs) -> DwEmployee | 
         'code': emp.code, 'role': emp.role, 'status': emp.status,
         'model_id': emp.model_id, 'kb_ids': emp.kb_ids,
         'is_builtin': emp.is_builtin, 'system_prompt': emp.system_prompt,
+        'tools': emp.tools, 'action_rids': emp.action_rids,
+        'temperature': emp.temperature, 'max_tokens': emp.max_tokens,
+        'top_p': emp.top_p, 'retrieval_method': emp.retrieval_method,
+        'top_k': emp.top_k, 'rerank': emp.rerank,
     }
     data.update(kwargs)
     updated = DwEmployee(**data)

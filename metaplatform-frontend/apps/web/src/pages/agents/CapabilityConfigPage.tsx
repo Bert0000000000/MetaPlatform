@@ -24,6 +24,7 @@ import {
   ToolOutlined,
   DatabaseOutlined,
   CodeOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { getEmployee, updateEmployee } from '@/api/dw/employees';
 import type { Employee } from '@/api/dw/types';
@@ -31,6 +32,7 @@ import {
   MOCK_TOOLS,
   MOCK_MODELS,
   MOCK_KNOWLEDGE_BASES,
+  MOCK_ACTIONS,
   DIALOG_STYLE_PRESETS,
 } from '@/api/dw/types';
 
@@ -60,6 +62,7 @@ export default function CapabilityConfigPage() {
           topP: emp.capability.topP,
           systemPrompt: emp.capability.systemPrompt,
           tools: emp.capability.tools,
+          actionRids: emp.capability.actionRids,
           ragKnowledgeBaseIds: emp.capability.ragKnowledgeBaseIds,
           retrievalMethod: emp.capability.retrievalMethod,
           topK: emp.capability.topK,
@@ -87,6 +90,7 @@ export default function CapabilityConfigPage() {
           topP: values.topP,
           systemPrompt: values.systemPrompt,
           tools: values.tools || [],
+          actionRids: values.actionRids || [],
           ragKnowledgeBaseIds: values.ragKnowledgeBaseIds || [],
           retrievalMethod: values.retrievalMethod,
           topK: values.topK,
@@ -227,6 +231,40 @@ export default function CapabilityConfigPage() {
                           <Text strong style={{ fontSize: 13 }}>{tool.name}</Text>
                           <Text type="secondary" style={{ fontSize: 11 }}>{tool.category}</Text>
                         </Space>
+                      </Space>
+                    </Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </Form.Item>
+        </Card>
+
+        {/* 动作配置：数字员工可触发的 ActionType */}
+        <Card
+          size="small"
+          title={
+            <Space>
+              <ThunderboltOutlined /> 动作配置
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {MOCK_ACTIONS.length} 个可触发 ActionType
+              </Text>
+            </Space>
+          }
+          style={{ marginBottom: 16 }}
+        >
+          <Form.Item name="actionRids" label="可触发的动作">
+            <Checkbox.Group style={{ width: '100%' }}>
+              <Row gutter={[16, 12]}>
+                {MOCK_ACTIONS.map((act) => (
+                  <Col key={act.id} span={12}>
+                    <Checkbox value={act.id} style={{ alignItems: 'flex-start' }}>
+                      <Space orientation="vertical" size={0}>
+                        <Space size={4}>
+                          <Text strong style={{ fontSize: 13 }}>{act.name}</Text>
+                          <Text type="secondary" style={{ fontSize: 11 }}>{act.category}</Text>
+                        </Space>
+                        <Text type="secondary" style={{ fontSize: 11 }}>{act.desc}</Text>
                       </Space>
                     </Checkbox>
                   </Col>

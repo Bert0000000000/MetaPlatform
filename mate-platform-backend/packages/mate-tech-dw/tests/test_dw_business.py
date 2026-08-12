@@ -567,3 +567,71 @@ def test_custom_employee_prompt_persists(client, auth_headers_acme) -> None:
     )
     assert r2.status_code == 200, r2.text
     assert r2.json()["data"]["capability"]["systemPrompt"] == "新提示词"
+
+def test_capability_fields_persist(client, auth_headers_acme) -> None:
+    """新建/更新员工时，工具、动作、模型参数等能力字段全部持久化。"""
+    r = client.post(
+        "/api/v1/dw/employees",
+        headers=auth_headers_acme,
+        json={
+            "name": "能力员工",
+            "roleCategory": "CUSTOM",
+            "roleIdentity": "CAP_TEST",
+            "capability": {
+                "model": "model-qwen",
+                "temperature": 0.3,
+                "maxTokens": 2048,
+                "topP": 0.8,
+                "systemPrompt": "cap prompt",
+                "tools": ["query_database", "send_email"],
+                "actionRids": ["approve", "notify"],
+                "ragKnowledgeBaseIds": ["kb-finance"],
+                "retrievalMethod": "hybrid",
+                "topK": 3,
+                "rerank": False,
+            },
+        },
+    )
+    assert r.status_code == 201, r.text
+    emp = r.json()["data"]
+    cap = emp["capability"]
+    assert cap["tools"] == ["query_database", "send_email"]
+    assert cap["actionRids"] == ["approve", "notify"]
+    assert cap["temperature"] == 0.3
+    assert cap["maxTokens"] == 2048
+    assert cap["topP"] == 0.8
+    assert cap["retrievalMethod"] == "hybrid"
+    assert cap["topK"] == 3
+    assert cap["rerank"] is False
+
+    # 更新能力字段后读回新值
+    r2 = client.put(
+        f"/api/v1/dw/employees/{emp['employeeId']}",
+        headers=auth_headers_acme,
+        json={
+            "name": "能力员工",
+            "roleCategory": "CUSTOM",
+            "roleIdentity": "CAP_TEST",
+            "capability": {
+                "model": "model-qwen",
+                "tools": ["read_file"],
+                "actionRids": ["reject"],
+                "temperature": 0.9,
+                "maxTokens": 1024,
+                "topP": 0.5,
+                "retrievalMethod": "keyword",
+                "topK": 1,
+                "rerank": True,
+            },
+        },
+    )
+    assert r2.status_code == 200, r2.text
+    cap2 = r2.json()["data"]["capability"]
+    assert cap2["tools"] == ["read_file"]
+    assert cap2["actionRids"] == ["reject"]
+    assert cap2["temperature"] == 0.9
+    assert cap2["maxTokens"] == 1024
+    assert cap2["topP"] == 0.5
+    assert cap2["retrievalMethod"] == "keyword"
+    assert cap2["topK"] == 1
+    assert cap2["rerank"] is True
