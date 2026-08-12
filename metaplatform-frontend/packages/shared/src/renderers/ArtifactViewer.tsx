@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Button, Drawer, Typography, Space, Tag } from 'antd';
+import React, { useState } from 'react';
+import { Button, SideSheet, Typography, Space, Tag } from '@douyinfe/semi-ui';
 import { DownloadOutlined, EyeOutlined } from '../icons';
 
 /**
@@ -28,10 +28,10 @@ export function ArtifactViewer({ artifact }: { artifact: Artifact }) {
         <Tag>{artifact.mimeType ?? 'unknown'}</Tag>
         {artifact.byteSize != null && <Tag>{(artifact.byteSize / 1024).toFixed(1)} KB</Tag>}
       </Space>
-      <Drawer
+      <SideSheet
         title={artifact.displayName}
-        open={open}
-        onClose={() => setOpen(false)}
+        visible={open}
+        onCancel={() => setOpen(false)}
         width={720}
       >
         {isText && artifact.previewUrl ? (
@@ -39,9 +39,9 @@ export function ArtifactViewer({ artifact }: { artifact: Artifact }) {
         ) : artifact.previewUrl ? (
           <img src={artifact.previewUrl} style={{ maxWidth: '100%' }} alt={artifact.displayName} />
         ) : (
-          <Typography.Paragraph type="secondary">无预览内容</Typography.Paragraph>
+          <Typography.Paragraph type="tertiary">无预览内容</Typography.Paragraph>
         )}
-      </Drawer>
+      </SideSheet>
     </>
   );
 }

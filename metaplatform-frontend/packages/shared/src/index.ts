@@ -9,6 +9,7 @@ export * from './icons';
 
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as PlatformMenu, NAV_ITEMS, type NavItem } from './PlatformMenu';
+export { MODULE_MENU, flattenMenu, type ModuleMenuItem, type SubMenuItem } from './navigation.tsx';
 export { default as AppLayout } from './AppLayout';
 export { AuthProvider, useAuth, type AuthContextValue } from './auth/AuthProvider';
 export { AuthGuard } from './auth/AuthGuard';

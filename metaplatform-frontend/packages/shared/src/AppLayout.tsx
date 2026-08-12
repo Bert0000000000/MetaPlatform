@@ -1,24 +1,54 @@
 import { useState, type ReactNode } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Nav } from '@douyinfe/semi-ui';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { User, LogOut, ChevronsLeft, ChevronsRight } from './icons';
-import PlatformMenu from './PlatformMenu';
 import { useAuth } from './auth/AuthProvider';
 import MateLogo from './components/MateLogo';
+import { MODULE_MENU, flattenMenu } from './navigation';
 
 export interface AppLayoutProps {
   module?: string;
   children?: ReactNode;
 }
 
+const SIDEBAR_W = 240;
+const SIDEBAR_W_COLLAPSED = 64;
+
+/** 二级菜单 itemKey：moduleKey__childKey（避免跨模块重复） */
+function childItemKey(moduleKey: string, childKey: string) {
+  return `${moduleKey}__${childKey}`;
+}
+
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const SIDEBAR_W = collapsed ? 64 : 240;
+  const width = collapsed ? SIDEBAR_W_COLLAPSED : SIDEBAR_W;
 
   const handleLogout = () => {
     logout();
     window.location.href = '/login';
   };
+
+  // 当前路径 → 匹配的二级菜单项（最长前缀）
+  const flat = flattenMenu();
+  const pathname = location.pathname;
+  const matched = flat
+    .filter((it) => pathname === it.path || pathname.startsWith(it.path + '/'))
+    .sort((a, b) => b.path.length - a.path.length)[0];
+  const selectedKey = matched ? childItemKey(matched.moduleKey, matched.key) : undefined;
+  const currentModuleKey = matched?.moduleKey;
+
+  const navItems = MODULE_MENU.map((m) => ({
+    itemKey: m.key,
+    text: m.label,
+    icon: m.icon,
+    items: m.children.map((c) => ({
+      itemKey: childItemKey(m.key, c.key),
+      text: c.label,
+    })),
+  }));
 
   return (
     <div className="v-app-layout" style={{ height: '100vh', background: 'var(--background)' }}>
@@ -30,26 +60,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
           top: 0,
           bottom: 0,
           height: '100vh',
-          width: SIDEBAR_W,
+          width,
           zIndex: 10,
           background: 'var(--sidebar)',
           borderRight: '1px solid var(--sidebar-border)',
           display: 'flex',
           flexDirection: 'column',
-          padding: collapsed ? '20px 8px' : '20px 12px',
-          transition: 'width 0.2s ease, padding 0.2s ease',
+          transition: 'width 0.2s ease',
         }}
       >
-        {/* Logo — 侧边栏品牌：放大六边形 + MetaPlatform / Ontology 双行标题 */}
+        {/* Logo */}
         <div
           className="v-sidebar-logo"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
-            marginBottom: 20,
-            padding: collapsed ? '0' : '0 4px',
+            padding: collapsed ? '20px 0 12px' : '20px 20px 12px',
             gap: 10,
+            flexShrink: 0,
           }}
         >
           {collapsed ? (
@@ -77,10 +106,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
           )}
         </div>
 
-        <div className="v-sider-menu" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          <PlatformMenu collapsed={collapsed} />
+        {/* Semi Nav：一级 + 二级菜单 */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
+          <Nav
+            items={navItems}
+            selectedKeys={selectedKey ? [selectedKey] : []}
+            openKeys={currentModuleKey ? [currentModuleKey] : []}
+            isCollapsed={collapsed}
+            onClick={({ itemKey }) => {
+              const target = flat.find((it) => childItemKey(it.moduleKey, it.key) === itemKey);
+              if (target) navigate(target.path);
+            }}
+            style={{ borderRight: 'none', background: 'transparent', fontSize: 13 }}
+            bodyStyle={{ paddingTop: 0 }}
+          />
         </div>
 
+        {/* footer：折叠 + 用户 + 退出 */}
         <div
           className="v-sider-footer"
           style={{
@@ -90,9 +132,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
+            flexShrink: 0,
           }}
         >
-          {/* 折叠/展开按钮（放在底部） */}
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
@@ -120,7 +162,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             )}
           </button>
 
-          {/* 用户信息（折叠后只显示头像） */}
           <div
             style={{
               height: 36,
@@ -164,7 +205,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             )}
           </div>
 
-          {/* 退出登录 */}
           <button
             type="button"
             className="v-sidebar-item"
@@ -194,7 +234,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <div
         className="v-main-layout"
         style={{
-          marginLeft: SIDEBAR_W,
+          marginLeft: width,
           height: '100vh',
           background: 'var(--background)',
           transition: 'margin-left 0.2s ease',

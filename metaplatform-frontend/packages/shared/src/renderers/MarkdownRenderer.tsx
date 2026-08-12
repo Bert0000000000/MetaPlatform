@@ -1,4 +1,4 @@
-import { Tag } from 'antd';
+import { Tag } from '@douyinfe/semi-ui';
 import type { CSSProperties } from 'react';
 
 interface MarkdownRendererProps {

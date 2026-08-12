@@ -20,7 +20,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Button, Modal, Slider, Tag } from 'antd';
+import { Button, Modal, Slider, Tag } from '@douyinfe/semi-ui';
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import {
   EditorRenderer,
@@ -367,7 +367,7 @@ const ControlBar: React.FC = () => {
   const running = api.status === 'running';
   const paused = api.status === 'paused';
   const idle = api.status === 'idle';
-  const tagColor = running ? 'blue' : paused ? 'orange' : api.status === 'finished' ? 'green' : 'default';
+  const tagColor = running ? 'blue' : paused ? 'orange' : api.status === 'finished' ? 'green' : 'grey';
 
   return (
     <div
@@ -497,8 +497,7 @@ const Modals: React.FC = () => {
         open={!!waitingHitlId}
         title="人工确认 (HITL)"
         footer={null}
-        mask={{ closable: false }}
-        closable={false}
+        maskClosable={false}
         width={480}
         onCancel={() => waitingHitlId && api.resolveHitl(waitingHitlId, false)}
       >
@@ -521,10 +520,10 @@ const Modals: React.FC = () => {
               {String(hitlData?.proposal ?? '（未填写 proposal 文案）')}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Button danger onClick={() => api.resolveHitl(waitingHitlId, false)}>
+              <Button type="danger" onClick={() => api.resolveHitl(waitingHitlId, false)}>
                 拒绝
               </Button>
-              <Button type="primary" onClick={() => api.resolveHitl(waitingHitlId, true)}>
+              <Button theme="solid" type="primary" onClick={() => api.resolveHitl(waitingHitlId, true)}>
                 确认
               </Button>
             </div>
@@ -537,8 +536,7 @@ const Modals: React.FC = () => {
         open={!!waitingApprovalId}
         title="审批 (Flowable 模拟)"
         footer={null}
-        mask={{ closable: false }}
-        closable={false}
+        maskClosable={false}
         width={480}
         onCancel={() => waitingApprovalId && api.resolveApproval(waitingApprovalId, false)}
       >
@@ -559,10 +557,10 @@ const Modals: React.FC = () => {
               审批人：{String(apprData?.assignee ?? '—')}　·　节点：{String(apprData?.title ?? '')}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Button danger onClick={() => api.resolveApproval(waitingApprovalId, false)}>
+              <Button type="danger" onClick={() => api.resolveApproval(waitingApprovalId, false)}>
                 驳回
               </Button>
-              <Button type="primary" onClick={() => api.resolveApproval(waitingApprovalId, true)}>
+              <Button theme="solid" type="primary" onClick={() => api.resolveApproval(waitingApprovalId, true)}>
                 通过
               </Button>
             </div>

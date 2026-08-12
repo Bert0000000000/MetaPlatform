@@ -1,6 +1,6 @@
 import React from 'react';
-import { Tag, Tooltip, Typography } from 'antd';
-import { CheckCircleOutlined, BulbOutlined, RocketOutlined } from '@ant-design/icons';
+import { Tag, Tooltip, Typography } from '@douyinfe/semi-ui';
+import { CheckCircleOutlined, BulbOutlined, ThunderboltOutlined } from '@mate/shared';
 import type { Claim } from '@/api/superai/types';
 
 const { Text } = Typography;
@@ -18,11 +18,11 @@ export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
   const icon = (() => {
     switch (claim.type) {
       case 'FACT':
-        return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+        return <CheckCircleOutlined style={{ color: 'var(--semi-color-success)' }} />;
       case 'INFERENCE':
-        return <BulbOutlined style={{ color: '#1677ff' }} />;
+        return <BulbOutlined style={{ color: 'var(--semi-color-primary)' }} />;
       case 'RECOMMENDATION':
-        return <RocketOutlined style={{ color: '#fa8c16' }} />;
+        return <ThunderboltOutlined style={{ color: 'var(--semi-color-warning)' }} />;
     }
   })();
 
@@ -43,10 +43,10 @@ export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
         display: 'flex',
         gap: 8,
         padding: '8px 12px',
-        border: '1px solid #d9d9d9',
+        border: '1px solid var(--border)',
         borderRadius: 6,
         marginBottom: 8,
-        background: '#fafafa',
+        background: 'var(--muted)',
       }}
       data-claim-id={claim.claimId}
     >
@@ -54,8 +54,8 @@ export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <Tag color={color}>{claim.type}</Tag>
-          <Tooltip title={'Confidence: ' + (claim.confidence * 100).toFixed(0) + '%'}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
+          <Tooltip content={'Confidence: ' + (claim.confidence * 100).toFixed(0) + '%'}>
+            <Text type="tertiary" style={{ fontSize: 12 }}>
               {(claim.confidence * 100).toFixed(0)}%
             </Text>
           </Tooltip>
@@ -63,11 +63,11 @@ export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
         <Text>{claim.text}</Text>
         {claim.evidenceRefs && claim.evidenceRefs.length > 0 && (
           <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Evidence:</Text>
+            <Text type="tertiary" style={{ fontSize: 12 }}>Evidence:</Text>
             {claim.evidenceRefs.map((ref) => (
               <Tag
                 key={ref}
-                color="geekblue"
+                color="indigo"
                 style={{ cursor: onEvidenceClick ? 'pointer' : 'default' }}
                 onClick={() => onEvidenceClick?.(ref)}
               >

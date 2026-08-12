@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Drawer, Empty, Tag, Typography } from 'antd';
-import { FileTextOutlined, DatabaseOutlined, LinkOutlined } from '@ant-design/icons';
+import { Card, SideSheet, Empty, Tag, Typography } from '@douyinfe/semi-ui';
+import { FileText, Database, Link } from 'lucide-react';
 import type { Evidence } from '@/api/superai/types';
 
 const { Text, Paragraph } = Typography;
@@ -18,7 +18,7 @@ export function EvidenceRenderer({ evidenceList, emptyText }: EvidenceRendererPr
   const [activeEvidence, setActiveEvidence] = useState<Evidence | null>(null);
 
   if (evidenceList.length === 0) {
-    return <Empty description={emptyText || 'No evidence yet'} image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    return <Empty description={emptyText || 'No evidence yet'} />;
   }
 
   const iconFor = (type: Evidence['type']) => {
@@ -26,13 +26,13 @@ export function EvidenceRenderer({ evidenceList, emptyText }: EvidenceRendererPr
       case 'ONTOLOGY_OBJECT':
       case 'ONTOLOGY_METRIC':
       case 'ONTOLOGY_RELATION':
-        return <DatabaseOutlined style={{ color: '#1677ff' }} />;
+        return <Database size={16} style={{ color: 'var(--semi-color-primary)' }} />;
       case 'DOCUMENT':
       case 'KB_CHUNK':
-        return <FileTextOutlined style={{ color: '#52c41a' }} />;
+        return <FileText size={16} style={{ color: 'var(--semi-color-success)' }} />;
       case 'EXTERNAL':
       case 'MODEL_DERIVED':
-        return <LinkOutlined style={{ color: '#722ed1' }} />;
+        return <Link size={16} style={{ color: 'var(--semi-color-violet)' }} />;
     }
   };
 
@@ -40,83 +40,78 @@ export function EvidenceRenderer({ evidenceList, emptyText }: EvidenceRendererPr
     <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {evidenceList.map((e) => (
-          <Card
-            key={e.evidenceId}
-            size="small"
-            hoverable
-            onClick={() => setActiveEvidence(e)}
-            style={{ cursor: 'pointer' }}
-            data-evidence-id={e.evidenceId}
-          >
+          <Card key={e.evidenceId} style={{ cursor: 'pointer' }}>
+            <div onClick={() => setActiveEvidence(e)} data-evidence-id={e.evidenceId}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {iconFor(e.type)}
               <Text strong style={{ flex: 1 }}>{e.ref}</Text>
-              <Tag color="default">{e.type}</Tag>
+              <Tag color="grey">{e.type}</Tag>
             </div>
             {e.concept && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="tertiary" style={{ fontSize: 12 }}>
                 {e.concept}{e.objectId ? ' / ' + e.objectId : ''}
               </Text>
             )}
             {e.fragment && (
               <Paragraph
-                type="secondary"
+                type="tertiary"
                 ellipsis={{ rows: 2 }}
                 style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}
               >
                 {e.fragment}
               </Paragraph>
             )}
+            </div>
           </Card>
         ))}
       </div>
-      <Drawer
+      <SideSheet
         title={activeEvidence ? 'Evidence: ' + activeEvidence.evidenceId : ''}
-        open={!!activeEvidence}
-        onClose={() => setActiveEvidence(null)}
-        size={560}
+        visible={!!activeEvidence}
+        onCancel={() => setActiveEvidence(null)}
+        width={560}
       >
         {activeEvidence && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <Text type="secondary">Type</Text>
-              <div><Tag color="default">{activeEvidence.type}</Tag></div>
+              <Text type="tertiary">Type</Text>
+              <div><Tag color="grey">{activeEvidence.type}</Tag></div>
             </div>
             <div>
-              <Text type="secondary">Reference</Text>
-              <div><Text code>{activeEvidence.ref}</Text></div>
+              <Text type="tertiary">Reference</Text>
+              <div><code style={{ fontSize: 13 }}>{activeEvidence.ref}</code></div>
             </div>
             {activeEvidence.concept && (
               <div>
-                <Text type="secondary">Concept / Object</Text>
+                <Text type="tertiary">Concept / Object</Text>
                 <div><Text>{activeEvidence.concept}{activeEvidence.objectId ? ' / ' + activeEvidence.objectId : ''}</Text></div>
               </div>
             )}
             {activeEvidence.fragment && (
               <div>
-                <Text type="secondary">Fragment</Text>
-                <Paragraph copyable style={{ background: '#fafafa', padding: 8, borderRadius: 4 }}>
+                <Text type="tertiary">Fragment</Text>
+                <Paragraph copyable style={{ background: 'var(--muted)', padding: 8, borderRadius: 4 }}>
                   {activeEvidence.fragment}
                 </Paragraph>
               </div>
             )}
             <div>
-              <Text type="secondary">Captured at</Text>
+              <Text type="tertiary">Captured at</Text>
               <div><Text>{activeEvidence.capturedAt}</Text></div>
             </div>
             <div>
-              <Text type="secondary">Envelope</Text>
-              <div><Text code>{activeEvidence.envelopeId}</Text></div>
+              <Text type="tertiary">Envelope</Text>
+              <div><code style={{ fontSize: 13 }}>{activeEvidence.envelopeId}</code></div>
             </div>
             {activeEvidence.toolCallId && (
               <div>
-                <Text type="secondary">Tool call</Text>
-                <div><Text code>{activeEvidence.toolCallId}</Text></div>
+                <Text type="tertiary">Tool call</Text>
+                <div><code style={{ fontSize: 13 }}>{activeEvidence.toolCallId}</code></div>
               </div>
             )}
           </div>
         )}
-      </Drawer>
+      </SideSheet>
     </>
   );
 }

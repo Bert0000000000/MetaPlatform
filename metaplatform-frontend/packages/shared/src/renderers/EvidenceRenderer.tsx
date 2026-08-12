@@ -1,5 +1,6 @@
-﻿import React from 'react';
-import { Tag, Typography } from 'antd';
+import React from 'react';
+import { Tag, Typography } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 
 /**
  * Evidence 渲染器（P4.1.3）。
@@ -13,9 +14,9 @@ export interface Evidence {
   title?: string;
 }
 
-const TYPE_COLOR: Record<Evidence['type'], string> = {
+const TYPE_COLOR: Record<Evidence['type'], TagColor> = {
   ONTOLOGY_OBJECT: 'cyan',
-  ONTOLOGY_METRIC: 'geekblue',
+  ONTOLOGY_METRIC: 'indigo',
   DOCUMENT: 'green',
   EXTERNAL: 'orange',
   MODEL_DERIVED: 'purple',
