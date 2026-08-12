@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Card } from '@douyinfe/semi-ui';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, MessageSquare, FileCheck, BarChart3, FileText,
@@ -204,7 +205,7 @@ export default function AgentsTasksPage() {
 
         {/* Detail Panel */}
         <div className="at-detail-panel">
-          <div className="v-card">
+          <Card>
             {/* Basic Info */}
             <div className="at-detail-section">
               <div className="at-detail-section-title">基本信息</div>
@@ -325,7 +326,7 @@ export default function AgentsTasksPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

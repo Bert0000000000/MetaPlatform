@@ -7,7 +7,7 @@ import {
   Circle, Box, ChevronRight, ArrowRight,
   RefreshCw, Download, Eye, EyeOff,
 } from 'lucide-react';
-import { Toast } from '@douyinfe/semi-ui';
+import { Toast, Card } from '@douyinfe/semi-ui';
 import { Graph } from '@antv/g6';
 import { listBigDataSources, listCDCTasks, listDataProducts, deriveLineageGraph, type LineageGraphNode, type LineageGraphEdge } from '../../../api/ontology-bigdata';
 
@@ -333,7 +333,7 @@ export default function DataGraphView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', minHeight: 0 }}>
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search style={{ position: 'absolute', left: 10, top: 10, width: 14, height: 14, color: 'var(--muted-foreground)' }} />
           <input
@@ -416,7 +416,7 @@ export default function DataGraphView() {
             <Download style={{ width: 16, height: 16 }} />
           </button>
         </div>
-      </div>
+      </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         {[
@@ -425,17 +425,16 @@ export default function DataGraphView() {
           { label: '总边', value: totalEdges, color: 'var(--foreground)' },
           { label: '可见边', value: visibleEdges, color: '#10b981' },
         ].map((s) => (
-          <div key={s.label} className="v-card" style={{ padding: 12 }}>
+          <Card key={s.label}  style={{ padding: 12 }}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: 0.04 + 'em' as any }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: selectedNode ? '1fr 320px' : '1fr', gap: 12, flex: 1, minHeight: 360 }}>
         <div
           ref={containerRef}
-          className="v-card"
           style={{ position: 'relative', padding: 0, overflow: 'hidden', minHeight: 360, background: 'var(--background)' }}
         />
         {selectedNode && (
@@ -449,7 +448,7 @@ export default function DataGraphView() {
         )}
       </div>
 
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
         <span style={{ color: 'var(--muted-foreground)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <Filter style={{ width: 12, height: 12 }} />图例
         </span>
@@ -462,7 +461,7 @@ export default function DataGraphView() {
         <span style={{ marginLeft: 'auto', color: 'var(--muted-foreground)' }}>
           布局: {LAYOUT_OPTIONS[layoutType].label} · 节点 {visibleNodes}/{totalNodes} · 边 {visibleEdges}/{totalEdges}
         </span>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -471,7 +470,7 @@ export default function DataGraphView() {
 function NodeDetailPanel({ node, inEdges, outEdges, nodes, onClose }: { node: NodeRow; inEdges: EdgeRow[]; outEdges: EdgeRow[]; nodes: NodeRow[]; onClose: () => void }) {
   const meta = NODE_TYPE_META[node.type] || NODE_TYPE_META.source;
   return (
-    <div className="v-card" style={{ padding: 16, overflow: 'auto' }}>
+    <Card style={{ padding: 16, overflow: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
@@ -498,7 +497,7 @@ function NodeDetailPanel({ node, inEdges, outEdges, nodes, onClose }: { node: No
       {inEdges.length > 0 && (
         <DetailEdgeList title="上游" icon={<ChevronRight style={{ width: 12, height: 12, transform: 'rotate(180deg)' }} />} edges={inEdges} direction="in" nodes={nodes} />
       )}
-    </div>
+    </Card>
   );
 }
 

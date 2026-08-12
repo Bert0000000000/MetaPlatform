@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { Card, Tag } from '@douyinfe/semi-ui';
 import { useEffect, useState } from 'react';
 import {
   RefreshCw, GitBranch, Plus, Activity, PlugZap, Layers,
@@ -198,15 +199,15 @@ function MappingView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           外部数据源到 Ontology 实体的字段映射（真实：CDC 任务 + 数据产品）
         </div>
         <button style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Plus style={{ width: 14, height: 14 }} />新建映射
         </button>
-      </div>
-      <div className="v-card">
+      </Card>
+      <Card>
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载中…</div>
         ) : rows.length === 0 ? (
@@ -222,7 +223,7 @@ function MappingView() {
                 <td style={{ fontWeight: 500 }}>{m.name}</td>
                 <td style={{ fontSize: 12 }}>{m.source}</td>
                 <td style={{ fontSize: 12 }}>{m.target}</td>
-                <td><span className="v-badge" style={{ background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 10 }}>{m.mode}</span></td>
+                <td><Tag style={{ background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 10 }}>{m.mode}</Tag></td>
                 <td style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{m.lastSync}</td>
                 <td><span className={`v-badge v-badge-${m.statusType}`}>{m.statusLabel}</span></td>
               </tr>
@@ -230,7 +231,7 @@ function MappingView() {
           </tbody>
         </table>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -284,20 +285,20 @@ function QualityView() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
         {metrics.map((q) => (
-          <div key={q.label} className="v-card" style={{ padding: '14px 16px' }}>
+          <Card key={q.label}  style={{ padding: '14px 16px' }}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 8 }}>{q.label}</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: q.level === 'good' ? 'var(--success)' : q.level === 'fair' ? 'var(--warning)' : 'var(--destructive)' }}>{q.value}</div>
             <div style={{ height: 4, background: 'var(--muted)', borderRadius: 2, marginTop: 8, overflow: 'hidden' }}>
               <div style={{ height: '100%', borderRadius: 2, width: q.width, background: q.level === 'good' ? 'var(--success)' : q.level === 'fair' ? 'var(--warning)' : 'var(--destructive)' }} />
             </div>
-          </div>
+          </Card>
         ))}
       </div>
       <div>
         <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12, color: 'var(--muted-foreground)' }}>
           资源状态（来自真实数据平台控制面：数据源 / CDC 同步 / 数据产品）
         </div>
-        <div className="v-card">
+        <Card>
           {loading ? (
             <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载中…</div>
           ) : records.length === 0 ? (
@@ -321,7 +322,7 @@ function QualityView() {
             </tbody>
           </table>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -349,7 +350,7 @@ function LakeView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="v-card" style={{ padding: 16 }}>
+      <Card style={{ padding: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>数据湖表（Iceberg ADS 数据产品）</div>
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载中…</div>
@@ -377,7 +378,7 @@ function LakeView() {
           </tbody>
         </table>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

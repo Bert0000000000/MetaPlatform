@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Card, Tag } from '@douyinfe/semi-ui';
 import { useState } from 'react';
 import {
   ScanSearch, CircleDot, Pencil, Play, History, Power,
@@ -142,7 +142,7 @@ export default function AgentsDetailPage() {
             <div className="ad-agent-name">数据质量巡检员</div>
             <div className="ad-agent-desc">基于本体引擎的数据质量自动化巡检 Agent，负责定期扫描数据源、检测异常模式、生成质量报告并推送告警通知。</div>
             <div className="ad-agent-meta-row">
-              <span className="v-badge v-badge-success"><CircleDot style={{ width: 12, height: 12 }} /> 运行中</span>
+              <Tag color="green"><CircleDot style={{ width: 12, height: 12 }} /> 运行中</Tag>
               <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>最近执行：2026-07-22 08:00:12</span>
               <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Cron: 0 8 * * *</span>
             </div>
@@ -172,7 +172,7 @@ export default function AgentsDetailPage() {
       </div>
 
       {/* 1. Config Info */}
-      <div className="v-card" style={{ marginBottom: 24 }}>
+      <Card style={{ marginBottom: 24 }}>
         <div className="ad-v-card-header">
           <div className="ad-section-title"><Settings2 style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> 配置信息</div>
         </div>
@@ -193,10 +193,10 @@ export default function AgentsDetailPage() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* 2. Orchestration Flow */}
-      <div className="v-card" style={{ marginBottom: 24 }}>
+      <Card style={{ marginBottom: 24 }}>
         <div className="ad-v-card-header">
           <div className="ad-section-title"><Workflow style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> 编排流程摘要</div>
           <span className="v-meta" style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Graph Core DAG · 6 节点</span>
@@ -214,10 +214,10 @@ export default function AgentsDetailPage() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* 3. Tool Config */}
-      <div className="v-card" style={{ marginBottom: 24 }}>
+      <Card style={{ marginBottom: 24 }}>
         <div className="ad-v-card-header">
           <div className="ad-section-title"><Wrench style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> 工具配置</div>
           <span className="v-meta" style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>5 个工具已挂载</span>
@@ -237,10 +237,10 @@ export default function AgentsDetailPage() {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* 4. Prompt Template */}
-      <div className="v-card" style={{ marginBottom: 24 }}>
+      <Card style={{ marginBottom: 24 }}>
         <div className="ad-v-card-header">
           <div className="ad-section-title"><Code2 style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> Prompt 模板预览</div>
           <Button theme="light" type="secondary" style={{ fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} /> 复制</Button>
@@ -266,10 +266,10 @@ export default function AgentsDetailPage() {
           - 发现异常时提供具体字段、示例值和修复建议{'\n'}
           - 每次巡检结果需与上次结果对比，标注趋势变化</span>
         </div>
-      </div>
+      </Card>
 
       {/* 5. Runtime Log */}
-      <div className="v-card" style={{ marginBottom: 0 }}>
+      <Card style={{ marginBottom: 0 }}>
         <div className="ad-v-card-header">
           <div className="ad-section-title"><ScrollText style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> 运行日志</div>
           <Button theme="light" type="secondary" style={{ fontSize: 12 }}><Download style={{ width: 14, height: 14 }} /> 导出</Button>
@@ -300,7 +300,7 @@ export default function AgentsDetailPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       <FormDrawer open={drawerOpen} title="编辑数字员工" onCancel={() => setDrawerOpen(false)} onOk={() => setDrawerOpen(false)}>
         <Field label="名称" required>

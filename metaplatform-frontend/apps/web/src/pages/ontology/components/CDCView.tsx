@@ -7,7 +7,7 @@ import {
   listCDCTasks, createCDCTask, pauseCDCTask, resumeCDCTask, getCDCTaskStatus,
   CDCTask, CDCSyncMode, CDCStartPosition, CDCTargetType, BigDataSource,
 } from '../../../api/ontology-bigdata';
-import { Toast } from '@douyinfe/semi-ui';
+import { Toast, Card, Tag } from '@douyinfe/semi-ui';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 
 const STATUS_META = {
@@ -63,7 +63,7 @@ export default function CDCView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Toolbar */}
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           监控源数据库到目标存储的实时变更同步
         </div>
@@ -73,7 +73,7 @@ export default function CDCView() {
         <button onClick={() => setShowCreate(true)} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Plus style={{ width: 14, height: 14 }} />新建 CDC 任务
         </button>
-      </div>
+      </Card>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
@@ -85,7 +85,7 @@ export default function CDCView() {
         ].map(s => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Card key={s.label}  style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color + '20', color: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon style={{ width: 18, height: 18 }} />
               </div>
@@ -93,7 +93,7 @@ export default function CDCView() {
                 <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -111,20 +111,20 @@ export default function CDCView() {
             const SmIcon = sm.icon;
             const sourceName = sources.find(s => s.sourceId === t.sourceId)?.name || t.sourceId;
             return (
-              <div key={t.taskId} className="v-card" style={{ padding: 16 }}>
+              <Card key={t.taskId}  style={{ padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <Radio style={{ width: 16, height: 16, color: 'var(--primary)' }} />
                       <span style={{ fontSize: 14, fontWeight: 600 }}>{t.name}</span>
                     </div>
-                    <span className="v-badge" style={{ background: sm.bg, color: sm.color, fontSize: 11 }}>
+                    <Tag style={{ background: sm.bg, color: sm.color, fontSize: 11 }}>
                       <SmIcon style={{ width: 10, height: 10, display: 'inline', marginRight: 4 }} />
                       {sm.label}
-                    </span>
-                    <span className="v-badge" style={{ marginLeft: 6, background: 'var(--accent)', color: 'var(--accent-foreground)', fontSize: 11 }}>
+                    </Tag>
+                    <Tag style={{ marginLeft: 6, background: 'var(--accent)', color: 'var(--accent-foreground)', fontSize: 11 }}>
                       {SYNC_MODE_META[t.syncMode] || t.syncMode}
-                    </span>
+                    </Tag>
                   </div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {t.status === 'RUNNING' && (
@@ -175,7 +175,7 @@ export default function CDCView() {
                 <div style={{ marginTop: 8, fontSize: 11, color: 'var(--muted-foreground)' }}>
                   同步表: {t.tables.map(tb => tb.tableName).join(', ')}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -214,7 +214,7 @@ function CreateCDCDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div className="v-card" style={{ width: 560, maxHeight: '90vh', overflow: 'auto' }}>
+      <Card style={{ width: 560, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建 CDC 任务</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>
@@ -274,7 +274,7 @@ function CreateCDCDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
             {submitting ? '创建中...' : '创建'}
           </button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

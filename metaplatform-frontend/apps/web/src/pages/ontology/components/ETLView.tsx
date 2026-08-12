@@ -7,7 +7,7 @@ import {
   listETLTasks, runETLTask, stopETLTask, createETLTask,
   ETLTask, ETLMode, ETLPriority, ETLTriggerType, BigDataSource, ETL_MODE_META,
 } from '../../../api/ontology-bigdata';
-import { Toast } from '@douyinfe/semi-ui';
+import { Toast, Card, Tag } from '@douyinfe/semi-ui';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 import { formatDuration, formatNumber, formatTimestamp } from './common';
 
@@ -61,7 +61,7 @@ export default function ETLView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           大数据 ETL 任务，支持 Spark/Flink 批流处理
         </div>
@@ -71,7 +71,7 @@ export default function ETLView() {
         <button onClick={() => setShowCreate(true)} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Plus style={{ width: 14, height: 14 }} />新建 ETL 任务
         </button>
-      </div>
+      </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         {[
@@ -80,10 +80,10 @@ export default function ETLView() {
           { label: '成功', value: tasks.filter(t => t.status === 'SUCCESS').length, color: '#10b981' },
           { label: '失败', value: tasks.filter(t => t.status === 'FAILED').length, color: '#ef4444' },
         ].map(s => (
-          <div key={s.label} className="v-card" style={{ padding: 12 }}>
+          <Card key={s.label}  style={{ padding: 12 }}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -93,7 +93,7 @@ export default function ETLView() {
           加载中...
         </div>
       ) : (
-        <div className="v-card">
+        <Card>
           <table className="v-table">
             <thead>
               <tr>
@@ -139,15 +139,15 @@ export default function ETLView() {
                         </div>
                       </div>
                     </td>
-                    <td><span className="v-badge" style={{ background: mm.color + '20', color: mm.color }}>{mm.label}</span></td>
+                    <td><Tag style={{ background: mm.color + '20', color: mm.color }}>{mm.label}</Tag></td>
                     <td><span style={{ color: pm.color, fontSize: 12, fontWeight: 600 }}>{pm.label}</span></td>
                     <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{(t.sourceIds || []).length} 个</td>
                     <td style={{ fontSize: 12 }}>{t.targetType}/{t.targetTable}</td>
                     <td>
-                      <span className="v-badge" style={{ background: sm.bg, color: sm.color, fontSize: 11 }}>
+                      <Tag style={{ background: sm.bg, color: sm.color, fontSize: 11 }}>
                         <SmIcon style={{ width: 10, height: 10, display: 'inline', marginRight: 4 }} className={t.status === 'RUNNING' ? 'v-spin' : ''} />
                         {sm.label}
-                      </span>
+                      </Tag>
                     </td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.lastRunDuration ? formatDuration(t.lastRunDuration) : '-'}</td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{formatNumber(t.totalProcessed || 0)}</td>
@@ -169,7 +169,7 @@ export default function ETLView() {
               })}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       {showCreate && <CreateETLDialog sources={sources} onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); load(); }} />}
@@ -196,7 +196,7 @@ function CreateETLDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div className="v-card" style={{ width: 600, maxHeight: '90vh', overflow: 'auto' }}>
+      <Card style={{ width: 600, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建 ETL 任务</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>
@@ -243,7 +243,7 @@ function CreateETLDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
           <button onClick={onClose} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', cursor: 'pointer' }}>取消</button>
           <button onClick={handleSubmit} disabled={submitting} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: submitting ? 0.5 : 1 }}>{submitting ? '创建中...' : '创建'}</button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

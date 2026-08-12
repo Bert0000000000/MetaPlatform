@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Card } from '@douyinfe/semi-ui';
 import { useLocation } from 'react-router-dom';
 import {
   Hexagon, Search, Plus, Columns3,
@@ -328,7 +328,7 @@ export default function OntologyModelingPage() {
       <div style={{ display: 'flex', gap: 20 }}>
         {/* Left: 一级本体列表 */}
         <div style={{ width: 240, flexShrink: 0 }}>
-          <div className="v-card" style={{ height: 'fit-content' }}>
+          <Card style={{ height: 'fit-content' }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>一级本体</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {loading ? (
@@ -352,7 +352,7 @@ export default function OntologyModelingPage() {
                 ))
               )}
             </ul>
-          </div>
+          </Card>
         </div>
 
         {/* Right: Concept Panel */}
@@ -390,7 +390,7 @@ export default function OntologyModelingPage() {
           </div>
 
           {/* Concept Table */}
-          <div className="v-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <Card style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
               <h4 style={{ fontSize: 14, fontWeight: 600 }}>
                 {DOMAIN_LABELS[selectedDomain] ?? (selectedDomain || '全部')} - 概念
@@ -463,14 +463,14 @@ export default function OntologyModelingPage() {
                 </tbody>
               </table>
             )}
-          </div>
+          </Card>
 
           {/* Detail Section（下钻：属性表 + 新增属性 + 关联 Action + 关系） */}
           {selectedConceptDetail && (
             <div ref={detailRef} style={{ display: 'flex', gap: 20, marginTop: 20, scrollMarginTop: 12 }}>
               {/* Attribute Table + Add-property form + 关联 Action */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="v-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <Card style={{ padding: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                     <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} · 属性定义</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -558,11 +558,11 @@ export default function OntologyModelingPage() {
                       })}
                     </tbody>
                   </table>
-                </div>
+                </Card>
 
                 {/* 关联 Action */}
                 {selectedActions.length > 0 && (
-                  <div className="v-card" style={{ padding: 0, overflow: 'hidden', marginTop: 16 }}>
+                  <Card style={{ padding: 0, overflow: 'hidden', marginTop: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                       <h4 style={{ fontSize: 14, fontWeight: 600 }}>关联 Action</h4>
                       <span className="v-eyebrow">{selectedActions.length} 个</span>
@@ -577,13 +577,13 @@ export default function OntologyModelingPage() {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 )}
               </div>
 
               {/* Relation Panel */}
               <div style={{ width: 300, flexShrink: 0 }}>
-                <div className="v-card" style={{ padding: 0, overflow: 'hidden', height: 'fit-content' }}>
+                <Card style={{ padding: 0, overflow: 'hidden', height: 'fit-content' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                     <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} - 关系定义</h4>
                     <span className="v-eyebrow">{selectedLinks.length} 个关系</span>
@@ -606,7 +606,7 @@ export default function OntologyModelingPage() {
                       </div>
                     ))
                   )}
-                </div>
+                </Card>
               </div>
             </div>
           )}

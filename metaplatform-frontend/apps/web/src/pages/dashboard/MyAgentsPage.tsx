@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Card } from '@douyinfe/semi-ui';
 import { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
@@ -307,7 +307,7 @@ export default function MyAgentsPage() {
       <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
         {/* Left: execution log table */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex' }}>
-          <div className="v-card" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Card style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 0' }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>最近执行记录</div>
               <Button theme="light" type="secondary" onClick={() => { setExecPage(1); setExecDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</Button>
@@ -340,12 +340,12 @@ export default function MyAgentsPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right: performance trend panel */}
         <div style={{ width: 320, flexShrink: 0, display: 'flex' }}>
-          <div className="v-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Card style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>性能趋势</div>
               <span className="v-meta">近 7 天</span>
@@ -372,7 +372,7 @@ export default function MyAgentsPage() {
                 <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--warning)' }}>3.2%</span>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
       </div>

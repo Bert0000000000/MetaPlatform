@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Card } from '@douyinfe/semi-ui';
 import {
   Calendar, Play, Filter, Download, Share2,
 } from 'lucide-react';
@@ -188,11 +188,11 @@ export default function AgentsEvaluationPage() {
       {/* 1. Overview Stats Cards */}
       <div className="ae-stats-grid">
         {MOCK_STATS.map((stat) => (
-          <div key={stat.eyebrow} className="v-card ae-stat-card">
+          <Card key={stat.eyebrow}  className="ae-stat-card">
             <div className="v-eyebrow">{stat.eyebrow}</div>
             <div className={`v-value ${stat.accent ? 'ae-stat-value-accent' : ''} ${stat.warning ? 'ae-stat-value-warning' : ''}`}>{stat.value}</div>
             <div className="v-meta">{stat.meta}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -218,7 +218,7 @@ export default function AgentsEvaluationPage() {
         {/* Left Column */}
         <div className="ae-content-left">
           {/* 3. Core Metrics Panel */}
-          <div className="v-card ae-metrics-panel">
+          <Card  className="ae-metrics-panel">
             <div className="panel-header">
               <div>
                 <div className="panel-title">核心指标评分</div>
@@ -235,10 +235,10 @@ export default function AgentsEvaluationPage() {
                 <div className={`ae-metric-score ${metric.scoreClass}`}>{metric.score}</div>
               </div>
             ))}
-          </div>
+          </Card>
 
           {/* 4. Evaluation History Table */}
-          <div className="v-card" style={{ padding: 0 }}>
+          <Card style={{ padding: 0 }}>
             <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: 15, fontWeight: 600 }}>评估历史</div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -274,12 +274,12 @@ export default function AgentsEvaluationPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Column: Evaluation Report Panel */}
         <div className="ae-content-right">
-          <div className="v-card ae-report-panel">
+          <Card  className="ae-report-panel">
             <div className="panel-header">
               <div>
                 <div className="panel-title">评估报告摘要</div>
@@ -329,12 +329,12 @@ export default function AgentsEvaluationPage() {
               <Button theme="solid" type="primary" ><Download style={{ width: 12, height: 12 }} /> 下载报告</Button>
               <Button theme="light" type="secondary" ><Share2 style={{ width: 12, height: 12 }} /> 分享</Button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
       {/* 5. Trend Bar Chart */}
-      <div className="v-card">
+      <Card>
         <div className="ae-trend-header">
           <div className="ae-trend-title">评估得分趋势</div>
           <div className="ae-trend-legend">
@@ -374,7 +374,7 @@ export default function AgentsEvaluationPage() {
             ))}
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

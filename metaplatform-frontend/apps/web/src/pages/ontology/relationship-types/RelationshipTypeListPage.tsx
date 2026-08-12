@@ -3,6 +3,7 @@
 // 数据源：mate-tech-ont v2 kernel GET /ont/v2/link-types。
 
 import { useEffect, useMemo, useState } from 'react';
+import { Card } from '@douyinfe/semi-ui';
 import { Search, GitBranch } from 'lucide-react';
 import { listLinkTypes, type KernelLinkType } from '@/api/ont/kernel';
 
@@ -58,7 +59,7 @@ export default function RelationshipTypeListPage() {
           </div>
         </div>
 
-        <div className="v-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
             <h4 style={{ fontSize: 14, fontWeight: 600 }}>LinkType 列表</h4>
           </div>
@@ -94,7 +95,7 @@ export default function RelationshipTypeListPage() {
               </tbody>
             </table>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

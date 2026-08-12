@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Card } from '@douyinfe/semi-ui';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Paperclip, CheckCheck, Check, Reply, Forward, Archive, Trash2,
@@ -139,7 +139,7 @@ export default function MessagesPage() {
         <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 180px)' }}>
           {/* Category panel */}
           <div style={{ width: 200, flexShrink: 0 }}>
-            <div className="v-card" style={{ height: '100%', padding: 8, display: 'flex', flexDirection: 'column' }}>
+            <Card style={{ height: '100%', padding: 8, display: 'flex', flexDirection: 'column' }}>
               {/* Quick filters */}
               <div style={{ display: 'flex', gap: 4, padding: '8px 8px 4px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
                 {[
@@ -184,12 +184,12 @@ export default function MessagesPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Message panel */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-            <div className="v-card" style={{ height: '100%', overflowY: 'auto', padding: '0 20px' }}>
+            <Card style={{ height: '100%', overflowY: 'auto', padding: '0 20px' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {loading
                   ? Array.from({ length: 8 }).map((_, i) => (
@@ -254,12 +254,12 @@ export default function MessagesPage() {
                         );
                       })}
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Detail panel (硬编码详情，作为"系统升级通知"的示例展示) */}
           <div style={{ width: 400, flexShrink: 0, overflowY: 'auto' }}>
-            <div className="v-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Card style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ paddingBottom: 16, borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
                 <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, lineHeight: 1.4 }}>系统升级通知</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted-foreground)', flexWrap: 'wrap' }}>
@@ -343,7 +343,7 @@ export default function MessagesPage() {
                   <Trash2 style={{ width: 12, height: 12 }} />删除
                 </Button>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Card, Tag } from '@douyinfe/semi-ui';
 import { useNavigate } from 'react-router-dom';
 import { Graph } from '@antv/x6';
 import {
@@ -274,26 +274,26 @@ export default function OntologyGraphPage() {
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-        <div className="v-card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Card style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}><CircleDot style={{ width: 14, height: 14 }} /> 实体总数</div>
           <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em' }}>1,247</div>
           <div style={{ fontSize: 11, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp style={{ width: 12, height: 12 }} /> +32 本周新增</div>
-        </div>
-        <div className="v-card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        </Card>
+        <Card style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}><GitBranch style={{ width: 14, height: 14 }} /> 关系总数</div>
           <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em' }}>3,892</div>
           <div style={{ fontSize: 11, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp style={{ width: 12, height: 12 }} /> +128 本周新增</div>
-        </div>
-        <div className="v-card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        </Card>
+        <Card style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}><Boxes style={{ width: 14, height: 14 }} /> 本体模型</div>
           <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em' }}>12</div>
           <div style={{ fontSize: 11, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp style={{ width: 12, height: 12 }} /> +1 本月新增</div>
-        </div>
-        <div className="v-card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        </Card>
+        <Card style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}><Database style={{ width: 14, height: 14 }} /> 数据源映射</div>
           <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em' }}>89</div>
           <div style={{ fontSize: 11, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4 }}><Minus style={{ width: 12, height: 12 }} /> 持平</div>
-        </div>
+        </Card>
       </div>
 
       {/* Toolbar */}
@@ -403,7 +403,7 @@ export default function OntologyGraphPage() {
                   <tr key={p.label} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '7px 0', fontSize: 12, color: 'var(--muted-foreground)', width: 90, whiteSpace: 'nowrap', paddingRight: 12, verticalAlign: 'top' }}>{p.label}</td>
                     <td style={{ padding: '7px 0', fontSize: 12, color: 'var(--foreground)', wordBreak: 'break-all', verticalAlign: 'top' }}>
-                      {p.badge ? <span className="v-badge v-badge-neutral">{p.value}</span> :
+                      {p.badge ? <Tag color="grey">{p.value}</Tag> :
                        p.statusDot ? <><span style={{ color: 'var(--success)' }}>●</span> {p.value}</> :
                        p.mono ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted-foreground)' }}>{p.value}</span> :
                        p.value}

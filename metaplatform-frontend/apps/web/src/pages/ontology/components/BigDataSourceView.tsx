@@ -1,6 +1,6 @@
 import { useApiErrorBoundary } from '@mate/shared';
 import React, { useState, useEffect } from 'react';
-import { Modal, Toast } from '@douyinfe/semi-ui';
+import { Modal, Toast, Card, Tag } from '@douyinfe/semi-ui';
 import {
   Database, Plus, Search, Settings2, Trash2, RefreshCw, CheckCircle2,
   XCircle, Loader2, AlertCircle, Play,
@@ -82,7 +82,7 @@ function InnerBody({ report }: { report: any }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Toolbar */}
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search style={{ position: 'absolute', left: 10, top: 10, width: 14, height: 14, color: 'var(--muted-foreground)' }} />
           <input
@@ -125,7 +125,7 @@ function InnerBody({ report }: { report: any }) {
         >
           <Plus style={{ width: 14, height: 14 }} />新建数据源
         </button>
-      </div>
+      </Card>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
@@ -136,10 +136,10 @@ function InnerBody({ report }: { report: any }) {
           { label: '异常', value: sources.filter(s => s.status === 'ERROR').length, color: '#ef4444' },
           { label: '类型数', value: new Set(sources.map(s => s.sourceType)).size, color: 'var(--primary)' },
         ].map(s => (
-          <div key={s.label} className="v-card" style={{ padding: '12px 16px' }}>
+          <Card key={s.label}  style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 4 }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -150,16 +150,16 @@ function InnerBody({ report }: { report: any }) {
           加载中...
         </div>
       ) : sources.length === 0 ? (
-        <div className="v-card" style={{ padding: 60, textAlign: 'center', color: 'var(--muted-foreground)' }}>
+        <Card style={{ padding: 60, textAlign: 'center', color: 'var(--muted-foreground)' }}>
           <Database style={{ width: 40, height: 40, margin: '0 auto 12px', opacity: 0.3 }} />
           <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>暂无数据源</div>
           <div style={{ fontSize: 12, marginBottom: 16 }}>点击右上角"新建数据源"开始接入</div>
           <button onClick={() => setShowCreate(true)} style={{ padding: '6px 12px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>
             <Plus style={{ width: 12, height: 12, display: 'inline', marginRight: 4 }} />新建
           </button>
-        </div>
+        </Card>
       ) : (
-        <div className="v-card">
+        <Card>
           <table className="v-table">
             <thead>
               <tr>
@@ -203,13 +203,13 @@ function InnerBody({ report }: { report: any }) {
                         </div>
                       </div>
                     </td>
-                    <td><span className="v-badge" style={{ background: tm.color + '20', color: tm.color }}>{tm.label}</span></td>
+                    <td><Tag style={{ background: tm.color + '20', color: tm.color }}>{tm.label}</Tag></td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{s.host}:{s.port}</td>
                     <td>
-                      <span className="v-badge" style={{ background: sm.bg, color: sm.color }}>
+                      <Tag style={{ background: sm.bg, color: sm.color }}>
                         <SmIcon style={{ width: 10, height: 10, display: 'inline', marginRight: 4 }} />
                         {sm.label}
-                      </span>
+                      </Tag>
                     </td>
                     <td style={{ fontSize: 12 }}>{s.authType === 'NONE' ? '无' : s.authType}</td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{s.poolSize}</td>
@@ -241,7 +241,7 @@ function InnerBody({ report }: { report: any }) {
               })}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       {showCreate && <CreateSourceModal onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); load(); }} report={report} />}
@@ -279,7 +279,7 @@ function CreateSourceModal({ onClose, onSuccess, report }: { onClose: () => void
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div className="v-card" style={{ width: 640, maxHeight: '90vh', overflow: 'auto' }}>
+      <Card style={{ width: 640, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建大数据源</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>
@@ -340,7 +340,7 @@ function CreateSourceModal({ onClose, onSuccess, report }: { onClose: () => void
             {submitting ? '创建中...' : '创建'}
           </button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

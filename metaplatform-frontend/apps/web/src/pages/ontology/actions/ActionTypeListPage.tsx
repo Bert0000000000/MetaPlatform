@@ -3,6 +3,7 @@
 // 数据源：mate-tech-ont v2 kernel GET /ont/v2/action-types + 本地 SEED_EXECUTION_HISTORY。
 
 import { useEffect, useMemo, useState } from 'react';
+import { Card } from '@douyinfe/semi-ui';
 import { Search, Zap, Clock } from 'lucide-react';
 import { listActionTypes, type KernelActionType } from '@/api/ont/kernel';
 import { SEED_EXECUTION_HISTORY, type SeedExecution } from '@/pages/ontology/actions/executionHistory';
@@ -60,7 +61,7 @@ export default function ActionTypeListPage() {
           </div>
         </div>
 
-        <div className="v-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+        <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
             <h4 style={{ fontSize: 14, fontWeight: 600 }}>ActionType 列表</h4>
           </div>
@@ -94,9 +95,9 @@ export default function ActionTypeListPage() {
               </tbody>
             </table>
           )}
-        </div>
+        </Card>
 
-        <div className="v-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
             <h4 style={{ fontSize: 14, fontWeight: 600 }}>执行历史</h4>
             <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>最近 {history.length} 条</span>
@@ -129,7 +130,7 @@ export default function ActionTypeListPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       </div>
     </div>
   );

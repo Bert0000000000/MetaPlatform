@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Card } from '@douyinfe/semi-ui';
 import { useState } from 'react';
 import {
   Plus, Eye, CheckCheck, FileText, Check, X, Pencil,
@@ -131,7 +132,7 @@ export default function AgentsKnowledgePage() {
         </div>
         <button className="ak-action-btn" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 14, height: 14 }} />新建提炼任务</button>
       </div>
-      <div className="v-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 28 }}>
+      <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 28 }}>
         <table className="v-table" style={{ border: 'none' }}>
           <thead>
             <tr>
@@ -158,7 +159,7 @@ export default function AgentsKnowledgePage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {/* 3. Knowledge Item Preview */}
       <div className="ak-section-header">
@@ -199,7 +200,7 @@ export default function AgentsKnowledgePage() {
         </div>
         <button className="ak-action-btn"><CheckCheck style={{ width: 14, height: 14 }} />批量批准</button>
       </div>
-      <div className="v-card" style={{ marginBottom: 28 }}>
+      <Card style={{ marginBottom: 28 }}>
         {MOCK_REVIEWS.map((review, i) => (
           <div key={i} className="ak-review-item">
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -216,7 +217,7 @@ export default function AgentsKnowledgePage() {
             </div>
           </div>
         ))}
-      </div>
+      </Card>
 
       <StepDrawer
         open={drawerOpen}

@@ -7,7 +7,7 @@ import {
   listSchedulerTasks, triggerScheduler, pauseScheduler, resumeScheduler,
   SchedulerTask,
 } from '../../../api/ontology-bigdata';
-import { Toast } from '@douyinfe/semi-ui';
+import { Toast, Card, Tag } from '@douyinfe/semi-ui';
 import { formatTimestamp } from './common';
 
 const TYPE_META = {
@@ -65,7 +65,7 @@ export default function SchedulerView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           统一任务调度中心：CRON/事件/依赖 多种触发方式
         </div>
@@ -75,7 +75,7 @@ export default function SchedulerView() {
         <button onClick={() => Toast.info('新建调度计划正在补全，预计在 P3 阶段上线')} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Plus style={{ width: 14, height: 14 }} />新建调度
         </button>
-      </div>
+      </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         {[
@@ -84,10 +84,10 @@ export default function SchedulerView() {
           { label: '已暂停', value: tasks.filter(t => t.status === 'PAUSED').length, color: '#94a3b8' },
           { label: '总触发', value: tasks.reduce((s, t) => s + (t.totalTriggers || 0), 0), color: '#3b82f6' },
         ].map(s => (
-          <div key={s.label} className="v-card" style={{ padding: 12 }}>
+          <Card key={s.label}  style={{ padding: 12 }}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -103,7 +103,7 @@ export default function SchedulerView() {
             const trm = TRIGGER_META[t.triggerType] || TRIGGER_META.MANUAL;
             const TrIcon = trm.icon;
             return (
-              <div key={t.schedulerId} className="v-card" style={{ padding: 16 }}>
+              <Card key={t.schedulerId}  style={{ padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -111,15 +111,15 @@ export default function SchedulerView() {
                       <span style={{ fontSize: 14, fontWeight: 600 }}>{t.name}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                      <span className="v-badge" style={{ background: tm.bg, color: tm.color, fontSize: 10 }}>
+                      <Tag style={{ background: tm.bg, color: tm.color, fontSize: 10 }}>
                         <TMIcon style={{ width: 9, height: 9, display: 'inline', marginRight: 3 }} />{tm.label}
-                      </span>
-                      <span className="v-badge" style={{ background: sm.bg, color: sm.color, fontSize: 10 }}>
+                      </Tag>
+                      <Tag style={{ background: sm.bg, color: sm.color, fontSize: 10 }}>
                         <SmIcon style={{ width: 9, height: 9, display: 'inline', marginRight: 3 }} />{sm.label}
-                      </span>
-                      <span className="v-badge" style={{ background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 10 }}>
+                      </Tag>
+                      <Tag style={{ background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 10 }}>
                         <TrIcon style={{ width: 9, height: 9, display: 'inline', marginRight: 3 }} />{trm.label}
-                      </span>
+                      </Tag>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 4 }}>
@@ -163,7 +163,7 @@ export default function SchedulerView() {
                   <span>上次: {formatTimestamp(t.lastTriggerAt)}</span>
                   <span>下次: {formatTimestamp(t.nextTriggerAt)}</span>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

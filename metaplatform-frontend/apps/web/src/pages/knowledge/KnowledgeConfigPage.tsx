@@ -5,6 +5,7 @@
  * 路由：/knowledge/config
  */
 import { useState } from 'react';
+import { Card } from '@douyinfe/semi-ui';
 import { Button } from '@douyinfe/semi-ui';
 import { Settings, Save, RefreshCw } from 'lucide-react';
 
@@ -90,7 +91,7 @@ export default function KnowledgeConfigPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {CONFIG_GROUPS.map((group) => (
-          <div key={group.title} className="v-card" style={{ padding: 18 }}>
+          <Card key={group.title}  style={{ padding: 18 }}>
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Settings style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />{group.title}
@@ -184,7 +185,7 @@ export default function KnowledgeConfigPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Card } from '@douyinfe/semi-ui';
 import { createPortal as ReactDOM_createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -1648,7 +1648,7 @@ export default function OntologyActionPage() {
       <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
         {/* Left: Action List */}
         <div style={{ width: 240, flexShrink: 0 }}>
-          <div className="v-card" style={{ height: 'fit-content' }}>
+          <Card style={{ height: 'fit-content' }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Actions</h3>
             {ACTIONS.map((a, i) => (
               <div
@@ -1672,12 +1672,12 @@ export default function OntologyActionPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </Card>
         </div>
 
         {/* Right: Detail */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <div className="v-card" style={{ marginBottom: 20, padding: 0, overflow: 'hidden' }}>
+          <Card style={{ marginBottom: 20, padding: 0, overflow: 'hidden' }}>
             {/* Header: title + actions */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>{ACTIONS[selectedAction].name}</h3>
@@ -1842,10 +1842,10 @@ export default function OntologyActionPage() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Execution history */}
-          <div className="v-card">
+          <Card>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600 }}>执行历史</h3>
               <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 11 }}>查看全部</Button>
@@ -1875,7 +1875,7 @@ export default function OntologyActionPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         </div>
       </div>
 

@@ -11,7 +11,7 @@ import {
   GitBranch,
   RefreshCw,
 } from 'lucide-react';
-import { Toast, Button } from '@douyinfe/semi-ui';
+import { Toast, Button, Card } from '@douyinfe/semi-ui';
 import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 import { getDashboardSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent } from '@/api/dashboard/workbench';
 
@@ -231,7 +231,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
         <div style={{ display: 'flex', gap: 16, marginBottom: 24, alignItems: 'stretch' }}>
           {/* 左：最近任务 */}
           <div style={{ flex: 3, display: 'flex' }}>
-            <div className="v-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Card style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>最近任务</div>
@@ -328,12 +328,12 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                   </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* 右：系统状态 + 快捷入口 */}
           <div style={{ flex: 2, display: 'flex' }}>
-            <div className="v-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Card style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>系统状态</div>
               </div>
@@ -402,12 +402,12 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                   })}
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
 
         {/* 底部：活跃数字员工 */}
-        <div className="v-card">
+        <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>活跃数字员工</div>
             <span style={{ fontSize: 12, color: 'var(--muted-foreground)', cursor: 'pointer' }}>管理</span>
@@ -437,7 +437,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                   </div>
                 ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* 创建应用抽屉 */}

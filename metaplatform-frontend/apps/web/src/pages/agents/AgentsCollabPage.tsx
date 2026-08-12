@@ -1,9 +1,19 @@
 import { useState } from 'react';
+import { Tag } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useNavigate } from 'react-router-dom';
 import { Bot, FileCheck, Scale } from 'lucide-react';
 
 
 // MOCK: 协作会话列表
+const COLOR: Record<string, string> = {
+  'v-badge-info': 'blue',
+  'v-badge-success': 'green',
+  'v-badge-warning': 'orange',
+  'v-badge-error': 'red',
+  'v-badge-neutral': 'grey',
+};
+
 interface CollabRow {
   id: string;
   initiator: string;
@@ -154,8 +164,8 @@ export default function AgentsCollabPage() {
                         ))}
                       </div>
                     </td>
-                    <td><span className={`v-badge ${session.collabBadge}`}>{session.collabType}</span></td>
-                    <td><span className={`v-badge ${session.statusBadge}`}>{session.status}</span></td>
+                    <td><Tag color={(COLOR[session.collabBadge] ?? 'grey') as TagColor}>{session.collabType}</Tag></td>
+                    <td><Tag color={(COLOR[session.statusBadge] ?? 'grey') as TagColor}>{session.status}</Tag></td>
                     <td>{session.messages}</td>
                     <td>{session.duration}</td>
                   </tr>

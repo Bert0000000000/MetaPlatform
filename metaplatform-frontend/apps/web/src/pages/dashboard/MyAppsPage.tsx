@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { Card } from '@douyinfe/semi-ui';
 import { Button } from '@douyinfe/semi-ui';
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -157,7 +158,7 @@ export default function MyAppsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 36 }}>
           {loading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} style={appCardStyle} className="v-card">
+                <Card key={i} style={appCardStyle} >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                     <SkeletonLine width="36px" height="36px" style={{ borderRadius: 4 }} />
                     <div style={{ flex: 1 }}>
@@ -171,14 +172,14 @@ export default function MyAppsPage() {
                     <SkeletonLine width="40%" height="12px" />
                     <SkeletonLine width="50px" height="28px" style={{ borderRadius: 4 }} />
                   </div>
-                </div>
+                </Card>
               ))
             : pinnedApps.length === 0
               ? <div style={{ gridColumn: 'span 2', padding: 24, color: 'var(--muted-foreground)', fontSize: 13, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 4 }}>暂无常用应用</div>
               : pinnedApps.map((app, i) => {
                   const Icon = getAppIcon(app.icon);
                   return (
-                    <div key={app.name + i} style={appCardStyle} className="v-card">
+                    <Card key={app.name + i} style={appCardStyle} >
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                         <div style={{ width: 36, height: 36, borderRadius: 4, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--muted-foreground)' }}>
                           <Icon style={{ width: 18, height: 18 }} />
@@ -196,7 +197,7 @@ export default function MyAppsPage() {
                         </span>
                         <button style={{ height: 28, padding: '0 14px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>打开</button>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
         </div>
@@ -209,7 +210,7 @@ export default function MyAppsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
           {loading
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} style={appCardStyle} className="v-card">
+                <Card key={i} style={appCardStyle} >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                     <SkeletonLine width="36px" height="36px" style={{ borderRadius: 4 }} />
                     <div style={{ flex: 1 }}>
@@ -223,14 +224,14 @@ export default function MyAppsPage() {
                     <SkeletonLine width="40%" height="12px" />
                     <SkeletonLine width="50px" height="28px" style={{ borderRadius: 4 }} />
                   </div>
-                </div>
+                </Card>
               ))
             : allApps.length === 0
               ? <div style={{ gridColumn: 'span 2', padding: 24, color: 'var(--muted-foreground)', fontSize: 13, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 4 }}>暂无应用</div>
               : allApps.map((app, i) => {
                   const Icon = getAppIcon(app.icon);
                   return (
-                    <div key={app.name + i} style={appCardStyle} className="v-card">
+                    <Card key={app.name + i} style={appCardStyle} >
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                         <div style={{ width: 36, height: 36, borderRadius: 4, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--muted-foreground)' }}>
                           <Icon style={{ width: 18, height: 18 }} />
@@ -258,7 +259,7 @@ export default function MyAppsPage() {
                           </button>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
         </div>

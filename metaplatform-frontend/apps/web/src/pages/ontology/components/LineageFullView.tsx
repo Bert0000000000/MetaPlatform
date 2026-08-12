@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Card } from '@douyinfe/semi-ui';
 import { listBigDataSources, listCDCTasks, listDataProducts, deriveLineageGraph, type LineageGraphNode, type LineageGraphEdge } from '../../../api/ontology-bigdata';
 import {
   GitBranch, Database, Filter, Search, X, ZoomIn, ZoomOut,
@@ -246,7 +247,7 @@ export default function LineageFullView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
       {/* 工具栏 */}
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search style={{ position: 'absolute', left: 10, top: 10, width: 14, height: 14, color: 'var(--muted-foreground)' }} />
           <input
@@ -295,7 +296,7 @@ export default function LineageFullView() {
             </button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* 统计 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
@@ -305,10 +306,10 @@ export default function LineageFullView() {
           { label: '总边', value: totalEdges, color: 'var(--foreground)' },
           { label: '可见边', value: visibleEdges, color: '#10b981' },
         ].map(s => (
-          <div key={s.label} className="v-card" style={{ padding: 12 }}>
+          <Card key={s.label}  style={{ padding: 12 }}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -333,7 +334,7 @@ export default function LineageFullView() {
           onSvgMouseUp={onMouseUp}
         />
       ) : (
-        <div className="v-card" style={{ padding: 16, overflow: 'auto', flex: 1, minHeight: 360 }}>
+        <Card style={{ padding: 16, overflow: 'auto', flex: 1, minHeight: 360 }}>
           <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', minWidth: '100%' }}>
             {nodesByLayer.map((group, layerIdx) => (
               <div key={group.layer} style={{ marginBottom: 24 }}>
@@ -357,7 +358,7 @@ export default function LineageFullView() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* 节点详情侧栏 */}
@@ -371,7 +372,7 @@ export default function LineageFullView() {
       )}
 
       {/* 图例 */}
-      <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
+      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
         <span style={{ color: 'var(--muted-foreground)' }}>图例:</span>
         {LAYER_ORDER.map(l => (
           <span key={l} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -382,7 +383,7 @@ export default function LineageFullView() {
         <span style={{ marginLeft: 'auto', color: 'var(--muted-foreground)' }}>
           节点: {visibleNodes}/{totalNodes} | 边: {visibleEdges}/{totalEdges} | 视图: {viewMode === 'force' ? '力导向' : '层级'}
         </span>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -556,7 +557,7 @@ function NodeDetailPanel({ node, edges, nodes, onClose }: { node: LineageNode; e
   const inEdges = edges.filter(e => e.to === node.id);
   const meta = NODE_TYPE_META[node.type];
   return (
-    <div className="v-card" style={{ padding: 16 }}>
+    <Card style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: meta.color }} />
@@ -588,6 +589,6 @@ function NodeDetailPanel({ node, edges, nodes, onClose }: { node: LineageNode; e
           {inEdges.length > 5 && <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>...+{inEdges.length - 5} more</div>}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
