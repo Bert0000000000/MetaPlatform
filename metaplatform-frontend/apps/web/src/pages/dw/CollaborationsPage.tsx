@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin } from 'antd';
+import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
 import { listCollaborations, type CollaborationTask } from '@/api/dw/collaborations';
 
 export default function CollaborationsPage() {
@@ -31,19 +31,18 @@ export default function CollaborationsPage() {
   return (
     <List
       header={<h2>协作任务列表</h2>}
-      bordered={false}
       dataSource={items}
-      locale={{ emptyText: <Empty description="暂无协作任务" /> }}
+      emptyContent={<Empty description="暂无协作任务" />}
       renderItem={(item) => (
         <List.Item>
-          <List.Item.Meta
-            title={item.collaborationId}
-            description={
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{item.collaborationId}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
               <>
                 <Tag>{item.status ?? 'UNKNOWN'}</Tag>
               </>
-            }
-          />
+            </div>
+          </div>
         </List.Item>
       )}
     />

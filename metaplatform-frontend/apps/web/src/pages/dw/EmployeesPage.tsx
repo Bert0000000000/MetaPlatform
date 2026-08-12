@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin } from 'antd';
+import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
 import { listEmployees } from '@/api/dw/employees';
 import type { Employee, PageResponse } from '@/api/dw/types';
 
@@ -31,23 +31,22 @@ export default function EmployeesPage() {
   return (
     <List
       header={<h2>数字员工列表</h2>}
-      bordered={false}
       dataSource={items}
-      locale={{ emptyText: <Empty description="暂无数字员工" /> }}
+      emptyContent={<Empty description="暂无数字员工" />}
       renderItem={(item) => (
         <List.Item>
-          <List.Item.Meta
-            title={item.name}
-            description={
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{item.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
               <>
                 <Tag>{item.roleCategory}</Tag>
-                <Tag color={item.status === 'ACTIVE' ? 'green' : 'default'}>
+                <Tag color={item.status === 'ACTIVE' ? 'green' : 'grey'}>
                   {item.status}
                 </Tag>
-                <span style={{ marginLeft: 8 }}>{item.description}</span>
+                {item.description}
               </>
-            }
-          />
+            </div>
+          </div>
         </List.Item>
       )}
     />

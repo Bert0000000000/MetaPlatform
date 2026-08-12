@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin } from 'antd';
+import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
 import { getTraceSpans, type ObsSpan } from '@/api/dw/obs';
 
 export default function ObsPage() {
@@ -30,20 +30,19 @@ export default function ObsPage() {
   return (
     <List
       header={<h2>可观测 Span</h2>}
-      bordered={false}
       dataSource={items}
-      locale={{ emptyText: <Empty description="暂无 span 数据" /> }}
+      emptyContent={<Empty description="暂无 span 数据" />}
       renderItem={(item) => (
         <List.Item>
-          <List.Item.Meta
-            title={`${item.serviceName} / ${item.operationName}`}
-            description={
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{`${item.serviceName} / ${item.operationName}`}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
               <>
                 <Tag>{item.status}</Tag>
-                <span style={{ marginLeft: 8 }}>{item.durationUs} µs</span>
+                {item.durationUs} µs
               </>
-            }
-          />
+            </div>
+          </div>
         </List.Item>
       )}
     />

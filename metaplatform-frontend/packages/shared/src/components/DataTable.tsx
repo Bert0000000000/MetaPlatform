@@ -1,11 +1,12 @@
-import { Table } from 'antd';
-import type { TableProps } from 'antd';
+import { Table } from '@douyinfe/semi-ui';
 
-interface DataTableProps<T extends object = object> extends TableProps<T> {}
+type SemiTableProps = React.ComponentProps<typeof Table>;
 
-export default function DataTable<T extends object = object>(props: DataTableProps<T>) {
+interface DataTableProps extends SemiTableProps {}
+
+export default function DataTable(props: DataTableProps) {
   return (
-    <Table<T>
+    <Table
       {...props}
       className={`v-table ${props.className ?? ''}`}
       pagination={props.pagination ?? { pageSize: 10 }}

@@ -1,11 +1,12 @@
-import { Menu } from 'antd';
+import { Nav } from '@douyinfe/semi-ui';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import type { ItemType } from 'antd/es/menu/interface';
+
+type SemiNavItem = NonNullable<React.ComponentProps<typeof Nav>['items']>[number];
 
 /**
- * 平台通用多级菜单（一级/二级…）。基于 antd Menu，封装平台导航语义：
+ * 平台通用多级菜单（一级/二级…）。基于 Semi Nav，封装平台导航语义：
  * - items 支持嵌套 children（二级菜单自动缩进渲染）
  * - 自动按当前路由选中/展开
  * - 点击导航到 `path`；子项 path 缺省时仅为分组（不可点）
@@ -22,17 +23,16 @@ export interface PlatformMenu2Props {
   items: PlatformMenu2Item[];
   /** 展开根路径前缀，用于高亮/展开（如 '/agents'） */
   rootPath?: string;
-  mode?: 'vertical' | 'inline';
   collapsed?: boolean;
   style?: React.CSSProperties;
 }
 
-function buildMenuTree(items: PlatformMenu2Item[]): ItemType[] {
+function buildNavTree(items: PlatformMenu2Item[]): SemiNavItem[] {
   return items.map((item) => ({
-    key: item.key,
+    itemKey: item.key,
     icon: item.icon,
-    label: item.label,
-    children: item.children?.length ? buildMenuTree(item.children) : undefined,
+    text: item.label,
+    items: item.children?.length ? buildNavTree(item.children) : undefined,
   }));
 }
 
@@ -49,7 +49,7 @@ function flatten(items: PlatformMenu2Item[]): PlatformMenu2Item[] {
   return out;
 }
 
-export default function PlatformMenu2({ items, rootPath, mode = 'inline', collapsed = false, style }: PlatformMenu2Props) {
+export default function PlatformMenu2({ items, rootPath, collapsed = false, style }: PlatformMenu2Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const flat = useMemo(() => flatten(items), [items]);
@@ -71,22 +71,16 @@ export default function PlatformMenu2({ items, rootPath, mode = 'inline', collap
   }, [location.pathname, flat]);
 
   return (
-    <Menu
-      mode={mode}
-      inlineCollapsed={collapsed}
+    <Nav
+      items={buildNavTree(items)}
       selectedKeys={selectedKeys}
       defaultOpenKeys={openKeys}
-      items={buildMenuTree(items)}
-      onClick={({ key }) => {
-        const target = flat.find((it) => it.key === key);
+      isCollapsed={collapsed}
+      onClick={({ itemKey }) => {
+        const target = flat.find((it) => it.key === itemKey);
         if (target?.path) navigate(target.path);
       }}
-      style={{
-        borderInlineEnd: 'none',
-        background: 'transparent',
-        fontSize: 13,
-        ...style,
-      }}
+      style={{ borderRight: 'none', background: 'transparent', fontSize: 13, ...style }}
     />
   );
 }

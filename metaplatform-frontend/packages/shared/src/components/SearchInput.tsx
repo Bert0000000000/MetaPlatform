@@ -1,4 +1,4 @@
-﻿import { Input } from 'antd';
+import { Input } from '@douyinfe/semi-ui';
 import { useState, useEffect, useRef } from 'react';
 import { Search } from '../icons';
 
@@ -33,17 +33,15 @@ export default function SearchInput({
 
   return (
     <Input
-      className="v-input"
       prefix={<Search size={16} strokeWidth={1.5} style={{ color: 'var(--muted-foreground)' }} />}
       placeholder={placeholder}
       value={value}
       style={{ width }}
-      onChange={(e) => {
-        setValue(e.target.value);
-        triggerSearch(e.target.value);
+      onChange={(value: string) => {
+        setValue(value);
+        triggerSearch(value);
       }}
-      onPressEnter={() => onSearch(value)}
+      onEnterPress={() => onSearch(value)}
     />
   );
 }
-

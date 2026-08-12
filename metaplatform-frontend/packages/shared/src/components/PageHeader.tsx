@@ -1,4 +1,4 @@
-﻿import { Space, Typography } from 'antd';
+import { Typography, Space } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 
 interface PageHeaderProps {
@@ -17,12 +17,12 @@ export default function PageHeader({ title, subtitle, extra }: PageHeaderProps) 
         marginBottom: 24,
       }}
     >
-      <Space orientation="vertical" size="small">
-        <Typography.Title level={4} style={{ margin: 0, color: 'var(--foreground)' }}>
+      <Space vertical spacing="tight">
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           {title}
         </Typography.Title>
         {subtitle && (
-          <Typography.Text style={{ color: 'var(--muted-foreground)', fontSize: 13 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 13 }}>
             {subtitle}
           </Typography.Text>
         )}

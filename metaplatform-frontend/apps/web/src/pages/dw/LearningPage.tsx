@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin, Statistic, Row as ARow, Col } from 'antd';
+import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { listKnowledge } from '@/api/dw/learning';
 import type { LearnedKnowledge } from '@/api/dw/types';
 
@@ -32,32 +33,35 @@ export default function LearningPage() {
   return (
     <List
       header={<h2>学习沉淀</h2>}
-      bordered={false}
       dataSource={items}
-      locale={{ emptyText: <Empty description="暂无学习沉淀" /> }}
+      emptyContent={<Empty description="暂无学习沉淀" />}
       renderItem={(item) => (
         <List.Item>
-          <List.Item.Meta
-            title={item.title}
-            description={
-              <>
-                <Tag>{item.knowledgeType}</Tag>
-                <Tag>{item.syncedToKb ? '已同步' : '未同步'}</Tag>
-                <span style={{ marginLeft: 8 }}>置信度 {item.confidence}</span>
-              </>
-            }
-          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{item.title}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
+              <Tag>{item.knowledgeType}</Tag>
+              <Tag>{item.syncedToKb ? '已同步' : '未同步'}</Tag>
+              置信度 {item.confidence}
+            </div>
+          </div>
         </List.Item>
       )}
     >
-      <ARow gutter={16}>
+      <Row gutter={16}>
         <Col span={8}>
-          <Statistic title="沉淀条目数" value={items.length} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>沉淀条目数</span>
+            <span style={{ fontSize: 28, fontWeight: 700 }}>{items.length}</span>
+          </div>
         </Col>
         <Col span={8}>
-          <Statistic title="已同步" value={items.filter((i) => i.syncedToKb).length} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>已同步</span>
+            <span style={{ fontSize: 28, fontWeight: 700 }}>{items.filter((i) => i.syncedToKb).length}</span>
+          </div>
         </Col>
-      </ARow>
+      </Row>
     </List>
   );
 }

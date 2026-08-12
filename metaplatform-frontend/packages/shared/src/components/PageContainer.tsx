@@ -1,4 +1,4 @@
-﻿import { Typography, Space } from 'antd';
+import { Typography, Space } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 
 interface PageContainerProps {
@@ -10,14 +10,14 @@ interface PageContainerProps {
 
 export default function PageContainer({ title, description, extra, children }: PageContainerProps) {
   return (
-    <Space orientation="vertical" style={{ width: '100%' }} size="large">
+    <Space vertical spacing="loose" style={{ width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <Space orientation="vertical" size="small">
-          <Typography.Title level={4} style={{ margin: 0, color: 'var(--foreground)' }}>
+        <Space vertical spacing="tight">
+          <Typography.Title heading={4} style={{ margin: 0 }}>
             {title}
           </Typography.Title>
           {description && (
-            <Typography.Text style={{ color: 'var(--muted-foreground)', fontSize: 13 }}>
+            <Typography.Text type="tertiary" style={{ fontSize: 13 }}>
               {description}
             </Typography.Text>
           )}

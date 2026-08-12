@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { App, message } from 'antd';
+import { Modal, Toast } from '@douyinfe/semi-ui';
 import { BizError, HttpError, isApiError } from '../api/errors';
 
 interface UseApiErrorOptions {
-  /** When provided, attach error to App.useApp().message context. */
-  context?: 'global' | 'local';
   /** When true, do not show toast automatically (caller will surface). */
   silent?: boolean;
   /** Optional fallback message when the error has no friendly text. */
@@ -58,7 +56,6 @@ function friendlyPrefix(status: number): string {
  * surfacing hook for use inside a route-level ErrorBoundary.
  */
 export function useApiErrorBoundary(opts: UseApiErrorOptions = {}) {
-  const { message: msgApi, modal } = App.useApp();
   const location = useLocation();
   const lastErrorRef = useRef<NormalizedError | null>(null);
   const [lastError, setLastError] = useState<NormalizedError | null>(null);
@@ -73,18 +70,15 @@ export function useApiErrorBoundary(opts: UseApiErrorOptions = {}) {
       }
       if (opts.silent) return norm;
       if (norm.status === 401) {
-        msgApi.error('登录已过期，请重新登录');
+        Toast.error('登录已过期，请重新登录');
         return norm;
       }
       const header = FRIENDLY_HEADERS.find((h) => norm.message.startsWith(h)) ?? friendlyPrefix(norm.status);
       const detail = norm.message ? `：${norm.message}` : '';
-      msgApi.error(`${header}${detail}`);
-      if (norm.status === 403) {
-        // no-op: page should render forbidden state via lastError
-      }
+      Toast.error(`${header}${detail}`);
       return norm;
     },
-    [msgApi, opts],
+    [opts],
   );
 
   const dismiss = useCallback(() => {
@@ -102,12 +96,11 @@ export function useApiErrorBoundary(opts: UseApiErrorOptions = {}) {
     dismiss,
     lastError,
     /** Convenience: prompts the user with a confirmation modal. */
-    confirm: (desc: string, danger = false) =>
-      modal.confirm({
+    confirm: (desc: string) =>
+      Modal.confirm({
         title: '确认操作',
         content: desc,
         okText: '确认',
-        okButtonProps: { danger },
         cancelText: '取消',
       }),
   };

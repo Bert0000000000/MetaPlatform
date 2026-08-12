@@ -1,4 +1,4 @@
-import { Modal, Space, Button } from 'antd';
+import { Modal, Space, Button } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 
 interface FormModalProps {
@@ -45,10 +45,10 @@ export default function FormModal({
       footer={
         footer ?? (
           <Space>
-            <Button className="v-btn" onClick={onCancel}>
+            <Button theme="borderless" onClick={onCancel}>
               {cancelText}
             </Button>
-            <Button className="v-btn-primary" loading={loading} onClick={handleOk}>
+            <Button theme="solid" type="primary" loading={loading} onClick={handleOk}>
               {okText}
             </Button>
           </Space>

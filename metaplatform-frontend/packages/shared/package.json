@@ -23,8 +23,8 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
-    "@douyinfe/semi-icons": "2.80.0",
-    "@douyinfe/semi-ui": "2.80.0",
+    "@douyinfe/semi-icons": "^2.101.1",
+    "@douyinfe/semi-ui": "^2.101.1",
     "@flowgram.ai/background-plugin": "1.0.12",
     "@flowgram.ai/export-plugin": "1.0.12",
     "@flowgram.ai/fixed-layout-editor": "^1.0.12",

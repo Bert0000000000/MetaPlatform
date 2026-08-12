@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin } from 'antd';
+import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
 import { getExtractionsByEmployee } from '@/api/dw/extraction';
 import type { ExtractionItem } from '@/api/dw/types';
 
@@ -31,21 +31,20 @@ export default function ExtractionPage() {
   return (
     <List
       header={<h2>概念抽取列表</h2>}
-      bordered={false}
       dataSource={items}
-      locale={{ emptyText: <Empty description="暂无抽取记录" /> }}
+      emptyContent={<Empty description="暂无抽取记录" />}
       renderItem={(item) => (
         <List.Item>
-          <List.Item.Meta
-            title={item.name}
-            description={
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{item.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
               <>
                 <Tag>{item.type}</Tag>
                 <Tag>{item.status}</Tag>
-                <span style={{ marginLeft: 8 }}>置信度 {item.confidence}</span>
+                置信度 {item.confidence}
               </>
-            }
-          />
+            </div>
+          </div>
         </List.Item>
       )}
     />

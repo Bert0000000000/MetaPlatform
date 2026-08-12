@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin } from 'antd';
+import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
 import { listDocuments } from '@/api/dw/documents';
 import type { DocumentItem } from '@/api/dw/types';
 
@@ -32,21 +32,20 @@ export default function DocumentsPage() {
   return (
     <List
       header={<h2>知识文档列表</h2>}
-      bordered={false}
       dataSource={items}
-      locale={{ emptyText: <Empty description="暂无文档" /> }}
+      emptyContent={<Empty description="暂无文档" />}
       renderItem={(item) => (
         <List.Item>
-          <List.Item.Meta
-            title={item.filename}
-            description={
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{item.filename}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
               <>
                 <Tag>{item.status}</Tag>
-                <span style={{ marginLeft: 8 }}>{item.fileType}</span>
-                <span style={{ marginLeft: 8 }}>{item.fileSize} B</span>
+                {item.fileType}
+                {item.fileSize} B
               </>
-            }
-          />
+            </div>
+          </div>
         </List.Item>
       )}
     />

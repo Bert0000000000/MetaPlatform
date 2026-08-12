@@ -1,4 +1,4 @@
-import { Drawer, Steps, Space, Button } from 'antd';
+import { SideSheet, Steps, Space, Button } from '@douyinfe/semi-ui';
 import { useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Maximize2, Minimize2, PanelRight, ArrowLeft, ArrowRight, Check } from 'lucide-react';
@@ -60,32 +60,33 @@ export default function StepDrawer({
   };
 
   return (
-    <Drawer
-      open={open}
-      title={title}
+    <SideSheet
+      visible={open}
       width={SIZE_WIDTH[size]}
-      onClose={handleCancel}
-      destroyOnClose
-      extra={
-        <button
-          type="button"
-          onClick={cycleSize}
-          title={`切换尺寸：${SIZE_TITLE[size]}`}
-          style={{
-            width: 28,
-            height: 28,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            color: 'var(--muted-foreground)',
-            cursor: 'pointer',
-          }}
-        >
-          {size === 'sm' ? <PanelRight size={14} /> : size === 'md' ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
-        </button>
+      onCancel={handleCancel}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <span>{title}</span>
+          <button
+            type="button"
+            onClick={cycleSize}
+            title={`切换尺寸：${SIZE_TITLE[size]}`}
+            style={{
+              width: 28,
+              height: 28,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              color: 'var(--muted-foreground)',
+              cursor: 'pointer',
+            }}
+          >
+            {size === 'sm' ? <PanelRight size={14} /> : size === 'md' ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+          </button>
+        </div>
       }
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -93,20 +94,26 @@ export default function StepDrawer({
             步骤 {current + 1} / {steps.length}
           </span>
           <Space>
-            <Button className="v-btn" onClick={handleCancel}>
+            <Button theme="borderless" onClick={handleCancel}>
               取消
             </Button>
             {current > 0 && (
-              <Button className="v-btn" icon={<ArrowLeft size={14} />} onClick={prev}>
+              <Button theme="borderless" icon={<ArrowLeft size={14} />} onClick={prev}>
                 上一步
               </Button>
             )}
             {current < steps.length - 1 ? (
-              <Button className="v-btn-primary" icon={<ArrowRight size={14} />} iconPosition="end" onClick={next}>
+              <Button
+                theme="solid"
+                type="primary"
+                icon={<ArrowRight size={14} />}
+                iconPosition="right"
+                onClick={next}
+              >
                 下一步
               </Button>
             ) : (
-              <Button className="v-btn-primary" icon={<Check size={14} />} onClick={handleFinish}>
+              <Button theme="solid" type="primary" icon={<Check size={14} />} onClick={handleFinish}>
                 完成
               </Button>
             )}
@@ -118,9 +125,12 @@ export default function StepDrawer({
         current={current}
         size="small"
         style={{ marginBottom: 24 }}
-        items={steps.map((s) => ({ title: s.title, description: s.description }))}
-      />
+      >
+        {steps.map((s) => (
+          <Steps.Step key={s.title} title={s.title} description={s.description} />
+        ))}
+      </Steps>
       <div style={{ minHeight: 200 }}>{steps[current]?.content}</div>
-    </Drawer>
+    </SideSheet>
   );
 }

@@ -7,7 +7,7 @@
  */
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message } from 'antd';
+import { Card, Table, Button, Space, Tag, Modal, Form, Toast } from '@douyinfe/semi-ui';
 import { Plus, RefreshCw, Database } from 'lucide-react';
 import { SubTabs, type SubTabItem, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
 import { listKb, createKb, type KbEntity } from '@/api/kb';
@@ -44,11 +44,11 @@ export default function KnowledgeBasePage() {
   );
 
   const onCreate = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     await submit.wrap(createKb(values));
     setOpen(false);
-    form.resetFields();
-    message.success('已创建知识库');
+    form.reset();
+    Toast.success('已创建知识库');
     setReloadTick((t) => t + 1);
   };
 
@@ -64,7 +64,7 @@ export default function KnowledgeBasePage() {
               知识库列表
             </Space>
           }
-          extra={
+          headerExtraContent={
             <Space>
               <Button
                 icon={<RefreshCw size={14} />}
@@ -73,7 +73,7 @@ export default function KnowledgeBasePage() {
               >
                 刷新
               </Button>
-              <Button type="primary" icon={<Plus size={14} />} onClick={() => setOpen(true)}>
+              <Button theme="solid" type="primary" icon={<Plus size={14} />} onClick={() => setOpen(true)}>
                 新建知识库
               </Button>
             </Space>
@@ -109,21 +109,12 @@ export default function KnowledgeBasePage() {
           onCancel={() => setOpen(false)}
           onOk={onCreate}
           confirmLoading={submit.loading}
-          destroyOnClose
         >
-          <Form form={form} layout="vertical" preserve={false}>
-            <Form.Item name="kbCode" label="编码" rules={[{ required: true, message: '请输入编码' }]}>
-              <Input placeholder="如：customer-policy-v1" />
-            </Form.Item>
-            <Form.Item name="displayName" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
-              <Input placeholder="如：客户政策知识库" />
-            </Form.Item>
-            <Form.Item name="kbKind" label="类型" initialValue="GENERAL">
-              <Select options={KB_KIND_OPTIONS} />
-            </Form.Item>
-            <Form.Item name="description" label="描述">
-              <Input.TextArea rows={3} />
-            </Form.Item>
+          <Form form={form}>
+            <Form.Input field="kbCode" label="编码" rules={[{ required: true, message: '请输入编码' }]} placeholder="如：customer-policy-v1" />
+            <Form.Input field="displayName" label="名称" rules={[{ required: true, message: '请输入名称' }]} placeholder="如：客户政策知识库" />
+            <Form.Select field="kbKind" label="类型" initValue="GENERAL" optionList={KB_KIND_OPTIONS} />
+            <Form.TextArea field="description" label="描述" rows={3} />
           </Form>
         </Modal>
       </div>

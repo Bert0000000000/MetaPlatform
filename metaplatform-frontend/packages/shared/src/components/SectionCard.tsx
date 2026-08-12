@@ -1,4 +1,4 @@
-﻿import { Card, Typography, Space } from 'antd';
+import { Card, Typography, Space } from '@douyinfe/semi-ui';
 import type { CSSProperties, ReactNode } from 'react';
 
 interface SectionCardProps {
@@ -20,17 +20,20 @@ export default function SectionCard({
 }: SectionCardProps) {
   return (
     <Card
-      className={`v-card ${className ?? ''}`}
-      styles={{ body: { padding: bodyPadding } }}
+      className={className}
       style={style}
-    >
-      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography.Text strong style={{ fontSize: 14, color: 'var(--foreground)' }}>
+      headerLine
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <Typography.Text strong style={{ fontSize: 14 }}>
             {title}
           </Typography.Text>
           {extra}
         </div>
+      }
+      bodyStyle={{ padding: bodyPadding }}
+    >
+      <Space vertical spacing="loose" style={{ width: '100%' }}>
         {children}
       </Space>
     </Card>

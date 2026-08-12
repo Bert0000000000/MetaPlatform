@@ -1,19 +1,17 @@
-import { ConfigProvider, App as AntApp } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+import { ConfigProvider as SemiConfigProvider } from '@douyinfe/semi-ui';
+import zh_CN from '@douyinfe/semi-ui/lib/es/locale/source/zh_CN';
+import { ConfigProvider as AntdConfigProvider, App as AntApp, theme as antdTheme } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import {
   AppLayout,
   AuthProvider,
   AuthGuard,
-  useThemeMode,
-  getAntdTheme,
-   ScrollbarAutoHide,
-  setMessageInstance,
+  ScrollbarAutoHide,
 } from '@mate/shared';
 import LoginPage from './pages/LoginPage';
 import ArchLayout from './pages/arch/ArchLayout';
-import { SettingsProvider } from './contexts/SettingsContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // 閹虫帒濮炴潪钘夋倗濡€虫健妞ょ敻娼?
@@ -353,31 +351,36 @@ function AppRoutes() {
   );
 }
 
-function App() {
-  const { resolvedTheme } = useThemeMode();
-  const { theme } = getAntdTheme(resolvedTheme, zhCN);
-
+/**
+ * 过渡桥接（Semi 迁移期间保留，全量迁移完成后删除）：
+ * 为尚未迁移的 antd 页面提供 ConfigProvider + App.useApp() 上下文，
+ * 主题跟随当前深浅色。删除后 antd 依赖一并移除。
+ */
+function AntdBridge({ children }: { children: ReactNode }) {
+  const { resolvedTheme } = useSettings();
   return (
-    <ConfigProvider locale={zhCN} theme={theme}>
-      <AntApp>
-        <MessageBridge />
-        <AuthProvider>
-          <SettingsProvider>
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </SettingsProvider>
-        </AuthProvider>
-      </AntApp>
-    </ConfigProvider>
+    <AntdConfigProvider
+      theme={{ algorithm: resolvedTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm }}
+    >
+      <AntApp>{children}</AntApp>
+    </AntdConfigProvider>
   );
 }
 
-/** 把 antd App.useApp() 的 message 实例注入全局 toast holder，供非 React 模块（如 client.ts）使用 */
-function MessageBridge() {
-  const { message } = AntApp.useApp();
-  setMessageInstance(message);
-  return null;
+function App() {
+  return (
+    <SemiConfigProvider locale={zh_CN}>
+      <SettingsProvider>
+        <AntdBridge>
+          <AuthProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </AuthProvider>
+        </AntdBridge>
+      </SettingsProvider>
+    </SemiConfigProvider>
+  );
 }
 
 export default App;

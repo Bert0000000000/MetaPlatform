@@ -1,103 +1,21 @@
-import type { Locale } from 'antd/es/locale';
-import type { ThemeConfig } from 'antd';
-import { theme } from 'antd';
+export type ResolvedTheme = 'light' | 'dark';
 
-export interface ThemeMode {
-  resolvedTheme: 'light' | 'dark';
-  language: 'zh-CN' | 'en-US';
+/**
+ * 应用 Semi 官方主题：通过 body[theme-mode] 属性切换。
+ * Semi 组件样式全部由 CSS 变量（--semi-color-*）驱动，
+ * 设置属性后所有组件随变量自动切换深浅色。
+ */
+export function applySemiTheme(resolvedTheme: ResolvedTheme): void {
+  if (typeof document !== 'undefined') {
+    document.body.setAttribute('theme-mode', resolvedTheme);
+  }
 }
 
-export function useThemeMode(): ThemeMode {
-  return {
-    resolvedTheme: 'dark',
-    language: (localStorage.getItem('mate-language') as 'zh-CN' | 'en-US') ?? 'zh-CN',
-  };
-}
-
-export function getAntdTheme(
-  resolvedTheme: 'light' | 'dark',
-  _locale: Locale,
-): { theme: ThemeConfig } {
-  const isDark = resolvedTheme === 'dark';
-  return {
-    theme: {
-      algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      token: {
-        colorPrimary: '#fafafa',
-        colorBgBase: '#0a0a0a',
-        colorBgContainer: '#111111',
-        colorBgElevated: '#1a1a1a',
-        colorBorder: '#262626',
-        colorText: '#fafafa',
-        colorTextSecondary: '#a1a1a1',
-        colorTextTertiary: '#737373',
-                borderRadius: 4,
-                borderRadiusLG: 4,
-        fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-        controlHeight: 36,
-        boxShadow: 'none',
-        boxShadowSecondary: 'none',
-        wireframe: false,
-      },
-      components: {
-        Menu: {
-          colorItemBg: 'transparent',
-          colorItemBgHover: '#1a1a1a',
-          colorItemBgSelected: '#fafafa',
-          colorItemText: '#fafafa',
-          colorItemTextHover: '#fafafa',
-          colorItemTextSelected: '#0a0a0a',
-          colorSubItemBg: '#0f0f0f',
-        },
-        Layout: {
-          bodyBg: '#0a0a0a',
-          headerBg: '#111111',
-          triggerBg: '#1a1a1a',
-        },
-        Card: {
-          colorBgContainer: '#111111',
-          colorBorderSecondary: '#262626',
-          boxShadowTertiary: 'none',
-          paddingLG: 16,
-        },
-        Table: {
-          colorBgContainer: '#111111',
-          colorBorderSecondary: '#262626',
-          headerBg: '#1a1a1a',
-        },
-        Input: {
-          colorBgContainer: '#1a1a1a',
-          colorBorder: '#262626',
-          activeBorderColor: '#fafafa',
-          hoverBorderColor: '#525252',
-        },
-        Button: {
-          colorBgContainer: 'transparent',
-          colorBorder: '#262626',
-          primaryShadow: 'none',
-          defaultShadow: 'none',
-          colorPrimary: '#fafafa',
-          colorPrimaryActive: '#e5e5e5',
-          colorPrimaryHover: '#ffffff',
-          colorPrimaryBg: '#fafafa',
-          colorPrimaryBgHover: '#e5e5e5',
-          colorPrimaryText: '#0a0a0a',
-          colorPrimaryTextActive: '#0a0a0a',
-          colorPrimaryTextHover: '#0a0a0a',
-        },
-        Modal: {
-          colorBgElevated: '#111111',
-          colorBorder: '#262626',
-        },
-        Drawer: {
-          colorBgElevated: '#111111',
-        },
-        Tag: {
-          defaultBg: '#1a1a1a',
-          defaultColor: '#a1a1a1',
-          borderRadiusSM: 4,
-        },
-      },
-    },
-  };
+/** 读取当前已生效的 Semi 主题（默认为浅色） */
+export function useThemeMode(): { resolvedTheme: ResolvedTheme } {
+  const resolvedTheme: ResolvedTheme =
+    typeof document !== 'undefined' && document.body.getAttribute('theme-mode') === 'dark'
+      ? 'dark'
+      : 'light';
+  return { resolvedTheme };
 }

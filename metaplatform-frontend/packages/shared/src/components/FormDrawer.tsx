@@ -1,4 +1,4 @@
-import { Drawer, Space, Button } from 'antd';
+import { SideSheet, Space, Button } from '@douyinfe/semi-ui';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Maximize2, Minimize2, PanelRight } from 'lucide-react';
@@ -58,41 +58,41 @@ export default function FormDrawer({
   };
 
   return (
-    <Drawer
-      open={open}
-      title={title}
+    <SideSheet
+      visible={open}
       width={SIZE_WIDTH[size]}
-      onClose={onCancel}
-      destroyOnClose
-      extra={
-        <button
-          type="button"
-          className="v-btn-icon"
-          onClick={cycleSize}
-          title={`切换尺寸：${SIZE_TITLE[size]}`}
-          style={{
-            width: 28,
-            height: 28,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            color: 'var(--muted-foreground)',
-            cursor: 'pointer',
-          }}
-        >
-          {size === 'sm' ? <PanelRight size={14} /> : size === 'md' ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
-        </button>
+      onCancel={onCancel}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <span>{title}</span>
+          <button
+            type="button"
+            onClick={cycleSize}
+            title={`切换尺寸：${SIZE_TITLE[size]}`}
+            style={{
+              width: 28,
+              height: 28,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              color: 'var(--muted-foreground)',
+              cursor: 'pointer',
+            }}
+          >
+            {size === 'sm' ? <PanelRight size={14} /> : size === 'md' ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+          </button>
+        </div>
       }
       footer={
         footer ?? (
           <Space>
-            <Button className="v-btn" onClick={onCancel}>
+            <Button theme="borderless" onClick={onCancel}>
               {cancelText}
             </Button>
-            <Button className="v-btn-primary" loading={confirmLoading} onClick={onOk}>
+            <Button theme="solid" type="primary" loading={confirmLoading} onClick={onOk}>
               {okText}
             </Button>
           </Space>
@@ -100,6 +100,6 @@ export default function FormDrawer({
       }
     >
       {children}
-    </Drawer>
+    </SideSheet>
   );
 }

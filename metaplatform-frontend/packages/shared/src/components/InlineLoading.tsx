@@ -1,7 +1,7 @@
-import { Spin } from 'antd';
+import { Spin } from '@douyinfe/semi-ui';
 
 interface InlineLoadingProps {
-  size?: 'small' | 'default' | 'large';
+  size?: 'small' | 'middle' | 'large';
   tip?: string;
 }
 

@@ -1,34 +1,41 @@
-:root {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #111111;
-  --card-foreground: #fafafa;
-  --muted: #1a1a1a;
-  --muted-foreground: #a1a1a1;
-  --accent: #1a1a1a;
-  --accent-foreground: #fafafa;
-  --border: #262626;
-  --primary: #fafafa;
-  --primary-foreground: #0a0a0a;
-  --destructive: #ff6166;
-  --destructive-subtle: #1f1415;
-  --success: #62d178;
-  --success-subtle: #14241a;
-  --success-foreground: #fafafa;
-  --warning: #eab308;
-  --warning-subtle: #1a1800;
-  --info: #60a5fa;
-  --info-subtle: #141a1f;
-  --sidebar: #0f0f0f;
-  --sidebar-foreground: #fafafa;
-  --sidebar-primary: #fafafa;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: #262626;
-  --radius: 4px;
-  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, monospace;
+/*
+ * 平台样式变量：全部映射自 Semi 官方主题 token（--semi-color-*）。
+ * 深色/浅色随 body[theme-mode] 由 Semi 自动切换，不再使用自研硬编码色板。
+ * 注意：Semi 变量定义在 body 上（深色在 body[theme-mode=dark] 覆盖），
+ * 因此映射也必须放在 body 而非 :root，否则取不到深色值。
+ */
+body {
+  --background: var(--semi-color-bg-0);
+  --foreground: var(--semi-color-text-0);
+  --card: var(--semi-color-bg-1);
+  --card-foreground: var(--semi-color-text-0);
+  --muted: var(--semi-color-fill-0);
+  --muted-foreground: var(--semi-color-text-2);
+  --accent: var(--semi-color-fill-0);
+  --accent-foreground: var(--semi-color-text-0);
+  --border: var(--semi-color-border);
+  --primary: var(--semi-color-primary);
+  --primary-foreground: var(--semi-color-white);
+  --destructive: var(--semi-color-danger);
+  --destructive-subtle: var(--semi-color-danger-light-default);
+  --success: var(--semi-color-success);
+  --success-subtle: var(--semi-color-success-light-default);
+  --success-foreground: var(--semi-color-text-0);
+  --warning: var(--semi-color-warning);
+  --warning-subtle: var(--semi-color-warning-light-default);
+  --info: var(--semi-color-info);
+  --info-subtle: var(--semi-color-info-light-default);
+  --sidebar: var(--semi-color-bg-1);
+  --sidebar-foreground: var(--semi-color-text-0);
+  --sidebar-primary: var(--semi-color-primary);
+  --sidebar-primary-foreground: var(--semi-color-white);
+  --sidebar-accent: var(--semi-color-fill-0);
+  --sidebar-accent-foreground: var(--semi-color-text-0);
+  --sidebar-border: var(--semi-color-border);
+  --radius: 6px;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
 
   --mate-page-padding-x: 24px;
   --mate-page-padding-y: 24px;

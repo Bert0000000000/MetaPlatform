@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   timezone: 'Asia/Shanghai',
   dateFormat: 'YYYY-MM-DD HH:mm:ss',
   defaultPage: '/dashboard',
-  theme: 'light',
+  theme: 'dark',
   layout: ['metrics', 'approvals', 'workers', 'notifications'],
 };
 
@@ -67,11 +67,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     saveToStorage(settings);
   }, [settings]);
 
-  // Apply theme to <html data-theme> for global CSS hooks.
+  // Apply theme: html[data-theme] for legacy CSS hooks + body[theme-mode] for Semi official dark theme.
   const resolvedTheme: 'light' | 'dark' =
     settings.theme === 'system' ? systemTheme : settings.theme;
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', resolvedTheme);
+    document.body.setAttribute('theme-mode', resolvedTheme);
   }, [resolvedTheme]);
 
   // Subscribe to OS theme changes when in 'system' mode.

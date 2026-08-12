@@ -1,4 +1,4 @@
-import { Spin } from 'antd';
+import { Spin } from '@douyinfe/semi-ui';
 
 interface PageLoadingProps {
   tip?: string;

@@ -3,7 +3,6 @@
 import 'reflect-metadata';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
-import 'antd/dist/reset.css';
 // 触发 prismjs UMD 包装器把 Prism 注册到 window；
 // 否则 antd 6 的传递依赖 @ant-design/x 的 CodeHighlighter 会抛
 // `Uncaught ReferenceError: Prism is not defined`。

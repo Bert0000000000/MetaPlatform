@@ -4,8 +4,8 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Button, Card, Empty, Input, Select, Space, Table, Tag, Typography, message } from 'antd';
-import type { TableColumnsType } from 'antd';
+import { Button, Card, Empty, Input, Select, Space, Table, Tag, Typography } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { FileText, RefreshCw, Search } from 'lucide-react';
 import { SubTabs, type SubTabItem, useAsync, useApiErrorBoundary } from '@mate/shared';
 import { listDocuments, listKb, type KbDocument, type KbEntity } from '@/api/kb';
@@ -17,11 +17,11 @@ const KB_TABS: SubTabItem[] = [
   { label: '检索配置', path: '/knowledge/config' },
 ];
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PROCESSED: { label: '已处理', color: 'success' },
-  PROCESSING: { label: '处理中', color: 'processing' },
-  PENDING: { label: '待处理', color: 'default' },
-  FAILED: { label: '失败', color: 'error' },
+const STATUS_LABELS: Record<string, { label: string; color: TagColor }> = {
+  PROCESSED: { label: '已处理', color: 'green' },
+  PROCESSING: { label: '处理中', color: 'blue' },
+  PENDING: { label: '待处理', color: 'grey' },
+  FAILED: { label: '失败', color: 'red' },
 };
 
 function formatBytes(value?: number) {
@@ -30,6 +30,9 @@ function formatBytes(value?: number) {
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
+
+type SemiTableProps = React.ComponentProps<typeof Table>;
+type SemiColumns<T> = NonNullable<SemiTableProps['columns']>;
 
 export default function KnowledgeDocsPage() {
   const { report } = useApiErrorBoundary();
@@ -66,7 +69,7 @@ export default function KnowledgeDocsPage() {
     );
   }, [documents, keyword]);
 
-  const columns: TableColumnsType<KbDocument> = [
+  const columns: SemiColumns<KbDocument> = [
     {
       title: '文档',
       dataIndex: 'title',
@@ -88,7 +91,7 @@ export default function KnowledgeDocsPage() {
       dataIndex: 'status',
       width: 120,
       render: (value: string) => {
-        const status = STATUS_LABELS[value] ?? { label: value, color: 'default' };
+        const status = STATUS_LABELS[value] ?? { label: value, color: 'grey' };
         return <Tag color={status.color}>{status.label}</Tag>;
       },
     },
@@ -115,29 +118,29 @@ export default function KnowledgeDocsPage() {
         <Card
           style={{ marginTop: 16 }}
           title="文档管理"
-          extra={
+          headerExtraContent={
             <Button icon={<RefreshCw size={14} />} onClick={reload} loading={loadingDocuments} disabled={!kbId}>
               刷新
             </Button>
           }
         >
-          <Space wrap style={{ marginBottom: 16 }}>
+          <Space wrap spacing={12} style={{ marginBottom: 16 }}>
             <Select
               aria-label="知识库"
               placeholder="选择知识库"
               style={{ width: 240 }}
               value={kbId}
-              onChange={setKbId}
+              onChange={(value) => setKbId(value as string | undefined)}
               loading={loadingKbs}
-              options={kbs.map((kb) => ({ value: kb.id, label: kb.displayName }))}
+              optionList={kbs.map((kb) => ({ value: kb.id, label: kb.displayName }))}
             />
             <Input
               aria-label="搜索文档名称"
               placeholder="搜索文档名称"
               prefix={<Search size={14} />}
               value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              allowClear
+              onChange={(value: string) => setKeyword(value)}
+              showClear
               style={{ width: 320 }}
             />
           </Space>
@@ -145,13 +148,13 @@ export default function KnowledgeDocsPage() {
           {!kbId ? (
             <Empty description="请先选择知识库" />
           ) : (
-            <Table<KbDocument>
+            <Table
               rowKey="id"
               columns={columns}
               dataSource={filteredDocuments}
               loading={loadingDocuments}
               pagination={{ pageSize: 20 }}
-              locale={{ emptyText: keyword ? '没有匹配的文档' : '暂无文档' }}
+              empty={keyword ? '没有匹配的文档' : '暂无文档'}
             />
           )}
         </Card>

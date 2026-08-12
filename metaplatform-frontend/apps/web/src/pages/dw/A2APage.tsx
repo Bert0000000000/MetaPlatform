@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin } from 'antd';
+import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
 import { listExternalAgents, type ExternalAgent } from '@/api/dw/a2a';
 
 export default function A2APage() {
@@ -30,22 +30,21 @@ export default function A2APage() {
   return (
     <List
       header={<h2>外部 Agent（A2A）</h2>}
-      bordered={false}
       dataSource={items}
-      locale={{ emptyText: <Empty description="暂无外部 Agent" /> }}
+      emptyContent={<Empty description="暂无外部 Agent" />}
       renderItem={(item) => (
         <List.Item>
-          <List.Item.Meta
-            title={item.name}
-            description={
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600 }}>{item.name}</div>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
               <>
                 <Tag>{item.status}</Tag>
                 <Tag>{item.authType}</Tag>
-                <span style={{ marginLeft: 8 }}>评分 {item.rating}</span>
-                <span style={{ marginLeft: 8 }}>委派 {item.totalDelegations}</span>
+                评分 {item.rating}
+                委派 {item.totalDelegations}
               </>
-            }
-          />
+            </div>
+          </div>
         </List.Item>
       )}
     />

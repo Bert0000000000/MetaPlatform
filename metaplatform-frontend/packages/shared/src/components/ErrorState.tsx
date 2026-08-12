@@ -1,4 +1,4 @@
-import { Button, Result } from 'antd';
+import { Button, Typography } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
@@ -16,17 +16,29 @@ export default function ErrorState({
   retryText = '重试',
 }: ErrorStateProps) {
   return (
-    <Result
-      icon={<AlertTriangle size={48} color="var(--destructive)" strokeWidth={1.5} />}
-      title={<span style={{ color: 'var(--foreground)' }}>{title}</span>}
-      subTitle={<span style={{ color: 'var(--muted-foreground)' }}>{description}</span>}
-      extra={
-        onRetry ? (
-          <Button className="v-btn-primary" onClick={onRetry}>
-            {retryText}
-          </Button>
-        ) : null
-      }
-    />
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        padding: 48,
+        textAlign: 'center',
+      }}
+    >
+      <AlertTriangle size={48} color="var(--destructive)" strokeWidth={1.5} />
+      <Typography.Title heading={5} style={{ margin: 0 }}>
+        {title}
+      </Typography.Title>
+      <Typography.Text type="tertiary" style={{ fontSize: 13 }}>
+        {description}
+      </Typography.Text>
+      {onRetry ? (
+        <Button theme="solid" type="primary" onClick={onRetry}>
+          {retryText}
+        </Button>
+      ) : null}
+    </div>
   );
 }

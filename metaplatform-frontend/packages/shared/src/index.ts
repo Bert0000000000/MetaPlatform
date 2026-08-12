@@ -52,12 +52,12 @@ export { default as PlatformMenu2, type PlatformMenu2Item } from './components/P
 export { COMPONENT_MANIFEST, type ComponentManifest, type ComponentCategory, type ComponentPropManifest } from './components/componentManifest';
 export { buildPlatformComponentsSkillMd, PLATFORM_COMPONENTS_SKILL } from './components/buildPlatformComponentsSkill';
 
-export { useThemeMode, getAntdTheme } from './theme';
+export { useThemeMode, applySemiTheme } from './theme';
 export * as FlowCanvas from './components/flow';
 export * as Api from './api';
 export { isApiError, isBizError, isHttpError } from './api/errors';
 export type { BizError, HttpError } from './api/errors';
-export { setMessageInstance, toast } from './api/toast';
+export { toast } from './api/toast';
 export { useAsyncError } from './errors';
 export { useApiErrorBoundary, type NormalizedError } from './hooks/useApiErrorBoundary';
 export { useAsync } from './hooks/useAsync';

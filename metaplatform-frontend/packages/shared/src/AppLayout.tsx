@@ -1,12 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
 import { User, LogOut, ChevronsLeft, ChevronsRight } from './icons';
 import PlatformMenu from './PlatformMenu';
 import { useAuth } from './auth/AuthProvider';
 import MateLogo from './components/MateLogo';
-
-const { Content } = Layout;
 
 export interface AppLayoutProps {
   module?: string;
@@ -24,7 +21,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <Layout className="v-app-layout" style={{ height: '100vh', background: 'var(--background)' }}>
+    <div className="v-app-layout" style={{ height: '100vh', background: 'var(--background)' }}>
       <aside
         className="v-sider"
         style={{
@@ -194,7 +191,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </aside>
 
-      <Layout
+      <div
         className="v-main-layout"
         style={{
           marginLeft: SIDEBAR_W,
@@ -203,7 +200,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           transition: 'margin-left 0.2s ease',
         }}
       >
-        <Content
+        <div
           className="v-content"
           style={{
             padding: '0 24px',
@@ -215,8 +212,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           }}
         >
           {children ?? <Outlet />}
-        </Content>
-      </Layout>
-    </Layout>
+        </div>
+      </div>
+    </div>
   );
 }

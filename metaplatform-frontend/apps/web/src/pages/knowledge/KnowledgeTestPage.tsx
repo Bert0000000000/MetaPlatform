@@ -7,7 +7,7 @@
  */
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Card, Input, Button, Select, Space, Empty, Tag, Typography, message } from 'antd';
+import { Card, Input, Button, Select, Space, Empty, Tag, Typography, Toast } from '@douyinfe/semi-ui';
 import { Search, FileText, Zap } from 'lucide-react';
 import { SubTabs, type SubTabItem, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
 import { listKb, search, type KbEntity, type Evidence } from '@/api/kb';
@@ -31,7 +31,7 @@ export default function KnowledgeTestPage() {
 
   // KB 列表:走 useAsync,首次加载后缓存
   const { data: kbs } = useAsync<KbEntity[]>(
-    () => listKb().catch((error) => { console.warn('[KnowledgeTest] kb list failed', error); message.warning('知识库列表加载失败，请检查后端服务状态'); return [] as KbEntity[]; }),
+    () => listKb().catch((error) => { console.warn('[KnowledgeTest] kb list failed', error); Toast.warning('知识库列表加载失败，请检查后端服务状态'); return [] as KbEntity[]; }),
     [],
     { initialData: [] },
   );
@@ -39,7 +39,7 @@ export default function KnowledgeTestPage() {
   const onSearch = async () => {
     const q = query.trim();
     if (!q) {
-      message.warning('请输入检索内容');
+      Toast.warning('请输入检索内容');
       return;
     }
     try {
@@ -47,7 +47,7 @@ export default function KnowledgeTestPage() {
         search({ tenantId: DEFAULT_TENANT, kbId, query: q }),
       );
       setEvidences(resp);
-      message.success(`命中 ${resp.length} 条`);
+      Toast.success(`命中 ${resp.length} 条`);
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
       report(err);
@@ -66,29 +66,29 @@ export default function KnowledgeTestPage() {
               检索测试
             </Space>
           }
-          extra={<Tag color="blue">Hybrid: BM25 + 向量</Tag>}
+          headerExtraContent={<Tag color="blue">Hybrid: BM25 + 向量</Tag>}
         >
-          <Space.Compact style={{ width: '100%' }}>
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
             <Select
               placeholder="选择 KB"
               style={{ width: 240 }}
               value={kbId}
-              onChange={setKbId}
-              allowClear
-              options={(kbs ?? []).map((kb) => ({ value: kb.id, label: kb.displayName }))}
+              onChange={(value) => setKbId(value as string | undefined)}
+              showClear
+              optionList={(kbs ?? []).map((kb) => ({ value: kb.id, label: kb.displayName }))}
             />
             <Input
               placeholder="输入检索内容"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onPressEnter={onSearch}
+              onChange={(value: string) => setQuery(value)}
+              onEnterPress={onSearch}
               style={{ width: 'calc(100% - 240px - 96px - 8px)' }}
               prefix={<Search size={14} />}
             />
-            <Button type="primary" onClick={onSearch} loading={run.loading}>
+            <Button theme="solid" type="primary" onClick={onSearch} loading={run.loading}>
               检索
             </Button>
-          </Space.Compact>
+          </div>
         </Card>
 
         <Card title={`命中 ${evidences.length} 条`} style={{ marginTop: 16 }}>
@@ -105,18 +105,18 @@ export default function KnowledgeTestPage() {
                     justifyContent: 'space-between',
                     gap: 12,
                     padding: '12px 0',
-                    borderBottom: '1px solid #f0f0f0',
+                    borderBottom: '1px solid var(--border)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
                     <div style={{ flexShrink: 0 }}>
-                      <FileText size={24} color="#1677ff" />
+                      <FileText size={24} color="var(--semi-color-primary)" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div>
                         <Typography.Text strong>{ev.title ?? ev.documentId}</Typography.Text>
                       </div>
-                      <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                      <div style={{ color: 'var(--muted-foreground)', fontSize: 12, marginTop: 4 }}>
                         <Typography.Paragraph ellipsis={{ rows: 3 }} style={{ marginBottom: 0 }}>
                           {ev.fragment}
                         </Typography.Paragraph>

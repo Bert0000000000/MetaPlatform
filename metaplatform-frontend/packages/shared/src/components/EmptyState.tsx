@@ -1,4 +1,4 @@
-import { Empty } from 'antd';
+import { Empty } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 import { Inbox } from 'lucide-react';
 

@@ -1,23 +1,11 @@
-import { Pagination } from 'antd';
-import type { PaginationProps } from 'antd';
+import { Pagination } from '@douyinfe/semi-ui';
 
 /**
- * 平台统一分页。封装 antd Pagination，统一配置项（showSizeChanger / showTotal）。
- * 新代码统一用 PlatformPagination，避免各页各自拼接配置。
+ * 平台统一分页，基于 Semi Pagination。
+ * 统一配置项（showSizeChanger / showTotal）。
  */
-export interface PlatformPaginationProps extends PaginationProps {}
+export type PlatformPaginationProps = React.ComponentProps<typeof Pagination>;
 
-export default function PlatformPagination({ showSizeChanger = true, showTotal, ...rest }: PlatformPaginationProps) {
-  return (
-    <Pagination
-      showSizeChanger={showSizeChanger}
-      showTotal={
-        showTotal ??
-        ((total: number) => (
-          <span style={{ fontSize: 12, color: '#a1a1a1' }}>共 {total} 条</span>
-        ))
-      }
-      {...rest}
-    />
-  );
+export default function PlatformPagination({ showSizeChanger = true, ...rest }: PlatformPaginationProps) {
+  return <Pagination showSizeChanger={showSizeChanger} showTotal {...rest} />;
 }
