@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
-  Drawer,
   Form,
   Input,
   Select,
   Checkbox,
   InputNumber,
   Switch,
-  Button,
   Typography,
   Space,
   App,
@@ -22,6 +20,7 @@ import {
   ToolOutlined,
   DatabaseOutlined,
 } from '@ant-design/icons';
+import { FormDrawer } from '@mate/shared';
 import { createEmployee } from '@/api/dw/employees';
 import { listAiModels, type AiModelItem } from '@/api/admin/models';
 import type { EmployeeCreateRequest, RoleCategory } from '@/api/dw/types';
@@ -52,7 +51,7 @@ interface DrawerFormValues {
   rerank: boolean;
 }
 
-const { Text } = Typography;
+const { Title } = Typography;
 
 export default function EmployeeCreateDrawer({ open, onClose, onCreated }: EmployeeCreateDrawerProps) {
   const [form] = Form.useForm<DrawerFormValues>();
@@ -104,24 +103,18 @@ export default function EmployeeCreateDrawer({ open, onClose, onCreated }: Emplo
   };
 
   return (
-    <Drawer
-      title="创建数字员工"
-      width={560}
+    <FormDrawer
       open={open}
-      onClose={onClose}
-      destroyOnClose
-      footer={
-        <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-          <Button onClick={onClose}>取消</Button>
-          <Button type="primary" loading={submitting} onClick={handleSave}>
-            创建
-          </Button>
-        </Space>
-      }
+      title="创建数字员工"
+      onCancel={onClose}
+      okText="创建"
+      cancelText="取消"
+      confirmLoading={submitting}
+      onOk={handleSave}
     >
       <Form form={form} layout="vertical" size="small" initialValues={{ temperature: 0.7, maxTokens: 4096, topP: 0.9, tools: [], actionRids: [], ragKnowledgeBaseIds: [], retrievalMethod: 'hybrid', topK: 5, rerank: true }}>
         {/* 基本信息 */}
-        <Typography.Title level={5}><RobotOutlined /> 基本信息</Typography.Title>
+        <Title level={5}><RobotOutlined /> 基本信息</Title>
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="name" label="员工名称" rules={[{ required: true, message: '请输入员工名称' }, { min: 2, message: '至少 2 个字符' }]}>
@@ -148,7 +141,7 @@ export default function EmployeeCreateDrawer({ open, onClose, onCreated }: Emplo
         <Divider />
 
         {/* 能力配置 */}
-        <Typography.Title level={5}><ToolOutlined /> 模型与能力</Typography.Title>
+        <Title level={5}><ToolOutlined /> 模型与能力</Title>
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="model" label="LLM 模型" rules={[{ required: true, message: '请选择模型' }]}>
@@ -198,7 +191,7 @@ export default function EmployeeCreateDrawer({ open, onClose, onCreated }: Emplo
         <Divider />
 
         {/* 知识范围 */}
-        <Typography.Title level={5}><DatabaseOutlined /> 知识范围</Typography.Title>
+        <Title level={5}><DatabaseOutlined /> 知识范围</Title>
         <Form.Item name="ragKnowledgeBaseIds" label="RAG 知识库">
           <Checkbox.Group style={{ width: '100%' }}>
             <Space wrap>
@@ -224,6 +217,6 @@ export default function EmployeeCreateDrawer({ open, onClose, onCreated }: Emplo
           <Col span={8}><Form.Item name="rerank" label="重排序" valuePropName="checked"><Switch /></Form.Item></Col>
         </Row>
       </Form>
-    </Drawer>
+    </FormDrawer>
   );
 }
