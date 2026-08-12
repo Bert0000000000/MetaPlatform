@@ -5,7 +5,8 @@
 export type SourceType =
   | 'HIVE' | 'HBASE' | 'CLICKHOUSE' | 'DORIS' | 'STARROCKS'
   | 'ICEBERG' | 'HUDI' | 'DELTA' | 'PRESTO' | 'TRINO'
-  | 'KAFKA' | 'PULSAR' | 'HDFS';
+  | 'KAFKA' | 'PULSAR' | 'HDFS'
+  | 'MYSQL' | 'POSTGRES';
 
 export type AuthType = 'NONE' | 'USER_PASSWORD' | 'KERBERY' | 'LDAP' | 'OAUTH2';
 
@@ -184,6 +185,24 @@ export interface Metric {
   updatedAt: string;
 }
 
+// ==================== 数据产品（Iceberg ADS / 数据湖） ====================
+// mate-tech-data /data/products 返回形状。
+export interface DataProduct {
+  id: string;
+  tenantId: string;
+  name: string;
+  version: number;
+  sourcePaimonTable: string;
+  targetIcebergTable: string;
+  modality: string;          // structured | embedding | chunk | mixed
+  status: string;            // draft | published | certified | suspended
+  owner: string;
+  description: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== 显示辅助 ====================
 export const SOURCE_TYPE_META: Record<SourceType, { label: string; color: string; icon: string }> = {
   HIVE:        { label: 'Hive',         color: '#f59e0b', icon: 'Hi' },
@@ -199,6 +218,8 @@ export const SOURCE_TYPE_META: Record<SourceType, { label: string; color: string
   KAFKA:       { label: 'Kafka',        color: '#000000', icon: 'Kf' },
   PULSAR:      { label: 'Pulsar',       color: '#7c2d12', icon: 'Pl' },
   HDFS:        { label: 'HDFS',         color: '#3b82f6', icon: 'Hd' },
+  MYSQL:       { label: 'MySQL',        color: '#00758f', icon: 'My' },
+  POSTGRES:    { label: 'PostgreSQL',   color: '#336791', icon: 'Pg' },
 };
 
 export const ETL_MODE_META: Record<ETLMode, { label: string; color: string; icon: string }> = {

@@ -59,8 +59,6 @@ const OntologyModelingPage = lazy(() => import('./pages/ontology/OntologyModelin
 const OntologyDatacenterPage = lazy(() => import('./pages/ontology/OntologyDatacenterPage'));
 const OntologyActionPage = lazy(() => import('./pages/ontology/OntologyActionPage'));
 const OntologyGraphPage = lazy(() => import('./pages/ontology/OntologyGraphPage'));
-const ObjectTypeListPage = lazy(() => import('./pages/ontology/object-types/ObjectTypeListPage'));
-const ObjectTypeDetailPage = lazy(() => import('./pages/ontology/object-types/ObjectTypeDetailPage'));
 const RelationshipTypeListPage = lazy(() => import('./pages/ontology/relationship-types/RelationshipTypeListPage'));
 const ActionTypeListPage = lazy(() => import('./pages/ontology/actions/ActionTypeListPage'));
 
@@ -116,6 +114,9 @@ const McpPermissionsPage = lazy(() => import('./pages/mcp/McpPermissionsPage'));
 const McpExternalPage = lazy(() => import('./pages/mcp/McpExternalPage'));
 const McpAuditPage = lazy(() => import('./pages/mcp/McpAuditPage'));
 const McpOverviewPage = lazy(() => import('./pages/mcp/OverviewPage'));
+const McpCenterLayout = lazy(() => import('./pages/mcp/McpCenterLayout'));
+const McpSkillHubPage = lazy(() => import('./pages/mcp/SkillHubPage'));
+const A2aInternalAgentsPage = lazy(() => import('./pages/mcp/A2aInternalAgentsPage'));
 const McpConnectionMonitorPage = lazy(() => import('./pages/mcp/ConnectionMonitorPage'));
 const McpToolDetailPage = lazy(() => import('./pages/mcp/ToolDetailPage'));
 const McpToolEditPage = lazy(() => import('./pages/mcp/ToolEditPage'));
@@ -267,9 +268,10 @@ function AppRoutes() {
           <Route path="ontology/datacenter" element={<OntologyDatacenterPage />} />
           <Route path="ontology/action" element={<OntologyActionPage />} />
           <Route path="ontology/graph" element={<OntologyGraphPage />} />
-          {/* GOVERN-12-04 A 路径：完整 ontology 模型编辑器（拆分路由） */}
-          <Route path="ontology/object-types" element={<ObjectTypeListPage />} />
-          <Route path="ontology/object-types/:rid" element={<ObjectTypeDetailPage />} />
+          {/* GOVERN-12-04 A 路径：模型编辑器拆分路由（概念模型已并入 /ontology 单页） */}
+          {/* 旧 object-types 路由重定向到合并后的单页 */}
+          <Route path="ontology/object-types" element={<Navigate to="/ontology" replace />} />
+          <Route path="ontology/object-types/:rid" element={<Navigate to="/ontology" replace />} />
           <Route path="ontology/relationship-types" element={<RelationshipTypeListPage />} />
           <Route path="ontology/actions" element={<ActionTypeListPage />} />
 
@@ -279,37 +281,48 @@ function AppRoutes() {
           <Route path="knowledge/test" element={<KnowledgeTestPage />} />
           <Route path="knowledge/config" element={<KnowledgeConfigPage />} />
 
-          {/* MCP 娑擃厼绺?*/}
-          <Route path="mcp" element={<McpToolsPage />} />
-          <Route path="mcp/server" element={<McpServerPage />} />
-          <Route path="mcp/client" element={<McpClientPage />} />
-          <Route path="mcp/debugger" element={<McpDebuggerPage />} />
-          <Route path="mcp/permissions" element={<McpPermissionsPage />} />
-          <Route path="mcp/external" element={<McpExternalPage />} />
-          <Route path="mcp/audit" element={<McpAuditPage />} />
-          <Route path="mcp/audit/detail/:id" element={<McpAuditDetailPage />} />
-          <Route path="mcp/audit/stats" element={<McpAuditStatisticsPage />} />
-          <Route path="mcp/overview" element={<McpOverviewPage />} />
-          <Route path="mcp/connection-monitor" element={<McpConnectionMonitorPage />} />
-          <Route path="mcp/tools/:id" element={<McpToolDetailPage />} />
-          <Route path="mcp/tools/:id/edit" element={<McpToolEditPage />} />
-          <Route path="mcp/servers/:id" element={<McpServerDetailPage />} />
-          <Route path="mcp/clients" element={<McpClientPage />} />
-          <Route path="mcp/clients/new" element={<McpClientFormPage />} />
-          <Route path="mcp/clients/:id" element={<McpClientDetailPage />} />
-          <Route path="mcp/resources" element={<McpResourceListPage />} />
-          <Route path="mcp/resources/:id" element={<McpResourceEditPage />} />
-          <Route path="mcp/prompts" element={<McpPromptTemplatePage />} />
-          <Route path="mcp/permissions/rules" element={<McpPermissionRulePage />} />
-          <Route path="mcp/policies" element={<McpPolicyManagementPage />} />
-          <Route path="mcp/ide-config" element={<McpIdeConfigPage />} />
-          <Route path="mcp/external-agents" element={<McpExternalAgentListPage />} />
-          <Route path="mcp/trusts" element={<McpTrustManagementPage />} />
+          {/* MCP 娑擃厼绺?/ 三 HUB 布局：SKILL / MCP / A2A */}
+          <Route path="mcp" element={<McpCenterLayout />}>
+            <Route index element={<Navigate to="/mcp/skill-hub" replace />} />
+            {/* SKILL HUB */}
+            <Route path="skill-hub" element={<McpSkillHubPage />} />
+            {/* MCP HUB（协议层） */}
+            <Route path="overview" element={<McpOverviewPage />} />
+            <Route path="tools" element={<McpToolsPage />} />
+            <Route path="tools/:id" element={<McpToolDetailPage />} />
+            <Route path="tools/:id/edit" element={<McpToolEditPage />} />
+            <Route path="resources" element={<McpResourceListPage />} />
+            <Route path="resources/:id" element={<McpResourceEditPage />} />
+            <Route path="prompts" element={<McpPromptTemplatePage />} />
+            <Route path="debugger" element={<McpDebuggerPage />} />
+            <Route path="ide-config" element={<McpIdeConfigPage />} />
+            {/* MCP 服务（协议层） */}
+            <Route path="servers" element={<McpServerPage />} />
+            <Route path="servers/:id" element={<McpServerDetailPage />} />
+            <Route path="clients" element={<McpClientPage />} />
+            <Route path="client" element={<McpClientPage />} />
+            <Route path="clients/new" element={<McpClientFormPage />} />
+            <Route path="clients/:id" element={<McpClientDetailPage />} />
+            <Route path="permissions" element={<McpPermissionsPage />} />
+            <Route path="permissions/rules" element={<McpPermissionRulePage />} />
+            <Route path="policies" element={<McpPolicyManagementPage />} />
+            <Route path="matrix" element={<McpPolicyManagementPage />} />
+            <Route path="audit" element={<McpAuditPage />} />
+            <Route path="audit/detail/:id" element={<McpAuditDetailPage />} />
+            <Route path="audit/stats" element={<McpAuditStatisticsPage />} />
+            <Route path="connection-monitor" element={<McpConnectionMonitorPage />} />
+            {/* A2A 注册中心（内外 Agent） */}
+            <Route path="internal-agents" element={<A2aInternalAgentsPage />} />
+            <Route path="external-agents" element={<McpExternalAgentListPage />} />
+            <Route path="external" element={<McpExternalPage />} />
+            <Route path="integrations" element={<McpExternalPage />} />
+            <Route path="trusts" element={<McpTrustManagementPage />} />
+            <Route path="collaborations" element={<McpExternalPage />} />
+          </Route>
           {/* 閺佹澘鐡ч崨妯轰紣 */}
           <Route path="agents" element={<EmployeeListPage />} />
           <Route path="agents/create" element={<EmployeeCreatePage />} />
           <Route path="agents/:employeeId" element={<EmployeeDetailPage />} />
-          <Route path="agents/:employeeId/edit" element={<EmployeeCreatePage />} />
           <Route path="agents/tasks" element={<TaskListPage />} />
           <Route path="agents/tasks/:taskId" element={<TaskDetailPage />} />
           <Route path="agents/collab" element={<CollaborationListPage />} />

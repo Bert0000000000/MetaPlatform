@@ -41,6 +41,8 @@ export default function CDCView() {
       ]);
       setTasks(taskData);
       setSources(sourceData);
+    } catch (e) {
+      console.warn('CDC 任务加载失败', e);
     } finally {
       setLoading(false);
     }
@@ -207,8 +209,8 @@ function CreateCDCDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
     try { await createCDCTask(form); onSuccess(); } finally { setSubmitting(false); }
   };
 
-  // 过滤只显示关系型数据源
-  const relationSources = sources.filter(s => ['HIVE', 'CLICKHOUSE', 'DORIS', 'STARROCKS'].includes(s.sourceType) && s.status === 'ACTIVE');
+  // 过滤只显示关系型数据源（含后端实际返回的 MYSQL/POSTGRES）
+  const relationSources = sources.filter(s => ['MYSQL', 'POSTGRES', 'HIVE', 'CLICKHOUSE', 'DORIS', 'STARROCKS'].includes(s.sourceType) && s.status === 'ACTIVE');
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>

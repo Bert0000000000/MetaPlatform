@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
-  Hexagon, Search, Upload, Plus, User, FileText, Package,
-  ScrollText, Building, Users, Truck, Warehouse, Receipt, Columns3,
-  Link as LinkIcon, ArrowUpRight, ArrowDownLeft, ArrowRight, ArrowLeft,
-  Database, Boxes, Zap, GitBranch,
+  Hexagon, Search, Plus, Columns3,
+  Link as LinkIcon, ArrowRight, Zap, GitBranch,
 } from 'lucide-react';
-import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, usePageAssistant } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, FormDrawer, Field, TextInput, usePageAssistant } from '@mate/shared';
 import {
-  listObjectTypes, getObjectType, listActionTypes, listLinkTypes,
+  listObjectTypes, listActionTypes, listLinkTypes,
+  createObjectType, appendObjectTypeProperty,
+  domainOfObjectType, slugAndVersionOfObjectType, slugAndVersionOfProperty,
   type KernelObjectType, type KernelActionType, type KernelLinkType,
-  domainOfObjectType,
 } from '@/api/ont/kernel';
+import { getTenantId } from '@/utils/auth';
 
 const ONTOLOGY_TABS = [
   { label: '本体论管理', path: '/ontology' },
@@ -20,17 +20,19 @@ const ONTOLOGY_TABS = [
   { label: '知识图谱', path: '/ontology/graph' },
 ];
 
+// 领域码 → 中文（rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1）
 const DOMAIN_LABELS: Record<string, string> = {
   crm: '客户关系',
   scm: '供应链',
   fin: '财务核算',
   org: '组织人力',
   hr: '人力资源',
+  employee: '人事档案',
+  'leave-request': '请假申请',
+  ticket: '工单',
+  superai: 'SuperAI',
+  'dw-digital-employee': '数字员工',
 };
-
-const CONCEPT_ICONS = [
-  User, FileText, Package, ScrollText, Building, Users, Truck, Warehouse, Receipt, Boxes, Database, Zap,
-];
 
 const statusDotStyle = (status: string) => ({
   width: 6, height: 6, borderRadius: '50%', display: 'inline-block', flexShrink: 0,
@@ -40,11 +42,8 @@ const statusDotStyle = (status: string) => ({
 const typeBadgeClass = (type: string) =>
   type === 'ENUM' ? 'type-badge enum' : type === 'DATETIME' ? 'type-badge datetime' : 'type-badge';
 
-// rid slug → 概念图标（稳定映射）
-function conceptIcon(rid: string) {
-  const idx = rid.length % CONCEPT_ICONS.length;
-  return CONCEPT_ICONS[idx];
-}
+const statusLabel = (status: string) =>
+  status === 'connected' ? '已接入' : status === 'partial' ? '部分接入' : '未接入';
 
 // 概念状态：有关联 LinkType → connected；有关联 ActionType → partial；否则 disconnected
 function conceptStatus(ot: KernelObjectType, linkTypes: KernelLinkType[], actionTypes: KernelActionType[]) {
@@ -56,7 +55,6 @@ function conceptStatus(ot: KernelObjectType, linkTypes: KernelLinkType[], action
 }
 
 export default function OntologyModelingPage() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
@@ -65,19 +63,39 @@ export default function OntologyModelingPage() {
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [selectedConcept, setSelectedConcept] = useState<string>('');
   const [keyword, setKeyword] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // 新增属性表单
+  const [addOpen, setAddOpen] = useState(false);
+  const [propName, setPropName] = useState('');
+  const [propType, setPropType] = useState('STRING');
+  const [propTitle, setPropTitle] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // 新建概念抽屉
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createSlug, setCreateSlug] = useState('');
+  const [createDomain, setCreateDomain] = useState('crm');
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  // 重拉全部 kernel 数据（初始加载 / 写操作后刷新）
+  const refreshAll = async () => {
+    const [ots, ats, lts] = await Promise.all([listObjectTypes(), listActionTypes(), listLinkTypes()]);
+    setObjectTypes(ots);
+    setActionTypes(ats);
+    setLinkTypes(lts);
+    return ots;
+  };
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const [ots, ats, lts] = await Promise.all([listObjectTypes(), listActionTypes(), listLinkTypes()]);
+        const ots = await refreshAll();
         if (!active) return;
-        setObjectTypes(ots);
-        setActionTypes(ats);
-        setLinkTypes(lts);
         if (ots.length > 0) {
           setSelectedDomain(domainOfObjectType(ots[0].rid));
           setSelectedConcept(ots[0].rid);
@@ -89,6 +107,7 @@ export default function OntologyModelingPage() {
       }
     })();
     return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 一级本体列表：按 rid 域名段分组
@@ -121,20 +140,13 @@ export default function OntologyModelingPage() {
         (ot) => ot.display_name.toLowerCase().includes(kw) || ot.rid.toLowerCase().includes(kw),
       );
     }
-    if (typeFilter) {
-      items = items.filter((ot) => {
-        const types = ot.properties.map((p) => p.type_id);
-        if (typeFilter === '实体') return ot.properties.length > 0;
-        return true;
-      });
-    }
     if (statusFilter) {
       items = items.filter((ot) => conceptStatus(ot, linkTypes, actionTypes) === statusFilter);
     }
     return items;
-  }, [currentDomainItems, keyword, typeFilter, statusFilter, linkTypes, actionTypes]);
+  }, [currentDomainItems, keyword, statusFilter, linkTypes, actionTypes]);
 
-  // 选中概念详情（属性表 + 关联 action）
+  // 选中概念详情（属性表 + 关联 action + 关系）
   const selectedConceptDetail = useMemo(
     () => objectTypes.find((ot) => ot.rid === selectedConcept) ?? null,
     [objectTypes, selectedConcept],
@@ -172,22 +184,89 @@ export default function OntologyModelingPage() {
         lines.push(`可用 Action：${actionTypes.map((at) => at.rid.split('.').pop()).join('、')}。`);
       }
       if (/搜索|查找|查询/.test(content)) {
-        lines.push(`搜索「${content.replace(/搜索|查找|查询/g, '').trim() || '全部'}」后，可在上方概念卡片中查看匹配结果。`);
+        lines.push(`搜索「${content.replace(/搜索|查找|查询/g, '').trim() || '全部'}」后，可在上方概念表格中查看匹配结果。`);
       }
       return lines.join('\n');
     },
   });
 
-  // 点击概念卡 → 下钻（切换选中 + 可选跳转数据详情）
+  // 点击概念 → 选中并滚动到详情面板
   const handleSelectConcept = (rid: string) => {
     setSelectedConcept(rid);
+    detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const stats = useMemo(() => {
     const totalProps = objectTypes.reduce((acc, ot) => acc + ot.properties.length, 0);
-    const totalLinks = linkTypes.length;
-    return { concepts: objectTypes.length, props: totalProps, links: totalLinks };
+    return { concepts: objectTypes.length, props: totalProps, links: linkTypes.length };
   }, [objectTypes, linkTypes]);
+
+  // 新增属性 → append → 重拉刷新
+  const submitAddProperty = async () => {
+    if (!selectedConceptDetail || !propName.trim()) return;
+    setSubmitting(true);
+    try {
+      const tenant = getTenantId() || 'demo';
+      // 合法属性 rid：ClassRef 正则要求 ont.<tenant>.prop.<slug>.<ver>，
+      // 由概念 rid 的 obj 段替换为 prop 段并追加属性名
+      const conceptSlug = slugAndVersionOfObjectType(selectedConceptDetail.rid).slug.replace(/\.v\d+$/, '');
+      const propRid = `ont.${tenant}.prop.${conceptSlug.replace(/^obj\./, '')}-${propName.trim()}.v1`;
+      await appendObjectTypeProperty(selectedConceptDetail.rid, {
+        rid: propRid,
+        type_id: propType,
+        nullable: true,
+        primary_key: false,
+        title: propTitle.trim() || propName.trim(),
+        format: 'string',
+      });
+      await refreshAll();
+      setAddOpen(false);
+      setPropName('');
+      setPropTitle('');
+    } catch (e) {
+      console.warn('新增 property 失败', e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 新建概念 → POST /object-types → 选中新概念
+  const submitCreate = async () => {
+    const name = createName.trim();
+    const slug = createSlug.trim();
+    if (!name || !slug) return;
+    setCreateSubmitting(true);
+    const tenant = getTenantId() || 'demo';
+    const rid = `ont.${tenant}.obj.${createDomain}.${slug}.v1`;
+    // 新概念自动带一个主键属性（概念必有主键）；kind 段用 'prop'（ClassRef 正则只认 prop）
+    const pkRid = `ont.${tenant}.prop.${slug}-id.v1`;
+    try {
+      await createObjectType({
+        rid,
+        display_name: name,
+        primary_key: [pkRid],
+        properties: [{
+          rid: pkRid,
+          type_id: 'string',
+          nullable: false,
+          primary_key: true,
+          title: `${name} ID`,
+          format: 'string',
+        }],
+        interfaces: [],
+      });
+      setCreateOpen(false);
+      setCreateName('');
+      setCreateSlug('');
+      const ots = await refreshAll();
+      setSelectedDomain(createDomain);
+      if (ots.some((ot) => ot.rid === rid)) setSelectedConcept(rid);
+    } catch (e) {
+      console.warn('新建概念失败', e);
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
 
   return (
     <AIAssistantWorkspace assistant={assistant}>
@@ -198,11 +277,13 @@ export default function OntologyModelingPage() {
         .om-tree-item.active{background:var(--muted);color:var(--foreground)}
         .om-tree-item svg{width:16px;height:16px;flex-shrink:0}
         .om-tree-item .count{margin-left:auto;font-size:11px;color:var(--muted-foreground);background:var(--background);padding:2px 6px;border-radius:4px}
-        .om-concept-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;cursor:pointer;transition:border-color .15s}
-        .om-concept-card:hover{border-color:var(--muted-foreground)}
-        .om-concept-card.selected{border-color:#60a5fa}
-        .om-concept-icon{width:36px;height:36px;border-radius:6px;background:var(--muted);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
-        .om-concept-icon svg{width:18px;height:18px;color:var(--muted-foreground)}
+        .om-table{width:100%;border-collapse:collapse}
+        .om-table th{padding:10px 16px;font-size:12px;font-weight:500;color:var(--muted-foreground);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+        .om-table td{padding:10px 16px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+        .om-table tbody tr{cursor:pointer}
+        .om-table tbody tr:hover{background:var(--muted)}
+        .om-table tbody tr.selected{background:var(--muted)}
+        .om-table tbody tr:last-child td{border-bottom:none}
         .om-attr-table{width:100%;border-collapse:collapse}
         .om-attr-table thead{background:var(--muted)}
         .om-attr-table th{padding:10px 16px;font-size:12px;font-weight:500;color:var(--muted-foreground);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -224,38 +305,15 @@ export default function OntologyModelingPage() {
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
-      {/* GOVERN-12-04 Deprecation Banner */}
-      <div
-        role="alert"
-        style={{
-          marginTop: 16,
-          padding: '12px 16px',
-          background: 'rgba(245, 158, 11, 0.12)',
-          border: '1px solid rgba(245, 158, 11, 0.4)',
-          borderRadius: 'var(--radius)',
-          color: 'var(--foreground)',
-          fontSize: 13,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <span style={{ color: 'var(--warning)', fontWeight: 600 }}>[Deprecated]</span>
-        <span>
-          请使用 <a href="/ontology/object-types" style={{ color: '#60a5fa', textDecoration: 'underline' }}>/ontology/object-types</a> 新模型编辑器，本页 2026-12-31 后下线。
-        </span>
-      </div>
-
       {/* Page Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>本体论管理</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>统一语义建模与推理引擎</div>
+          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>概念模型</h1>
+          <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>管理 Ontology 中的 ObjectType（业务概念）</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
-          <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />导入</button>
-          <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建本体</button>
+          <button className="v-btn-primary" onClick={() => setCreateOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建概念</button>
         </div>
       </div>
 
@@ -307,29 +365,18 @@ export default function OntologyModelingPage() {
 
         {/* Right: Concept Panel */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Search & Filter bar（真实过滤） */}
+          {/* Search & Filter bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <div style={{ flex: 1, maxWidth: 320, position: 'relative' }}>
               <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--muted-foreground)' }} />
               <input
                 type="text"
-                placeholder="搜索概念名称、描述..."
+                placeholder="搜索概念名称 / rid..."
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 style={{ width: '100%', height: 34, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 12px 0 34px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }}
               />
             </div>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              style={{ height: 34, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 13, color: 'var(--foreground)', outline: 'none', cursor: 'pointer', minWidth: 120 }}
-            >
-              <option value="">全部类型</option>
-              <option value="实体">实体</option>
-              <option value="事件">事件</option>
-              <option value="值对象">值对象</option>
-              <option value="枚举">枚举</option>
-            </select>
             <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
               {(['connected', 'partial', 'disconnected'] as const).map((st) => (
                 <button
@@ -344,73 +391,164 @@ export default function OntologyModelingPage() {
                   }}
                 >
                   <span style={statusDotStyle(st)} />
-                  {st === 'connected' ? '已接入' : st === 'partial' ? '部分接入' : '未接入'}
+                  {statusLabel(st)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Section header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600 }}>
-              {DOMAIN_LABELS[selectedDomain] ?? (selectedDomain || '全部')} - 概念
-            </h3>
-            <button className="v-btn" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Plus style={{ width: 14, height: 14 }} />添加概念</button>
+          {/* Concept Table */}
+          <div className="v-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: 14, fontWeight: 600 }}>
+                {DOMAIN_LABELS[selectedDomain] ?? (selectedDomain || '全部')} - 概念
+              </h4>
+            </div>
+            {loading ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载概念中…</div>
+            ) : filteredConcepts.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>当前一级本体下没有匹配的概念</div>
+            ) : (
+              <table className="om-table">
+                <thead>
+                  <tr style={{ background: 'var(--muted)' }}>
+                    <th>显示名</th>
+                    <th>slug</th>
+                    <th>版本</th>
+                    <th>领域</th>
+                    <th>属性数</th>
+                    <th>关系数</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredConcepts.map((ot) => {
+                    const domain = domainOfObjectType(ot.rid);
+                    const { slug, version } = slugAndVersionOfObjectType(ot.rid);
+                    const st = conceptStatus(ot, linkTypes, actionTypes);
+                    const relCount = linkTypes.filter((lt) => lt.src === ot.rid || lt.dst === ot.rid).length;
+                    return (
+                      <tr
+                        key={ot.rid}
+                        className={ot.rid === selectedConcept ? 'selected' : undefined}
+                        onClick={() => handleSelectConcept(ot.rid)}
+                      >
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Hexagon style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
+                            <span style={{ fontWeight: 500 }}>{ot.display_name}</span>
+                          </span>
+                        </td>
+                        <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{slug}</td>
+                        <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{version || '—'}</td>
+                        <td>{DOMAIN_LABELS[domain] ?? domain}</td>
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--muted-foreground)' }}>
+                            <Columns3 style={{ width: 14, height: 14 }} />{ot.properties.length}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--muted-foreground)' }}>
+                            <LinkIcon style={{ width: 14, height: 14 }} />{relCount}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                            <span style={statusDotStyle(st)} /> {statusLabel(st)}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            className="v-btn"
+                            style={{ height: 28, padding: '0 10px', fontSize: 12 }}
+                            onClick={(e) => { e.stopPropagation(); handleSelectConcept(ot.rid); }}
+                          >
+                            查看
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
 
-          {/* Concept Grid */}
-          {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载概念中…</div>
-          ) : filteredConcepts.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>当前一级本体下没有匹配的概念</div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-              {filteredConcepts.map((ot) => {
-                const Icon = conceptIcon(ot.rid);
-                const st = conceptStatus(ot, linkTypes, actionTypes);
-                return (
-                  <div
-                    key={ot.rid}
-                    className={`om-concept-card ${ot.rid === selectedConcept ? 'selected' : ''}`}
-                    onClick={() => handleSelectConcept(ot.rid)}
-                  >
-                    <div className="om-concept-icon"><Icon /></div>
-                    <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{ot.display_name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 14, lineHeight: 1.5 }}>
-                      {ot.rid.split('.').pop()}
-                    </div>
-                    <div style={{ display: 'flex', gap: 16 }}>
-                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Columns3 style={{ width: 14, height: 14 }} />{ot.properties.length} 属性
-                      </span>
-                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <LinkIcon style={{ width: 14, height: 14 }} />
-                        {linkTypes.filter((lt) => lt.src === ot.rid || lt.dst === ot.rid).length} 关系
-                      </span>
-                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={statusDotStyle(st)} /> {st === 'connected' ? '已接入' : st === 'partial' ? '部分接入' : '未接入'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Detail Section（下钻：属性表 + 关联 Action + 关系） */}
+          {/* Detail Section（下钻：属性表 + 新增属性 + 关联 Action + 关系） */}
           {selectedConceptDetail && (
-            <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
-              {/* Attribute Table */}
+            <div ref={detailRef} style={{ display: 'flex', gap: 20, marginTop: 20, scrollMarginTop: 12 }}>
+              {/* Attribute Table + Add-property form + 关联 Action */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="v-card" style={{ padding: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-                    <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} - 属性定义</h4>
-                    <span className="v-eyebrow">{selectedConceptDetail.properties.length} 个属性</span>
+                    <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} · 属性定义</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span className="v-eyebrow">{selectedConceptDetail.properties.length} 个属性</span>
+                      <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12 }} onClick={() => setAddOpen((v) => !v)}>
+                        <Plus style={{ width: 14, height: 14 }} />新增属性
+                      </button>
+                    </div>
                   </div>
+                  {addOpen && (
+                    <div style={{ padding: 16, borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                        <div>
+                          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>属性名</div>
+                          <input
+                            value={propName}
+                            onChange={(e) => setPropName(e.target.value)}
+                            placeholder="例如 dept_name"
+                            style={{ height: 30, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12, color: 'var(--foreground)', outline: 'none', width: 160 }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>类型</div>
+                          <select
+                            value={propType}
+                            onChange={(e) => setPropType(e.target.value)}
+                            style={{ height: 30, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12, color: 'var(--foreground)', outline: 'none' }}
+                          >
+                            <option value="STRING">STRING</option>
+                            <option value="INTEGER">INTEGER</option>
+                            <option value="DECIMAL">DECIMAL</option>
+                            <option value="BOOLEAN">BOOLEAN</option>
+                            <option value="DATETIME">DATETIME</option>
+                            <option value="ENUM">ENUM</option>
+                          </select>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>描述</div>
+                          <input
+                            value={propTitle}
+                            onChange={(e) => setPropTitle(e.target.value)}
+                            placeholder="可选"
+                            style={{ height: 30, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12, color: 'var(--foreground)', outline: 'none', width: 200 }}
+                          />
+                        </div>
+                        <button
+                          className="v-btn-primary"
+                          disabled={submitting || !propName.trim()}
+                          onClick={submitAddProperty}
+                          style={{ height: 30, padding: '0 14px', fontSize: 12, opacity: submitting || !propName.trim() ? 0.6 : 1 }}
+                        >
+                          {submitting ? '提交中…' : '保存'}
+                        </button>
+                        <button
+                          className="v-btn"
+                          onClick={() => setAddOpen(false)}
+                          style={{ height: 30, padding: '0 10px', fontSize: 12 }}
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <table className="om-attr-table">
                     <thead>
                       <tr>
                         <th>属性名</th>
+                        <th>版本</th>
                         <th>类型</th>
                         <th>必填</th>
                         <th>主键</th>
@@ -418,15 +556,21 @@ export default function OntologyModelingPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedConceptDetail.properties.map((attr) => (
-                        <tr key={attr.rid}>
-                          <td style={{ fontWeight: 500 }}>{attr.rid.split('.').pop()}</td>
-                          <td><span className={typeBadgeClass(attr.type_id)}>{attr.type_id}</span></td>
-                          <td><span style={{ color: attr.nullable ? 'var(--muted-foreground)' : 'var(--success)', fontSize: 12 }}>{attr.nullable ? '否' : '是'}</span></td>
-                          <td><span style={{ color: attr.primary_key ? 'var(--success)' : 'var(--muted-foreground)', fontSize: 12 }}>{attr.primary_key ? '是' : '否'}</span></td>
-                          <td style={{ color: 'var(--muted-foreground)' }}>{attr.title}</td>
-                        </tr>
-                      ))}
+                      {selectedConceptDetail.properties.map((attr) => {
+                        const { slug, version } = slugAndVersionOfProperty(attr.rid);
+                        // 砍掉 kind 段（prop / prp）—— 后端用 'prop'，统一兼容
+                        const propSlug = slug.replace(/^(prop|prp)\./, '');
+                        return (
+                          <tr key={attr.rid}>
+                            <td style={{ fontWeight: 500 }}>{propSlug}</td>
+                            <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{version || '—'}</td>
+                            <td><span className={typeBadgeClass(attr.type_id)}>{attr.type_id}</span></td>
+                            <td><span style={{ color: attr.nullable ? 'var(--muted-foreground)' : 'var(--success)', fontSize: 12 }}>{attr.nullable ? '否' : '是'}</span></td>
+                            <td><span style={{ color: attr.primary_key ? 'var(--success)' : 'var(--muted-foreground)', fontSize: 12 }}>{attr.primary_key ? '是' : '否'}</span></td>
+                            <td style={{ color: 'var(--muted-foreground)' }}>{attr.title}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -485,48 +629,42 @@ export default function OntologyModelingPage() {
       </div>
 
       <FormDrawer
-        open={drawerOpen}
-        title="新建本体"
-        onCancel={() => setDrawerOpen(false)}
-        onOk={() => setDrawerOpen(false)}
+        open={createOpen}
+        title="新建概念（ObjectType）"
+        onCancel={() => setCreateOpen(false)}
+        onOk={submitCreate}
+        okText="创建"
+        confirmLoading={createSubmitting}
       >
-        <FormSection title="基本信息" desc="本体的基础属性">
-          <Field label="本体名称" required>
-            <TextInput placeholder="请输入本体名称" />
-          </Field>
-          <Field label="本体编码">
-            <TextInput placeholder="请输入本体编码，如 ont-customer" />
-          </Field>
-          <Field label="所属领域">
-            <Select defaultValue="企业核心">
-              <option value="企业核心">企业核心</option>
-              <option value="产品领域">产品领域</option>
-              <option value="客户关系">客户关系</option>
-              <option value="供应链">供应链</option>
-              <option value="财务核算">财务核算</option>
-              <option value="人力资源">人力资源</option>
-            </Select>
-          </Field>
-          <Field label="描述">
-            <TextArea placeholder="请输入本体描述" rows={4} />
-          </Field>
-        </FormSection>
-
-        <FormSection title="配置" desc="本体的版本与可见性配置">
-          <Field label="版本">
-            <TextInput defaultValue="v1.0" placeholder="如 v1.0" />
-          </Field>
-          <Field label="可见范围">
-            <Select defaultValue="全公司">
-              <option value="全公司">全公司</option>
-              <option value="指定组织">指定组织</option>
-              <option value="私有">私有</option>
-            </Select>
-          </Field>
-          <Field label="负责人">
-            <TextInput placeholder="请输入负责人姓名或账号" />
-          </Field>
-        </FormSection>
+        <Field label="概念名称" required>
+          <TextInput
+            placeholder="例如：客户"
+            value={createName}
+            onChange={(e) => setCreateName(e.target.value)}
+          />
+        </Field>
+        <Field label="slug（rid 末段）" required>
+          <TextInput
+            placeholder="例如：customer"
+            value={createSlug}
+            onChange={(e) => setCreateSlug(e.target.value)}
+          />
+        </Field>
+        <Field label="领域">
+          <select
+            value={createDomain}
+            onChange={(e) => setCreateDomain(e.target.value)}
+            style={{ width: '100%', height: 34, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }}
+          >
+            {Object.entries(DOMAIN_LABELS).map(([code, label]) => (
+              <option key={code} value={code}>{label}</option>
+            ))}
+          </select>
+        </Field>
+        <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
+          生成 rid：<code>ont.{getTenantId() || 'demo'}.obj.{createDomain}.{createSlug.trim() || '<slug>'}.v1</code>
+          <br />自动创建主键属性：<code>ont.{getTenantId() || 'demo'}.prop.{createSlug.trim() || '<slug>'}-id.v1</code>
+        </div>
       </FormDrawer>
       </div>
     </div>

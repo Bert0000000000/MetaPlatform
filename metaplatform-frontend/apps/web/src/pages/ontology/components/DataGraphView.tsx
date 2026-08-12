@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { App, message } from 'antd';
 import { Graph } from '@antv/g6';
+import { listBigDataSources, listCDCTasks, listDataProducts, deriveLineageGraph, type LineageGraphNode, type LineageGraphEdge } from '../../../api/ontology-bigdata';
 
 // ============== 节点类型元数据 ==============
 const NODE_TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -26,53 +27,9 @@ const LAYER_LABEL: Record<string, string> = {
   source: '源系统', cdc: 'CDC', ods: 'ODS', dwd: 'DWD', dws: 'DWS', ads: 'ADS', metric: '指标',
 };
 
-// ============== 演示数据 (与 LineageFullView 保持一致) ==============
-const NODES = [
-  { id: 'src-mysql-orders',   name: 'MySQL.orders',     type: 'source',  layer: 'source', system: 'MySQL',      rows: '2.3M' },
-  { id: 'src-mysql-users',    name: 'MySQL.users',      type: 'source',  layer: 'source', system: 'MySQL',      rows: '560K' },
-  { id: 'src-pg-events',      name: 'PostgreSQL.events',type: 'source',  layer: 'source', system: 'PostgreSQL', rows: '8.9M' },
-  { id: 'src-kafka-raw',      name: 'Kafka.raw_topic',  type: 'source',  layer: 'source', system: 'Kafka',      rows: '124M' },
-  { id: 'src-api-partner',    name: 'REST API.partner', type: 'source',  layer: 'source', system: 'API',        rows: '12K' },
-  { id: 'cdc-orders',         name: 'Hudi.orders_cdc',  type: 'cdc',     layer: 'cdc',    system: 'Hudi',       rows: '2.3M' },
-  { id: 'cdc-events',         name: 'Hudi.events_cdc',  type: 'cdc',     layer: 'cdc',    system: 'Hudi',       rows: '8.9M' },
-  { id: 'ods-orders',         name: 'Iceberg.ods.orders',   type: 'ods',  layer: 'ods', system: 'Iceberg',    rows: '2.3M' },
-  { id: 'ods-events',         name: 'Iceberg.ods.events',   type: 'ods',  layer: 'ods', system: 'Iceberg',    rows: '8.9M' },
-  { id: 'ods-users',          name: 'Iceberg.ods.users',    type: 'ods',  layer: 'ods', system: 'Iceberg',    rows: '560K' },
-  { id: 'dwd-orders',         name: 'Iceberg.dwd.orders',   type: 'dwd',  layer: 'dwd', system: 'Iceberg',    rows: '2.3M' },
-  { id: 'dwd-events',         name: 'Iceberg.dwd.events',   type: 'dwd',  layer: 'dwd', system: 'Iceberg',    rows: '8.9M' },
-  { id: 'dwd-users',          name: 'Iceberg.dwd.users',    type: 'dwd',  layer: 'dwd', system: 'Iceberg',    rows: '560K' },
-  { id: 'dws-orders-agg',     name: 'ClickHouse.dws.orders_agg',  type: 'dws',  layer: 'dws', system: 'ClickHouse', rows: '1.2M' },
-  { id: 'dws-user-profile',   name: 'ClickHouse.dws.user_profile', type: 'dws', layer: 'dws', system: 'ClickHouse', rows: '560K' },
-  { id: 'ads-daily-orders',   name: 'ClickHouse.ads.daily_orders', type: 'ads',  layer: 'ads', system: 'ClickHouse', rows: '30K' },
-  { id: 'ads-realtime',       name: 'Doris.ads.realtime_metrics',  type: 'ads',  layer: 'ads', system: 'Doris',      rows: '10K' },
-  { id: 'm-dau',              name: 'biz_dau',                  type: 'metric', layer: 'metric', system: 'ClickHouse', rows: '-' },
-  { id: 'm-revenue',          name: 'biz_revenue_daily',        type: 'metric', layer: 'metric', system: 'ClickHouse', rows: '-' },
-  { id: 'm-conversion',       name: 'biz_conversion_rate',      type: 'metric', layer: 'metric', system: 'ClickHouse', rows: '-' },
-];
-
-const EDGES = [
-  { source: 'src-mysql-orders', target: 'cdc-orders',  type: 'binlog' },
-  { source: 'src-pg-events',    target: 'cdc-events',  type: 'wal' },
-  { source: 'cdc-orders',       target: 'ods-orders',  type: 'snapshot+binlog' },
-  { source: 'cdc-events',       target: 'ods-events',  type: 'snapshot+binlog' },
-  { source: 'src-mysql-users',  target: 'ods-users',   type: 'jdbc' },
-  { source: 'src-kafka-raw',    target: 'ods-events',  type: 'kafka' },
-  { source: 'src-api-partner',  target: 'ods-events',  type: 'rest' },
-  { source: 'ods-orders',       target: 'dwd-orders',  type: 'sql' },
-  { source: 'ods-events',       target: 'dwd-events',  type: 'sql' },
-  { source: 'ods-users',        target: 'dwd-users',   type: 'sql' },
-  { source: 'dwd-orders',       target: 'dws-orders-agg',   type: 'sql' },
-  { source: 'dwd-events',       target: 'dws-orders-agg',   type: 'sql' },
-  { source: 'dwd-users',        target: 'dws-user-profile', type: 'sql' },
-  { source: 'dws-orders-agg',   target: 'ads-daily-orders', type: 'sql' },
-  { source: 'dws-user-profile', target: 'ads-realtime',     type: 'sql' },
-  { source: 'ads-daily-orders', target: 'm-dau',         type: 'metric' },
-  { source: 'ads-daily-orders', target: 'm-revenue',     type: 'metric' },
-  { source: 'ads-realtime',     target: 'm-conversion',  type: 'metric' },
-];
-
-type NodeRow = (typeof NODES)[number];
-type EdgeRow = (typeof EDGES)[number];
+// ============== 节点/边类型（真实数据派生） ==============
+type NodeRow = LineageGraphNode;
+type EdgeRow = LineageGraphEdge;
 type LayoutType = 'force' | 'dagre' | 'circular' | 'concentric';
 
 const LAYOUT_OPTIONS: Record<LayoutType, { label: string; icon: any; desc: string }> = {
@@ -156,23 +113,38 @@ export default function DataGraphView() {
   const [selectedNode, setSelectedNode] = useState<NodeRow | null>(null);
   const [zoom, setZoom] = useState(1);
   const [showMinimap, setShowMinimap] = useState(true);
+  const [nodes, setNodes] = useState<NodeRow[]>([]);
+  const [edges, setEdges] = useState<LineageGraphEdge[]>([]);
+
+  // 从真实数据平台控制面（数据源 + CDC + 数据产品）加载图谱
+  const loadGraph = async () => {
+    try {
+      const [src, cdc, prd] = await Promise.all([listBigDataSources(), listCDCTasks(), listDataProducts()]);
+      const g = deriveLineageGraph(src, cdc, prd);
+      setNodes(g.nodes);
+      setEdges(g.edges);
+    } catch (e) {
+      console.warn('数据图谱加载失败', e);
+    }
+  };
+  useEffect(() => { loadGraph(); }, []);
 
   const allSystems = useMemo(
-    () => [...new Set(NODES.map((n) => n.system))].sort(),
-    []
+    () => [...new Set(nodes.map((n) => n.system))].sort(),
+    [nodes]
   );
 
   const { filteredNodes, filteredEdges } = useMemo(() => {
-    const nodes = NODES.filter((n) => {
+    const nds = nodes.filter((n) => {
       if (keyword && !n.name.toLowerCase().includes(keyword.toLowerCase())) return false;
       if (filterLayer !== 'all' && n.layer !== filterLayer) return false;
       if (filterSystem !== 'all' && n.system !== filterSystem) return false;
       return true;
     });
-    const ids = new Set(nodes.map((n) => n.id));
-    const edges = EDGES.filter((e) => ids.has(e.source) && ids.has(e.target));
-    return { filteredNodes: nodes, filteredEdges: edges };
-  }, [keyword, filterLayer, filterSystem]);
+    const ids = new Set(nds.map((n) => n.id));
+    const edgs = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
+    return { filteredNodes: nds, filteredEdges: edgs };
+  }, [keyword, filterLayer, filterSystem, nodes, edges]);
 
   // ============== 初始化 G6 Graph ==============
   useEffect(() => {
@@ -192,7 +164,7 @@ export default function DataGraphView() {
         height: initH,
         autoResize: false,
         background: 'transparent',
-        data: buildGraphData(NODES, EDGES),
+        data: buildGraphData(nodes, edges),
         node: {
           type: 'circle',
           style: {
@@ -267,7 +239,7 @@ export default function DataGraphView() {
 
         graph.on('node:click', (e: any) => {
           const id = e?.target?.id;
-          const node = NODES.find((n) => n.id === id);
+          const node = nodes.find((n) => n.id === id);
           if (node) {
             setSelectedNode(node);
             highlightConnected(graph, id);
@@ -332,10 +304,7 @@ export default function DataGraphView() {
     setZoom(1);
   };
   const handleRefresh = () => {
-    const g = graphRef.current;
-    if (!g) return;
-    g.setData(buildGraphData(NODES, EDGES));
-    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); message.warning('图谱渲染失败，请稍后重试'); });
+    loadGraph();
     setKeyword('');
     setFilterLayer('all');
     setFilterSystem('all');
@@ -354,9 +323,9 @@ export default function DataGraphView() {
     URL.revokeObjectURL(url);
   };
 
-  const totalNodes = NODES.length;
+  const totalNodes = nodes.length;
   const visibleNodes = filteredNodes.length;
-  const totalEdges = EDGES.length;
+  const totalEdges = edges.length;
   const visibleEdges = filteredEdges.length;
 
   const inEdges = selectedNode ? filteredEdges.filter((e) => e.target === selectedNode.id) : [];
@@ -474,6 +443,7 @@ export default function DataGraphView() {
             node={selectedNode}
             inEdges={inEdges}
             outEdges={outEdges}
+            nodes={nodes}
             onClose={() => { setSelectedNode(null); resetHighlight(graphRef.current); }}
           />
         )}
@@ -498,7 +468,7 @@ export default function DataGraphView() {
 }
 
 // ============== 节点详情侧栏 ==============
-function NodeDetailPanel({ node, inEdges, outEdges, onClose }: { node: NodeRow; inEdges: EdgeRow[]; outEdges: EdgeRow[]; onClose: () => void }) {
+function NodeDetailPanel({ node, inEdges, outEdges, nodes, onClose }: { node: NodeRow; inEdges: EdgeRow[]; outEdges: EdgeRow[]; nodes: NodeRow[]; onClose: () => void }) {
   const meta = NODE_TYPE_META[node.type] || NODE_TYPE_META.source;
   return (
     <div className="v-card" style={{ padding: 16, overflow: 'auto' }}>
@@ -523,10 +493,10 @@ function NodeDetailPanel({ node, inEdges, outEdges, onClose }: { node: NodeRow; 
       </div>
 
       {outEdges.length > 0 && (
-        <DetailEdgeList title="下游" icon={<ArrowRight style={{ width: 12, height: 12 }} />} edges={outEdges} direction="out" />
+        <DetailEdgeList title="下游" icon={<ArrowRight style={{ width: 12, height: 12 }} />} edges={outEdges} direction="out" nodes={nodes} />
       )}
       {inEdges.length > 0 && (
-        <DetailEdgeList title="上游" icon={<ChevronRight style={{ width: 12, height: 12, transform: 'rotate(180deg)' }} />} edges={inEdges} direction="in" />
+        <DetailEdgeList title="上游" icon={<ChevronRight style={{ width: 12, height: 12, transform: 'rotate(180deg)' }} />} edges={inEdges} direction="in" nodes={nodes} />
       )}
     </div>
   );
@@ -541,7 +511,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function DetailEdgeList({ title, icon, edges, direction }: { title: string; icon: React.ReactNode; edges: EdgeRow[]; direction: 'in' | 'out' }) {
+function DetailEdgeList({ title, icon, edges, direction, nodes }: { title: string; icon: React.ReactNode; edges: EdgeRow[]; direction: 'in' | 'out'; nodes: NodeRow[] }) {
   return (
     <div style={{ marginTop: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 6 }}>
@@ -550,7 +520,7 @@ function DetailEdgeList({ title, icon, edges, direction }: { title: string; icon
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
         {edges.slice(0, 8).map((e, i) => {
           const otherId = direction === 'out' ? e.target : e.source;
-          const other = NODES.find((n) => n.id === otherId);
+          const other = nodes.find((n) => n.id === otherId);
           if (!other) return null;
           const otherMeta = NODE_TYPE_META[other.type] || NODE_TYPE_META.source;
           return (

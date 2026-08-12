@@ -1,15 +1,19 @@
-/** GOVERN-12-04 A 路径 e2e：4 个 ontology 模型编辑器路由可达性。
+/** GOVERN-12-04 模型编辑器路由可达性 e2e：合并后单页 + 两个子页。
+ *
+ * 背景（2026-08-12 合并）：ObjectType「概念模型」编辑器已并入 /ontology
+ * 单页 master-detail（旧「本体论管理」卡片页 + 新 object-types 列表/详情合一），
+ * /ontology/object-types 两个路由已删除。关系/动作仍为独立子路由。
  *
  * 验证：
- * 1. 4 个新路由均返回非 404（前端路由 + 后端 seed 数据均可访问）
- * 2. 每个页面包含关键标题文本
- * 3. 不依赖完整 DOM 渲染（mock 接口 + auth-setup 共享 state）
+ * 1. /ontology 单页返回 200 且含「概念模型」标题
+ * 2. relationship-types / actions 两个子路由 200 + 标题
+ * 3. /ontology 不依赖后端即可渲染查询壳（搜索框可见）
  */
 
 import { test, expect } from '@playwright/test';
 
 const ROUTES = [
-  { path: '/ontology/object-types', title: '概念模型' },
+  { path: '/ontology', title: '概念模型' },
   { path: '/ontology/relationship-types', title: '关系模型' },
   { path: '/ontology/actions', title: 'Action 模型' },
 ];
@@ -27,12 +31,11 @@ for (const route of ROUTES) {
   });
 }
 
-test('routing: ObjectTypeDetailPage with :rid param renders detail shell', async ({ page }) => {
+test('routing: merged /ontology renders concept search shell without backend', async ({ page }) => {
   test.setTimeout(30_000);
-  // 用一个已知的 seed rid（即使后端没真表，前端详情壳也能渲染并显示 "未找到"）
-  const resp = await page.goto('/ontology/object-types/ont.demo.obj.leave-request.v1');
-  expect(resp, 'goto detail').not.toBeNull();
-  expect(resp!.status(), 'detail status').toBe(200);
-  // 详情页包含 "返回列表" 按钮（壳层固定元素）
-  await expect(page.locator('button:has-text("返回列表")').first()).toBeVisible({ timeout: 10_000 });
+  const resp = await page.goto('/ontology');
+  expect(resp, 'goto /ontology').not.toBeNull();
+  expect(resp!.status(), '/ontology status').toBe(200);
+  // 合并页壳层：概念搜索输入框（页面加载即渲染，不依赖后端数据）
+  await expect(page.locator('input[placeholder*="搜索概念名称"]').first()).toBeVisible({ timeout: 10_000 });
 });

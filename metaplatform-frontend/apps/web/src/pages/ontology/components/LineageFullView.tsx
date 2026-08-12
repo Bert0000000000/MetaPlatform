@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { listBigDataSources, listCDCTasks, listDataProducts, deriveLineageGraph, type LineageGraphNode, type LineageGraphEdge } from '../../../api/ontology-bigdata';
 import {
   GitBranch, Database, Filter, Search, X, ZoomIn, ZoomOut,
   Maximize2, ChevronRight, ChevronDown, Layers, Share2, Box,
@@ -34,50 +35,6 @@ const LAYER_ORDER: LineageLayer[] = ['source', 'cdc', 'ods', 'dwd', 'dws', 'ads'
 const LAYER_LABEL: Record<LineageLayer, string> = {
   source: '源系统', cdc: 'CDC', ods: 'ODS', dwd: 'DWD', dws: 'DWS', ads: 'ADS', metric: '指标',
 };
-
-const NODES: LineageNode[] = [
-  { id: 'src-mysql-orders',   name: 'MySQL.orders',     type: 'source',  layer: 'source', system: 'MySQL',     rows: '2.3M' },
-  { id: 'src-mysql-users',    name: 'MySQL.users',      type: 'source',  layer: 'source', system: 'MySQL',     rows: '560K' },
-  { id: 'src-pg-events',      name: 'PostgreSQL.events',type: 'source',  layer: 'source', system: 'PostgreSQL',rows: '8.9M' },
-  { id: 'src-kafka-raw',      name: 'Kafka.raw_topic',  type: 'source',  layer: 'source', system: 'Kafka',     rows: '124M' },
-  { id: 'src-api-partner',    name: 'REST API.partner', type: 'source',  layer: 'source', system: 'API',       rows: '12K' },
-  { id: 'cdc-orders',         name: 'Hudi.orders_cdc',  type: 'cdc',     layer: 'cdc',    system: 'Hudi',      rows: '2.3M' },
-  { id: 'cdc-events',         name: 'Hudi.events_cdc',  type: 'cdc',     layer: 'cdc',    system: 'Hudi',      rows: '8.9M' },
-  { id: 'ods-orders',        name: 'Iceberg.ods.orders',   type: 'ods', layer: 'ods', system: 'Iceberg', rows: '2.3M' },
-  { id: 'ods-events',        name: 'Iceberg.ods.events',   type: 'ods', layer: 'ods', system: 'Iceberg', rows: '8.9M' },
-  { id: 'ods-users',         name: 'Iceberg.ods.users',    type: 'ods', layer: 'ods', system: 'Iceberg', rows: '560K' },
-  { id: 'dwd-orders',        name: 'Iceberg.dwd.orders',   type: 'dwd', layer: 'dwd', system: 'Iceberg', rows: '2.3M' },
-  { id: 'dwd-events',        name: 'Iceberg.dwd.events',   type: 'dwd', layer: 'dwd', system: 'Iceberg', rows: '8.9M' },
-  { id: 'dwd-users',         name: 'Iceberg.dwd.users',    type: 'dwd', layer: 'dwd', system: 'Iceberg', rows: '560K' },
-  { id: 'dws-orders-agg',    name: 'ClickHouse.dws.orders_agg', type: 'dws', layer: 'dws', system: 'ClickHouse', rows: '1.2M' },
-  { id: 'dws-user-profile',  name: 'ClickHouse.dws.user_profile',type: 'dws',layer: 'dws', system: 'ClickHouse', rows: '560K' },
-  { id: 'ads-daily-orders',  name: 'ClickHouse.ads.daily_orders', type: 'ads', layer: 'ads', system: 'ClickHouse', rows: '30K' },
-  { id: 'ads-realtime',      name: 'Doris.ads.realtime_metrics',  type: 'ads', layer: 'ads', system: 'Doris',      rows: '10K' },
-  { id: 'm-dau',             name: 'biz_dau',                type: 'metric', layer: 'metric', system: 'ClickHouse', rows: '-' },
-  { id: 'm-revenue',         name: 'biz_revenue_daily',      type: 'metric', layer: 'metric', system: 'ClickHouse', rows: '-' },
-  { id: 'm-conversion',       name: 'biz_conversion_rate',    type: 'metric', layer: 'metric', system: 'ClickHouse', rows: '-' },
-];
-
-const EDGES: LineageEdge[] = [
-  { from: 'src-mysql-orders', to: 'cdc-orders',  type: 'binlog' },
-  { from: 'src-pg-events',    to: 'cdc-events',  type: 'wal' },
-  { from: 'cdc-orders',       to: 'ods-orders',  type: 'snapshot+binlog' },
-  { from: 'cdc-events',       to: 'ods-events',  type: 'snapshot+binlog' },
-  { from: 'src-mysql-users',  to: 'ods-users',   type: 'jdbc' },
-  { from: 'src-kafka-raw',    to: 'ods-events',  type: 'kafka' },
-  { from: 'src-api-partner',  to: 'ods-events',  type: 'rest' },
-  { from: 'ods-orders',       to: 'dwd-orders',  type: 'sql' },
-  { from: 'ods-events',       to: 'dwd-events',  type: 'sql' },
-  { from: 'ods-users',        to: 'dwd-users',   type: 'sql' },
-  { from: 'dwd-orders',       to: 'dws-orders-agg',   type: 'sql' },
-  { from: 'dwd-events',       to: 'dws-orders-agg',   type: 'sql' },
-  { from: 'dwd-users',        to: 'dws-user-profile', type: 'sql' },
-  { from: 'dws-orders-agg',   to: 'ads-daily-orders',  type: 'sql' },
-  { from: 'dws-user-profile', to: 'ads-realtime',      type: 'sql' },
-  { from: 'ads-daily-orders', to: 'm-dau',         type: 'metric' },
-  { from: 'ads-daily-orders', to: 'm-revenue',     type: 'metric' },
-  { from: 'ads-realtime',     to: 'm-conversion',   type: 'metric' },
-];
 
 // ============== 力导向算法 (轻量自实现) ==============
 // 物理参数
@@ -186,20 +143,35 @@ export default function LineageFullView() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement | null>(null);
 
+  // 从真实数据平台控制面（数据源 + CDC + 数据产品）派生血缘图
+  const [nodes, setNodes] = useState<LineageNode[]>([]);
+  const [edges, setEdges] = useState<LineageEdge[]>([]);
+  const loadLineage = async () => {
+    try {
+      const [src, cdc, prd] = await Promise.all([listBigDataSources(), listCDCTasks(), listDataProducts()]);
+      const g = deriveLineageGraph(src, cdc, prd);
+      setNodes(g.nodes as LineageNode[]);
+      setEdges(g.edges.map((e) => ({ from: e.source, to: e.target, type: e.type })));
+    } catch (e) {
+      console.warn('数据血缘加载失败', e);
+    }
+  };
+  useEffect(() => { loadLineage(); }, []);
+
   // 过滤节点
   const filteredNodes = useMemo(() => {
-    return NODES.filter(n => {
+    return nodes.filter(n => {
       if (keyword && !n.name.toLowerCase().includes(keyword.toLowerCase())) return false;
       if (filterLayer !== 'all' && n.layer !== filterLayer) return false;
       if (filterSystem !== 'all' && n.system !== filterSystem) return false;
       return true;
     });
-  }, [keyword, filterLayer, filterSystem]);
+  }, [keyword, filterLayer, filterSystem, nodes]);
 
   const filteredNodeIds = useMemo(() => new Set(filteredNodes.map(n => n.id)), [filteredNodes]);
   const filteredEdges = useMemo(() =>
-    EDGES.filter(e => filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to)),
-    [filteredNodeIds]
+    edges.filter(e => filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to)),
+    [filteredNodeIds, edges]
   );
 
   // 力导向布局 (仅 force 模式)
@@ -219,11 +191,11 @@ export default function LineageFullView() {
   }, [filteredNodes]);
 
   // 统计
-  const totalNodes = NODES.length;
+  const totalNodes = nodes.length;
   const visibleNodes = filteredNodes.length;
-  const totalEdges = EDGES.length;
+  const totalEdges = edges.length;
   const visibleEdges = filteredEdges.length;
-  const allSystems = useMemo(() => [...new Set(NODES.map(n => n.system))].sort(), []);
+  const allSystems = useMemo(() => [...new Set(nodes.map(n => n.system))].sort(), [nodes]);
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -393,6 +365,7 @@ export default function LineageFullView() {
         <NodeDetailPanel
           node={selectedNode}
           edges={filteredEdges.filter(e => e.from === selectedNode.id || e.to === selectedNode.id)}
+          nodes={nodes}
           onClose={() => setSelectedNode(null)}
         />
       )}
@@ -578,7 +551,7 @@ function NodeCard({ node, edges, expanded, onToggle }: { node: LineageNode; edge
 }
 
 // ============== 节点详情侧栏 ==============
-function NodeDetailPanel({ node, edges, onClose }: { node: LineageNode; edges: LineageEdge[]; onClose: () => void }) {
+function NodeDetailPanel({ node, edges, nodes, onClose }: { node: LineageNode; edges: LineageEdge[]; nodes: LineageNode[]; onClose: () => void }) {
   const outEdges = edges.filter(e => e.from === node.id);
   const inEdges = edges.filter(e => e.to === node.id);
   const meta = NODE_TYPE_META[node.type];
@@ -601,7 +574,7 @@ function NodeDetailPanel({ node, edges, onClose }: { node: LineageNode; edges: L
         <div>
           <div style={{ color: 'var(--muted-foreground)', marginBottom: 4 }}>出边 ({outEdges.length})</div>
           {outEdges.slice(0, 5).map((e, i) => {
-            const target = NODES.find(n => n.id === e.to);
+            const target = nodes.find(n => n.id === e.to);
             return <div key={i} style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>→ {target?.name || e.to} ({e.type})</div>;
           })}
           {outEdges.length > 5 && <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>...+{outEdges.length - 5} more</div>}
@@ -609,7 +582,7 @@ function NodeDetailPanel({ node, edges, onClose }: { node: LineageNode; edges: L
         <div>
           <div style={{ color: 'var(--muted-foreground)', marginBottom: 4 }}>入边 ({inEdges.length})</div>
           {inEdges.slice(0, 5).map((e, i) => {
-            const source = NODES.find(n => n.id === e.from);
+            const source = nodes.find(n => n.id === e.from);
             return <div key={i} style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>← {source?.name || e.from} ({e.type})</div>;
           })}
           {inEdges.length > 5 && <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>...+{inEdges.length - 5} more</div>}

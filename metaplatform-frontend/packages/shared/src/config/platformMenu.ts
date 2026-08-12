@@ -10,6 +10,8 @@ export interface PlatformMenuItem {
   label: string;
   path: string;
   appUrl?: string;
+  /** 分组 tab（当前仅 MCP 服务中心使用：skill / mcp / a2a） */
+  group?: string;
 }
 
 export interface PlatformModuleMenu {
@@ -138,23 +140,28 @@ export const PLATFORM_MENU: Record<string, PlatformModuleMenu> = {
     label: 'MCP 服务中心',
     appUrl: 'http://localhost:9501',
     items: [
-      { key: 'mcphub-overview', label: '概览', path: '/' },
-      { key: 'mcphub-tools', label: '工具注册中心', path: '/tools' },
-      { key: 'mcphub-servers', label: 'MCP Server', path: '/servers' },
-      { key: 'mcphub-debugger', label: '调试器', path: '/debugger' },
-      { key: 'mcphub-clients', label: 'MCP Client', path: '/clients' },
-      { key: 'mcphub-permissions', label: '权限控制', path: '/permissions' },
-      { key: 'mcphub-policies', label: 'ABAC 策略', path: '/policies' },
-      { key: 'mcphub-matrix', label: '权限矩阵', path: '/matrix' },
-      { key: 'mcphub-resources', label: '资源配置', path: '/resources' },
-      { key: 'mcphub-prompts', label: 'Prompt 模板', path: '/prompts' },
-      { key: 'mcphub-audit', label: '调用审计', path: '/audit' },
-      { key: 'mcphub-integrations', label: '外部对接', path: '/integrations' },
-      { key: 'mcphub-external-agents', label: '外部 Agent 目录', path: '/external-agents' },
-      { key: 'mcphub-trusts', label: '信任管理', path: '/trusts' },
-      { key: 'mcphub-collaborations', label: '协作审计', path: '/collaborations' },
-      { key: 'mcphub-ide-config', label: 'IDE 配置', path: '/ide-config' },
-      { key: 'mcphub-connection-monitor', label: '连接监控', path: '/connection-monitor' },
+      // SKILL HUB（公开 SKILL 上传/下载/安装）
+      { key: 'mcphub-skillhub', label: 'SKILL HUB', path: '/skill-hub', group: 'skill' },
+      // MCP HUB（MCP Server 状态/调度 + 工具/权限/审计）
+      { key: 'mcphub-overview', label: '概览', path: '/', group: 'mcp' },
+      { key: 'mcphub-tools', label: '工具注册中心', path: '/tools', group: 'mcp' },
+      { key: 'mcphub-servers', label: 'MCP Server', path: '/servers', group: 'mcp' },
+      { key: 'mcphub-clients', label: 'MCP Client', path: '/clients', group: 'mcp' },
+      { key: 'mcphub-debugger', label: '调试器', path: '/debugger', group: 'mcp' },
+      { key: 'mcphub-resources', label: '资源配置', path: '/resources', group: 'mcp' },
+      { key: 'mcphub-prompts', label: 'Prompt 模板', path: '/prompts', group: 'mcp' },
+      { key: 'mcphub-permissions', label: '权限控制', path: '/permissions', group: 'mcp' },
+      { key: 'mcphub-policies', label: 'ABAC 策略', path: '/policies', group: 'mcp' },
+      { key: 'mcphub-matrix', label: '权限矩阵', path: '/matrix', group: 'mcp' },
+      { key: 'mcphub-audit', label: '调用审计', path: '/audit', group: 'mcp' },
+      { key: 'mcphub-connection-monitor', label: '连接监控', path: '/connection-monitor', group: 'mcp' },
+      { key: 'mcphub-ide-config', label: 'IDE 配置', path: '/ide-config', group: 'mcp' },
+      // A2A 注册中心（内部数字员工 + 外部 Agent）
+      { key: 'mcphub-internal-agents', label: '内部数字员工', path: '/internal-agents', group: 'a2a' },
+      { key: 'mcphub-external-agents', label: '外部 Agent 目录', path: '/external-agents', group: 'a2a' },
+      { key: 'mcphub-integrations', label: '外部对接', path: '/integrations', group: 'a2a' },
+      { key: 'mcphub-trusts', label: '信任管理', path: '/trusts', group: 'a2a' },
+      { key: 'mcphub-collaborations', label: '协作审计', path: '/collaborations', group: 'a2a' },
     ],
   },
 };

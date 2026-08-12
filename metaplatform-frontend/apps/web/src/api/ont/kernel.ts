@@ -99,6 +99,28 @@ export async function listFunctions(): Promise<KernelFunction[]> {
   return list<KernelFunction>('/functions');
 }
 
+// 写操作：与后端 PropertyDTO / ObjectTypeDTO 对齐（v2_kernel/api.py）。
+
+export interface KernelObjectTypeCreate {
+  rid: string;
+  display_name: string;
+  primary_key: string[];
+  properties: KernelProperty[];
+  interfaces: string[];
+}
+
+/** 增量追加单个 Property 到已存在的 ObjectType（POST /object-types/{rid}/properties）。 */
+export async function appendObjectTypeProperty(rid: string, payload: KernelProperty): Promise<KernelObjectType> {
+  const resp = await apiClient.post(v2(`/object-types/${encodeURIComponent(rid)}/properties`), payload);
+  return resp.data as KernelObjectType;
+}
+
+/** Upsert 一个 ObjectType（POST /object-types）。 */
+export async function createObjectType(payload: KernelObjectTypeCreate): Promise<KernelObjectType> {
+  const resp = await apiClient.post(v2('/object-types'), payload);
+  return resp.data as KernelObjectType;
+}
+
 // 域名段 → 一级本体分组。rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1。
 export function domainOfObjectType(rid: string): string {
   const parts = rid.split('.');

@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   RefreshCw, GitBranch, Plus, Activity, PlugZap, Layers,
   Network, Share2,
@@ -15,6 +15,7 @@ import ETLView from './components/ETLView';
 import SchedulerView from './components/SchedulerView';
 import MetricView from './components/MetricView';
 import DataGraphView from './components/DataGraphView';
+import { listBigDataSources, listCDCTasks, listDataProducts, type BigDataSource, type CDCTask, type DataProduct } from '@/api/ontology-bigdata';
 
 const ONTOLOGY_TABS = [
   { label: '本体建模', path: '/ontology' },
@@ -36,66 +37,29 @@ const DATACENTER_SUBTABS = [
   { id: 'lake', label: '数据湖', icon: Database, count: 0 },
 ];
 
-const MAPPINGS = [
-  { name: 'PostgreSQL.users -> ClickHouse.user_profile', source: 'PostgreSQL-主库', target: 'ClickHouse-分析集群', mode: 'UPSERT', lastSync: '2026-07-27 10:30', status: 'success' },
-  { name: 'MySQL.orders -> Doris.daily_orders', source: 'MySQL-业务库', target: 'Doris-实时报表', mode: 'OVERWRITE', lastSync: '2026-07-27 10:28', status: 'success' },
-  { name: 'Kafka.events -> Hudi.event_log', source: 'Kafka-消息流', target: 'Hudi-订单数据', mode: 'APPEND', lastSync: '2026-07-27 10:32', status: 'success' },
-  { name: 'Hive.ods -> Iceberg.lake.ods', source: 'Hive-数据仓库', target: 'Iceberg-数据湖', mode: 'APPEND', lastSync: '2026-07-27 09:15', status: 'warning' },
-];
-
-const QUALITY_METRICS = [
-  { label: '完整率', value: '99.1%', level: 'good', width: '99.1%' },
-  { label: '准确率', value: '98.7%', level: 'good', width: '98.7%' },
-  { label: '一致性', value: '97.8%', level: 'fair', width: '97.8%' },
-  { label: '及时性', value: '99.5%', level: 'good', width: '99.5%' },
-  { label: '唯一性', value: '99.9%', level: 'good', width: '99.9%' },
-  { label: '有效性', value: '98.2%', level: 'good', width: '98.2%' },
-];
-
-const QC_RECORDS = [
-  { time: '2026-07-22 10:00', rule: 'null_field_check', source: 'PostgreSQL-主库', dim: '完整率', score: '99.1%', scoreColor: 'success', status: '通过', statusType: 'success', anomalies: 18 },
-  { time: '2026-07-22 10:00', rule: 'fk_referential_check', source: 'PostgreSQL-主库', dim: '一致性', score: '97.8%', scoreColor: 'warning', status: '警告', statusType: 'warning', anomalies: 142 },
-  { time: '2026-07-22 09:30', rule: 'duplicate_key_check', source: 'MySQL-业务库', dim: '唯一性', score: '99.9%', scoreColor: 'success', status: '通过', statusType: 'success', anomalies: 2 },
-  { time: '2026-07-22 09:30', rule: 'format_pattern_check', source: 'REST API-外部', dim: '有效性', score: '98.2%', scoreColor: 'success', status: '通过', statusType: 'success', anomalies: 67 },
-  { time: '2026-07-22 09:00', rule: 'sla_timeliness_check', source: 'Kafka-消息流', dim: '及时性', score: '99.5%', scoreColor: 'success', status: '通过', statusType: 'success', anomalies: 8 },
-];
-
-const LAKE_TABLES = [
-  { name: 'mate_ontology.entities', format: 'Hudi / COW', meta: '12.4 GB . 2.1M rows', badge: 'CDC 增量', badgeType: 'success' },
-  { name: 'mate_ontology.relations', format: 'Hudi / COW', meta: '8.7 GB . 5.8M rows', badge: 'CDC 增量', badgeType: 'success' },
-  { name: 'mate_audit.event_log', format: 'Hudi / MOR', meta: '9.2 GB . 18.3M rows', badge: 'CDC 增量', badgeType: 'success' },
-  { name: 'mate_warehouse.dim_*', format: 'Hudi / COW', meta: '5.6 GB . 0.9M rows', badge: '批量', badgeType: 'neutral' },
-  { name: 'mate_warehouse.dwd_*', format: 'Hudi / MOR', meta: '3.2 GB . 4.2M rows', badge: '批量', badgeType: 'neutral' },
-  { name: 'ext_partner.raw_data', format: 'Iceberg', meta: '5.1 GB . 3.4M rows', badge: '追加', badgeType: 'neutral' },
-  { name: 'ext_archive.legacy_dump', format: 'Iceberg', meta: '3.1 GB . 1.6M rows', badge: '追加', badgeType: 'neutral' },
-];
-
-const LINEAGE_NODES = [
-  { id: 'src-1', label: 'MySQL.orders', type: 'source' },
-  { id: 'src-2', label: 'PostgreSQL.users', type: 'source' },
-  { id: 'src-3', label: 'Kafka.events', type: 'source' },
-  { id: 'cdo-1', label: 'Hudi.orders_cdc', type: 'table' },
-  { id: 'cdo-2', label: 'Hudi.user_profile', type: 'table' },
-  { id: 'cdo-3', label: 'Hudi.event_log', type: 'table' },
-  { id: 'dws-1', label: 'Iceberg.dws.orders', type: 'table' },
-  { id: 'dws-2', label: 'Iceberg.dws.users', type: 'table' },
-  { id: 'ads-1', label: 'ClickHouse.ads.daily_orders', type: 'table' },
-  { id: 'ads-2', label: 'Doris.ads.user_metrics', type: 'table' },
-];
-
-const LINEAGE_EDGES = [
-  { from: 'src-1', to: 'cdo-1' },
-  { from: 'src-2', to: 'cdo-2' },
-  { from: 'src-3', to: 'cdo-3' },
-  { from: 'cdo-1', to: 'dws-1' },
-  { from: 'cdo-2', to: 'dws-2' },
-  { from: 'cdo-3', to: 'dws-1' },
-  { from: 'dws-1', to: 'ads-1' },
-  { from: 'dws-2', to: 'ads-2' },
-];
-
 const badgeColor = (type: string) =>
   type === 'success' ? 'var(--success)' : type === 'warning' ? 'var(--warning)' : type === 'error' ? 'var(--destructive)' : 'var(--muted-foreground)';
+
+// 真实数据的状态 → 中文标签/颜色（key 为前端适配后的大写枚举）
+const SOURCE_STATUS: Record<string, { label: string; type: string }> = {
+  ACTIVE: { label: '已连接', type: 'success' },
+  INACTIVE: { label: '已断开', type: 'warning' },
+  ERROR: { label: '异常', type: 'error' },
+};
+const CDC_STATUS: Record<string, { label: string; type: string }> = {
+  RUNNING: { label: '运行中', type: 'success' },
+  PAUSED: { label: '已暂停', type: 'warning' },
+  FAILED: { label: '失败', type: 'error' },
+  STOPPED: { label: '已停止', type: 'warning' },
+  PENDING: { label: '待启动', type: 'warning' },
+  SNAPSHOTTING: { label: '快照中', type: 'warning' },
+};
+const PRODUCT_STATUS: Record<string, { label: string; type: string }> = {
+  published: { label: '已发布', type: 'success' },
+  certified: { label: '已认证', type: 'success' },
+  draft: { label: '草稿', type: 'warning' },
+  suspended: { label: '已停用', type: 'error' },
+};
 
 export default function OntologyDatacenterPage() {
   const location = useLocation();
@@ -193,72 +157,178 @@ export default function OntologyDatacenterPage() {
 }
 
 function MappingView() {
+  const [sources, setSources] = useState<BigDataSource[]>([]);
+  const [tasks, setTasks] = useState<CDCTask[]>([]);
+  const [products, setProducts] = useState<DataProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [src, cdc, prd] = await Promise.all([listBigDataSources(), listCDCTasks(), listDataProducts()]);
+        if (!active) return;
+        setSources(src); setTasks(cdc); setProducts(prd);
+      } catch (e) {
+        console.warn('数据映射加载失败', e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const sourceName = (id: string) => sources.find((s) => s.sourceId === id)?.name || id;
+
+  // 真实映射流：CDC（源 → ODS）+ 数据产品（Paimon → Iceberg ADS）
+  const rows = [
+    ...tasks.map((t) => ({
+      name: `${sourceName(t.sourceId)} → ${t.targetName}`,
+      source: sourceName(t.sourceId),
+      target: t.targetName,
+      mode: t.syncMode === 'INCREMENTAL_ONLY' ? '增量' : t.syncMode === 'SNAPSHOT_ONLY' ? '快照' : '全量+增量',
+      lastSync: t.lastSyncAt ? new Date(t.lastSyncAt).toLocaleString('zh-CN') : '-',
+      status: t.status,
+      statusType: (CDC_STATUS[t.status] ?? { type: 'warning' }).type,
+      statusLabel: (CDC_STATUS[t.status] ?? { label: t.status }).label,
+    })),
+    ...products.map((p) => ({
+      name: `${p.sourcePaimonTable} → ${p.targetIcebergTable}`,
+      source: p.sourcePaimonTable,
+      target: p.targetIcebergTable,
+      mode: p.modality === 'embedding' ? '向量' : p.modality === 'chunk' ? '切片' : '结构化',
+      lastSync: p.updatedAt ? new Date(p.updatedAt).toLocaleString('zh-CN') : '-',
+      status: p.status,
+      statusType: (PRODUCT_STATUS[p.status] ?? { type: 'warning' }).type,
+      statusLabel: (PRODUCT_STATUS[p.status] ?? { label: p.status }).label,
+    })),
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="v-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>外部数据源到 Ontology 实体的字段映射</div>
+        <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
+          外部数据源到 Ontology 实体的字段映射（真实：CDC 任务 + 数据产品）
+        </div>
         <button style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Plus style={{ width: 14, height: 14 }} />新建映射
         </button>
       </div>
       <div className="v-card">
+        {loading ? (
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载中…</div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>暂无映射（尚无 CDC 任务或数据产品）</div>
+        ) : (
         <table className="v-table">
           <thead>
             <tr><th>映射名</th><th>源</th><th>目标</th><th>模式</th><th>最后同步</th><th>状态</th></tr>
           </thead>
           <tbody>
-            {MAPPINGS.map((m, i) => (
+            {rows.map((m, i) => (
               <tr key={i}>
                 <td style={{ fontWeight: 500 }}>{m.name}</td>
                 <td style={{ fontSize: 12 }}>{m.source}</td>
                 <td style={{ fontSize: 12 }}>{m.target}</td>
                 <td><span className="v-badge" style={{ background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 10 }}>{m.mode}</span></td>
                 <td style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{m.lastSync}</td>
-                <td><span className={`v-badge v-badge-${m.status}`}>{m.status === 'success' ? '成功' : '警告'}</span></td>
+                <td><span className={`v-badge v-badge-${m.statusType}`}>{m.statusLabel}</span></td>
               </tr>
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );
 }
 
 function QualityView() {
+  const [sources, setSources] = useState<BigDataSource[]>([]);
+  const [tasks, setTasks] = useState<CDCTask[]>([]);
+  const [products, setProducts] = useState<DataProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [src, cdc, prd] = await Promise.all([listBigDataSources(), listCDCTasks(), listDataProducts()]);
+        if (!active) return;
+        setSources(src); setTasks(cdc); setProducts(prd);
+      } catch (e) {
+        console.warn('数据质量加载失败', e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const sourceOk = sources.filter((s) => s.status === 'ACTIVE').length;
+  const sourceHealth = sources.length ? Math.round((sourceOk / sources.length) * 1000) / 10 : 0;
+  const cdcOk = tasks.filter((t) => t.status === 'RUNNING').length;
+  const cdcHealth = tasks.length ? Math.round((cdcOk / tasks.length) * 1000) / 10 : 0;
+  const published = products.filter((p) => p.status === 'published' || p.status === 'certified').length;
+  const productHealth = products.length ? Math.round((published / products.length) * 1000) / 10 : 0;
+
+  const metrics = [
+    { label: '数据源健康率', value: sources.length ? `${sourceHealth}%` : '—', level: sourceHealth >= 80 ? 'good' : sourceHealth > 0 ? 'fair' : 'bad', width: `${sourceHealth || 0}%` },
+    { label: 'CDC 同步健康率', value: tasks.length ? `${cdcHealth}%` : '—', level: cdcHealth >= 80 ? 'good' : cdcHealth > 0 ? 'fair' : 'bad', width: `${cdcHealth || 0}%` },
+    { label: '产品发布率', value: products.length ? `${productHealth}%` : '—', level: productHealth >= 80 ? 'good' : productHealth > 0 ? 'fair' : 'bad', width: `${productHealth || 0}%` },
+    { label: '数据源总数', value: sources.length, level: 'good', width: '100%' },
+    { label: '同步任务总数', value: tasks.length, level: 'good', width: '100%' },
+    { label: '数据产品总数', value: products.length, level: 'good', width: '100%' },
+  ];
+
+  // 真实资源状态记录（源 / CDC / 产品）
+  const records = [
+    ...sources.map((s) => ({ time: s.updatedAt, rule: 'data_source', source: s.name, dim: '数据源', score: SOURCE_STATUS[s.status]?.label ?? s.status, scoreColor: SOURCE_STATUS[s.status]?.type ?? 'warning', anomalies: 0 })),
+    ...tasks.map((t) => ({ time: t.lastSyncAt ?? '', rule: 'cdc_sync', source: t.name, dim: 'CDC 同步', score: CDC_STATUS[t.status]?.label ?? t.status, scoreColor: CDC_STATUS[t.status]?.type ?? 'warning', anomalies: 0 })),
+    ...products.map((p) => ({ time: p.updatedAt, rule: 'data_product', source: p.name, dim: '数据产品', score: PRODUCT_STATUS[p.status]?.label ?? p.status, scoreColor: PRODUCT_STATUS[p.status]?.type ?? 'warning', anomalies: 0 })),
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
-        {QUALITY_METRICS.map((q) => (
+        {metrics.map((q) => (
           <div key={q.label} className="v-card" style={{ padding: '14px 16px' }}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 8 }}>{q.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: q.level === 'good' ? 'var(--success)' : 'var(--warning)' }}>{q.value}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: q.level === 'good' ? 'var(--success)' : q.level === 'fair' ? 'var(--warning)' : 'var(--destructive)' }}>{q.value}</div>
             <div style={{ height: 4, background: 'var(--muted)', borderRadius: 2, marginTop: 8, overflow: 'hidden' }}>
-              <div style={{ height: '100%', borderRadius: 2, width: q.width, background: q.level === 'good' ? 'var(--success)' : 'var(--warning)' }} />
+              <div style={{ height: '100%', borderRadius: 2, width: q.width, background: q.level === 'good' ? 'var(--success)' : q.level === 'fair' ? 'var(--warning)' : 'var(--destructive)' }} />
             </div>
           </div>
         ))}
       </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12, color: 'var(--muted-foreground)' }}>最近质量检查记录</div>
+        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12, color: 'var(--muted-foreground)' }}>
+          资源状态（来自真实数据平台控制面：数据源 / CDC 同步 / 数据产品）
+        </div>
         <div className="v-card">
+          {loading ? (
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载中…</div>
+          ) : records.length === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>暂无资源数据</div>
+          ) : (
           <table className="v-table">
             <thead>
-              <tr><th>时间</th><th>检查规则</th><th>数据源</th><th>维度</th><th>得分</th><th>状态</th><th>异常数</th></tr>
+              <tr><th>更新时间</th><th>资源类型</th><th>资源名</th><th>维度</th><th>状态</th><th>异常数</th></tr>
             </thead>
             <tbody>
-              {QC_RECORDS.map((r, i) => (
+              {records.map((r, i) => (
                 <tr key={i}>
-                  <td><span className="v-meta">{r.time}</span></td>
+                  <td><span className="v-meta">{r.time ? new Date(r.time).toLocaleString('zh-CN') : '-'}</span></td>
                   <td><span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{r.rule}</span></td>
                   <td>{r.source}</td>
                   <td>{r.dim}</td>
-                  <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: badgeColor(r.scoreColor) }}>{r.score}</span></td>
-                  <td><span className={`v-badge v-badge-${r.statusType}`}>{r.status}</span></td>
+                  <td><span className={`v-badge v-badge-${r.scoreColor}`}>{r.score}</span></td>
                   <td style={{ fontFamily: 'var(--font-mono)' }}>{r.anomalies}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </div>
@@ -266,21 +336,45 @@ function QualityView() {
 }
 
 function LakeView() {
+  const [products, setProducts] = useState<DataProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const prd = await listDataProducts();
+        if (!active) return;
+        setProducts(prd);
+      } catch (e) {
+        console.warn('数据湖加载失败', e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="v-card" style={{ padding: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>数据湖表（Hudi / Iceberg）</div>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>数据湖表（Iceberg ADS 数据产品）</div>
+        {loading ? (
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载中…</div>
+        ) : products.length === 0 ? (
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>暂无数据产品</div>
+        ) : (
         <table className="v-table">
           <thead>
-            <tr><th>表名</th><th>格式</th><th>容量</th><th>同步方式</th><th>操作</th></tr>
+            <tr><th>表名</th><th>格式</th><th>来源表</th><th>同步方式</th><th>操作</th></tr>
           </thead>
           <tbody>
-            {LAKE_TABLES.map((t, i) => (
-              <tr key={i}>
-                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.name}</td>
-                <td style={{ fontSize: 12 }}>{t.format}</td>
-                <td style={{ fontSize: 12 }}>{t.meta}</td>
-                <td><span className={`v-badge v-badge-${t.badgeType}`}>{t.badge}</span></td>
+            {products.map((p) => (
+              <tr key={p.id}>
+                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{p.targetIcebergTable}</td>
+                <td style={{ fontSize: 12 }}>Iceberg / {p.modality}</td>
+                <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{p.sourcePaimonTable} · v{p.version}</td>
+                <td><span className={`v-badge v-badge-${(PRODUCT_STATUS[p.status] ?? { type: 'warning' }).type}`}>{(PRODUCT_STATUS[p.status] ?? { label: p.status }).label}</span></td>
                 <td>
                   <button style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer' }} title="查看详情">
                     <Settings2 style={{ width: 14, height: 14 }} />
@@ -290,6 +384,7 @@ function LakeView() {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );

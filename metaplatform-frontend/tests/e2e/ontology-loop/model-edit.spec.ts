@@ -1,19 +1,19 @@
 /** 场景 4：Ontology 模型编辑 → 即时生效（GOVERN-11 Step 4 + 5）。
 
-GOVERN-11 落地盘点：
+GOVERN-11 落地盘点（2026-08-12 更新）：
 - ont kernel 用 in-memory 后端（"backend":"memory"），重启即失；
   缺 PG DDL（GOVERN-04 标记的 5 张表 DDL 没在容器里真正执行）。
-- `/api/v1/ont/v2/object-types` GET/POST/PUT/PATCH 路径存在，但 PG 没建表
-  → server 启动只 seed 了 demo 数据（3 obj + 5 ind），不支持自定义 property
-  写入。
-- 前端 `/ontology/object-types/{rid}` 路由**未注册**到 App.tsx（GOVERN-08
-  死路由清单第 2 项）。完整 DOM 级"模型编辑器"UI 不存在。
+- `/api/v1/ont/v2/object-types` GET/POST 存在；property 只支持 POST
+  `.../properties` 增量追加（无 PUT/PATCH/DELETE，见 v2_kernel/api.py）。
+  前端概念模型编辑器已并入 `/ontology` 单页（旧卡片页 + object-types
+  列表/详情合一，2026-08-12），写路径为「新增属性」append + 「新建概念」
+  POST /object-types。
 
 本场景走 **API 探针** 验证：
 1. ont /v2/object-types GET 返 items ≥3（seed 3 个 object type）
-2. 选一个 ObjectType PUT 加 property → 端点可达（允许 2xx/4xx）
+2. 选一个 ObjectType POST 加 property → 端点可达（允许 2xx/4xx）
 3. 校验 端点 schema 字段名匹配 ont.yaml operationId=getOntV2ObjectTypes
-4. 标注**已知缺口**：PG 持久化缺失；前端模型编辑器路由缺失
+4. 标注**已知缺口**：PG 持久化缺失
 */
 
 import { test, expect } from '@playwright/test';

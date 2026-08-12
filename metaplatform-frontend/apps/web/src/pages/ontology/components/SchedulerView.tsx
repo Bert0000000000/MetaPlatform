@@ -41,6 +41,8 @@ export default function SchedulerView() {
     try {
       const data = await listSchedulerTasks();
       setTasks(data);
+    } catch (e) {
+      console.warn('调度任务加载失败', e);
     } finally { setLoading(false); }
   };
 

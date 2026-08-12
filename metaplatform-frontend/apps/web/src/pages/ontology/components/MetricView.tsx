@@ -39,6 +39,8 @@ export default function MetricView() {
       const [metricData, sourceData] = await Promise.all([listMetrics(), listBigDataSources()]);
       setMetrics(metricData);
       setSources(sourceData);
+    } catch (e) {
+      console.warn('指标加载失败', e);
     } finally { setLoading(false); }
   };
 

@@ -41,6 +41,8 @@ export default function ETLView() {
       const [taskData, sourceData] = await Promise.all([listETLTasks(), listBigDataSources()]);
       setTasks(taskData);
       setSources(sourceData);
+    } catch (e) {
+      console.warn('ETL 任务加载失败', e);
     } finally { setLoading(false); }
   };
 
