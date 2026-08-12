@@ -33,7 +33,7 @@ def _clean_store() -> None:
 
 
 def _auth(tenant: str = "tenant-acme") -> dict[str, str]:
-    from conftest import make_keycloak_token
+    from helpers import make_keycloak_token
 
     token = make_keycloak_token(tenant_id=tenant)
     return {"Authorization": f"Bearer {token}"}

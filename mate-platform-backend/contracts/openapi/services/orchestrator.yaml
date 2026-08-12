@@ -1,0 +1,548 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform orchestrator API
+  version: 1.0.0
+  x-mate-owner: ai-protocols
+  description: Canonical contract for the orchestrator — multi-role digital-employee dynamic scheduling over the MCP / A2A service centers.
+  contact:
+    name: Mate Platform Team
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.local/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: read access
+            platform.write: write access
+  schemas:
+    CapabilityBinding:
+      type: object
+      required:
+      - name
+      - worker_kind
+      properties:
+        name:
+          type: string
+        worker_kind:
+          type: string
+          enum: [mcp, a2a, http, local]
+        ref:
+          type: string
+          description: MCP tool name | A2A agent id | HTTP url
+    RegisterRoleRequest:
+      type: object
+      required:
+      - role
+      properties:
+        role:
+          type: string
+          description: kernel AgentRole slug (ontology/workflow/app/data_product/obs/security/knowledge/superai)
+        name:
+          type: string
+          default: ""
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapabilityBinding'
+    Role:
+      type: object
+      properties:
+        role:
+          type: string
+        name:
+          type: string
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapabilityBinding'
+        enabled:
+          type: boolean
+    DispatchRequest:
+      type: object
+      properties:
+        target_rid:
+          type: string
+          description: rid prefix selects the role via AgentSelector
+        capability:
+          type: string
+        action:
+          type: string
+          default: ""
+        arguments:
+          type: object
+          additionalProperties: true
+    DispatchResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        role:
+          type: string
+        capability:
+          type: string
+        worker_kind:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+    PlanStepRequest:
+      type: object
+      required:
+      - step_id
+      - target
+      properties:
+        step_id:
+          type: string
+        kind:
+          type: string
+          enum: [call_agent]
+          default: call_agent
+        target:
+          type: string
+          description: rid / capability for the step
+        payload:
+          type: object
+          additionalProperties: true
+        requires_hitl:
+          type: boolean
+          default: false
+    SubmitPlanRequest:
+      type: object
+      required:
+      - steps
+      properties:
+        author_user_id:
+          type: string
+          default: system
+        steps:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PlanStepRequest'
+    PlanStatus:
+      type: object
+      properties:
+        plan_id:
+          type: string
+        author_user_id:
+          type: string
+        current_step_id:
+          type: string
+          nullable: true
+        aborted:
+          type: boolean
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              step_id:
+                type: string
+              status:
+                type: string
+              output:
+                type: object
+                additionalProperties: true
+              error:
+                type: string
+                nullable: true
+    ReviewRequest:
+      type: object
+      required:
+      - approved
+      properties:
+        approved:
+          type: boolean
+        feedback:
+          type: string
+          default: ""
+paths:
+  /healthz:
+    get:
+      security: []
+      summary: liveness
+      tags: [orchestrator]
+      responses:
+        '200':
+          description: OK
+      operationId: orchestratorGetHealthz
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/roles:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 注册数字员工角色
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRoleRequest'
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          description: 缺少或无效 JWT
+        '422':
+          description: 未知角色 / worker_kind / 缺 tenant
+      operationId: orchestratorPostRoles
+      x-mate-implementation-status: implemented
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: 列出数字员工角色
+      tags: [orchestrator]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+                  total:
+                    type: integer
+      operationId: orchestratorGetRoles
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/roles/{role}:
+    delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 注销数字员工角色
+      tags: [orchestrator]
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+        '404':
+          description: 角色未注册
+      operationId: orchestratorDeleteRolesRole
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/dispatch:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 单任务多角色派发
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchRequest'
+      responses:
+        '200':
+          description: 派发结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchResponse'
+        '401':
+          description: 缺少或无效 JWT
+        '404':
+          description: 无角色可服务该任务
+        '422':
+          description: worker_kind 不支持
+      operationId: orchestratorPostDispatch
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 提交计划（≥1 HITL 步，决策 B3）
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPlanRequest'
+      responses:
+        '201':
+          description: 已提交
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: string
+                  status:
+                    type: string
+                  step_count:
+                    type: integer
+        '422':
+          description: 计划无 HITL 步
+      operationId: orchestratorPostPlans
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: 计划状态
+      tags: [orchestrator]
+      parameters:
+      - name: plan_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanStatus'
+        '404':
+          description: 计划不存在
+      operationId: orchestratorGetPlansPlanId
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}/execute:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 执行计划（HITL 步暂停）
+      tags: [orchestrator]
+      parameters:
+      - name: plan_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 执行结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: string
+                  status:
+                    type: string
+                  current_step_id:
+                    type: string
+                    nullable: true
+                  results:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: 计划不存在
+      operationId: orchestratorPostPlansPlanIdExecute
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}/steps/{step_id}/review:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: HITL 审批（approve 继续 / reject 中止）
+      tags: [orchestrator]
+      parameters:
+      - name: plan_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: step_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '200':
+          description: 审批结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: string
+                  status:
+                    type: string
+                  current_step_id:
+                    type: string
+                    nullable: true
+                  results:
+                    type: array
+        '404':
+          description: 计划不存在
+      operationId: orchestratorPostPlansPlanIdStepsStepIdReview
+      x-mate-implementation-status: implemented
+  # ---- scheduling 编排入口（A3 copilot 吸收 phase-1）----
+  /api/v1/orchestrator/scheduling/intent/detect:
+    post:
+      summary: 意图识别（text → intent）
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+      responses:
+        '200':
+          description: 意图
+      operationId: orchestratorPostSchedulingIntentDetect
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/employees/match:
+    post:
+      summary: 数字员工匹配（intent → candidates）
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intent: { type: string }
+      responses:
+        '200':
+          description: 候选员工列表
+      operationId: orchestratorPostSchedulingEmployeesMatch
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/plan/generate:
+    post:
+      summary: 计划生成（intent_id → ExecutionPlan）
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intent_id: { type: string }
+      responses:
+        '200':
+          description: 执行计划
+      operationId: orchestratorPostSchedulingPlanGenerate
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/execution/start:
+    post:
+      summary: 执行计划（plan_id → execution）
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id: { type: string }
+      responses:
+        '200':
+          description: 执行状态
+        '404':
+          description: 计划不存在
+      operationId: orchestratorPostSchedulingExecutionStart
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/execution/{execution_id}/report:
+    get:
+      summary: 执行报告
+      tags: [orchestrator]
+      parameters:
+      - name: execution_id
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: 报告文本
+      operationId: orchestratorGetSchedulingExecutionReport
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/intents:
+    get:
+      summary: 意图历史
+      tags: [orchestrator]
+      responses:
+        '200':
+          description: 意图列表
+      operationId: orchestratorGetSchedulingIntents
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/scheduling/templates:
+    get:
+      summary: 调度模板
+      tags: [orchestrator]
+      responses:
+        '200':
+          description: 模板列表
+      operationId: orchestratorGetSchedulingTemplates
+      x-mate-implementation-status: implemented
+    post:
+      summary: 创建调度模板
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+      responses:
+        '200':
+          description: 模板
+      operationId: orchestratorPostSchedulingTemplates
+      x-mate-implementation-status: implemented

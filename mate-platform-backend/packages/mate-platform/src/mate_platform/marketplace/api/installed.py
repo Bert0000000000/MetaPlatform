@@ -17,7 +17,7 @@ router = APIRouter(tags=["marketplace"])
 @router.get("/installed")
 async def list_installed(
     request: Request,
-    kind: str | None = Query(None, pattern="^(mcp|agent|ontology)$"),
+    kind: str | None = Query(None, pattern="^(mcp|agent|ontology|skill)$"),
     state: str | None = Query(
         None,
         pattern="^(downloading|verifying|installed|failed|uninstalled)$",

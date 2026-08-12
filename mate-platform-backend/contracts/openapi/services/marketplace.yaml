@@ -46,6 +46,7 @@ paths:
           - mcp
           - agent
           - ontology
+          - skill
       - in: query
         name: q
         schema:
@@ -104,6 +105,7 @@ paths:
           - mcp
           - agent
           - ontology
+          - skill
       - in: path
         name: id
         required: true
@@ -159,6 +161,7 @@ paths:
           - mcp
           - agent
           - ontology
+          - skill
       - in: query
         name: state
         schema:
@@ -388,6 +391,170 @@ paths:
       x-mate-permission: marketplace.read
       x-mate-requirements:
       - MP-CONS-008
+  /api/v1/marketplace/skills:
+    post:
+      operationId: uploadSkill
+      summary: 上传 SKILL（SKILL HUB）
+      description: 上传一个公开或私有 SKILL 到 SkillHub。
+      tags: [marketplace]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillUpload'
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '403':
+          description: 缺 marketplace.write scope
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
+    get:
+      operationId: listSkills
+      summary: 浏览 SKILL（公开 + 自有）
+      tags: [marketplace]
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema: { type: string }
+      - name: visibility
+        in: query
+        required: false
+        schema: { type: string, enum: [public, private] }
+      responses:
+        '200':
+          description: SKILL 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Skill'
+                  total: { type: integer }
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+  /api/v1/marketplace/skills/installed:
+    get:
+      operationId: listInstalledSkills
+      summary: 已安装 SKILL（当前租户）
+      tags: [marketplace]
+      responses:
+        '200':
+          description: 已安装 SKILL 列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Skill'
+                  total: { type: integer }
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+  /api/v1/marketplace/skills/{skill_id}:
+    get:
+      operationId: getSkill
+      summary: SKILL 详情
+      tags: [marketplace]
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+    delete:
+      operationId: deleteSkill
+      summary: 删除自有 SKILL
+      tags: [marketplace]
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: 已删除
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
+  /api/v1/marketplace/skills/{skill_id}/download:
+    get:
+      operationId: downloadSkill
+      summary: 下载 SKILL 内容
+      tags: [marketplace]
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: SKILL 内容
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  version: { type: string }
+                  content: { type: string }
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.read
+      x-mate-implementation-status: implemented
+  /api/v1/marketplace/skills/{skill_id}/install:
+    post:
+      operationId: installSkill
+      summary: 安装 SKILL
+      tags: [marketplace]
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: 安装成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  installs: { type: integer }
+                  status: { type: string }
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
@@ -397,6 +564,33 @@ components:
     oidcScopes:
       $ref: ./common/security.yaml#/components/securitySchemes/oidcScopes
   schemas:
+    Skill:
+      type: object
+      required:
+      - id
+      - name
+      - author_tenant
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        version: { type: string }
+        author_tenant: { type: string }
+        visibility: { type: string, enum: [public, private] }
+        content: { type: string }
+        installs: { type: integer }
+        created_at: { type: string }
+    SkillUpload:
+      type: object
+      required:
+      - name
+      - content
+      properties:
+        name: { type: string }
+        description: { type: string }
+        version: { type: string, default: v1 }
+        visibility: { type: string, enum: [public, private], default: public }
+        content: { type: string }
     Error:
       type: object
       required:
@@ -440,6 +634,7 @@ components:
           - mcp
           - agent
           - ontology
+          - skill
         id:
           type: string
           format: uuid
@@ -501,6 +696,7 @@ components:
           - mcp
           - agent
           - ontology
+          - skill
         id:
           type: string
           format: uuid
@@ -620,6 +816,7 @@ components:
           - mcp
           - agent
           - ontology
+          - skill
         artifact_id:
           type: string
           format: uuid
@@ -671,6 +868,7 @@ components:
           - mcp
           - agent
           - ontology
+          - skill
         artifact_id:
           type: string
           format: uuid

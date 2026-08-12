@@ -175,6 +175,14 @@ class Orchestrator:
                 ).run(
                     install_id=install_id, manifest=manifest, blob=blob
                 )
+            elif kind == "skill":
+                from .installer_skill import SkillInstaller
+
+                result = await SkillInstaller(
+                    self.mp_client.skill
+                ).run(
+                    install_id=install_id, manifest=manifest, blob=blob
+                )
             else:
                 raise KindNotAllowed(f"unknown kind {kind}")
         except (DigestMismatch, KindNotAllowed) as e:

@@ -187,6 +187,38 @@ paths:
       x-mate-requirements:
       - FR-MCP-MCPGETMCPTOOLS
       x-mate-implementation-status: implemented
+    post:
+      summary: 动态注册工具（W2 服务中心）
+      tags:
+      - mcp
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterToolRequest'
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicTool'
+        '401':
+          description: 缺少或无效 JWT
+        '422':
+          description: 请求体校验失败
+      operationId: mcpPostMcpTools
+      description: 动态注册工具（数字员工 / 外部 worker 能力，带转发 endpoint）
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-MCPPOSTMCPTOOLS
+      x-mate-implementation-status: implemented
   /api/v1/mcp/tools/{name}:
     post:
       summary: HTTP 桥接 — 调工具
@@ -234,6 +266,79 @@ paths:
       x-mate-permission: mcp.post
       x-mate-requirements:
       - FR-MCP-MCPPOSTMCPTOOLSNAME
+      x-mate-implementation-status: implemented
+    put:
+      summary: 更新动态工具（W2）
+      tags:
+      - mcp
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateToolRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicTool'
+        '401':
+          description: 缺少或无效 JWT
+        '404':
+          description: 工具不存在
+      operationId: mcpPutMcpToolsName
+      description: 更新动态工具（endpoint / description / enabled）
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.put
+      x-mate-requirements:
+      - FR-MCP-MCPPUTMCPTOOLSNAME
+      x-mate-implementation-status: implemented
+    delete:
+      summary: 注销动态工具（W2）
+      tags:
+      - mcp
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 注销成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+        '401':
+          description: 缺少或无效 JWT
+        '404':
+          description: 工具不存在
+      operationId: mcpDeleteMcpToolsName
+      description: 注销动态工具
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.delete
+      x-mate-requirements:
+      - FR-MCP-MCPDELETEMCPTOOLSNAME
       x-mate-implementation-status: implemented
   /api/v1/mcp/resources:
     get:
@@ -561,6 +666,37 @@ paths:
       x-mate-requirements:
       - FR-MCP-FEDERATION-INVOKE
       x-mate-implementation-status: implemented
+  /mcp-protocol:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: MCP streamable-http SSE 流（W4 外部 MCP 客户端）
+      description: MCP 协议标准端点 — initialize / tools/list / tools/call 经 streamable HTTP (JSON-RPC + SSE)。
+      tags: [mcp]
+      responses:
+        '200':
+          description: SSE 事件流
+      operationId: mcpGetMcpProtocol
+      x-mate-owner: ai-protocols
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: MCP streamable-http JSON-RPC 端点（W4）
+      description: MCP 协议标准端点 — 外部 MCP 客户端（Claude Desktop / Cursor 等）经此发现与调用服务中心工具。
+      tags: [mcp]
+      responses:
+        '200':
+          description: MCP JSON-RPC 响应或 SSE 流
+        '401':
+          description: 缺少或无效 JWT
+      operationId: mcpPostMcpProtocol
+      x-mate-owner: ai-protocols
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
@@ -593,6 +729,49 @@ components:
           type: string
         inputSchema:
           type: object
+    RegisterToolRequest:
+      type: object
+      required:
+      - name
+      - endpoint
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          default: ""
+        input_schema:
+          type: object
+          default:
+            type: object
+        endpoint:
+          type: string
+          description: 转发执行目标 URL（MCP-to-MCP）
+    UpdateToolRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        input_schema:
+          type: object
+        endpoint:
+          type: string
+        enabled:
+          type: boolean
+    DynamicTool:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        input_schema:
+          type: object
+        endpoint:
+          type: string
+        enabled:
+          type: boolean
     ToolCategory:
       type: object
       properties:

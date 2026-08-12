@@ -1,0 +1,37 @@
+[project]
+name = "mate-tech-orchestrator"
+version = "0.1.0"
+description = "Mate Platform - Orchestrator: multi-role digital-employee dynamic scheduling over the MCP/A2A service centers."
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "Proprietary" }
+authors = [{ name = "Mate Platform Team" }]
+dependencies = [
+    "fastapi>=0.115.0",
+    "pydantic>=2.0.0",
+    "mate-platform",
+    "mate-clients",
+    "mate-kernel",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "respx>=0.21.0",
+    "ruff>=0.8.0",
+    "pyright>=1.1.390",
+    "httpx>=0.28.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mate_tech_orchestrator"]
+
+[tool.uv.sources]
+mate-platform = { workspace = true }
+mate-clients = { workspace = true }
+mate-kernel = { workspace = true }

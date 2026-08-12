@@ -7,6 +7,7 @@ prompt templates) so it can be persisted to SQL.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import UTC
 from typing import Any
 
 
@@ -18,6 +19,7 @@ class McpTool:
     description: str = ""
     input_schema: dict[str, Any] = field(default_factory=dict)
     enabled: bool = True
+    endpoint: str = ""  # W2: forwarding target for dynamically-registered tools
     created_at: str = ""
     updated_at: str = ""
 
@@ -175,6 +177,94 @@ def delete_tool(tenant_id: str, tid: str) -> bool:
         return False
     del _TOOLS[tenant_id][tid]
     return True
+
+
+# ---------------------------------------------------------------------------
+# W2: dynamic (runtime) tool registry — name-keyed, tenant-scoped
+#
+# Static tools are registered at import time via `MCPServer.register_tool`
+# (e.g. kb_search). W2 adds a runtime registry so digital-employee roles /
+# external workers can register their capabilities as MCP tools with a
+# forwarding `endpoint`. The registry lives in the tenant-scoped catalog
+# (persisted via `sql_store` when `MATE_DB_URL` is set) and is merged into
+# the `GET /tools` / `POST /tools/{name}` surfaces at request time.
+# ---------------------------------------------------------------------------
+def get_tool_by_name(tenant_id: str, name: str) -> McpTool | None:
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return next((t for t in _TOOLS[tenant_id].values() if t.name == name), None)
+
+
+def register_tool(tenant_id: str, name: str, *, description: str = "", input_schema: dict[str, Any] | None = None, endpoint: str = "") -> McpTool:
+    """Register (or upsert) a dynamic tool for a tenant. Idempotent by name."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    existing = get_tool_by_name(tenant_id, name)
+    tid = existing.id if existing else f"dyn-{name}-{id(name) & 0xffff:x}"
+    tool = McpTool(
+        id=tid,
+        tenant_id=tenant_id,
+        name=name,
+        description=description,
+        input_schema=input_schema or {"type": "object"},
+        enabled=True,
+        endpoint=endpoint,
+        created_at=existing.created_at if existing else _now(),
+        updated_at=_now(),
+    )
+    _TOOLS[tenant_id][tid] = tool
+    return tool
+
+
+def update_tool(tenant_id: str, name: str, *, description: str | None = None, input_schema: dict[str, Any] | None = None, endpoint: str | None = None, enabled: bool | None = None) -> McpTool | None:
+    """Update fields of a dynamic tool (by name). Returns None if unknown."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    existing = get_tool_by_name(tenant_id, name)
+    if existing is None:
+        return None
+    tool = McpTool(
+        id=existing.id,
+        tenant_id=tenant_id,
+        name=name,
+        description=description if description is not None else existing.description,
+        input_schema=input_schema if input_schema is not None else existing.input_schema,
+        enabled=enabled if enabled is not None else existing.enabled,
+        endpoint=endpoint if endpoint is not None else existing.endpoint,
+        created_at=existing.created_at,
+        updated_at=_now(),
+    )
+    _TOOLS[tenant_id][tool.id] = tool
+    return tool
+
+
+def unregister_tool(tenant_id: str, name: str) -> bool:
+    """Remove a dynamic tool by name. Returns False if unknown."""
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    existing = get_tool_by_name(tenant_id, name)
+    if existing is None:
+        return False
+    del _TOOLS[tenant_id][existing.id]
+    return True
+
+
+def list_dynamic_tools(tenant_id: str) -> list[McpTool]:
+    """List the tenant's dynamically-registered tools (with an endpoint)."""
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    return [t for t in _TOOLS[tenant_id].values() if t.endpoint]
+
+
+def _now() -> str:
+    from datetime import datetime
+
+    return datetime.now(UTC).isoformat()
 
 
 def put_resource(tenant_id: str, res: McpResource) -> McpResource:

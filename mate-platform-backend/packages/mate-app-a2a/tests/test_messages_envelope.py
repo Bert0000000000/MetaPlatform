@@ -34,13 +34,18 @@ def test_messages_envelope_accepts_w3c_schema(
     assert len(body["history"]) == 1
     assert body["history"][0]["messageId"] == "msg-001"
 
-    # The task is persisted and readable through the existing task API.
+    # The task is persisted and readable through the existing task API,
+    # now aligned to the canonical W3C A2A Task shape (W1 contract-drift fix).
     task = client.get(
         f"/api/v1/a2a/tasks/{body['id']}", headers=auth_headers_acme,
     )
     assert task.status_code == 200
-    assert task.json()["target_agent_id"] == "agent-recon"
-    assert task.json()["message"] == "Reconcile the Q3 ledger"
+    t = task.json()
+    assert t["id"] == body["id"]
+    assert t["contextId"] == "ctx-001"
+    assert t["status"]["state"] == "submitted"
+    assert t["status"]["message"] == "Reconcile the Q3 ledger"
+    assert t["artifacts"] == []
 
 
 def test_messages_missing_messageId_422(

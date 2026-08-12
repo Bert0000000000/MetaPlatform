@@ -35,6 +35,7 @@ from fastapi import APIRouter, FastAPI
 
 # BUSINESS-SLICES P1 wave 3: hook 1 (auth).
 from mate_platform.auth import install_auth
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 from .federation import ExternalMcpClient, FederationRegistry
 from .federation_routes import _set_external_client as _share_federation_external_client
@@ -66,9 +67,11 @@ federation_registry = FederationRegistry()
 federation_external_client = ExternalMcpClient()
 _share_federation_registry(federation_registry)
 _share_federation_external_client(federation_external_client)
-# Outbox writer is optional — None in test profile; production wires
-# the InMemoryOutboxWriter or SQL-backed writer at startup.
-_share_federation_outbox(None)
+# W2: wire a real outbox writer (was None, so federation/tool events were
+# never emitted in production). In-memory for this batch; a SQL-backed
+# relay can drain it to Kafka at startup (OutboxRelay.drain_once).
+_outbox = InMemoryOutboxWriter()
+_share_federation_outbox(_outbox)
 
 # P3-W10 Fix-1: the 5 spec endpoints now live in the explicit
 # ``api/origin_routes.py`` router (registered via ``@router.get``/
@@ -92,6 +95,7 @@ install_auth(app)
 # importing main.py (avoids a circular import).
 app.state.mcp_server = mcp_server
 app.state.rate_limiter = _rate_limiter
+app.state.outbox_writer = _outbox
 
 # P3-W10 Fix-1: 5 spec endpoints mounted via the explicit origin router
 # (api/origin_routes.py) so that spec-level scanners can discover them.
@@ -104,6 +108,11 @@ app.include_router(clients_router)
 app.include_router(management_router)
 # 扩展能力 (backlog §3.8): MCP Federation endpoints.
 app.include_router(federation_router_routes)
+
+# W4: real MCP protocol surface (streamable-http) for external MCP clients.
+from .protocol.streamable import build_streamable_http_app  # noqa: E402
+
+app.mount("/mcp-protocol", build_streamable_http_app(mcp_server))
 
 
 @app.get("/healthz")

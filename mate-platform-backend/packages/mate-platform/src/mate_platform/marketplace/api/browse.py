@@ -11,7 +11,7 @@ router = APIRouter(tags=["marketplace"])
 @router.get("/browse")
 async def list_artifacts(
     request: Request,
-    kind: str = Query(..., pattern="^(mcp|agent|ontology)$"),
+    kind: str = Query(..., pattern="^(mcp|agent|ontology|skill)$"),
     q: str | None = None,
     tag: str | None = None,
     page: int = 1,

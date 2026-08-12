@@ -9,6 +9,7 @@ authors = [{ name = "Mate Platform Team" }]
 dependencies = [
     "fastapi>=0.115.0",
     "pydantic>=2.0.0",
+    "a2a-sdk>=0.1.0",
     "mate-platform",
     "mate-clients",
 ]

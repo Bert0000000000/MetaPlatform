@@ -20,6 +20,7 @@ logger = structlog.get_logger(__name__)
 from mate_platform.marketplace.api import browse as _browse
 from mate_platform.marketplace.api import install as _install
 from mate_platform.marketplace.api import installed as _installed
+from mate_platform.marketplace.skillhub import api as _skillhub
 
 
 class _StubMarketplaceClient:
@@ -93,6 +94,7 @@ router = APIRouter(
 router.include_router(_browse.router)
 router.include_router(_install.router)
 router.include_router(_installed.router)
+router.include_router(_skillhub.router)
 
 
 def install_marketplace_state(app) -> None:
