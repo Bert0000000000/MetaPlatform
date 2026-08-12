@@ -30,6 +30,7 @@ import { getEmployee, updateEmployee } from '@/api/dw/employees';
 import { listAiModels, type AiModelItem } from '@/api/admin/models';
 import type { Employee } from '@/api/dw/types';
 import {
+  ROLE_CATEGORY_OPTIONS,
   MOCK_TOOLS,
   MOCK_KNOWLEDGE_BASES,
   MOCK_ACTIONS,
@@ -74,6 +75,10 @@ export default function CapabilityConfigPage() {
       .then((emp) => {
         setEmployee(emp);
         form.setFieldsValue({
+          name: emp.name,
+          roleCategory: emp.roleCategory,
+          roleIdentity: emp.roleIdentity,
+          description: emp.description,
           model: emp.capability.model,
           temperature: emp.capability.temperature,
           maxTokens: emp.capability.maxTokens,
@@ -96,10 +101,10 @@ export default function CapabilityConfigPage() {
       const values = await form.validateFields();
       setSubmitting(true);
       await updateEmployee(id, {
-        name: employee.name,
-        roleCategory: employee.roleCategory,
-        roleIdentity: employee.roleIdentity,
-        description: employee.description,
+        name: values.name,
+        roleCategory: values.roleCategory,
+        roleIdentity: values.roleIdentity,
+        description: values.description,
         avatar: employee.avatar,
         capability: {
           model: values.model,
@@ -115,8 +120,12 @@ export default function CapabilityConfigPage() {
           rerank: values.rerank,
         },
       });
-      message.success('能力配置已更新');
-      navigate(`/agents/${employee?.code ?? id}`);
+      message.success('数字员工已更新');
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate(`/agents/${employee?.code ?? id}`);
+      }
     } catch (error) {
       if (error instanceof Error && error.message.includes('validated')) return;
       message.error(error instanceof Error ? error.message : '保存失败');
@@ -142,15 +151,59 @@ export default function CapabilityConfigPage() {
     <div>
       {/* 顶部导航 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/agents/${id}`)}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => { if (window.history.length > 1) navigate(-1); else navigate(`/agents/${id}`); }}>
           返回详情
         </Button>
-        <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
-          保存配置
-        </Button>
+        <Space>
+          <Typography.Title level={4} style={{ margin: 0 }}>编辑数字员工</Typography.Title>
+          <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
+            保存
+          </Button>
+        </Space>
       </div>
 
       <Form form={form} layout="vertical">
+        {/* 基本信息 */}
+        <Card
+          size="small"
+          title={<Space><RobotOutlined /> 基本信息</Space>}
+          style={{ marginBottom: 16 }}
+        >
+          <Row gutter={24}>
+            <Col span={8}>
+              <Form.Item name="name" label="员工名称" rules={[{ required: true, message: '请输入员工名称' }]}>
+                <Input placeholder="请输入员工名称" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="roleCategory" label="角色分类" rules={[{ required: true }]}>
+                <Select placeholder="选择角色分类">
+                  {ROLE_CATEGORY_OPTIONS.map((opt) => (
+                    <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="员工编码">
+                <Input value={employee.code} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item name="roleIdentity" label="角色身份">
+                <Input placeholder="角色身份" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="description" label="职责描述">
+                <Input placeholder="职责描述" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
         {/* 模型配置 */}
         <Card
           size="small"

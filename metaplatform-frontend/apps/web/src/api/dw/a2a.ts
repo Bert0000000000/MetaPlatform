@@ -18,6 +18,9 @@ export interface ExternalAgent {
   rating: number;
   totalDelegations: number;
   createdAt: string;
+  source?: 'internal' | 'external';
+  role?: string;
+  code?: string;
 }
 
 export type DelegationStatus =
@@ -82,13 +85,17 @@ export interface CreateDelegationRequest {
 
 function mapCardToExternalAgent(card: Record<string, unknown>): ExternalAgent {
   const endpoints = (card.endpoints as Record<string, string>) || {};
-  const endpoint = endpoints.jsonrpc || endpoints.default || Object.values(endpoints)[0] || '';
+  const endpoint = (card.endpoint as string) ||
+    endpoints.jsonrpc || endpoints.default || Object.values(endpoints)[0] || '';
   const authentication = (card.authentication as Record<string, unknown>) || {};
   const metadata = (card.metadata as Record<string, unknown>) || {};
-  const status = (card.status as string) === 'PUBLISHED' ? 'online' : 'offline';
+  const rawStatus = (card.status as string) || '';
+  const status = rawStatus === 'PUBLISHED' || rawStatus === 'active' || rawStatus === 'registered'
+    ? 'online'
+    : 'offline';
 
   return {
-    agentId: (card.cardId as string) || '',
+    agentId: (card.id as string) || (card.cardId as string) || '',
     name: (card.name as string) || '',
     description: (card.description as string) || '',
     endpoint,
@@ -98,6 +105,9 @@ function mapCardToExternalAgent(card: Record<string, unknown>): ExternalAgent {
     rating: (metadata.rating as number) || 0,
     totalDelegations: (metadata.totalDelegations as number) || 0,
     createdAt: (card.createdAt as string) || '',
+    source: (card.source as ExternalAgent['source']) || 'external',
+    role: (card.role as string) || '',
+    code: (card.code as string) || '',
   };
 }
 
@@ -110,6 +120,13 @@ export async function listExternalAgents(params?: {
     status: 'PUBLISHED',
     ...params,
   });
+  const cards = res?.items ?? [];
+  return cards.map(mapCardToExternalAgent);
+}
+
+/** 返回原始 agent-card（含 source/role），供内部数字员工区块使用。 */
+export async function searchAgentCards(): Promise<ExternalAgent[]> {
+  const res = await get<{ items?: Record<string, unknown>[] }>('/agent-cards/search');
   const cards = res?.items ?? [];
   return cards.map(mapCardToExternalAgent);
 }

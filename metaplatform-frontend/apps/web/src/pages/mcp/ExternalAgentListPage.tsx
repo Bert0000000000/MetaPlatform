@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -30,6 +31,7 @@ import {
   testExternalAgentConnection,
 } from '@/api/mcphub/external-agents';
 import type { ExternalAgent, ExternalAgentCreateRequest, PageResponse } from '@/api/mcphub/types';
+import { searchAgentCards, type ExternalAgent as A2ACard } from '@/api/dw/a2a';
 
 const PROTOCOL_OPTIONS = [
   { label: 'MCP', value: 'MCP' },
@@ -69,6 +71,7 @@ const TRUST_MAP: Record<ExternalAgent['trustLevel'], { label: string; color: str
 };
 
 export default function ExternalAgentListPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<PageResponse<ExternalAgent> | null>(null);
   const [loading, setLoading] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -85,6 +88,20 @@ export default function ExternalAgentListPage() {
   });
   const [form] = Form.useForm<ExternalAgentCreateRequest>();
   const [detail, setDetail] = useState<ExternalAgent | null>(null);
+  const [internalAgents, setInternalAgents] = useState<A2ACard[]>([]);
+
+  const loadInternal = async () => {
+    try {
+      const cards = await searchAgentCards();
+      setInternalAgents(cards.filter((c) => c.source === 'internal'));
+    } catch {
+      setInternalAgents([]);
+    }
+  };
+
+  useEffect(() => {
+    loadInternal();
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -253,6 +270,47 @@ export default function ExternalAgentListPage() {
           添加 Agent
         </Button>
       </div>
+
+      {internalAgents.length > 0 && (
+        <Card size="small" title="内部数字员工" style={{ marginBottom: 16 }}>
+          <Table<A2ACard>
+            rowKey="agentId"
+            dataSource={internalAgents}
+            size="small"
+            pagination={false}
+            columns={[
+              {
+                title: '名称',
+                dataIndex: 'name',
+                key: 'name',
+                render: (_, record) => (
+                  <Space>
+                    <Tag color="gold">内部</Tag>
+                    <Typography.Text strong>{record.name}</Typography.Text>
+                  </Space>
+                ),
+              },
+              { title: '角色', dataIndex: 'role', key: 'role', width: 160 },
+              {
+                title: '端点',
+                dataIndex: 'endpoint',
+                key: 'endpoint',
+                render: (v: string) => <Typography.Text type="secondary" style={{ fontSize: 12 }}>{v || '-'}</Typography.Text>,
+              },
+              {
+                title: '操作',
+                key: 'actions',
+                width: 120,
+                render: (_, record) => (
+                  <Button type="link" size="small" onClick={() => navigate(`/agents/${record.agentId}`)}>
+                    查看详情
+                  </Button>
+                ),
+              },
+            ]}
+          />
+        </Card>
+      )}
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Input.Search

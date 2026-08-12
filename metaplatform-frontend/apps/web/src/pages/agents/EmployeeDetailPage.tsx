@@ -16,9 +16,6 @@ import {
   Badge,
   Row,
   Col,
-  Input,
-  Select,
-  Form,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -27,10 +24,8 @@ import {
   SettingOutlined,
   CopyOutlined,
   EditOutlined,
-  CheckOutlined,
-  CloseOutlined,
 } from '@ant-design/icons';
-import { getEmployee, updateEmployee, activateEmployee, deactivateEmployee, deleteEmployee, cloneEmployee } from '@/api/dw/employees';
+import { getEmployee, activateEmployee, deactivateEmployee, deleteEmployee, cloneEmployee } from '@/api/dw/employees';
 import { listTasks } from '@/api/dw/tasks';
 import EmbeddedChat from './components/EmbeddedChat';
 import EmployeeVersionHistory from './components/EmployeeVersionHistory';
@@ -39,7 +34,6 @@ import type { Employee, EmployeeTask } from '@/api/dw/types';
 import {
   ROLE_CATEGORY_MAP,
   EMPLOYEE_STATUS_MAP,
-  ROLE_CATEGORY_OPTIONS,
   MOCK_TOOLS,
   MOCK_MODELS,
   MOCK_KNOWLEDGE_BASES,
@@ -75,9 +69,6 @@ export default function EmployeeDetailPage() {
   const [loading, setLoading] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [tasks, setTasks] = useState<EmployeeTask[]>([]);
-  const [editing, setEditing] = useState(false);
-  const [savingInfo, setSavingInfo] = useState(false);
-  const [infoForm] = Form.useForm();
 
   const goBack = () => {
     if (window.history.length > 1) {
@@ -142,41 +133,6 @@ export default function EmployeeDetailPage() {
       navigate(`/agents/${created.code}`);
     } catch (error) {
       message.error(error instanceof Error ? error.message : '克隆失败');
-    }
-  };
-
-  const startEdit = () => {
-    if (!employee) return;
-    infoForm.setFieldsValue({
-      name: employee.name,
-      description: employee.description,
-      roleCategory: employee.roleCategory,
-      roleIdentity: employee.roleIdentity,
-    });
-    setEditing(true);
-  };
-
-  const handleSaveInfo = async () => {
-    if (!id || !employee) return;
-    try {
-      const values = await infoForm.validateFields();
-      setSavingInfo(true);
-      await updateEmployee(id, {
-        name: values.name,
-        roleCategory: values.roleCategory,
-        roleIdentity: values.roleIdentity,
-        description: values.description,
-        avatar: employee.avatar,
-        capability: employee.capability,
-      });
-      message.success('基本信息已更新');
-      setEditing(false);
-      loadEmployee();
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('validated')) return;
-      message.error(error instanceof Error ? error.message : '保存失败');
-    } finally {
-      setSavingInfo(false);
     }
   };
 
@@ -291,45 +247,25 @@ export default function EmployeeDetailPage() {
 
         {/* 右侧：基本信息 / 版本历史 / 操作日志 分类查看 */}
         <div style={{ width: 380, flexShrink: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card size="small" title="基本信息">
-            {!editing ? (
-              <Descriptions bordered column={1} size="small">
-                <Descriptions.Item label="员工名称">{employee.name}</Descriptions.Item>
-                <Descriptions.Item label="员工编码">{employee.code}</Descriptions.Item>
-                <Descriptions.Item label="角色分类">{role?.label ?? '-'}</Descriptions.Item>
-                <Descriptions.Item label="角色身份">{employee.roleIdentity}</Descriptions.Item>
-                <Descriptions.Item label="状态">
-                  <Badge status={isRunning ? 'success' : 'default'} text={status?.label} />
-                </Descriptions.Item>
-                <Descriptions.Item label="职责描述">{employee.description || '-'}</Descriptions.Item>
-              </Descriptions>
-            ) : (
-              <Form form={infoForm} layout="vertical" size="small">
-                <Form.Item name="name" label="员工名称" rules={[{ required: true }]}>
-                  <Input placeholder="请输入员工名称" />
-                </Form.Item>
-                <Form.Item name="roleCategory" label="角色分类" rules={[{ required: true }]}>
-                  <Select>
-                    {ROLE_CATEGORY_OPTIONS.map((opt) => (
-                      <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item name="roleIdentity" label="角色身份">
-                  <Input placeholder="请输入角色身份" />
-                </Form.Item>
-                <Form.Item name="description" label="职责描述">
-                  <Input.TextArea rows={3} placeholder="请输入职责描述" />
-                </Form.Item>
-                <Space>
-                  <Button size="small" icon={<CheckOutlined />} type="primary" loading={savingInfo} onClick={handleSaveInfo}>保存</Button>
-                  <Button size="small" icon={<CloseOutlined />} onClick={() => setEditing(false)}>取消</Button>
-                </Space>
-              </Form>
-            )}
-            {!editing && (
-              <Button size="small" icon={<EditOutlined />} onClick={startEdit} style={{ marginTop: 8 }}>编辑</Button>
-            )}
+          <Card
+            size="small"
+            title="基本信息"
+            extra={
+              <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/agents/${id}/capabilities`)}>
+                编辑
+              </Button>
+            }
+          >
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="员工名称">{employee.name}</Descriptions.Item>
+              <Descriptions.Item label="员工编码">{employee.code}</Descriptions.Item>
+              <Descriptions.Item label="角色分类">{role?.label ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label="角色身份">{employee.roleIdentity}</Descriptions.Item>
+              <Descriptions.Item label="状态">
+                <Badge status={isRunning ? 'success' : 'default'} text={status?.label} />
+              </Descriptions.Item>
+              <Descriptions.Item label="职责描述">{employee.description || '-'}</Descriptions.Item>
+            </Descriptions>
           </Card>
 
           <Card size="small" title="能力摘要">

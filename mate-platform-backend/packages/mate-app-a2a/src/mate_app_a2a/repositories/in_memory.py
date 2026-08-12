@@ -39,6 +39,7 @@ class Agent:
     description: str
     endpoint: str = ""
     status: str = "active"
+    role: str = ""  # DW 内置员工 kernel AgentRole slug（ont/…）空 = 通用 agent
 
 
 @dataclass(frozen=True)
@@ -87,6 +88,11 @@ class TaskResult:
 # ---------------------------------------------------------------------------
 # Seed builders
 # ---------------------------------------------------------------------------
+def _tenant_alias(tenant_id: str) -> str:
+    """Short tenant id for namespacing DW employee ids ('tenant-acme' -> 'acme')."""
+    return tenant_id.split("tenant-", 1)[-1]
+
+
 def _seed_agents(tenant_id: str) -> dict[str, Agent]:
     catalog: list[tuple[str, str, str]] = [
         ("agent-copilot", "Copilot Agent", "AI business assistant for platform users"),
@@ -96,7 +102,7 @@ def _seed_agents(tenant_id: str) -> dict[str, Agent]:
         ("agent-scheduler", "Scheduling Agent", "Task scheduling and employee matching"),
         ("agent-analyst", "Data Analyst", "Data warehouse query and analysis"),
     ]
-    return {
+    agents: dict[str, Agent] = {
         aid: Agent(
             id=aid,
             tenant_id=tenant_id,
@@ -106,6 +112,29 @@ def _seed_agents(tenant_id: str) -> dict[str, Agent]:
         )
         for aid, name, desc in catalog
     }
+    # DW 内置 7 类数字员工快照（source=internal；与 mate-tech-dw seed 对齐）。
+    # id 用 tenant-scoped 格式 dw-emp-<alias>-<n>；role 即 kernel AgentRole slug。
+    alias = _tenant_alias(tenant_id)
+    dw_catalog: list[tuple[int, str, str, str]] = [
+        (1, "本体建模师", "ontology", "Ontology 语义建模与查询"),
+        (2, "流程工程师", "workflow", "BPMN 流程编排与调度"),
+        (3, "应用构建师", "app", "低代码应用 UI manifest 生成"),
+        (4, "数据产品师", "data_product", "数据产品血缘与质量"),
+        (5, "可观测工程师", "obs", "监控告警与自愈"),
+        (6, "安全合规官", "security", "权限与 Marking 合规检查"),
+        (7, "知识管理员", "knowledge", "知识库检索与 RAG"),
+    ]
+    for n, name, role, desc in dw_catalog:
+        aid = f"dw-emp-{alias}-{n}"
+        agents[aid] = Agent(
+            id=aid,
+            tenant_id=tenant_id,
+            name=name,
+            description=desc,
+            endpoint=f"a2a://{aid}",
+            role=role,
+        )
+    return agents
 
 
 def _seed_capabilities(tenant_id: str) -> dict[str, AgentCapability]:

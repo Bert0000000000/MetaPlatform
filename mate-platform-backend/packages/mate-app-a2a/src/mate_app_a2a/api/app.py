@@ -90,6 +90,89 @@ def _serialize(rows: list[Any]) -> list[dict[str, Any]]:
     return [asdict(r) for r in rows]
 
 
+# ---------------------------------------------------------------------------
+# W3C A2A message + Task models (GOVERN-12-03; W1 official-SDK alignment)
+#
+# `POST /messages` and `GET /tasks/{task_id}` use the canonical W3C A2A
+# envelope / Task shapes declared in `contracts/openapi/services/a2a.yaml`
+# (the task read previously returned the internal DelegationTask dict —
+# contract drift fixed in W1).
+# ---------------------------------------------------------------------------
+class A2APart(BaseModel):
+    """One content part of a W3C A2A message."""
+
+    kind: Literal["text", "file", "data"]
+    text: str | None = None
+    data: dict[str, Any] | None = None
+
+
+class A2AMessage(BaseModel):
+    """W3C A2A message envelope (the `/messages` request body)."""
+
+    messageId: str = Field(min_length=1)
+    role: Literal["user", "agent"]
+    parts: list[A2APart]
+    contextId: str | None = None
+    taskId: str | None = None
+
+
+def _message_text(msg: A2AMessage) -> str:
+    """Flatten the text parts of a message into the delegation message."""
+    return "\n".join(p.text for p in msg.parts if p.kind == "text" and p.text)
+
+
+def _message_data(msg: A2AMessage) -> dict[str, Any]:
+    """Merge the data parts of a message into the delegation context."""
+    merged: dict[str, Any] = {}
+    for part in msg.parts:
+        if part.kind == "data" and part.data:
+            merged.update(part.data)
+    return merged
+
+
+_A2A_TASK_STATES = ("submitted", "working", "input-required", "completed", "failed", "canceled")
+
+
+class A2ATaskStatus(BaseModel):
+    state: Literal["submitted", "working", "input-required", "completed", "failed", "canceled"]
+    message: str | None = None
+
+
+class A2AArtifact(BaseModel):
+    parts: list[A2APart] = Field(default_factory=list)
+
+
+class A2ATask(BaseModel):
+    id: str
+    contextId: str
+    status: A2ATaskStatus
+    artifacts: list[A2AArtifact] = Field(default_factory=list)
+    history: list[A2AMessage] = Field(default_factory=list)
+
+
+def _task_state_name(status: str) -> str:
+    """Map an internal DelegationTask status to a W3C TaskState value."""
+    mapping = {
+        "pending": "submitted",
+        "timeout": "failed",
+    }
+    state = mapping.get(status, status)
+    return state if state in _A2A_TASK_STATES else "submitted"
+
+
+def _task_to_a2a_task(task: Any) -> A2ATask:
+    """Map a DelegationTask row into the canonical W3C A2A Task shape."""
+    context_id = str(task.context.get("contextId") or task.id)
+    return A2ATask(
+        id=task.id,
+        contextId=context_id,
+        status=A2ATaskStatus(
+            state=_task_state_name(task.status),
+            message=str(task.message) or None,
+        ),
+    )
+
+
 # --- Health (1, anonymous) --------------------------------------------------
 @router.get("/health")
 async def health() -> dict[str, str]:
@@ -142,53 +225,18 @@ async def get_tasks(request: Request) -> dict[str, Any]:
     return {"items": items, "total": len(items)}
 
 
-@router.get("/tasks/{task_id}")
-async def get_task_detail(request: Request, task_id: str) -> dict[str, Any]:
+@router.get("/tasks/{task_id}", response_model=A2ATask, response_model_exclude_none=True)
+async def get_task_detail(request: Request, task_id: str) -> A2ATask:
     tid = _tid(request)
     task = get_delegation(tid, task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="task not found")
-    return task_to_dict(task)
-
-
-# ---------------------------------------------------------------------------
-# W3C A2A Message envelope (GOVERN-12-03)
-# ---------------------------------------------------------------------------
-class A2APart(BaseModel):
-    """One content part of a W3C A2A message."""
-
-    kind: Literal["text", "file", "data"]
-    text: str | None = None
-    data: dict[str, Any] | None = None
-
-
-class A2AMessage(BaseModel):
-    """W3C A2A message envelope (the `/messages` request body)."""
-
-    messageId: str = Field(min_length=1)
-    role: Literal["user", "agent"]
-    parts: list[A2APart]
-    contextId: str | None = None
-    taskId: str | None = None
-
-
-def _message_text(msg: A2AMessage) -> str:
-    """Flatten the text parts of a message into the delegation message."""
-    return "\n".join(p.text for p in msg.parts if p.kind == "text" and p.text)
-
-
-def _message_data(msg: A2AMessage) -> dict[str, Any]:
-    """Merge the data parts of a message into the delegation context."""
-    merged: dict[str, Any] = {}
-    for part in msg.parts:
-        if part.kind == "data" and part.data:
-            merged.update(part.data)
-    return merged
+    return _task_to_a2a_task(task)
 
 
 # --- W3C messages (1 POST) --------------------------------------------------
-@router.post("/messages")
-async def post_message(request: Request, message: A2AMessage) -> dict[str, Any]:
+@router.post("/messages", response_model=A2ATask, response_model_exclude_none=True)
+async def post_message(request: Request, message: A2AMessage) -> A2ATask:
     """Accept a W3C A2A message and open a delegation task (GOVERN-12-03).
 
     The envelope is translated into the existing ``DelegationTask``
@@ -220,13 +268,13 @@ async def post_message(request: Request, message: A2AMessage) -> dict[str, Any]:
         tid,
     )
     context_id = message.contextId or task.id
-    return {
-        "id": task.id,
-        "contextId": context_id,
-        "status": {"state": "submitted"},
-        "artifacts": [],
-        "history": [message.model_dump()],
-    }
+    return A2ATask(
+        id=task.id,
+        contextId=context_id,
+        status=A2ATaskStatus(state="submitted"),
+        artifacts=[],
+        history=[message],
+    )
 
 
 # --- Delegation (1 POST, deprecated in favour of /messages) -----------------
@@ -380,6 +428,9 @@ def _agent_card(agent: Any, source: str) -> dict[str, Any]:
     caps: list[str] = []
     if source == "external":
         caps = list(getattr(agent, "capabilities", ()) or ())
+    role = getattr(agent, "role", "") or ""
+    # DW 内置员工 code：dw-emp-<alias>-<n> → EMP-<KIND>-<n>（前端按 code 跳详情）
+    code = role.upper().replace("_", "-") if role else ""
     return {
         "id": agent.id,
         "tenant_id": agent.tenant_id,
@@ -388,6 +439,8 @@ def _agent_card(agent: Any, source: str) -> dict[str, Any]:
         "status": getattr(agent, "status", "active") or "active",
         "source": source,  # "internal" | "external"
         "capabilities": caps,
+        "role": role,
+        "code": code,
     }
 
 
