@@ -40,7 +40,6 @@
     "@flowgram.ai/shortcuts-plugin": "^1.0.12",
     "@mate/shared": "workspace:*",
     "@monaco-editor/react": "^4.6.0",
-    "antd": "^6.0.0",
     "axios": "^1.18.1",
     "dayjs": "^1.11.21",
     "lucide-react": "^0.468.0",
