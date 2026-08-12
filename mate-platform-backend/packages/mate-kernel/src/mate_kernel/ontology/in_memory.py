@@ -214,8 +214,10 @@ class InMemoryOntologyRepository(OntologyRepository):
             ctx=SubmissionContext(
                 actor=str(provenance.get("actor", "?")),
                 tenant_id=str(provenance.get("tenant_id", "")),
+                hitl_token=str(provenance.get("hitl_token", "")) or None,
             ),
             target_props=target_props,
+            proposal_id=provenance.get("proposal_id"),
         )
         now = outcome.applied_at
         if parameters or outcome.function_result is not None:

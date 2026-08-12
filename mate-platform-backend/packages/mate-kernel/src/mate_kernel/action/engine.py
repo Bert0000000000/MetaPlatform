@@ -70,6 +70,9 @@ class ApplyOutcome:
     audit_id: str
     rolled_back: bool = False
     function_result: Any = None
+    proposal_id: str | None = None  # 证据链：本次 apply 对应的 HITL proposal
+    hitl_token: str | None = None   # 证据链：用户确认所用 token（校验后记录）
+    side_effect_events: list[tuple[str, str]] = field(default_factory=list)  # (event_type, event_id)
 
 
 # ─────────────────── 规则表达式 ───────────────────
@@ -128,6 +131,7 @@ class SimpleRuleEvaluator:
 class ActionProposal:
     """proposal 模型 —— HITL 流程前置产物。"""
 
+    proposal_id: str
     action_rid: str
     target_iid: str | None
     parameters: dict[str, Any]
@@ -180,7 +184,9 @@ class ActionService:
         target_iid: str | None,
         impact_summary: str,
     ) -> ActionProposal:
+        import uuid
         prop = ActionProposal(
+            proposal_id=f"prop-{uuid.uuid4().hex[:8]}",
             action_rid=action_rid,
             target_iid=target_iid,
             parameters=parameters,
@@ -188,8 +194,14 @@ class ActionService:
             created_at=datetime.now(timezone.utc),
             requires_hitl=True,
         )
-        self._proposals[prop.created_at.isoformat()] = prop
+        self._proposals[prop.proposal_id] = prop
         return prop
+
+    def get_proposal(self, proposal_id: str) -> ActionProposal:
+        p = self._proposals.get(proposal_id)
+        if p is None:
+            raise KeyError(f"proposal not found: {proposal_id}")
+        return p
 
     # ───── apply (post-HITL confirmation) ─────
 
@@ -205,6 +217,8 @@ class ActionService:
         ctx: SubmissionContext,
         target_props: dict[str, Any] | None = None,
         rollback_hook: callable = None,
+        proposal_id: str | None = None,
+        side_effect_emitter: callable = None,
     ) -> ApplyOutcome:
         # 1) submission_criteria 全部通过
         for expr in submission_criteria:
@@ -213,8 +227,14 @@ class ActionService:
                     f"submission criteria not met: {expr!r} for action={action_rid}"
                 )
 
-        # 2) side_effects emit（占位）
+        # 2) side_effects emit（占位；有 emitter 时回填真实 event_id 形成证据）
         emitted = list(side_effects)
+        event_evidences: list[tuple[str, str]] = []
+        if side_effect_emitter is not None:
+            for se in emitted:
+                eid = side_effect_emitter(se)
+                if eid is not None:
+                    event_evidences.append((se, eid))
 
         # 3) 调用 function_ref；失败 → rollback
         rolled_back = False
@@ -287,6 +307,9 @@ class ActionService:
             audit_id=f"audit-{len(self._audit) + 1}",
             rolled_back=rolled_back,
             function_result=function_result,
+            proposal_id=proposal_id,
+            hitl_token=ctx.hitl_token if ctx else None,
+            side_effect_events=event_evidences,
         )
         self._audit.append(outcome)
         return outcome
