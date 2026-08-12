@@ -17,6 +17,7 @@ import {
 } from 'antd';
 import {
   CloudDownloadOutlined,
+  EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -26,6 +27,7 @@ import {
   installSkill,
   listInstalledSkills,
   listSkills,
+  updateSkill,
   uploadSkill,
   type Skill,
 } from '@/api/mcphub/skills';
@@ -37,6 +39,7 @@ export default function SkillHubPage() {
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
 
@@ -66,24 +69,53 @@ export default function SkillHubPage() {
     void loadInstalled();
   }, []);
 
-  const doUpload = async () => {
+  /** 已安装 skill 的 id 集合（用于公开市场标「已安装」）。 */
+  const installedIds = new Set(installed.map((s) => s.id));
+
+  const openUpload = () => {
+    setEditingSkill(null);
+    form.resetFields();
+    setUploadOpen(true);
+  };
+
+  const doEdit = (skill: Skill) => {
+    setEditingSkill(skill);
+    form.setFieldsValue({
+      name: skill.name,
+      description: skill.description,
+      version: skill.version,
+      visibility: skill.visibility,
+      content: skill.content,
+    });
+    setUploadOpen(true);
+  };
+
+  const doSubmit = async () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
-      await uploadSkill({
+      const payload = {
         name: values.name,
         description: values.description ?? '',
         version: values.version ?? 'v1',
         visibility: values.visibility ?? 'public',
         content: values.content,
-      });
-      message.success('SKILL 上传成功');
+      };
+      if (editingSkill) {
+        await updateSkill(editingSkill.id, payload);
+        message.success('SKILL 更新成功');
+      } else {
+        await uploadSkill(payload);
+        message.success('SKILL 上传成功');
+      }
       setUploadOpen(false);
       form.resetFields();
+      setEditingSkill(null);
       void load();
+      void loadInstalled();
     } catch (e) {
       if ((e as { errorFields?: unknown }).errorFields) return;
-      message.error('上传失败');
+      message.error(editingSkill ? '更新失败' : '上传失败');
     } finally {
       setSubmitting(false);
     }
@@ -94,6 +126,7 @@ export default function SkillHubPage() {
       await installSkill(id);
       message.success(`SKILL「${name}」已安装`);
       void load();
+      void loadInstalled(); // 安装后同步刷新「已安装」清单
     } catch {
       message.error('安装失败');
     }
@@ -137,10 +170,20 @@ export default function SkillHubPage() {
       ) },
     { title: '作者租户', dataIndex: 'author_tenant', width: 140 },
     { title: '安装数', dataIndex: 'installs', width: 80 },
-    { title: '操作', key: 'actions', width: 220, render: (_, r) => (
+    { title: '状态', key: 'status', width: 90, render: (_, r) => (
+        installedIds.has(r.id) ? <Tag color="blue">已安装</Tag> : <Tag>未安装</Tag>
+      ) },
+    { title: '操作', key: 'actions', width: 260, render: (_, r) => (
         <Space>
           <Button size="small" icon={<CloudDownloadOutlined />} onClick={() => void doDownload(r)}>下载</Button>
-          <Button size="small" type="primary" onClick={() => void doInstall(r.id, r.name)}>安装</Button>
+          {installedIds.has(r.id) ? (
+            <Button size="small" disabled>已安装</Button>
+          ) : (
+            <Button size="small" type="primary" onClick={() => void doInstall(r.id, r.name)}>安装</Button>
+          )}
+          {r.is_owner && (
+            <Button size="small" icon={<EditOutlined />} onClick={() => doEdit(r)}>编辑</Button>
+          )}
           <Popconfirm title={`删除「${r.name}」？`} onConfirm={() => void doDelete(r.id, r.name)}>
             <Button size="small" danger>删除</Button>
           </Popconfirm>
@@ -154,7 +197,7 @@ export default function SkillHubPage() {
       extra={
         <Space>
           <Input.Search placeholder="搜索 SKILL" allowClear style={{ width: 220 }} onSearch={(v) => { setKeyword(v); void load(); }} />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setUploadOpen(true)}>上传 SKILL</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openUpload}>上传 SKILL</Button>
         </Space>
       }
     >
@@ -192,11 +235,11 @@ export default function SkillHubPage() {
       />
 
       <Modal
-        title="上传 SKILL"
+        title={editingSkill ? `编辑 SKILL「${editingSkill.name}」` : '上传 SKILL'}
         open={uploadOpen}
-        onOk={() => void doUpload()}
+        onOk={() => void doSubmit()}
         confirmLoading={submitting}
-        onCancel={() => setUploadOpen(false)}
+        onCancel={() => { setUploadOpen(false); setEditingSkill(null); }}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" initialValues={{ version: 'v1', visibility: 'public' }}>

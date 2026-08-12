@@ -39,9 +39,10 @@ def _tenant(request: Request) -> str:
     return str(getattr(user, "tenant_id", "") or "")
 
 
-def _skill_dict(skill: Skill) -> dict[str, Any]:
+def _skill_dict(skill: Skill, tenant: str = "") -> dict[str, Any]:
     d = asdict(skill)
     d["id"] = skill.id
+    d["is_owner"] = bool(tenant) and skill.author_tenant == tenant
     return d
 
 
@@ -75,7 +76,7 @@ async def upload_skill(request: Request, body: UploadSkillRequest) -> dict[str, 
             content=body.content,
         )
     )
-    return _skill_dict(skill)
+    return _skill_dict(skill, tenant)
 
 
 @router.get("/skills")
@@ -94,7 +95,7 @@ async def list_skills(
     if visibility:
         items = [s for s in items if s.visibility == visibility]
     items.sort(key=lambda s: (-s.installs, s.name))
-    return {"items": [_skill_dict(s) for s in items], "total": len(items)}
+    return {"items": [_skill_dict(s, tenant) for s in items], "total": len(items)}
 
 
 @router.get("/skills/installed")
@@ -108,17 +109,18 @@ async def list_installed_skills(request: Request) -> dict[str, Any]:
     items = [store.get(sid) for sid in ids]
     items = [s for s in items if s is not None]
     items.sort(key=lambda s: s.name)
-    return {"items": [_skill_dict(s) for s in items], "total": len(items)}
+    return {"items": [_skill_dict(s, tenant) for s in items], "total": len(items)}
 
 
 @router.get("/skills/{skill_id}")
 async def get_skill(skill_id: str, request: Request) -> dict[str, Any]:
     user = getattr(request.state, "user", None)
     _require_scope(user, "platform.marketplace.read")
+    tenant = _tenant(request)
     skill = _store(request).get(skill_id)
     if skill is None:
         raise HTTPException(status_code=404, detail="skill not found")
-    return _skill_dict(skill)
+    return _skill_dict(skill, tenant)
 
 
 @router.get("/skills/{skill_id}/download")
@@ -139,6 +141,30 @@ async def install_skill(skill_id: str, request: Request) -> dict[str, Any]:
     if count == 0:
         raise HTTPException(status_code=404, detail="skill not found")
     return {"id": skill_id, "installs": count, "status": "installed"}
+
+
+@router.put("/skills/{skill_id}")
+async def update_skill(skill_id: str, request: Request, body: UploadSkillRequest) -> dict[str, Any]:
+    """更新自有 SKILL（仅作者）。"""
+    user = getattr(request.state, "user", None)
+    _require_scope(user, "platform.marketplace.write")
+    tenant = _tenant(request)
+    skill = _store(request).get(skill_id)
+    if skill is None:
+        raise HTTPException(status_code=404, detail="skill not found")
+    if skill.author_tenant != tenant:
+        raise HTTPException(status_code=403, detail="not the skill owner")
+    updated = _store(request).update(
+        skill_id,
+        name=body.name,
+        description=body.description,
+        version=body.version,
+        visibility=body.visibility,
+        content=body.content,
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="skill not found")
+    return _skill_dict(updated, tenant)
 
 
 @router.delete("/skills/{skill_id}")

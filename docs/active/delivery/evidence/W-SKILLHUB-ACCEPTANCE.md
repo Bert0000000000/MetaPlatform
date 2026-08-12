@@ -63,3 +63,11 @@ $ tsc --noEmit -p apps/web/tsconfig.json
 - **契约**：marketplace.yaml 加 `/skills/installed`（`listInstalledSkills`）。
 - **测试**：`test_installed_list_per_tenant`（安装后租户 A 可见、租户 B 不可见）；skillhub 全量 **8 passed**；合并套件 **641 passed**；tsc 干净；浏览器实测双 tab 渲染。
 - 原「已安装管理未做」缺口已闭合。
+
+## 8. 补充：已安装徽标 + 作者编辑（2026-08-12）
+
+- **Backend**：`PUT /skills/{id}`（仅作者更新 name/description/version/visibility/content）；所有 skill 响应加 `is_owner`（按请求租户 vs author_tenant）。`store.update()` 支持 SQL + 内存。
+- **Frontend**：公开市场新增「状态」列（已安装 → 蓝色「已安装」徽标）；操作列对已安装 skill 显示「已安装（禁用）」替代「安装」按钮；`is_owner` 时显示「编辑」按钮（打开复用上传 Modal，预填值，PUT 提交）。
+- **契约**：marketplace.yaml 加 `PUT /skills/{skill_id}`（`updateSkill`）+ Skill schema 加 `is_owner`。
+- **测试**：`test_update_skill_owner_only`（作者 200 / 非作者 403）、`test_is_owner_flag`（owner true / other false）；skillhub 全量 **10 passed**。
+- **端到端实测**：浏览器公开市场显示 kb-extractor-v2 +「已安装」徽标 + 安装按钮变「已安装」；curl 验证作者 PUT 200 + `is_owner:true`、非作者 403。

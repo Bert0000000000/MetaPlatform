@@ -200,6 +200,39 @@ class SkillHubStore:
             session.commit()
         return True
 
+    def update(self, skill_id: str, *, name: str | None = None, description: str | None = None,
+               version: str | None = None, visibility: str | None = None, content: str | None = None) -> Skill | None:
+        """Update an existing skill; returns the updated skill or None."""
+        existing = self.get(skill_id)
+        if existing is None:
+            return None
+        updated = Skill(
+            id=existing.id,
+            name=name if name is not None else existing.name,
+            description=description if description is not None else existing.description,
+            version=version if version is not None else existing.version,
+            author_tenant=existing.author_tenant,
+            visibility=visibility if visibility is not None else existing.visibility,
+            content=content if content is not None else existing.content,
+            installs=existing.installs,
+            created_at=existing.created_at,
+        )
+        if not self._use_sql():
+            self._mem.delete(skill_id)
+            self._mem.create(updated)
+            return updated
+        with self._session() as session:
+            orm = session.get(SkillORM, skill_id)
+            if orm is None:
+                return None
+            orm.name = updated.name
+            orm.description = updated.description
+            orm.version = updated.version
+            orm.visibility = updated.visibility
+            orm.content = updated.content
+            session.commit()
+        return updated
+
     # -- installer hand-off (kind="skill") ------------------------------
     async def register_skill(self, *, artifact: dict[str, Any], blob: bytes) -> dict[str, Any]:
         """Installer integration: store a skill artifact from the marketplace flow.

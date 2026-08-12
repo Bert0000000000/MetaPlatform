@@ -487,6 +487,35 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
+    put:
+      operationId: updateSkill
+      summary: 更新自有 SKILL（仅作者）
+      tags: [marketplace]
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillUpload'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '403':
+          description: 非作者
+        '404':
+          description: SKILL 不存在
+      x-mate-owner: marketplace-consumer
+      x-mate-permission: marketplace.write
+      x-mate-implementation-status: implemented
     delete:
       operationId: deleteSkill
       summary: 删除自有 SKILL
@@ -580,6 +609,7 @@ components:
         content: { type: string }
         installs: { type: integer }
         created_at: { type: string }
+        is_owner: { type: boolean, description: 当前请求租户是否为作者 }
     SkillUpload:
       type: object
       required:

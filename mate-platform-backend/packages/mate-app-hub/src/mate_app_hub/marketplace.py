@@ -69,14 +69,20 @@ async def _inject_marketplace_state(request: Request):
     ctx = getattr(request.state, "ctx", None)
     if ctx is not None:
         scopes = set(getattr(ctx, "scopes", frozenset()))
-        # 超级管理员自动授予 marketplace 全 scope（治理面已由 IAM 校验角色）
+        # 任何认证租户用户授予 marketplace 读写（SKILL HUB 公开浏览/上传/安装；
+        # 治理面已由 IAM 校验租户隔离）。超级管理员额外全 scope。
+        tenant = str(getattr(ctx, "tenant_id", "") or "")
+        if tenant:
+            scopes.update(
+                {"platform.marketplace.write", "platform.marketplace.read", "platform.marketplace.read.tenant"}
+            )
         if "PLATFORM_SUPER_ADMIN" in getattr(ctx, "roles", frozenset()):
             scopes.update(
                 {"platform.marketplace.write", "platform.marketplace.read", "platform.marketplace.read.tenant"}
             )
         request.state.user = _UserProxy(
             id=str(getattr(ctx, "user_id", "") or ""),
-            tenant_id=str(getattr(ctx, "tenant_id", "") or ""),
+            tenant_id=tenant,
             scopes=frozenset(scopes),
         )
     try:

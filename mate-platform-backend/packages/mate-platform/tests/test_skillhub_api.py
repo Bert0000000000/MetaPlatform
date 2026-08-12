@@ -124,6 +124,36 @@ def test_delete_only_owner() -> None:
     assert c.get(f"/skills/{skill['id']}", headers={"X-Test-Tenant": "tenant-acme"}).status_code == 404
 
 
+def test_update_skill_owner_only() -> None:
+    c = _app()
+    skill = _upload(c, "editable", tenant="tenant-acme", description="v1 desc")
+    # owner can update
+    r = c.put(
+        f"/skills/{skill['id']}",
+        json={"name": "editable-v2", "description": "updated desc", "version": "v2", "visibility": "public", "content": "# updated"},
+        headers={"X-Test-Tenant": "tenant-acme"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["name"] == "editable-v2"
+    assert r.json()["description"] == "updated desc"
+    # non-owner cannot
+    r2 = c.put(
+        f"/skills/{skill['id']}",
+        json={"name": "hijack", "content": "x"},
+        headers={"X-Test-Tenant": "tenant-globex"},
+    )
+    assert r2.status_code == 403
+
+
+def test_is_owner_flag() -> None:
+    c = _app()
+    skill = _upload(c, "owner-check", tenant="tenant-acme")
+    owner = c.get(f"/skills/{skill['id']}", headers={"X-Test-Tenant": "tenant-acme"}).json()
+    other = c.get(f"/skills/{skill['id']}", headers={"X-Test-Tenant": "tenant-globex"}).json()
+    assert owner["is_owner"] is True
+    assert other["is_owner"] is False
+
+
 def test_upload_requires_scope() -> None:
     async def _no_scope(request: Request):
         request.state.user = _User("tenant-acme", frozenset(["platform.marketplace.read"]))

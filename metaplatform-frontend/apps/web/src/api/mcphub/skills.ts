@@ -8,6 +8,9 @@ async function get<T>(url: string, params?: Record<string, unknown>): Promise<T>
 async function post<T>(url: string, body?: unknown): Promise<T> {
   return data(await client.post<T>(url, body));
 }
+async function put<T>(url: string, body?: unknown): Promise<T> {
+  return data(await client.put<T>(url, body));
+}
 async function del<T>(url: string): Promise<T> {
   return data(await client.delete<T>(url));
 }
@@ -23,6 +26,8 @@ export interface Skill {
   content: string;
   installs: number;
   created_at: string;
+  /** 当前租户是否为作者（后端按请求租户计算） */
+  is_owner?: boolean;
 }
 
 export interface SkillPage {
@@ -48,6 +53,10 @@ export async function listInstalledSkills(): Promise<SkillPage> {
 
 export async function uploadSkill(body: UploadSkillRequest): Promise<Skill> {
   return post<Skill>('/skills', body);
+}
+
+export async function updateSkill(id: string, body: UploadSkillRequest): Promise<Skill> {
+  return put<Skill>(`/skills/${id}`, body);
 }
 
 export async function getSkill(id: string): Promise<Skill> {

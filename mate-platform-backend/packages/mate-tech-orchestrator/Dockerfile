@@ -24,6 +24,7 @@ ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install --no-cache-dir \
         fastapi pydantic uvicorn structlog \
         httpx pydantic-settings 'pyjwt[crypto]' \
+        python-multipart sqlalchemy sqlmodel \
         opentelemetry-api opentelemetry-sdk \
         opentelemetry-exporter-otlp-proto-grpc \
         opentelemetry-instrumentation-fastapi
@@ -34,7 +35,8 @@ RUN SITE=/usr/local/lib/python3.12/site-packages && \
     cp -r /tmp/build/packages/mate-kernel/src/mate_kernel "$SITE/" && \
     cp -r /tmp/build/packages/mate-common/src/mate_common "$SITE/" && \
     cp -r /tmp/build/packages/mate-platform/src/mate_platform "$SITE/" && \
-    cp -r /tmp/build/packages/mate-clients/src/mate_clients "$SITE/"
+    cp -r /tmp/build/packages/mate-clients/src/mate_clients "$SITE/" && \
+    cp -r /tmp/build/packages/mate-tech-db/src/mate_tech_db "$SITE/"
 
 ENV PATH="/usr/local/bin:$PATH" \
     PORT=8505

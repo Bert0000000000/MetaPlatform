@@ -729,6 +729,10 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      mate-tech-mcp:
+        condition: service_started
+      mate-app-a2a:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8505/healthz || exit 1"]
       interval: 15s
