@@ -14,6 +14,8 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
       '@mate/shared$': path.resolve(import.meta.dirname, '../../packages/shared/src/index.ts'),
       '@ant-design/icons$': path.resolve(import.meta.dirname, '../../packages/shared/src/icons/index.tsx'),
+      // react-syntax-highlighter 异步语言注册表动态 import 的 highlight.js 语言文件解析
+      'highlight.js/lib/languages/sql_more': path.resolve(import.meta.dirname, '../../node_modules/.pnpm/highlight.js@10.7.3/node_modules/highlight.js/lib/languages/sql_more.js'),
     },
   },
   server: {
@@ -26,6 +28,10 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       'prismjs',
+      'lowlight',
+      'highlight.js',
+      '@ant-design/x',
+      'react-syntax-highlighter',
       'antd',
       '@flowgram.ai/fixed-layout-editor',
       '@flowgram.ai/fixed-semi-materials',
@@ -37,9 +43,7 @@ export default defineConfig({
       '@douyinfe/semi-icons',
       '@antv/g6',
     ],
-    // react-syntax-highlighter 的动态 import 引用 highlight.js 不存在的
-    // sql_more 语言路径，预构建时崩（form-materials → coze-editor 传递依赖）。
-    exclude: ['react-syntax-highlighter'],
+    // sql_more 已通过 resolve.alias 指向实际文件，react-syntax-highlighter 纳入预构建。
   },
   build: {
     target: 'es2020',
