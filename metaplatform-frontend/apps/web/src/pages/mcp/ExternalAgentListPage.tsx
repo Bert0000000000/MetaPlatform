@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -12,16 +12,19 @@ import {
   Table,
   Tag,
   Typography,
-  message,
   Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+  Toast,
+  useFormState,
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   ApiOutlined,
   RobotOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import {
   listExternalAgents,
@@ -58,17 +61,45 @@ const AUTH_OPTIONS = [
   { label: 'OAuth 2.0', value: 'oauth2' },
 ];
 
-const STATUS_MAP: Record<ExternalAgent['status'], { label: string; color: string }> = {
-  ACTIVE: { label: '活跃', color: 'success' },
-  INACTIVE: { label: '未激活', color: 'default' },
-  ERROR: { label: '异常', color: 'error' },
+const STATUS_MAP: Record<ExternalAgent['status'], { label: string; color: TagColor }> = {
+  ACTIVE: { label: '活跃', color: 'green' },
+  INACTIVE: { label: '未激活', color: 'grey' },
+  ERROR: { label: '异常', color: 'red' },
 };
 
-const TRUST_MAP: Record<ExternalAgent['trustLevel'], { label: string; color: string }> = {
+const TRUST_MAP: Record<ExternalAgent['trustLevel'], { label: string; color: TagColor }> = {
   TRUSTED: { label: '已信任', color: 'green' },
   UNTRUSTED: { label: '未信任', color: 'orange' },
   BLOCKED: { label: '已屏蔽', color: 'red' },
 };
+
+/**
+ * 认证配置字段：仅当 authType 非空且不为 none 时渲染（antd shouldUpdate render-prop 的 Semi 等价实现）。
+ */
+function AuthConfigField() {
+  const { values } = useFormState<ExternalAgentCreateRequest>();
+  const authType = values?.authType;
+  if (!authType || authType === 'none') {
+    return null;
+  }
+  return (
+    <Form.TextArea
+      field="authConfig"
+      label="认证配置 (JSON)"
+      rows={3}
+      placeholder='{"apiKey":"sk-..."}'
+      validator={(value) => {
+        if (!value) return '';
+        try {
+          JSON.parse(value);
+          return '';
+        } catch {
+          return '请输入合法 JSON';
+        }
+      }}
+    />
+  );
+}
 
 export default function ExternalAgentListPage() {
   const navigate = useNavigate();
@@ -119,8 +150,8 @@ export default function ExternalAgentListPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({
+    form.reset();
+    form.setValues({
       protocolType: 'MCP',
       authType: 'none',
     });
@@ -129,7 +160,7 @@ export default function ExternalAgentListPage() {
 
   const openEdit = (record: ExternalAgent) => {
     setEditing(record);
-    form.setFieldsValue({
+    form.setValues({
       name: record.name,
       description: record.description,
       endpoint: record.endpoint,
@@ -142,19 +173,19 @@ export default function ExternalAgentListPage() {
   };
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     setSubmitting(true);
     try {
       if (editing) {
         await updateExternalAgent(editing.id, values);
-        message.success('已更新');
+        Toast.success('已更新');
       } else {
         await createExternalAgent(values);
-        message.success('已创建');
+        Toast.success('已创建');
       }
       setEditorOpen(false);
       setEditing(null);
-      form.resetFields();
+      form.reset();
       load();
     } finally {
       setSubmitting(false);
@@ -163,7 +194,7 @@ export default function ExternalAgentListPage() {
 
   const handleDelete = async (record: ExternalAgent) => {
     await deleteExternalAgent(record.id);
-    message.success('已删除');
+    Toast.success('已删除');
     load();
   };
 
@@ -172,9 +203,9 @@ export default function ExternalAgentListPage() {
     try {
       const result = await testExternalAgentConnection(record.id);
       if (result.success) {
-        message.success(`连接成功 ${result.responseTimeMs ?? ''}ms`);
+        Toast.success(`连接成功 ${result.responseTimeMs ?? ''}ms`);
       } else {
-        message.error(result.message || '连接失败');
+        Toast.error(result.message || '连接失败');
       }
       load();
     } finally {
@@ -182,16 +213,16 @@ export default function ExternalAgentListPage() {
     }
   };
 
-  const columns: ColumnsType<ExternalAgent> = [
+  const columns: ColumnProps<ExternalAgent>[] = [
     {
       title: 'Agent',
       key: 'name',
       render: (_, record) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <RobotOutlined /> {record.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {record.description || record.endpoint}
           </Typography.Text>
         </Space>
@@ -236,22 +267,22 @@ export default function ExternalAgentListPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button type="link" onClick={() => setDetail(record)}>
+          <Button theme="borderless" onClick={() => setDetail(record)}>
             详情
           </Button>
           <Button
-            type="link"
+            theme="borderless"
             icon={<ApiOutlined />}
             loading={testingId === record.id}
             onClick={() => handleTest(record)}
           >
             测试
           </Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(record)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -263,16 +294,16 @@ export default function ExternalAgentListPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           外部 Agent 目录
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           添加 Agent
         </Button>
       </div>
 
       {internalAgents.length > 0 && (
-        <Card size="small" title="内部数字员工" style={{ marginBottom: 16 }}>
+        <Card title="内部数字员工" style={{ marginBottom: 16 }}>
           <Table<A2ACard>
             rowKey="agentId"
             dataSource={internalAgents}
@@ -285,7 +316,7 @@ export default function ExternalAgentListPage() {
                 key: 'name',
                 render: (_, record) => (
                   <Space>
-                    <Tag color="gold">内部</Tag>
+                    <Tag color="yellow">内部</Tag>
                     <Typography.Text strong>{record.name}</Typography.Text>
                   </Space>
                 ),
@@ -295,14 +326,14 @@ export default function ExternalAgentListPage() {
                 title: '端点',
                 dataIndex: 'endpoint',
                 key: 'endpoint',
-                render: (v: string) => <Typography.Text type="secondary" style={{ fontSize: 12 }}>{v || '-'}</Typography.Text>,
+                render: (v: string) => <Typography.Text type="tertiary" style={{ fontSize: 12 }}>{v || '-'}</Typography.Text>,
               },
               {
                 title: '操作',
                 key: 'actions',
                 width: 120,
                 render: (_, record) => (
-                  <Button type="link" size="small" onClick={() => navigate(`/agents/${record.agentId}`)}>
+                  <Button theme="borderless" size="small" onClick={() => navigate(`/agents/${record.agentId}`)}>
                     查看详情
                   </Button>
                 ),
@@ -312,36 +343,39 @@ export default function ExternalAgentListPage() {
         </Card>
       )}
 
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Input
           placeholder="搜索名称/端点"
-          allowClear
-          onSearch={(v) => setFilters((prev) => ({ ...prev, keyword: v, page: 1 }))}
+          showClear
+          prefix={<SearchOutlined />}
           style={{ width: 240 }}
+          onEnterPress={(e) =>
+            setFilters((prev) => ({ ...prev, keyword: (e.target as HTMLInputElement).value, page: 1 }))
+          }
         />
         <Select
           placeholder="协议类型"
-          allowClear
-          options={PROTOCOL_OPTIONS}
+          showClear
+          optionList={PROTOCOL_OPTIONS}
           style={{ width: 140 }}
           value={filters.protocolType}
-          onChange={(v) => setFilters((prev) => ({ ...prev, protocolType: v, page: 1 }))}
+          onChange={(v) => setFilters((prev) => ({ ...prev, protocolType: v as string | undefined, page: 1 }))}
         />
         <Select
           placeholder="状态"
-          allowClear
-          options={STATUS_OPTIONS}
+          showClear
+          optionList={STATUS_OPTIONS}
           style={{ width: 140 }}
           value={filters.status}
-          onChange={(v) => setFilters((prev) => ({ ...prev, status: v, page: 1 }))}
+          onChange={(v) => setFilters((prev) => ({ ...prev, status: v as string | undefined, page: 1 }))}
         />
         <Select
           placeholder="信任等级"
-          allowClear
-          options={TRUST_LEVEL_OPTIONS}
+          showClear
+          optionList={TRUST_LEVEL_OPTIONS}
           style={{ width: 140 }}
           value={filters.trustLevel}
-          onChange={(v) => setFilters((prev) => ({ ...prev, trustLevel: v, page: 1 }))}
+          onChange={(v) => setFilters((prev) => ({ ...prev, trustLevel: v as string | undefined, page: 1 }))}
         />
       </Space>
 
@@ -355,7 +389,7 @@ export default function ExternalAgentListPage() {
             columns={columns}
             loading={loading}
             pagination={{
-              current: data?.page || 1,
+              currentPage: data?.page || 1,
               pageSize: data?.size || 10,
               total: data?.total || 0,
               showSizeChanger: true,
@@ -367,7 +401,7 @@ export default function ExternalAgentListPage() {
       </Card>
 
       <Modal
-        open={editorOpen}
+        visible={editorOpen}
         title={editing ? '编辑外部 Agent' : '添加外部 Agent'}
         onCancel={() => {
           setEditorOpen(false);
@@ -375,88 +409,57 @@ export default function ExternalAgentListPage() {
         }}
         onOk={handleSubmit}
         confirmLoading={submitting}
-        destroyOnClose
         width={640}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-            <Input placeholder="例如：外部 RAG Agent" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item
-            name="endpoint"
+        <Form form={form}>
+          <Form.Input
+            field="name"
+            label="名称"
+            rules={[{ required: true }]}
+            placeholder="例如：外部 RAG Agent"
+          />
+          <Form.TextArea field="description" label="描述" rows={2} />
+          <Form.Input
+            field="endpoint"
             label="端点 URL"
             rules={[{ required: true, type: 'url', message: '请输入合法的 URL' }]}
-          >
-            <Input placeholder="https://example.com/mcp" />
-          </Form.Item>
-          <Form.Item name="protocolType" label="协议类型" rules={[{ required: true }]}>
-            <Select options={PROTOCOL_OPTIONS} />
-          </Form.Item>
-          <Form.Item name="authType" label="认证方式">
-            <Select options={AUTH_OPTIONS} allowClear />
-          </Form.Item>
-          <Form.Item
-            noStyle
-            shouldUpdate={(prev, next) => prev.authType !== next.authType}
-          >
-            {({ getFieldValue }) =>
-              getFieldValue('authType') && getFieldValue('authType') !== 'none' ? (
-                <Form.Item
-                  name="authConfig"
-                  label="认证配置 (JSON)"
-                  rules={[
-                    {
-                      validator: (_, value) => {
-                        if (!value) return Promise.resolve();
-                        try {
-                          JSON.parse(value);
-                          return Promise.resolve();
-                        } catch {
-                          return Promise.reject(new Error('请输入合法 JSON'));
-                        }
-                      },
-                    },
-                  ]}
-                >
-                  <Input.TextArea rows={3} placeholder='{"apiKey":"sk-..."}' />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
-          <Form.Item
-            name="capabilities"
+            placeholder="https://example.com/mcp"
+          />
+          <Form.Select
+            field="protocolType"
+            label="协议类型"
+            rules={[{ required: true }]}
+            optionList={PROTOCOL_OPTIONS}
+          />
+          <Form.Select field="authType" label="认证方式" optionList={AUTH_OPTIONS} showClear />
+          <AuthConfigField />
+          <Form.TextArea
+            field="capabilities"
             label="能力描述"
-            rules={[
-              {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
-                  try {
-                    JSON.parse(value);
-                    return Promise.resolve();
-                  } catch {
-                    return Promise.reject(new Error('请输入合法 JSON'));
-                  }
-                },
-              },
-            ]}
-          >
-            <Input.TextArea rows={3} placeholder='["search","execute"]' />
-          </Form.Item>
+            rows={3}
+            placeholder='["search","execute"]'
+            validator={(value) => {
+              if (!value) return '';
+              try {
+                JSON.parse(value);
+                return '';
+              } catch {
+                return '请输入合法 JSON';
+              }
+            }}
+          />
         </Form>
       </Modal>
 
       <Modal
-        open={!!detail}
+        visible={!!detail}
         title="Agent 详情"
         onCancel={() => setDetail(null)}
         footer={null}
         width={640}
       >
         {detail && (
-          <Space orientation="vertical" style={{ width: '100%' }}>
+          <Space vertical style={{ width: '100%' }}>
             <Typography.Paragraph>
               <Typography.Text strong>ID: </Typography.Text>
               {detail.id}

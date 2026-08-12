@@ -1,16 +1,16 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
   Empty,
+  Popconfirm,
   Space,
   Table,
   Tag,
+  Toast,
   Typography,
-  message,
-  Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SafetyOutlined } from '@ant-design/icons';
 import { listRules, createRule, updateRule, deleteRule } from '@/api/mcphub/permissions';
 import { listTools } from '@/api/mcphub/tools';
@@ -76,10 +76,10 @@ export default function PermissionRulePage() {
     try {
       if (editing) {
         await updateRule(editing.id, values);
-        message.success('已更新');
+        Toast.success('已更新');
       } else {
         await createRule(values);
-        message.success('已创建');
+        Toast.success('已创建');
       }
       setEditorOpen(false);
       setEditing(null);
@@ -89,16 +89,16 @@ export default function PermissionRulePage() {
     }
   };
 
-  const columns: ColumnsType<PermissionRule> = [
+  const columns: ColumnProps<PermissionRule>[] = [
     {
       title: '规则',
       key: 'name',
       render: (_, r) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <SafetyOutlined /> {r.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             优先级 {r.priority}
           </Typography.Text>
         </Space>
@@ -147,7 +147,7 @@ export default function PermissionRulePage() {
       render: (_, r) => (
         <Space>
           <Button
-            type="link"
+            theme="borderless"
             icon={<EditOutlined />}
             onClick={() => {
               setEditing(r);
@@ -158,10 +158,10 @@ export default function PermissionRulePage() {
           </Button>
           <Popconfirm title="确定删除？" onConfirm={async () => {
             await deleteRule(r.id);
-            message.success('已删除');
+            Toast.success('已删除');
             load();
           }}>
-            <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -171,10 +171,11 @@ export default function PermissionRulePage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           权限规则
         </Typography.Title>
         <Button
+          theme="solid"
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => {

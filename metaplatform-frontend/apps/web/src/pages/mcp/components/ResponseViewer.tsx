@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Card, Tag, Typography, Empty } from 'antd';
+import { Card, Tag, Typography, Empty } from '@douyinfe/semi-ui';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { JsonRpcResponse } from '@/api/mcphub/types';
 
@@ -30,16 +30,16 @@ export default function ResponseViewer({ response, loading, durationMs }: Respon
         <span>
           响应{' '}
           {isError ? (
-            <Tag icon={<CloseCircleOutlined />} color="error">
-              Error {response.error?.code}
+            <Tag color="red">
+              <CloseCircleOutlined /> Error {response.error?.code}
             </Tag>
           ) : (
-            <Tag icon={<CheckCircleOutlined />} color="success">
-              Success
+            <Tag color="green">
+              <CheckCircleOutlined /> Success
             </Tag>
           )}
           {durationMs !== undefined && (
-            <Typography.Text type="secondary" style={{ marginLeft: 12, fontSize: 12 }}>
+            <Typography.Text type="tertiary" style={{ marginLeft: 12, fontSize: 12 }}>
               {durationMs} ms
             </Typography.Text>
           )}
@@ -53,7 +53,8 @@ export default function ResponseViewer({ response, loading, durationMs }: Respon
       )}
       <pre
         style={{
-          background: '#fafafa',
+          background: 'var(--card)',
+          border: '1px solid var(--border)',
           padding: 12,
           borderRadius: 4,
           maxHeight: 400,

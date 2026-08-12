@@ -1,4 +1,4 @@
-import { Tree } from 'antd';
+import { Tree } from '@douyinfe/semi-ui';
 import type { McpTool } from '@/api/mcphub/types';
 
 interface ToolCategoryTreeProps {
@@ -15,11 +15,10 @@ export default function ToolCategoryTree({ tools, selectedToolId, onSelect }: To
   }, {});
 
   const treeData = Object.keys(grouped).map((cat) => ({
-    title: `${cat} (${grouped[cat]!.length})`,
+    label: `${cat} (${grouped[cat]!.length})`,
     key: `cat-${cat}`,
-    selectable: false,
     children: grouped[cat]!.map((t) => ({
-      title: t.name,
+      label: t.name,
       key: t.id,
       isLeaf: true,
     })),
@@ -29,10 +28,9 @@ export default function ToolCategoryTree({ tools, selectedToolId, onSelect }: To
     <Tree
       treeData={treeData}
       defaultExpandAll
-      selectedKeys={selectedToolId ? [selectedToolId] : []}
-      onSelect={(keys) => {
-        const k = keys[0];
-        if (k && !String(k).startsWith('cat-')) onSelect(String(k));
+      onSelect={(key) => {
+        const k = String(key);
+        if (k && !k.startsWith('cat-')) onSelect(k);
       }}
     />
   );

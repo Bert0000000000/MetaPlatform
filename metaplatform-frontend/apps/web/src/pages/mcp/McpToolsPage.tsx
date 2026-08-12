@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -9,12 +9,12 @@ import {
   Space,
   Table,
   Tag,
+  Toast,
   Typography,
-  message,
   Popconfirm,
   Switch,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import {
   PlusOutlined,
   EditOutlined,
@@ -58,7 +58,7 @@ export default function ToolListPage() {
 
   const handleDelete = async (tool: McpTool) => {
     await deleteTool(tool.id);
-    message.success('工具已删除');
+    Toast.success('工具已删除');
     load();
   };
 
@@ -73,18 +73,18 @@ export default function ToolListPage() {
       enabled,
       tags: tool.tags,
     });
-    message.success(enabled ? '已启用' : '已停用');
+    Toast.success(enabled ? '已启用' : '已停用');
     load();
   };
 
-  const columns: ColumnsType<McpTool> = [
+  const columns: ColumnProps<McpTool>[] = [
     {
       title: '工具',
       key: 'name',
       render: (_, t) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>{t.name}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             <CodeOutlined /> {t.code}
           </Typography.Text>
         </Space>
@@ -123,14 +123,14 @@ export default function ToolListPage() {
       render: (_, t) => (
         <Space>
           <Button
-            type="link"
+            theme="borderless"
             icon={<EditOutlined />}
             onClick={() => navigate(`/tools/${t.id}`)}
           >
             详情
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(t)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button type="danger" theme="borderless" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -142,7 +142,7 @@ export default function ToolListPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           工具注册中心
         </Typography.Title>
         <Space>
@@ -150,6 +150,7 @@ export default function ToolListPage() {
             分类管理
           </Button>
           <Button
+            theme="solid"
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/tools/new')}
@@ -160,19 +161,19 @@ export default function ToolListPage() {
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+        <Input
           placeholder="搜索工具名称/编码"
-          allowClear
-          onSearch={setKeyword}
+          showClear
+          onEnterPress={(e) => setKeyword((e.target as HTMLInputElement).value)}
           style={{ width: 240 }}
         />
         <Select
           placeholder="分类"
-          allowClear
+          showClear
           style={{ width: 160 }}
           value={category}
-          onChange={setCategory}
-          options={categories.map((c) => ({ label: c.name, value: c.code }))}
+          onChange={(v) => setCategory(v as string | undefined)}
+          optionList={categories.map((c) => ({ label: c.name, value: c.code }))}
         />
       </Space>
 
@@ -194,7 +195,9 @@ export default function ToolListPage() {
               columns={columns}
               loading={loading}
               pagination={{ pageSize: 10 }}
-              size="middle" scroll={{ x: 'max-content' }} />
+              size="middle"
+              scroll={{ x: 'max-content' }}
+            />
           )}
         </Card>
       </div>
@@ -208,7 +211,7 @@ export default function ToolListPage() {
             setSubmitting(true);
             try {
               await updateTool(editing.id, values);
-              message.success('已更新');
+              Toast.success('已更新');
             } finally {
               setSubmitting(false);
             }

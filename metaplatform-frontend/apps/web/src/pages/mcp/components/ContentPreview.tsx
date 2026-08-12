@@ -1,4 +1,4 @@
-import { Card, Typography, Empty } from 'antd';
+import { Card, Typography, Empty } from '@douyinfe/semi-ui';
 import { useMemo } from 'react';
 import type { McpResource } from '@/api/mcphub/types';
 
@@ -22,18 +22,19 @@ export default function ContentPreview({ resource }: ContentPreviewProps) {
 
   if (!isText) {
     return (
-      <Card title="预览" size="small">
+      <Card title="预览">
         <Empty description={`不支持直接预览 ${resource.mimeType} 类型，请下载查看`} />
       </Card>
     );
   }
 
   return (
-    <Card title={`预览 (${resource.mimeType})`} size="small">
-      <Typography.Paragraph copyable={{ text: content }}>
+    <Card title={`预览 (${resource.mimeType})`}>
+      <Typography.Paragraph copyable={{ content }}>
         <pre
           style={{
-            background: '#fafafa',
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
             padding: 12,
             borderRadius: 4,
             maxHeight: 400,

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -9,14 +9,12 @@ import {
   Table,
   Tag,
   Typography,
-  message,
+  Toast,
   Popconfirm,
-  Result,
-  Row,
-  Col,
-  Statistic,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlusOutlined,
   EyeOutlined,
@@ -25,16 +23,18 @@ import {
   DeleteOutlined,
   ClusterOutlined,
   ReloadOutlined,
+  SearchOutlined,
+  ExclamationCircleFilled,
 } from '@ant-design/icons';
 import { listServers, deleteServer, startServer, stopServer, createServer } from '@/api/mcphub/servers';
 import { listTools } from '@/api/mcphub/tools';
 import ServerForm from './components/ServerForm';
 import type { McpServer, McpTool } from '@/api/mcphub/types';
 
-const STATUS_MAP: Record<McpServer['status'], { label: string; color: string }> = {
-  online: { label: '在线', color: 'success' },
-  offline: { label: '离线', color: 'default' },
-  error: { label: '异常', color: 'error' },
+const STATUS_MAP: Record<McpServer['status'], { label: string; color: TagColor }> = {
+  online: { label: '在线', color: 'green' },
+  offline: { label: '离线', color: 'grey' },
+  error: { label: '异常', color: 'red' },
 };
 
 export default function ServerListPage() {
@@ -44,6 +44,7 @@ export default function ServerListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [query, setQuery] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -69,30 +70,30 @@ export default function ServerListPage() {
   const handleDelete = async (s: McpServer) => {
     try {
       await deleteServer(s.id);
-      message.success('Server 已删除');
+      Toast.success('Server 已删除');
       load();
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '删除失败');
+      Toast.error(err instanceof Error ? err.message : '删除失败');
     }
   };
 
   const handleStart = async (s: McpServer) => {
     try {
       await startServer(s.id);
-      message.success('已启动');
+      Toast.success('已启动');
       load();
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '启动失败');
+      Toast.error(err instanceof Error ? err.message : '启动失败');
     }
   };
 
   const handleStop = async (s: McpServer) => {
     try {
       await stopServer(s.id);
-      message.success('已停止');
+      Toast.success('已停止');
       load();
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '停止失败');
+      Toast.error(err instanceof Error ? err.message : '停止失败');
     }
   };
 
@@ -103,16 +104,16 @@ export default function ServerListPage() {
     error: servers.filter((s) => s.status === 'error').length,
   };
 
-  const columns: ColumnsType<McpServer> = [
+  const columns: ColumnProps<McpServer>[] = [
     {
       title: '名称',
       key: 'name',
       render: (_, s) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <ClusterOutlined /> {s.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {s.code}
           </Typography.Text>
         </Space>
@@ -129,10 +130,10 @@ export default function ServerListPage() {
       title: '状态',
       key: 'status',
       render: (_, s) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Tag color={STATUS_MAP[s.status].color}>{STATUS_MAP[s.status].label}</Tag>
           {s.lastHeartbeatAt && (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
               心跳 {new Date(s.lastHeartbeatAt).toLocaleString()}
             </Typography.Text>
           )}
@@ -144,20 +145,20 @@ export default function ServerListPage() {
       key: 'actions',
       render: (_, s) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/servers/${s.id}`)}>
+          <Button theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/servers/${s.id}`)}>
             详情
           </Button>
           {s.status === 'offline' ? (
-            <Button type="link" icon={<PlayCircleOutlined />} onClick={() => handleStart(s)}>
+            <Button theme="borderless" icon={<PlayCircleOutlined />} onClick={() => handleStart(s)}>
               启动
             </Button>
           ) : (
-            <Button type="link" icon={<PauseCircleOutlined />} onClick={() => handleStop(s)}>
+            <Button theme="borderless" icon={<PauseCircleOutlined />} onClick={() => handleStop(s)}>
               停止
             </Button>
           )}
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(s)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -169,10 +170,10 @@ export default function ServerListPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           MCP Server 管理
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
           创建 Server
         </Button>
       </div>
@@ -180,31 +181,38 @@ export default function ServerListPage() {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic title="总数" value={stats.total} />
+            <div className="v-stat-label">总数</div>
+            <div className="v-stat-value" style={{ fontSize: 24 }}>{stats.total}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic title="在线" value={stats.online} valueStyle={{ color: '#52c41a' }} />
+            <div className="v-stat-label">在线</div>
+            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--success)' }}>{stats.online}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic title="离线" value={stats.offline} valueStyle={{ color: '#8c8c8c' }} />
+            <div className="v-stat-label">离线</div>
+            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--muted-foreground)' }}>{stats.offline}</div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic title="异常" value={stats.error} valueStyle={{ color: '#ff4d4f' }} />
+            <div className="v-stat-label">异常</div>
+            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--destructive)' }}>{stats.error}</div>
           </Card>
         </Col>
       </Row>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+        <Input
           placeholder="搜索名称/编码"
-          allowClear
-          onSearch={setKeyword}
+          showClear
+          value={query}
+          onChange={(v) => setQuery(v)}
+          onEnterPress={() => setKeyword(query)}
+          suffix={<SearchOutlined style={{ color: 'var(--muted-foreground)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
           style={{ width: 240 }}
         />
       </Space>
@@ -218,16 +226,18 @@ export default function ServerListPage() {
             loading
             pagination={false} scroll={{ x: 'max-content' }} />
         ) : error ? (
-          <Result
-            status="error"
-            title="加载失败"
-            subTitle={error.message}
-            extra={
-              <Button type="primary" icon={<ReloadOutlined />} onClick={load}>
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--destructive)' }} />
+            <Typography.Title heading={4} style={{ marginTop: 16 }}>
+              加载失败
+            </Typography.Title>
+            <Typography.Text type="tertiary">{error.message}</Typography.Text>
+            <div style={{ marginTop: 24 }}>
+              <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>
                 重试
               </Button>
-            }
-          />
+            </div>
+          </div>
         ) : servers.length === 0 ? (
           <Empty description="还没有 MCP Server，点击右上角创建" />
         ) : (
@@ -246,11 +256,11 @@ export default function ServerListPage() {
           setSubmitting(true);
           try {
             await createServer(values);
-            message.success('Server 已创建');
+            Toast.success('Server 已创建');
             setFormOpen(false);
             load();
           } catch (err) {
-            message.error(err instanceof Error ? err.message : '创建失败');
+            Toast.error(err instanceof Error ? err.message : '创建失败');
           } finally {
             setSubmitting(false);
           }

@@ -11,17 +11,16 @@ import {
 } from '@ant-design/icons';
 import {
   Card,
-  Col,
   Empty,
   List,
-  Row,
   Spin,
-  Statistic,
   Table,
   Tag,
   Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { Col, Row } from '@douyinfe/semi-ui/lib/es/grid';
 import {
   CartesianGrid,
   Line,
@@ -58,9 +57,55 @@ function formatNumber(value: number): string {
   return String(value);
 }
 
+/** Semi 无 Statistic，自建（label + 大数字）。 */
+function Statistic({
+  title,
+  value,
+  prefix,
+  suffix,
+  valueStyle,
+  precision,
+}: {
+  title: React.ReactNode;
+  value: number | string;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  valueStyle?: React.CSSProperties;
+  precision?: number;
+}) {
+  const display =
+    typeof value === 'number'
+      ? (precision == null ? value : value.toFixed(precision)).toLocaleString('zh-CN')
+      : String(value);
+  return (
+    <div>
+      <div
+        style={{
+          color: 'var(--muted-foreground)',
+          fontSize: 13,
+          marginBottom: 4,
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.3, ...valueStyle }}>
+        {prefix ? (
+          <span style={{ marginRight: 6 }}>{prefix}</span>
+        ) : null}
+        {display}
+        {suffix ? (
+          <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 2 }}>
+            {suffix}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) {
   return (
-    <Card title="MCP Server 状态" size="small">
+    <Card title="MCP Server 状态">
       <Row gutter={[16, 8]}>
         <Col span={6}>
           <Statistic title="总数" value={stats.total} prefix={<ApiOutlined />} />
@@ -69,7 +114,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="在线"
             value={stats.online}
-            valueStyle={{ color: '#52c41a' }}
+            valueStyle={{ color: 'var(--success)' }}
             prefix={<CheckCircleFilled />}
           />
         </Col>
@@ -77,7 +122,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="离线"
             value={stats.offline}
-            valueStyle={{ color: '#8c8c8c' }}
+            valueStyle={{ color: 'var(--muted-foreground)' }}
             prefix={<CloseCircleFilled />}
           />
         </Col>
@@ -85,7 +130,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
           <Statistic
             title="异常"
             value={stats.error}
-            valueStyle={{ color: '#ff4d4f' }}
+            valueStyle={{ color: 'var(--destructive)' }}
             prefix={<ExclamationCircleFilled />}
           />
         </Col>
@@ -96,7 +141,7 @@ function ServerStatsCard({ stats }: { stats: OverviewResponse['serverStats'] }) 
 
 function ToolStatsCard({ stats }: { stats: OverviewResponse['toolStats'] }) {
   return (
-    <Card title="工具总数" size="small">
+    <Card title="工具总数">
       <Row gutter={[16, 8]}>
         <Col span={8}>
           <Statistic title="总数" value={stats.total} prefix={<ThunderboltOutlined />} />
@@ -105,14 +150,14 @@ function ToolStatsCard({ stats }: { stats: OverviewResponse['toolStats'] }) {
           <Statistic
             title="已启用"
             value={stats.enabled}
-            valueStyle={{ color: '#52c41a' }}
+            valueStyle={{ color: 'var(--success)' }}
           />
         </Col>
         <Col span={8}>
           <Statistic
             title="已禁用"
             value={stats.disabled}
-            valueStyle={{ color: '#8c8c8c' }}
+            valueStyle={{ color: 'var(--muted-foreground)' }}
           />
         </Col>
       </Row>
@@ -129,7 +174,7 @@ function CallStatsCard({
 }) {
   const chartData = trend.map((p) => ({ time: formatHour(p.time), calls: p.count }));
   return (
-    <Card title="今日调用" size="small">
+    <Card title="今日调用">
       <Row gutter={[16, 8]}>
         <Col span={8}>
           <Statistic title="今日调用数" value={stats.todayCalls} />
@@ -140,7 +185,7 @@ function CallStatsCard({
             value={stats.successRate}
             precision={2}
             suffix="%"
-            valueStyle={{ color: '#1677ff' }}
+            valueStyle={{ color: 'var(--primary)' }}
           />
         </Col>
         <Col span={8}>
@@ -155,11 +200,11 @@ function CallStatsCard({
       {chartData.length > 0 ? (
         <ResponsiveContainer width="100%" height={180} style={{ marginTop: 12 }}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="time" />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Line type="monotone" dataKey="calls" stroke="#1677ff" strokeWidth={2} />
+            <Line type="monotone" dataKey="calls" stroke="var(--primary)" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       ) : (
@@ -178,7 +223,7 @@ function TokenStatsCard({
 }) {
   const chartData = trend.map((p) => ({ time: formatHour(p.time), tokens: p.tokens }));
   return (
-    <Card title="今日 Token 消耗" size="small">
+    <Card title="今日 Token 消耗">
       <Row gutter={[16, 8]}>
         <Col span={8}>
           <Statistic title="输入 Token" value={stats.todayInputTokens} />
@@ -190,18 +235,18 @@ function TokenStatsCard({
           <Statistic
             title="合计"
             value={stats.todayTotalTokens}
-            valueStyle={{ color: '#722ed1' }}
+            valueStyle={{ color: 'rgb(var(--semi-purple-5))' }}
           />
         </Col>
       </Row>
       {chartData.length > 0 ? (
         <ResponsiveContainer width="100%" height={180} style={{ marginTop: 12 }}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="time" />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Line type="monotone" dataKey="tokens" stroke="#722ed1" strokeWidth={2} />
+            <Line type="monotone" dataKey="tokens" stroke="rgb(var(--semi-purple-5))" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       ) : (
@@ -211,14 +256,17 @@ function TokenStatsCard({
   );
 }
 
-const LEVEL_META: Record<OverviewErrorAlert['level'], { color: string; icon: React.ReactNode }> = {
+const LEVEL_META: Record<
+  OverviewErrorAlert['level'],
+  { color: TagColor; icon: React.ReactNode }
+> = {
   error: {
-    color: 'error',
-    icon: <CloseCircleFilled style={{ color: '#ff4d4f' }} />,
+    color: 'red',
+    icon: <CloseCircleFilled style={{ color: 'var(--destructive)' }} />,
   },
   warning: {
-    color: 'warning',
-    icon: <WarningFilled style={{ color: '#faad14' }} />,
+    color: 'orange',
+    icon: <WarningFilled style={{ color: 'var(--warning)' }} />,
   },
 };
 
@@ -227,25 +275,24 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
     <Card
       title={
         <span>
-          <AlertOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />
+          <AlertOutlined style={{ marginRight: 8, color: 'var(--destructive)' }} />
           近期错误告警
         </span>
       }
-      size="small"
     >
       {alerts.length === 0 ? (
         <Empty description="近期无错误告警" />
       ) : (
         <List
           dataSource={alerts}
-          rowKey={(item) => item.id}
+          emptyContent={<Empty description="近期无错误告警" />}
           renderItem={(item) => {
             const meta = LEVEL_META[item.level] ?? LEVEL_META.error;
             return (
               <List.Item>
-                <List.Item.Meta
-                  avatar={meta.icon}
-                  title={
+                <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+                  <div style={{ marginRight: 8, marginTop: 2 }}>{meta.icon}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Typography.Text strong>
                       {item.toolCode || '未知工具'}
                       <Tag color={meta.color} style={{ marginLeft: 8 }}>
@@ -255,21 +302,22 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
                         {item.level}
                       </Tag>
                     </Typography.Text>
-                  }
-                  description={
-                    <Typography.Paragraph
-                      type="secondary"
-                      ellipsis={{ rows: 2 }}
-                      style={{ marginBottom: 0 }}
+                    <div
+                      style={{
+                        color: 'var(--muted-foreground)',
+                        fontSize: 13,
+                        marginTop: 4,
+                        lineHeight: 1.6,
+                      }}
                     >
                       <ClockCircleOutlined style={{ marginRight: 4 }} />
                       {item.calledAt ? new Date(item.calledAt).toLocaleString() : '-'}
                       {item.traceId ? ` · trace: ${item.traceId}` : ''}
                       <br />
                       {item.errorMessage || '无错误详情'}
-                    </Typography.Paragraph>
-                  }
-                />
+                    </div>
+                  </div>
+                </div>
               </List.Item>
             );
           }}
@@ -280,7 +328,7 @@ function ErrorAlertsCard({ alerts }: { alerts: OverviewErrorAlert[] }) {
 }
 
 function TopToolsCard({ tools }: { tools: OverviewTopTool[] }) {
-  const columns: ColumnsType<OverviewTopTool> = [
+  const columns: ColumnProps<OverviewTopTool>[] = [
     {
       title: '排名',
       key: 'rank',
@@ -300,15 +348,16 @@ function TopToolsCard({ tools }: { tools: OverviewTopTool[] }) {
     },
   ];
   return (
-    <Card title="Top Tools 调用排行" size="small">
+    <Card title="Top Tools 调用排行">
       <Table
-        rowKey={(item) => item.toolCode}
+        rowKey={(item) => item!.toolCode}
         size="small"
         pagination={false}
         columns={columns}
         dataSource={tools}
-        locale={{ emptyText: <Empty description="今日暂无调用" /> }}
-       scroll={{ x: 'max-content' }}/>
+        empty={<Empty description="今日暂无调用" />}
+        scroll={{ x: 'max-content' }}
+      />
     </Card>
   );
 }
@@ -342,7 +391,7 @@ export default function OverviewPage() {
 
   return (
     <div>
-      <Typography.Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>
+      <Typography.Title heading={4} style={{ marginTop: 0, marginBottom: 16 }}>
         MCP Hub 概览
       </Typography.Title>
       <Row gutter={[16, 16]}>

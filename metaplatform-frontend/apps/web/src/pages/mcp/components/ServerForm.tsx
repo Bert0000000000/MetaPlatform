@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Modal, Form, Input, Select, Switch, InputNumber } from 'antd';
+import { useEffect, useState } from 'react';
+import { Form, Modal } from '@douyinfe/semi-ui';
 import type { McpServer, McpServerCreateRequest } from '@/api/mcphub/types';
 
 interface ServerFormProps {
@@ -11,6 +11,18 @@ interface ServerFormProps {
   confirmLoading?: boolean;
 }
 
+const TRANSPORT_OPTIONS = [
+  { label: 'stdio', value: 'stdio' },
+  { label: 'SSE', value: 'sse' },
+  { label: 'HTTP', value: 'http' },
+];
+
+const AUTH_TYPE_OPTIONS = [
+  { label: '无', value: 'none' },
+  { label: 'API Key', value: 'apikey' },
+  { label: 'OAuth2', value: 'oauth2' },
+];
+
 export default function ServerForm({
   open,
   initial,
@@ -20,12 +32,12 @@ export default function ServerForm({
   confirmLoading,
 }: ServerFormProps) {
   const [form] = Form.useForm<McpServerCreateRequest>();
-  const authType = Form.useWatch('authType', form);
+  const [authType, setAuthType] = useState<string>('none');
 
   useEffect(() => {
     if (open) {
       if (initial) {
-        form.setFieldsValue({
+        form.setValues({
           name: initial.name,
           code: initial.code,
           description: initial.description,
@@ -43,9 +55,10 @@ export default function ServerForm({
           enabled: initial.enabled,
           tags: initial.tags,
         });
+        setAuthType(initial.authType ?? 'none');
       } else {
-        form.resetFields();
-        form.setFieldsValue({
+        form.reset();
+        form.setValues({
           enabled: true,
           transport: 'sse',
           authType: 'none',
@@ -53,96 +66,76 @@ export default function ServerForm({
           timeoutMs: 30000,
           maxConcurrentCalls: 100,
         });
+        setAuthType('none');
       }
     }
   }, [open, initial, form]);
 
   const handleOk = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     onOk(values);
   };
 
   return (
     <Modal
-      open={open}
+      visible={open}
       title={initial ? '编辑 MCP Server' : '创建 MCP Server'}
       onOk={handleOk}
       onCancel={onCancel}
       confirmLoading={confirmLoading}
-      destroyOnClose
       width={720}
     >
-      <Form form={form} layout="vertical">
-        <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
-        <Form.Item
-          name="code"
+      <Form form={form}>
+        <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+        <Form.Input
+          field="code"
           label="编码"
           rules={[{ required: true }, { pattern: /^[A-Za-z][A-Za-z0-9_]*$/, message: '字母数字下划线' }]}
-        >
-          <Input disabled={!!initial} />
-        </Form.Item>
-        <Form.Item name="description" label="描述">
-          <Input.TextArea rows={2} />
-        </Form.Item>
-        <Form.Item name="transport" label="传输方式" rules={[{ required: true }]}>
-          <Select
-            options={[
-              { label: 'stdio', value: 'stdio' },
-              { label: 'SSE', value: 'sse' },
-              { label: 'HTTP', value: 'http' },
-            ]}
-          />
-        </Form.Item>
-        <Form.Item name="endpoint" label="访问端点" rules={[{ required: true }]}>
-          <Input placeholder="例如：/mcp/sse/main" />
-        </Form.Item>
-        <Form.Item name="host" label="监听地址">
-          <Input placeholder="例如：0.0.0.0 或 127.0.0.1" />
-        </Form.Item>
-        <Form.Item name="port" label="监听端口">
-          <InputNumber min={1} max={65535} style={{ width: '100%' }} placeholder="例如：8080" />
-        </Form.Item>
-        <Form.Item name="sseEndpoint" label="SSE 端点">
-          <Input placeholder="例如：/sse" />
-        </Form.Item>
-        <Form.Item name="authType" label="认证方式">
-          <Select
-            options={[
-              { label: '无', value: 'none' },
-              { label: 'API Key', value: 'apikey' },
-              { label: 'OAuth2', value: 'oauth2' },
-            ]}
-          />
-        </Form.Item>
+          disabled={!!initial}
+        />
+        <Form.TextArea field="description" label="描述" rows={2} />
+        <Form.Select
+          field="transport"
+          label="传输方式"
+          rules={[{ required: true }]}
+          optionList={TRANSPORT_OPTIONS}
+        />
+        <Form.Input field="endpoint" label="访问端点" rules={[{ required: true }]} placeholder="例如：/mcp/sse/main" />
+        <Form.Input field="host" label="监听地址" placeholder="例如：0.0.0.0 或 127.0.0.1" />
+        <Form.InputNumber field="port" label="监听端口" min={1} max={65535} style={{ width: '100%' }} placeholder="例如：8080" />
+        <Form.Input field="sseEndpoint" label="SSE 端点" placeholder="例如：/sse" />
+        <Form.Select
+          field="authType"
+          label="认证方式"
+          optionList={AUTH_TYPE_OPTIONS}
+          onChange={(v) => setAuthType(v as string)}
+        />
         {authType && authType !== 'none' && (
-          <Form.Item name="authConfig" label="认证配置（JSON）">
-            <Input.TextArea rows={3} placeholder='例如：{ "apiKey": "xxx" }' />
-          </Form.Item>
-        )}
-        <Form.Item name="timeoutMs" label="超时时间（ms）">
-          <InputNumber min={1} style={{ width: '100%' }} placeholder="例如：30000" />
-        </Form.Item>
-        <Form.Item name="maxConcurrentCalls" label="最大并发调用数">
-          <InputNumber min={1} style={{ width: '100%' }} placeholder="例如：100" />
-        </Form.Item>
-        <Form.Item name="healthCheckUrl" label="健康检查 URL">
-          <Input placeholder="例如：http://localhost:8080/health" />
-        </Form.Item>
-        <Form.Item name="toolIds" label="暴露的工具">
-          <Select
-            mode="multiple"
-            placeholder="选择工具"
-            options={availableTools.map((t) => ({ label: t.name, value: t.id }))}
+          <Form.TextArea
+            field="authConfig"
+            label="认证配置（JSON）"
+            rows={3}
+            placeholder='例如：{ "apiKey": "xxx" }'
           />
-        </Form.Item>
-        <Form.Item name="enabled" label="启用" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-        <Form.Item name="tags" label="标签">
-          <Select mode="tags" placeholder="输入后回车" />
-        </Form.Item>
+        )}
+        <Form.InputNumber field="timeoutMs" label="超时时间（ms）" min={1} style={{ width: '100%' }} placeholder="例如：30000" />
+        <Form.InputNumber field="maxConcurrentCalls" label="最大并发调用数" min={1} style={{ width: '100%' }} placeholder="例如：100" />
+        <Form.Input field="healthCheckUrl" label="健康检查 URL" placeholder="例如：http://localhost:8080/health" />
+        <Form.Select
+          field="toolIds"
+          label="暴露的工具"
+          multiple
+          placeholder="选择工具"
+          optionList={availableTools.map((t) => ({ label: t.name, value: t.id }))}
+        />
+        <Form.Switch field="enabled" label="启用" />
+        <Form.Select
+          field="tags"
+          label="标签"
+          multiple
+          placeholder="输入后回车"
+          optionList={[]}
+        />
       </Form>
     </Modal>
   );

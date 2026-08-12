@@ -1,17 +1,17 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
   Empty,
+  Popconfirm,
   Space,
   Table,
   Tag,
+  Toast,
   Typography,
-  message,
-  Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import {
   PlusOutlined,
   EditOutlined,
@@ -30,13 +30,13 @@ function normalizeStatus(status: string): McpClient['status'] {
   return 'disconnected';
 }
 
-const STATUS_MAP: Record<McpClient['status'], { label: string; color: string }> = {
-  connected: { label: '已连接', color: 'success' },
-  CONNECTED: { label: '已连接', color: 'success' },
-  disconnected: { label: '未连接', color: 'default' },
-  DISCONNECTED: { label: '未连接', color: 'default' },
-  error: { label: '异常', color: 'error' },
-  ERROR: { label: '异常', color: 'error' },
+const STATUS_MAP: Record<McpClient['status'], { label: string; color: 'green' | 'grey' | 'red' }> = {
+  connected: { label: '已连接', color: 'green' },
+  CONNECTED: { label: '已连接', color: 'green' },
+  disconnected: { label: '未连接', color: 'grey' },
+  DISCONNECTED: { label: '未连接', color: 'grey' },
+  error: { label: '异常', color: 'red' },
+  ERROR: { label: '异常', color: 'red' },
 };
 
 export default function ClientListPage() {
@@ -60,26 +60,26 @@ export default function ClientListPage() {
 
   const handleDelete = async (c: McpClient) => {
     await deleteClient(c.id);
-    message.success('Client 已删除');
+    Toast.success('Client 已删除');
     load();
   };
 
   const handleSync = async (c: McpClient) => {
     const tools = await discoverClientTools(c.id);
-    message.success(`已发现 ${tools.length} 个工具`);
+    Toast.success(`已发现 ${tools.length} 个工具`);
     load();
   };
 
-  const columns: ColumnsType<McpClient> = [
+  const columns: ColumnProps<McpClient>[] = [
     {
       title: 'Client',
       key: 'name',
       render: (_, c) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <LinkOutlined /> {c.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {c.endpoint}
           </Typography.Text>
         </Space>
@@ -118,17 +118,17 @@ export default function ClientListPage() {
       key: 'actions',
       render: (_, c) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/clients/${c.id}`)}>
+          <Button theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/clients/${c.id}`)}>
             详情
           </Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(`/clients/${c.id}/edit`)}>
+          <Button theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/clients/${c.id}/edit`)}>
             编辑
           </Button>
-          <Button type="link" icon={<SyncOutlined />} onClick={() => handleSync(c)}>
+          <Button theme="borderless" icon={<SyncOutlined />} onClick={() => handleSync(c)}>
             发现工具
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(c)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -140,10 +140,10 @@ export default function ClientListPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           MCP Client 管理
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/clients/new')}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/clients/new')}>
           添加 Client
         </Button>
       </div>

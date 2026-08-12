@@ -13,14 +13,14 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
 import {
   CloudDownloadOutlined,
   EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import {
   deleteSkill,
   downloadSkill,
@@ -49,7 +49,7 @@ export default function SkillHubPage() {
       const page = await listSkills(keyword ? { q: keyword } : undefined);
       setSkills(page.items ?? []);
     } catch {
-      message.error('加载 SKILL 失败（需后端 marketplace 服务）');
+      Toast.error('加载 SKILL 失败（需后端 marketplace 服务）');
     } finally {
       setLoading(false);
     }
@@ -60,7 +60,7 @@ export default function SkillHubPage() {
       const page = await listInstalledSkills();
       setInstalled(page.items ?? []);
     } catch {
-      message.error('加载已安装 SKILL 失败');
+      Toast.error('加载已安装 SKILL 失败');
     }
   };
 
@@ -74,13 +74,13 @@ export default function SkillHubPage() {
 
   const openUpload = () => {
     setEditingSkill(null);
-    form.resetFields();
+    form.reset();
     setUploadOpen(true);
   };
 
   const doEdit = (skill: Skill) => {
     setEditingSkill(skill);
-    form.setFieldsValue({
+    form.setValues({
       name: skill.name,
       description: skill.description,
       version: skill.version,
@@ -92,7 +92,7 @@ export default function SkillHubPage() {
 
   const doSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      const values = await form.validate();
       setSubmitting(true);
       const payload = {
         name: values.name,
@@ -103,19 +103,20 @@ export default function SkillHubPage() {
       };
       if (editingSkill) {
         await updateSkill(editingSkill.id, payload);
-        message.success('SKILL 更新成功');
+        Toast.success('SKILL 更新成功');
       } else {
         await uploadSkill(payload);
-        message.success('SKILL 上传成功');
+        Toast.success('SKILL 上传成功');
       }
       setUploadOpen(false);
-      form.resetFields();
+      form.reset();
       setEditingSkill(null);
       void load();
       void loadInstalled();
     } catch (e) {
-      if ((e as { errorFields?: unknown }).errorFields) return;
-      message.error(editingSkill ? '更新失败' : '上传失败');
+      // Semi Form.validate() 校验失败时 reject 的是按 field 聚合的普通对象（非 Error），静默返回，不弹错误 Toast
+      if (e && typeof e === 'object' && !(e instanceof Error)) return;
+      Toast.error(editingSkill ? '更新失败' : '上传失败');
     } finally {
       setSubmitting(false);
     }
@@ -124,11 +125,11 @@ export default function SkillHubPage() {
   const doInstall = async (id: string, name: string) => {
     try {
       await installSkill(id);
-      message.success(`SKILL「${name}」已安装`);
+      Toast.success(`SKILL「${name}」已安装`);
       void load();
       void loadInstalled(); // 安装后同步刷新「已安装」清单
     } catch {
-      message.error('安装失败');
+      Toast.error('安装失败');
     }
   };
 
@@ -143,25 +144,25 @@ export default function SkillHubPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      message.error('下载失败');
+      Toast.error('下载失败');
     }
   };
 
   const doDelete = async (id: string, name: string) => {
     try {
       await deleteSkill(id);
-      message.success(`SKILL「${name}」已删除`);
+      Toast.success(`SKILL「${name}」已删除`);
       void load();
     } catch {
-      message.error('删除失败（仅作者可删）');
+      Toast.error('删除失败（仅作者可删）');
     }
   };
 
-  const columns: ColumnsType<Skill> = [
+  const columns: ColumnProps<Skill>[] = [
     { title: 'SKILL', dataIndex: 'name', render: (v, r) => (
-        <Space direction="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>{v}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>{r.description}</Typography.Text>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>{r.description}</Typography.Text>
         </Space>
       ) },
     { title: '版本', dataIndex: 'version', width: 80 },
@@ -175,17 +176,17 @@ export default function SkillHubPage() {
       ) },
     { title: '操作', key: 'actions', width: 260, render: (_, r) => (
         <Space>
-          <Button size="small" icon={<CloudDownloadOutlined />} onClick={() => void doDownload(r)}>下载</Button>
+          <Button size="small" theme="borderless" icon={<CloudDownloadOutlined />} onClick={() => void doDownload(r)}>下载</Button>
           {installedIds.has(r.id) ? (
             <Button size="small" disabled>已安装</Button>
           ) : (
-            <Button size="small" type="primary" onClick={() => void doInstall(r.id, r.name)}>安装</Button>
+            <Button size="small" theme="solid" type="primary" onClick={() => void doInstall(r.id, r.name)}>安装</Button>
           )}
           {r.is_owner && (
-            <Button size="small" icon={<EditOutlined />} onClick={() => doEdit(r)}>编辑</Button>
+            <Button size="small" theme="borderless" icon={<EditOutlined />} onClick={() => doEdit(r)}>编辑</Button>
           )}
           <Popconfirm title={`删除「${r.name}」？`} onConfirm={() => void doDelete(r.id, r.name)}>
-            <Button size="small" danger>删除</Button>
+            <Button size="small" type="danger" theme="borderless">删除</Button>
           </Popconfirm>
         </Space>
       ) },
@@ -194,73 +195,65 @@ export default function SkillHubPage() {
   return (
     <Card
       title="SKILL HUB"
-      extra={
+      headerExtraContent={
         <Space>
-          <Input.Search placeholder="搜索 SKILL" allowClear style={{ width: 220 }} onSearch={(v) => { setKeyword(v); void load(); }} />
-          <Button type="primary" icon={<PlusOutlined />} onClick={openUpload}>上传 SKILL</Button>
+          <Input
+            placeholder="搜索 SKILL"
+            showClear
+            style={{ width: 220 }}
+            onEnterPress={(e) => {
+              setKeyword((e.target as HTMLInputElement).value);
+              void load();
+            }}
+          />
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openUpload}>上传 SKILL</Button>
         </Space>
       }
     >
       <Tabs
-        items={[
-          {
-            key: 'market',
-            label: '公开市场',
-            children: (
-              <Table
-                rowKey="id"
-                columns={columns}
-                dataSource={skills}
-                loading={loading}
-                locale={{ emptyText: <Empty description="还没有 SKILL，点击右上角上传" /> }}
-                pagination={{ pageSize: 10 }}
-              />
-            ),
-          },
-          {
-            key: 'installed',
-            label: `已安装 (${installed.length})`,
-            children: (
-              <Table
-                rowKey="id"
-                columns={columns}
-                dataSource={installed}
-                loading={loading}
-                locale={{ emptyText: <Empty description="还没有已安装的 SKILL" /> }}
-                pagination={{ pageSize: 10 }}
-              />
-            ),
-          },
+        tabList={[
+          { itemKey: 'market', tab: '公开市场' },
+          { itemKey: 'installed', tab: `已安装 (${installed.length})` },
         ]}
-      />
+      >
+        <Tabs.TabPane itemKey="market">
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={skills}
+            loading={loading}
+            empty={<Empty description="还没有 SKILL，点击右上角上传" />}
+            pagination={{ pageSize: 10 }}
+          />
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="installed">
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={installed}
+            loading={loading}
+            empty={<Empty description="还没有已安装的 SKILL" />}
+            pagination={{ pageSize: 10 }}
+          />
+        </Tabs.TabPane>
+      </Tabs>
 
       <Modal
         title={editingSkill ? `编辑 SKILL「${editingSkill.name}」` : '上传 SKILL'}
-        open={uploadOpen}
+        visible={uploadOpen}
         onOk={() => void doSubmit()}
         confirmLoading={submitting}
         onCancel={() => { setUploadOpen(false); setEditingSkill(null); }}
-        destroyOnHidden
       >
-        <Form form={form} layout="vertical" initialValues={{ version: 'v1', visibility: 'public' }}>
-          <Form.Item name="name" label="SKILL 名称" rules={[{ required: true, message: '请输入名称' }]}>
-            <Input placeholder="如：kb-extractor" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} placeholder="简短描述这个 SKILL 的能力" />
-          </Form.Item>
-          <Form.Item name="version" label="版本">
-            <Input placeholder="v1" />
-          </Form.Item>
-          <Form.Item name="visibility" label="可见性">
-            <Radio.Group>
-              <Radio value="public">公开</Radio>
-              <Radio value="private">私有</Radio>
-            </Radio.Group>
-          </Form.Item>
-          <Form.Item name="content" label="SKILL 内容（SKILL.md / YAML）" rules={[{ required: true, message: '请输入内容' }]}>
-            <Input.TextArea rows={6} placeholder={'---\nname: my-skill\ndescription: ...\n---\n# Skill 内容'} />
-          </Form.Item>
+        <Form form={form}>
+          <Form.Input field="name" label="SKILL 名称" rules={[{ required: true, message: '请输入名称' }]} placeholder="如：kb-extractor" />
+          <Form.TextArea field="description" label="描述" rows={2} placeholder="简短描述这个 SKILL 的能力" />
+          <Form.Input field="version" label="版本" initValue="v1" placeholder="v1" />
+          <Form.RadioGroup field="visibility" label="可见性" initValue="public">
+            <Radio value="public">公开</Radio>
+            <Radio value="private">私有</Radio>
+          </Form.RadioGroup>
+          <Form.TextArea field="content" label="SKILL 内容（SKILL.md / YAML）" rules={[{ required: true, message: '请输入内容' }]} rows={6} placeholder={'---\nname: my-skill\ndescription: ...\n---\n# Skill 内容'} />
         </Form>
       </Modal>
     </Card>

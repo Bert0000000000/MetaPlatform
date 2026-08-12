@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
@@ -9,11 +9,11 @@ import {
   Table,
   Tabs,
   Tag,
+  Toast,
   Typography,
-  message,
   Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -58,14 +58,14 @@ export default function ToolDetailPage() {
   const handleRollback = async (versionId: string) => {
     if (!id) return;
     await rollbackToolVersion(id, versionId);
-    message.success('已回滚到该版本');
+    Toast.success('已回滚到该版本');
     load();
   };
 
   const handleSetCurrent = async (versionId: string) => {
     if (!id) return;
     await setCurrentToolVersion(id, versionId);
-    message.success('已设为当前版本');
+    Toast.success('已设为当前版本');
     load();
   };
 
@@ -76,7 +76,7 @@ export default function ToolDetailPage() {
     setCompareOpen(true);
   };
 
-  const versionColumns: ColumnsType<McpToolVersion> = [
+  const versionColumns: ColumnProps<McpToolVersion>[] = [
     {
       title: '版本',
       dataIndex: 'version',
@@ -108,15 +108,15 @@ export default function ToolDetailPage() {
         <Space>
           <Popconfirm
             title="回滚到此版本？"
-            description="当前工具 schema 与描述将被替换为该版本内容。"
+            content="当前工具 schema 与描述将被替换为该版本内容。"
             onConfirm={() => handleRollback(record.id)}
           >
-            <Button type="link" icon={<RollbackOutlined />}>
+            <Button theme="borderless" icon={<RollbackOutlined />}>
               回滚
             </Button>
           </Popconfirm>
           <Button
-            type="link"
+            theme="borderless"
             icon={<CheckCircleOutlined />}
             disabled={record.isCurrent}
             onClick={() => handleSetCurrent(record.id)}
@@ -125,7 +125,7 @@ export default function ToolDetailPage() {
           </Button>
           {index > 0 && (
             <Button
-              type="link"
+              theme="borderless"
               icon={<SwapOutlined />}
               onClick={() => handleCompare(versions[index - 1]!.id, record.id)}
             >
@@ -143,10 +143,11 @@ export default function ToolDetailPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tools')}>
           返回
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           {tool?.name ?? '工具详情'}
         </Typography.Title>
         <Button
+          theme="solid"
           type="primary"
           icon={<EditOutlined />}
           onClick={() => navigate(`/tools/${id}/edit`)}
@@ -156,22 +157,22 @@ export default function ToolDetailPage() {
       </Space>
 
       <Tabs defaultActiveKey="overview">
-        <Tabs.TabPane tab="概览" key="overview">
+        <Tabs.TabPane tab="概览" itemKey="overview">
           <Card loading={loading}>
             {tool && (
-              <Descriptions bordered column={2}>
-                <Descriptions.Item label="编码">{tool.code}</Descriptions.Item>
-                <Descriptions.Item label="分类">
+              <Descriptions layout="horizontal" column={2}>
+                <Descriptions.Item itemKey="编码">{tool.code}</Descriptions.Item>
+                <Descriptions.Item itemKey="分类">
                   <Tag color="blue">{tool.category}</Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="当前版本">
+                <Descriptions.Item itemKey="当前版本">
                   <Tag color="purple">v{tool.version}</Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="启用">{tool.enabled ? '是' : '否'}</Descriptions.Item>
-                <Descriptions.Item label="描述" span={2}>
+                <Descriptions.Item itemKey="启用">{tool.enabled ? '是' : '否'}</Descriptions.Item>
+                <Descriptions.Item itemKey="描述" span={2}>
                   {tool.description || '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label="标签" span={2}>
+                <Descriptions.Item itemKey="标签" span={2}>
                   <Space>
                     {tool.tags?.map((tag) => (
                       <Tag key={tag}>{tag}</Tag>
@@ -183,7 +184,7 @@ export default function ToolDetailPage() {
           </Card>
         </Tabs.TabPane>
 
-        <Tabs.TabPane tab="版本历史" key="versions">
+        <Tabs.TabPane tab="版本历史" itemKey="versions">
           <Card>
             <Table
               rowKey="id"
@@ -191,58 +192,60 @@ export default function ToolDetailPage() {
               columns={versionColumns}
               loading={loading}
               pagination={{ pageSize: 10 }}
-              size="middle" scroll={{ x: 'max-content' }} />
+              size="middle"
+              scroll={{ x: 'max-content' }}
+            />
           </Card>
         </Tabs.TabPane>
       </Tabs>
 
       <Modal
         title="版本对比"
-        open={compareOpen}
+        visible={compareOpen}
         width={900}
         footer={null}
         onCancel={() => setCompareOpen(false)}
       >
         {compareResult && (
-            <Space orientation="vertical" style={{ width: '100%' }}>
-              <Space>
-                <Tag color="blue">差异项</Tag>
-                {compareResult.differences.map((d) => (
-                  <Tag key={d} color="orange">
-                    {d}
-                  </Tag>
-                ))}
-              </Space>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <Card title={`v${compareResult.left.version}`} size="small">
-                  <pre style={{ maxHeight: 360, overflow: 'auto' }}>
-                    {JSON.stringify(
-                      {
-                        description: compareResult.left.description,
-                        schema: compareResult.left.schema,
-                        changeLog: compareResult.left.changeLog,
-                      },
-                      null,
-                      2,
-                    )}
-                  </pre>
-                </Card>
-                <Card title={`v${compareResult.right.version}`} size="small">
-                  <pre style={{ maxHeight: 360, overflow: 'auto' }}>
-                    {JSON.stringify(
-                      {
-                        description: compareResult.right.description,
-                        schema: compareResult.right.schema,
-                        changeLog: compareResult.right.changeLog,
-                      },
-                      null,
-                      2,
-                    )}
-                  </pre>
-                </Card>
-              </div>
+          <Space vertical style={{ width: '100%' }}>
+            <Space>
+              <Tag color="blue">差异项</Tag>
+              {compareResult.differences.map((d) => (
+                <Tag key={d} color="orange">
+                  {d}
+                </Tag>
+              ))}
             </Space>
-          )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Card title={`v${compareResult.left.version}`}>
+                <pre style={{ maxHeight: 360, overflow: 'auto' }}>
+                  {JSON.stringify(
+                    {
+                      description: compareResult.left.description,
+                      schema: compareResult.left.schema,
+                      changeLog: compareResult.left.changeLog,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </Card>
+              <Card title={`v${compareResult.right.version}`}>
+                <pre style={{ maxHeight: 360, overflow: 'auto' }}>
+                  {JSON.stringify(
+                    {
+                      description: compareResult.right.description,
+                      schema: compareResult.right.schema,
+                      changeLog: compareResult.right.changeLog,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </Card>
+            </div>
+          </Space>
+        )}
       </Modal>
     </div>
   );

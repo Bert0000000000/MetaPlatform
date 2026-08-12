@@ -1,22 +1,22 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  Badge,
   Button,
   Card,
+  Checkbox,
   Empty,
+  List,
   Select,
   Space,
   Spin,
   Switch,
-  Tag,
-  Typography,
-  Row,
-  Col,
   Tabs,
-  List,
-  Checkbox,
-  Badge,
-  message,
-} from 'antd';
+  Tag,
+  Toast,
+  Typography,
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlayCircleOutlined,
   CodeOutlined,
@@ -47,10 +47,10 @@ const METHOD_OPTIONS = [
   { label: 'initialize', value: 'initialize' },
 ];
 
-const STATUS_COLOR: Record<string, string> = {
-  SUCCESS: 'success',
-  FAILED: 'error',
-  BREAKPOINT: 'warning',
+const STATUS_COLOR: Record<string, TagColor> = {
+  SUCCESS: 'green',
+  FAILED: 'red',
+  BREAKPOINT: 'orange',
 };
 
 export default function DebuggerPage() {
@@ -182,11 +182,11 @@ export default function DebuggerPage() {
     try {
       requestPayload = JSON.parse(requestText);
     } catch {
-      message.warning('请求 JSON 格式不正确');
+      Toast.warning('请求 JSON 格式不正确');
       return;
     }
     if (method === 'tools/call' && !selectedTool) {
-      message.warning('请先选择工具');
+      Toast.warning('请先选择工具');
       return;
     }
     setExecuting(true);
@@ -234,15 +234,15 @@ export default function DebuggerPage() {
 
   const formatJson = (value: unknown) => JSON.stringify(value, null, 2) ?? '';
 
-  const tabItems = [
+  const tabItems: { itemKey: string; tab: React.ReactNode; content: React.ReactNode }[] = [
     {
-      key: 'result',
-      label: (
+      itemKey: 'result',
+      tab: (
         <span>
           <CodeOutlined /> 结果
         </span>
       ),
-      children: currentSession ? (
+      content: currentSession ? (
         <Editor
           height="calc(100vh - 320px)"
           defaultLanguage="json"
@@ -254,15 +254,15 @@ export default function DebuggerPage() {
       ),
     },
     {
-      key: 'raw',
-      label: (
+      itemKey: 'raw',
+      tab: (
         <span>
           <FileTextOutlined /> 原始报文
         </span>
       ),
-      children: currentSession ? (
-        <Space orientation="vertical" style={{ width: '100%' }}>
-          <Card size="small" title="请求报文">
+      content: currentSession ? (
+        <Space vertical style={{ width: '100%' }}>
+          <Card title="请求报文">
             <Editor
               height="180px"
               defaultLanguage="json"
@@ -270,7 +270,7 @@ export default function DebuggerPage() {
               options={{ readOnly: true, minimap: { enabled: false } }}
             />
           </Card>
-          <Card size="small" title="响应报文">
+          <Card title="响应报文">
             <Editor
               height="180px"
               defaultLanguage="json"
@@ -284,62 +284,65 @@ export default function DebuggerPage() {
       ),
     },
     {
-      key: 'info',
-      label: (
+      itemKey: 'info',
+      tab: (
         <span>
           <InfoCircleOutlined /> 调用信息
         </span>
       ),
-      children: currentSession ? (
-        <Space orientation="vertical" style={{ width: '100%' }}>
-          <Card size="small">
+      content: currentSession ? (
+        <Space vertical style={{ width: '100%' }}>
+          <Card>
             <Row gutter={16}>
               <Col span={12}>
-                <Typography.Text type="secondary">状态</Typography.Text>
+                <Typography.Text type="tertiary">状态</Typography.Text>
                 <div>
-                  <Tag color={STATUS_COLOR[currentSession.status] ?? 'default'}>
+                  <Tag color={STATUS_COLOR[currentSession.status] ?? 'grey'}>
                     {currentSession.status}
                   </Tag>
                 </div>
               </Col>
               <Col span={12}>
-                <Typography.Text type="secondary">耗时</Typography.Text>
+                <Typography.Text type="tertiary">耗时</Typography.Text>
                 <div>{currentSession.durationMs ?? '-'} ms</div>
               </Col>
             </Row>
           </Card>
-          <Card size="small">
+          <Card>
             <Row gutter={16}>
               <Col span={12}>
-                <Typography.Text type="secondary">Server</Typography.Text>
+                <Typography.Text type="tertiary">Server</Typography.Text>
                 <div>{selectedServer?.name ?? currentSession.serverId ?? '-'}</div>
               </Col>
               <Col span={12}>
-                <Typography.Text type="secondary">Tool</Typography.Text>
+                <Typography.Text type="tertiary">Tool</Typography.Text>
                 <div>{selectedTool?.name ?? currentSession.toolId ?? '-'}</div>
               </Col>
             </Row>
           </Card>
-          <Card size="small">
+          <Card>
             <Row gutter={16}>
               <Col span={12}>
-                <Typography.Text type="secondary">Method</Typography.Text>
+                <Typography.Text type="tertiary">Method</Typography.Text>
                 <div>{currentSession.method ?? '-'}</div>
               </Col>
               <Col span={12}>
-                <Typography.Text type="secondary">Trace ID</Typography.Text>
+                <Typography.Text type="tertiary">Trace ID</Typography.Text>
                 <div>{currentSession.traceId ?? '-'}</div>
               </Col>
             </Row>
           </Card>
           {currentSession.errorMessage && (
-            <Card size="small">
+            <Card>
               <Typography.Text type="danger">{currentSession.errorMessage}</Typography.Text>
             </Card>
           )}
           {currentSession.breakpoint && (
-            <Card size="small">
-              <Badge status="warning" text="断点调试：请求已暂停，可点击历史记录中的回放继续执行" />
+            <Card>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Badge type="warning" dot />
+                <Typography.Text>断点调试：请求已暂停，可点击历史记录中的回放继续执行</Typography.Text>
+              </div>
             </Card>
           )}
         </Space>
@@ -348,46 +351,45 @@ export default function DebuggerPage() {
       ),
     },
     {
-      key: 'history',
-      label: (
+      itemKey: 'history',
+      tab: (
         <span>
           <HistoryOutlined /> 历史记录
         </span>
       ),
-      children: (
+      content: (
         <List
           loading={historyLoading}
           dataSource={history}
           renderItem={(item) => (
             <List.Item
-              actions={[
-                <Button
-                  key="replay"
-                  type="link"
-                  size="small"
-                  onClick={() => handleReplay(item.id)}
-                >
-                  回放
-                </Button>,
-                <Checkbox
-                  key="select"
-                  checked={selectedHistoryIds.includes(item.id)}
-                  onChange={(e) => handleHistorySelect(item.id, e.target.checked)}
-                >
-                  对比
-                </Checkbox>,
-              ]}
-            >
-              <List.Item.Meta
-                title={
-                  <Space>
-                    <Tag color={STATUS_COLOR[item.status] ?? 'default'}>{item.status}</Tag>
+              main={
+                <div>
+                  <Space vertical spacing={0}>
+                    <Tag color={STATUS_COLOR[item.status] ?? 'grey'}>{item.status}</Tag>
                     <Typography.Text>{item.method}</Typography.Text>
                   </Space>
-                }
-                description={`${item.createdAt ?? ''} · ${item.durationMs ?? '-'} ms · ${item.traceId ?? ''}`}
-              />
-            </List.Item>
+                  <div>
+                    <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                      {`${item.createdAt ?? ''} · ${item.durationMs ?? '-'} ms · ${item.traceId ?? ''}`}
+                    </Typography.Text>
+                  </div>
+                </div>
+              }
+              extra={
+                <Space>
+                  <Button theme="borderless" size="small" onClick={() => handleReplay(item.id)}>
+                    回放
+                  </Button>
+                  <Checkbox
+                    checked={selectedHistoryIds.includes(item.id)}
+                    onChange={(e) => handleHistorySelect(item.id, e.target.checked ?? false)}
+                  >
+                    对比
+                  </Checkbox>
+                </Space>
+              }
+            />
           )}
         />
       ),
@@ -396,24 +398,24 @@ export default function DebuggerPage() {
 
   if (compareResult) {
     tabItems.push({
-      key: 'compare',
-      label: (
+      itemKey: 'compare',
+      tab: (
         <span>
           <DiffOutlined /> 请求对比
         </span>
       ),
-      children: (
-        <Space orientation="vertical" style={{ width: '100%' }}>
-          <Card size="small" title="差异字段">
+      content: (
+        <Space vertical style={{ width: '100%' }}>
+          <Card title="差异字段">
             {compareResult.differences.length > 0 ? (
               compareResult.differences.map((d) => <Tag key={d}>{d}</Tag>)
             ) : (
-              <Typography.Text type="secondary">无差异</Typography.Text>
+              <Typography.Text type="tertiary">无差异</Typography.Text>
             )}
           </Card>
           <Row gutter={16}>
             <Col span={12}>
-              <Card size="small" title="请求 A">
+              <Card title="请求 A">
                 <Editor
                   height="200px"
                   defaultLanguage="json"
@@ -423,7 +425,7 @@ export default function DebuggerPage() {
               </Card>
             </Col>
             <Col span={12}>
-              <Card size="small" title="请求 B">
+              <Card title="请求 B">
                 <Editor
                   height="200px"
                   defaultLanguage="json"
@@ -435,7 +437,7 @@ export default function DebuggerPage() {
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Card size="small" title="响应 A">
+              <Card title="响应 A">
                 <Editor
                   height="200px"
                   defaultLanguage="json"
@@ -445,7 +447,7 @@ export default function DebuggerPage() {
               </Card>
             </Col>
             <Col span={12}>
-              <Card size="small" title="响应 B">
+              <Card title="响应 B">
                 <Editor
                   height="200px"
                   defaultLanguage="json"
@@ -463,7 +465,7 @@ export default function DebuggerPage() {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           <ThunderboltOutlined /> MCP 调试器
         </Typography.Title>
       </div>
@@ -471,14 +473,13 @@ export default function DebuggerPage() {
       <Row gutter={16} style={{ flex: 1, minHeight: 0, marginTop: 16 }}>
         <Col span={5} style={{ height: '100%' }}>
           <Card
-            size="small"
             title="Server / 工具"
             style={{ height: '100%', overflow: 'auto' }}
           >
             {loadingResources ? (
               <Spin />
             ) : (
-              <Space orientation="vertical" style={{ width: '100%' }}>
+              <Space vertical style={{ width: '100%' }}>
                 <div>
                   <Typography.Text strong style={{ fontSize: 12 }}>
                     MCP Server
@@ -492,13 +493,16 @@ export default function DebuggerPage() {
                           padding: 8,
                           borderRadius: 4,
                           cursor: 'pointer',
-                          background: selectedServerId === s.id ? '#e6f4ff' : 'transparent',
+                          background:
+                            selectedServerId === s.id
+                              ? 'var(--semi-color-primary-light-default)'
+                              : 'transparent',
                           marginBottom: 4,
                         }}
                       >
                         <Typography.Text strong>{s.name}</Typography.Text>
                         <div>
-                          <Tag color={s.status === 'online' ? 'success' : 'default'}>
+                          <Tag color={s.status === 'online' ? 'green' : 'grey'}>
                             {s.status}
                           </Tag>
                         </div>
@@ -519,14 +523,17 @@ export default function DebuggerPage() {
                           padding: 8,
                           borderRadius: 4,
                           cursor: 'pointer',
-                          background: selectedToolId === t.id ? '#e6f4ff' : 'transparent',
+                          background:
+                            selectedToolId === t.id
+                              ? 'var(--semi-color-primary-light-default)'
+                              : 'transparent',
                           marginBottom: 4,
                         }}
                       >
                         <Typography.Text strong>{t.name}</Typography.Text>
                         <div>
                           <Tag color="blue">{t.category}</Tag>
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                             <CodeOutlined /> {t.code}
                           </Typography.Text>
                         </div>
@@ -540,20 +547,22 @@ export default function DebuggerPage() {
         </Col>
 
         <Col span={10} style={{ height: '100%' }}>
-          <Card size="small" title="请求编辑器" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Card title="请求编辑器" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Space wrap style={{ marginBottom: 12 }}>
               <Select
                 value={method}
                 onChange={(m) => {
-                  setMethod(m);
-                  if (m === 'tools/call' && !selectedTool) {
+                  const next = m as string;
+                  setMethod(next);
+                  if (next === 'tools/call' && !selectedTool) {
                     setSelectedToolId(undefined);
                   }
                 }}
                 style={{ width: 180 }}
-                options={METHOD_OPTIONS}
+                optionList={METHOD_OPTIONS}
               />
               <Button
+                theme="solid"
                 type="primary"
                 icon={<PlayCircleOutlined />}
                 onClick={handleExecute}
@@ -564,8 +573,8 @@ export default function DebuggerPage() {
               <Switch
                 checked={breakpoint}
                 onChange={setBreakpoint}
-                checkedChildren="断点调试"
-                unCheckedChildren="断点调试"
+                checkedText="断点调试"
+                uncheckedText="断点调试"
               />
             </Space>
 
@@ -589,8 +598,14 @@ export default function DebuggerPage() {
         </Col>
 
         <Col span={9} style={{ height: '100%' }}>
-          <Card size="small" style={{ height: '100%' }}>
-            <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+          <Card style={{ height: '100%' }}>
+            <Tabs activeKey={activeTab} onChange={setActiveTab}>
+              {tabItems.map((t) => (
+                <Tabs.TabPane itemKey={t.itemKey} tab={t.tab} key={t.itemKey}>
+                  {t.content}
+                </Tabs.TabPane>
+              ))}
+            </Tabs>
           </Card>
         </Col>
       </Row>

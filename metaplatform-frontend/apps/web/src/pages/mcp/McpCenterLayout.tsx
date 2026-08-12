@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Tabs } from 'antd';
+import { Tabs } from '@douyinfe/semi-ui';
 import { ApiOutlined, AppstoreOutlined, TeamOutlined } from '@ant-design/icons';
 
 /**
@@ -66,9 +66,9 @@ export default function McpCenterLayout() {
       <Tabs
         activeKey={active}
         onChange={onTabChange}
-        items={GROUPS.map((g) => ({
-          key: g.key,
-          label: (
+        tabList={GROUPS.map((g) => ({
+          itemKey: g.key,
+          tab: (
             <span>
               {g.icon} {g.label}
             </span>

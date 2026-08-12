@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -11,27 +11,34 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
+  Toast,
   Popconfirm,
   Form,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+  withField,
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
   AppstoreOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import { listPrompts, createPrompt, updatePrompt, deletePrompt } from '@/api/mcphub/prompts';
 import VariableEditor from './components/VariableEditor';
 import PreviewPanel from './components/PreviewPanel';
 import type { PromptTemplate, PromptTemplateCreateRequest } from '@/api/mcphub/types';
 
+const FormVariableEditor = withField(
+  VariableEditor as React.ComponentType<Partial<React.ComponentProps<typeof VariableEditor>>>
+);
+
 export default function PromptTemplatePage() {
   const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<PromptTemplate | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [previewPrompt, setPreviewPrompt] = useState<PromptTemplate | null>(null);
@@ -53,35 +60,35 @@ export default function PromptTemplatePage() {
   }, [keyword]);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     setSubmitting(true);
     try {
       if (editing) {
         await updatePrompt(editing.id, values);
-        message.success('已更新');
+        Toast.success('已更新');
       } else {
         await createPrompt(values);
-        message.success('已创建');
+        Toast.success('已创建');
       }
       setFormOpen(false);
       setEditing(null);
-      form.resetFields();
+      form.reset();
       load();
     } finally {
       setSubmitting(false);
     }
   };
 
-  const columns: ColumnsType<PromptTemplate> = [
+  const columns: ColumnProps<PromptTemplate>[] = [
     {
       title: 'Prompt',
       key: 'name',
       render: (_, p) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <AppstoreOutlined /> {p.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {p.description}
           </Typography.Text>
         </Space>
@@ -104,15 +111,15 @@ export default function PromptTemplatePage() {
       key: 'actions',
       render: (_, p) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => setPreviewPrompt(p)}>
+          <Button theme="borderless" icon={<EyeOutlined />} onClick={() => setPreviewPrompt(p)}>
             预览
           </Button>
           <Button
-            type="link"
+            theme="borderless"
             icon={<EditOutlined />}
             onClick={() => {
               setEditing(p);
-              form.setFieldsValue(p);
+              form.setValues(p);
               setFormOpen(true);
             }}
           >
@@ -122,11 +129,11 @@ export default function PromptTemplatePage() {
             title="确定删除？"
             onConfirm={async () => {
               await deletePrompt(p.id);
-              message.success('已删除');
+              Toast.success('已删除');
               load();
             }}
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -138,15 +145,16 @@ export default function PromptTemplatePage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           Prompt 模板
         </Typography.Title>
         <Button
+          theme="solid"
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
             setEditing(null);
-            form.resetFields();
+            form.reset();
             setFormOpen(true);
           }}
         >
@@ -155,10 +163,13 @@ export default function PromptTemplatePage() {
       </div>
 
       <Space style={{ marginBottom: 16 }}>
-        <Input.Search
+        <Input
           placeholder="搜索名称/分类"
-          allowClear
-          onSearch={setKeyword}
+          showClear
+          value={query}
+          onChange={(v) => setQuery(v)}
+          onEnterPress={() => setKeyword(query)}
+          suffix={<SearchOutlined style={{ color: 'var(--muted-foreground)', cursor: 'pointer' }} onClick={() => setKeyword(query)} />}
           style={{ width: 240 }}
         />
       </Space>
@@ -177,7 +188,7 @@ export default function PromptTemplatePage() {
       </Card>
 
       <Modal
-        open={formOpen}
+        visible={formOpen}
         title={editing ? '编辑 Prompt' : '创建 Prompt'}
         onCancel={() => {
           setFormOpen(false);
@@ -186,79 +197,61 @@ export default function PromptTemplatePage() {
         onOk={handleSubmit}
         width={760}
         confirmLoading={submitting}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="模板名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="category" label="分类" rules={[{ required: true }]}>
-            <Input placeholder="如：财务、HR、客服" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="role" label="角色" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { label: 'System', value: 'system' },
-                { label: 'User', value: 'user' },
-                { label: 'Assistant', value: 'assistant' },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item
-            name="template"
+        <Form form={form}>
+          <Form.Input field="name" label="模板名称" rules={[{ required: true }]} />
+          <Form.Input field="category" label="分类" rules={[{ required: true }]} placeholder="如：财务、HR、客服" />
+          <Form.TextArea field="description" label="描述" rows={2} />
+          <Form.Select
+            field="role"
+            label="角色"
+            rules={[{ required: true }]}
+            optionList={[
+              { label: 'System', value: 'system' },
+              { label: 'User', value: 'user' },
+              { label: 'Assistant', value: 'assistant' },
+            ]}
+          />
+          <Form.TextArea
+            field="template"
             label="模板内容"
             rules={[{ required: true }]}
-            extra="使用 {{varName}} 引用变量"
-          >
-            <Input.TextArea rows={6} placeholder="你是一个...请基于 {{name}} 的数据..." />
-          </Form.Item>
-          <Form.Item name="variables" label="变量定义">
-            <VariableEditor value={[]} onChange={() => {}} />
-          </Form.Item>
-          <Form.Item name="tags" label="标签">
-            <Select mode="tags" placeholder="输入后回车" />
-          </Form.Item>
+            rows={6}
+            placeholder="你是一个...请基于 {{name}} 的数据..."
+            extraText="使用 {{varName}} 引用变量"
+          />
+          <FormVariableEditor field="variables" label="变量定义" initValue={[]} />
+          <Form.TagInput field="tags" label="标签" placeholder="输入后回车" />
         </Form>
       </Modal>
 
       <Modal
-        open={!!previewPrompt}
+        visible={!!previewPrompt}
         title={`预览：${previewPrompt?.name ?? ''}`}
         onCancel={() => setPreviewPrompt(null)}
         footer={<Button onClick={() => setPreviewPrompt(null)}>关闭</Button>}
         width={760}
       >
         {previewPrompt && (
-          <Tabs
-            items={[
-              {
-                key: 'preview',
-                label: '渲染预览',
-                children: <PreviewPanel template={previewPrompt} />,
-              },
-              {
-                key: 'raw',
-                label: '原始模板',
-                children: (
-                  <pre
-                    style={{
-                      background: '#fafafa',
-                      padding: 12,
-                      borderRadius: 4,
-                      fontFamily: 'Menlo, Consolas, monospace',
-                      fontSize: 12,
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    {previewPrompt.template}
-                  </pre>
-                ),
-              },
-            ]}
-          />
+          <Tabs>
+            <Tabs.TabPane itemKey="preview" tab="渲染预览">
+              <PreviewPanel template={previewPrompt} />
+            </Tabs.TabPane>
+            <Tabs.TabPane itemKey="raw" tab="原始模板">
+              <pre
+                style={{
+                  background: 'var(--muted)',
+                  padding: 12,
+                  borderRadius: 4,
+                  fontFamily: 'Menlo, Consolas, monospace',
+                  fontSize: 12,
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {previewPrompt.template}
+              </pre>
+            </Tabs.TabPane>
+          </Tabs>
         )}
       </Modal>
     </div>

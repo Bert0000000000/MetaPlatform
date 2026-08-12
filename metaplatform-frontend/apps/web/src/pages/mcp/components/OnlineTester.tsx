@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { Button, Card, Empty, Input, Space, Typography, message } from 'antd';
+import { useState } from 'react';
+import { Button, Card, Empty, Input, Space, Toast, Typography } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { Integration, JsonRpcResponse } from '@/api/mcphub/types';
 import { callJsonRpc } from '@/api/mcphub/jsonrpc';
@@ -19,7 +19,7 @@ export default function OnlineTester({ integration }: OnlineTesterProps) {
     try {
       parsed = JSON.parse(params);
     } catch {
-      message.warning('参数必须是合法 JSON');
+      Toast.warning('参数必须是合法 JSON');
       return;
     }
     setLoading(true);
@@ -37,21 +37,22 @@ export default function OnlineTester({ integration }: OnlineTesterProps) {
   };
 
   return (
-    <Card title="在线测试" size="small">
-      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+    <Card title="在线测试">
+      <Space vertical spacing="medium" style={{ width: '100%' }}>
         <Space>
           <Input
             value={method}
-            onChange={(e) => setMethod(e.target.value)}
+            onChange={(val) => setMethod(val)}
             style={{ width: 200 }}
           />
           <Input
             value={params}
-            onChange={(e) => setParams(e.target.value)}
+            onChange={(val) => setParams(val)}
             placeholder="params (JSON)"
             style={{ width: 400 }}
           />
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={loading}
@@ -62,7 +63,7 @@ export default function OnlineTester({ integration }: OnlineTesterProps) {
         </Space>
 
         {response ? (
-          <Typography.Paragraph copyable={{ text: JSON.stringify(response, null, 2) }}>
+          <Typography.Paragraph copyable={{ content: JSON.stringify(response, null, 2) }}>
             <pre style={codeStyle}>
               {JSON.stringify(response, null, 2)}
             </pre>
@@ -76,7 +77,8 @@ export default function OnlineTester({ integration }: OnlineTesterProps) {
 }
 
 const codeStyle: React.CSSProperties = {
-  background: '#fafafa',
+  background: 'var(--card)',
+  border: '1px solid var(--border)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

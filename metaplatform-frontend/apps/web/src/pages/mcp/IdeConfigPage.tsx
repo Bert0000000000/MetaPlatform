@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import {
+  Banner,
   Button,
   Card,
   Form,
+  Radio,
+  RadioGroup,
   Select,
-  Segmented,
   Space,
-  Typography,
-  message,
   Spin,
-  Result,
-  Alert,
-} from 'antd';
-import { CopyOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
+  Toast,
+  Typography,
+} from '@douyinfe/semi-ui';
+import { CopyOutlined, DownloadOutlined, ReloadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -61,7 +61,7 @@ export default function IdeConfigPage() {
 
   const handleGenerate = async () => {
     if (!serverId) {
-      message.warning('请先选择 Server');
+      Toast.warning('请先选择 Server');
       return;
     }
     setGenerating(true);
@@ -69,7 +69,7 @@ export default function IdeConfigPage() {
       const res = await generateServerIdeConfig(serverId, ide);
       setConfig(res);
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '生成配置失败');
+      Toast.error(err instanceof Error ? err.message : '生成配置失败');
     } finally {
       setGenerating(false);
     }
@@ -79,9 +79,9 @@ export default function IdeConfigPage() {
     if (!config) return;
     try {
       await navigator.clipboard.writeText(config.content);
-      message.success('已复制到剪贴板');
+      Toast.success('已复制到剪贴板');
     } catch {
-      message.error('复制失败，请手动复制');
+      Toast.error('复制失败，请手动复制');
     }
   };
 
@@ -96,7 +96,7 @@ export default function IdeConfigPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    message.success('已下载');
+    Toast.success('已下载');
   };
 
   if (loading) {
@@ -109,51 +109,65 @@ export default function IdeConfigPage() {
 
   if (error) {
     return (
-      <Result
-        status="error"
-        title="加载失败"
-        subTitle={error.message}
-        extra={
-          <Button type="primary" icon={<ReloadOutlined />} onClick={load}>
-            重试
-          </Button>
-        }
-      />
+      <div style={{ textAlign: 'center', padding: 48 }}>
+        <CloseCircleOutlined style={{ fontSize: 48, color: 'var(--semi-color-danger)' }} />
+        <Typography.Title heading={4} style={{ marginTop: 16 }}>
+          加载失败
+        </Typography.Title>
+        <Typography.Paragraph type="tertiary" style={{ marginTop: 8 }}>
+          {error.message}
+        </Typography.Paragraph>
+        <Button
+          theme="solid"
+          type="primary"
+          icon={<ReloadOutlined />}
+          onClick={load}
+          style={{ marginTop: 16 }}
+        >
+          重试
+        </Button>
+      </div>
     );
   }
 
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           IDE 配置模板
         </Typography.Title>
       </div>
 
       <Card style={{ marginBottom: 16 }}>
-        <Form layout="vertical">
-          <Form.Item label="选择 Server" required>
-            <Select
-              showSearch
-              placeholder="请选择要生成配置的 MCP Server"
-              value={serverId || undefined}
-              onChange={setServerId}
-              options={servers.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id }))}
-              style={{ maxWidth: 480 }}
-            />
-          </Form.Item>
-          <Form.Item label="IDE 类型" required>
-            <Segmented
-              value={ide}
-              onChange={(v) => setIde(v as IdeType)}
-              options={IDE_OPTIONS}
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" loading={generating} onClick={handleGenerate}>
+        <Form>
+          <Form.Label required>选择 Server</Form.Label>
+          <Select
+            filter
+            placeholder="请选择要生成配置的 MCP Server"
+            value={serverId || undefined}
+            onChange={(v) => setServerId(v as string)}
+            optionList={servers.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id }))}
+            style={{ maxWidth: 480 }}
+          />
+          <Form.Label required style={{ marginTop: 16 }}>
+            IDE 类型
+          </Form.Label>
+          <RadioGroup
+            type="button"
+            value={ide}
+            onChange={(e) => setIde(e.target.value as IdeType)}
+          >
+            {IDE_OPTIONS.map((o) => (
+              <Radio key={o.value} value={o.value}>
+                {o.label}
+              </Radio>
+            ))}
+          </RadioGroup>
+          <div style={{ marginTop: 16 }}>
+            <Button theme="solid" type="primary" loading={generating} onClick={handleGenerate}>
               生成配置
             </Button>
-          </Form.Item>
+          </div>
         </Form>
       </Card>
 
@@ -162,26 +176,25 @@ export default function IdeConfigPage() {
           title={
             <Space>
               <span>生成结果</span>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                 {config.fileName}
               </Typography.Text>
             </Space>
           }
-          extra={
+          headerExtraContent={
             <Space>
               <Button icon={<CopyOutlined />} onClick={handleCopy}>
                 复制
               </Button>
-              <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownload}>
+              <Button theme="solid" type="primary" icon={<DownloadOutlined />} onClick={handleDownload}>
                 下载
               </Button>
             </Space>
           }
         >
-          <Alert
-            message={`当前为 ${IDE_OPTIONS.find((i) => i.value === config.ideType)?.label || config.ideType} 配置格式，请按对应 IDE 的文档放置到正确位置。`}
+          <Banner
             type="info"
-            showIcon
+            description={`当前为 ${IDE_OPTIONS.find((i) => i.value === config.ideType)?.label || config.ideType} 配置格式，请按对应 IDE 的文档放置到正确位置。`}
             style={{ marginBottom: 16 }}
           />
           <SyntaxHighlighter language="json" style={oneLight} customStyle={{ margin: 0 }}>

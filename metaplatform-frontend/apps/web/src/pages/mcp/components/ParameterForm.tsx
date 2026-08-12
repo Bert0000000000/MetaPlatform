@@ -1,4 +1,4 @@
-import { Form, Input, InputNumber, Switch, Select, Empty, Card, Typography } from 'antd';
+import { Card, Empty, InputNumber, Select, Switch, TextArea, Typography } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 import type { McpTool } from '@/api/mcphub/types';
 
@@ -18,14 +18,14 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
   };
 
   return (
-    <Card size="small" title={`参数（${tool.inputSchema.length}）`}>
-      <Form layout="vertical">
+    <Card title={`参数（${tool.inputSchema.length}）`}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {tool.inputSchema.map((p) => {
           const current = value[p.name];
           const label = (
             <>
-              {p.name} {p.required && <span style={{ color: '#f5222d' }}>*</span>}
-              <Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+              {p.name} {p.required && <span style={{ color: 'var(--destructive)' }}>*</span>}
+              <Typography.Text type="tertiary" style={{ fontSize: 12, marginLeft: 8 }}>
                 {p.type}
               </Typography.Text>
             </>
@@ -37,7 +37,8 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
               <Select
                 value={current as string | undefined}
                 onChange={(v) => handleFieldChange(p.name, v)}
-                options={p.enumValues.map((v) => ({ label: v, value: v }))}
+                optionList={p.enumValues.map((v) => ({ label: v, value: v }))}
+                style={{ width: '100%' }}
               />
             );
           } else if (p.type === 'number') {
@@ -57,21 +58,29 @@ export default function ParameterForm({ tool, value, onChange }: ParameterFormPr
             );
           } else {
             control = (
-              <Input.TextArea
+              <TextArea
                 rows={2}
                 value={(current as string) || ''}
-                onChange={(e) => handleFieldChange(p.name, e.target.value)}
+                onChange={(val) => handleFieldChange(p.name, val)}
               />
             );
           }
 
           return (
-            <Form.Item key={p.name} label={label} tooltip={p.description}>
+            <div key={p.name}>
+              <div style={{ marginBottom: 4 }}>
+                {label}
+                {p.description && (
+                  <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                    {p.description}
+                  </span>
+                )}
+              </div>
               {control}
-            </Form.Item>
+            </div>
           );
         })}
-      </Form>
+      </div>
     </Card>
   );
 }

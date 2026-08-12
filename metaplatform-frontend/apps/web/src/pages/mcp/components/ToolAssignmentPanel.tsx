@@ -1,4 +1,4 @@
-import { Card, Empty, Tag, Typography } from 'antd';
+import { Card, Empty, Tag, Typography } from '@douyinfe/semi-ui';
 import type { McpServer, McpTool } from '@/api/mcphub/types';
 
 interface ToolAssignmentPanelProps {
@@ -12,7 +12,7 @@ export default function ToolAssignmentPanel({ server, tools }: ToolAssignmentPan
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-      <Card title={`已分配 (${assigned.length})`} size="small">
+      <Card title={`已分配 (${assigned.length})`}>
         {assigned.length === 0 ? (
           <Empty description="未分配任何工具" />
         ) : (
@@ -25,7 +25,7 @@ export default function ToolAssignmentPanel({ server, tools }: ToolAssignmentPan
           </div>
         )}
       </Card>
-      <Card title={`未分配 (${unassigned.length})`} size="small">
+      <Card title={`未分配 (${unassigned.length})`}>
         {unassigned.length === 0 ? (
           <Empty description="所有工具都已分配" />
         ) : (

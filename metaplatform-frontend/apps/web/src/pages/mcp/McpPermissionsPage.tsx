@@ -5,16 +5,15 @@ import {
   Empty,
   Form,
   Modal,
-  Radio,
   Select,
   Space,
   Table,
-  Tag,
   Tabs,
+  Tag,
+  Toast,
   Typography,
-  message,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import {
   DownloadOutlined,
   ReloadOutlined,
@@ -98,7 +97,7 @@ export default function PermissionMatrixPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      message.success('导出成功');
+      Toast.success('导出成功');
     } finally {
       setExporting(false);
     }
@@ -113,9 +112,8 @@ export default function PermissionMatrixPage() {
       toolName: toolNames.get(col.toolId) || col.toolId,
       currentEffect: row.cells[col.toolId] || 'inherit',
     });
-    form.setFieldsValue({
-      effect: (row.cells[col.toolId] === 'allow' ? 'ALLOW' : row.cells[col.toolId] === 'deny' ? 'DENY' : 'ALLOW'),
-    });
+    // Semi 的 Form.useForm 在 Form 组件挂载前调用方法无效（警告且不生效），
+    // 改为 Modal 内 Form.RadioGroup 的 initValue 声明式初始化，行为等价（每次打开都按 currentEffect 预填）。
   };
 
   const handleCellSubmit = async (values: { effect: 'ALLOW' | 'DENY' }) => {
@@ -134,7 +132,7 @@ export default function PermissionMatrixPage() {
         enabled: true,
       };
       await createPolicy(payload);
-      message.success('策略已更新');
+      Toast.success('策略已更新');
       setEditing(null);
       load();
     } finally {
@@ -142,11 +140,11 @@ export default function PermissionMatrixPage() {
     }
   };
 
-  const columns = useMemo<ColumnsType<PolicyMatrixRow>>(() => {
-    const base: ColumnsType<PolicyMatrixRow> = [
+  const columns = useMemo<ColumnProps<PolicyMatrixRow>[]>(() => {
+    const base: ColumnProps<PolicyMatrixRow>[] = [
       {
         title: matrixType === 'user-tool' ? '用户' : '应用',
-        dataIndex: ['subject', 'subjectName'],
+        dataIndex: 'subject.subjectName',
         fixed: 'left',
         width: 160,
         render: (_, r) => (
@@ -162,16 +160,18 @@ export default function PermissionMatrixPage() {
       const toolName = toolNames.get(col.toolId) || col.toolId;
       base.push({
         title: (
-          <Typography.Text ellipsis style={{ maxWidth: 120 }} title={toolName}>
-            {toolName}
-          </Typography.Text>
+          <span title={toolName}>
+            <Typography.Text ellipsis style={{ maxWidth: 120 }}>
+              {toolName}
+            </Typography.Text>
+          </span>
         ),
-        dataIndex: ['cells', col.toolId],
+        dataIndex: `cells.${col.toolId}`,
         align: 'center',
         width: 100,
         render: (effect: MatrixCellEffect | undefined, row) => {
           const cellEffect = effect || 'inherit';
-          const color = cellEffect === 'allow' ? 'green' : cellEffect === 'deny' ? 'red' : 'default';
+          const color = cellEffect === 'allow' ? 'green' : cellEffect === 'deny' ? 'red' : 'grey';
           const label = cellEffect === 'allow' ? '允许' : cellEffect === 'deny' ? '拒绝' : '继承';
           return (
             <Tag
@@ -191,14 +191,14 @@ export default function PermissionMatrixPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           权限矩阵
         </Typography.Title>
         <Space>
           <Select
             value={action}
-            options={ACTION_OPTIONS}
-            onChange={(v) => setAction(v)}
+            optionList={ACTION_OPTIONS}
+            onChange={(v) => setAction(v as string)}
             style={{ width: 160 }}
           />
           <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
@@ -217,7 +217,7 @@ export default function PermissionMatrixPage() {
         <Tabs
           activeKey={matrixType}
           onChange={(k) => setMatrixType(k as 'user-tool' | 'app-tool')}
-          items={MATRIX_TYPE_OPTIONS.map((t) => ({ key: t.key, label: t.label }))}
+          tabList={MATRIX_TYPE_OPTIONS.map((t) => ({ itemKey: t.key, tab: t.label }))}
           style={{ marginBottom: 16 }}
         />
 
@@ -225,7 +225,7 @@ export default function PermissionMatrixPage() {
           <Empty description="暂无权限矩阵数据" />
         ) : (
           <Table
-            rowKey={(r) => r.subject.subjectId}
+            rowKey={(r) => r?.subject.subjectId ?? ''}
             dataSource={matrix?.rows || []}
             columns={columns}
             loading={loading}
@@ -239,13 +239,13 @@ export default function PermissionMatrixPage() {
 
       <Modal
         title="编辑矩阵单元格"
-        open={!!editing}
+        visible={!!editing}
         confirmLoading={submitting}
         onCancel={() => setEditing(null)}
-        onOk={() => form.submit()}
+        onOk={() => form.submitForm()}
       >
         {editing && (
-          <Form form={form} layout="vertical" onFinish={handleCellSubmit}>
+          <Form form={form} layout="vertical" onSubmit={handleCellSubmit}>
             <Typography.Paragraph>
               主体：<Typography.Text strong>{editing.subjectName}</Typography.Text>
               <br />
@@ -260,7 +260,7 @@ export default function PermissionMatrixPage() {
                     ? 'green'
                     : editing.currentEffect === 'deny'
                     ? 'red'
-                    : 'default'
+                    : 'grey'
                 }
               >
                 {editing.currentEffect === 'allow'
@@ -271,13 +271,13 @@ export default function PermissionMatrixPage() {
               </Tag>
             </Typography.Paragraph>
 
-            <Form.Item
-              name="effect"
+            <Form.RadioGroup
+              field="effect"
               label="新策略效果"
               rules={[{ required: true, message: '请选择策略效果' }]}
-            >
-              <Radio.Group options={EFFECT_OPTIONS} />
-            </Form.Item>
+              options={EFFECT_OPTIONS}
+              initValue={editing.currentEffect === 'deny' ? 'DENY' : 'ALLOW'}
+            />
           </Form>
         )}
       </Modal>

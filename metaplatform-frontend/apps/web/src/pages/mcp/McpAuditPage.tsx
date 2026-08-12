@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -10,8 +10,9 @@ import {
   Table,
   Tag,
   Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { EyeOutlined, InteractionOutlined } from '@ant-design/icons';
 import { listCollaborations } from '@/api/mcphub/collaborations';
 import type { CollaborationAudit, PageResponse } from '@/api/mcphub/types';
@@ -27,10 +28,13 @@ const STATUS_OPTIONS = [
   { label: 'TIMEOUT', value: 'TIMEOUT' },
 ];
 
-const STATUS_MAP: Record<CollaborationAudit['status'], { label: string; color: string }> = {
-  SUCCESS: { label: '成功', color: 'success' },
-  ERROR: { label: '失败', color: 'error' },
-  TIMEOUT: { label: '超时', color: 'warning' },
+const STATUS_MAP: Record<
+  CollaborationAudit['status'],
+  { label: string; color: TagColor }
+> = {
+  SUCCESS: { label: '成功', color: 'green' },
+  ERROR: { label: '失败', color: 'red' },
+  TIMEOUT: { label: '超时', color: 'orange' },
 };
 
 export default function CollaborationAuditPage() {
@@ -64,14 +68,14 @@ export default function CollaborationAuditPage() {
     load();
   }, [filters]);
 
-  const columns: ColumnsType<CollaborationAudit> = [
+  const columns: ColumnProps<CollaborationAudit>[] = [
     {
       title: '调用方',
       key: 'caller',
       render: (_, record) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>{record.callerId}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {record.callerType}
           </Typography.Text>
         </Space>
@@ -81,9 +85,9 @@ export default function CollaborationAuditPage() {
       title: '被调用方',
       key: 'callee',
       render: (_, record) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>{record.calleeId}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {record.calleeType}
           </Typography.Text>
         </Space>
@@ -126,7 +130,7 @@ export default function CollaborationAuditPage() {
       title: '操作',
       key: 'actions',
       render: (_, record) => (
-        <Button type="link" icon={<EyeOutlined />} onClick={() => setDetail(record)}>
+        <Button theme="borderless" icon={<EyeOutlined />} onClick={() => setDetail(record)}>
           详情
         </Button>
       ),
@@ -136,44 +140,62 @@ export default function CollaborationAuditPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           <InteractionOutlined /> 协作审计
         </Typography.Title>
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+        <Input
           placeholder="调用方 ID"
-          allowClear
-          onSearch={(v) => setFilters((prev) => ({ ...prev, callerId: v, page: 1 }))}
+          showClear
+          onEnterPress={(e) =>
+            setFilters((prev) => ({
+              ...prev,
+              callerId: (e.target as HTMLInputElement).value,
+              page: 1,
+            }))
+          }
           style={{ width: 200 }}
         />
-        <Input.Search
+        <Input
           placeholder="被调用方 ID"
-          allowClear
-          onSearch={(v) => setFilters((prev) => ({ ...prev, calleeId: v, page: 1 }))}
+          showClear
+          onEnterPress={(e) =>
+            setFilters((prev) => ({
+              ...prev,
+              calleeId: (e.target as HTMLInputElement).value,
+              page: 1,
+            }))
+          }
           style={{ width: 200 }}
         />
         <Select
           placeholder="协议类型"
-          allowClear
-          options={PROTOCOL_OPTIONS}
+          showClear
+          optionList={PROTOCOL_OPTIONS}
           style={{ width: 140 }}
           value={filters.protocolType}
-          onChange={(v) => setFilters((prev) => ({ ...prev, protocolType: v, page: 1 }))}
+          onChange={(v) => setFilters((prev) => ({ ...prev, protocolType: v as string | undefined, page: 1 }))}
         />
         <Select
           placeholder="状态"
-          allowClear
-          options={STATUS_OPTIONS}
+          showClear
+          optionList={STATUS_OPTIONS}
           style={{ width: 140 }}
           value={filters.status}
-          onChange={(v) => setFilters((prev) => ({ ...prev, status: v, page: 1 }))}
+          onChange={(v) => setFilters((prev) => ({ ...prev, status: v as string | undefined, page: 1 }))}
         />
-        <Input.Search
+        <Input
           placeholder="traceId"
-          allowClear
-          onSearch={(v) => setFilters((prev) => ({ ...prev, traceId: v, page: 1 }))}
+          showClear
+          onEnterPress={(e) =>
+            setFilters((prev) => ({
+              ...prev,
+              traceId: (e.target as HTMLInputElement).value,
+              page: 1,
+            }))
+          }
           style={{ width: 240 }}
         />
       </Space>
@@ -188,7 +210,7 @@ export default function CollaborationAuditPage() {
             columns={columns}
             loading={loading}
             pagination={{
-              current: data?.page || 1,
+              currentPage: data?.page || 1,
               pageSize: data?.size || 10,
               total: data?.total || 0,
               showSizeChanger: true,
@@ -200,14 +222,14 @@ export default function CollaborationAuditPage() {
       </Card>
 
       <Modal
-        open={!!detail}
+        visible={!!detail}
         title="协作详情"
         onCancel={() => setDetail(null)}
         footer={null}
         width={720}
       >
         {detail && (
-          <Space orientation="vertical" style={{ width: '100%' }}>
+          <Space vertical style={{ width: '100%' }}>
             <Typography.Paragraph>
               <Typography.Text strong>ID: </Typography.Text>
               {detail.id}

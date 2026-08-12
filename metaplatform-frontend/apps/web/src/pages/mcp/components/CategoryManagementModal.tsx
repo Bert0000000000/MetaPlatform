@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
-import { Button, Form, Input, Modal, Space, Table, message, Popconfirm } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { useEffect, useState } from 'react';
+import { Button, Form, Modal, Space, Table, Toast, Popconfirm } from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createCategory, deleteCategory, listCategories, updateCategory } from '@/api/mcphub/tools';
 import type { McpToolCategory, McpToolCategoryCreateRequest } from '@/api/mcphub/types';
@@ -29,28 +29,28 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
   useEffect(() => {
     if (open) {
       load();
-      form.resetFields();
+      form.reset();
       setEditing(null);
     }
   }, [open, form]);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     if (editing) {
       await updateCategory(editing.id, values);
-      message.success('分类已更新');
+      Toast.success('分类已更新');
     } else {
       await createCategory(values);
-      message.success('分类已创建');
+      Toast.success('分类已创建');
     }
-    form.resetFields();
+    form.reset();
     setEditing(null);
     load();
   };
 
   const handleEdit = (category: McpToolCategory) => {
     setEditing(category);
-    form.setFieldsValue({
+    form.setValues({
       name: category.name,
       code: category.code,
       description: category.description,
@@ -61,11 +61,11 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
 
   const handleDelete = async (id: string) => {
     await deleteCategory(id);
-    message.success('分类已删除');
+    Toast.success('分类已删除');
     load();
   };
 
-  const columns: ColumnsType<McpToolCategory> = [
+  const columns: ColumnProps<McpToolCategory>[] = [
     {
       title: '名称',
       dataIndex: 'name',
@@ -88,11 +88,11 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          <Button theme="borderless" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -104,7 +104,7 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
   return (
     <Modal
       title="分类管理"
-      open={open}
+      visible={open}
       width={760}
       onCancel={onCancel}
       footer={[
@@ -113,30 +113,22 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
         </Button>,
       ]}
     >
-      <Space orientation="vertical" style={{ width: '100%' }}>
-        <Form form={form} layout="inline" style={{ marginBottom: 16 }}>
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-            <Input placeholder="分类名称" />
-          </Form.Item>
-          <Form.Item name="code" label="编码" rules={[{ required: true }]}>
-            <Input placeholder="分类编码" disabled={!!editing} />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input placeholder="描述" />
-          </Form.Item>
-          <Form.Item name="sortOrder" label="排序">
-            <Input type="number" placeholder="0" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleSubmit}>
+      <Space vertical style={{ width: '100%' }}>
+        <Form form={form} labelPosition="left" style={{ marginBottom: 16 }}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} placeholder="分类名称" />
+          <Form.Input field="code" label="编码" rules={[{ required: true }]} placeholder="分类编码" disabled={!!editing} />
+          <Form.Input field="description" label="描述" placeholder="描述" />
+          <Form.Input field="sortOrder" label="排序" type="number" placeholder="0" />
+          <div style={{ marginTop: 12 }}>
+            <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={handleSubmit}>
               {editing ? '更新' : '添加'}
             </Button>
             {editing && (
-              <Button style={{ marginLeft: 8 }} onClick={() => { form.resetFields(); setEditing(null); }}>
+              <Button style={{ marginLeft: 8 }} onClick={() => { form.reset(); setEditing(null); }}>
                 取消
               </Button>
             )}
-          </Form.Item>
+          </div>
         </Form>
 
         <Table
@@ -145,7 +137,8 @@ export default function CategoryManagementModal({ open, onCancel }: CategoryMana
           columns={columns}
           loading={loading}
           pagination={{ pageSize: 8 }}
-          size="small" scroll={{ x: 'max-content' }} />
+          scroll={{ x: 'max-content' }}
+        />
       </Space>
     </Modal>
   );

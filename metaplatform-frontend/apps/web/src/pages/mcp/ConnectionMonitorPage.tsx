@@ -2,15 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Col,
   Empty,
-  Row,
   Spin,
-  Statistic,
   Tag,
   Typography,
-  Result,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
@@ -25,24 +23,24 @@ import type { ConnectionMonitorResponse, ConnectionStatus } from '@/api/mcphub/t
 
 const STATUS_META: Record<
   ConnectionStatus['connectionStatus'],
-  { label: string; color: string; icon: React.ReactNode }
+  { label: string; color: TagColor; valueColor: string; icon: React.ReactNode }
 > = {
-  online: { label: '在线', color: '#52c41a', icon: <CheckCircleFilled /> },
-  offline: { label: '离线', color: '#8c8c8c', icon: <CloseCircleFilled /> },
-  error: { label: '异常', color: '#ff4d4f', icon: <ExclamationCircleFilled /> },
+  online: { label: '在线', color: 'green', valueColor: 'var(--success)', icon: <CheckCircleFilled /> },
+  offline: { label: '离线', color: 'grey', valueColor: 'var(--muted-foreground)', icon: <CloseCircleFilled /> },
+  error: { label: '异常', color: 'red', valueColor: 'var(--destructive)', icon: <ExclamationCircleFilled /> },
 };
 
 const POLL_INTERVAL_MS = 10000;
 
 function StatusTag({ status }: { status: ConnectionStatus['connectionStatus'] }) {
   const meta = STATUS_META[status];
-  return <Tag color={meta.color} icon={meta.icon}>{meta.label}</Tag>;
+  return <Tag color={meta.color} prefixIcon={meta.icon}>{meta.label}</Tag>;
 }
 
 function ConnectionCard({ item }: { item: ConnectionStatus }) {
   const isServer = item.type === 'server';
   return (
-    <Card size="small" style={{ marginBottom: 12 }}>
+    <Card style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <Typography.Text strong>
@@ -54,22 +52,20 @@ function ConnectionCard({ item }: { item: ConnectionStatus }) {
           </div>
         </div>
         {item.latencyMs !== undefined && (
-          <Statistic
-            title="超时/延迟"
-            value={item.latencyMs}
-            suffix="ms"
-            valueStyle={{ fontSize: 16 }}
-          />
+          <div style={{ textAlign: 'right' }}>
+            <div className="v-stat-label">超时/延迟</div>
+            <div className="v-stat-value" style={{ fontSize: 16 }}>{item.latencyMs} ms</div>
+          </div>
         )}
       </div>
       <div style={{ marginTop: 12 }}>
         {item.endpoint && (
-          <Typography.Paragraph type="secondary" ellipsis style={{ marginBottom: 4 }}>
+          <Typography.Paragraph type="tertiary" ellipsis style={{ marginBottom: 4 }}>
             端点: {item.endpoint}
           </Typography.Paragraph>
         )}
         {item.lastHeartbeatAt && (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             <ClockCircleOutlined style={{ marginRight: 4 }} />
             最后心跳: {new Date(item.lastHeartbeatAt).toLocaleString()}
           </Typography.Text>
@@ -118,16 +114,18 @@ export default function ConnectionMonitorPage() {
 
   if (error && !data) {
     return (
-      <Result
-        status="error"
-        title="加载失败"
-        subTitle={error.message}
-        extra={
-          <Button type="primary" icon={<ReloadOutlined />} onClick={load}>
+      <div style={{ textAlign: 'center', padding: 48 }}>
+        <ExclamationCircleFilled style={{ fontSize: 48, color: 'var(--destructive)' }} />
+        <Typography.Title heading={4} style={{ marginTop: 16 }}>
+          加载失败
+        </Typography.Title>
+        <Typography.Text type="tertiary">{error.message}</Typography.Text>
+        <div style={{ marginTop: 24 }}>
+          <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>
             重试
           </Button>
-        }
-      />
+        </div>
+      </div>
     );
   }
 
@@ -140,7 +138,7 @@ export default function ConnectionMonitorPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           连接状态监控
         </Typography.Title>
         <Button icon={<ReloadOutlined />} loading={loading} onClick={load}>
@@ -151,47 +149,41 @@ export default function ConnectionMonitorPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic
-              title="Server 总数"
-              value={summary.totalServers}
-              prefix={<ClusterOutlined />}
-            />
+            <div className="v-stat-label">Server 总数</div>
+            <div className="v-stat-value" style={{ fontSize: 24 }}>
+              <ClusterOutlined style={{ fontSize: 16, color: 'var(--muted-foreground)' }} /> {summary.totalServers}
+            </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic
-              title="Server 在线"
-              value={summary.onlineServers}
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<CheckCircleFilled />}
-            />
+            <div className="v-stat-label">Server 在线</div>
+            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--success)' }}>
+              <CheckCircleFilled style={{ fontSize: 16 }} /> {summary.onlineServers}
+            </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic
-              title="Client 总数"
-              value={summary.totalClients}
-              prefix={<LinkOutlined />}
-            />
+            <div className="v-stat-label">Client 总数</div>
+            <div className="v-stat-value" style={{ fontSize: 24 }}>
+              <LinkOutlined style={{ fontSize: 16, color: 'var(--muted-foreground)' }} /> {summary.totalClients}
+            </div>
           </Card>
         </Col>
         <Col span={6}>
           <Card bordered={false}>
-            <Statistic
-              title="Client 已连接"
-              value={summary.connectedClients}
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<CheckCircleFilled />}
-            />
+            <div className="v-stat-label">Client 已连接</div>
+            <div className="v-stat-value" style={{ fontSize: 24, color: 'var(--success)' }}>
+              <CheckCircleFilled style={{ fontSize: 16 }} /> {summary.connectedClients}
+            </div>
           </Card>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="MCP Server 状态" size="small">
+          <Card title="MCP Server 状态">
             {data.servers.length === 0 ? (
               <Empty description="暂无 Server" />
             ) : (
@@ -200,7 +192,7 @@ export default function ConnectionMonitorPage() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="MCP Client 状态" size="small">
+          <Card title="MCP Client 状态">
             {data.clients.length === 0 ? (
               <Empty description="暂无 Client" />
             ) : (

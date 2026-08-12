@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Spin, Table, Tag, Button } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Card, Empty, Spin, Table, Tag, Button } from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { ReloadOutlined } from '@ant-design/icons';
 import type { McpClient } from '@/api/mcphub/types';
 
@@ -39,7 +39,7 @@ export default function ToolDiscoveryPanel({ client }: ToolDiscoveryPanelProps) 
     load();
   }, [client.id]);
 
-  const columns: ColumnsType<DiscoveredTool> = [
+  const columns: ColumnProps<DiscoveredTool>[] = [
     { title: '工具名', dataIndex: 'name' },
     { title: '来源 Server', dataIndex: 'server', render: (v) => <Tag>{v}</Tag> },
     { title: '描述', dataIndex: 'description' },
@@ -48,7 +48,7 @@ export default function ToolDiscoveryPanel({ client }: ToolDiscoveryPanelProps) 
   return (
     <Card
       title={`发现工具 (${tools.length})`}
-      extra={
+      headerExtraContent={
         <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
           重新发现
         </Button>
@@ -70,7 +70,8 @@ export default function ToolDiscoveryPanel({ client }: ToolDiscoveryPanelProps) 
           dataSource={tools}
           columns={columns}
           pagination={{ pageSize: 10 }}
-          size="small" scroll={{ x: 'max-content' }} />
+          scroll={{ x: 'max-content' }}
+        />
       )}
     </Card>
   );

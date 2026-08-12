@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Form, Input, Select, Space, Typography, message } from 'antd';
+import { Button, Card, Form, Space, Typography, Toast } from '@douyinfe/semi-ui';
 import { ArrowLeftOutlined, SaveOutlined, EyeOutlined } from '@ant-design/icons';
 import { createResource, getResource, updateResource } from '@/api/mcphub/resources';
 import ContentPreview from './components/ContentPreview';
@@ -27,7 +27,7 @@ export default function ResourceEditPage() {
     if (id) {
       getResource(id).then((r) => {
         setResource(r);
-        form.setFieldsValue({
+        form.setValues({
           uri: r.uri,
           name: r.name,
           mimeType: r.mimeType,
@@ -41,15 +41,15 @@ export default function ResourceEditPage() {
   }, [id, form]);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     setSubmitting(true);
     try {
       if (id) {
         await updateResource(id, values);
-        message.success('已更新');
+        Toast.success('已更新');
       } else {
         await createResource(values);
-        message.success('已创建');
+        Toast.success('已创建');
       }
       navigate('/resources');
     } finally {
@@ -63,13 +63,14 @@ export default function ResourceEditPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/resources')}>
           返回
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           {id ? `编辑资源：${resource?.name ?? ''}` : '添加资源'}
         </Typography.Title>
         <Button
           icon={<EyeOutlined />}
           onClick={() => setPreviewMode(!previewMode)}
-          type={previewMode ? 'primary' : 'default'}
+          theme={previewMode ? 'solid' : 'light'}
+          type={previewMode ? 'primary' : 'secondary'}
         >
           {previewMode ? '编辑模式' : '预览'}
         </Button>
@@ -79,39 +80,39 @@ export default function ResourceEditPage() {
         <ContentPreview resource={resource} />
       ) : (
         <Card>
-          <Form form={form} layout="vertical" style={{ maxWidth: 800 }}>
-            <Form.Item
-              name="uri"
+          <Form form={form} style={{ maxWidth: 800 }}>
+            <Form.Input
+              field="uri"
               label="资源 URI"
               rules={[{ required: true }, { pattern: /^[a-z][a-z0-9_:\-/]*$/, message: '小写 URI' }]}
+              placeholder="docs://handbook/index.md"
+              disabled={!!id}
+            />
+            <Form.Input field="name" label="资源名称" rules={[{ required: true }]} />
+            <Form.Select
+              field="mimeType"
+              label="MIME 类型"
+              rules={[{ required: true }]}
+              optionList={MIME_OPTIONS}
+            />
+            <Form.TextArea field="description" label="描述" rows={2} />
+            <Form.TextArea
+              field="content"
+              label="内容"
+              rules={[{ required: true }]}
+              rows={12}
+              placeholder="文本/Markdown/JSON 字符串"
+            />
+            <Form.Select field="tags" label="标签" multiple optionList={[]} placeholder="输入后回车" />
+            <Button
+              theme="solid"
+              type="primary"
+              icon={<SaveOutlined />}
+              loading={submitting}
+              onClick={handleSubmit}
             >
-              <Input placeholder="docs://handbook/index.md" disabled={!!id} />
-            </Form.Item>
-            <Form.Item name="name" label="资源名称" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item name="mimeType" label="MIME 类型" rules={[{ required: true }]}>
-              <Select options={MIME_OPTIONS} />
-            </Form.Item>
-            <Form.Item name="description" label="描述">
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item name="content" label="内容" rules={[{ required: true }]}>
-              <Input.TextArea rows={12} placeholder="文本/Markdown/JSON 字符串" />
-            </Form.Item>
-            <Form.Item name="tags" label="标签">
-              <Select mode="tags" placeholder="输入后回车" />
-            </Form.Item>
-            <Form.Item>
-              <Button
-                type="primary"
-                icon={<SaveOutlined />}
-                loading={submitting}
-                onClick={handleSubmit}
-              >
-                保存
-              </Button>
-            </Form.Item>
+              保存
+            </Button>
           </Form>
         </Card>
       )}

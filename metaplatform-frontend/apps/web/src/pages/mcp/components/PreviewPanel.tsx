@@ -1,5 +1,5 @@
-﻿import { useMemo, useState } from 'react';
-import { Card, Empty, Form, Input, Space, Typography } from 'antd';
+import { useMemo, useState } from 'react';
+import { Card, Empty, Space, TextArea, Typography } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { PromptTemplate } from '@/api/mcphub/types';
 
@@ -25,13 +25,14 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
   const emptyVars = template.variables.length === 0;
 
   return (
-    <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+    <Space vertical spacing="medium" style={{ width: '100%' }}>
       {emptyVars ? (
-        <Card title="预览" size="small">
+        <Card title="预览">
           <Empty description="该模板无变量" />
           <pre
             style={{
-              background: '#fafafa',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
               padding: 12,
               borderRadius: 4,
               fontFamily: 'Menlo, Consolas, monospace',
@@ -43,27 +44,27 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
           </pre>
         </Card>
       ) : (
-        <Card title="填写变量" size="small">
-          <Form layout="vertical">
+        <Card title="填写变量">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {template.variables.map((v) => (
-              <Form.Item
-                key={v.name}
-                label={
-                  <Space>
-                    <span>{v.name}</span>
-                    {v.required && <span style={{ color: '#f5222d' }}>*</span>}
-                  </Space>
-                }
-                tooltip={v.description}
-              >
-                <Input.TextArea
+              <div key={v.name}>
+                <div style={{ marginBottom: 4 }}>
+                  <span>{v.name}</span>
+                  {v.required && <span style={{ color: 'var(--destructive)' }}>*</span>}
+                  {v.description && (
+                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                      {v.description}
+                    </span>
+                  )}
+                </div>
+                <TextArea
                   rows={2}
                   value={values[v.name] || ''}
-                  onChange={(e) => setValues((prev) => ({ ...prev, [v.name]: e.target.value }))}
+                  onChange={(val) => setValues((prev) => ({ ...prev, [v.name]: val }))}
                 />
-              </Form.Item>
+              </div>
             ))}
-          </Form>
+          </div>
         </Card>
       )}
 
@@ -74,12 +75,12 @@ export default function PreviewPanel({ template }: PreviewPanelProps) {
             渲染结果
           </Space>
         }
-        size="small"
       >
-        <Typography.Paragraph copyable={{ text: rendered }}>
+        <Typography.Paragraph copyable={{ content: rendered }}>
           <pre
             style={{
-              background: '#fafafa',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
               padding: 12,
               borderRadius: 4,
               fontFamily: 'Menlo, Consolas, monospace',

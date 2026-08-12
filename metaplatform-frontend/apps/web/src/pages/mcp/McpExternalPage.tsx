@@ -1,22 +1,19 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
   Empty,
   Form,
-  Input,
   Modal,
-  Select,
   Space,
-  Switch,
   Table,
   Tabs,
   Tag,
   Typography,
-  message,
+  Toast,
   Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import {
   PlusOutlined,
   EditOutlined,
@@ -68,37 +65,37 @@ export default function ExternalIntegrationPage() {
   }, []);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     setSubmitting(true);
     try {
       if (editing) {
         const updated = await updateIntegration(editing.id, values);
-        message.success('已更新');
+        Toast.success('已更新');
         setSelected(updated);
       } else {
         const created = await createIntegration(values);
-        message.success('已创建');
+        Toast.success('已创建');
         setSelected(created);
       }
       setEditorOpen(false);
       setEditing(null);
-      form.resetFields();
+      form.reset();
       load();
     } finally {
       setSubmitting(false);
     }
   };
 
-  const columns: ColumnsType<Integration> = [
+  const columns: ColumnProps<Integration>[] = [
     {
       title: '集成',
       key: 'name',
       render: (_, i) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <GlobalOutlined /> {i.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {i.platform}
           </Typography.Text>
         </Space>
@@ -116,7 +113,7 @@ export default function ExternalIntegrationPage() {
       render: (_, i) => (
         <Space>
           <Button
-            type="link"
+            theme="borderless"
             onClick={() => {
               setSelected(i);
             }}
@@ -124,11 +121,11 @@ export default function ExternalIntegrationPage() {
             查看
           </Button>
           <Button
-            type="link"
+            theme="borderless"
             icon={<EditOutlined />}
             onClick={() => {
               setEditing(i);
-              form.setFieldsValue(i);
+              form.setValues(i);
               setEditorOpen(true);
             }}
           >
@@ -138,11 +135,11 @@ export default function ExternalIntegrationPage() {
             title="确定删除？"
             onConfirm={async () => {
               await deleteIntegration(i.id);
-              message.success('已删除');
+              Toast.success('已删除');
               load();
             }}
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -152,16 +149,17 @@ export default function ExternalIntegrationPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           外部应用集成
         </Typography.Title>
         <Button
+          theme="solid"
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => {
             setEditing(null);
-            form.resetFields();
-            form.setFieldsValue({ platform: 'cursor', enabled: true, endpoint: '/api/v1/mcp/sse/main' });
+            form.reset();
+            form.setValues({ platform: 'cursor', enabled: true, endpoint: '/api/v1/mcp/sse/main' });
             setEditorOpen(true);
           }}
         >
@@ -169,41 +167,29 @@ export default function ExternalIntegrationPage() {
         </Button>
       </div>
 
-      <Tabs
-        items={[
-          {
-            key: 'list',
-            label: '集成列表',
-            children: (
-              <Card>
-                {integrations.length === 0 && !loading ? (
-                  <Empty description="还没有外部集成" />
-                ) : (
-                  <Table rowKey="id" dataSource={integrations} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
-                )}
-              </Card>
-            ),
-          },
-          {
-            key: 'docs',
-            label: '集成文档',
-            children: selected ? <IntegrationDocViewer integration={selected} /> : <Empty />,
-          },
-          {
-            key: 'test',
-            label: '在线测试',
-            children: selected ? <OnlineTester integration={selected} /> : <Empty />,
-          },
-          {
-            key: 'keys',
-            label: 'API Key',
-            children: <ApiKeyGenerator />,
-          },
-        ]}
-      />
+      <Tabs>
+        <Tabs.TabPane itemKey="list" tab="集成列表">
+          <Card>
+            {integrations.length === 0 && !loading ? (
+              <Empty description="还没有外部集成" />
+            ) : (
+              <Table rowKey="id" dataSource={integrations} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
+            )}
+          </Card>
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="docs" tab="集成文档">
+          {selected ? <IntegrationDocViewer integration={selected} /> : <Empty />}
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="test" tab="在线测试">
+          {selected ? <OnlineTester integration={selected} /> : <Empty />}
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="keys" tab="API Key">
+          <ApiKeyGenerator />
+        </Tabs.TabPane>
+      </Tabs>
 
       <Modal
-        open={editorOpen}
+        visible={editorOpen}
         title={editing ? '编辑集成' : '新建集成'}
         onCancel={() => {
           setEditorOpen(false);
@@ -211,27 +197,18 @@ export default function ExternalIntegrationPage() {
         }}
         onOk={handleSubmit}
         confirmLoading={submitting}
-        destroyOnClose
         width={640}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="platform" label="平台" rules={[{ required: true }]}>
-            <Select options={PLATFORMS} />
-          </Form.Item>
-          <Form.Item name="endpoint" label="端点" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="configSnippet"
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Select field="platform" label="平台" rules={[{ required: true }]} optionList={PLATFORMS} />
+          <Form.Input field="endpoint" label="端点" rules={[{ required: true }]} />
+          <Form.TextArea
+            field="configSnippet"
             label="配置片段 (JSON)"
             rules={[{ required: true }]}
-          >
-            <Input.TextArea
-              rows={6}
-              placeholder={`{
+            rows={6}
+            placeholder={`{
   "mcpServers": {
     "mate-platform": {
       "url": "https://your-host/api/v1/mcp/sse/main",
@@ -241,11 +218,8 @@ export default function ExternalIntegrationPage() {
     }
   }
 }`}
-            />
-          </Form.Item>
-          <Form.Item name="enabled" label="启用" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+          />
+          <Form.Switch field="enabled" label="启用" />
         </Form>
       </Modal>
     </div>

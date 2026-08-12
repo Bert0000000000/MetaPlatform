@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -8,11 +8,12 @@ import {
   Space,
   Table,
   Tag,
+  Toast,
   Typography,
-  message,
   Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlusOutlined,
   EditOutlined,
@@ -22,12 +23,12 @@ import {
 import { listResources, deleteResource } from '@/api/mcphub/resources';
 import type { McpResource } from '@/api/mcphub/types';
 
-const MIME_COLORS: Record<string, string> = {
+const MIME_COLORS: Record<string, TagColor> = {
   'text/plain': 'blue',
-  'text/markdown': 'geekblue',
+  'text/markdown': 'indigo',
   'application/json': 'purple',
   'image/png': 'orange',
-  'image/jpeg': 'gold',
+  'image/jpeg': 'yellow',
 };
 
 export default function ResourceListPage() {
@@ -35,6 +36,8 @@ export default function ResourceListPage() {
   const [resources, setResources] = useState<McpResource[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
+  // Semi 无 Input.Search，用受控 Input + Enter 触发搜索（交互与原 onSearch 一致）
+  const [searchText, setSearchText] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -52,20 +55,20 @@ export default function ResourceListPage() {
 
   const handleDelete = async (r: McpResource) => {
     await deleteResource(r.id);
-    message.success('已删除');
+    Toast.success('已删除');
     load();
   };
 
-  const columns: ColumnsType<McpResource> = [
+  const columns: ColumnProps<McpResource>[] = [
     {
       title: '资源',
       key: 'name',
       render: (_, r) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <FileTextOutlined /> {r.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             <code>{r.uri}</code>
           </Typography.Text>
         </Space>
@@ -74,7 +77,7 @@ export default function ResourceListPage() {
     {
       title: 'MIME',
       dataIndex: 'mimeType',
-      render: (v) => <Tag color={MIME_COLORS[v] || 'default'}>{v}</Tag>,
+      render: (v) => <Tag color={MIME_COLORS[v] || 'grey'}>{v}</Tag>,
     },
     {
       title: '描述',
@@ -91,11 +94,13 @@ export default function ResourceListPage() {
       key: 'actions',
       render: (_, r) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(`/resources/${r.id}`)}>
+          <Button theme="borderless" icon={<EditOutlined />} onClick={() => navigate(`/resources/${r.id}`)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(r)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
+              删除
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -105,19 +110,21 @@ export default function ResourceListPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           MCP Resources
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/resources/new')}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/resources/new')}>
           添加资源
         </Button>
       </div>
 
       <Space style={{ marginBottom: 16 }}>
-        <Input.Search
+        <Input
           placeholder="搜索名称/URI"
-          allowClear
-          onSearch={setKeyword}
+          showClear
+          value={searchText}
+          onChange={(v) => setSearchText(v)}
+          onEnterPress={() => setKeyword(searchText)}
           style={{ width: 240 }}
         />
       </Space>

@@ -1,29 +1,25 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ComponentProps } from 'react';
 import {
   Button,
   Card,
   Empty,
   Form,
-  Input,
-  InputNumber,
   Modal,
+  Popconfirm,
   Radio,
-  Select,
   Space,
-  Switch,
   Table,
   Tag,
+  Toast,
   TreeSelect,
   Typography,
-  message,
-  DatePicker,
-  Popconfirm,
-} from 'antd';
-import type { TreeSelectProps } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+  withField,
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SafetyOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import {
   listPolicies,
   createPolicy,
@@ -52,13 +48,15 @@ const ACTION_OPTIONS = [
   { label: '管理 (admin)', value: 'admin' },
 ];
 
+const MonacoField = withField(Editor);
+
 type PolicyFormValues = Omit<PolicyCreateRequest, 'effectiveStartAt' | 'effectiveEndAt'> & {
   version?: number;
-  effectiveStartAt?: Dayjs;
-  effectiveEndAt?: Dayjs;
+  effectiveStartAt?: Date;
+  effectiveEndAt?: Date;
 };
 
-type PolicyTreeSelectNode = NonNullable<TreeSelectProps['treeData']>[number];
+type PolicyTreeSelectNode = NonNullable<ComponentProps<typeof TreeSelect>['treeData']>[number];
 
 export default function PolicyManagementPage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -77,12 +75,11 @@ export default function PolicyManagementPage() {
       return acc;
     }, {});
     return Object.keys(grouped).map((cat) => ({
-      title: `${cat} (${grouped[cat]!.length})`,
+      label: `${cat} (${grouped[cat]!.length})`,
       key: `cat-${cat}`,
       value: `cat-${cat}`,
-      selectable: false,
       children: grouped[cat]!.map((t) => ({
-        title: t.name,
+        label: t.name,
         key: t.id,
         value: t.id,
       })),
@@ -111,8 +108,8 @@ export default function PolicyManagementPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({
+    form.reset();
+    form.setValues({
       resourceType: 'tool',
       action: 'invoke',
       effect: 'ALLOW',
@@ -125,11 +122,11 @@ export default function PolicyManagementPage() {
 
   const openEdit = (record: Policy) => {
     setEditing(record);
-    form.setFieldsValue({
+    form.setValues({
       ...record,
       version: record.version,
-      effectiveStartAt: record.effectiveStartAt ? dayjs(record.effectiveStartAt) : undefined,
-      effectiveEndAt: record.effectiveEndAt ? dayjs(record.effectiveEndAt) : undefined,
+      effectiveStartAt: record.effectiveStartAt ? new Date(record.effectiveStartAt) : undefined,
+      effectiveEndAt: record.effectiveEndAt ? new Date(record.effectiveEndAt) : undefined,
     });
     setEditorOpen(true);
   };
@@ -149,10 +146,10 @@ export default function PolicyManagementPage() {
           version: version ?? editing.version,
         };
         await updatePolicy(editing.id, payload);
-        message.success('已更新');
+        Toast.success('已更新');
       } else {
         await createPolicy(basePayload);
-        message.success('已创建');
+        Toast.success('已创建');
       }
       setEditorOpen(false);
       setEditing(null);
@@ -162,16 +159,16 @@ export default function PolicyManagementPage() {
     }
   };
 
-  const columns: ColumnsType<Policy> = [
+  const columns: ColumnProps<Policy>[] = [
     {
       title: '策略',
       key: 'name',
       render: (_, r) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <SafetyOutlined /> {r.name}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             优先级 {r.priority} / 版本 {r.version}
           </Typography.Text>
         </Space>
@@ -211,7 +208,7 @@ export default function PolicyManagementPage() {
       title: '生效时间',
       key: 'effective',
       render: (_, r) => (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
           {r.effectiveStartAt ? dayjs(r.effectiveStartAt).format('YYYY-MM-DD HH:mm') : '不限'} ~{' '}
           {r.effectiveEndAt ? dayjs(r.effectiveEndAt).format('YYYY-MM-DD HH:mm') : '不限'}
         </Typography.Text>
@@ -227,18 +224,18 @@ export default function PolicyManagementPage() {
       key: 'actions',
       render: (_, r) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(r)}>
+          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openEdit(r)}>
             编辑
           </Button>
           <Popconfirm
             title="确定删除？"
             onConfirm={async () => {
               await deletePolicy(r.id);
-              message.success('已删除');
+              Toast.success('已删除');
               load();
             }}
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -250,10 +247,10 @@ export default function PolicyManagementPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           ABAC 权限策略
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           创建策略
         </Button>
       </div>
@@ -273,107 +270,100 @@ export default function PolicyManagementPage() {
 
       <Modal
         title={editing ? '编辑策略' : '创建策略'}
-        open={editorOpen}
+        visible={editorOpen}
         width={720}
         onCancel={() => {
           setEditorOpen(false);
           setEditing(null);
         }}
         confirmLoading={submitting}
-        onOk={() => form.submit()}
+        onOk={() => form.submitForm()}
       >
         <Form
           form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            resourceType: 'tool',
-            action: 'invoke',
-            effect: 'ALLOW',
-            priority: 0,
-            enabled: true,
-          }}
+          onSubmit={handleSubmit}
+          initValues={
+            {
+              resourceType: 'tool',
+              action: 'invoke',
+              effect: 'ALLOW',
+              priority: 0,
+              enabled: true,
+            } as PolicyFormValues
+          }
         >
-          <Form.Item
-            name="name"
+          <Form.Input
+            field="name"
             label="策略名称"
             rules={[{ required: true, message: '请输入策略名称' }]}
-          >
-            <Input placeholder="例如：销售部工作时间可调用报价工具" />
-          </Form.Item>
+            placeholder="例如：销售部工作时间可调用报价工具"
+          />
 
           <Space style={{ display: 'flex' }}>
-            <Form.Item
-              name="subjectType"
+            <Form.Select
+              field="subjectType"
               label="主体类型"
               rules={[{ required: true, message: '请选择主体类型' }]}
-            >
-              <Select options={SUBJECT_TYPE_OPTIONS} style={{ width: 120 }} />
-            </Form.Item>
-            <Form.Item
-              name="subjectId"
+              optionList={SUBJECT_TYPE_OPTIONS}
+              style={{ width: 120 }}
+            />
+            <Form.Input
+              field="subjectId"
               label="主体 ID"
               rules={[{ required: true, message: '请输入主体 ID' }]}
-              style={{ flex: 1 }}
-            >
-              <Input placeholder="用户 ID 或应用 ID" />
-            </Form.Item>
+              fieldStyle={{ flex: 1 }}
+              placeholder="用户 ID 或应用 ID"
+            />
           </Space>
 
           <Space style={{ display: 'flex' }}>
-            <Form.Item
-              name="resourceType"
+            <Form.Select
+              field="resourceType"
               label="资源类型"
               rules={[{ required: true, message: '请选择资源类型' }]}
-            >
-              <Select options={RESOURCE_TYPE_OPTIONS} style={{ width: 120 }} />
-            </Form.Item>
-            <Form.Item
-              name="action"
+              optionList={RESOURCE_TYPE_OPTIONS}
+              style={{ width: 120 }}
+            />
+            <Form.Select
+              field="action"
               label="操作"
               rules={[{ required: true, message: '请选择操作' }]}
+              optionList={ACTION_OPTIONS}
               style={{ width: 160 }}
-            >
-              <Select options={ACTION_OPTIONS} />
-            </Form.Item>
-            <Form.Item
-              name="effect"
+            />
+            <Form.RadioGroup
+              field="effect"
               label="效果"
               rules={[{ required: true, message: '请选择效果' }]}
             >
-              <Radio.Group>
-                <Radio.Button value="ALLOW">允许</Radio.Button>
-                <Radio.Button value="DENY">拒绝</Radio.Button>
-              </Radio.Group>
-            </Form.Item>
+              <Radio value="ALLOW" type="button">允许</Radio>
+              <Radio value="DENY" type="button">拒绝</Radio>
+            </Form.RadioGroup>
           </Space>
 
-          <Form.Item
-            name="resourceIds"
+          <Form.TreeSelect
+            field="resourceIds"
             label="工具范围"
             rules={[{ required: true, message: '请选择至少一个资源' }]}
-          >
-            <TreeSelect
-              treeData={treeData}
-              treeCheckable
-              treeDefaultExpandAll
-              showCheckedStrategy={TreeSelect.SHOW_CHILD}
-              placeholder="请选择工具（按分类）"
-              style={{ width: '100%' }}
-              allowClear
-            />
-          </Form.Item>
+            treeData={treeData}
+            multiple
+            leafOnly
+            defaultExpandAll
+            placeholder="请选择工具（按分类）"
+            style={{ width: '100%' }}
+            showClear
+          />
 
-          <Form.Item name="conditionExpression" label="条件表达式">
-            <Editor
-              height={160}
-              defaultLanguage="javascript"
-              options={{ minimap: { enabled: false }, lineNumbers: 'on' }}
-            />
-          </Form.Item>
+          <MonacoField
+            field="conditionExpression"
+            label="条件表达式"
+            height={160}
+            defaultLanguage="javascript"
+            options={{ minimap: { enabled: false }, lineNumbers: 'on' }}
+          />
 
           {syntax && (
-            <Typography.Paragraph type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Paragraph type="tertiary" style={{ fontSize: 12 }}>
               语法：{syntax.syntax}；可用变量：{syntax.variables.join(', ')}
               <br />
               示例：{syntax.examples[0]}
@@ -381,25 +371,29 @@ export default function PolicyManagementPage() {
           )}
 
           <Space style={{ display: 'flex' }}>
-            <Form.Item name="effectiveStartAt" label="生效开始时间">
-              <DatePicker showTime placeholder="开始时间" />
-            </Form.Item>
-            <Form.Item name="effectiveEndAt" label="生效结束时间">
-              <DatePicker showTime placeholder="结束时间" />
-            </Form.Item>
+            <Form.DatePicker
+              field="effectiveStartAt"
+              label="生效开始时间"
+              type="dateTime"
+              placeholder="开始时间"
+            />
+            <Form.DatePicker
+              field="effectiveEndAt"
+              label="生效结束时间"
+              type="dateTime"
+              placeholder="结束时间"
+            />
           </Space>
 
           <Space style={{ display: 'flex' }}>
-            <Form.Item
-              name="priority"
+            <Form.InputNumber
+              field="priority"
               label="优先级"
               rules={[{ required: true, message: '请输入优先级' }]}
-            >
-              <InputNumber min={0} max={9999} />
-            </Form.Item>
-            <Form.Item name="enabled" label="启用" valuePropName="checked">
-              <Switch />
-            </Form.Item>
+              min={0}
+              max={9999}
+            />
+            <Form.Switch field="enabled" label="启用" />
           </Space>
         </Form>
       </Modal>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Tag, Typography, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Card, Table, Tag, Toast, Typography } from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { listEmployees } from '@/api/dw/employees';
 import type { Employee } from '@/api/dw/types';
 
@@ -13,11 +13,11 @@ export default function A2aInternalAgentsPage() {
     setLoading(true);
     listEmployees()
       .then((page) => setItems(page.items ?? []))
-      .catch(() => message.error('加载内部数字员工失败'))
+      .catch(() => Toast.error('加载内部数字员工失败'))
       .finally(() => setLoading(false));
   }, []);
 
-  const columns: ColumnsType<Employee> = [
+  const columns: ColumnProps<Employee>[] = [
     { title: '员工', key: 'name', render: (_, r) => (
         <Typography.Text strong>{r.name}</Typography.Text>
       ) },
@@ -25,13 +25,13 @@ export default function A2aInternalAgentsPage() {
     { title: '角色', dataIndex: 'roleCategory', width: 140, render: (v) => <Tag>{v}</Tag> },
     { title: '身份', dataIndex: 'roleIdentity', width: 140 },
     { title: '状态', dataIndex: 'status', width: 100, render: (v) => (
-        <Tag color={v === 'ACTIVE' ? 'green' : v === 'DRAFT' ? 'orange' : 'default'}>{v}</Tag>
+        <Tag color={v === 'ACTIVE' ? 'green' : v === 'DRAFT' ? 'orange' : 'grey'}>{v}</Tag>
       ) },
     { title: '内置', dataIndex: 'builtin', width: 70, render: (v) => (v ? '✓' : '') },
   ];
 
   return (
-    <Card title="内部数字员工" extra={<Typography.Text type="secondary">A2A 注册中心 — 内部 Agent</Typography.Text>}>
+    <Card title="内部数字员工" headerExtraContent={<Typography.Text type="tertiary">A2A 注册中心 — 内部 Agent</Typography.Text>}>
       <Table
         rowKey="employeeId"
         columns={columns}

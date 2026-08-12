@@ -1,4 +1,4 @@
-import { Form, Input, Switch, Space, Button } from 'antd';
+import { Input, Switch, Space, Button } from '@douyinfe/semi-ui';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { PromptVariable } from '@/api/mcphub/types';
 
@@ -26,55 +26,45 @@ export default function VariableEditor({ value, onChange }: VariableEditorProps)
 
   return (
     <div>
-      <Form layout="vertical">
-        {vars.map((v, idx) => (
-          <Space key={idx} align="baseline" style={{ marginBottom: 8 }} wrap>
-            <Form.Item>
-              <Input
-                placeholder="变量名 (如 name)"
-                value={v.name}
-                onChange={(e) => updateVar(idx, { name: e.target.value })}
-                style={{ width: 140 }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Input
-                placeholder="描述"
-                value={v.description || ''}
-                onChange={(e) => updateVar(idx, { description: e.target.value })}
-                style={{ width: 200 }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Input
-                placeholder="默认值"
-                value={v.defaultValue || ''}
-                onChange={(e) => updateVar(idx, { defaultValue: e.target.value })}
-                style={{ width: 160 }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Space>
-                <Switch
-                  checked={v.required || false}
-                  checkedChildren="必填"
-                  unCheckedChildren="可选"
-                  onChange={(c) => updateVar(idx, { required: c })}
-                />
-                <Button danger icon={<DeleteOutlined />} onClick={() => removeVar(idx)} />
-              </Space>
-            </Form.Item>
+      {vars.map((v, idx) => (
+        <Space key={idx} style={{ marginBottom: 8 }} wrap>
+          <Input
+            placeholder="变量名 (如 name)"
+            value={v.name}
+            onChange={(val) => updateVar(idx, { name: val })}
+            style={{ width: 140 }}
+          />
+          <Input
+            placeholder="描述"
+            value={v.description || ''}
+            onChange={(val) => updateVar(idx, { description: val })}
+            style={{ width: 200 }}
+          />
+          <Input
+            placeholder="默认值"
+            value={v.defaultValue || ''}
+            onChange={(val) => updateVar(idx, { defaultValue: val })}
+            style={{ width: 160 }}
+          />
+          <Space>
+            <Switch
+              checked={v.required || false}
+              checkedText="必填"
+              uncheckedText="可选"
+              onChange={(c) => updateVar(idx, { required: c })}
+            />
+            <Button type="danger" icon={<DeleteOutlined />} onClick={() => removeVar(idx)} />
           </Space>
-        ))}
-        <Button
-          type="dashed"
-          icon={<PlusOutlined />}
-          onClick={addVar}
-          block
-        >
-          添加变量
-        </Button>
-      </Form>
+        </Space>
+      ))}
+      <Button
+        theme="borderless"
+        icon={<PlusOutlined />}
+        onClick={addVar}
+        block
+      >
+        添加变量
+      </Button>
     </div>
   );
 }

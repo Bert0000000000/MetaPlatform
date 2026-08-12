@@ -4,16 +4,17 @@ import {
   Button,
   Card,
   Descriptions,
-  Drawer,
+  SideSheet,
   Space,
   Spin,
   Tag,
   Typography,
   Table,
-  message,
   Tooltip,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+  Toast,
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   ArrowLeftOutlined,
   ReloadOutlined,
@@ -32,13 +33,13 @@ function normalizeStatus(status: string): McpClient['status'] {
   return 'disconnected';
 }
 
-const STATUS_MAP: Record<McpClient['status'], { label: string; color: string }> = {
-  connected: { label: '已连接', color: 'success' },
-  CONNECTED: { label: '已连接', color: 'success' },
-  disconnected: { label: '未连接', color: 'default' },
-  DISCONNECTED: { label: '未连接', color: 'default' },
-  error: { label: '异常', color: 'error' },
-  ERROR: { label: '异常', color: 'error' },
+const STATUS_MAP: Record<McpClient['status'], { label: string; color: TagColor }> = {
+  connected: { label: '已连接', color: 'green' },
+  CONNECTED: { label: '已连接', color: 'green' },
+  disconnected: { label: '未连接', color: 'grey' },
+  DISCONNECTED: { label: '未连接', color: 'grey' },
+  error: { label: '异常', color: 'red' },
+  ERROR: { label: '异常', color: 'red' },
 };
 
 export default function ClientDetailPage() {
@@ -73,7 +74,7 @@ export default function ClientDetailPage() {
     try {
       const discovered = await discoverClientTools(id);
       setTools(discovered);
-      message.success(`已同步 ${discovered.length} 个工具`);
+      Toast.success(`已同步 ${discovered.length} 个工具`);
       if (client) {
         const updated = await getClient(id);
         setClient(updated);
@@ -90,7 +91,7 @@ export default function ClientDetailPage() {
       const updated = await testConnection(id);
       setClient(updated);
       const ok = updated.status.toLowerCase() === 'connected';
-      message.success(ok ? '连接成功' : '连接失败');
+      Toast.success(ok ? '连接成功' : '连接失败');
     } finally {
       setTesting(false);
     }
@@ -110,14 +111,14 @@ export default function ClientDetailPage() {
     }
   };
 
-  const columns: ColumnsType<McpDiscoveredTool> = [
+  const columns: ColumnProps<McpDiscoveredTool>[] = [
     {
       title: '名称',
       dataIndex: 'name',
       render: (v, t) => (
         <Space>
           <Typography.Text strong>{v}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             <CodeOutlined /> {t.code}
           </Typography.Text>
         </Space>
@@ -137,13 +138,13 @@ export default function ClientDetailPage() {
     {
       title: '状态',
       dataIndex: 'enabled',
-      render: (v) => (v ? <Tag color="success">启用</Tag> : <Tag>禁用</Tag>),
+      render: (v) => (v ? <Tag color="green">启用</Tag> : <Tag>禁用</Tag>),
     },
     {
       title: '操作',
       key: 'actions',
       render: (_, t) => (
-        <Button type="link" onClick={() => setSchemaTool(t)}>
+        <Button theme="borderless" onClick={() => setSchemaTool(t)}>
           查看 Schema
         </Button>
       ),
@@ -166,13 +167,13 @@ export default function ClientDetailPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/clients')}>
           返回
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           {client.name}
         </Typography.Title>
         <Tag color={STATUS_MAP[status].color}>{STATUS_MAP[status].label}</Tag>
       </Space>
 
-      <Space style={{ marginBottom: 16 }} wrap>
+      <Space wrap style={{ marginBottom: 16 }}>
         <Button icon={<ReloadOutlined />} onClick={load}>
           刷新
         </Button>
@@ -182,7 +183,7 @@ export default function ClientDetailPage() {
         <Button icon={<ApiOutlined />} loading={testing} onClick={handleTest}>
           测试连接
         </Button>
-        <Tooltip title="跳转到 MCP 调试器并带入当前端点">
+        <Tooltip content="跳转到 MCP 调试器并带入当前端点">
           <Button icon={<ThunderboltOutlined />} onClick={handleDebug}>
             跳转调试器
           </Button>
@@ -190,23 +191,23 @@ export default function ClientDetailPage() {
       </Space>
 
       <Card style={{ marginBottom: 16 }}>
-        <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="ID">{client.id}</Descriptions.Item>
-          <Descriptions.Item label="名称">{client.name}</Descriptions.Item>
-          <Descriptions.Item label="端点">
+        <Descriptions column={2} size="small">
+          <Descriptions.Item itemKey="ID">{client.id}</Descriptions.Item>
+          <Descriptions.Item itemKey="名称">{client.name}</Descriptions.Item>
+          <Descriptions.Item itemKey="端点">
             <code>{client.endpoint}</code>
           </Descriptions.Item>
-          <Descriptions.Item label="Client 类型">{client.clientType || 'custom'}</Descriptions.Item>
-          <Descriptions.Item label="传输协议">{client.transportType || 'HTTP'}</Descriptions.Item>
-          <Descriptions.Item label="认证方式">{client.authType || 'none'}</Descriptions.Item>
-          <Descriptions.Item label="超时（ms）">{client.timeoutMs ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="最后同步">
+          <Descriptions.Item itemKey="Client 类型">{client.clientType || 'custom'}</Descriptions.Item>
+          <Descriptions.Item itemKey="传输协议">{client.transportType || 'HTTP'}</Descriptions.Item>
+          <Descriptions.Item itemKey="认证方式">{client.authType || 'none'}</Descriptions.Item>
+          <Descriptions.Item itemKey="超时（ms）">{client.timeoutMs ?? '-'}</Descriptions.Item>
+          <Descriptions.Item itemKey="最后同步">
             {client.lastSyncAt ? new Date(client.lastSyncAt).toLocaleString() : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="创建时间">
+          <Descriptions.Item itemKey="创建时间">
             {client.createdAt ? new Date(client.createdAt).toLocaleString() : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="更新时间">
+          <Descriptions.Item itemKey="更新时间">
             {client.updatedAt ? new Date(client.updatedAt).toLocaleString() : '-'}
           </Descriptions.Item>
         </Descriptions>
@@ -218,18 +219,20 @@ export default function ClientDetailPage() {
           dataSource={tools}
           columns={columns}
           pagination={{ pageSize: 10 }}
-          locale={{ emptyText: '暂无已发现工具，点击「同步工具」获取' }} scroll={{ x: 'max-content' }} />
+          empty="暂无已发现工具，点击「同步工具」获取"
+          scroll={{ x: 'max-content' }}
+        />
       </Card>
 
-      <Drawer
+      <SideSheet
         title={schemaTool ? `${schemaTool.name} - Schema` : 'Schema'}
-        size={560}
-        open={!!schemaTool}
-        onClose={() => setSchemaTool(null)}
+        width={560}
+        visible={!!schemaTool}
+        onCancel={() => setSchemaTool(null)}
       >
         <pre
           style={{
-            background: '#f6f8fa',
+            background: 'var(--muted)',
             padding: 16,
             borderRadius: 8,
             overflow: 'auto',
@@ -238,7 +241,7 @@ export default function ClientDetailPage() {
         >
           <code>{formatSchema(schemaTool?.inputSchema)}</code>
         </pre>
-      </Drawer>
+      </SideSheet>
     </div>
   );
 }

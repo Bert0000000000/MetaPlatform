@@ -2,28 +2,26 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
-  Col,
   DatePicker,
-  Drawer,
   Empty,
   Form,
-  Input,
-  InputNumber,
   Modal,
-  Row,
   Select,
+  SideSheet,
   Space,
-  Statistic,
   Switch,
+  TabPane,
   Table,
   Tabs,
   Tag,
   Timeline,
+  Toast,
   Typography,
-  message,
   Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import {
@@ -83,21 +81,19 @@ import type {
   TrendPoint,
 } from '@/api/mcphub/types';
 
-const { RangePicker } = DatePicker;
-
 const STATUS_OPTIONS = [
   { label: '成功', value: 'success' },
   { label: '失败', value: 'error' },
   { label: '超时', value: 'timeout' },
 ];
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  success: { label: '成功', color: 'success' },
-  SUCCESS: { label: '成功', color: 'success' },
-  error: { label: '失败', color: 'error' },
-  ERROR: { label: '失败', color: 'error' },
-  timeout: { label: '超时', color: 'warning' },
-  TIMEOUT: { label: '超时', color: 'warning' },
+const STATUS_MAP: Record<string, { label: string; color: TagColor }> = {
+  success: { label: '成功', color: 'green' },
+  SUCCESS: { label: '成功', color: 'green' },
+  error: { label: '失败', color: 'red' },
+  ERROR: { label: '失败', color: 'red' },
+  timeout: { label: '超时', color: 'orange' },
+  TIMEOUT: { label: '超时', color: 'orange' },
 };
 
 const METRIC_OPTIONS = [
@@ -132,6 +128,48 @@ function buildTimeRange(days = 7): [Dayjs, Dayjs] {
 
 function getInitialTimeRange(): [Dayjs, Dayjs] {
   return buildTimeRange(7);
+}
+
+function StatCard({
+  icon,
+  title,
+  value,
+  suffix,
+  valueStyle,
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  value: string;
+  suffix?: string;
+  valueStyle?: React.CSSProperties;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
+        {icon && (
+          <span style={{ marginRight: 6, verticalAlign: -2 }}>
+            {icon}
+          </span>
+        )}
+        {title}
+      </span>
+      <span
+        style={{
+          fontSize: 28,
+          fontWeight: 600,
+          color: 'var(--foreground)',
+          ...valueStyle,
+        }}
+      >
+        {value}
+        {suffix && (
+          <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 2 }}>
+            {suffix}
+          </span>
+        )}
+      </span>
+    </div>
+  );
 }
 
 export default function AuditStatisticsPage() {
@@ -193,7 +231,7 @@ export default function AuditStatisticsPage() {
       setServers(serversRes.items);
       setClients(clientsRes.items);
     } catch {
-      message.error('加载筛选元数据失败');
+      Toast.error('加载筛选元数据失败');
     }
   };
 
@@ -279,9 +317,9 @@ export default function AuditStatisticsPage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      message.success('导出成功');
+      Toast.success('导出成功');
     } catch {
-      message.error('导出失败');
+      Toast.error('导出失败');
     }
   };
 
@@ -306,7 +344,7 @@ export default function AuditStatisticsPage() {
   const openRuleModal = (rule?: AlertRule) => {
     setEditingRule(rule || null);
     if (rule) {
-      ruleForm.setFieldsValue({
+      ruleForm.setValues({
         name: rule.name,
         metric: rule.metric,
         threshold: rule.threshold,
@@ -315,7 +353,7 @@ export default function AuditStatisticsPage() {
         notifyChannels: rule.notifyChannels?.join(',') || '',
       });
     } else {
-      ruleForm.setFieldsValue({
+      ruleForm.setValues({
         metric: 'error_rate',
         enabled: true,
         windowMinutes: 5,
@@ -340,14 +378,14 @@ export default function AuditStatisticsPage() {
     try {
       if (editingRule) {
         await updateAlertRule(editingRule.id, payload);
-        message.success('告警规则已更新');
+        Toast.success('告警规则已更新');
       } else {
         await createAlertRule(payload);
-        message.success('告警规则已创建');
+        Toast.success('告警规则已创建');
       }
       setRuleModalOpen(false);
       setEditingRule(null);
-      ruleForm.resetFields();
+      ruleForm.reset();
       loadAlertRules();
     } finally {
       setSubmittingRule(false);
@@ -357,33 +395,33 @@ export default function AuditStatisticsPage() {
   const handleToggleRule = async (rule: AlertRule) => {
     try {
       await toggleAlertRule(rule.id, !rule.enabled);
-      message.success('状态已更新');
+      Toast.success('状态已更新');
       loadAlertRules();
     } catch {
-      message.error('操作失败');
+      Toast.error('操作失败');
     }
   };
 
   const handleDeleteRule = async (rule: AlertRule) => {
     try {
       await deleteAlertRule(rule.id);
-      message.success('告警规则已删除');
+      Toast.success('告警规则已删除');
       loadAlertRules();
     } catch {
-      message.error('删除失败');
+      Toast.error('删除失败');
     }
   };
 
-  const logColumns: ColumnsType<AuditLog> = [
+  const logColumns: ColumnProps<AuditLog>[] = [
     {
       title: '工具',
       key: 'tool',
       render: (_, l) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             <AuditOutlined /> {l.toolName}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {l.method}
           </Typography.Text>
         </Space>
@@ -393,7 +431,8 @@ export default function AuditStatisticsPage() {
       title: '状态',
       key: 'status',
       render: (_, l) => {
-        const meta = STATUS_MAP[l.status] || { label: l.status, color: 'default' };
+        const meta: { label: string; color: TagColor } =
+          STATUS_MAP[l.status] || { label: l.status, color: 'grey' };
         return <Tag color={meta.color}>{meta.label}</Tag>;
       },
     },
@@ -406,7 +445,7 @@ export default function AuditStatisticsPage() {
       title: 'Token',
       key: 'tokens',
       render: (_, l) => (
-        <Space orientation="vertical" size={0} style={{ fontSize: 12 }}>
+        <Space vertical spacing={0} style={{ fontSize: 12 }}>
           <span>输入：{l.inputTokens || 0}</span>
           <span>输出：{l.outputTokens || 0}</span>
           <Typography.Text strong>总计：{l.totalTokens || 0}</Typography.Text>
@@ -428,14 +467,14 @@ export default function AuditStatisticsPage() {
       title: '操作',
       key: 'actions',
       render: (_, l) => (
-        <Button type="link" onClick={() => openDrawer(l)}>
+        <Button theme="borderless" onClick={() => openDrawer(l)}>
           详情
         </Button>
       ),
     },
   ];
 
-  const analyticsColumns: ColumnsType<AnalyticsItem> = [
+  const analyticsColumns: ColumnProps<AnalyticsItem>[] = [
     {
       title: '维度',
       dataIndex: 'dimensionKey',
@@ -451,7 +490,7 @@ export default function AuditStatisticsPage() {
       title: '错误数',
       dataIndex: 'errorCount',
       align: 'right',
-      render: (v) => <span style={{ color: '#ff4d4f' }}>{formatNumber(v)}</span>,
+      render: (v) => <span style={{ color: 'var(--destructive)' }}>{formatNumber(v)}</span>,
     },
     {
       title: 'Token 消耗',
@@ -467,13 +506,13 @@ export default function AuditStatisticsPage() {
     },
   ];
 
-  const ruleColumns: ColumnsType<AlertRule> = [
+  const ruleColumns: ColumnProps<AlertRule>[] = [
     {
       title: '规则名称',
       dataIndex: 'name',
       render: (v) => (
         <Typography.Text strong>
-          <WarningOutlined style={{ marginRight: 8, color: '#faad14' }} />
+          <WarningOutlined style={{ marginRight: 8, color: 'var(--warning)' }} />
           {v}
         </Typography.Text>
       ),
@@ -508,11 +547,11 @@ export default function AuditStatisticsPage() {
       key: 'actions',
       render: (_, r) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => openRuleModal(r)}>
+          <Button theme="borderless" icon={<EditOutlined />} onClick={() => openRuleModal(r)}>
             编辑
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDeleteRule(r)}>
-            <Button type="link" danger>
+            <Button theme="borderless" type="danger">
               删除
             </Button>
           </Popconfirm>
@@ -534,10 +573,10 @@ export default function AuditStatisticsPage() {
   );
 
   const renderTrendsTab = () => (
-    <Space orientation="vertical" style={{ width: '100%' }} size="large">
+    <Space vertical style={{ width: '100%' }} spacing="loose">
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="调用量 / 错误数趋势" size="small" loading={loadingTrends}>
+          <Card title="调用量 / 错误数趋势" loading={loadingTrends}>
             {trendChartData.length === 0 ? (
               <Empty description="暂无数据" />
             ) : (
@@ -579,7 +618,7 @@ export default function AuditStatisticsPage() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Token 消耗趋势" size="small" loading={loadingTrends}>
+          <Card title="Token 消耗趋势" loading={loadingTrends}>
             {trendChartData.length === 0 ? (
               <Empty description="暂无数据" />
             ) : (
@@ -608,7 +647,7 @@ export default function AuditStatisticsPage() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="平均耗时趋势" size="small" loading={loadingTrends}>
+          <Card title="平均耗时趋势" loading={loadingTrends}>
             {trendChartData.length === 0 ? (
               <Empty description="暂无数据" />
             ) : (
@@ -637,13 +676,12 @@ export default function AuditStatisticsPage() {
   const renderAnalyticsTab = () => (
     <Card
       title="多维分析"
-      size="small"
-      extra={
+      headerExtraContent={
         <Select
           value={dimension}
-          onChange={setDimension}
+          onChange={(v) => setDimension(v as string)}
           style={{ width: 140 }}
-          options={[
+          optionList={[
             { label: '按工具', value: 'tool' },
             { label: '按 Server', value: 'server' },
             { label: '按 Client', value: 'client' },
@@ -653,11 +691,11 @@ export default function AuditStatisticsPage() {
       loading={loadingAnalytics}
     >
       <Table
-        rowKey={(r) => `${r.dimension}-${r.dimensionKey}`}
+        rowKey={(r) => `${r!.dimension}-${r!.dimensionKey}`}
         dataSource={analytics}
         columns={analyticsColumns}
         pagination={false}
-        locale={{ emptyText: <Empty description="暂无数据" /> }}
+        empty={<Empty description="暂无数据" />}
         scroll={{ x: 'max-content' }}
       />
     </Card>
@@ -666,9 +704,8 @@ export default function AuditStatisticsPage() {
   const renderRulesTab = () => (
     <Card
       title="告警规则"
-      size="small"
-      extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openRuleModal()}>
+      headerExtraContent={
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => openRuleModal()}>
           创建规则
         </Button>
       }
@@ -679,20 +716,20 @@ export default function AuditStatisticsPage() {
         dataSource={alertRules}
         columns={ruleColumns}
         pagination={false}
-        locale={{ emptyText: <Empty description="还没有告警规则" /> }}
+        empty={<Empty description="还没有告警规则" />}
         scroll={{ x: 'max-content' }}
       />
     </Card>
   );
 
   const renderLogsTab = () => (
-    <Card title="调用日志" size="small" loading={loadingLogs}>
+    <Card title="调用日志" loading={loadingLogs}>
       <Table
         rowKey="id"
         dataSource={logs}
         columns={logColumns}
         pagination={{ pageSize: 10 }}
-        locale={{ emptyText: <Empty description="暂无调用日志" /> }}
+        empty={<Empty description="暂无调用日志" />}
         scroll={{ x: 'max-content' }}
       />
     </Card>
@@ -701,7 +738,7 @@ export default function AuditStatisticsPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           <BarChartOutlined /> 调用审计统计
         </Typography.Title>
         <Space>
@@ -718,54 +755,56 @@ export default function AuditStatisticsPage() {
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <RangePicker
-          showTime={{ format: 'HH:mm' }}
+        <DatePicker
+          type="dateTimeRange"
           format="YYYY-MM-DD HH:mm"
-          value={timeRange}
+          value={timeRange.map((d) => d.toDate()) as [Date, Date]}
           onChange={(dates) => {
-            if (dates && dates[0] && dates[1]) {
-              setTimeRange([dates[0], dates[1]]);
+            const arr = Array.isArray(dates) ? (dates as (Date | string)[]) : [];
+            if (arr.length >= 2 && arr[0] && arr[1]) {
+              setTimeRange([dayjs(arr[0]), dayjs(arr[1])]);
             }
           }}
+          style={{ width: 360 }}
         />
         <Select
           placeholder="工具"
-          allowClear
+          showClear
           style={{ width: 180 }}
           value={toolId}
-          onChange={setToolId}
-          options={tools.map((t) => ({ label: t.name, value: t.id }))}
+          onChange={(v) => setToolId(v as string)}
+          optionList={tools.map((t) => ({ label: t.name, value: t.id }))}
         />
         <Select
           placeholder="Server"
-          allowClear
+          showClear
           style={{ width: 180 }}
           value={serverId}
-          onChange={setServerId}
-          options={servers.map((s) => ({ label: s.name, value: s.id }))}
+          onChange={(v) => setServerId(v as string)}
+          optionList={servers.map((s) => ({ label: s.name, value: s.id }))}
         />
         <Select
           placeholder="Client"
-          allowClear
+          showClear
           style={{ width: 180 }}
           value={clientId}
-          onChange={setClientId}
-          options={clients.map((c) => ({ label: c.name, value: c.id }))}
+          onChange={(v) => setClientId(v as string)}
+          optionList={clients.map((c) => ({ label: c.name, value: c.id }))}
         />
         <Select
           placeholder="状态"
-          allowClear
+          showClear
           style={{ width: 120 }}
           value={status}
-          onChange={setStatus}
-          options={STATUS_OPTIONS}
+          onChange={(v) => setStatus(v as string)}
+          optionList={STATUS_OPTIONS}
         />
         <Select
           placeholder="粒度"
           style={{ width: 120 }}
           value={granularity}
-          onChange={setGranularity}
-          options={[
+          onChange={(v) => setGranularity(v as string)}
+          optionList={[
             { label: '按小时', value: 'hour' },
             { label: '按天', value: 'day' },
           ]}
@@ -775,82 +814,89 @@ export default function AuditStatisticsPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loadingStats}>
-            <Statistic
+            <StatCard
+              icon={<ThunderboltOutlined />}
               title="总调用量"
-              value={statistics?.totalCalls || 0}
-              prefix={<ThunderboltOutlined />}
+              value={formatNumber(statistics?.totalCalls || 0)}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loadingStats}>
-            <Statistic
+            <StatCard
               title="成功率"
-              value={(statistics?.successRate || 0) * 100}
+              value={((statistics?.successRate || 0) * 100).toFixed(2)}
               suffix="%"
-              precision={2}
-              valueStyle={{ color: '#52c41a' }}
+              valueStyle={{ color: 'var(--success)' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loadingStats}>
-            <Statistic
+            <StatCard
+              icon={<ClockCircleOutlined />}
               title="平均耗时"
-              value={statistics?.avgDuration || 0}
+              value={formatNumber(statistics?.avgDuration || 0)}
               suffix="ms"
-              precision={0}
-              prefix={<ClockCircleOutlined />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loadingStats}>
-            <Statistic
+            <StatCard
+              icon={<BugOutlined />}
               title="Token 消耗"
-              value={statistics?.totalTokens || 0}
-              prefix={<BugOutlined />}
+              value={formatNumber(statistics?.totalTokens || 0)}
               valueStyle={{ color: '#722ed1' }}
             />
           </Card>
         </Col>
       </Row>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          { key: 'trends', label: '趋势分析', children: renderTrendsTab() },
-          { key: 'analytics', label: '多维分析', children: renderAnalyticsTab() },
-          { key: 'rules', label: '告警规则', children: renderRulesTab() },
-          { key: 'logs', label: '调用日志', children: renderLogsTab() },
-        ]}
-      />
+      <Tabs activeKey={activeTab} onChange={setActiveTab}>
+        <TabPane tab="趋势分析" itemKey="trends">
+          {renderTrendsTab()}
+        </TabPane>
+        <TabPane tab="多维分析" itemKey="analytics">
+          {renderAnalyticsTab()}
+        </TabPane>
+        <TabPane tab="告警规则" itemKey="rules">
+          {renderRulesTab()}
+        </TabPane>
+        <TabPane tab="调用日志" itemKey="logs">
+          {renderLogsTab()}
+        </TabPane>
+      </Tabs>
 
-      <Drawer
-        title="调用详情"
-        size={720}
-        open={drawerOpen}
-        onClose={closeDrawer}
-        extra={
-          selectedLog?.traceId ? (
-            <Tag icon={<ExportOutlined />}>trace: {selectedLog.traceId}</Tag>
-          ) : null
+      <SideSheet
+        title={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            调用详情
+            {selectedLog?.traceId ? (
+              <Tag>
+                <ExportOutlined /> trace: {selectedLog.traceId}
+              </Tag>
+            ) : null}
+          </span>
         }
+        width={720}
+        visible={drawerOpen}
+        onCancel={closeDrawer}
       >
         {selectedLog && (
-          <Space orientation="vertical" style={{ width: '100%' }} size="large">
-            <Card title="基本信息" size="small">
+          <Space vertical style={{ width: '100%' }} spacing="loose">
+            <Card title="基本信息">
               <Row gutter={[16, 8]}>
                 <Col span={12}>工具：{selectedLog.toolName}</Col>
                 <Col span={12}>方法：{selectedLog.method}</Col>
                 <Col span={12}>
                   状态：
                   {(() => {
-                    const meta = STATUS_MAP[selectedLog.status] || {
-                      label: selectedLog.status,
-                      color: 'default',
-                    };
+                    const meta: { label: string; color: TagColor } =
+                      STATUS_MAP[selectedLog.status] || {
+                        label: selectedLog.status,
+                        color: 'grey',
+                      };
                     return <Tag color={meta.color}>{meta.label}</Tag>;
                   })()}
                 </Col>
@@ -864,20 +910,20 @@ export default function AuditStatisticsPage() {
               </Row>
             </Card>
 
-            <Card title="执行链路" size="small" loading={loadingTrace}>
+            <Card title="执行链路" loading={loadingTrace}>
               {traceLogs.length === 0 ? (
                 <Empty description="无链路信息" />
               ) : (
                 <Timeline
                   mode="left"
-                  items={traceLogs.map((l) => ({
-                    label: formatTime(l.timestamp || ''),
-                    children: (
-                      <Space orientation="vertical" size={0}>
+                  dataSource={traceLogs.map((l) => ({
+                    time: formatTime(l.timestamp || ''),
+                    content: (
+                      <Space vertical spacing={0}>
                         <Typography.Text strong>
                           {l.toolName || '调用节点'}
                         </Typography.Text>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                           {l.method || '-'} · {l.duration} ms ·{' '}
                           {STATUS_MAP[l.status]?.label || l.status}
                         </Typography.Text>
@@ -888,67 +934,65 @@ export default function AuditStatisticsPage() {
                         )}
                       </Space>
                     ),
-                    color:
+                    type:
                       l.status === 'success'
-                        ? 'green'
+                        ? 'success'
                         : l.status === 'timeout'
-                          ? 'orange'
-                          : 'red',
+                          ? 'warning'
+                          : 'error',
                   }))}
                 />
               )}
             </Card>
           </Space>
         )}
-      </Drawer>
+      </SideSheet>
 
       <Modal
         title={editingRule ? '编辑告警规则' : '创建告警规则'}
-        open={ruleModalOpen}
-        onOk={() => ruleForm.submit()}
+        visible={ruleModalOpen}
+        onOk={() => ruleForm.submitForm()}
         onCancel={() => {
           setRuleModalOpen(false);
           setEditingRule(null);
-          ruleForm.resetFields();
+          ruleForm.reset();
         }}
         confirmLoading={submittingRule}
-        destroyOnClose
       >
-        <Form form={ruleForm} layout="vertical" onFinish={handleRuleSubmit}>
-          <Form.Item
-            name="name"
+        <Form form={ruleForm} onSubmit={handleRuleSubmit}>
+          <Form.Input
+            field="name"
             label="规则名称"
             rules={[{ required: true, message: '请输入规则名称' }]}
-          >
-            <Input placeholder="例如：高错误率告警" />
-          </Form.Item>
-          <Form.Item
-            name="metric"
+            placeholder="例如：高错误率告警"
+          />
+          <Form.Select
+            field="metric"
             label="监控指标"
             rules={[{ required: true, message: '请选择监控指标' }]}
-          >
-            <Select options={METRIC_OPTIONS} />
-          </Form.Item>
-          <Form.Item
-            name="threshold"
+            optionList={METRIC_OPTIONS}
+          />
+          <Form.InputNumber
+            field="threshold"
             label="阈值"
             rules={[{ required: true, message: '请输入阈值' }]}
-          >
-            <InputNumber style={{ width: '100%' }} placeholder="例如：0.05" />
-          </Form.Item>
-          <Form.Item
-            name="windowMinutes"
+            style={{ width: '100%' }}
+            placeholder="例如：0.05"
+          />
+          <Form.InputNumber
+            field="windowMinutes"
             label="统计窗口（分钟）"
             rules={[{ required: true, message: '请输入窗口时间' }]}
-          >
-            <InputNumber style={{ width: '100%' }} min={1} placeholder="例如：5" />
-          </Form.Item>
-          <Form.Item name="notifyChannels" label="通知渠道（逗号分隔）">
-            <Input placeholder="例如：email,webhook,im" />
-          </Form.Item>
-          <Form.Item name="enabled" label="启用" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+            min={1}
+            style={{ width: '100%' }}
+            placeholder="例如：5"
+          />
+          <Form.Input
+            field="notifyChannels"
+            label="通知渠道（逗号分隔）"
+            placeholder="例如：email,webhook,im"
+          />
+          <Form.Switch field="enabled" label="启用" />
         </Form>
       </Modal>
     </div>
