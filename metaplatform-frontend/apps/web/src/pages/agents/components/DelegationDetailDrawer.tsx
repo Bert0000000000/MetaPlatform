@@ -192,11 +192,11 @@ export default function DelegationDetailDrawer({
                 ? 'error'
                 : 'process'
             }
-          >
-            <Steps.Step title="已提交" />
-            <Steps.Step title="执行中" />
-            <Steps.Step title="需输入" />
-            <Steps.Step title="已完成" />
+           type="basic">
+            <Steps.Step title="已提交"/>
+            <Steps.Step title="执行中"/>
+            <Steps.Step title="需输入"/>
+            <Steps.Step title="已完成"/>
           </Steps>
 
           <div>

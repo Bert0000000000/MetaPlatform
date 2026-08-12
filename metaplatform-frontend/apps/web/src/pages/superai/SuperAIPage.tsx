@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Button } from '@douyinfe/semi-ui';
 import { useLocation } from 'react-router-dom';
 import {
   Plus, ChevronDown, ChevronRight, User, Sparkles, Paperclip, Send,
@@ -112,9 +113,9 @@ export default function SuperAIPage() {
         <div className="sa-conv-panel">
           <div className="sa-conv-header">
             <h2>会话</h2>
-            <button className="v-btn" style={{ height: 32, padding: '0 12px', fontSize: 12, gap: 4, display: 'inline-flex', alignItems: 'center' }} onClick={() => { setInputText(''); setSelectedConv(-1); setThinkingExpanded({}); }}>
+            <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12, gap: 4, display: 'inline-flex', alignItems: 'center' }} onClick={() => { setInputText(''); setSelectedConv(-1); setThinkingExpanded({}); }}>
               <Plus style={{ width: 14, height: 14 }} />新建
-            </button>
+            </Button>
           </div>
           <div className="sa-conv-list">
             {conversations.map((conv, idx) => (

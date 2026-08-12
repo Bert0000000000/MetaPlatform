@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@douyinfe/semi-ui';
 import { useLocation } from 'react-router-dom';
 import {
   Hexagon, Search, Plus, Columns3,
@@ -304,7 +305,7 @@ export default function OntologyModelingPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
-          <button className="v-btn-primary" onClick={() => setCreateOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建概念</button>
+          <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建概念</Button>
         </div>
       </div>
 
@@ -450,13 +451,11 @@ export default function OntologyModelingPage() {
                           </span>
                         </td>
                         <td>
-                          <button
-                            className="v-btn"
-                            style={{ height: 28, padding: '0 10px', fontSize: 12 }}
+                          <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12 }}
                             onClick={(e) => { e.stopPropagation(); handleSelectConcept(ot.rid); }}
                           >
                             查看
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -476,9 +475,9 @@ export default function OntologyModelingPage() {
                     <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} · 属性定义</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span className="v-eyebrow">{selectedConceptDetail.properties.length} 个属性</span>
-                      <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12 }} onClick={() => setAddOpen((v) => !v)}>
+                      <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12 }} onClick={() => setAddOpen((v) => !v)}>
                         <Plus style={{ width: 14, height: 14 }} />新增属性
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   {addOpen && (
@@ -517,21 +516,16 @@ export default function OntologyModelingPage() {
                             style={{ height: 30, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 10px', fontSize: 12, color: 'var(--foreground)', outline: 'none', width: 200 }}
                           />
                         </div>
-                        <button
-                          className="v-btn-primary"
-                          disabled={submitting || !propName.trim()}
+                        <Button theme="solid" type="primary" disabled={submitting || !propName.trim()}
                           onClick={submitAddProperty}
-                          style={{ height: 30, padding: '0 14px', fontSize: 12, opacity: submitting || !propName.trim() ? 0.6 : 1 }}
-                        >
+                          style={{ height: 30, padding: '0 14px', fontSize: 12, opacity: submitting || !propName.trim() ? 0.6 : 1 }}>
                           {submitting ? '提交中…' : '保存'}
-                        </button>
-                        <button
-                          className="v-btn"
-                          onClick={() => setAddOpen(false)}
+                        </Button>
+                        <Button theme="light" type="secondary" onClick={() => setAddOpen(false)}
                           style={{ height: 30, padding: '0 10px', fontSize: 12 }}
                         >
                           取消
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}

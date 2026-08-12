@@ -30,7 +30,7 @@ export default function SchedulePlanCardPage() {
           <Steps
             direction="vertical"
             size="small"
-          >
+           type="basic">
             {PLAN.steps.map((s) => (
               <Steps.Step
                 key={s.id}

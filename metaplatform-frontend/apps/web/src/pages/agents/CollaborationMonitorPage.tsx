@@ -367,7 +367,7 @@ export default function CollaborationMonitorPage() {
             ) : (
               <>
                 <Typography.Title heading={5}>依赖关系（Steps 视图）</Typography.Title>
-                <Steps size="small" direction="vertical" style={{ marginBottom: 24 }}>
+                <Steps size="small" direction="vertical" style={{ marginBottom: 24 }} type="basic">
                   {task.subtasks.map((st, idx) => (
                     <Steps.Step
                       key={st.id}

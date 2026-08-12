@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import { useState } from 'react';
 import {
   Headphones, FileCheck, BarChart3, PenTool, BookOpen, ShieldCheck,
@@ -132,7 +133,7 @@ export default function AgentsListPage() {
             <Search style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} />
             <input type="text" placeholder="搜索数字员工..." />
           </div>
-          <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />创建数字员工</button>
+          <Button theme="solid" type="primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />创建数字员工</Button>
         </div>
       </div>
 

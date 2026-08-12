@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '@douyinfe/semi-ui';
 import { useNavigate } from 'react-router-dom';
 import { Graph } from '@antv/x6';
 import {
@@ -265,9 +266,9 @@ export default function OntologyGraphPage() {
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>基于本体引擎的可视化知识关系网络，支持多数据源实体关系探索</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />导入</button>
-          <button className="v-btn"><Download style={{ width: 16, height: 16 }} />导出</button>
-          <button className="v-btn"><Settings2 style={{ width: 16, height: 16 }} />配置</button>
+          <Button theme="light" type="secondary" ><Upload style={{ width: 16, height: 16 }} />导入</Button>
+          <Button theme="light" type="secondary" ><Download style={{ width: 16, height: 16 }} />导出</Button>
+          <Button theme="light" type="secondary" ><Settings2 style={{ width: 16, height: 16 }} />配置</Button>
         </div>
       </div>
 
@@ -297,15 +298,15 @@ export default function OntologyGraphPage() {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 12 }}>
-        <button className="v-btn" style={{ height: 32, padding: '0 10px' }}><ZoomIn style={{ width: 14, height: 14 }} /></button>
-        <button className="v-btn" style={{ height: 32, padding: '0 10px' }}><ZoomOut style={{ width: 14, height: 14 }} /></button>
-        <button className="v-btn" style={{ height: 32, padding: '0 10px' }}><Maximize style={{ width: 14, height: 14 }} /></button>
+        <Button theme="light" type="secondary" style={{ height: 32, padding: '0 10px' }}><ZoomIn style={{ width: 14, height: 14 }} /></Button>
+        <Button theme="light" type="secondary" style={{ height: 32, padding: '0 10px' }}><ZoomOut style={{ width: 14, height: 14 }} /></Button>
+        <Button theme="light" type="secondary" style={{ height: 32, padding: '0 10px' }}><Maximize style={{ width: 14, height: 14 }} /></Button>
         <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
-        <button className="v-btn" style={{ height: 32, padding: '0 10px' }}><Download style={{ width: 14, height: 14 }} /></button>
-        <button className="v-btn" style={{ height: 32, padding: '0 10px' }}><ImageIcon style={{ width: 14, height: 14 }} /></button>
+        <Button theme="light" type="secondary" style={{ height: 32, padding: '0 10px' }}><Download style={{ width: 14, height: 14 }} /></Button>
+        <Button theme="light" type="secondary" style={{ height: 32, padding: '0 10px' }}><ImageIcon style={{ width: 14, height: 14 }} /></Button>
         <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
-        <button className="v-btn" style={{ height: 32, padding: '0 10px' }}><LayoutGrid style={{ width: 14, height: 14 }} />力导向</button>
-        <button className="v-btn" style={{ height: 32, padding: '0 10px' }}><AlignHorizontalJustifyCenter style={{ width: 14, height: 14 }} />层级</button>
+        <Button theme="light" type="secondary" style={{ height: 32, padding: '0 10px' }}><LayoutGrid style={{ width: 14, height: 14 }} />力导向</Button>
+        <Button theme="light" type="secondary" style={{ height: 32, padding: '0 10px' }}><AlignHorizontalJustifyCenter style={{ width: 14, height: 14 }} />层级</Button>
         <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--foreground)', display: 'inline-block' }} /> 8 节点</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--muted-foreground)', display: 'inline-block' }} /> 12 关系</span>
@@ -356,8 +357,8 @@ export default function OntologyGraphPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
-            <button className="v-btn" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 8px', justifyContent: 'center' }}>重置</button>
-            <button className="v-btn" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 8px', justifyContent: 'center', background: 'var(--foreground)', color: 'var(--background)', borderColor: 'var(--foreground)' }}>应用</button>
+            <Button theme="light" type="secondary" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 8px', justifyContent: 'center' }}>重置</Button>
+            <Button theme="light" type="secondary" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 8px', justifyContent: 'center', background: 'var(--foreground)', color: 'var(--background)', borderColor: 'var(--foreground)' }}>应用</Button>
           </div>
         </div>
 

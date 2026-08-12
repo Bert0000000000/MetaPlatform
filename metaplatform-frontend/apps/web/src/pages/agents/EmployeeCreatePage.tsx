@@ -504,9 +504,9 @@ export default function EmployeeCreatePage() {
         <Steps
           current={currentStep}
           style={{ marginBottom: 24 }}
-        >
+         type="basic">
           {steps.map((title) => (
-            <Steps.Step key={title} title={title} />
+            <Steps.Step key={title} title={title}/>
           ))}
         </Steps>
 

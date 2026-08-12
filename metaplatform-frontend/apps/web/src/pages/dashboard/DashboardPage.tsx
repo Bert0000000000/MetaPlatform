@@ -11,7 +11,7 @@ import {
   GitBranch,
   RefreshCw,
 } from 'lucide-react';
-import { Toast } from '@douyinfe/semi-ui';
+import { Toast, Button } from '@douyinfe/semi-ui';
 import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 import { getDashboardSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent } from '@/api/dashboard/workbench';
 
@@ -201,16 +201,16 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="v-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
+            <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
               <Plus style={{ width: 16, height: 16 }} />创建应用
-            </button>
-            <button className="v-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            </Button>
+            <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <FileBarChart style={{ width: 16, height: 16 }} />查看报告
-            </button>
-            <button className="v-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            </Button>
+            <Button theme="solid" type="primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => navigate('/dashboard/my-agents')}>
               <Bot style={{ width: 16, height: 16 }} />管理数字员工
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -245,17 +245,14 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                       最后更新 {formatRelativeTime(lastUpdated)}
                     </span>
                   )}
-                  <button
-                    className="v-btn"
-                    onClick={loadDashboard}
+                  <Button theme="light" type="secondary" onClick={loadDashboard}
                     disabled={refreshing}
                     style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                    title="刷新数据"
-                  >
+                    title="刷新数据">
                     <RefreshCw style={{ width: 12, height: 12, animation: refreshing ? 'workbench-spin 0.8s linear infinite' : 'none' }} />
                     刷新
-                  </button>
-                  <button className="v-btn" onClick={() => { setTasksPage(1); setTasksDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</button>
+                  </Button>
+                  <Button theme="light" type="secondary" onClick={() => { setTasksPage(1); setTasksDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</Button>
                 </div>
               </div>
               <div style={{ flex: 1 }}>
@@ -307,14 +304,12 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                   第 {(tasksPage - 1) * tasksPageSize + 1} - {Math.min(tasksPage * tasksPageSize, (data.recentTasksTotal ?? data.recentTasks.length))} 条，共 {(data.recentTasksTotal ?? data.recentTasks.length)} 条
                 </span>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <button
-                    className="v-btn"
-                    disabled={tasksPage === 1}
+                  <Button theme="light" type="secondary" disabled={tasksPage === 1}
                     onClick={() => setTasksPage((p) => Math.max(1, p - 1))}
                     style={{ height: 28, padding: '0 10px', fontSize: 12, opacity: tasksPage === 1 ? 0.5 : 1 }}
                   >
                     上一页
-                  </button>
+                  </Button>
                   {Array.from({ length: tasksPageTotal }).map((_, i) => (
                     <button
                       key={i}
@@ -325,14 +320,12 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                       {i + 1}
                     </button>
                   ))}
-                  <button
-                    className="v-btn"
-                    disabled={tasksPage === tasksPageTotal}
+                  <Button theme="light" type="secondary" disabled={tasksPage === tasksPageTotal}
                     onClick={() => setTasksPage((p) => Math.min(tasksPageTotal, p + 1))}
                     style={{ height: 28, padding: '0 10px', fontSize: 12, opacity: tasksPage === tasksPageTotal ? 0.5 : 1 }}
                   >
                     下一页
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

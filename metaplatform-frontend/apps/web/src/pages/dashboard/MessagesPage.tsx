@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Paperclip, CheckCheck, Check, Reply, Forward, Archive, Trash2,
@@ -129,9 +130,9 @@ export default function MessagesPage() {
               <span title="API 不可达，使用本地兜底数据" style={{ fontSize: 10, padding: '1px 6px', borderRadius: 9999, background: 'var(--warning-subtle)', color: 'var(--warning)' }}>本地数据</span>
             )}
           </div>
-          <button className="v-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <CheckCheck style={{ width: 14, height: 14 }} />全部已读
-          </button>
+          </Button>
         </div>
 
         {/* Content layout */}
@@ -326,21 +327,21 @@ export default function MessagesPage() {
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Check style={{ width: 12, height: 12 }} />标记已读
-                </button>
-                <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                </Button>
+                <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Reply style={{ width: 12, height: 12 }} />回复
-                </button>
-                <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                </Button>
+                <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Forward style={{ width: 12, height: 12 }} />转发
-                </button>
-                <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                </Button>
+                <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Archive style={{ width: 12, height: 12 }} />归档
-                </button>
-                <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                </Button>
+                <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Trash2 style={{ width: 12, height: 12 }} />删除
-                </button>
+                </Button>
               </div>
             </div>
           </div>

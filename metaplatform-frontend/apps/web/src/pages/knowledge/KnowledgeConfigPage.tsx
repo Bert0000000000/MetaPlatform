@@ -5,6 +5,7 @@
  * 路由：/knowledge/config
  */
 import { useState } from 'react';
+import { Button } from '@douyinfe/semi-ui';
 import { Settings, Save, RefreshCw } from 'lucide-react';
 
 
@@ -82,8 +83,8 @@ export default function KnowledgeConfigPage() {
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>全局检索策略、Top-K、Reranker、分块策略的统一管理</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn"><RefreshCw style={{ width: 16, height: 16 }} />恢复默认</button>
-          <button className="v-btn-primary"><Save style={{ width: 16, height: 16 }} />保存配置</button>
+          <Button theme="light" type="secondary" ><RefreshCw style={{ width: 16, height: 16 }} />恢复默认</Button>
+          <Button theme="solid" type="primary" ><Save style={{ width: 16, height: 16 }} />保存配置</Button>
         </div>
       </div>
 

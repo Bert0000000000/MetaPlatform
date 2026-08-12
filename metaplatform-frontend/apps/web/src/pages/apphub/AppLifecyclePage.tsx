@@ -120,10 +120,10 @@ export default function AppLifecyclePage() {
       </Space>
 
       <Card title="生命周期阶段" style={{ marginBottom: 16 }}>
-        <Steps current={currentStep}>
-          <Steps.Step title="设计" icon={<ClockCircleOutlined />} />
-          <Steps.Step title="已发布" icon={<CloudUploadOutlined />} />
-          <Steps.Step title="已下线" icon={<PauseCircleOutlined />} />
+        <Steps current={currentStep} type="basic">
+          <Steps.Step title="设计" icon={<ClockCircleOutlined/>} />
+          <Steps.Step title="已发布" icon={<CloudUploadOutlined/>} />
+          <Steps.Step title="已下线" icon={<PauseCircleOutlined/>} />
         </Steps>
       </Card>
 

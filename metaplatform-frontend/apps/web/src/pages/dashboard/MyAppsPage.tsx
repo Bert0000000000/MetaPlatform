@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Search,
@@ -143,9 +144,9 @@ export default function MyAppsPage() {
             <option value="created">创建时间</option>
           </select>
           <div style={{ flex: 1 }} />
-          <button className="v-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }} onClick={() => setDrawerOpen(true)}>
+          <Button theme="solid" type="primary" style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }} onClick={() => setDrawerOpen(true)}>
             <Plus style={{ width: 15, height: 15 }} />新建应用
-          </button>
+          </Button>
         </div>
 
         {/* Pinned apps */}

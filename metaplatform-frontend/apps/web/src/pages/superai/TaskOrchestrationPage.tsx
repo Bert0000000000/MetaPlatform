@@ -44,11 +44,11 @@ export default function TaskOrchestrationPage() {
       <Typography.Title heading={4}>任务编排</Typography.Title>
 
       <Card style={{ marginBottom: 16 }}>
-        <Steps current={step}>
-          <Steps.Step title="任务输入" />
-          <Steps.Step title="意图识别" />
-          <Steps.Step title="执行计划" />
-          <Steps.Step title="执行" />
+        <Steps current={step} type="basic">
+          <Steps.Step title="任务输入"/>
+          <Steps.Step title="意图识别"/>
+          <Steps.Step title="执行计划"/>
+          <Steps.Step title="执行"/>
         </Steps>
       </Card>
 
@@ -104,7 +104,7 @@ export default function TaskOrchestrationPage() {
             direction="vertical"
             size="small"
             current={plan.steps.length}
-          >
+           type="basic">
             {plan.steps.map((s) => (
               <Steps.Step
                 key={s.id}

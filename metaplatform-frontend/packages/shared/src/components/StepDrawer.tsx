@@ -122,6 +122,7 @@ export default function StepDrawer({
       }
     >
       <Steps
+        type="basic"
         current={current}
         size="small"
         style={{ marginBottom: 24 }}

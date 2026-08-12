@@ -252,9 +252,9 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
         <Steps
           current={currentStep}
           status={selectedRelease.status === 'REJECTED' ? 'error' : 'process'}
-        >
+         type="basic">
           {STEP_TITLES.map((title) => (
-            <Steps.Step key={title} title={title} />
+            <Steps.Step key={title} title={title}/>
           ))}
         </Steps>
         <Typography.Title heading={5} style={{ marginTop: 24 }}>

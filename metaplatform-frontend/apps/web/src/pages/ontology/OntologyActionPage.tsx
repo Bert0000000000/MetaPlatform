@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button } from '@douyinfe/semi-ui';
 import { createPortal as ReactDOM_createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -1617,8 +1618,8 @@ export default function OntologyActionPage() {
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>定义和编排业务动作</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn"><TestTube style={{ width: 16, height: 16 }} />测试运行</button>
-          <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建 Action</button>
+          <Button theme="light" type="secondary" ><TestTube style={{ width: 16, height: 16 }} />测试运行</Button>
+          <Button theme="solid" type="primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建 Action</Button>
         </div>
       </div>
 
@@ -1681,9 +1682,9 @@ export default function OntologyActionPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>{ACTIONS[selectedAction].name}</h3>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="v-btn" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} />复制</button>
-                <button className="v-btn" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Trash2 style={{ width: 14, height: 14 }} />删除</button>
-                <button className="v-btn-primary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Save style={{ width: 14, height: 14 }} />保存</button>
+                <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} />复制</Button>
+                <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Trash2 style={{ width: 14, height: 14 }} />删除</Button>
+                <Button theme="solid" type="primary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Save style={{ width: 14, height: 14 }} />保存</Button>
               </div>
             </div>
 
@@ -1806,13 +1807,11 @@ export default function OntologyActionPage() {
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>流程编排</div>
                       <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>当前 Action 包含 <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}>7</span> 个节点 / <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}>7</span> 条连线</div>
                     </div>
-                    <button
-                      className="v-btn-primary"
-                      onClick={() => setFlowFullscreen(true)}
+                    <Button theme="solid" type="primary" onClick={() => setFlowFullscreen(true)}
                       style={{ height: 32, padding: '0 12px', fontSize: 12 }}
                     >
                       <Maximize2 style={{ width: 14, height: 14 }} />进入全屏编辑
-                    </button>
+                    </Button>
                   </div>
                   <div style={{ height: 360, background: 'var(--background)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', position: 'relative' }}>
                     <FreeLayoutEditorProvider
@@ -1849,7 +1848,7 @@ export default function OntologyActionPage() {
           <div className="v-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600 }}>执行历史</h3>
-              <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 11 }}>查看全部</button>
+              <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 11 }}>查看全部</Button>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>

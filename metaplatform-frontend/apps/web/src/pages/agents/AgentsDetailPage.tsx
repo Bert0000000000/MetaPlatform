@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import { useState } from 'react';
 import {
   ScanSearch, CircleDot, Pencil, Play, History, Power,
@@ -148,10 +149,10 @@ export default function AgentsDetailPage() {
           </div>
         </div>
         <div className="ad-agent-header-actions">
-          <button className="v-btn" onClick={() => setDrawerOpen(true)}><Pencil style={{ width: 14, height: 14 }} /> 编辑</button>
-          <button className="v-btn"><Play style={{ width: 14, height: 14 }} /> 手动触发</button>
-          <button className="v-btn"><History style={{ width: 14, height: 14 }} /> 执行历史</button>
-          <button className="v-btn" style={{ color: 'var(--destructive)', borderColor: 'rgba(255,97,102,0.3)' }}><Power style={{ width: 14, height: 14 }} /> 停止</button>
+          <Button theme="light" type="secondary" onClick={() => setDrawerOpen(true)}><Pencil style={{ width: 14, height: 14 }} /> 编辑</Button>
+          <Button theme="light" type="secondary" ><Play style={{ width: 14, height: 14 }} /> 手动触发</Button>
+          <Button theme="light" type="secondary" ><History style={{ width: 14, height: 14 }} /> 执行历史</Button>
+          <Button theme="light" type="secondary" style={{ color: 'var(--destructive)', borderColor: 'rgba(255,97,102,0.3)' }}><Power style={{ width: 14, height: 14 }} /> 停止</Button>
         </div>
       </div>
 
@@ -242,7 +243,7 @@ export default function AgentsDetailPage() {
       <div className="v-card" style={{ marginBottom: 24 }}>
         <div className="ad-v-card-header">
           <div className="ad-section-title"><Code2 style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> Prompt 模板预览</div>
-          <button className="v-btn" style={{ fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} /> 复制</button>
+          <Button theme="light" type="secondary" style={{ fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} /> 复制</Button>
         </div>
         <div className="ad-prompt-block">
           <span className="ad-prompt-comment">// System Prompt - 数据质量巡检员</span>{'\n'}
@@ -271,7 +272,7 @@ export default function AgentsDetailPage() {
       <div className="v-card" style={{ marginBottom: 0 }}>
         <div className="ad-v-card-header">
           <div className="ad-section-title"><ScrollText style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> 运行日志</div>
-          <button className="v-btn" style={{ fontSize: 12 }}><Download style={{ width: 14, height: 14 }} /> 导出</button>
+          <Button theme="light" type="secondary" style={{ fontSize: 12 }}><Download style={{ width: 14, height: 14 }} /> 导出</Button>
         </div>
         <table className="v-table">
           <thead>

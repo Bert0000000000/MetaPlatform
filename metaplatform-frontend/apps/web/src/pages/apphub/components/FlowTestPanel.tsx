@@ -77,7 +77,7 @@ export default function FlowTestPanel({ result }: FlowTestPanelProps) {
             size="small"
             current={result.steps.length - 1}
             direction="vertical"
-          >
+           type="basic">
             {result.steps.map((step, idx) => (
               <Steps.Step
                 key={`${step.nodeName}-${idx}`}

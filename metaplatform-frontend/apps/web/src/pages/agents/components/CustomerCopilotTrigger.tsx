@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
-import { Button } from '@douyinfe/semi-ui';
 import { RobotOutlined } from '@ant-design/icons';
+import { Button } from '@douyinfe/semi-ui';
 import { CustomerCopilotDrawer } from './CustomerCopilotDrawer';
 
 /**

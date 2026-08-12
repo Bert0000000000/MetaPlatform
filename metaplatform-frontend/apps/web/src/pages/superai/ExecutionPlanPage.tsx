@@ -58,7 +58,7 @@ export default function ExecutionPlanPage() {
         <Row gutter={16}>
           <Col span={16}>
             <Card title="计划步骤">
-              <Steps direction="vertical">
+              <Steps direction="vertical" type="basic">
                 {plan.steps.map((s) => (
                   <Steps.Step
                     key={s.id}

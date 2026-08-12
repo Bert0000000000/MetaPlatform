@@ -16,11 +16,11 @@ export default function ExecutionDetailPage() {
             <Steps
               direction="vertical"
               current={2}
-            >
-              <Steps.Step title="查询员工数据" description="已完成 - 5s" />
-              <Steps.Step title="汇总工资" description="已完成 - 8s" />
-              <Steps.Step title="生成报表" description="执行中..." />
-              <Steps.Step title="邮件通知" description="待执行" />
+             type="basic">
+              <Steps.Step title="查询员工数据" description="已完成 - 5s"/>
+              <Steps.Step title="汇总工资" description="已完成 - 8s"/>
+              <Steps.Step title="生成报表" description="执行中..."/>
+              <Steps.Step title="邮件通知" description="待执行"/>
             </Steps>
           </TabPane>
           <TabPane itemKey="logs">

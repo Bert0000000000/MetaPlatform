@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import { useState, useEffect, useMemo } from 'react';
 import {
   FileText,
@@ -127,10 +128,10 @@ export default function PortalPage() {
           </div>
         </div>
         <div style={{ flexShrink: 0 }}>
-          <button className="v-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', fontSize: 13 }}>
+          <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', fontSize: 13 }}>
             <span>访问</span>
             <ArrowUpRight style={{ width: 14, height: 14 }} />
-          </button>
+          </Button>
         </div>
       </div>
     );

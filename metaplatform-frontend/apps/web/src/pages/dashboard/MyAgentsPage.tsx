@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
@@ -219,9 +220,9 @@ export default function MyAgentsPage() {
             <span title="API 不可达，使用本地兜底数据" style={{ fontSize: 10, padding: '1px 6px', borderRadius: 9999, background: 'var(--warning-subtle)', color: 'var(--warning)' }}>本地数据</span>
           )}
         </div>
-        <button className="v-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
+        <Button theme="solid" type="primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
           <Plus style={{ width: 14, height: 14 }} />创建数字员工
-        </button>
+        </Button>
       </div>
 
       {/* Stats row */}
@@ -293,8 +294,8 @@ export default function MyAgentsPage() {
                   <Clock style={{ width: 12, height: 12 }} />{a.lastActive}
                 </span>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="v-btn" onClick={() => navigate(`/agents/detail?name=${encodeURIComponent(a.name)}`)} style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>查看详情</button>
-                  <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>{a.actionLabel}</button>
+                  <Button theme="light" type="secondary" onClick={() => navigate(`/agents/detail?name=${encodeURIComponent(a.name)}`)} style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>查看详情</Button>
+                  <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>{a.actionLabel}</Button>
                 </div>
               </div>
             </div>
@@ -309,7 +310,7 @@ export default function MyAgentsPage() {
           <div className="v-card" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 0' }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>最近执行记录</div>
-              <button className="v-btn" onClick={() => { setExecPage(1); setExecDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</button>
+              <Button theme="light" type="secondary" onClick={() => { setExecPage(1); setExecDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</Button>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -553,14 +554,12 @@ export default function MyAgentsPage() {
               第 {(execPage - 1) * execPageSize + 1} - {Math.min(execPage * execPageSize, execLogs.length)} 条，共 {execLogs.length} 条
             </span>
             <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                className="v-btn"
-                disabled={execPage === 1}
+              <Button theme="light" type="secondary" disabled={execPage === 1}
                 onClick={() => setExecPage((p) => Math.max(1, p - 1))}
                 style={{ height: 28, padding: '0 10px', fontSize: 12, opacity: execPage === 1 ? 0.5 : 1 }}
               >
                 上一页
-              </button>
+              </Button>
               {Array.from({ length: execPageTotal }).map((_, i) => (
                 <button
                   key={i}
@@ -571,14 +570,12 @@ export default function MyAgentsPage() {
                   {i + 1}
                 </button>
               ))}
-              <button
-                className="v-btn"
-                disabled={execPage === execPageTotal}
+              <Button theme="light" type="secondary" disabled={execPage === execPageTotal}
                 onClick={() => setExecPage((p) => Math.min(execPageTotal, p + 1))}
                 style={{ height: 28, padding: '0 10px', fontSize: 12, opacity: execPage === execPageTotal ? 0.5 : 1 }}
               >
                 下一页
-              </button>
+              </Button>
             </div>
           </div>
         </div>

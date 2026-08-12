@@ -115,7 +115,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
             isCollapsed={collapsed}
             onClick={({ itemKey }) => {
               const target = flat.find((it) => childItemKey(it.moduleKey, it.key) === itemKey);
-              if (target) navigate(target.path);
+              if (target) {
+                navigate(target.path);
+                return;
+              }
+              // 一级模块项：导航到模块默认路由
+              const module = MODULE_MENU.find((m) => m.key === itemKey);
+              if (module) navigate(module.path);
             }}
             style={{ borderRight: 'none', background: 'transparent', fontSize: 13 }}
             bodyStyle={{ paddingTop: 0 }}

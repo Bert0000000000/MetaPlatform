@@ -186,7 +186,7 @@ function stepsToSemiSteps(plan: Plan) {
       size="small"
       current={current}
       direction="vertical"
-    >
+     type="basic">
       {plan.steps
         .slice()
         .sort((a, b) => a.order - b.order)

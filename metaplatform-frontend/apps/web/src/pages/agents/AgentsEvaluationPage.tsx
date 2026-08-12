@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import {
   Calendar, Play, Filter, Download, Share2,
 } from 'lucide-react';
@@ -207,8 +208,8 @@ export default function AgentsEvaluationPage() {
           <option>代码审查助手</option>
         </select>
         <div className="ae-selector-actions">
-          <button className="v-btn"><Calendar style={{ width: 14, height: 14 }} /> 2026-07-15 至 2026-07-21</button>
-          <button className="v-btn-primary"><Play style={{ width: 14, height: 14 }} /> 发起评估</button>
+          <Button theme="light" type="secondary" ><Calendar style={{ width: 14, height: 14 }} /> 2026-07-15 至 2026-07-21</Button>
+          <Button theme="solid" type="primary" ><Play style={{ width: 14, height: 14 }} /> 发起评估</Button>
         </div>
       </div>
 
@@ -241,8 +242,8 @@ export default function AgentsEvaluationPage() {
             <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: 15, fontWeight: 600 }}>评估历史</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="v-btn" style={{ height: 30, fontSize: 12, padding: '0 10px' }}><Filter style={{ width: 12, height: 12 }} /> 筛选</button>
-                <button className="v-btn" style={{ height: 30, fontSize: 12, padding: '0 10px' }}><Download style={{ width: 12, height: 12 }} /> 导出</button>
+                <Button theme="light" type="secondary" style={{ height: 30, fontSize: 12, padding: '0 10px' }}><Filter style={{ width: 12, height: 12 }} /> 筛选</Button>
+                <Button theme="light" type="secondary" style={{ height: 30, fontSize: 12, padding: '0 10px' }}><Download style={{ width: 12, height: 12 }} /> 导出</Button>
               </div>
             </div>
             <div style={{ overflowX: 'auto' }}>
@@ -325,8 +326,8 @@ export default function AgentsEvaluationPage() {
 
             {/* Actions */}
             <div className="ae-report-actions">
-              <button className="v-btn-primary"><Download style={{ width: 12, height: 12 }} /> 下载报告</button>
-              <button className="v-btn"><Share2 style={{ width: 12, height: 12 }} /> 分享</button>
+              <Button theme="solid" type="primary" ><Download style={{ width: 12, height: 12 }} /> 下载报告</Button>
+              <Button theme="light" type="secondary" ><Share2 style={{ width: 12, height: 12 }} /> 分享</Button>
             </div>
           </div>
         </div>

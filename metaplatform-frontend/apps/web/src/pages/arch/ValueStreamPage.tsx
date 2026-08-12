@@ -187,9 +187,9 @@ export default function ValueStreamPage() {
 
       {detail && (
         <Card title={`价值流详情 - ${detail.name}`} style={{ marginTop: 16 }}>
-          <Steps current={stages.length - 1}>
+          <Steps current={stages.length - 1} type="basic">
             {stages.sort((a, b) => a.sortOrder - b.sortOrder).map((s) => (
-              <Steps.Step key={s.id} title={s.name} description={s.description} />
+              <Steps.Step key={s.id} title={s.name} description={s.description}/>
             ))}
           </Steps>
         </Card>
