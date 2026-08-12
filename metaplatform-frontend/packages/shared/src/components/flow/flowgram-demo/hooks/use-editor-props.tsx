@@ -10,6 +10,7 @@
  * - 9 个 --g-* CSS 主题变量通过 flowgram-theme.css 注入（外部）
  * - Semi Design 通过 ConfigProvider 注入（外部）
  */
+import type { ReactNode } from 'react';
 import { createMinimapPlugin } from '@flowgram.ai/minimap-plugin';
 import { createBackgroundPlugin } from '@flowgram.ai/background-plugin';
 import { createDownloadPlugin, FlowDownloadFormat } from '@flowgram.ai/export-plugin';
@@ -39,6 +40,17 @@ export interface BuildEditorPropsOptions {
   enableExport?: boolean;
   /** 是否启用网格背景（默认 true） */
   enableBackground?: boolean;
+  /**
+   * 按节点 type 定制节点表单渲染（formMeta.render）。
+   * 返回 null/undefined 时回落默认 title/content 表单。
+   * 渲染函数内可用 useNodeRender() 拿当前 node，用于读取执行状态做高亮。
+   */
+  defaultFormMeta?: (type: string) =>
+    | { formMeta?: { render: () => ReactNode } }
+    | null
+    | undefined;
+  /** 定制默认节点渲染组件（缺省用 BaseNode）。 */
+  renderDefaultNode?: typeof BaseNode;
 }
 
 export function buildEditorProps(
@@ -70,6 +82,8 @@ export function buildEditorPropsWith(
     enableShortcuts = true,
     enableExport = true,
     enableBackground = true,
+    defaultFormMeta,
+    renderDefaultNode,
   } = opts;
 
   return {
@@ -78,6 +92,14 @@ export function buildEditorPropsWith(
     initialData,
     nodeRegistries,
     getNodeDefaultRegistry(type) {
+      const override = defaultFormMeta?.(type);
+      if (override?.formMeta) {
+        return {
+          type,
+          meta: { defaultExpanded: true },
+          formMeta: override.formMeta,
+        };
+      }
       return {
         type,
         meta: { defaultExpanded: true },
@@ -104,7 +126,7 @@ export function buildEditorPropsWith(
         [FlowRendererKey.BRANCH_ADDER]: BranchAdder,
         [FlowRendererKey.SLOT_ADDER]: SlotAdder,
       },
-      renderDefaultNode: BaseNode,
+      renderDefaultNode: renderDefaultNode ?? BaseNode,
       renderTexts: {
         [FlowTextKey.LOOP_END_TEXT]: 'loop end',
         [FlowTextKey.LOOP_TRAVERSE_TEXT]: 'looping',
@@ -131,7 +153,7 @@ export function buildEditorPropsWith(
       },
     },
     onInit: () => {
-      console.log('---- Playground Init ----');
+      // Playground init
     },
     onAllLayersRendered: (ctx) => {
       setTimeout(() => {

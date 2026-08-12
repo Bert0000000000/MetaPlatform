@@ -1,3 +1,6 @@
+// 必须在所有 flowgram（InversifyJS DI）之前加载 reflect-metadata polyfill，
+// 否则 decorator 元数据失效导致画布 document 为空 / DI 绑定异常。
+import 'reflect-metadata';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import 'antd/dist/reset.css';

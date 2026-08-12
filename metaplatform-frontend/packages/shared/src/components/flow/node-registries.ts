@@ -177,6 +177,107 @@ export const AGENT_NODE_REGISTRIES: FlowNodeRegistry[] = [
   AGENT_LOOP,
 ];
 
+// ---------------- 人工确认 (HITL) ---------------- //
+
+const HITL_CONFIRM: FlowNodeRegistry = {
+  type: 'hitl_confirm',
+  meta: { defaultExpanded: true },
+  onAdd: () => ({
+    id: `hitl_confirm_${nanoid(5)}`,
+    type: 'hitl_confirm',
+    data: {
+      title: '人工确认 (HITL)',
+      content: 'AI 动作落库前的人工确认（proposal + token）',
+      proposal: 'AI 将执行以下变更，请人工确认：\n- 变更对象\n- 影响范围',
+      assignee: '',
+    },
+  }),
+};
+
+export const HITL_NODE_REGISTRIES: FlowNodeRegistry[] = [HITL_CONFIRM];
+
+// ---------------- FlowGram 官方复合节点（并行 / 条件 / 循环 / 异常） ----------------
+// 官方 fixed-layout 的复合节点：容器内部通过 `blocks` 嵌套分支块，
+// 每个分支块可独立连线 → 实现并行 / 条件分叉。extend 决定布局形态。
+// 参考官方文档 docs/guide/fixed-layout/composite-nodes.mdx。
+
+const COMPOSITE_CONDITION: FlowNodeRegistry = {
+  type: 'condition',
+  extend: 'dynamicSplit',
+  meta: { defaultExpanded: true },
+  onAdd: () => ({
+    id: `condition_${nanoid(5)}`,
+    type: 'condition',
+    data: { title: '条件 / 并行分支', content: '一个入口分多条并行分支' },
+    blocks: [
+      { id: nanoid(5), type: 'block', data: { title: '分支 A' } },
+      { id: nanoid(5), type: 'block', data: { title: '分支 B' } },
+    ],
+  }),
+};
+
+const COMPOSITE_MULTI_OUTPUTS: FlowNodeRegistry = {
+  type: 'multiOutputs',
+  extend: 'dynamicSplit',
+  meta: { defaultExpanded: true },
+  onAdd: () => ({
+    id: `multiOutputs_${nanoid(5)}`,
+    type: 'multiOutputs',
+    data: { title: '多输出', content: '一个输入分多条输出' },
+    blocks: [
+      { id: nanoid(5), type: 'output', data: { title: '输出 1' } },
+      { id: nanoid(5), type: 'output', data: { title: '输出 2' } },
+    ],
+  }),
+};
+
+const COMPOSITE_MULTI_INPUTS: FlowNodeRegistry = {
+  type: 'multiInputs',
+  extend: 'dynamicSplit',
+  meta: { defaultExpanded: true },
+  onAdd: () => ({
+    id: `multiInputs_${nanoid(5)}`,
+    type: 'multiInputs',
+    data: { title: '多输入', content: '多条输入汇聚为一个输出' },
+    blocks: [
+      { id: nanoid(5), type: 'input', data: { title: '输入 1' } },
+      { id: nanoid(5), type: 'input', data: { title: '输入 2' } },
+    ],
+  }),
+};
+
+const COMPOSITE_LOOP: FlowNodeRegistry = {
+  type: 'loop',
+  extend: 'loop',
+  meta: { defaultExpanded: true },
+  onAdd: () => ({
+    id: `loop_${nanoid(5)}`,
+    type: 'loop',
+    data: { title: '循环', content: '循环执行内部节点' },
+    blocks: [{ id: nanoid(5), type: 'block', data: { title: '循环体' } }],
+  }),
+};
+
+const COMPOSITE_TRY_CATCH: FlowNodeRegistry = {
+  type: 'tryCatch',
+  extend: 'tryCatch',
+  meta: { defaultExpanded: true },
+  onAdd: () => ({
+    id: `tryCatch_${nanoid(5)}`,
+    type: 'tryCatch',
+    data: { title: 'Try / Catch', content: '异常处理分支' },
+    blocks: [{ id: nanoid(5), type: 'block', data: { title: 'Try 分支' } }],
+  }),
+};
+
+export const FLOWGRAM_COMPOSITE_REGISTRIES: FlowNodeRegistry[] = [
+  COMPOSITE_CONDITION,
+  COMPOSITE_MULTI_OUTPUTS,
+  COMPOSITE_MULTI_INPUTS,
+  COMPOSITE_LOOP,
+  COMPOSITE_TRY_CATCH,
+];
+
 // ---------------- 业务流程 ---------------- //
 
 const BUSINESS_TRIGGER: FlowNodeRegistry = {
@@ -220,7 +321,9 @@ export const BUSINESS_FLOW_REGISTRIES: FlowNodeRegistry[] = [
 export const ALL_NODE_REGISTRIES: FlowNodeRegistry[] = [
   ...BPMN_NODE_REGISTRIES,
   ...AGENT_NODE_REGISTRIES,
+  ...HITL_NODE_REGISTRIES,
   ...BUSINESS_FLOW_REGISTRIES,
+  ...FLOWGRAM_COMPOSITE_REGISTRIES,
 ];
 
 export interface PaletteCategory {
@@ -233,7 +336,9 @@ export interface PaletteCategory {
 export const PALETTE_CATEGORIES: PaletteCategory[] = [
   { key: 'bpmn', label: '审批流', types: BPMN_NODE_REGISTRIES.map((r) => r.type as unknown as string) },
   { key: 'agent', label: 'AI 协作流', types: AGENT_NODE_REGISTRIES.map((r) => r.type as unknown as string) },
+  { key: 'hitl', label: '人工确认 (HITL)', types: HITL_NODE_REGISTRIES.map((r) => r.type as unknown as string) },
   { key: 'business', label: '业务流程', types: BUSINESS_FLOW_REGISTRIES.map((r) => r.type as unknown as string) },
+  { key: 'parallel', label: '并行与条件', types: FLOWGRAM_COMPOSITE_REGISTRIES.map((r) => r.type as unknown as string) },
 ];
 
 /**

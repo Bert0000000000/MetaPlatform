@@ -19,6 +19,8 @@ export interface FlowNode<T = unknown> {
   width?: number;
   height?: number;
   data?: T;
+  /** FlowGram 复合节点（并行/条件/循环）：嵌套的分支块列表 */
+  blocks?: FlowNode<unknown>[];
 }
 
 export interface FlowEdge<T = unknown> {

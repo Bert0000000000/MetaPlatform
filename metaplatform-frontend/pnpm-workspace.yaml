@@ -1,4 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
 allowBuilds:
   esbuild: set this to true or false
+  puppeteer: set this to true or false
 onlyBuiltDependencies:
   - esbuild

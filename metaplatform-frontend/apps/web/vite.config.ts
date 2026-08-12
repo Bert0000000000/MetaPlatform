@@ -37,6 +37,9 @@ export default defineConfig({
       '@douyinfe/semi-icons',
       '@antv/g6',
     ],
+    // react-syntax-highlighter 的动态 import 引用 highlight.js 不存在的
+    // sql_more 语言路径，预构建时崩（form-materials → coze-editor 传递依赖）。
+    exclude: ['react-syntax-highlighter'],
   },
   build: {
     target: 'es2020',

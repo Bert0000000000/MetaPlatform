@@ -57,8 +57,8 @@ export interface FlowGramDocumentJSON {
 /**
  * 业务模型 → FlowGram JSON
  */
-export function flowDataToFlowgram(data: FlowData): FlowGramDocumentJSON {
-  const nodes: FlowGramNodeJSON[] = data.nodes.map((node: FlowNode) => ({
+function toGramNode(node: FlowNode): FlowGramNodeJSON {
+  const gram: FlowGramNodeJSON = {
     id: node.id,
     type: node.type,
     meta: {
@@ -72,7 +72,15 @@ export function flowDataToFlowgram(data: FlowData): FlowGramDocumentJSON {
       node.width !== undefined || node.height !== undefined
         ? { width: node.width, height: node.height }
         : undefined,
-  }));
+  };
+  if (node.blocks && node.blocks.length > 0) {
+    gram.blocks = node.blocks.map(toGramNode);
+  }
+  return gram;
+}
+
+export function flowDataToFlowgram(data: FlowData): FlowGramDocumentJSON {
+  const nodes: FlowGramNodeJSON[] = data.nodes.map(toGramNode);
 
   const edges: FlowGramEdgeJSON[] = data.edges.map((edge: FlowEdge) => ({
     id: edge.id,

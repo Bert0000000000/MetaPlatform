@@ -12,6 +12,7 @@ const ADMIN_TABS: Array<{ key: string; label: string; path: string }> = [
   { key: "operations", label: "运营数据", path: "/admin/operations" },
   { key: "analytics", label: "访问看板", path: "/admin/analytics" },
   { key: "components", label: "组件展示", path: "/admin/components" },
+  { key: "flowgram", label: "流程编排 Demo", path: "/admin/flowgram" },
 ];
 
 interface AdminLayoutProps {

@@ -80,6 +80,7 @@ const DashboardAdminAIProvidersPage = lazy(() => import('./pages/dashboard/admin
 const DashboardAdminOperationsPage = lazy(() => import('./pages/dashboard/admin/OperationsPage'));
 const DashboardAdminAnalyticsPage = lazy(() => import('./pages/dashboard/admin/AnalyticsPage'));
 const DashboardAdminComponentDemoPage = lazy(() => import('./pages/dashboard/admin/ComponentDemoPage'));
+const DashboardAdminFlowgramDemoPage = lazy(() => import('./pages/dashboard/admin/FlowgramDemoPage'));
 const DashboardDeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
 const ArchBusinessArchPage = lazy(() => import('./pages/arch/BusinessArchPage'));
 const ArchApplicationManagementPage = lazy(() => import('./pages/arch/ApplicationManagementPage'));
@@ -205,6 +206,7 @@ function AppRoutes() {
           <Route path="admin/operations" element={<DashboardAdminOperationsPage />} />
           <Route path="admin/analytics" element={<DashboardAdminAnalyticsPage />} />
           <Route path="admin/components" element={<DashboardAdminComponentDemoPage />} />
+          <Route path="admin/flowgram" element={<DashboardAdminFlowgramDemoPage />} />
           {/* SuperAI 鐎电鐦芥稉顓炵妇(Phase 4.5: from apps/superai) */}
           <Route path="superai" element={<SuperaiOverviewPage />} />
           <Route path="superai/chat" element={<SuperaiChatPage />} />

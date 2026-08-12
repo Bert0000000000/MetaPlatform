@@ -26,6 +26,7 @@ import {
   SquareDashed,
   Wand2,
   Zap,
+  UserCheck,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -54,6 +55,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   agent_if: Filter,
   agent_loop: FunctionSquare,
   agent_branch: GitBranch,
+  hitl_confirm: UserCheck,
 };
 
 interface NodeAddPanelProps {

@@ -35,6 +35,9 @@ export const NODE_TYPE_LABEL_ZH: Record<string, string> = {
   agent_if: '条件分支',
   agent_loop: '循环',
 
+  // HITL
+  hitl_confirm: '人工确认 (HITL)',
+
   // Business
   business_trigger: '触发器',
   business_notify: '通知抄送',

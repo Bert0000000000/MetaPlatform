@@ -27,8 +27,10 @@ export { FlowgramErrorBoundary } from './flowgram-demo/flowgram-error-boundary';
 export {
   BPMN_NODE_REGISTRIES,
   AGENT_NODE_REGISTRIES,
+  HITL_NODE_REGISTRIES,
   ALL_NODE_REGISTRIES,
   BUSINESS_FLOW_REGISTRIES,
+  FLOWGRAM_COMPOSITE_REGISTRIES,
 } from './node-registries';
 export {
   flowDataToFlowgram,
@@ -60,5 +62,22 @@ export {
   FLOW_MODE_META,
   type FlowMode,
 } from './presets';
+
+// 混合流程 preset（业务活动 + Agent 协作 + 审批 + HITL）
+export { HYBRID_SUPPLIER_PRESET, HYBRID_PARALLEL_PRESET, HYBRID_PRESETS } from './hybrid-presets';
+
+// 可执行混合画布（FlowRunner）
+export { FlowRunner, type FlowRunnerProps } from './FlowRunner/FlowRunner';
+export { useFlowRunner } from './FlowRunner/use-flow-runner';
+export {
+  EXEC_STATE_TEXT,
+  EXEC_STATE_COLOR,
+  RUNNER_STATUS_TEXT,
+  LOG_EVENT_TEXT,
+  type ExecState,
+  type RunnerStatus,
+  type RunnerLog,
+  type RunnerApi,
+} from './FlowRunner/flow-runner-types';
 
 import './flowgram-demo/index.css';

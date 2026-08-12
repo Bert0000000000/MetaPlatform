@@ -62,15 +62,23 @@ export interface FlowgramEditorProps {
 /**
  * 默认的节点库分组拆分规则：按 type 前缀 / 业务关键字。
  */
+const COMPOSITE_TYPES = new Set([
+  'condition', 'loop', 'multiOutputs', 'multiInputs', 'tryCatch',
+  'break', 'slot', 'block', 'output', 'input', 'custom',
+]);
+
 function defaultPaletteGroups(registries: FlowNodeRegistry[]) {
   const groups: Record<string, FlowNodeRegistry[]> = {
     '审批流 (BPMN)': [],
     'AI 协作流 (Agent)': [],
+    '并行与条件': [],
     '业务流程': [],
   };
   for (const r of registries) {
     const t = String(r.type);
-    if (t.startsWith('bpmn')) {
+    if (COMPOSITE_TYPES.has(t)) {
+      groups['并行与条件'].push(r);
+    } else if (t.startsWith('bpmn')) {
       groups['审批流 (BPMN)'].push(r);
     } else if (t.startsWith('agent')) {
       groups['AI 协作流 (Agent)'].push(r);
