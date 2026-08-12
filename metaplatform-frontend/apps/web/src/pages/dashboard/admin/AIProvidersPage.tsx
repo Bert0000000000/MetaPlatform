@@ -459,7 +459,9 @@ export default function AIProvidersPage() {
     const defaultModel = pickByKey(id, "default_model");
     const apiVersion = id === "azure" ? pickByKey(id, "api_version") : undefined;
     const isEnabled = enabled?.value === true || enabled?.value === "true";
-    const testState = testStates[id];
+    // testStates 只初始化了 4 个内置 key；动态添加的自定义 provider 不在其中，
+    // 直接读 testStates[id] 会得到 undefined → testState.status 崩溃（页面白屏）。
+    const testState = testStates[id] ?? { status: "idle" as const };
     const isSaving = saving[id];
 
     return (
