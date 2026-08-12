@@ -27,10 +27,10 @@ import {
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { getEmployee, updateEmployee } from '@/api/dw/employees';
+import { listAiModels, type AiModelItem } from '@/api/admin/models';
 import type { Employee } from '@/api/dw/types';
 import {
   MOCK_TOOLS,
-  MOCK_MODELS,
   MOCK_KNOWLEDGE_BASES,
   MOCK_ACTIONS,
   DIALOG_STYLE_PRESETS,
@@ -38,6 +38,16 @@ import {
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
+
+function groupByProvider(items: AiModelItem[]): { provider: string; models: AiModelItem[] }[] {
+  const byProvider = new Map<string, AiModelItem[]>();
+  for (const m of items) {
+    const p = m.provider || 'unknown';
+    if (!byProvider.has(p)) byProvider.set(p, []);
+    byProvider.get(p)!.push(m);
+  }
+  return [...byProvider.entries()].map(([provider, models]) => ({ provider, models }));
+}
 
 export default function CapabilityConfigPage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -48,6 +58,14 @@ export default function CapabilityConfigPage() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [aiModels, setAiModels] = useState<AiModelItem[]>([]);
+
+  useEffect(() => {
+    // 从后台 provider 注册表拉真实模型清单（AI Providers 页「获取模型」产物）
+    listAiModels()
+      .then((items) => setAiModels(items.filter((m) => m.enabled)))
+      .catch(() => setAiModels([]));
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -142,11 +160,29 @@ export default function CapabilityConfigPage() {
           <Row gutter={24}>
             <Col span={12}>
               <Form.Item name="model" label="LLM 模型" rules={[{ required: true, message: '请选择模型' }]}>
-                <Select placeholder="选择模型">
-                  {MOCK_MODELS.map((m) => (
-                    <Select.Option key={m.id} value={m.id}>
-                      {m.name} - {m.description}
+                <Select
+                  placeholder="选择模型"
+                  loading={loading && aiModels.length === 0}
+                  showSearch
+                  optionFilterProp="label"
+                >
+                  {aiModels.length === 0 && (
+                    <Select.Option value="" disabled>
+                      暂无可选模型（请先到后台 AI Providers 获取模型）
                     </Select.Option>
+                  )}
+                  {groupByProvider(aiModels).map((group) => (
+                    <Select.OptGroup key={group.provider} label={`${group.provider} 模型`}>
+                      {group.models.map((m) => (
+                        <Select.Option
+                          key={`${m.provider}-${m.modelId}`}
+                          value={m.modelId}
+                          label={m.displayName || m.modelId}
+                        >
+                          {m.displayName || m.modelId}
+                        </Select.Option>
+                      ))}
+                    </Select.OptGroup>
                   ))}
                 </Select>
               </Form.Item>
