@@ -92,9 +92,16 @@ class TokenVerifier:
         if not kid:
             raise TokenError("token header missing kid")
 
-        key = self._cache.get_or_refresh(kid)
+        try:
+            key = self._cache.get_or_refresh(kid)
+        except JWKSError as exc:
+            # JWKS fetch failed (Keycloak restart / network). Surface as a
+            # TokenError so the middleware returns 401/503 instead of a 500.
+            raise TokenError(f"JWKS refresh failed: {exc}") from exc
         if key is None:
-            raise JWKSError(f"no JWKS entry for kid {kid!r}")
+            # Keycloak rotated signing keys; this token was signed by a
+            # key that no longer exists. Treat as rejected (401), not 500.
+            raise TokenError(f"no JWKS entry for kid {kid!r}")
         public_key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(key))
         try:
             return jwt.decode(
