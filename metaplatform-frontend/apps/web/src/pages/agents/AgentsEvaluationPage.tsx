@@ -1,17 +1,8 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar, Play, Filter, Download, Share2,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
 
-const AGENT_TABS: SubTabItem[] = [
-  { label: '数字员工列表', path: '/agents' },
-  { label: '数字员工详情', path: '/agents/detail' },
-  { label: '知识提炼', path: '/agents/knowledge' },
-  { label: '任务管理', path: '/agents/tasks' },
-  { label: '协作中心', path: '/agents/collab' },
-  { label: '效果评估', path: '/agents/evaluation' },
-];
 
 // MOCK: 概览统计
 const MOCK_STATS = [
@@ -97,11 +88,9 @@ const priorityTagClass: Record<string, string> = {
 
 export default function AgentsEvaluationPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-
+  
   return (
     <div>
-      <SubTabs items={AGENT_TABS} activePath={location.pathname} />
 
       <style>{`
         .ae-breadcrumb { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }

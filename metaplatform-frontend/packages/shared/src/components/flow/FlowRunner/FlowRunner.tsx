@@ -232,7 +232,7 @@ const SchemaFormInputs: React.FC = () => {
           | undefined;
         const required = schema?.required ?? [];
         const properties = schema?.properties;
-        if (!properties) return null;
+        if (!properties) return <></>;
         return (
           <>
             {Object.keys(properties).map((key) => {
@@ -401,7 +401,7 @@ const ControlBar: React.FC = () => {
           max={1500}
           step={50}
           value={api.stepDelay}
-          onChange={(v: number) => api.setStepDelay(v)}
+          onChange={(v) => api.setStepDelay(Array.isArray(v) ? v[0] : v ?? 150)}
           style={{ width: 120, margin: '0 4px' }}
         />
       </div>
@@ -494,12 +494,12 @@ const Modals: React.FC = () => {
     <>
       {/* HITL 人工确认 */}
       <Modal
-        open={!!waitingHitlId}
+        visible={!!waitingHitlId}
         title="人工确认 (HITL)"
         footer={null}
         maskClosable={false}
         width={480}
-        onCancel={() => waitingHitlId && api.resolveHitl(waitingHitlId, false)}
+        onCancel={() => { if (waitingHitlId) api.resolveHitl(waitingHitlId, false); }}
       >
         {waitingHitlId && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -533,12 +533,12 @@ const Modals: React.FC = () => {
 
       {/* 审批（Flowable 模拟） */}
       <Modal
-        open={!!waitingApprovalId}
+        visible={!!waitingApprovalId}
         title="审批 (Flowable 模拟)"
         footer={null}
         maskClosable={false}
         width={480}
-        onCancel={() => waitingApprovalId && api.resolveApproval(waitingApprovalId, false)}
+        onCancel={() => { if (waitingApprovalId) api.resolveApproval(waitingApprovalId, false); }}
       >
         {waitingApprovalId && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

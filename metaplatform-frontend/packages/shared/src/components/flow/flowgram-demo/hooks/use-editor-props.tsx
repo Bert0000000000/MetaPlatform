@@ -92,7 +92,7 @@ export function buildEditorPropsWith(
     initialData,
     nodeRegistries,
     getNodeDefaultRegistry(type) {
-      const override = defaultFormMeta?.(type);
+      const override = defaultFormMeta?.(String(type));
       if (override?.formMeta) {
         return {
           type,

@@ -135,8 +135,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
       <Card title={formResult.name}>
         <Typography.Paragraph type="secondary">{formResult.description}</Typography.Paragraph>
         <Table
-          size="small"
-          dataSource={formResult.fields.map((f, i) => ({ ...f, key: i }))}
+                    dataSource={formResult.fields.map((f, i) => ({ ...f, key: i }))}
           columns={[
             { title: '标签', dataIndex: 'label', key: 'label' },
             { title: '类型', dataIndex: 'type', key: 'type', render: (v: string) => <Tag>{v}</Tag> },
@@ -157,8 +156,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         title={processResult.name}
         headerExtraContent={
           <Button
-            size="small"
-            theme="borderless"
+                        theme="borderless"
             icon={<ExportOutlined />}
             onClick={() =>
               handleImportToDesigner({
@@ -226,8 +224,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
           {reviewResult.securityIssues.length > 0 && (
             <Card title={<Typography.Text type="danger">安全问题</Typography.Text>}>
               <Table
-                size="small"
-                dataSource={reviewResult.securityIssues.map((i, idx) => ({ ...i, key: idx }))}
+                                dataSource={reviewResult.securityIssues.map((i, idx) => ({ ...i, key: idx }))}
                 columns={[
                   { title: '行', dataIndex: 'line', key: 'line', width: 60 },
                   { title: '严重度', dataIndex: 'severity', key: 'severity', render: (v: string) => <Tag color={v === 'critical' ? 'red' : v === 'warning' ? 'orange' : 'blue'}>{v}</Tag> },
@@ -242,8 +239,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
           {reviewResult.qualityIssues.length > 0 && (
             <Card title={<Typography.Text type="warning">质量问题</Typography.Text>}>
               <Table
-                size="small"
-                dataSource={reviewResult.qualityIssues.map((i, idx) => ({ ...i, key: idx }))}
+                                dataSource={reviewResult.qualityIssues.map((i, idx) => ({ ...i, key: idx }))}
                 columns={[
                   { title: '行', dataIndex: 'line', key: 'line', width: 60 },
                   { title: '严重度', dataIndex: 'severity', key: 'severity', render: (v: string) => <Tag color={v === 'critical' ? 'red' : v === 'warning' ? 'orange' : 'blue'}>{v}</Tag> },
@@ -276,8 +272,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         title={dashboardResult.title}
         headerExtraContent={
           <Button
-            size="small"
-            theme="borderless"
+                        theme="borderless"
             icon={<ExportOutlined />}
             onClick={() =>
               handleImportToDesigner({
@@ -297,8 +292,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         {dashboardResult.widgets.map((w) => (
           <Descriptions
             key={w.id}
-            size="small"
-            column={1}
+                        column={1}
             style={{ marginBottom: 8 }}
             data={[
               { key: '标题', value: w.title },
@@ -309,7 +303,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         ))}
         <Typography.Title heading={5}>API 示例</Typography.Title>
         {dashboardResult.apiExamples.map((api, i) => (
-          <Card key={i} size="small" style={{ marginBottom: 8 }}>
+          <Card key={i} style={{ marginBottom: 8 }}>
             <Space>
               <Tag color={api.method === 'GET' ? 'green' : 'blue'}>{api.method}</Tag>
               <Typography.Text code>{api.url}</Typography.Text>

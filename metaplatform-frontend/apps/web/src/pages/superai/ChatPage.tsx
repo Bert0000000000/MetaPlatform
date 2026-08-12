@@ -549,7 +549,7 @@ function MessageRow({
             )}
             {actionResult && <ActionResultCard result={actionResult} />}
             {!msg.streaming && msg.content && (
-              <MessageActions onCopy={() => onCopy(msg.content)} />
+              <MessageActions onCopy={() => onCopy(msg.content ?? '')} />
             )}
           </div>
         )}
@@ -679,7 +679,7 @@ export default function ChatPage() {
         const chatMessages: ChatMessage[] = messages.map((m) => ({
           id: m.id,
           role: m.role,
-          content: m.content,
+          content: m.content ?? '',
           status: 'success' as const,
           createdAt: m.createdAt,
         }));
@@ -948,7 +948,7 @@ export default function ChatPage() {
         .slice(-MAX_CONTEXT_TURNS * 2)
         .map<Parameters<typeof streamChat>[0][number]>((m) => ({
           role: m.role === 'user' ? 'user' : 'assistant',
-          content: m.content,
+          content: m.content ?? '',
         }));
 
       let ragContext = '';
@@ -1146,7 +1146,7 @@ export default function ChatPage() {
     return sessions.filter(
       (s) =>
         s.title.toLowerCase().includes(k) ||
-        s.messages.some((m) => m.content.toLowerCase().includes(k)),
+        s.messages.some((m) => (m.content ?? '').toLowerCase().includes(k)),
     );
   }, [sessions, searchKeyword]);
 

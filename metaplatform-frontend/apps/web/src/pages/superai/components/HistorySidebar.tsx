@@ -42,7 +42,7 @@ export default function HistorySidebar({
       result = result.filter(
         (s) =>
           s.title.toLowerCase().includes(k) ||
-          s.messages.some((m) => m.content.toLowerCase().includes(k)),
+          s.messages.some((m) => (m.content ?? '').toLowerCase().includes(k)),
       );
     }
     return result;

@@ -8,7 +8,7 @@ import {
   Pause, Server, Calendar, BarChart3, Maximize2,
 } from 'lucide-react';
 import LineageFullView from './components/LineageFullView';
-import { AIAssistantTrigger, AIAssistantWorkspace, ErrorBoundary, SubTabs, usePageAssistant } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, ErrorBoundary, usePageAssistant } from '@mate/shared';
 import BigDataSourceView from './components/BigDataSourceView';
 import CDCView from './components/CDCView';
 import ETLView from './components/ETLView';
@@ -17,12 +17,6 @@ import MetricView from './components/MetricView';
 import DataGraphView from './components/DataGraphView';
 import { listBigDataSources, listCDCTasks, listDataProducts, type BigDataSource, type CDCTask, type DataProduct } from '@/api/ontology-bigdata';
 
-const ONTOLOGY_TABS = [
-  { label: '本体建模', path: '/ontology' },
-  { label: '数据中心', path: '/ontology/datacenter' },
-  { label: 'Action 编排', path: '/ontology/action' },
-  { label: '知识图谱', path: '/ontology/graph' },
-];
 
 const DATACENTER_SUBTABS = [
   { id: 'bigdata', label: '大数据源', icon: Server, count: 0 },
@@ -62,8 +56,7 @@ const PRODUCT_STATUS: Record<string, { label: string; type: string }> = {
 };
 
 export default function OntologyDatacenterPage() {
-  const location = useLocation();
-  const [activeSubTab, setActiveSubTab] = useState('bigdata');
+    const [activeSubTab, setActiveSubTab] = useState('bigdata');
   const [reloadKey, setReloadKey] = useState(0);
   const assistant = usePageAssistant({
     employeeId: 'ontology-data-steward',
@@ -99,7 +92,6 @@ export default function OntologyDatacenterPage() {
   return (
     <AIAssistantWorkspace assistant={assistant}>
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
           {/* Page Header */}

@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Plus,
@@ -12,18 +12,10 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Toast } from '@douyinfe/semi-ui';
-import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
+import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 import { getDashboardSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent } from '@/api/dashboard/workbench';
 
 // 子标签页
-const DASHBOARD_TABS = [
-  { label: '工作台', path: '/dashboard' },
-  { label: '我的应用', path: '/dashboard/my-apps' },
-  { label: '我的数字员工', path: '/dashboard/my-agents' },
-  { label: '消息', path: '/dashboard/messages' },
-  { label: '门户', path: '/dashboard/portal' },
-  { label: '交付材料', path: '/dashboard/deliverables' },
-];
 
 // FALLBACK: 当 BFF 不可达时使用，与 API 返回结构一致（snake_case）
 const FALLBACK: DashboardSummary = {
@@ -99,8 +91,7 @@ const SkeletonBox: React.FC<{ width?: string; height?: string; style?: React.CSS
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(false);
   const [tasksDrawerOpen, setTasksDrawerOpen] = useState(false);
   const [tasksPage, setTasksPage] = useState(1);
   const tasksPageSize = 5;
@@ -186,7 +177,6 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={DASHBOARD_TABS} activePath={location.pathname} />
 
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <div className="v-page-header">

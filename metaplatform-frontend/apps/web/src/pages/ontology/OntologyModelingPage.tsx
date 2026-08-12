@@ -4,7 +4,7 @@ import {
   Hexagon, Search, Plus, Columns3,
   Link as LinkIcon, ArrowRight, Zap, GitBranch,
 } from 'lucide-react';
-import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, FormDrawer, Field, TextInput, usePageAssistant } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, FormDrawer, Field, TextInput, usePageAssistant } from '@mate/shared';
 import {
   listObjectTypes, listActionTypes, listLinkTypes,
   createObjectType, appendObjectTypeProperty,
@@ -13,12 +13,6 @@ import {
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
 
-const ONTOLOGY_TABS = [
-  { label: '本体论管理', path: '/ontology' },
-  { label: '数据中心', path: '/ontology/datacenter' },
-  { label: 'Action 编排', path: '/ontology/action' },
-  { label: '知识图谱', path: '/ontology/graph' },
-];
 
 // 领域码 → 中文（rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1）
 const DOMAIN_LABELS: Record<string, string> = {
@@ -55,8 +49,7 @@ function conceptStatus(ot: KernelObjectType, linkTypes: KernelLinkType[], action
 }
 
 export default function OntologyModelingPage() {
-  const location = useLocation();
-  const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
+    const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
   const [linkTypes, setLinkTypes] = useState<KernelLinkType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -301,8 +294,6 @@ export default function OntologyModelingPage() {
         .om-stat-value{font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em}
         .om-stat-label{font-size:12px;color:var(--muted-foreground);margin-top:6px}
       `}</style>
-
-      <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}

@@ -12,6 +12,7 @@ import {
   Popconfirm,
   Dropdown,
 } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlusOutlined,
   AppstoreOutlined,
@@ -27,7 +28,7 @@ import { SearchInput } from '@mate/shared';
 
 const { Meta } = Card;
 
-const STATUS_MAP: Record<AppStatus, { label: string; color: string }> = {
+const STATUS_MAP: Record<AppStatus, { label: string; color: TagColor }> = {
   DESIGNING: { label: '设计中', color: 'blue' },
   PUBLISHED: { label: '已发布', color: 'green' },
   OFFLINE: { label: '已下线', color: 'grey' },

@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { Banner, Button, Card, Empty, Space, Spin, Tag, Typography } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlayCircleOutlined, StopOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useAgentStream, useInteractionContext } from '@/api/superai/types';
 import { ClaimRenderer } from './ClaimRenderer';
@@ -92,7 +93,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
         />
       </Card>
 
-      {error && <Banner type="error" description={error} />}
+      {error && <Banner type="danger" description={error} />}
 
       <Card title={<Text strong>Run Events ({events.length})</Text>}>
         {events.length === 0 ? (
@@ -125,7 +126,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
 
       {claims.length > 0 && (
         <Card title={<Text strong>Claims ({claims.length})</Text>}>
-          {claims.map((c: Claim) => (
+          {claims.map((c) => (
             <ClaimRenderer key={c.claimId} claim={c} />
           ))}
         </Card>
@@ -140,7 +141,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
   );
 }
 
-function statusColor(s: string): string {
+function statusColor(s: string): TagColor {
   switch (s) {
     case 'completed': return 'green';
     case 'failed': return 'red';
@@ -151,7 +152,7 @@ function statusColor(s: string): string {
   }
 }
 
-function eventColor(t: string): string {
+function eventColor(t: string): TagColor {
   if (t.startsWith('RUN_COMPLETED') || t === 'CLAIM_PRODUCED') return 'green';
   if (t.startsWith('RUN_FAILED') || t === 'TOOL_FAILED') return 'red';
   if (t === 'EVIDENCE_ATTACHED') return 'violet';

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Tag, Typography, Button, Space, Rating, Input, Select, Empty, Tooltip, Spin, Toast } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import * as Icons from '@ant-design/icons';
 import {
@@ -102,7 +103,7 @@ export default function MarketPage() {
     }
   };
 
-  const tagColor = (c: string | undefined) => SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey';
+  const tagColor = (c: string | undefined): TagColor => (SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey') as TagColor;
 
   return (
     <div>

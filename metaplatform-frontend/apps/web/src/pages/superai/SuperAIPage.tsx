@@ -4,7 +4,7 @@ import {
   Plus, ChevronDown, ChevronRight, User, Sparkles, Paperclip, Send,
   Copy, RefreshCw, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
-import { SubTabs, FormDrawer } from '@mate/shared';
+import { FormDrawer } from '@mate/shared';
 
 // MOCK
 const conversations = [
@@ -20,13 +20,9 @@ const conversations = [
 
 const models = ['GPT-4o', 'Claude', 'Gemini'];
 
-const SUPERAI_TABS = [
-  { label: '对话', path: '/superai' },
-];
 
 export default function SuperAIPage() {
-  const location = useLocation();
-  const [temperature, setTemperature] = useState(0.7);
+    const [temperature, setTemperature] = useState(0.7);
   const [inputText, setInputText] = useState('');
   const [selectedConv, setSelectedConv] = useState(2); // 0-indexed, 3rd item active
   const [selectedModel, setSelectedModel] = useState('GPT-4o');
@@ -148,9 +144,8 @@ export default function SuperAIPage() {
 
         {/* Chat Area */}
         <div className="sa-chat-area">
-          {/* Header: SubTabs + 模型选择 + 温度控制 */}
+          {/* Header:  + 模型选择 + 温度控制 */}
           <div className="sa-chat-header">
-            <SubTabs items={SUPERAI_TABS} activePath={location.pathname} embedded />
             <div className="sa-temp-control" style={{ flexShrink: 0 }}>
               <span className="sa-temp-label">Temperature</span>
               <input

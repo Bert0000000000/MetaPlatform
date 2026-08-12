@@ -58,7 +58,7 @@ export interface ChatImage {
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
-  content: string;
+  content?: string;
   status: 'local' | 'loading' | 'updating' | 'success' | 'error';
   streaming?: boolean;
   citations?: Citation[];
@@ -77,7 +77,9 @@ export type ClaimType = 'FACT' | 'INFERENCE' | 'RECOMMENDATION';
 export interface Claim {
   claimId?: string;
   type: ClaimType;
-  content: string;
+  content?: string;
+  /** 运行时别名（useAgentStream 形态）。 */
+  text?: string;
   confidence?: number;
   /** 支撑该论断的证据 ref 列表。 */
   evidenceRefs?: string[];
@@ -86,7 +88,9 @@ export interface Claim {
 export type EvidenceType =
   | 'ONTOLOGY_OBJECT'
   | 'ONTOLOGY_METRIC'
+  | 'ONTOLOGY_RELATION'
   | 'DOCUMENT'
+  | 'KB_CHUNK'
   | 'EXTERNAL'
   | 'MODEL_DERIVED';
 
@@ -100,6 +104,12 @@ export interface Evidence {
   fragment?: string;
   score?: number;
   title?: string;
+  /** 运行时扩展字段（useAgentStream 形态）。 */
+  concept?: string;
+  objectId?: string;
+  capturedAt?: string;
+  envelopeId?: string;
+  toolCallId?: string;
 }
 
 export interface MultimodalModel {
@@ -155,7 +165,7 @@ export interface KnowledgeBase {
 export interface RagSearchResult {
   id: string;
   title: string;
-  content: string;
+  content?: string;
   score: number;
   source: string;
   type: string;
@@ -313,7 +323,7 @@ export type GenerateType = 'form' | 'process' | 'code' | 'dashboard' | 'explain'
 export interface GeneratedConfig {
   type: GenerateType;
   title: string;
-  content: string;
+  content?: string;
   language?: string;
   metadata?: Record<string, unknown>;
   targetAppId?: string;

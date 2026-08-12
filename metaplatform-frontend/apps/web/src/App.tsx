@@ -1,8 +1,7 @@
 import { ConfigProvider as SemiConfigProvider } from '@douyinfe/semi-ui';
 import zh_CN from '@douyinfe/semi-ui/lib/es/locale/source/zh_CN';
-import { ConfigProvider as AntdConfigProvider, App as AntApp, theme as antdTheme } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, Suspense } from 'react';
 import {
   AppLayout,
   AuthProvider,
@@ -351,33 +350,15 @@ function AppRoutes() {
   );
 }
 
-/**
- * 过渡桥接（Semi 迁移期间保留，全量迁移完成后删除）：
- * 为尚未迁移的 antd 页面提供 ConfigProvider + App.useApp() 上下文，
- * 主题跟随当前深浅色。删除后 antd 依赖一并移除。
- */
-function AntdBridge({ children }: { children: ReactNode }) {
-  const { resolvedTheme } = useSettings();
-  return (
-    <AntdConfigProvider
-      theme={{ algorithm: resolvedTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm }}
-    >
-      <AntApp>{children}</AntApp>
-    </AntdConfigProvider>
-  );
-}
-
 function App() {
   return (
     <SemiConfigProvider locale={zh_CN}>
       <SettingsProvider>
-        <AntdBridge>
-          <AuthProvider>
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </AuthProvider>
-        </AntdBridge>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
       </SettingsProvider>
     </SemiConfigProvider>
   );

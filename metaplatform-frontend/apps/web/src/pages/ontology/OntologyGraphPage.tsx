@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Graph } from '@antv/x6';
 import {
   Upload, Download, Settings2, CircleDot, GitBranch, Boxes, Database,
@@ -8,14 +8,7 @@ import {
   User, FileText, Package, FileSignature, Building2, Users, Warehouse,
   Truck, List, ArrowRight, Link as LinkIcon,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
 
-const ONTOLOGY_TABS = [
-  { label: '本体论管理', path: '/ontology' },
-  { label: '数据中心', path: '/ontology/datacenter' },
-  { label: 'Action 编排', path: '/ontology/action' },
-  { label: '知识图谱', path: '/ontology/graph' },
-];
 
 // MOCK: 图谱节点
 type GNode = { id: string; label: string; type: string; nodeClass: string; x: number; y: number };
@@ -99,8 +92,7 @@ const nodeIconColor = (nodeClass: string) => {
 
 export default function OntologyGraphPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [selectedNode, setSelectedNode] = useState('n1');
+    const [selectedNode, setSelectedNode] = useState('n1');
   const selectedNodeRef = useRef(selectedNode);
   selectedNodeRef.current = selectedNode;
   const graphRef = useRef<HTMLDivElement | null>(null);
@@ -264,7 +256,6 @@ export default function OntologyGraphPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}

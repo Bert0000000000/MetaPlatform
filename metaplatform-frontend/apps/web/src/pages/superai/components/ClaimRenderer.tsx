@@ -54,9 +54,9 @@ export function ClaimRenderer({ claim, onEvidenceClick }: ClaimRendererProps) {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <Tag color={color}>{claim.type}</Tag>
-          <Tooltip content={'Confidence: ' + (claim.confidence * 100).toFixed(0) + '%'}>
+          <Tooltip content={'Confidence: ' + (claim.confidence != null ? (claim.confidence * 100).toFixed(0) + '%' : 'N/A')}>
             <Text type="tertiary" style={{ fontSize: 12 }}>
-              {(claim.confidence * 100).toFixed(0)}%
+              {claim.confidence != null ? (claim.confidence * 100).toFixed(0) + '%' : '-'}
             </Text>
           </Tooltip>
         </div>

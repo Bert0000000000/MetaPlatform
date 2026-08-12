@@ -121,14 +121,13 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
             {matches.map((m) => (
               <Card
                 key={m.action.id}
-                size="small"
                 style={{
                   width: 220,
                   border: selectedAction?.id === m.action.id ? '2px solid var(--primary)' : '1px solid var(--border)',
                   cursor: 'pointer',
                 }}
-                onClick={() => handleSelectAction(m.action)}
               >
+                <div onClick={() => handleSelectAction(m.action)}>
                 <Space vertical spacing="tight" style={{ width: '100%' }}>
                   <Typography.Text strong>{m.action.name}</Typography.Text>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>{m.action.description}</Typography.Text>
@@ -137,6 +136,7 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
                     <Tag color={m.confidence > 70 ? 'green' : 'orange'}>{m.confidence}% 匹配</Tag>
                   </Space>
                 </Space>
+                </div>
               </Card>
             ))}
           </Space>

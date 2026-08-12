@@ -4,16 +4,8 @@ import {
   Headphones, FileCheck, BarChart3, PenTool, BookOpen, ShieldCheck,
   Code, TrendingUp, Plus, Search, Eye, Pencil, Pause, Trash2,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem, StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 
-const AGENT_TABS: SubTabItem[] = [
-  { label: '数字员工列表', path: '/agents' },
-  { label: '数字员工详情', path: '/agents/detail' },
-  { label: '知识提炼', path: '/agents/knowledge' },
-  { label: '任务管理', path: '/agents/tasks' },
-  { label: '协作中心', path: '/agents/collab' },
-  { label: '效果评估', path: '/agents/evaluation' },
-];
 
 // MOCK: 列表展示数据（基于 MOCK_AGENTS 扩展设计稿字段）
 interface AgentRow {
@@ -70,7 +62,6 @@ export default function AgentsListPage() {
 
   return (
     <div>
-      <SubTabs items={AGENT_TABS} activePath={location.pathname} />
 
       <style>{`
         .al-stats-row { display: flex; gap: 16px; margin-bottom: 24px; }

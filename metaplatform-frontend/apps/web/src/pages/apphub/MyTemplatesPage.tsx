@@ -11,6 +11,7 @@ import {
   Typography,
   Toast,
 } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import * as Icons from '@ant-design/icons';
 import {
@@ -70,7 +71,7 @@ export default function MyTemplatesPage() {
     Toast.success(`模板「${t.name}」已投稿到应用市场，等待管理员审核`);
   };
 
-  const tagColor = (c: string | undefined) => SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey';
+  const tagColor = (c: string | undefined): TagColor => (SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey') as TagColor;
 
   return (
     <div>

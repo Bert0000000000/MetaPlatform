@@ -247,11 +247,11 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
             <Space vertical spacing="tight" style={{ width: '100%' }}>
               <InputGroup style={{ width: '100%' }}>
                 <Select
-                  value={searchField}
-                  onChange={(v) => setSearchField(v as SearchField)}
+                  value={searchField as string}
+                  onChange={(v: string | string[] | undefined) => setSearchField(v as SearchField)}
                   style={{ width: 120 }}
-                  optionList={SEARCH_FIELD_OPTIONS}
-                  suffixIcon={<FilterOutlined />}
+                  optionList={SEARCH_FIELD_OPTIONS as unknown as Array<{ label: string; value: string }>}
+                  suffix={<FilterOutlined />}
                 />
                 <Input
                   placeholder={
@@ -282,10 +282,9 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
                 concepts.map((concept) => (
                   <Card
                     key={concept.id}
-                    size="small"
-                    onClick={() => handleConceptClick(concept.id)}
                     style={{ cursor: 'pointer' }}
                   >
+                    <div onClick={() => handleConceptClick(concept.id)}>
                     <Space vertical spacing="tight" style={{ width: '100%' }}>
                       <Space>
                         <Typography.Text strong>{concept.name}</Typography.Text>
@@ -320,7 +319,8 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
                         </Space>
                       )}
                     </Space>
-                  </Card>
+                                  </div>
+</Card>
                 ))
               )}
             </Space>

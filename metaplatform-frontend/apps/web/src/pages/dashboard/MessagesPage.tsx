@@ -6,17 +6,8 @@ import {
   FileCheck2, BarChart3, AlertTriangle, MessageSquare, Settings, Activity,
   GitMerge, Zap, Sparkles, type LucideIcon,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
 import { getMessages, type MessageItem } from '@/api/dashboard/workbench';
 
-const DASHBOARD_TABS = [
-  { label: '工作台', path: '/dashboard' },
-  { label: '我的应用', path: '/dashboard/my-apps' },
-  { label: '我的数字员工', path: '/dashboard/my-agents' },
-  { label: '消息', path: '/dashboard/messages' },
-  { label: '门户', path: '/dashboard/portal' },
-  { label: '交付材料', path: '/dashboard/deliverables' },
-];
 
 const MSG_ICON_MAP: Record<string, LucideIcon> = {
   FileCheck2, BarChart3, AlertTriangle, MessageSquare, Settings, Activity,
@@ -95,8 +86,7 @@ const SkeletonLine: React.FC<{ width?: string; height?: string; style?: React.CS
 );
 
 export default function MessagesPage() {
-  const location = useLocation();
-
+  
   // 数据状态
   const [messages, setMessages] = useState<MessageItem[]>(FALLBACK_MESSAGES);
   const [loading, setLoading] = useState(true);
@@ -127,7 +117,6 @@ export default function MessagesPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={DASHBOARD_TABS} activePath={location.pathname} />
 
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>

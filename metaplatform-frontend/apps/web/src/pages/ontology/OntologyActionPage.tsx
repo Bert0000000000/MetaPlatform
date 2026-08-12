@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal as ReactDOM_createPortal } from 'react-dom';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   TestTube, Plus, Search, Calculator, Bell, GitBranch, Plug, Webhook,
   Copy, Trash2, Save, Sparkles, Diamond, RefreshCw, ArrowDownToLine,
@@ -40,15 +40,9 @@ import {
 import { defaultFixedSemiMaterials } from '@flowgram.ai/fixed-semi-materials';
 import '@flowgram.ai/free-layout-editor/index.css';
 import '@flowgram.ai/fixed-layout-editor/index.css';
-import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import { SEED_EXECUTION_HISTORY } from './actions/executionHistory';
 
-const ONTOLOGY_TABS = [
-  { label: '本体论管理', path: '/ontology' },
-  { label: '数据中心', path: '/ontology/datacenter' },
-  { label: 'Action 编排', path: '/ontology/action' },
-  { label: '知识图谱', path: '/ontology/graph' },
-];
 
 // MOCK: Action 列表
 const ACTIONS = [
@@ -1561,8 +1555,7 @@ function CustomBaseNode() {
 
 export default function OntologyActionPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [selectedAction, setSelectedAction] = useState(2);
+    const [selectedAction, setSelectedAction] = useState(2);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedFlowNode, setSelectedFlowNode] = useState('llm-extract');
   const [actionFlowSelect, setActionFlowSelect] = useState('客户数据清洗 Action');
@@ -1615,7 +1608,6 @@ export default function OntologyActionPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}

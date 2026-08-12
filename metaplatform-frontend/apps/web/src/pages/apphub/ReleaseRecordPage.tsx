@@ -17,7 +17,8 @@ import {
   Timeline,
   Typography,
   Toast,
-} from '@douyinfe/semi-ui';
+  TextArea } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -46,13 +47,13 @@ const STRATEGY_LABELS: Record<string, string> = {
   GRAYSCALE: '灰度',
 };
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+const STATUS_LABELS: Record<string, { label: string; color: TagColor }> = {
   PENDING_APPROVAL: { label: '审批中', color: 'blue' },
   PUBLISHED: { label: '已发布', color: 'green' },
   REJECTED: { label: '已驳回', color: 'red' },
 };
 
-const APPROVAL_LABELS: Record<string, { label: string; color: string }> = {
+const APPROVAL_LABELS: Record<string, { label: string; color: TagColor }> = {
   PENDING: { label: '审批中', color: 'blue' },
   APPROVED: { label: '已通过', color: 'green' },
   REJECTED: { label: '已驳回', color: 'red' },
@@ -427,7 +428,7 @@ function TaskApprovalCard({ task, onComplete }: TaskApprovalCardProps) {
   return (
     <Card title={task.name} headerExtraContent={<Tag color="blue">待审批</Tag>}>
       <Typography.Text type="tertiary">处理人: {task.assignee ?? '-'}</Typography.Text>
-      <Input.TextArea
+      <TextArea
         rows={2}
         placeholder="审批意见（可选）"
         value={comment}

@@ -3,16 +3,8 @@ import { useState } from 'react';
 import {
   Plus, Eye, CheckCheck, FileText, Check, X, Pencil,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem, StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 
-const AGENT_TABS: SubTabItem[] = [
-  { label: '数字员工列表', path: '/agents' },
-  { label: '数字员工详情', path: '/agents/detail' },
-  { label: '知识提炼', path: '/agents/knowledge' },
-  { label: '任务管理', path: '/agents/tasks' },
-  { label: '协作中心', path: '/agents/collab' },
-  { label: '效果评估', path: '/agents/evaluation' },
-];
 
 // MOCK: 提炼任务列表
 const MOCK_TASKS = [
@@ -64,7 +56,6 @@ export default function AgentsKnowledgePage() {
 
   return (
     <div>
-      <SubTabs items={AGENT_TABS} activePath={location.pathname} />
 
       <style>{`
         .ak-breadcrumb { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }

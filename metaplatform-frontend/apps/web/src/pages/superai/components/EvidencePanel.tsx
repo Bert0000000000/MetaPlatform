@@ -19,7 +19,9 @@ const CLAIM_META: Record<Claim['type'], { color: string; label: string }> = {
 const EVIDENCE_META: Record<Evidence['type'], { color: string; label: string }> = {
   ONTOLOGY_OBJECT: { color: '#06b6d4', label: '本体对象' },
   ONTOLOGY_METRIC: { color: '#6366f1', label: '本体指标' },
+  ONTOLOGY_RELATION: { color: '#8b5cf6', label: '本体关系' },
   DOCUMENT: { color: '#22c55e', label: '文档' },
+  KB_CHUNK: { color: '#10b981', label: '知识块' },
   EXTERNAL: { color: '#f97316', label: '外部' },
   MODEL_DERIVED: { color: '#a855f7', label: '模型推导' },
 };

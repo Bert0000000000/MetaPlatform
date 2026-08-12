@@ -1,16 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Bot, FileCheck, Scale } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
 
-const AGENT_TABS: SubTabItem[] = [
-  { label: '数字员工列表', path: '/agents' },
-  { label: '数字员工详情', path: '/agents/detail' },
-  { label: '知识提炼', path: '/agents/knowledge' },
-  { label: '任务管理', path: '/agents/tasks' },
-  { label: '协作中心', path: '/agents/collab' },
-  { label: '效果评估', path: '/agents/evaluation' },
-];
 
 // MOCK: 协作会话列表
 interface CollabRow {
@@ -52,14 +43,12 @@ const MOCK_MESSAGES = [
 
 export default function AgentsCollabPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [selectedId, setSelectedId] = useState<string>('COL-20260721-001');
+    const [selectedId, setSelectedId] = useState<string>('COL-20260721-001');
 
   const selected = MOCK_SESSIONS.find((s) => s.id === selectedId) ?? MOCK_SESSIONS[0];
 
   return (
     <div>
-      <SubTabs items={AGENT_TABS} activePath={location.pathname} />
 
       <style>{`
         .ac-breadcrumb { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }

@@ -96,7 +96,7 @@ export default function KnowledgeBasePage() {
 
         <Modal
           title="新建知识库"
-          open={open}
+          visible={open}
           onCancel={() => setOpen(false)}
           onOk={onCreate}
           confirmLoading={submit.loading}

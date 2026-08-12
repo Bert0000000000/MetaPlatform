@@ -20,17 +20,8 @@ import {
   Server,
   type LucideIcon,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
 import { getPortals, type PortalItem } from '@/api/dashboard/workbench';
 
-const DASHBOARD_TABS = [
-  { label: '工作台', path: '/dashboard' },
-  { label: '我的应用', path: '/dashboard/my-apps' },
-  { label: '我的数字员工', path: '/dashboard/my-agents' },
-  { label: '消息', path: '/dashboard/messages' },
-  { label: '门户', path: '/dashboard/portal' },
-  { label: '交付材料', path: '/dashboard/deliverables' },
-];
 
 const portalItemStyle = (isFirst: boolean, isLast: boolean): React.CSSProperties => ({
   display: 'flex',
@@ -75,8 +66,7 @@ const SkeletonLine: React.FC<{ width?: string; height?: string; style?: React.CS
 );
 
 export default function PortalPage() {
-  const location = useLocation();
-
+  
   // 数据状态
   const [portals, setPortals] = useState<PortalItem[]>(FALLBACK_PORTALS);
   const [loading, setLoading] = useState(true);
@@ -148,7 +138,6 @@ export default function PortalPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={DASHBOARD_TABS} activePath={location.pathname} />
 
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <div style={{ marginBottom: 32, display: 'flex', alignItems: 'center', gap: 12 }}>

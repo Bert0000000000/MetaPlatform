@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
@@ -10,7 +10,7 @@ import {
   BookOpen,
   Clock,
 } from 'lucide-react';
-import { SubTabs, StepDrawer, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { StepDrawer, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import { getMyAgents, getAgentExecLogs, type MyAgentItem, type AgentExecLogItem } from '@/api/dashboard/workbench';
 
 import { ShieldCheck, FileText, Receipt, Headphones, BarChart3, type LucideIcon } from 'lucide-react';
@@ -46,14 +46,6 @@ const FALLBACK_EXEC_LOGS: AgentExecLogItem[] = [
   { log_id: 'l13', agent: '知识库管理员', agent_id: 'kb-admin', exec_time: '07-22 10:30:00', duration: '5.2s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '7,210' },
   { log_id: 'l14', agent: '数据质量巡检员', agent_id: 'data-quality', exec_time: '07-22 10:00:00', duration: '1.9s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '2,580' },
   { log_id: 'l15', agent: '客服助手', agent_id: 'service-bot', exec_time: '07-22 09:42:17', duration: '0.8s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '用户提问', tokens: '1,120' },
-];
-const DASHBOARD_TABS = [
-  { label: '工作台', path: '/dashboard' },
-  { label: '我的应用', path: '/dashboard/my-apps' },
-  { label: '我的数字员工', path: '/dashboard/my-agents' },
-  { label: '消息', path: '/dashboard/messages' },
-  { label: '门户', path: '/dashboard/portal' },
-  { label: '交付材料', path: '/dashboard/deliverables' },
 ];
 
 // MOCK: agent cards data (richer than MOCK_MY_AGENTS)
@@ -150,8 +142,7 @@ const badgeColorMap: Record<string, string> = {
 };
 
 export default function MyAgentsPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [execDrawerOpen, setExecDrawerOpen] = useState(false);
   const [execPage, setExecPage] = useState(1);
@@ -217,7 +208,6 @@ export default function MyAgentsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={DASHBOARD_TABS} activePath={location.pathname} />
 
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
       {/* Page header */}

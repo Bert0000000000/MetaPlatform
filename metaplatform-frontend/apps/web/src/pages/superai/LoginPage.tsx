@@ -35,7 +35,7 @@ export default function LoginPage() {
         </Typography.Title>
         <Form
           onSubmit={handleSubmit}
-          initValues={{ tenantId: 'default' }}
+          initValues={{ tenantId: 'default', username: '', password: '' }}
         >
           <Form.Input
             field="tenantId"

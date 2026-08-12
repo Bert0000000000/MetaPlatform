@@ -4,17 +4,8 @@ import {
   Upload, Search, FileText, BarChart3, BrainCircuit, FileSpreadsheet,
   Database, Activity, Eye, Download, Trash2, Bot, User, type LucideIcon,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
 import { getDeliverablesSummary, type DeliverableItem, type DeliverableTimelineItem } from '@/api/dashboard/workbench';
 
-const DASHBOARD_TABS = [
-  { label: '工作台', path: '/dashboard' },
-  { label: '我的应用', path: '/dashboard/my-apps' },
-  { label: '我的数字员工', path: '/dashboard/my-agents' },
-  { label: '消息', path: '/dashboard/messages' },
-  { label: '门户', path: '/dashboard/portal' },
-  { label: '交付材料', path: '/dashboard/deliverables' },
-];
 
 const DELIVERABLE_ICON_MAP: Record<string, LucideIcon> = {
   FileText, BarChart3, BrainCircuit, FileSpreadsheet, Database, Activity,
@@ -64,8 +55,7 @@ const SkeletonLine: React.FC<{ width?: string; height?: string; style?: React.CS
 );
 
 export default function DeliverablesPage() {
-  const location = useLocation();
-
+  
   // 数据状态
   const [deliverables, setDeliverables] = useState<DeliverableItem[]>(FALLBACK_DELIVERABLES);
   const [timeline, setTimeline] = useState<DeliverableTimelineItem[]>(FALLBACK_TIMELINE_ITEMS);
@@ -101,7 +91,6 @@ export default function DeliverablesPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={DASHBOARD_TABS} activePath={location.pathname} />
 
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
