@@ -2,7 +2,7 @@ import { useState, useRef, useMemo, useCallback } from 'react';
 import { Bubble, Sender } from '@ant-design/x';
 import { Typography, Space, Tag, theme } from 'antd';
 import { RobotOutlined, UserOutlined } from '@ant-design/icons';
-import { getToken, getUser } from '@mate/shared';
+import { getToken } from '@mate/shared';
 import type { Employee } from '@/api/dw/types';
 
 interface ChatMessage {
@@ -84,22 +84,24 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
       const systemPrompt = employee.capability?.systemPrompt || `你是${employee.name}，${employee.roleIdentity}。${employee.description}`;
 
       try {
-        const response = await fetch('/api/v1/llmgw/chat/stream', {
+        // 经 copilot 走真实 LLM 链路：copilot 读 IAM provider 配置 →
+        // llmgw /chat/real → 真实模型（SSE）。API key 留在 copilot 后端。
+        const response = await fetch('/api/v1/copilot/chat/completions/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
           },
           body: JSON.stringify({
-            model: employee.capability?.model || 'doubao-pro',
+            model: employee.capability?.model || 'doubao-pro-32k',
             messages: [
               { role: 'system', content: systemPrompt },
               ...historyMsgs,
               { role: 'user', content: trimmed },
             ],
             temperature: employee.capability?.temperature ?? 0.7,
-            max_tokens: employee.capability?.maxTokens ?? 2048,
-            tenant_id: getUser()?.tenantId || 'tenant-default',
+            maxTokens: employee.capability?.maxTokens ?? 2048,
+            appId: 'app-employee-chat',
           }),
           signal: controller.signal,
         });
@@ -128,13 +130,19 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
             if (!data || data === '[DONE]') continue;
 
             try {
-              // mate-tech-llmgw SSE format: {type: "token"|"final", data: {...}}
               const parsed = JSON.parse(data) as {
                 type?: string;
                 data?: { text?: string; finish_reason?: string };
+                choices?: { delta?: { content?: string }; finish_reason?: string }[];
               };
-              if (parsed.type === 'token' && parsed.data?.text !== undefined) {
-                const delta = parsed.data.text || '';
+              // copilot → llmgw 链路：{choices:[{delta:{content}}]}（OpenAI 风格）
+              let delta = '';
+              if (parsed.choices?.[0]?.delta?.content) {
+                delta = parsed.choices[0].delta.content;
+              } else if (parsed.type === 'token' && parsed.data?.text !== undefined) {
+                delta = parsed.data.text;
+              }
+              if (delta) {
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsg.id
@@ -143,7 +151,11 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
                   ),
                 );
               }
-              if (parsed.type === 'final' || parsed.data?.finish_reason) {
+              if (
+                parsed.choices?.[0]?.finish_reason ||
+                parsed.type === 'final' ||
+                parsed.data?.finish_reason
+              ) {
                 finished = true;
               }
             } catch {
