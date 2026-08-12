@@ -266,7 +266,7 @@ async def verify(req: VerifyRequest) -> VerifyResponse:
             algorithms=ALLOWED_ALGS,
             issuer=ISSUER,
             audience=KEYCLOAK_CLIENT_ID,
-            options={"require": ["exp", "iat", "iss", "sub"]},
+            options={"require": ["exp", "iat", "iss", "aud"]},
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -449,6 +449,83 @@ async def iam_logout(authorization: str | None = Header(default=None)) -> dict[s
     return {"loggedOut": True, "jti": jti}
 
 
+# ---- Dashboard login override (real Keycloak JWT, not mock mb_at_ token) ----
+# The mate-tech-iam dashboard router mints a fake `mb_at_...` token at
+# /api/v1/dashboard/auth/login. SEC-IAM-01's install_auth middleware rejects
+# non-JWT tokens → browser 401 on every subsequent dashboard request. This
+# override is defined BEFORE app.include_router(dashboard_router), so FastAPI
+# matches it first. It delegates to Keycloak password grant and returns the
+# same dashboard-style response shape the frontend expects — but with a real
+# JWT the middleware will accept.
+@app.post("/api/v1/dashboard/auth/login")
+async def dashboard_login_keycloak(req: IamLoginRequest) -> dict[str, Any]:
+    if not KEYCLOAK_CLIENT_SECRET:
+        raise HTTPException(status_code=503, detail="KEYCLOAK_CLIENT_SECRET not configured")
+    token_url = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+    form = {
+        "grant_type": "password",
+        "client_id": KEYCLOAK_CLIENT_ID,
+        "client_secret": KEYCLOAK_CLIENT_SECRET,
+        "username": req.username,
+        "password": req.password,
+    }
+    try:
+        r = await app.state.client.post(
+            token_url, data=form,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Keycloak timeout")
+    if r.status_code != 200:
+        try:
+            err = r.json()
+            detail = err.get("error_description") or err.get("error") or "Login failed"
+        except Exception:
+            detail = r.text or "Login failed"
+        raise HTTPException(status_code=r.status_code, detail=detail)
+    td = r.json()
+    access_token = td.get("access_token", "")
+    refresh_token = td.get("refresh_token", "")
+    # Fetch userinfo for display fields (best-effort).
+    sub = ""
+    preferred = req.username
+    email = f"{req.username}@metaplatform.local"
+    real_name = req.username.capitalize()
+    try:
+        ui = await app.state.client.get(
+            OIDC_USERINFO_URL,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        if ui.status_code == 200:
+            info = ui.json()
+            sub = info.get("sub", "")
+            preferred = info.get("preferred_username", preferred)
+            email = info.get("email", email)
+            real_name = info.get("name", real_name)
+    except Exception as exc:
+        logger.warning("dashboard_login.userinfo_failed", error=str(exc))
+    return {
+        "loginResult": "SUCCESS",
+        "userId": sub or f"u-{req.username}",
+        "username": preferred,
+        "realName": real_name,
+        "accessToken": access_token,
+        "refreshToken": refresh_token or None,
+        "tokenType": td.get("token_type", "Bearer"),
+        "expiresIn": td.get("expires_in", 3600),
+        "refreshExpiresIn": td.get("refresh_expires_in", 2592000),
+        "requirePasswordReset": False,
+        "mfaRequired": False,
+        "user": {
+            "id": sub or f"u-{req.username}",
+            "username": preferred,
+            "email": email,
+            "realName": real_name,
+            "status": "ACTIVE",
+        },
+    }
+
+
 # ---- GOVERN-02-FIX: CORS + install_auth + IAM router mounting ----
 
 app.add_middleware(
@@ -464,8 +541,18 @@ app.add_middleware(
 install_auth(
     app,
     extra_anonymous_paths={
-        "/api/v1/dashboard/auth/login",
+        # /api/v1/iam/auth/login|logout are password-grant endpoints — Keycloak
+        # accepts client_credentials + username/password, no bearer token yet.
+        # /api/v1/iam/auth/refresh is the refresh-grant variant.
+        # Without these, the auth middleware rejects them with 401 "missing
+        # bearer token" before they can talk to Keycloak (issue found 2026-08-11
+        # in end-to-end smoke after GOVERN-02-FIX rebuild).
+        "/api/v1/iam/auth/login",
+        "/api/v1/iam/auth/logout",
         "/api/v1/iam/auth/refresh",
+        # /dashboard/auth/login is the workbench mock-login route — never
+        # receives a bearer token; it mints the `mb_at_...` workbench token.
+        "/api/v1/dashboard/auth/login",
     },
 )
 

@@ -1100,9 +1100,10 @@ services:
       OTEL_SERVICE_NAME: mate-auth-service
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # GOVERN-02-FIX: IAM package now mounted on auth-service (dashboard/admin/users/orgs/...)
-      # IAM_DATABASE_URL: leave default (SQLite at /data/mate_iam.db) for dev;
-      # override to asyncpg in prod.
+      # IAM data lives in PostgreSQL (metaplatform_iam), per architecture — not SQLite.
+      # SQLite (aiosqlite) is kept as a fallback for local unit tests only.
       IAM_DATA_DIR: /data
+      IAM_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_iam
       CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
     ports:
       - "${AUTH_SVC_PORT:-8101}:8101"
@@ -1110,6 +1111,8 @@ services:
       - iam_data:/data
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
       keycloak:
         condition: service_started

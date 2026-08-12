@@ -1,0 +1,102 @@
+{
+  "realm": "metaplatform",
+  "enabled": true,
+  "accessTokenLifespan": 3600,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "permanentLockout": false,
+  "verifyEmail": false,
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@metaplatform.local",
+      "emailVerified": true,
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "attributes": {
+        "tenant_id": ["tenant-default"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["PLATFORM_ADMIN", "user"]
+    },
+    {
+      "username": "metaplatform",
+      "enabled": true,
+      "email": "user@metaplatform.local",
+      "emailVerified": true,
+      "firstName": "Meta",
+      "lastName": "User",
+      "attributes": {
+        "tenant_id": ["tenant-default"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "metaplatform",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {"name": "user", "description": "Default user role"},
+      {"name": "PLATFORM_ADMIN", "description": "Platform administrator (maps to mate-tech-iam admin guard)"}
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "metaplatform-backend",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "UgLYQat6W-Q_banAssRqG8AgCoL84pM06t1GDA4N5fJwi3THJVcQkVJhF9Lcr_K5",
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "metaplatform-backend-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "metaplatform-backend",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "tenant-id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "multivalued": "false"
+          }
+        }
+      ]
+    }
+  ]
+}

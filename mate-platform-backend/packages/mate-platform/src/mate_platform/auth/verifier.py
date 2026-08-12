@@ -104,7 +104,9 @@ class TokenVerifier:
                 audience=self._config.audience,
                 issuer=self._config.issuer,
                 leeway=self._config.leeway_seconds,
-                options={"require": ["exp", "iat", "iss", "sub", "aud"]},
+                # `sub` is required by OIDC spec only when `openid` scope is requested.
+                # Password-grant access tokens typically omit `sub`; tolerate that.
+                options={"require": ["exp", "iat", "iss", "aud"]},
             )
         except jwt.PyJWTError as exc:
             raise TokenError(f"token verification failed: {exc}") from exc
@@ -183,6 +185,13 @@ def _collect_scopes(claims: dict[str, Any]) -> frozenset[str]:
 
 
 def _extract_tenant_id(claims: dict[str, Any]) -> str:
+    # Top-level tenant_id claim (set by oidc-usermodel-attribute-mapper on the
+    # Keycloak client). This is the primary path for SEC-IAM-01 tokens.
+    top = claims.get("tenant_id")
+    if isinstance(top, str) and top:
+        return top
+    if isinstance(top, list) and top:
+        return str(top[0])
     attrs = claims.get("attributes")
     if isinstance(attrs, dict):
         tenant = attrs.get("tenant_id")

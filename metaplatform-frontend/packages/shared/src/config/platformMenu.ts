@@ -91,9 +91,9 @@ export const PLATFORM_MENU: Record<string, PlatformModuleMenu> = {
     items: [
       { key: 'dw-employees', label: '数字员工', path: '/dw/employees' },
       { key: 'dw-tasks', label: '任务中心', path: '/dw/tasks' },
-      { key: 'dw-evaluation', label: '效果评估', path: '/dw/evaluation' },
+      { key: 'dw-evaluation', label: '效果评估', path: '/dw/evaluations' },
       { key: 'dw-collaborations', label: '多员工协作', path: '/dw/collaborations' },
-      { key: 'dw-external-agents', label: 'A2A 外部协作', path: '/dw/external-agents' },
+      { key: 'dw-external-agents', label: 'A2A 外部协作', path: '/dw/a2a' },
     ],
   },
   apphub: {

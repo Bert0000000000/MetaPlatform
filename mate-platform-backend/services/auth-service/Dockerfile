@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir \
     pyjwt[crypto] redis tenacity structlog python-multipart \
     opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc \
     opentelemetry-instrumentation-fastapi \
-    sqlmodel sqlalchemy aiosqlite 'passlib[bcrypt]' bcrypt \
+    sqlmodel sqlalchemy asyncpg aiosqlite 'passlib[bcrypt]' bcrypt \
     && echo "AUTH_DEPS_OK" || (echo "AUTH_DEPS_FAIL"; exit 1)
 
 COPY services/ services/
