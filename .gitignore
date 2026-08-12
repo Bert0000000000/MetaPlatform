@@ -174,3 +174,6 @@ mate-platform-backend/contracts/runtime/*.json
 .tmp-commit-v*.py
 .tmp-gh-push*.py
 .tmp-git-status.py
+
+# Test output artifacts
+test-results/
