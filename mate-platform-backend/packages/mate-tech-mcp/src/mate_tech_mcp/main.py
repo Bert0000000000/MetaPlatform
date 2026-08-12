@@ -46,6 +46,7 @@ from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
 from .tools.kb_search import build_kb_search_tool
 from .tools.rate_limit import RateLimitConfig, ToolRateLimiter
+from .tools.skill_search import build_read_skill_tool, build_search_skill_tool
 
 logger = structlog.get_logger(__name__)
 
@@ -54,6 +55,10 @@ mcp_server: MCPServer = create_server()
 
 # Register the kb_search tool (ST-5.3.2.1).
 mcp_server.register_tool(build_kb_search_tool())
+
+# skill 检索工具（agent 按能力检索 skillhub → 读 SKILL.md 搭应用）。
+mcp_server.register_tool(build_search_skill_tool())
+mcp_server.register_tool(build_read_skill_tool())
 
 # Ontology resource.
 _ontology: OntologyResource = build_ontology_resource()

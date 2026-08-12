@@ -14,6 +14,7 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 from .api.app import router as orchestrator_router
 from .api.scheduling import router as scheduling_router
+from .bootstrap import seed_default_roles
 from .scheduler.dispatcher import get_dispatcher
 from .scheduler.plan_runner import get_plan_runner
 from .scheduler.role_registry import get_role_registry
@@ -31,6 +32,8 @@ def create_app() -> FastAPI:
     # Wire the scheduler singletons (DI seam for tests via set_* / app.state).
     registry = get_role_registry()
     registry.restore()  # reload persisted roles (cross-restart survival)
+    # Seed default skill capabilities (idempotent) so App role can search/read skills.
+    seed_default_roles()
     app.state.role_registry = registry
     app.state.dispatcher = get_dispatcher()
     app.state.plan_runner = get_plan_runner()

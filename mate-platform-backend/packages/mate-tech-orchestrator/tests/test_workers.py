@@ -11,10 +11,16 @@ from mate_tech_orchestrator.workers.identity import build_service_identity
 from mate_tech_orchestrator.workers.mcp import McpWorker
 
 
-def test_identity_none_without_creds(monkeypatch) -> None:
+def test_identity_legacy_token_without_creds(monkeypatch) -> None:
+    # Dev profile (INSECURE_SKIP_SIGNATURE=true, no SERVICE_CLIENT_SECRET):
+    # falls back to a locally-minted legacy token provider so the
+    # orchestrator → center leg stays authenticated.
     monkeypatch.delenv("SERVICE_CLIENT_ID", raising=False)
     monkeypatch.delenv("SERVICE_CLIENT_SECRET", raising=False)
-    assert build_service_identity() is None
+    ident = build_service_identity()
+    assert ident is not None
+    assert callable(ident.token)
+    assert isinstance(ident.token(), str) and ident.token().count(".") == 2
 
 
 def test_identity_built_with_creds(monkeypatch) -> None:
