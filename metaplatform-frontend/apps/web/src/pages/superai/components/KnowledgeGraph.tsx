@@ -15,6 +15,8 @@ import { expandGraphNode } from '@/api/superai/ontology';
 interface KnowledgeGraphProps {
   data: GraphData;
   height?: number;
+  /** 固定画布宽度（px）。不传则自适应容器宽度。 */
+  width?: number;
   /** 节点点击回调（用于 REQ-033 跳转概念详情）。 */
   onNodeClick?: (nodeId: string, nodeType: string) => void;
 }
@@ -39,16 +41,14 @@ interface PositionedNode extends GraphNode {
   y: number;
 }
 
-const WIDTH = 800;
-
-/** 按布局类型计算节点坐标。 */
-function computeLayout(nodes: GraphNode[], layout: LayoutType, height: number): PositionedNode[] {
-  const centerX = WIDTH / 2;
+/** 按布局类型计算节点坐标。width/height 取容器实际尺寸（聊天卡片内自适应，避免画布超出卡片）。 */
+function computeLayout(nodes: GraphNode[], layout: LayoutType, height: number, width: number): PositionedNode[] {
+  const centerX = width / 2;
   const centerY = height / 2;
   if (nodes.length === 0) return [];
 
   if (layout === 'circular') {
-    const radius = Math.min(WIDTH, height) * 0.35;
+    const radius = Math.min(width, height) * 0.35;
     return nodes.map((node, i) => {
       const angle = (i / nodes.length) * Math.PI * 2;
       return { ...node, x: centerX + Math.cos(angle) * radius, y: centerY + Math.sin(angle) * radius };
@@ -56,7 +56,7 @@ function computeLayout(nodes: GraphNode[], layout: LayoutType, height: number): 
   }
   if (layout === 'grid') {
     const cols = Math.ceil(Math.sqrt(nodes.length));
-    const spacing = Math.min(WIDTH / (cols + 1), height / (Math.ceil(nodes.length / cols) + 1));
+    const spacing = Math.min(width / (cols + 1), height / (Math.ceil(nodes.length / cols) + 1));
     return nodes.map((node, i) => ({
       ...node,
       x: spacing * ((i % cols) + 1),
@@ -64,7 +64,7 @@ function computeLayout(nodes: GraphNode[], layout: LayoutType, height: number): 
     }));
   }
   // force：用圆形随机扰动初始化，后续 tick 由简易弹簧模型迭代
-  const radius = Math.min(WIDTH, height) * 0.3;
+  const radius = Math.min(width, height) * 0.3;
   return nodes.map((node, i) => {
     const angle = (i / nodes.length) * Math.PI * 2;
     return {
@@ -137,7 +137,7 @@ function forceLayoutTick(
   return next;
 }
 
-export default function KnowledgeGraph({ data, height = 400, onNodeClick }: KnowledgeGraphProps) {
+export default function KnowledgeGraph({ data, height = 400, width, onNodeClick }: KnowledgeGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph | null>(null);
   const expandedNodesRef = useRef<Set<string>>(new Set());
@@ -153,13 +153,24 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
   });
   const [expanding, setExpanding] = useState(false);
 
-  /** 初始化 X6 图实例（含 History 插件）。 */
+  /** 实时读取画布宽度：固定 width 优先，否则取容器实际宽度（不含边框）。 */
+  const graphWidth = useCallback((): number => {
+    if (width) return width;
+    const el = containerRef.current;
+    if (!el) return 800;
+    const w = el.clientWidth;
+    return w > 0 ? w : 800;
+  }, [width]);
+
+  /** 初始化 X6 图实例（含 History 插件）。只在挂载时创建一次；
+   *  容器宽度变化由 resize effect 处理，避免重建导致容器塌缩。 */
   useEffect(() => {
-    if (!containerRef.current) return;
+    const el = containerRef.current;
+    if (!el) return;
 
     const graph = new Graph({
-      container: containerRef.current,
-      width: WIDTH,
+      container: el,
+      width: width || el.clientWidth || 800,
       height,
       grid: { visible: true, type: 'dot', args: { color: '#f0f0f0', thickness: 1 } },
       background: { color: '#fafafa' },
@@ -190,7 +201,21 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
       graph.dispose();
       graphRef.current = null;
     };
-  }, [height, onNodeClick]);
+  }, [width, height, layout, onNodeClick]);
+
+  /** 容器宽度变化 → 仅调整画布宽度（高度固定）。固定 width 时不观察。 */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || width) return;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      if (w > 0 && graphRef.current) {
+        graphRef.current.resize(w, height);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [height, width]);
 
   /** 计算当前可见节点/边（按折叠状态与类型筛选）。 */
   const computeVisible = useCallback(() => {
@@ -211,51 +236,60 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
   const renderGraph = useCallback(() => {
     const graph = graphRef.current;
     if (!graph) return;
+    // 切换布局/数据时先停止力导向动画，避免旧布局元素与重绘叠加
+    if (forceAnimRef.current) {
+      cancelAnimationFrame(forceAnimRef.current);
+      forceAnimRef.current = null;
+    }
     const { visibleNodes, visibleEdges } = computeVisible();
-    const positioned = computeLayout(visibleNodes, layout, height);
+    const positioned = computeLayout(visibleNodes, layout, height, graphWidth());
 
     graph.clearCells();
     graph.startBatch('render');
 
-    positioned.forEach((node) => {
-      const size = NODE_SIZES[node.type] || 40;
-      const color = NODE_COLORS[node.type] || '#999';
-      const isSelected = selectedNode === node.id;
-      const hasHiddenNeighbors = data.edges.some(
-        (e) =>
-          (e.source === node.id || e.target === node.id) &&
-          (collapsedNodes.has(e.source === node.id ? e.target : e.source) ||
-            (typeFilter.length > 0 &&
-              !typeFilter.includes(
-                (data.nodes.find((n) => n.id === (e.source === node.id ? e.target : e.source))?.type || ''),
-              ))),
-      );
+    try {
+      positioned.forEach((node) => {
+        const size = NODE_SIZES[node.type] || 40;
+        const color = NODE_COLORS[node.type] || '#999';
+        const isSelected = selectedNode === node.id;
+        const hasHiddenNeighbors = data.edges.some(
+          (e) =>
+            (e.source === node.id || e.target === node.id) &&
+            (collapsedNodes.has(e.source === node.id ? e.target : e.source) ||
+              (typeFilter.length > 0 &&
+                !typeFilter.includes(
+                  (data.nodes.find((n) => n.id === (e.source === node.id ? e.target : e.source))?.type || ''),
+                ))),
+        );
 
-      graph.addNode({
-        id: node.id,
-        shape: 'ellipse',
-        x: node.x - size / 2,
-        y: node.y - size / 2,
-        width: size,
-        height: size,
-        label: node.label.length > 8 ? node.label.slice(0, 7) + '…' : node.label,
-        attrs: {
-          body: {
-            fill: isSelected ? color : `${color}33`,
-            stroke: color,
-            strokeWidth: isSelected ? 3 : 2,
-            strokeDasharray: hasHiddenNeighbors ? '4,4' : null,
+        graph.addNode({
+          id: node.id,
+          shape: 'ellipse',
+          x: node.x - size / 2,
+          y: node.y - size / 2,
+          width: size,
+          height: size,
+          label: node.label.length > 8 ? node.label.slice(0, 7) + '…' : node.label,
+          attrs: {
+            body: {
+              fill: isSelected ? color : `${color}33`,
+              stroke: color,
+              strokeWidth: isSelected ? 3 : 2,
+              strokeDasharray: hasHiddenNeighbors ? '4,4' : null,
+            },
+            label: {
+              fontSize: 11,
+              fill: '#333',
+              fontWeight: node.type === 'concept' ? 600 : 400,
+              refY: size / 2 + 14,
+            },
           },
-          label: {
-            fontSize: 11,
-            fill: '#333',
-            fontWeight: node.type === 'concept' ? 600 : 400,
-            refY: size / 2 + 14,
-          },
-        },
-        data: { type: node.type, label: node.label, properties: node.properties },
+          data: { type: node.type, label: node.label, properties: node.properties },
+        });
       });
-    });
+    } catch (e) {
+      console.error('[kg] addNode error', e);
+    }
 
     visibleEdges.forEach((edge) => {
       graph.addEdge({
@@ -276,7 +310,7 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
     });
 
     graph.stopBatch('render');
-  }, [computeVisible, layout, height, selectedNode, data, collapsedNodes, typeFilter]);
+  }, [computeVisible, layout, height, graphWidth, selectedNode, data, collapsedNodes, typeFilter]);
 
   useEffect(() => {
     renderGraph();
@@ -311,7 +345,7 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
         source: String(e.getSourceCellId()),
         target: String(e.getTargetCellId()),
       }));
-      const next = forceLayoutTick(positioned, edges, WIDTH, height);
+      const next = forceLayoutTick(positioned, edges, graphWidth(), height);
       next.forEach((n) => {
         const cell = graph.getCellById(n.id);
         if (cell && cell.isNode()) {
@@ -328,7 +362,7 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
         forceAnimRef.current = null;
       }
     };
-  }, [layout, height, data]);
+  }, [layout, height, graphWidth, data]);
 
   /** 展开节点（REQ-035）：调用后端 expand 接口获取邻居子图。 */
   const handleExpand = useCallback(
@@ -348,7 +382,7 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
       setExpanding(true);
       try {
         const sub = await expandGraphNode(nodeId, 1);
-        // 将新节点合并入 data（通过 trigger data 重新渲染依赖）
+        // 不可变合并新节点/边到内部 graphData（触发及时刷新）
         const existingIds = new Set(data.nodes.map((n) => n.id));
         const newNodes = sub.nodes.filter((n) => !existingIds.has(n.id));
         const existingEdgeIds = new Set(data.edges.map((e) => e.id));
@@ -505,7 +539,9 @@ export default function KnowledgeGraph({ data, height = 400, onNodeClick }: Know
       <div
         ref={containerRef}
         style={{
-          width: '100%',
+          width: width ? width : '100%',
+          minWidth: 0,
+          maxWidth: '100%',
           height,
           border: '1px solid #f0f0f0',
           borderRadius: 8,

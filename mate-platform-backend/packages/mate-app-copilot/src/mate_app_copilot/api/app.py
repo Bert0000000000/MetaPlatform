@@ -1313,8 +1313,22 @@ async def query_graph(
             edges.append(
                 {"source": cap["id"], "target": child["id"], "label": "contains"}
             )
+    # 数据资产映射：data_asset_id → 数据来源信息（D 层 / 业务域）
+    assets = {a.id: a for a in list_data_assets(tid)}
     for ent in list_data_entities(tid):
-        nodes.append({"id": ent.id, "label": ent.name, "type": "entity"})
+        asset = assets.get(ent.data_asset_id)
+        nodes.append({
+            "id": ent.id,
+            "label": ent.name,
+            "type": "entity",
+            # data 供前端 evidence 展示：对应的数据（字段）+ 数据来源（数据资产/D 层/域）
+            "data": {
+                "fields": list(ent.fields)[:8],
+                "dataSource": asset.name if asset else "",
+                "layer": asset.layer if asset else "",
+                "domain": asset.domain if asset else "",
+            },
+        })
     return {"nodes": nodes, "edges": edges}
 
 

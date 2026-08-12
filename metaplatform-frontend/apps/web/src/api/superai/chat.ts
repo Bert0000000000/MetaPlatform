@@ -15,7 +15,7 @@ export interface StreamMessage {
 }
 export interface StreamCallbacks {
   onDelta: (text: string) => void;
-  onDone: (citations: Citation[]) => void;
+  onDone: (content: string, citations: Citation[]) => void;
   onError: (message: string) => void;
 }
 export interface MultimodalResponse {
@@ -108,7 +108,7 @@ export async function streamChat(
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      callbacks.onDone([]);
+      callbacks.onDone('', []);
       return;
     }
     callbacks.onError(error instanceof Error ? error.message : 'LLM 流式请求失败');
@@ -122,6 +122,7 @@ export async function streamChat(
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
   let finished = false;
+  let fullContent = '';
   const citations: Citation[] = [];
   while (!finished) {
     const { done, value } = await reader.read();
@@ -137,7 +138,9 @@ export async function streamChat(
       try {
         const parsed = JSON.parse(data) as unknown;
         if (isContentDelta(parsed)) {
-          callbacks.onDelta(parsed.choices[0].delta.content ?? '');
+          const delta = parsed.choices[0].delta.content ?? '';
+          fullContent += delta;
+          callbacks.onDelta(delta);
         } else if (isErrorEvent(parsed)) {
           callbacks.onError(parsed.errorMessage || 'LLM 流式失败');
           finished = true;
@@ -151,7 +154,7 @@ export async function streamChat(
       }
     }
   }
-  callbacks.onDone(citations);
+  callbacks.onDone(fullContent, citations);
 }
 interface DeltaEvent {
   choices: Array<{

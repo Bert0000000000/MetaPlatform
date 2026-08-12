@@ -42,11 +42,15 @@ import {
 import MarkdownRenderer from './components/MarkdownRenderer';
 import KnowledgeGraph from './components/KnowledgeGraph';
 import ActionMatchCard from './components/ActionPanel';
+import EvidencePanel from './components/EvidencePanel';
 import { matchAction } from '@/api/superai/actions';
 import type {
   ChatSession,
   ChatMessage,
   Citation,
+  Claim,
+  Evidence,
+  GraphData,
   KnowledgeBase,
   ChatImage,
   MultimodalModel,
@@ -61,7 +65,11 @@ const UNIFIED_SYSTEM_PROMPT = `你是 Mate Platform 的智能助手 SuperAI。�
 - 代码生成：当用户需要表单/流程/代码时，生成配置和代码片段。
 - 任务编排：当用户描述复杂任务时，拆解步骤并给出执行方案。
 
-始终使用 Markdown 格式，支持标题、列表、代码块、表格等。回答要专业、准确、可溯源。`;
+始终使用 Markdown 格式，支持标题、列表、代码块、表格等。回答要专业、准确、可溯源。
+
+在回答的**最末尾**输出一个 JSON 块，列出本次回答的 2-4 条关键论断。格式（不要把 JSON 包在代码块里，直接输出）：
+{"claims":[{"content":"论断内容","type":"FACT|INFERENCE|RECOMMENDATION","confidence":0.9}]}
+type 用 FACT（事实，可直接验证）、INFERENCE（推断，基于推理）、RECOMMENDATION（建议/行动）。没有依据时不要硬编造论断。`;
 
 const WELCOME_PROMPTS = [
   '什么是 Ontology 本体引擎？',
@@ -71,6 +79,92 @@ const WELCOME_PROMPTS = [
 ];
 
 const MAX_CONTEXT_TURNS = 10;
+
+// ---- 结构化证据（Claims / Evidence）辅助 ----
+
+/** 从回答末尾解析 claims JSON 块，返回剥离后的正文与 claims。 */
+function extractClaims(content: string): { content: string; claims: Claim[] } {
+  const claims: Claim[] = [];
+  // 优先匹配 ```json ... ``` 围栏，其次匹配末尾 JSON 对象
+  const fence = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = fence ? fence[1] : content.match(/\{\s*"claims"\s*:[\s\S]*?\}\s*$/)?.[0];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw.trim());
+      if (Array.isArray(parsed?.claims)) {
+        for (const c of parsed.claims) {
+          if (c && typeof c.content === 'string' && c.content.trim()) {
+            const type = c.type === 'FACT' || c.type === 'RECOMMENDATION' ? c.type : 'INFERENCE';
+            const confidence = Number(c.confidence);
+            claims.push({
+              content: c.content.trim(),
+              type,
+              confidence: Number.isFinite(confidence) && confidence > 0 ? Math.min(confidence, 1) : undefined,
+            });
+          }
+        }
+      }
+    } catch {
+      /* 解析失败则忽略 claims */
+    }
+  }
+  let cleaned = content;
+  if (fence) {
+    cleaned = content.replace(fence[0], '').replace(/\n+$/, '').trim();
+  } else if (claims.length > 0) {
+    cleaned = content.replace(/\{\s*"claims"\s*:[\s\S]*?\}\s*$/, '').replace(/\n+$/, '').trim();
+  }
+  return { content: cleaned, claims };
+}
+
+/** 知识库引用（Citation）→ 文档型证据（DOCUMENT）。 */
+function citationsToEvidence(citations: Citation[]): Evidence[] {
+  return citations
+    .filter((c) => c && c.title)
+    .map((c) => ({
+      evidenceId: c.id,
+      type: 'DOCUMENT' as const,
+      ref: c.url || c.title,
+      title: c.title,
+      score: c.score,
+      fragment: c.snippet,
+    }));
+}
+
+/** Ontology 图谱 → 本体对象证据：关系 + 对应的数据（字段）+ 数据来源（数据资产/D 层/域）。 */
+function graphToEvidence(graph: GraphData): Evidence[] {
+  const items: Evidence[] = [];
+  const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+  for (const node of graph.nodes) {
+    if (node.type !== 'entity' || !node.data) continue;
+    const d = node.data;
+    const rels = (graph.edges ?? [])
+      .filter((e) => e.source === node.id || e.target === node.id)
+      .map((e) => {
+        const otherId = e.source === node.id ? e.target : e.source;
+        const other = nodeById.get(otherId);
+        return other ? `${other.label}（${e.label || '关联'}）` : '';
+      })
+      .filter(Boolean);
+    const fields = Array.isArray(d.fields) && d.fields.length > 0 ? d.fields.slice(0, 5).join(', ') : '';
+    const source = [d.dataSource, d.layer, d.domain].filter(Boolean).join(' · ');
+    const frag = [
+      rels.length > 0 ? `关系：${rels.join('、')}` : '',
+      fields ? `数据：${fields}` : '',
+      source ? `来源：${source}` : '',
+    ]
+      .filter(Boolean)
+      .join('；');
+    if (!frag) continue;
+    items.push({
+      type: 'ONTOLOGY_OBJECT' as const,
+      ref: node.id,
+      title: node.label,
+      fragment: frag,
+    });
+  }
+  return items;
+}
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -295,17 +389,22 @@ function MessageRow({
   msg,
   onCopy,
   onActionResult,
+  streamingContent,
 }: {
   msg: ChatMessage;
   onCopy: (text: string) => void;
   onActionResult?: (result: ActionResult) => void;
+  streamingContent?: string;
 }) {
   const isUser = msg.role === 'user';
+  const [graphCollapsed, setGraphCollapsed] = useState(false);
   const graphData = !isUser ? msg.metadata?.graphData : undefined;
   const thinkingContent = !isUser ? msg.metadata?.thinking : undefined;
   const thinkingDuration = !isUser ? msg.metadata?.thinkingDuration : undefined;
   const actionResult = !isUser ? msg.metadata?.actionResult : undefined;
   const actionMatch = !isUser ? msg.metadata?.actionMatch : undefined;
+  // 流式期间用草稿 content（避免 onDelta 增量追加与 onDone 最终值竞争）
+  const displayContent = msg.streaming && streamingContent != null ? streamingContent : msg.content;
 
   const time = msg.createdAt
     ? new Date(msg.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -360,7 +459,7 @@ function MessageRow({
         }}
       >
         {/* 思考中状态 */}
-        {msg.streaming && msg.content === '' && (
+        {msg.streaming && !streamingContent && msg.content === '' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#a1a1a1', padding: '8px 0 4px' }}>
             <div style={{ display: 'inline-flex', gap: 3 }}>
               <span className="thinking-dot" />
@@ -397,7 +496,7 @@ function MessageRow({
           </div>
         ) : (
           <div>
-            <MarkdownRenderer content={msg.content || ''} />
+            <MarkdownRenderer content={displayContent || ''} />
             {graphData && graphData.nodes.length > 0 && (
               <div
                 style={{
@@ -408,16 +507,42 @@ function MessageRow({
                   padding: 8,
                 }}
               >
-                <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 }}>
-                  <BookOutlined style={{ fontSize: 12, color: '#a1a1a1' }} />
-                  <Typography.Text style={{ fontSize: 12, color: '#a1a1a1' }}>
-                    知识图谱 · {graphData.nodes.length} 节点 / {graphData.edges.length} 关系
-                  </Typography.Text>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 4,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: graphCollapsed ? 0 : 8,
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <BookOutlined style={{ fontSize: 12, color: '#a1a1a1' }} />
+                    <Typography.Text style={{ fontSize: 12, color: '#a1a1a1' }}>
+                      知识图谱 · {graphData.nodes.length} 节点 / {graphData.edges.length} 关系
+                    </Typography.Text>
+                  </div>
+                  <button
+                    onClick={() => setGraphCollapsed((v) => !v)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#a1a1a1',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      fontFamily: 'inherit',
+                    }}
+                    title={graphCollapsed ? '展开图谱' : '收缩图谱'}
+                  >
+                    {graphCollapsed ? '展开 ▾' : '收缩 ▴'}
+                  </button>
                 </div>
-                <KnowledgeGraph data={graphData} height={300} />
+                {!graphCollapsed && <KnowledgeGraph data={graphData} height={300} width={620} />}
               </div>
             )}
             <CitationList citations={msg.citations} />
+            <EvidencePanel claims={msg.claims} evidence={msg.evidence} />
             {actionMatch && (
               <ActionMatchCard
                 query={actionMatch.query}
@@ -475,6 +600,8 @@ export default function ChatPage() {
   const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
   const [currentModel, setCurrentModel] = useState('');
   const [availableModels, setAvailableModels] = useState<{ label: string; value: string }[]>([]);
+  // 流式草稿：assistantId → 累积中的 content（onDelta 阶段），onDone 后并入消息并清空
+  const [streamingMap, setStreamingMap] = useState<Record<string, string>>({});
   const loadedHistoryRef = useRef<Set<string>>(new Set());
   const modelsLoadedRef = useRef(false);
 
@@ -853,10 +980,17 @@ export default function ChatPage() {
       if (trimmed.match(/关系|关联|图谱|ontology|实体|依赖|拓扑/i)) {
         ontSemanticQuery(trimmed)
           .then((graphData) => {
-            updateMessage(sessionId, assistantId, (msg) => ({
-              ...msg,
-              metadata: { ...(msg.metadata || {}), graphData },
-            }));
+            updateMessage(sessionId, assistantId, (msg) => {
+              // graphData 异步到达，可能在 onDone 之后：若消息已完成，补充本体 evidence（去重）
+              const hasOntEvidence = (msg.evidence || []).some((e) => e.type === 'ONTOLOGY_OBJECT');
+              return {
+                ...msg,
+                metadata: { ...(msg.metadata || {}), graphData },
+                ...(!hasOntEvidence && msg.status === 'success'
+                  ? { evidence: [...(msg.evidence || []), ...graphToEvidence(graphData)] }
+                  : {}),
+              };
+            });
           })
           .catch((error) => {
             /* Graph fetch failed; assistant text response still shows. */
@@ -872,18 +1006,32 @@ export default function ChatPage() {
         ],
         {
           onDelta: (delta) => {
-            updateMessage(sessionId, assistantId, (msg) => ({
-              ...msg,
-              content: msg.content + delta,
-            }));
+            setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
           },
-          onDone: (citations) => {
-            updateMessage(sessionId, assistantId, (msg) => ({
-              ...msg,
-              status: 'success',
-              streaming: false,
-              citations: citations.length > 0 ? citations : ragCitations,
-            }));
+          onDone: (fullContent, citations) => {
+            const finalCitations = citations.length > 0 ? citations : ragCitations;
+            const { content: cleanedContent, claims } = extractClaims(fullContent);
+            updateMessage(sessionId, assistantId, (msg) => {
+              const graph = msg.metadata?.graphData;
+              const evidence: Evidence[] = [
+                ...citationsToEvidence(finalCitations),
+                ...(graph ? graphToEvidence(graph) : []),
+              ];
+              return {
+                ...msg,
+                status: 'success',
+                streaming: false,
+                content: cleanedContent,
+                citations: finalCitations,
+                claims: claims.length > 0 ? claims : undefined,
+                evidence: evidence.length > 0 ? evidence : undefined,
+              };
+            });
+            setStreamingMap((m) => {
+              const next = { ...m };
+              delete next[assistantId];
+              return next;
+            });
             setLoading(false);
             abortRef.current = null;
           },
@@ -1282,6 +1430,7 @@ export default function ChatPage() {
                   key={msg.id}
                   msg={msg}
                   onCopy={handleCopyMessage}
+                  streamingContent={streamingMap[msg.id]}
                   onActionResult={(result) => {
                     updateSession(activeSession.id, (session) => ({
                       ...session,

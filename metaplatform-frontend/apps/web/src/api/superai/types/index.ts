@@ -62,9 +62,44 @@ export interface ChatMessage {
   status: 'local' | 'loading' | 'updating' | 'success' | 'error';
   streaming?: boolean;
   citations?: Citation[];
+  claims?: Claim[];
+  evidence?: Evidence[];
   createdAt: string;
   metadata?: ChatMessageMetadata;
   images?: ChatImage[];
+}
+
+// ============ Structured Evidence / Claim Types（证据结构化展示） ============
+
+export type ClaimType = 'FACT' | 'INFERENCE' | 'RECOMMENDATION';
+
+/** AI 回答中的关键论断（事实 / 推断 / 建议）。 */
+export interface Claim {
+  claimId?: string;
+  type: ClaimType;
+  content: string;
+  confidence?: number;
+  /** 支撑该论断的证据 ref 列表。 */
+  evidenceRefs?: string[];
+}
+
+export type EvidenceType =
+  | 'ONTOLOGY_OBJECT'
+  | 'ONTOLOGY_METRIC'
+  | 'DOCUMENT'
+  | 'EXTERNAL'
+  | 'MODEL_DERIVED';
+
+/** 支撑回答的证据：知识库文档（DOCUMENT）或本体关系（ONTOLOGY_OBJECT）等。 */
+export interface Evidence {
+  evidenceId?: string;
+  type: EvidenceType;
+  /** 引用标识：文档 URL / 本体实体 id / 关系描述。 */
+  ref: string;
+  /** 证据片段（文档摘要 / 关系说明）。 */
+  fragment?: string;
+  score?: number;
+  title?: string;
 }
 
 export interface MultimodalModel {
@@ -239,11 +274,24 @@ export interface ConceptInstance {
   values: Record<string, unknown>;
 }
 
+export interface GraphNodeData {
+  /** 实体对应的数据字段。 */
+  fields?: string[];
+  /** 数据来源（数据资产名）。 */
+  dataSource?: string;
+  /** 数据分层（D0-D8）。 */
+  layer?: string;
+  /** 业务域。 */
+  domain?: string;
+}
+
 export interface GraphNode {
   id: string;
   label: string;
-  type: 'concept' | 'entity' | 'relation';
+  type: string;
   properties?: Record<string, unknown>;
+  /** 后端实体节点附带的数据信息（供 evidence 展示）。 */
+  data?: GraphNodeData;
 }
 
 export interface GraphEdge {

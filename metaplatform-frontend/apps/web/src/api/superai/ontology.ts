@@ -7,7 +7,7 @@ async function post<T>(url: string, body?: unknown): Promise<T> { return data(aw
 async function put<T>(url: string, body?: unknown): Promise<T> { return data(await client.put<T>(url, body)); }
 async function del<T>(url: string): Promise<T> { return data(await client.delete<T>(url)); }
 
-import type { OntologyConcept, GraphData, GraphNode, GraphEdge } from './types';
+import type { OntologyConcept, GraphData, GraphNode, GraphEdge, GraphNodeData } from './types';
 /**
  * Ontology 探索 API（V12-01 REQ-030~037）。
  * 通过 APP-COPILOT 代理对接 TECH-ONT 后端，不做任何 mock 兜底。
@@ -24,6 +24,8 @@ interface GraphNodeDto {
   label: string;
   type?: string;
   properties?: Record<string, unknown>;
+  /** 后端实体节点附带的数据信息（fields / dataSource / layer / domain），供 evidence 展示。 */
+  data?: GraphNodeData;
 }
 /** 后端 GraphEdgeDto 形状。 */
 interface GraphEdgeDto {
@@ -57,6 +59,7 @@ function toGraphData(resp: GraphQueryResponse | null | undefined): GraphData {
     label: n.label,
     type: (n.type as GraphNode['type']) || 'entity',
     properties: n.properties,
+    data: n.data,
   }));
   const edges: GraphEdge[] = (resp.edges || []).map((e) => ({
     id: e.id,
