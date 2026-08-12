@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Space, Tag, Divider, Form, Switch, Input } from "antd";
+import { useNavigate } from "react-router-dom";
+import { Space, Tag, Divider, Form, Switch, Input, App } from "antd";
 import {
   AdminLayout,
   StatCard,
@@ -12,7 +13,9 @@ import {
   PlatformMenu2,
   SectionCard,
   FormDrawer,
+  PLATFORM_COMPONENTS_SKILL,
 } from "@mate/shared";
+import { listSkills, uploadSkill, updateSkill } from "@/api/mcphub/skills";
 
 const MARKDOWN_SAMPLE = `# 组件展示
 
@@ -36,11 +39,48 @@ const MARKDOWN_SAMPLE = `# 组件展示
 `;
 
 export default function ComponentDemoPage() {
+  const navigate = useNavigate();
+  const { message } = App.useApp();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [publishing, setPublishing] = useState(false);
+
+  const handlePublishSkill = async () => {
+    setPublishing(true);
+    try {
+      const existing = await listSkills({ q: 'platform-ui-components' });
+      const body = {
+        name: 'platform-ui-components',
+        description: '平台通用 UI 组件清单（@mate/shared）：按钮 / 分页 / 菜单 / 表单抽屉 / 卡片 / 表格 / 状态反馈 / Markdown 渲染器。用这些组件快速搭建平台页面。',
+        version: 'v1',
+        visibility: 'public' as const,
+        content: PLATFORM_COMPONENTS_SKILL,
+      };
+      const hit = existing.items?.find((s) => s.name === 'platform-ui-components');
+      if (hit) {
+        await updateSkill(hit.id, body);
+        message.success('组件 Skill 已更新');
+      } else {
+        await uploadSkill(body);
+        message.success('组件 Skill 已发布');
+      }
+      navigate('/mcp/skill-hub');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '发布失败');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   return (
-    <AdminLayout title="组件展示">
+    <AdminLayout
+      title="组件展示"
+      extra={
+        <PlatformButton variant="primary" loading={publishing} onClick={handlePublishSkill}>
+          发布组件 Skill
+        </PlatformButton>
+      }
+    >
       <StatGrid>
         <StatCard label="通用组件" value={4} color="success" />
         <StatCard label="渲染器" value={4} />

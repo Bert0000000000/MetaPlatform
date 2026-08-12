@@ -49,6 +49,8 @@ export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from
 export { default as PlatformButton, type PlatformButtonProps } from './components/PlatformButton';
 export { default as PlatformPagination, type PlatformPaginationProps } from './components/PlatformPagination';
 export { default as PlatformMenu2, type PlatformMenu2Item } from './components/PlatformMenu2';
+export { COMPONENT_MANIFEST, type ComponentManifest, type ComponentCategory, type ComponentPropManifest } from './components/componentManifest';
+export { buildPlatformComponentsSkillMd, PLATFORM_COMPONENTS_SKILL } from './components/buildPlatformComponentsSkill';
 
 export { useThemeMode, getAntdTheme } from './theme';
 export * as FlowCanvas from './components/flow';
