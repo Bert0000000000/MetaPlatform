@@ -213,10 +213,10 @@ export default function DataAnalysisPage() {
   return (
     <div style={{ height: '100%', display: 'flex', gap: 16 }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Card >
+        <Card>
           <Space vertical spacing="medium" style={{ width: '100%' }}>
             <Row gutter={16} align="middle">
-              <Col flex="auto">
+              <Col style={{ flex: 'auto' }}>
                 <Space>
                   <DatabaseIcon />
                   <Text strong>数据源</Text>
@@ -232,7 +232,7 @@ export default function DataAnalysisPage() {
                   />
                 </Space>
               </Col>
-              <Col>
+              <Col style={{ flexShrink: 0 }}>
                 <Space>
                   <Button
                     theme="solid"
@@ -287,7 +287,7 @@ export default function DataAnalysisPage() {
           </Space>
         </Card>
 
-        <Card  style={{ flex: 1, minHeight: 0 }}>
+        <Card style={{ flex: 1, minHeight: 0 }}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -305,10 +305,9 @@ export default function DataAnalysisPage() {
                     <Tag>{result.executionTime} ms</Tag>
                   </Space>
                   <Table
-                    dataSource={result.rows}
+                    dataSource={result.rows.map((r, i) => ({ ...r, __rowKey: String(i) }))}
                     columns={resultColumns}
-                    rowKey={(_, index) => String(index)}
-                    size="small"
+                    rowKey="__rowKey"
                     pagination={{ pageSize: 10 }}
                     scroll={{ x: 'max-content' }}
                   />

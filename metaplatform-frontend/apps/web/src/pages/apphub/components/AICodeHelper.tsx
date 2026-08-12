@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { Button, Card, Empty, Input, Select, Space, Tag, Typography, message } from 'antd';
+import { useState } from 'react';
+import { Button, Card, Empty, Input, Select, Space, Tag, Typography, Toast } from '@douyinfe/semi-ui';
 import { CodeOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { generateCode } from '@/api/apphub/generate';
 import type { CodeGenResult } from '@/api/apphub/types';
@@ -16,7 +16,7 @@ export default function AICodeHelper({ defaultLanguage = 'typescript' }: AICodeH
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      message.warning('请输入需求');
+      Toast.warning('请输入需求');
       return;
     }
     setLoading(true);
@@ -29,14 +29,14 @@ export default function AICodeHelper({ defaultLanguage = 'typescript' }: AICodeH
   };
 
   return (
-    <Card size="small" title={<><CodeOutlined /> AI 代码助手</>}>
-      <Space orientation="vertical" style={{ width: '100%' }}>
+    <Card title={<><CodeOutlined /> AI 代码助手</>} bodyStyle={{ padding: 12 }}>
+      <Space vertical style={{ width: '100%' }}>
         <Space>
           <Select
             value={language}
-            onChange={setLanguage}
+            onChange={(v) => setLanguage(typeof v === 'string' ? v : 'typescript')}
             style={{ width: 160 }}
-            options={[
+            optionList={[
               { label: 'TypeScript', value: 'typescript' },
               { label: 'Python', value: 'python' },
               { label: 'Java', value: 'java' },
@@ -47,11 +47,12 @@ export default function AICodeHelper({ defaultLanguage = 'typescript' }: AICodeH
           <Input
             placeholder="描述需求"
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(v) => setPrompt(v)}
             style={{ width: 320 }}
-            onPressEnter={handleGenerate}
+            onEnterPress={handleGenerate}
           />
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={loading}
@@ -63,7 +64,7 @@ export default function AICodeHelper({ defaultLanguage = 'typescript' }: AICodeH
 
         {result ? (
           <>
-            <Typography.Text type="secondary">{result.description}</Typography.Text>
+            <Typography.Text type="tertiary">{result.description}</Typography.Text>
             {result.dependencies && (
               <Space wrap>
                 {result.dependencies.map((d: string) => (
@@ -71,12 +72,12 @@ export default function AICodeHelper({ defaultLanguage = 'typescript' }: AICodeH
                 ))}
               </Space>
             )}
-            <Typography.Paragraph copyable={{ text: result.code }}>
+            <Typography.Paragraph copyable={{ content: result.code }}>
               <pre
                 style={{
-                  background: '#fafafa',
+                  background: 'var(--muted)',
                   padding: 12,
-                  borderRadius: 4,
+                  borderRadius: 'var(--radius)',
                   fontFamily: 'Menlo, Consolas, monospace',
                   fontSize: 12,
                   maxHeight: 320,

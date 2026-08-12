@@ -1,5 +1,5 @@
-﻿import { Table, Tag, Button, Space, Popconfirm, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Table, Tag, Button, Space, Popconfirm, Typography } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   RollbackOutlined,
   CloudUploadOutlined,
@@ -20,10 +20,10 @@ interface VersionListProps {
   onPreview: (v: AppVersion) => void;
 }
 
-const STATUS_MAP: Record<AppVersion['status'], { label: string; color: string }> = {
-  DRAFT: { label: '草稿', color: 'default' },
+const STATUS_MAP: Record<AppVersion['status'], { label: string; color: TagColor }> = {
+  DRAFT: { label: '草稿', color: 'grey' },
   PUBLISHED: { label: '已发布', color: 'green' },
-  OFFLINE: { label: '已下线', color: 'default' },
+  OFFLINE: { label: '已下线', color: 'grey' },
   ROLLBACK: { label: '回滚中', color: 'orange' },
 };
 
@@ -38,100 +38,106 @@ export default function VersionList({
   onDelete,
   onPreview,
 }: VersionListProps) {
-  const columns: ColumnsType<AppVersion> = [
-    {
-      title: 'A/B',
-      key: 'select',
-      width: 120,
-      render: (_, v) => (
-        <Space>
-          <Button
-            type={selectedA === v.versionId ? 'primary' : 'default'}
-            size="small"
-            onClick={() => onSelectA(v.versionId)}
-          >
-            A
-          </Button>
-          <Button
-            type={selectedB === v.versionId ? 'primary' : 'default'}
-            size="small"
-            onClick={() => onSelectB(v.versionId)}
-          >
-            B
-          </Button>
-        </Space>
-      ),
-    },
-    {
-      title: '版本',
-      key: 'version',
-      render: (_, v) => (
-        <Space orientation="vertical" size={0}>
-          <Typography.Text strong>v{v.version}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {v.changeLog || '无变更说明'}
-          </Typography.Text>
-        </Space>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      render: (v) => <Tag color={STATUS_MAP[v as AppVersion['status']].color}>{STATUS_MAP[v as AppVersion['status']].label}</Tag>,
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'createdAt',
-      render: (v) => new Date(v).toLocaleString(),
-    },
-    {
-      title: '发布/回滚',
-      key: 'dates',
-      render: (_, v) => (
-        <Space orientation="vertical" size={0} style={{ fontSize: 12 }}>
-          {v.publishedAt && (
-            <span>发布: {new Date(v.publishedAt).toLocaleString()}</span>
-          )}
-          {v.rolledBackAt && (
-            <span>回滚: {new Date(v.rolledBackAt).toLocaleString()}</span>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      render: (_, v) => (
-        <Space wrap>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => onPreview(v)}>
-            预览
-          </Button>
-          {v.status !== 'PUBLISHED' && (
-            <Button type="link" icon={<CloudUploadOutlined />} onClick={() => onPublish(v)}>
-              发布
-            </Button>
-          )}
-          {v.status === 'OFFLINE' && (
-            <Button type="link" icon={<RollbackOutlined />} onClick={() => onRollback(v)}>
-              回滚到此版本
-            </Button>
-          )}
-          {v.status === 'DRAFT' && (
-            <Popconfirm title="确定删除草稿？" onConfirm={() => onDelete(v)}>
-              <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
-    },
-  ];
-
   return (
     <Table
       rowKey="versionId"
       dataSource={versions}
-      columns={columns}
       pagination={false}
-      size="small" scroll={{ x: 'max-content' }} />
+      size="small"
+      scroll={{ x: 'max-content' }}
+      columns={[
+        {
+          title: 'A/B',
+          key: 'select',
+          width: 120,
+          render: (_: unknown, v: AppVersion) => (
+            <Space spacing="tight">
+              <Button
+                theme={selectedA === v.versionId ? 'solid' : 'outline'}
+                type={selectedA === v.versionId ? 'primary' : 'secondary'}
+                size="small"
+                onClick={() => onSelectA(v.versionId)}
+              >
+                A
+              </Button>
+              <Button
+                theme={selectedB === v.versionId ? 'solid' : 'outline'}
+                type={selectedB === v.versionId ? 'primary' : 'secondary'}
+                size="small"
+                onClick={() => onSelectB(v.versionId)}
+              >
+                B
+              </Button>
+            </Space>
+          ),
+        },
+        {
+          title: '版本',
+          key: 'version',
+          render: (_: unknown, v: AppVersion) => (
+            <Space vertical spacing={0}>
+              <Typography.Text strong>v{v.version}</Typography.Text>
+              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                {v.changeLog || '无变更说明'}
+              </Typography.Text>
+            </Space>
+          ),
+        },
+        {
+          title: '状态',
+          dataIndex: 'status',
+          render: (v: unknown) => (
+            <Tag color={STATUS_MAP[v as AppVersion['status']].color}>
+              {STATUS_MAP[v as AppVersion['status']].label}
+            </Tag>
+          ),
+        },
+        {
+          title: '创建时间',
+          dataIndex: 'createdAt',
+          render: (v: unknown) => new Date(v as string).toLocaleString(),
+        },
+        {
+          title: '发布/回滚',
+          key: 'dates',
+          render: (_: unknown, v: AppVersion) => (
+            <Space vertical spacing={0} style={{ fontSize: 12 }}>
+              {v.publishedAt && (
+                <span>发布: {new Date(v.publishedAt).toLocaleString()}</span>
+              )}
+              {v.rolledBackAt && (
+                <span>回滚: {new Date(v.rolledBackAt).toLocaleString()}</span>
+              )}
+            </Space>
+          ),
+        },
+        {
+          title: '操作',
+          key: 'actions',
+          render: (_: unknown, v: AppVersion) => (
+            <Space wrap spacing="tight">
+              <Button theme="borderless" type="primary" icon={<EyeOutlined />} onClick={() => onPreview(v)}>
+                预览
+              </Button>
+              {v.status !== 'PUBLISHED' && (
+                <Button theme="borderless" type="primary" icon={<CloudUploadOutlined />} onClick={() => onPublish(v)}>
+                  发布
+                </Button>
+              )}
+              {v.status === 'OFFLINE' && (
+                <Button theme="borderless" type="primary" icon={<RollbackOutlined />} onClick={() => onRollback(v)}>
+                  回滚到此版本
+                </Button>
+              )}
+              {v.status === 'DRAFT' && (
+                <Popconfirm title="确定删除草稿？" onConfirm={() => onDelete(v)}>
+                  <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
+                </Popconfirm>
+              )}
+            </Space>
+          ),
+        },
+      ]}
+    />
   );
 }

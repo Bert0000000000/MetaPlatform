@@ -3,16 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
-  Col,
   Empty,
   Popconfirm,
-  Rate,
-  Row,
+  Rating,
   Space,
   Tag,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import * as Icons from '@ant-design/icons';
 import {
   CATEGORY_COLOR,
@@ -22,6 +21,9 @@ import {
 } from './data/templates';
 import { listTemplates, type TemplateItem } from '@/api/apphub/marketplace';
 import { getUser } from '@mate/shared';
+
+// Semi Tag 颜色名与 antd 色名差异修正（gold → yellow）
+const SEMI_TAG_COLOR: Record<string, string> = { gold: 'yellow', default: 'grey' };
 
 const IconMap = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
 
@@ -47,7 +49,7 @@ export default function MyTemplatesPage() {
         : [];
       setTemplates(mine);
     } catch {
-      message.error('加载模板列表失败');
+      Toast.error('加载模板列表失败');
       setTemplates([]);
     } finally {
       setLoading(false);
@@ -61,24 +63,26 @@ export default function MyTemplatesPage() {
   const handleDelete = (t: TemplateItem) => {
     removeUserTemplate(t.templateId);
     setTemplates((prev) => prev.filter((x) => x.templateId !== t.templateId));
-    message.success(`已删除模板：${t.name}`);
+    Toast.success(`已删除模板：${t.name}`);
   };
 
   const handlePublish = (t: TemplateItem) => {
-    message.success(`模板「${t.name}」已投稿到应用市场，等待管理员审核`);
+    Toast.success(`模板「${t.name}」已投稿到应用市场，等待管理员审核`);
   };
+
+  const tagColor = (c: string | undefined) => SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey';
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           <Icons.AppstoreOutlined /> 我的模板
         </Typography.Title>
         <Space>
           <Button icon={<Icons.AppstoreOutlined />} onClick={() => navigate('/market')}>
             浏览应用市场
           </Button>
-          <Button type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
+          <Button theme="solid" type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
             投稿新模板
           </Button>
         </Space>
@@ -87,7 +91,7 @@ export default function MyTemplatesPage() {
       <Card loading={loading}>
         {templates.length === 0 ? (
           <Empty description="还没有创建任何模板，点击&quot;投稿新模板&quot;开始">
-            <Button type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
+            <Button theme="solid" type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
               投稿新模板
             </Button>
           </Empty>
@@ -96,7 +100,7 @@ export default function MyTemplatesPage() {
             {templates.map((t) => (
               <Col key={t.templateId} xs={24} sm={12} md={8} lg={6}>
                 <Card
-                  hoverable
+                  shadows="hover"
                   cover={
                     <div
                       style={{
@@ -104,8 +108,8 @@ export default function MyTemplatesPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #722ed1 0%, #b37feb 100%)',
-                        color: '#fff',
+                        background: 'linear-gradient(135deg, rgb(var(--semi-purple-6)) 0%, rgb(var(--semi-purple-3)) 100%)',
+                        color: 'var(--semi-color-white)',
                         fontSize: 48,
                       }}
                     >
@@ -116,16 +120,17 @@ export default function MyTemplatesPage() {
                     <Popconfirm
                       key="delete"
                       title="确认删除"
-                      description={`确定删除模板「${t.name}」吗？`}
+                      content={`确定删除模板「${t.name}」吗？`}
                       onConfirm={() => handleDelete(t)}
                     >
-                      <Button type="link" icon={<Icons.DeleteOutlined />} danger>
+                      <Button theme="borderless" type="danger" icon={<Icons.DeleteOutlined />}>
                         删除
                       </Button>
                     </Popconfirm>,
                     <Button
                       key="publish"
-                      type="link"
+                      theme="borderless"
+                      type="primary"
                       icon={<Icons.CloudUploadOutlined />}
                       onClick={() => handlePublish(t)}
                     >
@@ -137,7 +142,7 @@ export default function MyTemplatesPage() {
                     title={
                       <Space>
                         <Typography.Text strong>{t.name}</Typography.Text>
-                        <Tag color={CATEGORY_COLOR[t.category as TemplateCategory] ?? 'default'}>
+                        <Tag color={tagColor(CATEGORY_COLOR[t.category as TemplateCategory])}>
                           {CATEGORY_LABEL[t.category as TemplateCategory] ?? t.category}
                         </Tag>
                       </Space>
@@ -145,24 +150,24 @@ export default function MyTemplatesPage() {
                     description={
                       <div>
                         <Typography.Paragraph
-                          type="secondary"
+                          type="tertiary"
                           ellipsis={{ rows: 2 }}
                           style={{ minHeight: 44, marginBottom: 8, marginTop: 8 }}
                         >
                           {t.description}
                         </Typography.Paragraph>
-                        <Space size={4} wrap style={{ marginBottom: 4 }}>
+                        <Space spacing={4} wrap style={{ marginBottom: 4 }}>
                           {t.tags.map((tag) => (
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                         </Space>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Rate disabled value={t.rating} allowHalf style={{ fontSize: 12 }} />
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <Rating disabled value={t.rating} allowHalf style={{ fontSize: 12 }} />
+                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                             {t.usageCount ?? 0} 次使用
                           </Typography.Text>
                         </div>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                           创建于：{new Date(t.createdAt).toLocaleDateString()}
                         </Typography.Text>
                       </div>

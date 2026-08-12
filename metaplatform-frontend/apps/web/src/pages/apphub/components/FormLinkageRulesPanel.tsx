@@ -1,4 +1,5 @@
-import { Button, Card, Empty, Form, Input, Select, Space } from 'antd';
+import type { CSSProperties } from 'react';
+import { Button, Card, Empty, Form, Input, Select, Space, TextArea } from '@douyinfe/semi-ui';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { FormConfig, FormField, LinkageRule, LinkageRuleAction, LinkageRuleCondition } from '@/api/apphub/types';
 
@@ -28,6 +29,8 @@ const ACTIONS: { label: string; value: LinkageRuleAction['action'] }[] = [
   { label: '设置选项', value: 'setOptions' },
   { label: '设置值', value: 'setValue' },
 ];
+
+const FIELD_LABEL_STYLE: CSSProperties = { display: 'block', marginBottom: 8 };
 
 export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageRulesPanelProps) {
   const rules: LinkageRule[] = config.linkageRules || [];
@@ -82,9 +85,8 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
   return (
     <Card
       title="数据联动规则"
-      size="small"
-      extra={
-        <Button type="link" icon={<PlusOutlined />} onClick={addRule} disabled={fields.length === 0}>
+      headerExtraContent={
+        <Button theme="borderless" type="primary" icon={<PlusOutlined />} onClick={addRule} disabled={fields.length === 0}>
           添加规则
         </Button>
       }
@@ -94,7 +96,7 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
       )}
       {rules.length === 0 && fields.length > 0 && (
         <Empty description="暂无联动规则">
-          <Button type="dashed" icon={<PlusOutlined />} onClick={addRule}>
+          <Button type="primary" theme="outline" icon={<PlusOutlined />} onClick={addRule}>
             添加规则
           </Button>
         </Empty>
@@ -102,95 +104,107 @@ export default function FormLinkageRulesPanel({ config, onChange }: FormLinkageR
       {rules.map((rule, idx) => (
         <Card
           key={rule.id}
-          type="inner"
-          size="small"
           style={{ marginBottom: 12 }}
           title={
             <Input
               value={rule.name}
-              onChange={(e) => updateRule(idx, { name: e.target.value })}
-              bordered={false}
+              onChange={(value) => updateRule(idx, { name: value })}
               placeholder="规则名称"
               style={{ width: 200 }}
             />
           }
-          extra={
-            <Button type="link" danger icon={<DeleteOutlined />} onClick={() => removeRule(idx)} />
+          headerExtraContent={
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />} onClick={() => removeRule(idx)} />
           }
         >
-          <Form layout="vertical" size="small">
-            <Space wrap align="start">
-              <Card size="small" title="当" style={{ width: 320 }}>
-                <Form.Item label="字段">
-                  <Select
-                    value={rule.when.fieldKey}
-                    onChange={(v) => updateWhen(idx, { fieldKey: v })}
-                    options={fieldOptions}
-                    placeholder="选择字段"
-                  />
-                </Form.Item>
-                <Form.Item label="运算符">
-                  <Select
-                    value={rule.when.operator || 'eq'}
-                    onChange={(v) => updateWhen(idx, { operator: v })}
-                    options={OPERATORS}
-                  />
-                </Form.Item>
-                <Form.Item label="目标值">
+          <Space wrap align="start" spacing="medium">
+            <Card title="当" style={{ width: 320 }}>
+              <div style={{ marginBottom: 16 }}>
+                <Form.Label style={FIELD_LABEL_STYLE}>字段</Form.Label>
+                <Select
+                  size="small"
+                  value={rule.when.fieldKey}
+                  onChange={(v) => updateWhen(idx, { fieldKey: v as string })}
+                  optionList={fieldOptions}
+                  placeholder="选择字段"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <Form.Label style={FIELD_LABEL_STYLE}>运算符</Form.Label>
+                <Select
+                  size="small"
+                  value={rule.when.operator || 'eq'}
+                  onChange={(v) => updateWhen(idx, { operator: v as LinkageRuleCondition['operator'] })}
+                  optionList={OPERATORS}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div>
+                <Form.Label style={FIELD_LABEL_STYLE}>目标值</Form.Label>
+                <Input
+                  size="small"
+                  value={String(rule.when.value ?? '')}
+                  onChange={(value) => updateWhen(idx, { value })}
+                  placeholder="输入比较值"
+                />
+              </div>
+            </Card>
+            <Card title="则" style={{ width: 320 }}>
+              <div style={{ marginBottom: 16 }}>
+                <Form.Label style={FIELD_LABEL_STYLE}>字段</Form.Label>
+                <Select
+                  size="small"
+                  value={rule.then.fieldKey}
+                  onChange={(v) => updateThen(idx, { fieldKey: v as string })}
+                  optionList={fieldOptions}
+                  placeholder="选择字段"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <Form.Label style={FIELD_LABEL_STYLE}>动作</Form.Label>
+                <Select
+                  size="small"
+                  value={rule.then.action}
+                  onChange={(v) => updateThen(idx, { action: v as LinkageRuleAction['action'] })}
+                  optionList={ACTIONS}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              {rule.then.action === 'setValue' && (
+                <div style={{ marginBottom: 16 }}>
+                  <Form.Label style={FIELD_LABEL_STYLE}>设置值</Form.Label>
                   <Input
-                    value={String(rule.when.value ?? '')}
-                    onChange={(e) => updateWhen(idx, { value: e.target.value })}
-                    placeholder="输入比较值"
+                    size="small"
+                    value={String(rule.then.value ?? '')}
+                    onChange={(value) => updateThen(idx, { value })}
+                    placeholder="输入要设置的值"
                   />
-                </Form.Item>
-              </Card>
-              <Card size="small" title="则" style={{ width: 320 }}>
-                <Form.Item label="字段">
-                  <Select
-                    value={rule.then.fieldKey}
-                    onChange={(v) => updateThen(idx, { fieldKey: v })}
-                    options={fieldOptions}
-                    placeholder="选择字段"
+                </div>
+              )}
+              {rule.then.action === 'setOptions' && (
+                <div style={{ marginBottom: 16 }}>
+                  <Form.Label style={FIELD_LABEL_STYLE}>选项（每行 标签:值）</Form.Label>
+                  <TextArea
+                    rows={3}
+                    value={rule.then.options?.map((o) => `${o.label}:${o.value}`).join('\n')}
+                    onChange={(value) => {
+                      const options = value
+                        .split('\n')
+                        .filter((line) => line.includes(':'))
+                        .map((line) => {
+                          const [label, val] = line.split(':');
+                          return { label: label.trim(), value: val.trim() };
+                        });
+                      updateThen(idx, { options });
+                    }}
+                    placeholder="选项1:1\n选项2:2"
                   />
-                </Form.Item>
-                <Form.Item label="动作">
-                  <Select
-                    value={rule.then.action}
-                    onChange={(v) => updateThen(idx, { action: v })}
-                    options={ACTIONS}
-                  />
-                </Form.Item>
-                {rule.then.action === 'setValue' && (
-                  <Form.Item label="设置值">
-                    <Input
-                      value={String(rule.then.value ?? '')}
-                      onChange={(e) => updateThen(idx, { value: e.target.value })}
-                      placeholder="输入要设置的值"
-                    />
-                  </Form.Item>
-                )}
-                {rule.then.action === 'setOptions' && (
-                  <Form.Item label="选项（每行 标签:值）">
-                    <Input.TextArea
-                      rows={3}
-                      value={rule.then.options?.map((o) => `${o.label}:${o.value}`).join('\n')}
-                      onChange={(e) => {
-                        const options = e.target.value
-                          .split('\n')
-                          .filter((line) => line.includes(':'))
-                          .map((line) => {
-                            const [label, value] = line.split(':');
-                            return { label: label.trim(), value: value.trim() };
-                          });
-                        updateThen(idx, { options });
-                      }}
-                      placeholder="选项1:1\n选项2:2"
-                    />
-                  </Form.Item>
-                )}
-              </Card>
-            </Space>
-          </Form>
+                </div>
+              )}
+            </Card>
+          </Space>
         </Card>
       ))}
     </Card>

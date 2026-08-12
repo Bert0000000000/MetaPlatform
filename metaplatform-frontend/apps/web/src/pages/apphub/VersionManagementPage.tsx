@@ -6,13 +6,12 @@ import {
   Card,
   Empty,
   Form,
-  Input,
   Modal,
   Space,
   Typography,
-  message,
+  Toast,
   Spin,
-} from 'antd';
+} from '@douyinfe/semi-ui';
 import { ArrowLeftOutlined, PlusOutlined, DiffOutlined } from '@ant-design/icons';
 import {
   listVersions,
@@ -70,7 +69,7 @@ export default function VersionManagementPage() {
 
   const handleCreate = async () => {
     if (!appId) return;
-    const values = await form.validateFields();
+    const values = await form.validate();
     setSubmitting(true);
     try {
       await createVersion({
@@ -79,9 +78,9 @@ export default function VersionManagementPage() {
         changeLog: values.changeLog,
         snapshot: JSON.stringify(app),
       });
-      message.success('版本草稿已创建');
+      Toast.success('版本草稿已创建');
       setCreateOpen(false);
-      form.resetFields();
+      form.reset();
       load();
     } finally {
       setSubmitting(false);
@@ -90,14 +89,14 @@ export default function VersionManagementPage() {
 
   const handlePublish = async (v: AppVersion) => {
     await publishVersion(v.versionId);
-    message.success('版本已发布');
+    Toast.success('版本已发布');
     load();
   };
 
   const handleRollback = async () => {
     if (!rollbackTarget) return;
     await rollbackVersion(rollbackTarget.versionId);
-    message.success('已回滚');
+    Toast.success('已回滚');
     setRollbackTarget(null);
     load();
   };
@@ -110,13 +109,14 @@ export default function VersionManagementPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
           返回应用
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           版本管理 - {app.name}
         </Typography.Title>
       </Space>
 
       <Space style={{ marginBottom: 16 }}>
         <Button
+          theme="solid"
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => setCreateOpen(true)}
@@ -150,7 +150,7 @@ export default function VersionManagementPage() {
             onRollback={(v) => setRollbackTarget(v)}
             onDelete={async (v) => {
               await deleteVersion(v.versionId);
-              message.success('已删除');
+              Toast.success('已删除');
               load();
             }}
             onPreview={(v) => setPreviewing(v)}
@@ -160,25 +160,25 @@ export default function VersionManagementPage() {
 
       <Modal
         title="创建版本快照"
-        open={createOpen}
+        visible={createOpen}
         onCancel={() => setCreateOpen(false)}
         onOk={handleCreate}
         confirmLoading={submitting}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="version" label="版本号" rules={[{ required: true }, { pattern: /^\d+\.\d+\.\d+$/, message: '语义化版本，例如 1.0.0' }]}>
-            <Input placeholder="1.0.0" />
-          </Form.Item>
-          <Form.Item name="changeLog" label="变更说明">
-            <Input.TextArea rows={3} placeholder="本次变更内容..." />
-          </Form.Item>
+        <Form form={form}>
+          <Form.Input
+            field="version"
+            label="版本号"
+            rules={[{ required: true }, { pattern: /^\d+\.\d+\.\d+$/, message: '语义化版本，例如 1.0.0' }]}
+            placeholder="1.0.0"
+          />
+          <Form.TextArea field="changeLog" label="变更说明" rows={3} placeholder="本次变更内容..." />
         </Form>
       </Modal>
 
       <Modal
         title="版本预览"
-        open={!!previewing}
+        visible={!!previewing}
         onCancel={() => setPreviewing(null)}
         footer={
           <Button onClick={() => setPreviewing(null)}>关闭</Button>
@@ -194,11 +194,11 @@ export default function VersionManagementPage() {
 
       <Modal
         title="版本回滚确认"
-        open={!!rollbackTarget}
+        visible={!!rollbackTarget}
         onCancel={() => setRollbackTarget(null)}
         onOk={handleRollback}
         okText="确认回滚"
-        okButtonProps={{ danger: true }}
+        okType="danger"
       >
         {rollbackTarget && published && (
           <RollbackConfirm current={published} target={rollbackTarget} />
@@ -209,7 +209,7 @@ export default function VersionManagementPage() {
 }
 
 const codeStyle: CSSProperties = {
-  background: '#fafafa',
+  background: 'var(--muted)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

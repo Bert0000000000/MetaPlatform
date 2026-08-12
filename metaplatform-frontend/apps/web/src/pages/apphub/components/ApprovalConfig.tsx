@@ -1,4 +1,5 @@
-﻿import { Form, Input, Select, InputNumber, Switch, Button, Space, Divider } from 'antd';
+import type { CSSProperties } from 'react';
+import { Button, Divider, Form, Input, InputNumber, Select, Space, Switch } from '@douyinfe/semi-ui';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ApprovalNodeConfig, AssigneeType, ApprovalMode } from '@/api/apphub/types';
 
@@ -40,6 +41,8 @@ const MOCK_ASSIGNEES: Record<AssigneeType, Array<{ label: string; value: string 
   ],
 };
 
+const FIELD_LABEL_STYLE: CSSProperties = { display: 'block', marginBottom: 8 };
+
 export default function ApprovalConfig({ config, onChange }: ApprovalConfigProps) {
   const handleUpdate = (updates: Partial<ApprovalNodeConfig>) => {
     onChange({ ...config, ...updates });
@@ -77,96 +80,112 @@ export default function ApprovalConfig({ config, onChange }: ApprovalConfigProps
     <div style={{ marginTop: 12 }}>
       <Divider style={{ margin: '8px 0' }}>审批配置</Divider>
 
-      <Form layout="vertical" size="small">
-        <Form.Item label="审批人类型">
-          <Select
-            value={config.assigneeType}
-            onChange={(v) => handleUpdate({ assigneeType: v, assigneeIds: [] })}
-            options={ASSIGNEE_TYPE_OPTIONS}
-          />
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>审批人类型</Form.Label>
+        <Select
+          size="small"
+          value={config.assigneeType}
+          onChange={(v) => handleUpdate({ assigneeType: v as AssigneeType, assigneeIds: [] })}
+          optionList={ASSIGNEE_TYPE_OPTIONS}
+          style={{ width: '100%' }}
+        />
+      </div>
 
-        <Form.Item label="审批人列表">
-          <Space orientation="vertical" style={{ width: '100%' }}>
-            {config.assigneeIds.map((id, index) => (
-              <Space key={index} style={{ width: '100%' }}>
-                <Select
-                  style={{ flex: 1, width: 200 }}
-                  value={id || undefined}
-                  onChange={(v) => handleUpdateAssignee(index, v)}
-                  options={MOCK_ASSIGNEES[config.assigneeType]}
-                  placeholder={`选择${config.assigneeType === 'person' ? '人员' : config.assigneeType === 'role' ? '角色' : '部门'}`}
-                />
-                <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveAssignee(index)} />
-              </Space>
-            ))}
-            <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddAssignee} block>
-              添加审批人
-            </Button>
-          </Space>
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>审批人列表</Form.Label>
+        <Space vertical spacing="tight" style={{ width: '100%' }}>
+          {config.assigneeIds.map((id, index) => (
+            <Space key={index} spacing="tight" style={{ width: '100%' }}>
+              <Select
+                size="small"
+                style={{ flex: 1, width: 200 }}
+                value={id || undefined}
+                onChange={(v) => handleUpdateAssignee(index, v as string)}
+                optionList={MOCK_ASSIGNEES[config.assigneeType]}
+                placeholder={`选择${config.assigneeType === 'person' ? '人员' : config.assigneeType === 'role' ? '角色' : '部门'}`}
+              />
+              <Button size="small" type="danger" icon={<DeleteOutlined />} onClick={() => handleRemoveAssignee(index)} />
+            </Space>
+          ))}
+          <Button size="small" type="primary" theme="outline" icon={<PlusOutlined />} onClick={handleAddAssignee} block>
+            添加审批人
+          </Button>
+        </Space>
+      </div>
 
-        <Form.Item label="审批模式">
-          <Select
-            value={config.approvalMode}
-            onChange={(v) => handleUpdate({ approvalMode: v })}
-            options={APPROVAL_MODE_OPTIONS}
-          />
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>审批模式</Form.Label>
+        <Select
+          size="small"
+          value={config.approvalMode}
+          onChange={(v) => handleUpdate({ approvalMode: v as ApprovalMode })}
+          optionList={APPROVAL_MODE_OPTIONS}
+          style={{ width: '100%' }}
+        />
+      </div>
 
-        <Form.Item label="审批层级数">
-          <InputNumber
-            min={1}
-            max={10}
-            value={config.approvalLevels}
-            onChange={(v) => handleUpdate({ approvalLevels: v ?? 1 })}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>审批层级数</Form.Label>
+        <InputNumber
+          size="small"
+          min={1}
+          max={10}
+          value={config.approvalLevels}
+          onChange={(v) => handleUpdate({ approvalLevels: (v ?? 1) as number })}
+          style={{ width: '100%' }}
+        />
+      </div>
 
-        <Form.Item label="超时时间（小时）">
-          <InputNumber
-            min={1}
-            max={168}
-            value={config.timeoutHours}
-            onChange={(v) => handleUpdate({ timeoutHours: v ?? undefined })}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>超时时间（小时）</Form.Label>
+        <InputNumber
+          size="small"
+          min={1}
+          max={168}
+          value={config.timeoutHours}
+          onChange={(v) => handleUpdate({ timeoutHours: (v ?? undefined) as number | undefined })}
+          style={{ width: '100%' }}
+        />
+      </div>
 
-        <Form.Item label="允许拒绝" valuePropName="checked">
-          <Switch
-            checked={config.allowReject}
-            onChange={(v) => handleUpdate({ allowReject: v })}
-          />
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>允许拒绝</Form.Label>
+        <Switch
+          size="small"
+          checked={config.allowReject}
+          onChange={(v) => handleUpdate({ allowReject: v })}
+        />
+      </div>
 
-        <Form.Item label="允许转办" valuePropName="checked">
-          <Switch
-            checked={config.allowTransfer}
-            onChange={(v) => handleUpdate({ allowTransfer: v })}
-          />
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>允许转办</Form.Label>
+        <Switch
+          size="small"
+          checked={config.allowTransfer}
+          onChange={(v) => handleUpdate({ allowTransfer: v })}
+        />
+      </div>
 
-        <Form.Item label="抄送人列表">
-          <Space orientation="vertical" style={{ width: '100%' }}>
-            {(config.ccList || []).map((id, index) => (
-              <Space key={index} style={{ width: '100%' }}>
-                <Input
-                  style={{ width: 200 }}
-                  value={id}
-                  onChange={(e) => handleUpdateCC(index, e.target.value)}
-                  placeholder="输入抄送人ID"
-                />
-                <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveCC(index)} />
-              </Space>
-            ))}
-            <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddCC} block>
-              添加抄送人
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
+      <div style={{ marginBottom: 16 }}>
+        <Form.Label style={FIELD_LABEL_STYLE}>抄送人列表</Form.Label>
+        <Space vertical spacing="tight" style={{ width: '100%' }}>
+          {(config.ccList || []).map((id, index) => (
+            <Space key={index} spacing="tight" style={{ width: '100%' }}>
+              <Input
+                size="small"
+                style={{ width: 200 }}
+                value={id}
+                onChange={(value) => handleUpdateCC(index, value)}
+                placeholder="输入抄送人ID"
+              />
+              <Button size="small" type="danger" icon={<DeleteOutlined />} onClick={() => handleRemoveCC(index)} />
+            </Space>
+          ))}
+          <Button size="small" type="primary" theme="outline" icon={<PlusOutlined />} onClick={handleAddCC} block>
+            添加抄送人
+          </Button>
+        </Space>
+      </div>
     </div>
   );
 }

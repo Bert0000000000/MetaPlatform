@@ -11,10 +11,10 @@ import {
   Tabs,
   Tag,
   Timeline,
+  Toast,
   Tooltip,
   Typography,
-  message,
-} from 'antd';
+} from '@douyinfe/semi-ui';
 import {
   AppstoreAddOutlined,
   ArrowLeftOutlined,
@@ -290,7 +290,7 @@ function exportAsTemplate(artifacts: AIArtifact[]) {
   const form = artifacts.find(isFormArtifact);
   const flow = artifacts.find(isFlowArtifact);
   if (!form || !flow) {
-    message.warning('缺少表单或流程产物，无法导出模板');
+    Toast.warning('缺少表单或流程产物，无法导出模板');
     return;
   }
 
@@ -332,7 +332,7 @@ function exportAsTemplate(artifacts: AIArtifact[]) {
     createdAt: new Date().toISOString(),
   });
 
-  message.success(`已导出为模板「${tpl.name}」，可在应用市场查看`);
+  Toast.success(`已导出为模板「${tpl.name}」，可在应用市场查看`);
 }
 
 type TemplateFieldType =
@@ -346,9 +346,9 @@ type TemplateFieldType =
 function renderFormPreview(artifact: AIFormArtifact) {
   const cfg = artifact.config;
   return (
-    <Space orientation="vertical" style={{ width: '100%' }}>
+    <Space vertical style={{ width: '100%' }}>
       <Typography.Text strong>{cfg.name}</Typography.Text>
-      <Typography.Paragraph type="secondary">
+      <Typography.Paragraph type="tertiary">
         {cfg.description || artifact.description}
       </Typography.Paragraph>
       <Space wrap>
@@ -366,9 +366,9 @@ function renderFormPreview(artifact: AIFormArtifact) {
 function renderFlowPreview(artifact: AIFlowArtifact) {
   const cfg = artifact.config;
   return (
-    <Space orientation="vertical" style={{ width: '100%' }}>
+    <Space vertical style={{ width: '100%' }}>
       <Typography.Text strong>{cfg.name}</Typography.Text>
-      <Typography.Paragraph type="secondary">
+      <Typography.Paragraph type="tertiary">
         {cfg.description || artifact.description}
       </Typography.Paragraph>
       <Space wrap>
@@ -390,9 +390,9 @@ function renderFlowPreview(artifact: AIFlowArtifact) {
 function renderPagePreview(artifact: AIPageArtifact) {
   const cfg = artifact.config;
   return (
-    <Space orientation="vertical" style={{ width: '100%' }}>
+    <Space vertical style={{ width: '100%' }}>
       <Typography.Text strong>{cfg.name}</Typography.Text>
-      <Typography.Paragraph type="secondary">
+      <Typography.Paragraph type="tertiary">
         {cfg.description || artifact.description}
       </Typography.Paragraph>
       <Space wrap>
@@ -426,75 +426,89 @@ function renderAppPreview(
   );
 
   return (
-    <Timeline mode="left" style={{ marginTop: 8 }}>
-      <Timeline.Item label="表单" dot={<FileTextOutlined />}>
-        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
-          <Typography.Text strong>{form.config.name}</Typography.Text>
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            {form.config.description}
-          </Typography.Paragraph>
-          <Space wrap>
-            {form.config.fields.map((f) => (
-              <Tag key={f.id} color={f.required ? 'red' : 'blue'}>
-                {f.label}
-              </Tag>
-            ))}
-          </Space>
-        </Space>
-      </Timeline.Item>
-
-      <Timeline.Item label="流程" dot={<NodeIndexOutlined />}>
-        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
-          <Typography.Text strong>{flow.config.name}</Typography.Text>
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            {flow.config.description}
-          </Typography.Paragraph>
-          <Space wrap>
-            {flow.config.nodes.map((n) => (
-              <Tag
-                key={n.id}
-                color={
-                  n.type === 'start'
-                    ? 'green'
-                    : n.type === 'end'
-                      ? 'red'
-                      : 'blue'
-                }
-              >
-                {n.name}
-              </Tag>
-            ))}
-          </Space>
-          {boundFieldLabels.length > 0 && (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              流程引用字段：{boundFieldLabels.join('、')}
-            </Typography.Text>
-          )}
-        </Space>
-      </Timeline.Item>
-
-      <Timeline.Item label="页面" dot={<LayoutOutlined />}>
-        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
-          <Typography.Text strong>{page.config.name}</Typography.Text>
-          <Typography.Paragraph type="secondary" style={{ margin: 0 }}>
-            {page.config.description}
-          </Typography.Paragraph>
-          <Space wrap>
-            {page.config.widgets.map((w) => (
-              <Tag key={w.id} color="purple">
-                {w.title} ({w.type})
-              </Tag>
-            ))}
-          </Space>
-          {statusWidgets.length > 0 && (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              流程状态看板：
-              {statusWidgets.map((w) => w.title).join('、')}
-            </Typography.Text>
-          )}
-        </Space>
-      </Timeline.Item>
-    </Timeline>
+    <Timeline
+      mode="left"
+      style={{ marginTop: 8 }}
+      dataSource={[
+        {
+          time: '表单',
+          dot: <FileTextOutlined />,
+          content: (
+            <Space vertical spacing="tight" style={{ width: '100%' }}>
+              <Typography.Text strong>{form.config.name}</Typography.Text>
+              <Typography.Paragraph type="tertiary" style={{ margin: 0 }}>
+                {form.config.description}
+              </Typography.Paragraph>
+              <Space wrap>
+                {form.config.fields.map((f) => (
+                  <Tag key={f.id} color={f.required ? 'red' : 'blue'}>
+                    {f.label}
+                  </Tag>
+                ))}
+              </Space>
+            </Space>
+          ),
+        },
+        {
+          time: '流程',
+          dot: <NodeIndexOutlined />,
+          content: (
+            <Space vertical spacing="tight" style={{ width: '100%' }}>
+              <Typography.Text strong>{flow.config.name}</Typography.Text>
+              <Typography.Paragraph type="tertiary" style={{ margin: 0 }}>
+                {flow.config.description}
+              </Typography.Paragraph>
+              <Space wrap>
+                {flow.config.nodes.map((n) => (
+                  <Tag
+                    key={n.id}
+                    color={
+                      n.type === 'start'
+                        ? 'green'
+                        : n.type === 'end'
+                          ? 'red'
+                          : 'blue'
+                    }
+                  >
+                    {n.name}
+                  </Tag>
+                ))}
+              </Space>
+              {boundFieldLabels.length > 0 && (
+                <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                  流程引用字段：{boundFieldLabels.join('、')}
+                </Typography.Text>
+              )}
+            </Space>
+          ),
+        },
+        {
+          time: '页面',
+          dot: <LayoutOutlined />,
+          content: (
+            <Space vertical spacing="tight" style={{ width: '100%' }}>
+              <Typography.Text strong>{page.config.name}</Typography.Text>
+              <Typography.Paragraph type="tertiary" style={{ margin: 0 }}>
+                {page.config.description}
+              </Typography.Paragraph>
+              <Space wrap>
+                {page.config.widgets.map((w) => (
+                  <Tag key={w.id} color="purple">
+                    {w.title} ({w.type})
+                  </Tag>
+                ))}
+              </Space>
+              {statusWidgets.length > 0 && (
+                <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                  流程状态看板：
+                  {statusWidgets.map((w) => w.title).join('、')}
+                </Typography.Text>
+              )}
+            </Space>
+          ),
+        },
+      ]}
+    />
   );
 }
 
@@ -601,7 +615,7 @@ export default function AIDesignerPage() {
 
   const handleSend = async (text: string) => {
     if (!activeKey) {
-      message.warning('请先创建对话');
+      Toast.warning('请先创建对话');
       return;
     }
     if (!text.trim()) return;
@@ -645,7 +659,7 @@ export default function AIDesignerPage() {
       setSessions(next);
       saveSessions(next);
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '请求失败');
+      Toast.error(err instanceof Error ? err.message : '请求失败');
     } finally {
       setLoading(false);
     }
@@ -653,30 +667,30 @@ export default function AIDesignerPage() {
 
   const handleApply = () => {
     if (currentArtifacts.length === 0) {
-      message.warning('当前没有可应用的产物');
+      Toast.warning('当前没有可应用的产物');
       return;
     }
     saveArtifactsToStorage(currentArtifacts);
-    message.success(`已将 ${currentArtifacts.length} 个产物保存到本地`);
+    Toast.success(`已将 ${currentArtifacts.length} 个产物保存到本地`);
   };
 
   const handleCreateApp = () => {
     if (!hasFullApp) {
-      message.warning('当前产物不完整，需包含表单、流程、页面才能创建应用');
+      Toast.warning('当前产物不完整，需包含表单、流程、页面才能创建应用');
       return;
     }
     const app = buildGeneratedApp(currentArtifacts);
     if (!app) {
-      message.warning('无法组装应用，请检查产物完整性');
+      Toast.warning('无法组装应用，请检查产物完整性');
       return;
     }
     saveGeneratedApp(app);
-    message.success(`已创建应用「${app.name}」并保存到本地`);
+    Toast.success(`已创建应用「${app.name}」并保存到本地`);
   };
 
   const handleExportTemplate = () => {
     if (currentArtifacts.length === 0) {
-      message.warning('当前没有可导出的产物');
+      Toast.warning('当前没有可导出的产物');
       return;
     }
     exportAsTemplate(currentArtifacts);
@@ -702,13 +716,13 @@ export default function AIDesignerPage() {
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps')}>
             返回
           </Button>
-          <Typography.Title level={4} style={{ margin: 0 }}>
+          <Typography.Title heading={4} style={{ margin: 0 }}>
             <RobotOutlined /> AI 设计器
           </Typography.Title>
         </Space>
 
         <Space>
-          <Tooltip title="开启后 AI 将自动生成表单+流程+页面完整应用">
+          <Tooltip content="开启后 AI 将自动生成表单+流程+页面完整应用">
             <Space>
               <Switch checked={mode === 'full'} onChange={handleModeChange} />
               <Typography.Text>生成完整应用</Typography.Text>
@@ -741,8 +755,7 @@ export default function AIDesignerPage() {
 
       <Layout style={{ flex: 1, overflow: 'hidden', background: 'transparent' }}>
         <Sider
-          width={240}
-          style={{ background: 'transparent', marginRight: 16 }}
+          style={{ width: 240, background: 'transparent', marginRight: 16 }}
         >
           <Conversations
             items={conversationItems}
@@ -758,7 +771,7 @@ export default function AIDesignerPage() {
 
         <Content style={{ display: 'flex', gap: 16, minWidth: 0 }}>
           <Card
-            styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column' } }}
+            bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
             style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
           >
             {currentSession ? (
@@ -796,7 +809,7 @@ export default function AIDesignerPage() {
 
           <Card
             title="产物与应用预览"
-            styles={{ body: { overflow: 'auto' } }}
+            bodyStyle={{ overflow: 'auto' }}
             style={{ width: 420, overflow: 'auto' }}
           >
             {currentArtifacts.length === 0 ? (
@@ -805,47 +818,41 @@ export default function AIDesignerPage() {
               <Tabs
                 activeKey={previewTab}
                 onChange={(k) => setPreviewTab(k as 'artifacts' | 'app')}
-                items={[
-                  {
-                    key: 'artifacts',
-                    label: '产物预览',
-                    children: (
-                      <Tabs
-                        items={currentArtifacts.map((artifact, idx) => ({
-                          key: String(idx),
-                          label:
-                            artifact.type === 'form'
-                              ? '表单'
-                              : artifact.type === 'flow'
-                                ? '流程'
-                                : '页面',
-                          children: (
-                            <div>
-                              {artifact.type === 'form' &&
-                                renderFormPreview(artifact)}
-                              {artifact.type === 'flow' &&
-                                renderFlowPreview(artifact)}
-                              {artifact.type === 'page' &&
-                                renderPagePreview(artifact)}
-                            </div>
-                          ),
-                        }))}
-                      />
-                    ),
-                  },
-                  {
-                    key: 'app',
-                    label: '应用预览',
-                    disabled: !hasFullApp,
-                    children:
-                      formArtifact && flowArtifact && pageArtifact ? (
-                        renderAppPreview(formArtifact, flowArtifact, pageArtifact)
-                      ) : (
-                        <Empty description="请先生成完整的表单、流程、页面产物" />
-                      ),
-                  },
-                ]}
-              />
+              >
+                <Tabs.TabPane tab="产物预览" itemKey="artifacts">
+                  <Tabs>
+                    {currentArtifacts.map((artifact, idx) => (
+                      <Tabs.TabPane
+                        key={String(idx)}
+                        itemKey={String(idx)}
+                        tab={
+                          artifact.type === 'form'
+                            ? '表单'
+                            : artifact.type === 'flow'
+                              ? '流程'
+                              : '页面'
+                        }
+                      >
+                        <div>
+                          {artifact.type === 'form' &&
+                            renderFormPreview(artifact)}
+                          {artifact.type === 'flow' &&
+                            renderFlowPreview(artifact)}
+                          {artifact.type === 'page' &&
+                            renderPagePreview(artifact)}
+                        </div>
+                      </Tabs.TabPane>
+                    ))}
+                  </Tabs>
+                </Tabs.TabPane>
+                <Tabs.TabPane tab="应用预览" itemKey="app" disabled={!hasFullApp}>
+                  {formArtifact && flowArtifact && pageArtifact ? (
+                    renderAppPreview(formArtifact, flowArtifact, pageArtifact)
+                  ) : (
+                    <Empty description="请先生成完整的表单、流程、页面产物" />
+                  )}
+                </Tabs.TabPane>
+              </Tabs>
             )}
           </Card>
         </Content>

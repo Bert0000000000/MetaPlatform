@@ -106,19 +106,21 @@ export default function A2ACollaborationPage() {
             columns={columns}
             loading={loading}
             expandedRowRender={(a) => (
-              <Descriptions
-                column={2}
-                size="small"
-                data={[
-                  { key: '名称', value: a.name, span: 2 },
-                  {
-                    key: '能力',
-                    value: <>{a.capabilities.map((c) => <Tag key={c}>{c}</Tag>)}</>,
-                    span: 2,
-                  },
-                  { key: '端点', value: <code>{a.endpoint}</code>, span: 2 },
-                ]}
-              />
+              a ? (
+                <Descriptions
+                  column={2}
+                  size="small"
+                  data={[
+                    { key: '名称', value: a.name, span: 2 },
+                    {
+                      key: '能力',
+                      value: <>{a.capabilities.map((c) => <Tag key={c}>{c}</Tag>)}</>,
+                      span: 2,
+                    },
+                    { key: '端点', value: <code>{a.endpoint}</code>, span: 2 },
+                  ]}
+                />
+              ) : null
             )}
             scroll={{ x: 'max-content' }}
           />

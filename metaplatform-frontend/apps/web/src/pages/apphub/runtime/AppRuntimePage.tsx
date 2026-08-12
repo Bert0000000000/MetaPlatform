@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, Spin, Typography, Alert, Tag, Space } from 'antd';
+import { Banner, Card, Space, Spin, Tag, Typography } from '@douyinfe/semi-ui';
 import { getAppRuntime } from '@/api/apphub/runtime';
 import type { AppRuntime } from '@/api/apphub/types';
 
@@ -24,23 +24,23 @@ export default function AppRuntimePage() {
   }, [code]);
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
-  if (error) return <Alert type="error" message={error} style={{ margin: 24 }} />;
+  if (error) return <Banner type="danger" description={error} style={{ margin: 24 }} />;
   if (!runtime) return null;
 
   return (
     <div style={{ padding: 24 }}>
       <Card>
-        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+        <Space vertical spacing="loose" style={{ width: '100%' }}>
           <div>
-            <Title level={3}>{runtime.app_id}</Title>
+            <Title heading={3}>{runtime.app_id}</Title>
             <Tag color="blue">v{runtime.version}</Tag>
-            <Text type="secondary">{runtime.modules.length} 个模块</Text>
+            <Text type="tertiary">{runtime.modules.length} 个模块</Text>
           </div>
           {runtime.render_tree.map((node, i) => (
-            <Card key={i} type="inner" title={node.title}>
+            <Card key={i} title={node.title}>
               <Tag>{node.node_type}</Tag>
               {node.children.length > 0 && (
-                <Text type="secondary">{node.children.length} 个子节点</Text>
+                <Text type="tertiary">{node.children.length} 个子节点</Text>
               )}
             </Card>
           ))}

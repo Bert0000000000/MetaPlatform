@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { Button, Card, Input, Modal, Space, Tag, Typography, message } from 'antd';
+import { useState } from 'react';
+import { Button, Card, Modal, Space, Tag, TextArea, Typography, Toast } from '@douyinfe/semi-ui';
 import { RobotOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { generateForm } from '@/api/apphub/generate';
 import type { FormGenResult } from '@/api/apphub/types';
@@ -20,7 +20,7 @@ export default function AIGenerateButton({
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      message.warning('请输入描述');
+      Toast.warning('请输入描述');
       return;
     }
     setGenerating(true);
@@ -48,21 +48,22 @@ export default function AIGenerateButton({
       </Button>
       <Modal
         title="AI 生成表单"
-        open={open}
+        visible={open}
         onCancel={() => setOpen(false)}
         onOk={handleApply}
         okText="应用到设计器"
         okButtonProps={{ disabled: !result }}
         width={680}
       >
-        <Space orientation="vertical" style={{ width: '100%' }}>
-          <Input.TextArea
+        <Space vertical style={{ width: '100%' }}>
+          <TextArea
             rows={3}
             placeholder={promptPlaceholder}
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(v) => setPrompt(v)}
           />
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={generating}
@@ -72,8 +73,8 @@ export default function AIGenerateButton({
             生成
           </Button>
           {result && (
-            <Card title={`预览：${result.name}`} size="small">
-              <Typography.Paragraph type="secondary">
+            <Card title={`预览：${result.name}`} bodyStyle={{ padding: 12 }}>
+              <Typography.Paragraph type="tertiary">
                 {result.description}
               </Typography.Paragraph>
               <Space wrap>

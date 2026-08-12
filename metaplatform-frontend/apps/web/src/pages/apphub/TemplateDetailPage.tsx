@@ -1,27 +1,25 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Avatar,
   Button,
   Card,
-  Col,
   Empty,
   Form,
-  Input,
   List,
-  Rate,
-  Row,
+  Rating,
   Space,
   Spin,
   Tag,
   Timeline,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import * as Icons from '@ant-design/icons';
 import {
   OFFICIAL_TEMPLATES,
-  CATEGORY_COLOR,
   CATEGORY_LABEL,
   type OfficialTemplate,
 } from './data/templates';
@@ -50,11 +48,21 @@ const FIELD_TYPE_LABEL: Record<string, string> = {
   file: '附件',
 };
 
-const NODE_TYPE_COLOR: Record<string, string> = {
+const NODE_TYPE_COLOR: Record<string, 'green' | 'blue' | 'orange' | 'grey'> = {
   start: 'green',
   approval: 'blue',
   condition: 'orange',
-  end: 'gray',
+  end: 'grey',
+};
+
+// Semi TagColor 无 gold，按映射 gold → yellow；其余与 CATEGORY_COLOR 保持一致
+const CATEGORY_TAG_COLOR: Record<OfficialTemplate['category'], TagColor> = {
+  CRM: 'orange',
+  HR: 'green',
+  Finance: 'yellow',
+  Procurement: 'cyan',
+  Project: 'purple',
+  Collaboration: 'blue',
 };
 
 interface CommentFormValues {
@@ -141,7 +149,7 @@ export default function TemplateDetailPage() {
   if (!template) {
     return (
       <Empty description="模板不存在">
-        <Button type="primary" onClick={() => navigate('/market')}>
+        <Button theme="solid" type="primary" onClick={() => navigate('/market')}>
           返回应用市场
         </Button>
       </Empty>
@@ -154,14 +162,14 @@ export default function TemplateDetailPage() {
     try {
       const result = await installTemplate(template.templateId);
       if (result.success) {
-        message.success(`已安装模板：${template.name}`);
+        Toast.success(`已安装模板：${template.name}`);
         setInstalled(true);
       } else {
-        message.info('该模板已安装');
+        Toast.info('该模板已安装');
         setInstalled(true);
       }
     } catch {
-      message.error('安装失败，请稍后重试');
+      Toast.error('安装失败，请稍后重试');
     }
   };
 
@@ -172,10 +180,10 @@ export default function TemplateDetailPage() {
       await addTemplateComment(templateId, { rating: values.rating, comment: values.comment });
       const data = await listTemplateComments(templateId);
       setComments(data);
-      message.success('评论已提交');
-      form.resetFields();
+      Toast.success('评论已提交');
+      form.reset();
     } catch {
-      message.error('评论提交失败');
+      Toast.error('评论提交失败');
     } finally {
       setSubmitting(false);
     }
@@ -187,10 +195,10 @@ export default function TemplateDetailPage() {
         <Button icon={<Icons.ArrowLeftOutlined />} onClick={() => navigate('/market')}>
           返回市场
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           {template.name}
         </Typography.Title>
-        <Tag color={CATEGORY_COLOR[template.category]}>{CATEGORY_LABEL[template.category]}</Tag>
+        <Tag color={CATEGORY_TAG_COLOR[template.category]}>{CATEGORY_LABEL[template.category]}</Tag>
         {template.isOfficial && <Tag>官方模板</Tag>}
       </Space>
 
@@ -205,8 +213,8 @@ export default function TemplateDetailPage() {
                     width: 80,
                     height: 80,
                     borderRadius: 12,
-                    background: 'linear-gradient(135deg, #1677ff 0%, #69b1ff 100%)',
-                    color: '#fff',
+                    background: 'linear-gradient(135deg, var(--semi-color-primary) 0%, var(--semi-color-primary-light-hover) 100%)',
+                    color: 'var(--semi-color-white)',
                     fontSize: 36,
                     display: 'flex',
                     alignItems: 'center',
@@ -216,24 +224,25 @@ export default function TemplateDetailPage() {
                   {renderIcon(template.icon)}
                 </div>
               </Col>
-              <Col flex="auto">
-                <Typography.Title level={5} style={{ margin: 0 }}>
+              <Col style={{ flex: 'auto' }}>
+                <Typography.Title heading={5} style={{ margin: 0 }}>
                   {template.name}
                 </Typography.Title>
-                <Space size="middle" style={{ marginTop: 8 }}>
+                <Space spacing="medium" style={{ marginTop: 8 }}>
                   <Space>
-                    <Rate disabled value={ratingInfo.rating} allowHalf style={{ fontSize: 14 }} />
+                    <Rating disabled value={ratingInfo.rating} allowHalf style={{ fontSize: 14 }} />
                     <Typography.Text strong>{ratingInfo.rating}</Typography.Text>
-                    <Typography.Text type="secondary">({ratingInfo.ratingCount} 人评分)</Typography.Text>
+                    <Typography.Text type="tertiary">({ratingInfo.ratingCount} 人评分)</Typography.Text>
                   </Space>
-                  <Typography.Text type="secondary">·</Typography.Text>
-                  <Typography.Text type="secondary">{template.usageCount} 次使用</Typography.Text>
-                  <Typography.Text type="secondary">·</Typography.Text>
-                  <Typography.Text type="secondary">作者：{template.author}</Typography.Text>
+                  <Typography.Text type="tertiary">·</Typography.Text>
+                  <Typography.Text type="tertiary">{template.usageCount} 次使用</Typography.Text>
+                  <Typography.Text type="tertiary">·</Typography.Text>
+                  <Typography.Text type="tertiary">作者：{template.author}</Typography.Text>
                 </Space>
               </Col>
               <Col>
                 <Button
+                  theme="solid"
                   type="primary"
                   size="large"
                   icon={<Icons.DownloadOutlined />}
@@ -255,10 +264,7 @@ export default function TemplateDetailPage() {
           {/* 截图预览 */}
           <Card title="模板截图" style={{ marginBottom: 16 }}>
             {template.screenshots.length === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="暂无截图"
-              />
+              <Empty description="暂无截图" />
             ) : (
               <Row gutter={[12, 12]}>
                 {template.screenshots.map((s, idx) => (
@@ -266,7 +272,7 @@ export default function TemplateDetailPage() {
                     <img
                       src={s}
                       alt={`截图 ${idx + 1}`}
-                      style={{ width: '100%', borderRadius: 8, border: '1px solid #f0f0f0' }}
+                      style={{ width: '100%', borderRadius: 8, border: '1px solid var(--semi-color-border)' }}
                     />
                   </Col>
                 ))}
@@ -277,7 +283,7 @@ export default function TemplateDetailPage() {
           {/* 字段预览 */}
           <Card title={`字段预览（${template.fields.length} 个）`} style={{ marginBottom: 16 }}>
             {template.fields.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无字段定义" />
+              <Empty description="暂无字段定义" />
             ) : (
               <List
                 size="small"
@@ -290,7 +296,7 @@ export default function TemplateDetailPage() {
                       <Tag color="blue">{FIELD_TYPE_LABEL[field.type] ?? field.type}</Tag>
                       {field.required ? <Tag color="red">必填</Tag> : null}
                       {field.options && field.options.length > 0 ? (
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                           选项：{field.options.join(' / ')}
                         </Typography.Text>
                       ) : null}
@@ -304,28 +310,27 @@ export default function TemplateDetailPage() {
           {/* 流程预览 */}
           <Card title={`流程预览（${template.flows.length} 个）`} style={{ marginBottom: 16 }}>
             {template.flows.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无流程定义" />
+              <Empty description="暂无流程定义" />
             ) : (
               template.flows.map((flow, idx) => (
                 <Card
                   key={idx}
-                  type="inner"
                   title={flow.name}
-                  extra={flow.description ? <Typography.Text type="secondary">{flow.description}</Typography.Text> : null}
+                  headerExtraContent={flow.description ? <Typography.Text type="tertiary">{flow.description}</Typography.Text> : null}
                   style={{ marginBottom: idx === template.flows.length - 1 ? 0 : 12 }}
                 >
                   <Timeline
-                    items={flow.nodes.map((node) => ({
+                    dataSource={flow.nodes.map((node) => ({
                       color: NODE_TYPE_COLOR[node.type],
                       dot: <Icons.CheckCircleOutlined style={{ fontSize: 16 }} />,
-                      children: (
-                        <Space orientation="vertical" size={0}>
+                      content: (
+                        <Space vertical spacing={0}>
                           <Space>
                             <Typography.Text strong>{node.name}</Typography.Text>
                             <Tag color={NODE_TYPE_COLOR[node.type]}>{node.type}</Tag>
                           </Space>
                           {node.assignee ? (
-                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                               处理人：{node.assignee}
                             </Typography.Text>
                           ) : null}
@@ -345,24 +350,23 @@ export default function TemplateDetailPage() {
             <Form
               form={form}
               layout="vertical"
-              onFinish={handleSubmitComment}
-              initialValues={{ rating: 5 }}
+              onSubmit={handleSubmitComment}
+              initValues={{ rating: 5 }}
             >
-              <Form.Item
-                name="rating"
+              <Form.Rating
+                field="rating"
                 label="评分"
                 rules={[{ required: true, message: '请选择评分' }]}
-              >
-                <Rate />
-              </Form.Item>
-              <Form.Item name="comment" label="评论">
-                <Input.TextArea rows={3} placeholder="说说你对这个模板的看法" />
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" htmlType="submit" loading={submitting}>
-                  提交评论
-                </Button>
-              </Form.Item>
+              />
+              <Form.TextArea
+                field="comment"
+                label="评论"
+                rows={3}
+                placeholder="说说你对这个模板的看法"
+              />
+              <Button theme="solid" type="primary" htmlType="submit" loading={submitting}>
+                提交评论
+              </Button>
             </Form>
           </Card>
 
@@ -371,30 +375,26 @@ export default function TemplateDetailPage() {
               <Empty description="暂无评论，快来发表第一条评论吧" />
             ) : (
               <List
-                itemLayout="vertical"
+                layout="vertical"
                 dataSource={comments}
                 renderItem={(item) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      avatar={<Avatar icon={<Icons.UserOutlined />} />}
-                      title={
+                  <List.Item
+                    header={<Avatar><Icons.UserOutlined /></Avatar>}
+                    main={
+                      <>
                         <Space>
                           <Typography.Text>{item.userId}</Typography.Text>
-                          <Rate disabled value={item.rating} style={{ fontSize: 12 }} />
+                          <Rating disabled value={item.rating} style={{ fontSize: 12 }} />
                         </Space>
-                      }
-                      description={
-                        <>
-                          {item.comment ? (
-                            <Typography.Paragraph style={{ marginTop: 8 }}>{item.comment}</Typography.Paragraph>
-                          ) : null}
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            {new Date(item.createdAt).toLocaleString()}
-                          </Typography.Text>
-                        </>
-                      }
-                    />
-                  </List.Item>
+                        {item.comment ? (
+                          <Typography.Paragraph style={{ marginTop: 8 }}>{item.comment}</Typography.Paragraph>
+                        ) : null}
+                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                          {new Date(item.createdAt).toLocaleString()}
+                        </Typography.Text>
+                      </>
+                    }
+                  />
                 )}
               />
             )}

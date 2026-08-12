@@ -1,5 +1,5 @@
-﻿import { useEffect, useState } from 'react';
-import { Card, Empty, Modal, Space, Tag, Typography, message, Spin, Result, Button, Table, Badge } from 'antd';
+import { useEffect, useState } from 'react';
+import { Card, Empty, Modal, Space, Tag, Typography, Toast, Spin, Button, Table, Badge } from '@douyinfe/semi-ui';
 import { AppstoreOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   listTemplates,
@@ -11,12 +11,13 @@ import CategoryFilter from './components/CategoryFilter';
 import SearchBar from './components/SearchBar';
 import type { TemplateItem, InstallResult, InstalledItem } from '@/api/apphub/marketplace';
 
-const INSTALL_STATE_MAP: Record<string, { label: string; badge: 'success' | 'processing' | 'warning' | 'error' | 'default' }> = {
+// Semi Badge type 仅支持 primary/secondary/tertiary/danger/warning/success
+const INSTALL_STATE_MAP: Record<string, { label: string; badge: 'primary' | 'secondary' | 'tertiary' | 'danger' | 'warning' | 'success' }> = {
   installed: { label: '已安装', badge: 'success' },
-  downloading: { label: '下载中', badge: 'processing' },
-  verifying: { label: '校验中', badge: 'processing' },
-  failed: { label: '失败', badge: 'error' },
-  uninstalled: { label: '已卸载', badge: 'default' },
+  downloading: { label: '下载中', badge: 'primary' },
+  verifying: { label: '校验中', badge: 'primary' },
+  failed: { label: '失败', badge: 'danger' },
+  uninstalled: { label: '已卸载', badge: 'tertiary' },
 };
 
 export default function MarketplacePage() {
@@ -71,25 +72,25 @@ export default function MarketplacePage() {
     const res: InstallResult = await installTemplate(t.templateId);
     if (res.success) {
       if (res.alreadyInstalled) {
-        message.info(`「${t.name}」已安装`);
+        Toast.info(`「${t.name}」已安装`);
       } else {
-        message.success(`已安装「${t.name}」（Install ID: ${res.installId}）`);
+        Toast.success(`已安装「${t.name}」（Install ID: ${res.installId}）`);
       }
       loadInstalled();
     } else {
-      message.error(res.error || '安装失败');
+      Toast.error(res.error || '安装失败');
     }
   };
 
   return (
     <div>
       <div className="mcphub-page-header" style={{ marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           <AppstoreOutlined /> 应用市场
         </Typography.Title>
       </div>
 
-      <Space style={{ marginBottom: 16 }} orientation="vertical">
+      <Space vertical style={{ marginBottom: 16 }}>
         <SearchBar
           keyword={keyword}
           onKeywordChange={setKeyword}
@@ -104,16 +105,15 @@ export default function MarketplacePage() {
           <Spin tip="加载中..." />
         </div>
       ) : error ? (
-        <Result
-          status="error"
-          title="加载失败"
-          subTitle={error.message}
-          extra={
-            <Button type="primary" icon={<ReloadOutlined />} onClick={load}>
-              重试
-            </Button>
-          }
-        />
+        <div style={{ textAlign: 'center', padding: 40 }}>
+          <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--destructive)', marginBottom: 8 }}>
+            加载失败
+          </div>
+          <div style={{ color: 'var(--muted-foreground)', marginBottom: 16 }}>{error.message}</div>
+          <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>
+            重试
+          </Button>
+        </div>
       ) : templates.length === 0 ? (
         <Empty description="没有匹配的模板" />
       ) : (
@@ -136,17 +136,16 @@ export default function MarketplacePage() {
       )}
 
       {/* 我的安装 */}
-      <Card size="small" title={`我的安装 (${installed.length})`} style={{ marginTop: 24 }}>
+      <Card title={`我的安装 (${installed.length})`} style={{ marginTop: 24 }}>
         <Spin spinning={installedLoading}>
           {installed.length === 0 ? (
-            <Empty description="还没有安装记录，安装后的本体/Agent/MCP 会显示在这里" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty description="还没有安装记录，安装后的本体/Agent/MCP 会显示在这里" />
           ) : (
             <Table
               size="small"
               dataSource={installed}
               rowKey="id"
               pagination={false}
-              scroll={{ x: 'max-content' }}
               columns={[
                 { title: '类型', dataIndex: 'kind', key: 'kind', render: (k: string) => <Tag color="blue">{k}</Tag> },
                 { title: 'Artifact ID', dataIndex: 'artifactId', key: 'artifactId', ellipsis: true },
@@ -157,8 +156,13 @@ export default function MarketplacePage() {
                   key: 'state',
                   width: 110,
                   render: (s: string) => {
-                    const m = INSTALL_STATE_MAP[s] ?? { label: s, badge: 'default' as const };
-                    return <Badge status={m.badge} text={m.label} />;
+                    const m = INSTALL_STATE_MAP[s] ?? { label: s, badge: 'tertiary' as const };
+                    return (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <Badge type={m.badge} dot />
+                        <span>{m.label}</span>
+                      </span>
+                    );
                   },
                 },
                 {
@@ -176,13 +180,13 @@ export default function MarketplacePage() {
 
       <Modal
         title={previewing?.name}
-        open={!!previewing}
+        visible={!!previewing}
         onCancel={() => setPreviewing(null)}
         footer={null}
         width={680}
       >
         {previewing && (
-          <Space orientation="vertical" style={{ width: '100%' }}>
+          <Space vertical style={{ width: '100%' }}>
             <Card>
               <Typography.Paragraph>{previewing.description}</Typography.Paragraph>
               <Space wrap>
@@ -196,7 +200,7 @@ export default function MarketplacePage() {
                 {previewing.rating} / 5 · 安装 {previewing.downloadCount} 次
               </div>
             </Card>
-            <Card title="功能预览" size="small">
+            <Card title="功能预览">
               <Typography.Paragraph>
                 包含：表单（4 个）、流程（2 个）、仪表盘（1 个）、
                 仪表盘组件（5+）、权限规则（3 条）。

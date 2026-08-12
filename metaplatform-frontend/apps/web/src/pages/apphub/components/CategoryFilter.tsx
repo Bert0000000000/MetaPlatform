@@ -1,4 +1,4 @@
-import { Radio, Typography, Space } from 'antd';
+import { Radio, Typography, Space } from '@douyinfe/semi-ui';
 import type { TemplateItem } from '@/api/apphub/marketplace';
 
 interface CategoryFilterProps {
@@ -20,13 +20,14 @@ export default function CategoryFilter({ value, onChange }: CategoryFilterProps)
     <div>
       <Typography.Text strong>分类：</Typography.Text>
       <Radio.Group
+        type="button"
         value={value ?? '全部'}
         onChange={(e) => onChange(e.target.value === '全部' ? undefined : e.target.value)}
         style={{ marginLeft: 12 }}
       >
         <Space>
           {CATEGORIES.map((c) => (
-            <Radio.Button key={c.label} value={c.value}>{c.label}</Radio.Button>
+            <Radio key={c.label} value={c.value}>{c.label}</Radio>
           ))}
         </Space>
       </Radio.Group>

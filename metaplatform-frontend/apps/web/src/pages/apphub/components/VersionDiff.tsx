@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Spin, Tag, Typography } from 'antd';
+import { Card, Empty, Spin, Tag, Typography } from '@douyinfe/semi-ui';
 import { PlusOutlined, MinusOutlined, EditOutlined } from '@ant-design/icons';
 import { compareVersions } from '@/api/apphub/versions';
 
@@ -38,43 +38,43 @@ export default function VersionDiff({ aId, bId }: VersionDiffProps) {
   if (!diff) return null;
 
   return (
-    <Card title="版本差异" size="small">
+    <Card title="版本差异" bodyStyle={{ padding: 12 }}>
       <div style={{ marginBottom: 12 }}>
-        <Tag icon={<PlusOutlined />} color="green">
+        <Tag prefixIcon={<PlusOutlined />} color="green">
           新增 {diff.added.length}
         </Tag>
-        <Tag icon={<MinusOutlined />} color="red">
+        <Tag prefixIcon={<MinusOutlined />} color="red">
           删除 {diff.removed.length}
         </Tag>
-        <Tag icon={<EditOutlined />} color="orange">
+        <Tag prefixIcon={<EditOutlined />} color="orange">
           修改 {diff.modified.length}
         </Tag>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-        <Card type="inner" title="新增" size="small">
+        <Card title="新增" bordered={false} bodyStyle={{ padding: 12 }}>
           {diff.added.length === 0 ? (
-            <Typography.Text type="secondary">无</Typography.Text>
+            <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.added.map((k) => (
-              <div key={k} style={{ color: '#52c41a' }}>+ {k}</div>
+              <div key={k} style={{ color: 'var(--success)' }}>+ {k}</div>
             ))
           )}
         </Card>
-        <Card type="inner" title="删除" size="small">
+        <Card title="删除" bordered={false} bodyStyle={{ padding: 12 }}>
           {diff.removed.length === 0 ? (
-            <Typography.Text type="secondary">无</Typography.Text>
+            <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.removed.map((k) => (
-              <div key={k} style={{ color: '#f5222d' }}>- {k}</div>
+              <div key={k} style={{ color: 'var(--destructive)' }}>- {k}</div>
             ))
           )}
         </Card>
-        <Card type="inner" title="修改" size="small">
+        <Card title="修改" bordered={false} bodyStyle={{ padding: 12 }}>
           {diff.modified.length === 0 ? (
-            <Typography.Text type="secondary">无</Typography.Text>
+            <Typography.Text type="tertiary">无</Typography.Text>
           ) : (
             diff.modified.map((k) => (
-              <div key={k} style={{ color: '#fa8c16' }}>~ {k}</div>
+              <div key={k} style={{ color: 'var(--warning)' }}>~ {k}</div>
             ))
           )}
         </Card>

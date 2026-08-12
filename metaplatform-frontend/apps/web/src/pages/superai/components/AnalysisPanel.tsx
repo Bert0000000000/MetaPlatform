@@ -224,7 +224,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
   };
 
   return (
-    <Card  style={{ marginBottom: 8 }}>
+    <Card style={{ marginBottom: 8 }}>
       <Space vertical spacing="tight" style={{ width: '100%' }}>
         <TextArea
           value={query}

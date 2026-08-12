@@ -499,4 +499,6 @@ export default function PlanPanel({
           )}
         </Spin>
       </Space>
-   
+    </Card>
+  );
+}

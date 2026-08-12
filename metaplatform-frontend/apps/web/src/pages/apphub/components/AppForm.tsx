@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Form, Input, Modal, Select } from 'antd';
+import { Form, Modal } from '@douyinfe/semi-ui';
 import type { AppItem, AppCreateRequest, AppUpdateRequest } from '@/api/apphub/types';
 import { APP_ICONS } from './componentRegistry';
 
@@ -21,7 +21,7 @@ export default function AppForm({ open, title, initial, groups, onOk, onCancel, 
   useEffect(() => {
     if (open) {
       if (initial) {
-        form.setFieldsValue({
+        form.setValues({
           name: initial.name,
           code: initial.code,
           description: initial.description,
@@ -29,70 +29,66 @@ export default function AppForm({ open, title, initial, groups, onOk, onCancel, 
           group: initial.group,
         });
       } else {
-        form.resetFields();
-        form.setFieldsValue({ icon: APP_ICONS[0] });
+        form.reset();
+        form.setValues({ icon: APP_ICONS[0] });
       }
     }
   }, [open, initial, form]);
 
   const handleOk = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     onOk(values);
   };
+
+  const iconOptions = APP_ICONS.map((icon) => ({ label: icon, value: icon }));
+  const groupOptions = groups.map((g) => ({ label: g, value: g }));
 
   return (
     <Modal
       title={title}
-      open={open}
+      visible={open}
       onOk={handleOk}
       onCancel={onCancel}
       confirmLoading={confirmLoading}
-      destroyOnClose
     >
-      <Form form={form} layout="vertical">
-        <Form.Item
-          name="name"
+      <Form form={form}>
+        <Form.Input
+          field="name"
           label="应用名称"
           rules={[
             { required: true, message: '请输入应用名称' },
             { min: 1, max: 50, message: '长度 1-50 个字符' },
             { pattern: /\S+/, message: '不能纯空格' },
           ]}
-        >
-          <Input placeholder="例如：采购管理" />
-        </Form.Item>
-        <Form.Item
-          name="code"
+          placeholder="例如：采购管理"
+        />
+        <Form.Input
+          field="code"
           label="应用编码"
           rules={[
             { required: true, message: '请输入应用编码' },
             { min: 3, max: 30, message: '长度 3-30 个字符' },
             { pattern: CODE_PATTERN, message: '以字母开头，可包含字母、数字、下划线' },
           ]}
-        >
-          <Input placeholder="例如：PURCHASE" disabled={!!initial} />
-        </Form.Item>
-        <Form.Item name="description" label="应用描述" rules={[{ max: 200, message: '最多 200 个字符' }]}>
-          <Input.TextArea rows={3} placeholder="描述应用用途" />
-        </Form.Item>
-        <Form.Item name="icon" label="应用图标">
-          <Select placeholder="选择图标">
-            {APP_ICONS.map((icon) => (
-              <Select.Option key={icon} value={icon}>
-                {icon}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
-        <Form.Item name="group" label="应用分组">
-          <Select placeholder="选择或输入分组" allowClear showSearch>
-            {groups.map((g) => (
-              <Select.Option key={g} value={g}>
-                {g}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+          placeholder="例如：PURCHASE"
+          disabled={!!initial}
+        />
+        <Form.TextArea
+          field="description"
+          label="应用描述"
+          rules={[{ max: 200, message: '最多 200 个字符' }]}
+          rows={3}
+          placeholder="描述应用用途"
+        />
+        <Form.Select field="icon" label="应用图标" optionList={iconOptions} placeholder="选择图标" />
+        <Form.Select
+          field="group"
+          label="应用分组"
+          optionList={groupOptions}
+          placeholder="选择或输入分组"
+          showClear
+          filter
+        />
       </Form>
     </Modal>
   );

@@ -355,9 +355,8 @@ export default function CodeWorkspace({
           style={{ marginTop: 8 }}
         >
           <Table
-            size="small"
-            rowKey={(_, idx) => String(idx)}
-            dataSource={execution.rows}
+            rowKey="__rowKey"
+            dataSource={execution.rows.map((r, idx) => ({ ...r, __rowKey: String(idx) }))}
             columns={columns}
             pagination={{ pageSize: 10 }}
             scroll={{ x: 'max-content' }}
@@ -562,7 +561,7 @@ export default function CodeWorkspace({
           <>
             <Table
               size="small"
-              rowKey={(record) => `${record.snippetId}-v${record.version}`}
+              rowKey={(record) => (record ? `${record.snippetId}-v${record.version}` : '')}
               dataSource={versions}
               pagination={false}
               columns={[
@@ -614,7 +613,7 @@ export default function CodeWorkspace({
             />
             {diffLoading && <Text type="secondary">计算差异中...</Text>}
             {diffResult && (
-              <Card  title={`差异：v${diffResult.versionA} → v${diffResult.versionB}`}>
+              <Card title={`差异：v${diffResult.versionA} → v${diffResult.versionB}`}>
                 <Space vertical spacing="tight" style={{ width: '100%' }}>
                   {diffResult.addedLines.length > 0 && (
                     <div>

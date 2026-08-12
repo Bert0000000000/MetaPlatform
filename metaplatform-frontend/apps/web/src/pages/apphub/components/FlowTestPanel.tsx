@@ -1,6 +1,20 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Tag, Typography, Space, Card, Alert, Steps, Tabs, Form, Input, Select, Button, message } from 'antd';
+import {
+  Tag,
+  Typography,
+  Space,
+  Card,
+  Banner,
+  Steps,
+  Tabs,
+  Form,
+  Input,
+  Select,
+  Button,
+  Toast,
+  TextArea,
+} from '@douyinfe/semi-ui';
 import {
   PlayCircleOutlined,
   CheckCircleOutlined,
@@ -10,6 +24,7 @@ import {
   ForwardOutlined,
 } from '@ant-design/icons';
 import type { FlowTestResult, FlowTestStep } from '@/api/apphub/types';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 
 interface FlowTestPanelProps {
   result: FlowTestResult;
@@ -23,7 +38,7 @@ const ACTION_ICONS: Record<FlowTestStep['action'], ReactNode> = {
   complete: <FlagOutlined style={{ color: '#722ed1' }} />,
 };
 
-const NODE_TYPE_TAGS: Record<string, { color: string; label: string }> = {
+const NODE_TYPE_TAGS: Record<string, { color: TagColor; label: string }> = {
   start: { color: 'green', label: '开始' },
   approval: { color: 'blue', label: '审批' },
   condition: { color: 'orange', label: '条件' },
@@ -31,112 +46,111 @@ const NODE_TYPE_TAGS: Record<string, { color: string; label: string }> = {
 };
 
 export default function FlowTestPanel({ result }: FlowTestPanelProps) {
-  const finalStatusType = result.finalStatus === 'approved' ? 'success' : result.finalStatus === 'rejected' ? 'error' : 'warning';
+  const finalStatusType: 'success' | 'danger' | 'warning' =
+    result.finalStatus === 'approved'
+      ? 'success'
+      : result.finalStatus === 'rejected'
+        ? 'danger'
+        : 'warning';
   const [approver, setApprover] = useState('userA');
   const [decision, setDecision] = useState<'approve' | 'reject'>('approve');
 
   return (
-    <Tabs
-      items={[
-        {
-          key: 'trace',
-          label: '执行轨迹',
-          children: (
-            <div>
-              <Alert
-                type={finalStatusType}
-                message={
-                  result.finalStatus === 'approved'
-                    ? '流程测试通过 ✅'
-                    : result.finalStatus === 'rejected'
-                      ? '流程测试被拒绝 ❌'
-                      : '流程测试异常 ⚠️'
-                }
-                description={`共 ${result.steps.length} 步，耗时 ${result.duration}ms`}
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
+    <Tabs>
+      <Tabs.TabPane tab="执行轨迹" itemKey="trace">
+        <div>
+          <Banner
+            type={finalStatusType}
+            title={
+              result.finalStatus === 'approved'
+                ? '流程测试通过 ✅'
+                : result.finalStatus === 'rejected'
+                  ? '流程测试被拒绝 ❌'
+                  : '流程测试异常 ⚠️'
+            }
+            description={`共 ${result.steps.length} 步，耗时 ${result.duration}ms`}
+            icon={null}
+            style={{ marginBottom: 16 }}
+          />
 
-              <Steps
-                size="small"
-                current={result.steps.length - 1}
-                direction="vertical"
-                items={result.steps.map((step) => ({
-                  title: (
+          <Steps
+            size="small"
+            current={result.steps.length - 1}
+            direction="vertical"
+          >
+            {result.steps.map((step, idx) => (
+              <Steps.Step
+                key={`${step.nodeName}-${idx}`}
+                status="finish"
+                title={
+                  <Space>
+                    <Typography.Text strong>{step.nodeName}</Typography.Text>
+                    <Tag color={NODE_TYPE_TAGS[step.nodeType]?.color}>
+                      {NODE_TYPE_TAGS[step.nodeType]?.label}
+                    </Tag>
+                  </Space>
+                }
+                description={
+                  <Space vertical spacing="tight">
                     <Space>
-                      <Typography.Text strong>{step.nodeName}</Typography.Text>
-                      <Tag color={NODE_TYPE_TAGS[step.nodeType]?.color}>
-                        {NODE_TYPE_TAGS[step.nodeType]?.label}
-                      </Tag>
+                      {ACTION_ICONS[step.action]}
+                      <Typography.Text>{step.actionLabel}</Typography.Text>
                     </Space>
-                  ),
-                  description: (
-                    <Space orientation="vertical" size="small">
-                      <Space>
-                        {ACTION_ICONS[step.action]}
-                        <Typography.Text>{step.actionLabel}</Typography.Text>
-                      </Space>
-                      {step.assignee && (
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          审批人：{step.assignee}
-                        </Typography.Text>
-                      )}
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {new Date(step.timestamp).toLocaleString()}
+                    {step.assignee && (
+                      <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        审批人：{step.assignee}
                       </Typography.Text>
-                    </Space>
-                  ),
-                  status: 'finish',
-                }))}
+                    )}
+                    <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                      {new Date(step.timestamp).toLocaleString()}
+                    </Typography.Text>
+                  </Space>
+                }
               />
+            ))}
+          </Steps>
+        </div>
+      </Tabs.TabPane>
+      <Tabs.TabPane tab="模拟推进" itemKey="simulate">
+        <Card>
+          <div style={{ maxWidth: 480 }}>
+            <Form.Slot label="模拟审批人">
+              <Select
+                value={approver}
+                onChange={(v) => setApprover(typeof v === 'string' ? v : 'userA')}
+                optionList={[
+                  { label: 'userA - 张三', value: 'userA' },
+                  { label: 'userB - 李四', value: 'userB' },
+                  { label: 'userC - 王五', value: 'userC' },
+                ]}
+              />
+            </Form.Slot>
+            <Form.Slot label="决策">
+              <Select
+                value={decision}
+                onChange={(v) => setDecision(v as 'approve' | 'reject')}
+                optionList={[
+                  { label: '同意', value: 'approve' },
+                  { label: '拒绝', value: 'reject' },
+                  { label: '转交', value: 'approve' },
+                ]}
+              />
+            </Form.Slot>
+            <Form.Slot label="附加意见">
+              <TextArea rows={3} placeholder="审批意见..." />
+            </Form.Slot>
+            <div style={{ marginTop: 8 }}>
+              <Button
+                type="primary"
+                icon={<ForwardOutlined />}
+                onClick={() => Toast.info('已模拟一步')}
+              >
+                下一步
+              </Button>
             </div>
-          ),
-        },
-        {
-          key: 'simulate',
-          label: '模拟推进',
-          children: (
-            <Card>
-              <Form layout="vertical" style={{ maxWidth: 480 }}>
-                <Form.Item label="模拟审批人">
-                  <Select
-                    value={approver}
-                    onChange={setApprover}
-                    options={[
-                      { label: 'userA - 张三', value: 'userA' },
-                      { label: 'userB - 李四', value: 'userB' },
-                      { label: 'userC - 王五', value: 'userC' },
-                    ]}
-                  />
-                </Form.Item>
-                <Form.Item label="决策">
-                  <Select
-                    value={decision}
-                    onChange={(v) => setDecision(v as 'approve' | 'reject')}
-                    options={[
-                      { label: '同意', value: 'approve' },
-                      { label: '拒绝', value: 'reject' },
-                      { label: '转交', value: 'approve' },
-                    ]}
-                  />
-                </Form.Item>
-                <Form.Item label="附加意见">
-                  <Input.TextArea rows={3} placeholder="审批意见..." />
-                </Form.Item>
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    icon={<ForwardOutlined />}
-                    onClick={() => message.info('已模拟一步')}
-                  >
-                    下一步
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Card>
-          ),
-        },
-      ]}
-    />
+          </div>
+        </Card>
+      </Tabs.TabPane>
+    </Tabs>
   );
 }

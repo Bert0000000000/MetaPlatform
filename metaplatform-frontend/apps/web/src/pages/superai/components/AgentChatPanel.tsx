@@ -94,7 +94,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
 
       {error && <Banner type="error" description={error} />}
 
-      <Card  title={<Text strong>Run Events ({events.length})</Text>}>
+      <Card title={<Text strong>Run Events ({events.length})</Text>}>
         {events.length === 0 ? (
           <Empty description="No events yet" />
         ) : (
@@ -118,13 +118,13 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
       </Card>
 
       {answer && (
-        <Card  title={<Text strong>Final Answer</Text>}>
+        <Card title={<Text strong>Final Answer</Text>}>
           <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{answer}</Paragraph>
         </Card>
       )}
 
       {claims.length > 0 && (
-        <Card  title={<Text strong>Claims ({claims.length})</Text>}>
+        <Card title={<Text strong>Claims ({claims.length})</Text>}>
           {claims.map((c: Claim) => (
             <ClaimRenderer key={c.claimId} claim={c} />
           ))}
@@ -132,7 +132,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
       )}
 
       {evidence.length > 0 && (
-        <Card  title={<Text strong>Evidence ({evidence.length})</Text>}>
+        <Card title={<Text strong>Evidence ({evidence.length})</Text>}>
           <EvidenceRenderer evidenceList={evidence} />
         </Card>
       )}

@@ -132,7 +132,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderFormResult = () => {
     if (!formResult) return null;
     return (
-      <Card  title={formResult.name}>
+      <Card title={formResult.name}>
         <Typography.Paragraph type="secondary">{formResult.description}</Typography.Paragraph>
         <Table
           size="small"
@@ -208,7 +208,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderExplainResult = () => {
     if (!explainResult) return null;
     return (
-      <Card  title={explainResult.title}>
+      <Card title={explainResult.title}>
         <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{explainResult.content}</pre>
       </Card>
     );
@@ -217,14 +217,14 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderReviewResult = () => {
     if (!reviewResult) return null;
     return (
-      <Card  title="代码审查报告">
+      <Card title="代码审查报告">
         <Space vertical spacing="tight" style={{ width: '100%' }}>
           <Banner
             type={reviewResult.overallScore >= 80 ? 'success' : reviewResult.overallScore >= 50 ? 'warning' : 'danger'}
             description={`综合评分：${reviewResult.overallScore}/100`}
           />
           {reviewResult.securityIssues.length > 0 && (
-            <Card  title={<Typography.Text type="danger">安全问题</Typography.Text>}>
+            <Card title={<Typography.Text type="danger">安全问题</Typography.Text>}>
               <Table
                 size="small"
                 dataSource={reviewResult.securityIssues.map((i, idx) => ({ ...i, key: idx }))}
@@ -240,7 +240,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
             </Card>
           )}
           {reviewResult.qualityIssues.length > 0 && (
-            <Card  title={<Typography.Text type="warning">质量问题</Typography.Text>}>
+            <Card title={<Typography.Text type="warning">质量问题</Typography.Text>}>
               <Table
                 size="small"
                 dataSource={reviewResult.qualityIssues.map((i, idx) => ({ ...i, key: idx }))}
@@ -256,7 +256,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
             </Card>
           )}
           {reviewResult.suggestions.length > 0 && (
-            <Card  title="改进建议">
+            <Card title="改进建议">
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {reviewResult.suggestions.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -328,7 +328,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const showLanguageSelect = mode === 'code';
 
   return (
-    <Card  style={{ marginBottom: 8 }}>
+    <Card style={{ marginBottom: 8 }}>
       <Space vertical spacing="tight" style={{ width: '100%' }}>
         <RadioGroup
           type="button"

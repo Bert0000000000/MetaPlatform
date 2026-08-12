@@ -3,30 +3,27 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Drawer,
+  SideSheet,
   Empty,
   Form,
   Input,
   Modal,
   Progress,
   Radio,
-  Select,
-  Slider,
   Space,
   Steps,
   Table,
   Tag,
   Timeline,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   HistoryOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import type { RadioChangeEvent } from 'antd';
 import {
   type ReleaseRecord,
   type ReleaseLog,
@@ -50,15 +47,15 @@ const STRATEGY_LABELS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING_APPROVAL: { label: '审批中', color: 'processing' },
-  PUBLISHED: { label: '已发布', color: 'success' },
-  REJECTED: { label: '已驳回', color: 'error' },
+  PENDING_APPROVAL: { label: '审批中', color: 'blue' },
+  PUBLISHED: { label: '已发布', color: 'green' },
+  REJECTED: { label: '已驳回', color: 'red' },
 };
 
 const APPROVAL_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING: { label: '审批中', color: 'processing' },
-  APPROVED: { label: '已通过', color: 'success' },
-  REJECTED: { label: '已驳回', color: 'error' },
+  PENDING: { label: '审批中', color: 'blue' },
+  APPROVED: { label: '已通过', color: 'green' },
+  REJECTED: { label: '已驳回', color: 'red' },
 };
 
 const STEP_TITLES = ['提交申请', '技术负责人审批', '运维审批', '发布完成'];
@@ -102,8 +99,8 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
   }, [appId]);
 
   const handleOpenCreate = () => {
-    form.resetFields();
-    form.setFieldsValue({
+    form.reset();
+    form.setValues({
       strategy: 'FULL',
       grayPercent: 0,
       techLeadId: 'tech-lead',
@@ -113,17 +110,18 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
     setModalOpen(true);
   };
 
-  const handleStrategyChange = (e: RadioChangeEvent) => {
+  // Semi Radio.Group onChange 第一参数为 RadioChangeEvent（含 target.value），保持原逻辑
+  const handleStrategyChange = (e: { target: { value: string | number | boolean } }) => {
     const value = e.target.value as 'FULL' | 'GRAYSCALE';
     setStrategy(value);
-    form.setFieldsValue({ grayPercent: value === 'FULL' ? 0 : 10 });
+    form.setValues({ grayPercent: value === 'FULL' ? 0 : 10 });
   };
 
   const handleCreate = async (values: CreateReleaseRequest) => {
     setSubmitting(true);
     try {
       await createRelease(appId, values);
-      message.success('发布申请已提交，等待审批');
+      Toast.success('发布申请已提交，等待审批');
       setModalOpen(false);
       loadReleases();
     } finally {
@@ -159,7 +157,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
     if (!selectedRelease?.processInstanceId) return;
     try {
       await completeReleaseTask(selectedRelease.processInstanceId, task.id, { approved, comment });
-      message.success(approved ? '审批已通过' : '已驳回');
+      Toast.success(approved ? '审批已通过' : '已驳回');
       refreshDrawer();
     } catch {
       // message already shown by api client
@@ -207,7 +205,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       dataIndex: 'status',
       key: 'status',
       render: (value: string) => {
-        const item = STATUS_LABELS[value] ?? { label: value, color: 'default' };
+        const item = STATUS_LABELS[value] ?? { label: value, color: 'grey' };
         return <Tag color={item.color}>{item.label}</Tag>;
       },
     },
@@ -216,7 +214,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       dataIndex: 'approvalStatus',
       key: 'approvalStatus',
       render: (value: string) => {
-        const item = APPROVAL_LABELS[value] ?? { label: value, color: 'default' };
+        const item = APPROVAL_LABELS[value] ?? { label: value, color: 'grey' };
         return <Tag color={item.color}>{item.label}</Tag>;
       },
     },
@@ -231,11 +229,11 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
       key: 'action',
       render: (_: unknown, record: ReleaseRecord) => (
         <Space>
-          <Button type="link" icon={<HistoryOutlined />} onClick={() => openDrawer(record, 'logs')}>
+          <Button theme="borderless" type="primary" icon={<HistoryOutlined />} onClick={() => openDrawer(record, 'logs')}>
             日志
           </Button>
           {record.status === 'PENDING_APPROVAL' && (
-            <Button type="link" onClick={() => openDrawer(record, 'approval')}>
+            <Button theme="borderless" type="primary" onClick={() => openDrawer(record, 'approval')}>
               审批
             </Button>
           )}
@@ -253,9 +251,12 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
         <Steps
           current={currentStep}
           status={selectedRelease.status === 'REJECTED' ? 'error' : 'process'}
-          items={STEP_TITLES.map((title) => ({ key: title, title }))}
-        />
-        <Typography.Title level={5} style={{ marginTop: 24 }}>
+        >
+          {STEP_TITLES.map((title) => (
+            <Steps.Step key={title} title={title} />
+          ))}
+        </Steps>
+        <Typography.Title heading={5} style={{ marginTop: 24 }}>
           待处理任务
         </Typography.Title>
         {tasksLoading ? (
@@ -263,7 +264,7 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
         ) : activeTasks.length === 0 ? (
           <Empty description="暂无待处理审批任务" />
         ) : (
-          <Space orientation="vertical" style={{ width: '100%' }}>
+          <Space vertical style={{ width: '100%' }}>
             {activeTasks.map((task) => (
               <TaskApprovalCard
                 key={task.id}
@@ -278,26 +279,30 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
   };
 
   const renderLogsContent = () => (
-    <Timeline mode="left">
-      {logs.map((log) => (
-        <Timeline.Item key={log.logId} label={formatTime(log.createdAt)}>
-          <Typography.Text strong>{log.action}</Typography.Text>
+    <Timeline
+      mode="left"
+      dataSource={logs.map((log) => ({
+        time: formatTime(log.createdAt),
+        content: (
           <div>
-            <Typography.Text type="secondary">
-              {log.operator ? `操作人: ${log.operator}` : '系统'}
-              {log.remark ? ` | 备注: ${log.remark}` : ''}
-            </Typography.Text>
+            <Typography.Text strong>{log.action}</Typography.Text>
+            <div>
+              <Typography.Text type="tertiary">
+                {log.operator ? `操作人: ${log.operator}` : '系统'}
+                {log.remark ? ` | 备注: ${log.remark}` : ''}
+              </Typography.Text>
+            </div>
           </div>
-        </Timeline.Item>
-      ))}
-    </Timeline>
+        ),
+      }))}
+    />
   );
 
   return (
     <div>
       <Card loading={loading}>
         <Space style={{ marginBottom: 16 }}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
             创建发布
           </Button>
         </Space>
@@ -306,107 +311,108 @@ export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPag
           columns={columns}
           dataSource={releases?.items ?? []}
           pagination={false}
-          locale={{ emptyText: <Empty description="暂无发布记录" /> }}
-          scroll={{ x: 'max-content' }}
+          empty={<Empty description="暂无发布记录" />}
         />
       </Card>
 
       <Modal
         title="创建发布"
-        open={modalOpen}
-        onOk={() => form.submit()}
+        visible={modalOpen}
+        onOk={() => form.submitForm()}
         onCancel={() => setModalOpen(false)}
         confirmLoading={submitting}
         width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleCreate}>
-          <Form.Item
-            name="version"
+        <Form form={form} onSubmit={handleCreate}>
+          <Form.Input
+            field="version"
             label="版本号"
             rules={[{ required: true, message: '请输入版本号' }]}
-          >
-            <Input placeholder="例如 v1.0.0" />
-          </Form.Item>
-          <Form.Item name="releaseNotes" label="发布说明">
-            <Input.TextArea rows={3} placeholder="描述本次发布内容" />
-          </Form.Item>
-          <Form.Item
-            name="strategy"
+            placeholder="例如 v1.0.0"
+          />
+          <Form.TextArea field="releaseNotes" label="发布说明" rows={3} placeholder="描述本次发布内容" />
+          <Form.RadioGroup
+            field="strategy"
             label="发布策略"
             rules={[{ required: true, message: '请选择发布策略' }]}
+            type="button"
+            onChange={handleStrategyChange}
           >
-            <Radio.Group onChange={handleStrategyChange}>
-              <Radio.Button value="FULL">全量</Radio.Button>
-              <Radio.Button value="GRAYSCALE">灰度</Radio.Button>
-            </Radio.Group>
-          </Form.Item>
+            <Radio type="button" value="FULL">全量</Radio>
+            <Radio type="button" value="GRAYSCALE">灰度</Radio>
+          </Form.RadioGroup>
           {strategy === 'GRAYSCALE' && (
-            <Form.Item
-              name="grayPercent"
+            <Form.Slider
+              field="grayPercent"
               label="灰度比例"
               rules={[{ required: true, message: '请选择灰度比例' }]}
-            >
-              <Slider marks={GRAY_MARKS} step={null} min={0} max={100} />
-            </Form.Item>
+              marks={GRAY_MARKS}
+              min={0}
+              max={100}
+            />
           )}
           {strategy === 'GRAYSCALE' && (
-            <Form.Item name="grayUsers" label="灰度用户">
-              <Select
-                mode="tags"
-                placeholder="输入用户 ID 后回车"
-                tokenSeparators={[',']}
-                allowClear
-              />
-            </Form.Item>
+            <Form.TagInput
+              field="grayUsers"
+              label="灰度用户"
+              placeholder="输入用户 ID 后回车"
+              separator=","
+              showClear
+            />
           )}
           {strategy === 'GRAYSCALE' && (
-            <Form.Item name="grayDepts" label="灰度部门">
-              <Select
-                mode="tags"
-                placeholder="输入部门 ID 后回车"
-                tokenSeparators={[',']}
-                allowClear
-              />
-            </Form.Item>
+            <Form.TagInput
+              field="grayDepts"
+              label="灰度部门"
+              placeholder="输入部门 ID 后回车"
+              separator=","
+              showClear
+            />
           )}
-          <Form.Item
-            name="techLeadId"
+          <Form.Input
+            field="techLeadId"
             label="技术负责人"
             rules={[{ required: true, message: '请输入技术负责人 ID' }]}
-          >
-            <Input placeholder="tech-lead" />
-          </Form.Item>
-          <Form.Item
-            name="opsOwnerId"
+            placeholder="tech-lead"
+          />
+          <Form.Input
+            field="opsOwnerId"
             label="运维审批人"
             rules={[{ required: true, message: '请输入运维审批人 ID' }]}
-          >
-            <Input placeholder="ops-owner" />
-          </Form.Item>
+            placeholder="ops-owner"
+          />
         </Form>
       </Modal>
 
-      <Drawer
+      <SideSheet
         title={
           <Space>
             <span>发布详情</span>
             <Tag>{selectedRelease?.version}</Tag>
           </Space>
         }
-        size={720}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        width={720}
+        visible={drawerOpen}
+        onCancel={() => setDrawerOpen(false)}
       >
         <Space style={{ marginBottom: 16 }}>
-          <Button type={drawerTab === 'approval' ? 'primary' : 'default'} onClick={() => setDrawerTab('approval')}>
+          <Button
+            theme={drawerTab === 'approval' ? 'solid' : 'light'}
+            type="primary"
+            onClick={() => setDrawerTab('approval')}
+          >
             审批进度
           </Button>
-          <Button type={drawerTab === 'logs' ? 'primary' : 'default'} onClick={() => setDrawerTab('logs')}>
+          <Button
+            theme={drawerTab === 'logs' ? 'solid' : 'light'}
+            type="primary"
+            onClick={() => setDrawerTab('logs')}
+          >
             发布日志
           </Button>
         </Space>
         {drawerTab === 'approval' ? renderApprovalContent() : renderLogsContent()}
-      </Drawer>
+      </SideSheet>
     </div>
   );
 }
@@ -419,17 +425,18 @@ interface TaskApprovalCardProps {
 function TaskApprovalCard({ task, onComplete }: TaskApprovalCardProps) {
   const [comment, setComment] = useState('');
   return (
-    <Card size="small" title={task.name} extra={<Tag color="processing">待审批</Tag>}>
-      <Typography.Text type="secondary">处理人: {task.assignee ?? '-'}</Typography.Text>
+    <Card title={task.name} headerExtraContent={<Tag color="blue">待审批</Tag>}>
+      <Typography.Text type="tertiary">处理人: {task.assignee ?? '-'}</Typography.Text>
       <Input.TextArea
         rows={2}
         placeholder="审批意见（可选）"
         value={comment}
-        onChange={(e) => setComment(e.target.value)}
+        onChange={(v) => setComment(v)}
         style={{ marginTop: 12, marginBottom: 12 }}
       />
       <Space>
         <Button
+          theme="solid"
           type="primary"
           icon={<CheckCircleOutlined />}
           onClick={() => onComplete(task, true, comment)}
@@ -437,7 +444,7 @@ function TaskApprovalCard({ task, onComplete }: TaskApprovalCardProps) {
           通过
         </Button>
         <Button
-          danger
+          type="danger"
           icon={<CloseCircleOutlined />}
           onClick={() => onComplete(task, false, comment)}
         >

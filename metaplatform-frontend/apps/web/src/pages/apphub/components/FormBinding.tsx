@@ -1,4 +1,4 @@
-import { Select, Table, Switch, Typography, Space, Empty } from 'antd';
+import { Select, Table, Switch, Typography, Space, Empty } from '@douyinfe/semi-ui';
 import type { ModuleItem, FormFieldBinding } from '@/api/apphub/types';
 
 interface FormBindingProps {
@@ -60,26 +60,28 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
 
   return (
     <div style={{ marginTop: 12 }}>
-      <Typography.Title level={5}>表单字段绑定</Typography.Title>
+      <Typography.Title heading={5}>表单字段绑定</Typography.Title>
 
       {formModules.length > 0 && (
-        <Space style={{ marginBottom: 12 }}>
-          <Typography.Text type="secondary">关联表单：</Typography.Text>
+        <Space spacing="tight" style={{ marginBottom: 12 }}>
+          <Typography.Text type="tertiary">关联表单：</Typography.Text>
           <Select
             placeholder="选择表单模块"
             style={{ width: 200 }}
-            options={formModules.map((m) => ({ label: m.name, value: m.moduleId }))}
+            optionList={formModules.map((m) => ({ label: m.name, value: m.moduleId }))}
           />
         </Space>
       )}
 
       {MOCK_FIELDS.length === 0 ? (
-        <Empty description="请先关联表单模块" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description="请先关联表单模块" />
       ) : (
         <Table
           size="small"
+          rowKey="fieldKey"
           dataSource={MOCK_FIELDS.map((f) => ({ ...f, key: f.fieldKey }))}
           pagination={false}
+          scroll={{ x: 'max-content' }}
           columns={[
             { title: '字段', dataIndex: 'fieldLabel', key: 'fieldLabel' },
             {
@@ -119,7 +121,7 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
               ),
             },
           ]}
-         scroll={{ x: 'max-content' }}/>
+        />
       )}
     </div>
   );

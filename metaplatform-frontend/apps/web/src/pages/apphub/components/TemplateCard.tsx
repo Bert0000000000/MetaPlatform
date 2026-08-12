@@ -1,4 +1,5 @@
-import { Card, Tag, Typography, Button, Space, Rate } from 'antd';
+import { Card, Tag, Typography, Button, Space, Rating } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   DownloadOutlined,
   EyeOutlined,
@@ -12,19 +13,19 @@ interface TemplateCardProps {
   onInstall: (t: TemplateItem) => void;
 }
 
-const CATEGORY_COLOR: Record<TemplateItem['category'], string> = {
+const CATEGORY_COLOR: Record<TemplateItem['category'], TagColor> = {
   OA: 'blue',
   CRM: 'orange',
   HR: 'green',
-  Finance: 'gold',
+  Finance: 'yellow',
   Project: 'purple',
-  Other: 'default',
+  Other: 'grey',
 };
 
 export default function TemplateCard({ template, onPreview, onInstall }: TemplateCardProps) {
   return (
     <Card
-      hoverable
+      shadows="hover"
       cover={
         <div
           style={{
@@ -32,8 +33,8 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #1677ff 0%, #69b1ff 100%)',
-            color: '#fff',
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--semi-color-primary-light-default) 100%)',
+            color: 'var(--primary-foreground)',
             fontSize: 48,
           }}
         >
@@ -43,7 +44,8 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
       actions={[
         <Button
           key="preview"
-          type="link"
+          theme="borderless"
+          type="tertiary"
           icon={<EyeOutlined />}
           onClick={() => onPreview(template)}
         >
@@ -51,7 +53,8 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
         </Button>,
         <Button
           key="install"
-          type="link"
+          theme="borderless"
+          type="tertiary"
           icon={<DownloadOutlined />}
           onClick={() => onInstall(template)}
         >
@@ -69,20 +72,20 @@ export default function TemplateCard({ template, onPreview, onInstall }: Templat
         description={
           <div>
             <Typography.Paragraph
-              type="secondary"
+              type="tertiary"
               ellipsis={{ rows: 2 }}
               style={{ minHeight: 44, marginBottom: 8 }}
             >
               {template.description}
             </Typography.Paragraph>
-            <Space size={4} wrap>
+            <Space spacing={4} wrap>
               {template.tags.map((t) => (
                 <Tag key={t}>{t}</Tag>
               ))}
             </Space>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-              <Rate disabled defaultValue={template.rating} allowHalf />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Rating disabled defaultValue={template.rating} allowHalf />
+              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                 {template.downloadCount} 安装
               </Typography.Text>
             </div>

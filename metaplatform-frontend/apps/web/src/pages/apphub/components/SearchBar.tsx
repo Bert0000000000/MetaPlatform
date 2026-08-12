@@ -1,4 +1,4 @@
-import { Input, Space, Select } from 'antd';
+import { Input, Space, Select } from '@douyinfe/semi-ui';
 import { SearchOutlined } from '@ant-design/icons';
 
 interface SearchBarProps {
@@ -20,15 +20,15 @@ export default function SearchBar({
         prefix={<SearchOutlined />}
         placeholder="搜索模板"
         value={keyword || ''}
-        onChange={(e) => onKeywordChange(e.target.value)}
+        onChange={(v) => onKeywordChange(v)}
         style={{ width: 280 }}
-        allowClear
+        showClear
       />
       <Select
         value={sortBy || 'newest'}
-        onChange={onSortChange}
+        onChange={(v) => onSortChange(v as "newest" | "popular" | "rating")}
         style={{ width: 140 }}
-        options={[
+        optionList={[
           { label: '最新', value: 'newest' },
           { label: '最热', value: 'popular' },
           { label: '评分', value: 'rating' },

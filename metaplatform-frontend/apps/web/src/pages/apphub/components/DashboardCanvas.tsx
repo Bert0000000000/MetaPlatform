@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Button, Space, Empty, Tag } from 'antd';
+import { Button, Card, Empty, Space, Tag } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -15,18 +16,18 @@ interface DashboardCanvasProps {
   onPreview: (w: DashboardWidget) => void;
 }
 
-const TYPE_LABELS: Record<DashboardWidgetType, { label: string; color: string }> = {
+const TYPE_LABELS: Record<DashboardWidgetType, { label: string; color: TagColor }> = {
   table: { label: '表格', color: 'blue' },
   'chart-bar': { label: '柱状图', color: 'cyan' },
   'chart-line': { label: '折线图', color: 'green' },
   'chart-pie': { label: '饼图', color: 'orange' },
-  'chart-area': { label: '面积图', color: 'geekblue' },
-  'chart-scatter': { label: '散点图', color: 'magenta' },
+  'chart-area': { label: '面积图', color: 'indigo' },
+  'chart-scatter': { label: '散点图', color: 'pink' },
   gauge: { label: '仪表盘', color: 'red' },
-  iframe: { label: '嵌入网页', color: 'volcano' },
-  'rich-text': { label: '富文本', color: 'gold' },
+  iframe: { label: '嵌入网页', color: 'orange' },
+  'rich-text': { label: '富文本', color: 'amber' },
   stat: { label: '统计', color: 'purple' },
-  text: { label: '文本', color: 'default' },
+  text: { label: '文本', color: 'grey' },
 };
 
 interface DataSourceResult {
@@ -147,7 +148,7 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
 
   return (
     <div>
-      <Card size="small" title="添加组件" style={{ marginBottom: 16 }}>
+      <Card title="添加组件" style={{ marginBottom: 16 }}>
         <Space wrap>
           {(Object.keys(TYPE_LABELS) as DashboardWidgetType[]).map((t) => (
             <Button key={t} icon={<PlusOutlined />} onClick={() => handleAdd(t)}>
@@ -170,7 +171,6 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
           {config.widgets.map((w) => (
             <Card
               key={w.id}
-              size="small"
               style={{
                 gridColumn: `span ${w.position.w}`,
                 minHeight: 120,
@@ -182,18 +182,18 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
                   <Tag color={TYPE_LABELS[w.type].color}>{TYPE_LABELS[w.type].label}</Tag>
                 </Space>
               }
-              extra={
+              headerExtraContent={
                 <Space>
                   <Button
-                    type="text"
+                    theme="borderless"
                     size="small"
                     icon={<EditOutlined />}
                     onClick={() => onPreview(w)}
                   />
                   <Button
-                    type="text"
+                    theme="borderless"
                     size="small"
-                    danger
+                    type="danger"
                     icon={<DeleteOutlined />}
                     onClick={() => handleDelete(w.id)}
                   />
@@ -202,7 +202,7 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
             >
               <div
                 style={{
-                  color: '#999',
+                  color: 'var(--muted-foreground)',
                   fontSize: 12,
                   padding: '24px 0',
                   textAlign: 'center',

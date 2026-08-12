@@ -107,7 +107,7 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
   };
 
   return (
-    <Card  style={{ marginTop: 8, maxWidth: 480 }}>
+    <Card style={{ marginTop: 8, maxWidth: 480 }}>
       <Space vertical spacing="tight" style={{ width: '100%' }}>
         <Space>
           <ThunderboltOutlined style={{ color: 'var(--primary)' }} />
@@ -143,7 +143,7 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
         )}
 
         {selectedAction && (
-          <Card  title={`${selectedAction.name} - 参数配置`}>
+          <Card title={`${selectedAction.name} - 参数配置`}>
             <Form form={form}>
               {selectedAction.inputSchema.map((param) => (
                 <div key={param.name} style={{ marginBottom: 12 }}>

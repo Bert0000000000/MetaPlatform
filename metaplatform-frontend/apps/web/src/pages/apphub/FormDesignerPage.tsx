@@ -12,10 +12,11 @@ import {
   Space,
   Tag,
   Typography,
-  message,
+  Toast,
   Tabs,
   Modal,
-} from 'antd';
+  TextArea,
+} from '@douyinfe/semi-ui';
 import {
   ArrowLeftOutlined,
   SaveOutlined,
@@ -49,7 +50,7 @@ import type {
   FormScripts,
 } from '@/api/apphub/types';
 
-const { TextArea } = Input;
+
 const DESIGNER_IMPORT_KEY = 'metaplatform:designer:import';
 
 type ActiveTab = 'fields' | 'settings' | 'linkage' | 'scripts';
@@ -163,7 +164,7 @@ export default function FormDesignerPage() {
             .map((f, idx) => toFormField(f, idx));
           if (newFields.length > 0) {
             setConfig({ ...initialConfig, fields: [...initialConfig.fields, ...newFields] });
-            message.success(`从 AI 导入 ${newFields.length} 个字段`);
+            Toast.success(`从 AI 导入 ${newFields.length} 个字段`);
             return;
           }
         } catch {
@@ -180,11 +181,11 @@ export default function FormDesignerPage() {
       .filter((f) => f.fieldKey && !existingKeys.has(f.fieldKey))
       .map((f, idx) => toFormField(f, idx));
     if (newFields.length === 0) {
-      message.warning('AI 生成的字段已存在，未重复导入');
+      Toast.warning('AI 生成的字段已存在，未重复导入');
       return;
     }
     setConfig((prev) => ({ ...prev, fields: [...prev.fields, ...newFields] }));
-    message.success(`已导入 ${newFields.length} 个 AI 字段`);
+    Toast.success(`已导入 ${newFields.length} 个 AI 字段`);
   };
 
   const selectedField = config.fields.find((f) => f.id === selectedId) || null;
@@ -245,12 +246,12 @@ export default function FormDesignerPage() {
 
   const validateLocal = (): boolean => {
     if (config.fields.length === 0) {
-      message.warning('请至少添加一个组件');
+      Toast.warning('请至少添加一个组件');
       return false;
     }
     const keys = config.fields.map((f) => f.fieldKey);
     if (new Set(keys).size !== keys.length) {
-      message.warning('字段标识不能重复');
+      Toast.warning('字段标识不能重复');
       return false;
     }
     return true;
@@ -271,7 +272,7 @@ export default function FormDesignerPage() {
       });
       if (!validateRes.valid) {
         const first = validateRes.errors[0];
-        message.error(first ? `[${first.code}] ${first.message}` : '表单校验未通过');
+        Toast.error(first ? `[${first.code}] ${first.message}` : '表单校验未通过');
         return;
       }
 
@@ -281,7 +282,7 @@ export default function FormDesignerPage() {
         saveFormLinkageRules(moduleId, config.linkageRules || []),
         saveFormScripts(moduleId, config.scripts || {}),
       ]);
-      message.success('表单保存成功');
+      Toast.success('表单保存成功');
     } finally {
       setSubmitting(false);
     }
@@ -289,7 +290,7 @@ export default function FormDesignerPage() {
 
   const handlePreview = () => {
     if (!validateLocal()) return;
-    setPreviewValues(previewForm.getFieldsValue(true));
+    setPreviewValues(previewForm.getValues());
     setPreviewOpen(true);
   };
 
@@ -336,10 +337,10 @@ export default function FormDesignerPage() {
         style={{
           width,
           padding: 12,
-          border: `2px dashed ${isSelected ? '#1677ff' : '#d9d9d9'}`,
+          border: `2px dashed ${isSelected ? 'var(--semi-color-primary)' : 'var(--border)'}`,
           borderRadius: 8,
           marginBottom: 8,
-          background: isSelected ? '#f0f5ff' : '#fff',
+          background: isSelected ? 'var(--semi-color-primary-light-default)' : 'var(--card)',
           cursor: 'pointer',
           position: 'relative',
         }}
@@ -347,11 +348,11 @@ export default function FormDesignerPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography.Text strong>{field.label}</Typography.Text>
           {isSelected && (
-            <Space size="small">
-              <Button type="text" size="small" icon={<DragOutlined />} onClick={() => handleMoveField(field.id, 'up')} />
-              <Button type="text" size="small" icon={<DragOutlined />} onClick={() => handleMoveField(field.id, 'down')} />
-              <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => handleCopyField(field)} />
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteField(field.id)} />
+            <Space spacing="tight">
+              <Button theme="borderless" size="small" icon={<DragOutlined />} onClick={() => handleMoveField(field.id, 'up')} />
+              <Button theme="borderless" size="small" icon={<DragOutlined />} onClick={() => handleMoveField(field.id, 'down')} />
+              <Button theme="borderless" size="small" icon={<CopyOutlined />} onClick={() => handleCopyField(field)} />
+              <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteField(field.id)} />
             </Space>
           )}
         </div>
@@ -387,13 +388,11 @@ export default function FormDesignerPage() {
         );
       case 'select':
         return (
-          <Select style={{ width: '100%' }} placeholder={field.placeholder}>
-            {field.options?.map((opt) => (
-              <Select.Option key={opt.value} value={opt.value}>
-                {opt.label}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            style={{ width: '100%' }}
+            placeholder={field.placeholder}
+            optionList={(field.options || []).map((opt) => ({ value: opt.value, label: opt.label }))}
+          />
         );
       case 'date':
         return <Input placeholder={field.placeholder || 'YYYY-MM-DD'} />;
@@ -402,9 +401,9 @@ export default function FormDesignerPage() {
       case 'upload':
         return <Button>上传附件</Button>;
       case 'divider':
-        return <div style={{ borderTop: '1px solid #d9d9d9', paddingTop: 8 }}>{field.label}</div>;
+        return <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>{field.label}</div>;
       case 'group':
-        return <Card size="small" title={field.label} style={{ background: '#fafafa' }} />;
+        return <Card title={field.label} style={{ background: 'var(--muted)' }} />;
       default:
         return <Input placeholder={field.placeholder} />;
     }
@@ -413,84 +412,85 @@ export default function FormDesignerPage() {
   const renderPropertyPanel = () => {
     if (!selectedField) {
       return (
-        <Form layout="vertical">
+        <div>
           <Empty description="点击画布中的字段进行编辑" />
-        </Form>
+        </div>
       );
     }
 
     return (
-      <Form layout="vertical">
-        <Form.Item label="标签名称">
+      <div>
+        <Form.Slot label="标签名称">
           <Input
             value={selectedField.label}
-            onChange={(e) => handleUpdateField(selectedField.id, { label: e.target.value })}
+            onChange={(v) => handleUpdateField(selectedField.id, { label: v })}
           />
-        </Form.Item>
-        <Form.Item label="字段标识">
+        </Form.Slot>
+        <Form.Slot label="字段标识">
           <Input
             value={selectedField.fieldKey}
-            onChange={(e) => handleUpdateField(selectedField.id, { fieldKey: e.target.value })}
+            onChange={(v) => handleUpdateField(selectedField.id, { fieldKey: v })}
           />
-        </Form.Item>
-        <Form.Item label="占位提示">
+        </Form.Slot>
+        <Form.Slot label="占位提示">
           <Input
             value={selectedField.placeholder}
-            onChange={(e) => handleUpdateField(selectedField.id, { placeholder: e.target.value })}
+            onChange={(v) => handleUpdateField(selectedField.id, { placeholder: v })}
           />
-        </Form.Item>
-        <Form.Item label="宽度">
+        </Form.Slot>
+        <Form.Slot label="宽度">
           <Select
             value={selectedField.width}
-            onChange={(v) => handleUpdateField(selectedField.id, { width: v })}
-          >
-            <Select.Option value="100%">100%</Select.Option>
-            <Select.Option value="50%">50%</Select.Option>
-            <Select.Option value="33%">33%</Select.Option>
-          </Select>
-        </Form.Item>
-        <Form.Item label="必填">
+            onChange={(v) => handleUpdateField(selectedField.id, { width: v as FormField['width'] })}
+            optionList={[
+              { value: '100%', label: '100%' },
+              { value: '50%', label: '50%' },
+              { value: '33%', label: '33%' },
+            ]}
+          />
+        </Form.Slot>
+        <Form.Slot label="必填">
           <Switch
             checked={selectedField.required}
             onChange={(v) => handleUpdateField(selectedField.id, { required: v })}
           />
-        </Form.Item>
-        <Form.Item label="只读">
+        </Form.Slot>
+        <Form.Slot label="只读">
           <Switch
             checked={selectedField.readonly}
             onChange={(v) => handleUpdateField(selectedField.id, { readonly: v })}
           />
-        </Form.Item>
-        <Form.Item label="隐藏">
+        </Form.Slot>
+        <Form.Slot label="隐藏">
           <Switch
             checked={selectedField.hidden}
             onChange={(v) => handleUpdateField(selectedField.id, { hidden: v })}
           />
-        </Form.Item>
+        </Form.Slot>
         {['text', 'textarea'].includes(selectedField.type) && (
           <>
-            <Form.Item label="最小长度">
+            <Form.Slot label="最小长度">
               <InputNumber
                 value={selectedField.minLength}
-                onChange={(v) => handleUpdateField(selectedField.id, { minLength: v ?? undefined })}
+                onChange={(v) => handleUpdateField(selectedField.id, { minLength: typeof v === "number" ? v : undefined })}
               />
-            </Form.Item>
-            <Form.Item label="最大长度">
+            </Form.Slot>
+            <Form.Slot label="最大长度">
               <InputNumber
                 value={selectedField.maxLength}
-                onChange={(v) => handleUpdateField(selectedField.id, { maxLength: v ?? undefined })}
+                onChange={(v) => handleUpdateField(selectedField.id, { maxLength: typeof v === "number" ? v : undefined })}
               />
-            </Form.Item>
+            </Form.Slot>
           </>
         )}
         {['radio', 'checkbox', 'select'].includes(selectedField.type) && (
-          <Form.Item label="选项配置">
+          <Form.Slot label="选项配置">
             <TextArea
               rows={4}
               value={selectedField.options?.map((o) => `${o.label}:${o.value}`).join('\n')}
               placeholder="每行一个选项，格式：标签:值"
-              onChange={(e) => {
-                const options = e.target.value
+              onChange={(value) => {
+                const options = value
                   .split('\n')
                   .filter((line) => line.includes(':'))
                   .map((line) => {
@@ -500,9 +500,9 @@ export default function FormDesignerPage() {
                 handleUpdateField(selectedField.id, { options });
               }}
             />
-          </Form.Item>
+          </Form.Slot>
         )}
-      </Form>
+      </div>
     );
   };
 
@@ -527,95 +527,114 @@ export default function FormDesignerPage() {
     switch (field.type) {
       case 'textarea':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
-            <TextArea placeholder={field.placeholder} rows={3} disabled={disabled} />
-          </Form.Item>
+          <Form.TextArea
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            placeholder={field.placeholder}
+            rows={3}
+            disabled={disabled}
+          />
         );
       case 'number':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
-            <InputNumber style={{ width: '100%' }} placeholder={field.placeholder} disabled={disabled} />
-          </Form.Item>
+          <Form.InputNumber
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            placeholder={field.placeholder}
+            disabled={disabled}
+            style={{ width: '100%' }}
+          />
         );
       case 'radio':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
-            <Select placeholder={field.placeholder} disabled={disabled}>
-              {field.options?.map((opt) => (
-                <Select.Option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+          <Form.Select
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            placeholder={field.placeholder}
+            disabled={disabled}
+            optionList={(field.options || []).map((opt) => ({ value: opt.value, label: opt.label }))}
+          />
         );
       case 'checkbox':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
-            <Select mode="multiple" placeholder={field.placeholder} disabled={disabled}>
-              {field.options?.map((opt) => (
-                <Select.Option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+          <Form.Select
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            placeholder={field.placeholder}
+            disabled={disabled}
+            multiple
+            optionList={(field.options || []).map((opt) => ({ value: opt.value, label: opt.label }))}
+          />
         );
       case 'select':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
-            <Select placeholder={field.placeholder} disabled={disabled}>
-              {field.options?.map((opt) => (
-                <Select.Option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+          <Form.Select
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            placeholder={field.placeholder}
+            disabled={disabled}
+            optionList={(field.options || []).map((opt) => ({ value: opt.value, label: opt.label }))}
+          />
         );
       case 'date':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
-            <Input placeholder={field.placeholder || 'YYYY-MM-DD'} disabled={disabled} />
-          </Form.Item>
+          <Form.Input
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            placeholder={field.placeholder || 'YYYY-MM-DD'}
+            disabled={disabled}
+          />
         );
       case 'switch':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} valuePropName="checked" rules={rules}>
-            <Switch disabled={disabled} />
-          </Form.Item>
+          <Form.Switch
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            disabled={disabled}
+          />
         );
       case 'upload':
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+          <Form.Slot label={field.label}>
             <Button disabled={disabled}>上传附件</Button>
-          </Form.Item>
+          </Form.Slot>
         );
       case 'divider':
-        return <div style={{ borderTop: '1px solid #d9d9d9', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
+        return <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
       case 'group':
-        return <Card size="small" title={field.label} style={{ background: '#fafafa', marginBottom: 16 }} />;
+        return <Card title={field.label} style={{ background: 'var(--muted)', marginBottom: 16 }} />;
       default:
         return (
-          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
-            <Input placeholder={field.placeholder} disabled={disabled} />
-          </Form.Item>
+          <Form.Input
+            field={field.fieldKey}
+            label={field.label}
+            rules={rules}
+            placeholder={field.placeholder}
+            disabled={disabled}
+          />
         );
     }
   };
 
   const handlePreviewSubmit = async () => {
     try {
-      const values = await previewForm.validateFields();
+      const values = (await previewForm.validate()) as Record<string, unknown>;
       const beforeRes = runScript(config.scripts?.beforeSubmit || '', values);
       if (beforeRes.errors.length > 0) {
-        message.error(beforeRes.errors[0].message);
+        Toast.error(beforeRes.errors[0].message);
         return;
       }
-      message.success('预览提交成功');
+      Toast.success('预览提交成功');
       runScript(config.scripts?.afterSubmit || '', values);
     } catch {
-      message.error('请检查表单填写');
+      Toast.error('请检查表单填写');
     }
   };
 
@@ -630,7 +649,7 @@ export default function FormDesignerPage() {
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
             返回
           </Button>
-          <Typography.Title level={5} style={{ margin: 0 }}>
+          <Typography.Title heading={5} style={{ margin: 0 }}>
             {module.name} - 表单设计器
           </Typography.Title>
         </Space>
@@ -650,7 +669,7 @@ export default function FormDesignerPage() {
 
       <div style={{ flex: 1, display: 'flex', gap: 16, overflow: 'hidden' }}>
         <Card title="组件面板" style={{ width: 240, overflow: 'auto' }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             基础组件
           </Typography.Text>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
@@ -660,7 +679,7 @@ export default function FormDesignerPage() {
               </Button>
             ))}
           </div>
-          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 16 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', marginTop: 16 }}>
             布局组件
           </Typography.Text>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
@@ -672,42 +691,39 @@ export default function FormDesignerPage() {
           </div>
         </Card>
 
-        <Card
-          title="表单画布"
+        <div
           style={{ flex: 1, overflow: 'auto' }}
           onClick={() => setSelectedId(null)}
         >
-          {config.fields.length === 0 ? (
-            <Empty description="点击左侧组件添加到画布" />
-          ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {config.fields.map(renderCanvasField)}
-            </div>
-          )}
-        </Card>
+          <Card title="表单画布" style={{ height: '100%' }}>
+            {config.fields.length === 0 ? (
+              <Empty description="点击左侧组件添加到画布" />
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {config.fields.map(renderCanvasField)}
+              </div>
+            )}
+          </Card>
+        </div>
 
         <Card
           title="属性配置"
           style={{ width: 360, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
-          styles={{ body: { flex: 1, overflow: 'auto' } }}
+          bodyStyle={{ flex: 1, overflow: 'auto' }}
         >
-          <Tabs
-            activeKey={activeTab}
-            onChange={(k) => setActiveTab(k as ActiveTab)}
-            items={[
-              { key: 'fields', label: '字段' },
-              { key: 'settings', label: '全局设置' },
-              { key: 'linkage', label: '数据联动' },
-              { key: 'scripts', label: '表单脚本' },
-            ]}
-          />
+          <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k as ActiveTab)}>
+            <Tabs.TabPane tab="字段" itemKey="fields" />
+            <Tabs.TabPane tab="全局设置" itemKey="settings" />
+            <Tabs.TabPane tab="数据联动" itemKey="linkage" />
+            <Tabs.TabPane tab="表单脚本" itemKey="scripts" />
+          </Tabs>
           <div style={{ marginTop: 12 }}>{renderRightPanel()}</div>
         </Card>
       </div>
 
       <Modal
         title={config.globalSettings?.title || config.name || '表单预览'}
-        open={previewOpen}
+        visible={previewOpen}
         onCancel={() => setPreviewOpen(false)}
         width={720}
         footer={
@@ -721,9 +737,8 @@ export default function FormDesignerPage() {
       >
         <Form
           form={previewForm}
-          layout="vertical"
-          onValuesChange={(_, allValues) => {
-            setPreviewValues(allValues);
+          onValueChange={(values) => {
+            setPreviewValues(values);
           }}
         >
           {displayFields.map((field) => (

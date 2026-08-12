@@ -38,6 +38,12 @@ interface ExplorePanelProps {
 
 type SearchField = 'keyword' | 'attribute' | 'tag';
 
+const SEARCH_FIELD_OPTIONS: Array<{ label: string; value: SearchField }> = [
+  { label: '关键字', value: 'keyword' },
+  { label: '属性', value: 'attribute' },
+  { label: '标签', value: 'tag' },
+];
+
 export default function ExplorePanel({ query, onQueryChange, onResult }: ExplorePanelProps) {
   const [loading, setLoading] = useState(false);
   const [concepts, setConcepts] = useState<OntologyConcept[]>([]);
@@ -133,7 +139,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
           </Space>
         )}
 
-        <Card  title="属性定义">
+        <Card title="属性定义">
           <Table
             size="small"
             dataSource={selectedConcept.attributes.map((a, i) => ({ ...a, key: i }))}
@@ -153,15 +159,15 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
           />
         </Card>
 
-        <Card  title={`实例列表 (${selectedConcept.instances.length})`}>
+        <Card title={`实例列表 (${selectedConcept.instances.length})`}>
           <Table
             size="small"
-            dataSource={selectedConcept.instances.map((inst) => ({ ...inst, key: inst.id }))}
+            dataSource={selectedConcept.instances.map((inst) => ({ ...inst, ...inst.values, key: inst.id }))}
             columns={[
               { title: '实例名称', dataIndex: 'name', key: 'name' },
               ...Object.keys(selectedConcept.instances[0]?.values || {}).map((k) => ({
                 title: k,
-                dataIndex: ['values', k],
+                dataIndex: k,
                 key: k,
                 render: (v: unknown) => String(v),
               })),
@@ -172,7 +178,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
         </Card>
 
         {selectedConcept.relatedConcepts.length > 0 && (
-          <Card  title="关联概念">
+          <Card title="关联概念">
             <Space wrap>
               {selectedConcept.relatedConcepts.map((c) => (
                 <Tag
@@ -192,7 +198,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
   };
 
   return (
-    <Card  style={{ marginBottom: 8 }}>
+    <Card style={{ marginBottom: 8 }}>
       <Space vertical spacing="tight" style={{ width: '100%' }}>
         <TextArea
           value={query}
@@ -244,11 +250,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
                   value={searchField}
                   onChange={(v) => setSearchField(v as SearchField)}
                   style={{ width: 120 }}
-                  optionList={[
-                    { label: '关键字', value: 'keyword' },
-                    { label: '属性', value: 'attribute' },
-                    { label: '标签', value: 'tag' },
-                  ]}
+                  optionList={SEARCH_FIELD_OPTIONS}
                   suffixIcon={<FilterOutlined />}
                 />
                 <Input

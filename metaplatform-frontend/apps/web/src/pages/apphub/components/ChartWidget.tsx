@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Card, Empty, Spin, Typography } from 'antd';
+import { Card, Empty, Spin, Typography } from '@douyinfe/semi-ui';
 import {
   ResponsiveContainer,
   BarChart,
@@ -68,27 +68,27 @@ function GaugeView({ value }: { value: number }) {
         <path
           d="M 20 100 A 80 80 0 0 1 180 100"
           fill="none"
-          stroke="#f0f0f0"
+          stroke="var(--muted)"
           strokeWidth={12}
           strokeLinecap="round"
         />
         <path
           d="M 20 100 A 80 80 0 0 1 180 100"
           fill="none"
-          stroke="#1677ff"
+          stroke="var(--primary)"
           strokeWidth={12}
           strokeLinecap="round"
           style={{
             strokeDasharray: `${(safeValue / 100) * arcLength} ${arcLength}`,
           }}
         />
-        <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="#333" strokeWidth={2} />
-        <circle cx={cx} cy={cy} r={4} fill="#333" />
-        <text x={cx} y={cy + 24} textAnchor="middle" fontSize={20} fontWeight={700} fill="#1677ff">
+        <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke="var(--foreground)" strokeWidth={2} />
+        <circle cx={cx} cy={cy} r={4} fill="var(--foreground)" />
+        <text x={cx} y={cy + 24} textAnchor="middle" fontSize={20} fontWeight={700} fill="var(--primary)">
           {safeValue}
         </text>
-        <text x={20} y={115} textAnchor="middle" fontSize={10} fill="#999">0</text>
-        <text x={180} y={115} textAnchor="middle" fontSize={10} fill="#999">100</text>
+        <text x={20} y={115} textAnchor="middle" fontSize={10} fill="var(--muted-foreground)">0</text>
+        <text x={180} y={115} textAnchor="middle" fontSize={10} fill="var(--muted-foreground)">100</text>
       </svg>
     </div>
   );
@@ -123,11 +123,11 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
         chart = (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={11} />
               <Tooltip />
-              <Bar dataKey="value" fill="#1677ff" />
+              <Bar dataKey="value" fill="var(--primary)" />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -136,9 +136,9 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
         chart = (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={11} />
               <Tooltip />
               <Line type="monotone" dataKey="value" stroke="#52c41a" />
             </LineChart>
@@ -150,7 +150,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Tooltip />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
               <Pie data={rows} dataKey="value" nameKey="name" outerRadius={80} label>
                 {rows.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -164,11 +164,11 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
         chart = (
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={11} />
               <Tooltip />
-              <Area type="monotone" dataKey="value" stroke="#1677ff" fill="#1677ff" fillOpacity={0.3} />
+              <Area type="monotone" dataKey="value" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.3} />
             </AreaChart>
           </ResponsiveContainer>
         );
@@ -177,9 +177,9 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
         chart = (
           <ResponsiveContainer width="100%" height={220}>
             <ScatterChart>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="x" name="x" />
-              <YAxis dataKey="y" name="y" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="x" name="x" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis dataKey="y" name="y" stroke="var(--muted-foreground)" fontSize={11} />
               <ZAxis range={[60, 60]} />
               <Tooltip cursor={{ strokeDasharray: '3 3' }} />
               <Scatter data={rows} fill="#722ed1" />
@@ -206,7 +206,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
   };
 
   return (
-    <Card title={widget.title} size="small">
+    <Card title={widget.title}>
       {hasDataSource ? renderChart() : <Empty description="未配置数据源" />}
     </Card>
   );

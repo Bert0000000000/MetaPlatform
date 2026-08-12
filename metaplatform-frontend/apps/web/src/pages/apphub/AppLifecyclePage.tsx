@@ -10,9 +10,9 @@ import {
   Tag,
   Timeline,
   Typography,
-  message,
+  Toast,
   Spin,
-} from 'antd';
+} from '@douyinfe/semi-ui';
 import {
   ArrowLeftOutlined,
   PauseCircleOutlined,
@@ -27,7 +27,7 @@ import type { AppItem, AppStatus } from '@/api/apphub/types';
 const STATUS_MAP: Record<AppStatus, { label: string; color: string }> = {
   DESIGNING: { label: '设计中', color: 'blue' },
   PUBLISHED: { label: '已发布', color: 'green' },
-  OFFLINE: { label: '已下线', color: 'default' },
+  OFFLINE: { label: '已下线', color: 'grey' },
 };
 
 export default function AppLifecyclePage() {
@@ -65,7 +65,7 @@ export default function AppLifecyclePage() {
 
   const handleOffline = async () => {
     await updateApp(app.appId, { status: 'OFFLINE' });
-    message.success('应用已下线');
+    Toast.success('应用已下线');
     setConfirmOfflineOpen(false);
     load();
   };
@@ -75,7 +75,7 @@ export default function AppLifecyclePage() {
     try {
       await updateApp(app.appId, { status: 'PUBLISHED' });
       await publishApp(app.appId);
-      message.success('应用已恢复上线');
+      Toast.success('应用已恢复上线');
       load();
     } finally {
       setPublishing(false);
@@ -88,7 +88,7 @@ export default function AppLifecyclePage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
           返回
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           应用生命周期 - {app.name}
         </Typography.Title>
         <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
@@ -97,6 +97,7 @@ export default function AppLifecyclePage() {
       <Space style={{ marginBottom: 16 }}>
         {app.status !== 'PUBLISHED' && (
           <Button
+            theme="solid"
             type="primary"
             icon={<CloudUploadOutlined />}
             onClick={handleOnline}
@@ -106,7 +107,7 @@ export default function AppLifecyclePage() {
           </Button>
         )}
         {app.status === 'PUBLISHED' && (
-          <Button danger icon={<PauseCircleOutlined />} onClick={() => setConfirmOfflineOpen(true)}>
+          <Button type="danger" icon={<PauseCircleOutlined />} onClick={() => setConfirmOfflineOpen(true)}>
             下线
           </Button>
         )}
@@ -118,47 +119,51 @@ export default function AppLifecyclePage() {
       </Space>
 
       <Card title="生命周期阶段" style={{ marginBottom: 16 }}>
-        <Steps
-          current={currentStep}
-          items={[
-            { title: '设计', icon: <ClockCircleOutlined /> },
-            { title: '已发布', icon: <CloudUploadOutlined /> },
-            { title: '已下线', icon: <PauseCircleOutlined /> },
+        <Steps current={currentStep}>
+          <Steps.Step title="设计" icon={<ClockCircleOutlined />} />
+          <Steps.Step title="已发布" icon={<CloudUploadOutlined />} />
+          <Steps.Step title="已下线" icon={<PauseCircleOutlined />} />
+        </Steps>
+      </Card>
+
+      <Card title="基本信息">
+        <Descriptions
+          column={2}
+          size="small"
+          data={[
+            { key: '应用名称', value: app.name },
+            { key: '应用编码', value: app.code },
+            {
+              key: '状态',
+              value: (
+                <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
+              ),
+            },
+            { key: '模块数', value: app.moduleCount },
+            { key: '创建时间', value: app.createdAt },
+            { key: '更新时间', value: app.updatedAt },
           ]}
         />
       </Card>
 
-      <Card title="基本信息">
-        <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="应用名称">{app.name}</Descriptions.Item>
-          <Descriptions.Item label="应用编码">{app.code}</Descriptions.Item>
-          <Descriptions.Item label="状态">
-            <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="模块数">{app.moduleCount}</Descriptions.Item>
-          <Descriptions.Item label="创建时间">{app.createdAt}</Descriptions.Item>
-          <Descriptions.Item label="更新时间">{app.updatedAt}</Descriptions.Item>
-        </Descriptions>
-      </Card>
-
       <Card title="操作记录" style={{ marginTop: 16 }}>
         <Timeline
-          items={[
+          dataSource={[
             {
-              color: 'green',
-              children: `创建应用 ${new Date(app.createdAt).toLocaleString()}`,
+              color: 'var(--semi-color-success)',
+              content: `创建应用 ${new Date(app.createdAt).toLocaleString()}`,
             },
             {
-              color: 'blue',
-              children: `最近更新 ${new Date(app.updatedAt).toLocaleString()}`,
+              color: 'var(--semi-color-primary)',
+              content: `最近更新 ${new Date(app.updatedAt).toLocaleString()}`,
             },
             app.status === 'OFFLINE' && {
-              color: 'red',
-              children: <span>应用已下线（用户访问将被拒绝）</span>,
+              color: 'var(--semi-color-danger)',
+              content: <span>应用已下线（用户访问将被拒绝）</span>,
             },
             app.status === 'PUBLISHED' && {
-              color: 'green',
-              children: <span>应用正在服务</span>,
+              color: 'var(--semi-color-success)',
+              content: <span>应用正在服务</span>,
             },
           ].filter(Boolean) as never[]}
         />
@@ -166,16 +171,16 @@ export default function AppLifecyclePage() {
 
       <Modal
         title="确认下线"
-        open={confirmOfflineOpen}
+        visible={confirmOfflineOpen}
         onCancel={() => setConfirmOfflineOpen(false)}
         onOk={handleOffline}
         okText="确认下线"
-        okButtonProps={{ danger: true }}
+        okType="danger"
       >
         <Typography.Paragraph>
           下线后用户将无法访问此应用，但已发布的版本快照仍保留，可在需要时恢复。
         </Typography.Paragraph>
-        <Typography.Paragraph type="secondary">
+        <Typography.Paragraph type="tertiary">
           目标应用：<strong>{app.name}</strong>
         </Typography.Paragraph>
       </Modal>

@@ -1356,7 +1356,7 @@ export default function ChatPage() {
               min={0}
               max={100}
               value={temperature}
-              onChange={setTemperature}
+              onChange={(v) => setTemperature(v as number)}
               style={{ width: 100, margin: 0 }}
               tooltipVisible={false}
             />
@@ -1507,7 +1507,7 @@ export default function ChatPage() {
                   beforeUpload={({ file }) => beforeUpload(file.fileInstance as File)}
                   multiple
                   limit={8}
-                  listType="picture-card"
+                  listType="picture"
                   accept="image/png,image/jpeg,image/webp"
                 >
                   {imageFiles.length < 8 && (

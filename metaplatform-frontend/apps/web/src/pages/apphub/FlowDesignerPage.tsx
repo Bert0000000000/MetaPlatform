@@ -6,12 +6,13 @@ import {
   Card,
   Empty,
   Input,
+  TextArea,
   Typography,
   Space,
-  message,
+  Toast,
   Modal,
   Tag,
-} from 'antd';
+} from '@douyinfe/semi-ui';
 import {
   ArrowLeftOutlined,
   SaveOutlined,
@@ -29,14 +30,13 @@ import FlowTestPanel from './components/FlowTestPanel';
 import PublishValidation from './components/PublishValidation';
 import AIProcessGenerate from './components/AIProcessGenerate';
 import type { ModuleItem, FlowConfig, FlowNode, FlowEdge, FlowNodeType, FlowValidationResult, FlowTestResult, FormFieldBinding, ProcessGenResult } from '@/api/apphub/types';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 
-const { TextArea } = Input;
-
-const NODE_DEFS: { type: FlowNodeType; label: string; icon: string; color: string; width: number; height: number }[] = [
-  { type: 'start', label: '开始', icon: '▶', color: '#52c41a', width: 100, height: 60 },
-  { type: 'approval', label: '审批', icon: '✓', color: '#1677ff', width: 140, height: 70 },
-  { type: 'condition', label: '条件', icon: '◇', color: '#faad14', width: 120, height: 80 },
-  { type: 'end', label: '结束', icon: '■', color: '#f5222d', width: 100, height: 60 },
+const NODE_DEFS: { type: FlowNodeType; label: string; icon: string; color: string; tagColor: TagColor; width: number; height: number }[] = [
+  { type: 'start', label: '开始', icon: '▶', color: '#52c41a', tagColor: 'green', width: 100, height: 60 },
+  { type: 'approval', label: '审批', icon: '✓', color: '#1677ff', tagColor: 'blue', width: 140, height: 70 },
+  { type: 'condition', label: '条件', icon: '◇', color: '#faad14', tagColor: 'orange', width: 120, height: 80 },
+  { type: 'end', label: '结束', icon: '■', color: '#f5222d', tagColor: 'red', width: 100, height: 60 },
 ];
 
 const NODE_SIZE: Record<FlowNodeType, { width: number; height: number }> = {
@@ -151,7 +151,7 @@ export default function FlowDesignerPage() {
               edges,
               bpmnXml,
             };
-            message.success('从 AI 导入流程');
+            Toast.success('从 AI 导入流程');
           } catch {
             // ignore parse error
           }
@@ -286,16 +286,16 @@ export default function FlowDesignerPage() {
   const handleSave = async () => {
     if (!moduleId) return;
     if (config.nodes.length === 0) {
-      message.warning('请至少添加一个节点');
+      Toast.warning('请至少添加一个节点');
       return;
     }
     setSubmitting(true);
     try {
       await saveFlow(moduleId, config);
       await updateModule(moduleId, { config: { name: config.name, fields: [], submitAction: 'flow' } });
-      message.success('流程保存成功');
+      Toast.success('流程保存成功');
     } catch {
-      message.error('保存失败');
+      Toast.error('保存失败');
     } finally {
       setSubmitting(false);
     }
@@ -305,9 +305,9 @@ export default function FlowDesignerPage() {
     const result = await validateFlow(config);
     setValidationResult(result);
     if (result.valid) {
-      message.success('流程校验通过');
+      Toast.success('流程校验通过');
     } else {
-      message.error(`校验失败：${result.errors.length} 个错误`);
+      Toast.error(`校验失败：${result.errors.length} 个错误`);
     }
   };
 
@@ -321,14 +321,14 @@ export default function FlowDesignerPage() {
     if (!moduleId) return;
     const validation = await validateFlow(config);
     if (!validation.valid) {
-      message.error('流程校验未通过，无法发布');
+      Toast.error('流程校验未通过，无法发布');
       setValidationResult(validation);
       return;
     }
     setSubmitting(true);
     try {
       const result = await publishFlow(moduleId, config);
-      message.success(result.message);
+      Toast.success(result.message);
       setPublishModalOpen(false);
     } finally {
       setSubmitting(false);
@@ -398,7 +398,7 @@ export default function FlowDesignerPage() {
           y={node.position.y + size.height / 2 + 5}
           textAnchor="middle"
           fontSize={13}
-          fill="#333"
+          fill="var(--foreground)"
           fontWeight={600}
           style={{ pointerEvents: 'none', userSelect: 'none' }}
         >
@@ -466,12 +466,12 @@ export default function FlowDesignerPage() {
           y1={y1}
           x2={x2}
           y2={y2}
-          stroke={isSelected ? '#f5222d' : '#bbb'}
+          stroke={isSelected ? '#f5222d' : 'var(--border)'}
           strokeWidth={isSelected ? 2.5 : 1.5}
           markerEnd="url(#flow-arrow)"
         />
         {edge.label && (
-          <text x={midX} y={midY - 4} textAnchor="middle" fontSize={10} fill="#999">
+          <text x={midX} y={midY - 4} textAnchor="middle" fontSize={10} fill="var(--muted-foreground)">
             {edge.label}
           </text>
         )}
@@ -489,14 +489,14 @@ export default function FlowDesignerPage() {
       if (!edge) return null;
       return (
         <div>
-          <Typography.Title level={5}>连线属性</Typography.Title>
+          <Typography.Title heading={5}>连线属性</Typography.Title>
           <Input
             placeholder="连线标签（可选）"
             value={edge.label || ''}
-            onChange={(e) => {
+            onChange={(value) => {
               setConfig((prev) => ({
                 ...prev,
-                edges: prev.edges.map((ed) => (ed.id === selectedEdgeId ? { ...ed, label: e.target.value } : ed)),
+                edges: prev.edges.map((ed) => (ed.id === selectedEdgeId ? { ...ed, label: value } : ed)),
               }));
             }}
           />
@@ -507,20 +507,20 @@ export default function FlowDesignerPage() {
     if (!selectedNode) {
       return (
         <div>
-          <Typography.Title level={5}>流程属性</Typography.Title>
+          <Typography.Title heading={5}>流程属性</Typography.Title>
           <Input
             placeholder="流程名称"
             value={config.name}
-            onChange={(e) => setConfig((prev) => ({ ...prev, name: e.target.value }))}
+            onChange={(value) => setConfig((prev) => ({ ...prev, name: value }))}
             style={{ marginBottom: 8 }}
           />
           <TextArea
             rows={3}
             placeholder="流程描述"
             value={config.description || ''}
-            onChange={(e) => setConfig((prev) => ({ ...prev, description: e.target.value }))}
+            onChange={(value) => setConfig((prev) => ({ ...prev, description: value }))}
           />
-          <Typography.Paragraph type="secondary" style={{ marginTop: 12, fontSize: 12 }}>
+          <Typography.Paragraph type="tertiary" style={{ marginTop: 12, fontSize: 12 }}>
             点击节点查看属性，点击节点底部红色按钮删除节点。选择两个节点可以连线。
           </Typography.Paragraph>
         </div>
@@ -529,14 +529,14 @@ export default function FlowDesignerPage() {
 
     return (
       <div>
-        <Typography.Title level={5}>节点属性</Typography.Title>
+        <Typography.Title heading={5}>节点属性</Typography.Title>
         <Input
           placeholder="节点名称"
           value={selectedNode.name}
-          onChange={(e) => handleUpdateNode(selectedNode.id, { name: e.target.value })}
+          onChange={(value) => handleUpdateNode(selectedNode.id, { name: value })}
           style={{ marginBottom: 8 }}
         />
-        <Tag color={NODE_DEFS.find((d) => d.type === selectedNode.type)?.color}>
+        <Tag color={NODE_DEFS.find((d) => d.type === selectedNode.type)?.tagColor}>
           {NODE_DEFS.find((d) => d.type === selectedNode.type)?.label}
         </Tag>
 
@@ -563,7 +563,7 @@ export default function FlowDesignerPage() {
         )}
 
         <Button
-          danger
+          type="danger"
           icon={<DeleteOutlined />}
           onClick={() => handleDeleteNode(selectedNode.id)}
           block
@@ -586,19 +586,19 @@ export default function FlowDesignerPage() {
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
             返回
           </Button>
-          <Typography.Title level={5} style={{ margin: 0 }}>
+          <Typography.Title heading={5} style={{ margin: 0 }}>
             {module.name} - 流程设计器
           </Typography.Title>
         </Space>
         <Space>
           <Button
-            type={connectingFrom ? 'primary' : 'default'}
+            type={connectingFrom ? 'primary' : 'secondary'}
             icon={<PlusOutlined />}
             onClick={() => {
               if (connectingFrom) {
                 setConnectingFrom(null);
               } else {
-                message.info('请点击源节点，然后点击目标节点来创建连线');
+                Toast.info('请点击源节点，然后点击目标节点来创建连线');
               }
             }}
           >
@@ -640,50 +640,51 @@ export default function FlowDesignerPage() {
               </Button>
             ))}
           </div>
-          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 16 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', marginTop: 16 }}>
             流程统计：{config.nodes.length} 节点 / {config.edges.length} 连线
           </Typography.Text>
         </Card>
 
-        <Card
-          title="流程画布"
+        <div
           style={{ flex: 1, overflow: 'auto' }}
           onClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
         >
-          {config.nodes.length === 0 ? (
-            <Empty description="点击左侧节点添加到画布" />
-          ) : (
-            <svg
-              ref={svgRef}
-              width="100%"
-              height="100%"
-              style={{ minHeight: 500, background: '#fafafa', borderRadius: 8 }}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-            >
-              <defs>
-                <marker id="flow-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                  <polygon points="0 0, 8 3, 0 6" fill="#bbb" />
-                </marker>
-              </defs>
+          <Card title="流程画布" style={{ height: '100%' }}>
+            {config.nodes.length === 0 ? (
+              <Empty description="点击左侧节点添加到画布" />
+            ) : (
+              <svg
+                ref={svgRef}
+                width="100%"
+                height="100%"
+                style={{ minHeight: 500, background: 'var(--card)', borderRadius: 8 }}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+              >
+                <defs>
+                  <marker id="flow-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                    <polygon points="0 0, 8 3, 0 6" fill="var(--border)" />
+                  </marker>
+                </defs>
 
-              {config.edges.map(renderEdge)}
-              {config.nodes.map(renderNode)}
-            </svg>
-          )}
-        </Card>
+                {config.edges.map(renderEdge)}
+                {config.nodes.map(renderNode)}
+              </svg>
+            )}
+          </Card>
+        </div>
 
-        <Card title="属性配置" style={{ width: 320, overflow: 'auto' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {renderPropertyPanel()}
-        </Card>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Card title="属性配置" style={{ width: 320, overflow: 'auto' }}>
+            {renderPropertyPanel()}
+          </Card>
+        </div>
       </div>
 
       <Modal
         title="流程测试"
-        open={testModalOpen}
+        visible={testModalOpen}
         onCancel={() => setTestModalOpen(false)}
         footer={<Button onClick={() => setTestModalOpen(false)}>关闭</Button>}
         width={760}
@@ -693,7 +694,7 @@ export default function FlowDesignerPage() {
 
       <Modal
         title="AI 流程生成"
-        open={aiGenerateOpen}
+        visible={aiGenerateOpen}
         onCancel={() => setAiGenerateOpen(false)}
         footer={null}
         width={680}
@@ -709,7 +710,7 @@ export default function FlowDesignerPage() {
               edges,
               bpmnXml,
             }));
-            message.success('已应用 AI 生成的流程');
+            Toast.success('已应用 AI 生成的流程');
             setAiGenerateOpen(false);
           }}
         />
@@ -717,7 +718,7 @@ export default function FlowDesignerPage() {
 
       <Modal
         title="发布流程"
-        open={publishModalOpen}
+        visible={publishModalOpen}
         onOk={handlePublish}
         onCancel={() => setPublishModalOpen(false)}
         confirmLoading={submitting}
@@ -727,7 +728,7 @@ export default function FlowDesignerPage() {
         <Typography.Paragraph>
           发布前将自动进行流程完整性校验。确认发布到 TECH-WFE 工作流引擎？
         </Typography.Paragraph>
-        <Typography.Text type="secondary">
+        <Typography.Text type="tertiary">
           流程名称：{config.name || '未命名'}
         </Typography.Text>
       </Modal>
@@ -769,20 +770,20 @@ function ConditionConfigEditor({
             size="small"
             placeholder="分支标签"
             value={branch.label}
-            onChange={(e) => handleUpdateBranch(branch.id, { label: e.target.value })}
+            onChange={(value) => handleUpdateBranch(branch.id, { label: value })}
             style={{ width: 100 }}
           />
           <Input
             size="small"
             placeholder="条件表达式，如：amount > 10000"
             value={branch.condition}
-            onChange={(e) => handleUpdateBranch(branch.id, { condition: e.target.value })}
+            onChange={(value) => handleUpdateBranch(branch.id, { condition: value })}
             style={{ flex: 1 }}
           />
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteBranch(branch.id)} />
+          <Button size="small" type="danger" icon={<DeleteOutlined />} onClick={() => handleDeleteBranch(branch.id)} />
         </div>
       ))}
-      <Button size="small" type="dashed" icon={<PlusOutlined />} onClick={handleAddBranch} block>
+      <Button size="small" type="tertiary" icon={<PlusOutlined />} onClick={handleAddBranch} block>
         添加分支
       </Button>
     </div>

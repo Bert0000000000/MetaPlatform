@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrayField,
   Button,
   Card,
-  Col,
   Form,
-  Input,
-  Row,
-  Select,
   Space,
-  Switch,
   Typography,
   Upload,
-  message,
-  type UploadFile,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import type { FileItem as UploadFileItem } from '@douyinfe/semi-ui/lib/es/upload';
 import { ArrowLeftOutlined, PlusOutlined, MinusCircleOutlined, InboxOutlined } from '@ant-design/icons';
 import {
   TEMPLATE_CATEGORIES,
@@ -25,9 +22,6 @@ import {
   type TemplateFlowNode,
 } from './data/templates';
 import { getUser } from '@mate/shared';
-
-const { TextArea } = Input;
-const { Dragger } = Upload;
 
 interface FieldFormValue {
   fieldKey: string;
@@ -103,7 +97,7 @@ export default function TemplateSubmitPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm<SubmitFormValues>();
   const [submitting, setSubmitting] = useState(false);
-  const [screenshots, setScreenshots] = useState<UploadFile[]>([]);
+  const [screenshots, setScreenshots] = useState<UploadFileItem[]>([]);
 
   const handleSubmit = async (values: SubmitFormValues) => {
     setSubmitting(true);
@@ -149,7 +143,7 @@ export default function TemplateSubmitPage() {
         createdAt: new Date().toISOString(),
       });
 
-      message.success('模板投稿成功，可在"我的模板"中查看');
+      Toast.success('模板投稿成功，可在"我的模板"中查看');
       navigate('/my-templates');
     } finally {
       setSubmitting(false);
@@ -162,16 +156,18 @@ export default function TemplateSubmitPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/my-templates')}>
           返回我的模板
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           投稿新模板
         </Typography.Title>
       </Space>
 
       <Form<SubmitFormValues>
         form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        initialValues={{
+        onSubmit={handleSubmit}
+        initValues={{
+          name: '',
+          category: 'OA' as TemplateCategory,
+          description: '',
           icon: 'AppstoreOutlined',
           fields: [{ fieldKey: '', label: '', type: 'text', required: false }],
           flows: [],
@@ -180,239 +176,213 @@ export default function TemplateSubmitPage() {
         <Card title="基础信息" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item
-                name="name"
+              <Form.Input
+                field="name"
                 label="模板名称"
                 rules={[{ required: true, message: '请输入模板名称' }, { max: 50 }]}
-              >
-                <Input placeholder="如：客户管理、报销审批" />
-              </Form.Item>
+                placeholder="如：客户管理、报销审批"
+              />
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item
-                name="category"
+              <Form.Select
+                field="category"
                 label="模板分类"
                 rules={[{ required: true, message: '请选择分类' }]}
-              >
-                <Select placeholder="选择分类" options={TEMPLATE_CATEGORIES} />
-              </Form.Item>
+                optionList={TEMPLATE_CATEGORIES}
+                placeholder="选择分类"
+              />
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item name="icon" label="模板图标">
-                <Select
-                  showSearch
-                  options={ICON_OPTIONS.map((i) => ({ label: i, value: i }))}
-                  placeholder="选择图标"
-                />
-              </Form.Item>
+              <Form.Select
+                field="icon"
+                label="模板图标"
+                optionList={ICON_OPTIONS.map((i) => ({ label: i, value: i }))}
+                placeholder="选择图标"
+              />
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item name="tags" label="标签（逗号分隔）">
-                <Input placeholder="如：销售,客户,CRM" />
-              </Form.Item>
+              <Form.Input field="tags" label="标签（逗号分隔）" placeholder="如：销售,客户,CRM" />
             </Col>
             <Col xs={24}>
-              <Form.Item
-                name="description"
+              <Form.TextArea
+                field="description"
                 label="模板描述"
+                rows={3}
                 rules={[{ required: true, message: '请输入描述' }, { max: 500 }]}
-              >
-                <TextArea rows={3} placeholder="模板的功能、适用场景、包含的核心模块等" />
-              </Form.Item>
+                placeholder="模板的功能、适用场景、包含的核心模块等"
+              />
             </Col>
           </Row>
         </Card>
 
         <Card title="模板截图" style={{ marginBottom: 16 }}>
-          <Dragger
-            listType="picture-card"
+          <Upload
+            draggable
+            listType="picture"
             fileList={screenshots}
             onRemove={(file) => {
               setScreenshots((prev) => prev.filter((f) => f.uid !== file.uid));
             }}
-            beforeUpload={(file) => {
+            beforeUpload={({ file }) => {
+              const raw = file.fileInstance;
               setScreenshots((prev) => [
                 ...prev,
                 {
                   uid: `${Date.now()}-${file.name}`,
                   name: file.name,
-                  size: file.size,
-                  type: file.type,
-                  originFileObj: file,
+                  size: String(file.size ?? ''),
+                  type: raw?.type,
+                  fileInstance: raw,
+                  status: 'success',
                 },
               ]);
               return false; // 阻止自动上传
             }}
             multiple
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">点击或拖拽上传模板截图</p>
-            <p className="ant-upload-hint">支持多张，仅保存文件名</p>
-          </Dragger>
+            dragIcon={<InboxOutlined />}
+            dragMainText="点击或拖拽上传模板截图"
+            dragSubText="支持多张，仅保存文件名"
+          />
         </Card>
 
         <Card title="字段定义" style={{ marginBottom: 16 }}>
-          <Form.List name="fields">
-            {(fields, { add, remove }) => (
+          <ArrayField field="fields">
+            {({ arrayFields, add }) => (
               <>
-                {fields.map((field) => (
-                  <Row key={field.key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
+                {arrayFields.map((item) => (
+                  <Row key={item.key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
                     <Col xs={24} md={6}>
-                      <Form.Item
-                        {...field}
-                        name={[field.name, 'fieldKey']}
+                      <Form.Input
+                        field={`${item.field}[fieldKey]`}
                         rules={[{ required: true, message: '字段 Key' }]}
-                      >
-                        <Input placeholder="字段 Key（如 customerName）" />
-                      </Form.Item>
+                        placeholder="字段 Key（如 customerName）"
+                      />
                     </Col>
                     <Col xs={24} md={5}>
-                      <Form.Item
-                        {...field}
-                        name={[field.name, 'label']}
+                      <Form.Input
+                        field={`${item.field}[label]`}
                         rules={[{ required: true, message: '字段标签' }]}
-                      >
-                        <Input placeholder="字段标签" />
-                      </Form.Item>
+                        placeholder="字段标签"
+                      />
                     </Col>
                     <Col xs={12} md={4}>
-                      <Form.Item {...field} name={[field.name, 'type']}>
-                        <Select options={FIELD_TYPES} placeholder="类型" />
-                      </Form.Item>
+                      <Form.Select field={`${item.field}[type]`} optionList={FIELD_TYPES} placeholder="类型" />
                     </Col>
                     <Col xs={12} md={5}>
-                      <Form.Item {...field} name={[field.name, 'options']}>
-                        <Input placeholder="下拉选项（逗号分隔）" />
-                      </Form.Item>
+                      <Form.Input field={`${item.field}[options]`} placeholder="下拉选项（逗号分隔）" />
                     </Col>
                     <Col xs={12} md={3}>
-                      <Form.Item {...field} name={[field.name, 'required']} valuePropName="checked">
-                        <Switch checkedChildren="必填" unCheckedChildren="选填" />
-                      </Form.Item>
+                      <Form.Switch
+                        field={`${item.field}[required]`}
+                        checkedText="必填"
+                        uncheckedText="选填"
+                      />
                     </Col>
                     <Col xs={12} md={1}>
                       <MinusCircleOutlined
-                        onClick={() => remove(field.name)}
-                        style={{ color: '#ff4d4f', fontSize: 18 }}
+                        onClick={() => item.remove()}
+                        style={{ color: 'var(--semi-color-danger)', fontSize: 18 }}
                       />
                     </Col>
                   </Row>
                 ))}
-                <Form.Item>
-                  <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>
-                    添加字段
-                  </Button>
-                </Form.Item>
+                <Button block onClick={() => add()} icon={<PlusOutlined />} style={{ borderStyle: 'dashed' }}>
+                  添加字段
+                </Button>
               </>
             )}
-          </Form.List>
+          </ArrayField>
         </Card>
 
         <Card title="流程定义" style={{ marginBottom: 16 }}>
-          <Form.List name="flows">
-            {(flows, { add, remove }) => (
+          <ArrayField field="flows">
+            {({ arrayFields, add }) => (
               <>
-                {flows.map((flow) => (
+                {arrayFields.map((flowItem, idx) => (
                   <Card
-                    key={flow.key}
-                    type="inner"
-                    title={`流程 ${flow.name + 1}`}
-                    extra={
+                    key={flowItem.key}
+                    title={`流程 ${idx + 1}`}
+                    headerExtraContent={
                       <MinusCircleOutlined
-                        onClick={() => remove(flow.name)}
-                        style={{ color: '#ff4d4f', fontSize: 18 }}
+                        onClick={() => flowItem.remove()}
+                        style={{ color: 'var(--semi-color-danger)', fontSize: 18 }}
                       />
                     }
                     style={{ marginBottom: 12 }}
                   >
                     <Row gutter={8}>
                       <Col xs={24} md={8}>
-                        <Form.Item
-                          {...flow}
-                          name={[flow.name, 'name']}
+                        <Form.Input
+                          field={`${flowItem.field}[name]`}
                           label="流程名称"
                           rules={[{ required: true, message: '请输入流程名称' }]}
-                        >
-                          <Input placeholder="如：报销审批" />
-                        </Form.Item>
+                          placeholder="如：报销审批"
+                        />
                       </Col>
                       <Col xs={24} md={16}>
-                        <Form.Item {...flow} name={[flow.name, 'description']} label="流程描述">
-                          <Input placeholder="如：员工提交 → 经理审批 → 财务付款" />
-                        </Form.Item>
+                        <Form.Input
+                          field={`${flowItem.field}[description]`}
+                          label="流程描述"
+                          placeholder="如：员工提交 → 经理审批 → 财务付款"
+                        />
                       </Col>
                     </Row>
-                    <Form.List name={[flow.name, 'nodes']}>
-                      {(nodes, { add: addNode, remove: removeNode }) => (
+                    <ArrayField field={`${flowItem.field}[nodes]`}>
+                      {({ arrayFields: nodeFields, add: addNode }) => (
                         <>
-                          {nodes.map((node) => (
-                            <Row key={node.key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
+                          {nodeFields.map((nodeItem) => (
+                            <Row key={nodeItem.key} gutter={8} align="middle" style={{ marginBottom: 8 }}>
                               <Col xs={24} md={8}>
-                                <Form.Item
-                                  {...node}
-                                  name={[node.name, 'name']}
+                                <Form.Input
+                                  field={`${nodeItem.field}[name]`}
                                   rules={[{ required: true, message: '节点名称' }]}
-                                >
-                                  <Input placeholder="节点名称" />
-                                </Form.Item>
+                                  placeholder="节点名称"
+                                />
                               </Col>
                               <Col xs={12} md={6}>
-                                <Form.Item
-                                  {...node}
-                                  name={[node.name, 'type']}
+                                <Form.Select
+                                  field={`${nodeItem.field}[type]`}
                                   rules={[{ required: true, message: '节点类型' }]}
-                                >
-                                  <Select options={NODE_TYPES} placeholder="节点类型" />
-                                </Form.Item>
+                                  optionList={NODE_TYPES}
+                                  placeholder="节点类型"
+                                />
                               </Col>
                               <Col xs={12} md={8}>
-                                <Form.Item {...node} name={[node.name, 'assignee']}>
-                                  <Input placeholder="处理人/角色（可选）" />
-                                </Form.Item>
+                                <Form.Input
+                                  field={`${nodeItem.field}[assignee]`}
+                                  placeholder="处理人/角色（可选）"
+                                />
                               </Col>
                               <Col xs={24} md={2}>
                                 <MinusCircleOutlined
-                                  onClick={() => removeNode(node.name)}
-                                  style={{ color: '#ff4d4f', fontSize: 18 }}
+                                  onClick={() => nodeItem.remove()}
+                                  style={{ color: 'var(--semi-color-danger)', fontSize: 18 }}
                                 />
                               </Col>
                             </Row>
                           ))}
-                          <Form.Item>
-                            <Button
-                              type="dashed"
-                              onClick={() => addNode()}
-                              icon={<PlusOutlined />}
-                              block
-                            >
-                              添加流程节点
-                            </Button>
-                          </Form.Item>
+                          <Button block onClick={() => addNode()} icon={<PlusOutlined />} style={{ borderStyle: 'dashed' }}>
+                            添加流程节点
+                          </Button>
                         </>
                       )}
-                    </Form.List>
+                    </ArrayField>
                   </Card>
                 ))}
-                <Form.Item>
-                  <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>
-                    添加流程
-                  </Button>
-                </Form.Item>
+                <Button block onClick={() => add()} icon={<PlusOutlined />} style={{ borderStyle: 'dashed' }}>
+                  添加流程
+                </Button>
               </>
             )}
-          </Form.List>
+          </ArrayField>
         </Card>
 
-        <Form.Item>
-          <Space>
-            <Button type="primary" htmlType="submit" loading={submitting} icon={<PlusOutlined />}>
-              提交投稿
-            </Button>
-            <Button onClick={() => navigate('/my-templates')}>取消</Button>
-          </Space>
-        </Form.Item>
+        <Space>
+          <Button theme="solid" type="primary" htmlType="submit" loading={submitting} icon={<PlusOutlined />}>
+            提交投稿
+          </Button>
+          <Button onClick={() => navigate('/my-templates')}>取消</Button>
+        </Space>
       </Form>
     </div>
   );

@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { Button, Card, Empty, Input, Space, Tag, Typography, message, Spin } from 'antd';
+import { useState } from 'react';
+import { Button, Card, Empty, Input, Space, Spin, Tag, TextArea, Toast, Typography } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined, BarChartOutlined } from '@ant-design/icons';
 import { generateDashboard } from '@/api/apphub/generate';
 import type { DashboardWidget, DataSourceBinding } from '@/api/apphub/pages';
@@ -16,7 +16,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      message.warning('请输入描述');
+      Toast.warning('请输入描述');
       return;
     }
     setLoading(true);
@@ -44,27 +44,28 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
       };
     });
     onApply(widgets);
-    message.success('已应用');
+    Toast.success('已应用');
     setResult(null);
     setPrompt('');
   };
 
   return (
     <div>
-      <Space orientation="vertical" style={{ width: '100%' }}>
-        <Typography.Title level={5}>
+      <Space vertical style={{ width: '100%' }}>
+        <Typography.Title heading={5}>
           <BarChartOutlined /> AI 仪表盘生成
         </Typography.Title>
-        <Typography.Paragraph type="secondary">
+        <Typography.Paragraph type="tertiary">
           描述业务场景，AI 自动推荐组件、数据源和 API 示例。
         </Typography.Paragraph>
-        <Input.TextArea
+        <TextArea
           rows={3}
           placeholder="例如：HR 视角的员工管理仪表盘：显示总数、新增趋势、流失率、部门分布"
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(value) => setPrompt(value)}
         />
         <Button
+          theme="solid"
           type="primary"
           icon={<ThunderboltOutlined />}
           loading={loading}
@@ -81,8 +82,8 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
 
         {result && !loading && (
           <>
-            <Card title={result.title} size="small">
-              <Typography.Paragraph type="secondary">
+            <Card title={result.title}>
+              <Typography.Paragraph type="tertiary">
                 {result.description}
               </Typography.Paragraph>
               <Space wrap>
@@ -95,18 +96,18 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
             </Card>
 
             {result.apiExamples.length > 0 && (
-              <Card title="API 示例" size="small">
+              <Card title="API 示例">
                 {result.apiExamples.map((ex: DashboardGenResult['apiExamples'][number], i: number) => (
-                  <Card key={i} type="inner" size="small" style={{ marginBottom: 8 }}>
+                  <Card key={i} style={{ marginBottom: 8 }}>
                     <Typography.Text strong>
                       {ex.method} {ex.url}
                     </Typography.Text>
-                    <Typography.Paragraph style={{ color: '#666', fontSize: 12, marginBottom: 4 }}>
+                    <Typography.Paragraph style={{ color: 'var(--muted-foreground)', fontSize: 12, marginBottom: 4 }}>
                       {ex.description}
                     </Typography.Paragraph>
                     <pre
                       style={{
-                        background: '#fafafa',
+                        background: 'var(--muted)',
                         padding: 8,
                         borderRadius: 4,
                         fontSize: 11,
@@ -120,7 +121,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
               </Card>
             )}
 
-            <Button type="primary" onClick={handleApply} block>
+            <Button theme="solid" type="primary" onClick={handleApply} block>
               应用到画布
             </Button>
           </>

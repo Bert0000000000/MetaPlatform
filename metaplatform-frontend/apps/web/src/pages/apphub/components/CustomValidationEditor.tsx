@@ -1,4 +1,5 @@
-import { Button, Card, Empty, Form, Input, InputNumber, Select, Space, Switch, Tag } from 'antd';
+import type { CSSProperties } from 'react';
+import { Button, Card, Empty, Form, Input, InputNumber, Select, Space, Switch, Tag } from '@douyinfe/semi-ui';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 export interface CustomValidationRule {
@@ -15,6 +16,8 @@ interface CustomValidationEditorProps {
   rules: CustomValidationRule[];
   onChange: (rules: CustomValidationRule[]) => void;
 }
+
+const FIELD_LABEL_STYLE: CSSProperties = { display: 'block', marginBottom: 8 };
 
 export default function CustomValidationEditor({ rules, onChange }: CustomValidationEditorProps) {
   const addRule = () => {
@@ -44,9 +47,9 @@ export default function CustomValidationEditor({ rules, onChange }: CustomValida
 
   if (rules.length === 0) {
     return (
-      <Card title="自定义校验规则" size="small">
+      <Card title="自定义校验规则">
         <Empty description="暂无自定义规则" />
-        <Button type="dashed" icon={<PlusOutlined />} onClick={addRule} block style={{ marginTop: 12 }}>
+        <Button type="primary" theme="outline" icon={<PlusOutlined />} onClick={addRule} block style={{ marginTop: 12 }}>
           添加规则
         </Button>
       </Card>
@@ -56,9 +59,8 @@ export default function CustomValidationEditor({ rules, onChange }: CustomValida
   return (
     <Card
       title="自定义校验规则"
-      size="small"
-      extra={
-        <Button type="link" icon={<PlusOutlined />} onClick={addRule}>
+      headerExtraContent={
+        <Button theme="borderless" type="primary" icon={<PlusOutlined />} onClick={addRule}>
           添加
         </Button>
       }
@@ -66,8 +68,6 @@ export default function CustomValidationEditor({ rules, onChange }: CustomValida
       {rules.map((r, idx) => (
         <Card
           key={r.id}
-          type="inner"
-          size="small"
           style={{ marginBottom: 12 }}
           title={
             <Space>
@@ -79,87 +79,101 @@ export default function CustomValidationEditor({ rules, onChange }: CustomValida
               />
             </Space>
           }
-          extra={
+          headerExtraContent={
             <Button
-              type="link"
-              danger
+              theme="borderless"
+              type="danger"
               icon={<DeleteOutlined />}
               onClick={() => removeRule(idx)}
             />
           }
         >
-          <Form layout="vertical" size="small">
-            <Space wrap>
-              <Form.Item label="名称">
-                <Input
-                  value={r.name}
-                  onChange={(e) => updateRule(idx, { name: e.target.value })}
-                  style={{ width: 160 }}
-                />
-              </Form.Item>
-              <Form.Item label="字段">
-                <Input
-                  value={r.fieldKey}
-                  onChange={(e) => updateRule(idx, { fieldKey: e.target.value })}
-                  style={{ width: 140 }}
-                />
-              </Form.Item>
-              <Form.Item label="校验器">
-                <Select
-                  value={r.validator}
-                  onChange={(v) => updateRule(idx, { validator: v as CustomValidationRule['validator'] })}
-                  style={{ width: 140 }}
-                  options={[
-                    { label: '最小值', value: 'min' },
-                    { label: '最大值', value: 'max' },
-                    { label: '正则', value: 'pattern' },
-                    { label: '自定义', value: 'custom' },
-                  ]}
-                />
-              </Form.Item>
-              {r.validator === 'min' && (
-                <Form.Item label="最小值">
-                  <InputNumber
-                    value={r.args.min as number | undefined}
-                    onChange={(v) => updateRule(idx, { args: { ...r.args, min: v } })}
-                  />
-                </Form.Item>
-              )}
-              {r.validator === 'max' && (
-                <Form.Item label="最大值">
-                  <InputNumber
-                    value={r.args.max as number | undefined}
-                    onChange={(v) => updateRule(idx, { args: { ...r.args, max: v } })}
-                  />
-                </Form.Item>
-              )}
-              {r.validator === 'pattern' && (
-                <Form.Item label="正则表达式">
-                  <Input
-                    value={(r.args.pattern as string) || ''}
-                    onChange={(e) => updateRule(idx, { args: { ...r.args, pattern: e.target.value } })}
-                    style={{ width: 200 }}
-                  />
-                </Form.Item>
-              )}
-              {r.validator === 'custom' && (
-                <Form.Item label="表达式">
-                  <Input
-                    value={(r.args.expr as string) || ''}
-                    onChange={(e) => updateRule(idx, { args: { ...r.args, expr: e.target.value } })}
-                    placeholder="value > 100 && status === 'ok'"
-                    style={{ width: 240 }}
-                  />
-                </Form.Item>
-              )}
-            </Space>
-            <Form.Item label="失败提示">
+          <Space wrap>
+            <div>
+              <Form.Label style={FIELD_LABEL_STYLE}>名称</Form.Label>
               <Input
-                value={r.message}
-                onChange={(e) => updateRule(idx, { message: e.target.value })}
+                size="small"
+                value={r.name}
+                onChange={(value) => updateRule(idx, { name: value })}
+                style={{ width: 160 }}
               />
-            </Form.Item>
-          </Form>
+            </div>
+            <div>
+              <Form.Label style={FIELD_LABEL_STYLE}>字段</Form.Label>
+              <Input
+                size="small"
+                value={r.fieldKey}
+                onChange={(value) => updateRule(idx, { fieldKey: value })}
+                style={{ width: 140 }}
+              />
+            </div>
+            <div>
+              <Form.Label style={FIELD_LABEL_STYLE}>校验器</Form.Label>
+              <Select
+                size="small"
+                value={r.validator}
+                onChange={(v) => updateRule(idx, { validator: v as CustomValidationRule['validator'] })}
+                style={{ width: 140 }}
+                optionList={[
+                  { label: '最小值', value: 'min' },
+                  { label: '最大值', value: 'max' },
+                  { label: '正则', value: 'pattern' },
+                  { label: '自定义', value: 'custom' },
+                ]}
+              />
+            </div>
+            {r.validator === 'min' && (
+              <div>
+                <Form.Label style={FIELD_LABEL_STYLE}>最小值</Form.Label>
+                <InputNumber
+                  size="small"
+                  value={r.args.min as number | undefined}
+                  onChange={(v) => updateRule(idx, { args: { ...r.args, min: v } })}
+                />
+              </div>
+            )}
+            {r.validator === 'max' && (
+              <div>
+                <Form.Label style={FIELD_LABEL_STYLE}>最大值</Form.Label>
+                <InputNumber
+                  size="small"
+                  value={r.args.max as number | undefined}
+                  onChange={(v) => updateRule(idx, { args: { ...r.args, max: v } })}
+                />
+              </div>
+            )}
+            {r.validator === 'pattern' && (
+              <div>
+                <Form.Label style={FIELD_LABEL_STYLE}>正则表达式</Form.Label>
+                <Input
+                  size="small"
+                  value={(r.args.pattern as string) || ''}
+                  onChange={(value) => updateRule(idx, { args: { ...r.args, pattern: value } })}
+                  style={{ width: 200 }}
+                />
+              </div>
+            )}
+            {r.validator === 'custom' && (
+              <div>
+                <Form.Label style={FIELD_LABEL_STYLE}>表达式</Form.Label>
+                <Input
+                  size="small"
+                  value={(r.args.expr as string) || ''}
+                  onChange={(value) => updateRule(idx, { args: { ...r.args, expr: value } })}
+                  placeholder="value > 100 && status === 'ok'"
+                  style={{ width: 240 }}
+                />
+              </div>
+            )}
+          </Space>
+          <div style={{ marginTop: 12 }}>
+            <Form.Label style={FIELD_LABEL_STYLE}>失败提示</Form.Label>
+            <Input
+              size="small"
+              value={r.message}
+              onChange={(value) => updateRule(idx, { message: value })}
+            />
+          </div>
         </Card>
       ))}
     </Card>

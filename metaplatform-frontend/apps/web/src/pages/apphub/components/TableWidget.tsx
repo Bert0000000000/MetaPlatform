@@ -1,5 +1,4 @@
-import { Card, Table, Empty, Spin } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Card, Table, Empty, Spin } from '@douyinfe/semi-ui';
 import type { DashboardWidget } from '@/api/apphub/pages';
 import { useDataSource } from './DashboardCanvas';
 
@@ -13,7 +12,7 @@ interface TableRow {
   value: number;
 }
 
-const MOCK_COLUMNS: ColumnsType<TableRow> = [
+const MOCK_COLUMNS = [
   { title: 'ID', dataIndex: 'id' },
   { title: '名称', dataIndex: 'name' },
   { title: '数值', dataIndex: 'value' },
@@ -39,7 +38,7 @@ export default function TableWidget({ widget }: TableWidgetProps) {
   const rows = toTableRows(data);
 
   return (
-    <Card title={widget.title} size="small">
+    <Card title={widget.title} bodyStyle={{ padding: 12 }}>
       {widget.dataSource ? (
         loading ? (
           <div style={{ textAlign: 'center', padding: 24 }}>

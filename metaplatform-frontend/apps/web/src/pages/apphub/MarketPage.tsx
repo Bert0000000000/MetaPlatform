@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Tag, Typography, Button, Space, Rate, Input, Select, Row, Col, Empty, Tooltip, Spin, message } from 'antd';
+import { Card, Tag, Typography, Button, Space, Rating, Input, Select, Empty, Tooltip, Spin, Toast } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import * as Icons from '@ant-design/icons';
 import {
   TEMPLATE_CATEGORIES,
@@ -12,12 +13,43 @@ import { listTemplates, installTemplate, type TemplateItem } from '@/api/apphub/
 
 type SortBy = 'newest' | 'popular' | 'rating';
 
+// Semi Tag 颜色名与 antd 色名差异修正（gold → yellow）
+const SEMI_TAG_COLOR: Record<string, string> = { gold: 'yellow', default: 'grey' };
+
 const IconMap = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
 
 function renderIcon(name?: string): React.ReactNode {
   if (!name) return <Icons.AppstoreOutlined />;
   const IconComponent = IconMap[name];
   return IconComponent ? <IconComponent /> : <Icons.AppstoreOutlined />;
+}
+
+function CheckableTag({
+  checked,
+  onChange,
+  children,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      onClick={onChange}
+      style={{
+        padding: '4px 12px',
+        border: '1px solid var(--border)',
+        borderRadius: 4,
+        cursor: 'pointer',
+        fontSize: 13,
+        color: checked ? 'var(--primary)' : 'var(--muted-foreground)',
+        background: checked ? 'var(--semi-color-primary-light-default)' : 'transparent',
+        userSelect: 'none',
+      }}
+    >
+      {children}
+    </span>
+  );
 }
 
 export default function MarketPage() {
@@ -40,7 +72,7 @@ export default function MarketPage() {
         setTemplates(data);
       } catch {
         setTemplates([]);
-        message.error('加载模板列表失败');
+        Toast.error('加载模板列表失败');
       } finally {
         setLoading(false);
       }
@@ -60,75 +92,70 @@ export default function MarketPage() {
     try {
       const result = await installTemplate(t.templateId);
       if (result.success) {
-        message.success(`已安装模板：${t.name}`);
+        Toast.success(`已安装模板：${t.name}`);
         setInstalledIds((prev) => new Set([...prev, t.templateId]));
       } else {
-        message.info('该模板已安装，可在"我的模板"中查看');
+        Toast.info('该模板已安装，可在"我的模板"中查看');
       }
     } catch {
-      message.error('安装失败，请稍后重试');
+      Toast.error('安装失败，请稍后重试');
     }
   };
+
+  const tagColor = (c: string | undefined) => SEMI_TAG_COLOR[c ?? ''] ?? c ?? 'grey';
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           <Icons.AppstoreOutlined /> 应用市场
         </Typography.Title>
-        <Button type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
+        <Button theme="solid" type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
           投稿模板
         </Button>
       </div>
 
-      <Card style={{ marginBottom: 16 }} size="small">
-        <Row gutter={[12, 12]} align="middle">
-          <Col flex="auto">
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <Input
               prefix={<Icons.SearchOutlined />}
               placeholder="按名称、描述、标签搜索模板"
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              allowClear
+              onChange={(v) => setKeyword(v)}
+              showClear
             />
-          </Col>
-          <Col>
-            <Select
-              value={sortBy}
-              onChange={setSortBy}
-              style={{ width: 140 }}
-              options={[
-                { label: '最新', value: 'newest' },
-                { label: '最热', value: 'popular' },
-                { label: '评分最高', value: 'rating' },
-              ]}
-            />
-          </Col>
-        </Row>
-        <Row style={{ marginTop: 12 }}>
+          </div>
+          <Select
+            value={sortBy}
+            onChange={(v) => setSortBy(v as SortBy)}
+            style={{ width: 140 }}
+            optionList={[
+              { label: '最新', value: 'newest' },
+              { label: '最热', value: 'popular' },
+              { label: '评分最高', value: 'rating' },
+            ]}
+          />
+        </div>
+        <div style={{ marginTop: 12 }}>
           <Space wrap>
-            <Tag.CheckableTag
-              checked={!category}
-              onChange={() => setCategory(undefined)}
-              style={{ padding: '4px 12px', border: '1px solid #d9d9d9', borderRadius: 4 }}
-            >
+            <CheckableTag checked={!category} onChange={() => setCategory(undefined)}>
               全部
-            </Tag.CheckableTag>
+            </CheckableTag>
             {TEMPLATE_CATEGORIES.map((c) => (
-              <Tag.CheckableTag
+              <CheckableTag
                 key={c.value}
                 checked={category === c.value}
                 onChange={() => setCategory(c.value)}
-                style={{ padding: '4px 12px', border: '1px solid #d9d9d9', borderRadius: 4 }}
               >
                 {c.label}
-              </Tag.CheckableTag>
+              </CheckableTag>
             ))}
           </Space>
-        </Row>
+        </div>
       </Card>
 
-      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+      <Typography.Text type="tertiary" style={{ display: 'block', marginBottom: 12 }}>
         共 {filtered.length} 个模板
       </Typography.Text>
 
@@ -145,7 +172,7 @@ export default function MarketPage() {
             return (
               <Col key={t.templateId} xs={24} sm={12} md={8} lg={6}>
                 <Card
-                  hoverable
+                  shadows="hover"
                   cover={
                     <div
                       style={{
@@ -153,8 +180,8 @@ export default function MarketPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #1677ff 0%, #69b1ff 100%)',
-                        color: '#fff',
+                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--semi-color-primary-hover) 100%)',
+                        color: 'var(--semi-color-white)',
                         fontSize: 48,
                       }}
                       onClick={() => navigate(`/market/${t.templateId}`)}
@@ -163,18 +190,20 @@ export default function MarketPage() {
                     </div>
                   }
                   actions={[
-                    <Tooltip title={installed ? '已安装，查看详情' : '查看详情'} key="detail">
+                    <Tooltip content={installed ? '已安装，查看详情' : '查看详情'} key="detail">
                       <Button
-                        type="link"
+                        theme="borderless"
+                        type="primary"
                         icon={<Icons.EyeOutlined />}
                         onClick={() => navigate(`/market/${t.templateId}`)}
                       >
                         详情
                       </Button>
                     </Tooltip>,
-                    <Tooltip title={installed ? '已安装' : '一键安装到我的模板'} key="install">
+                    <Tooltip content={installed ? '已安装' : '一键安装到我的模板'} key="install">
                       <Button
-                        type="link"
+                        theme="borderless"
+                        type="primary"
                         icon={<Icons.DownloadOutlined />}
                         disabled={installed}
                         onClick={() => handleInstall(t)}
@@ -188,7 +217,7 @@ export default function MarketPage() {
                     title={
                       <Space>
                         <Typography.Text strong>{t.name}</Typography.Text>
-                        <Tag color={CATEGORY_COLOR[t.category as TemplateCategory] ?? 'default'}>
+                        <Tag color={tagColor(CATEGORY_COLOR[t.category as TemplateCategory])}>
                           {CATEGORY_LABEL[t.category as TemplateCategory] ?? t.category}
                         </Tag>
                       </Space>
@@ -196,25 +225,25 @@ export default function MarketPage() {
                     description={
                       <div>
                         <Typography.Paragraph
-                          type="secondary"
+                          type="tertiary"
                           ellipsis={{ rows: 2 }}
                           style={{ minHeight: 44, marginBottom: 8 }}
                         >
                           {t.description}
                         </Typography.Paragraph>
-                        <Space size={4} wrap style={{ marginBottom: 4 }}>
+                        <Space spacing={4} wrap style={{ marginBottom: 4 }}>
                           {t.tags.map((tag) => (
                             <Tag key={tag}>{tag}</Tag>
                           ))}
                         </Space>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Rate disabled value={t.rating} allowHalf style={{ fontSize: 12 }} />
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <Rating disabled value={t.rating} allowHalf style={{ fontSize: 12 }} />
+                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                             {t.usageCount ?? t.downloadCount} 次使用
                           </Typography.Text>
                         </div>
                         {t.author && (
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                             作者：{t.author}
                           </Typography.Text>
                         )}

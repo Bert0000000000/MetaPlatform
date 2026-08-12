@@ -6,15 +6,14 @@ import {
   Card,
   Empty,
   Form,
-  Input,
   List,
-  Rate,
+  Rating,
   Space,
   Spin,
   Tag,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
 import { ArrowLeftOutlined, DownloadOutlined, UserOutlined } from '@ant-design/icons';
 import {
   addTemplateComment,
@@ -74,13 +73,13 @@ export default function MarketplaceDetailPage() {
     const res: InstallResult = await installTemplate(template.templateId);
     if (res.success) {
       if (res.alreadyInstalled) {
-        message.info('该本体已安装，无需重复安装');
+        Toast.info('该本体已安装，无需重复安装');
       } else {
-        message.success(`已安装到本体引擎（Install ID: ${res.installId}）`);
+        Toast.success(`已安装到本体引擎（Install ID: ${res.installId}）`);
       }
       setLastInstall(res);
     } else {
-      message.error(res.error || '安装失败');
+      Toast.error(res.error || '安装失败');
     }
   };
 
@@ -92,8 +91,8 @@ export default function MarketplaceDetailPage() {
         rating: values.rating,
         comment: values.comment,
       });
-      message.success('评论已提交');
-      form.resetFields();
+      Toast.success('评论已提交');
+      form.reset();
       refreshComments(templateId);
       // 重新拉取模板以更新平均评分
       const updated = await getTemplate(templateId);
@@ -109,13 +108,13 @@ export default function MarketplaceDetailPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/marketplace')}>
           返回
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           {template.name}
         </Typography.Title>
         <Tag color="blue">{template.category}</Tag>
-        <Rate disabled value={template.rating} allowHalf />
+        <Rating disabled value={template.rating} allowHalf />
         {template.ratingCount ? (
-          <Typography.Text type="secondary">{template.ratingCount} 人评分</Typography.Text>
+          <Typography.Text type="tertiary">{template.ratingCount} 人评分</Typography.Text>
         ) : null}
       </Space>
 
@@ -130,6 +129,7 @@ export default function MarketplaceDetailPage() {
           <Typography.Text>已安装 {template.downloadCount} 次</Typography.Text>
         </div>
         <Button
+          theme="solid"
           type="primary"
           icon={<DownloadOutlined />}
           style={{ marginTop: 16 }}
@@ -143,7 +143,7 @@ export default function MarketplaceDetailPage() {
               ✓ 已安装到本体引擎（Install ID: {lastInstall.installId}）
             </Typography.Text>
             <div style={{ marginTop: 4 }}>
-              <Typography.Text type="secondary">
+              <Typography.Text type="tertiary">
                 可在「云市场 → 我的安装」中查看安装记录与状态。
               </Typography.Text>
             </div>
@@ -154,25 +154,18 @@ export default function MarketplaceDetailPage() {
       <Card title="评分与评论" style={{ marginBottom: 16 }}>
         <Form
           form={form}
-          layout="vertical"
-          onFinish={handleSubmitComment}
-          initialValues={{ rating: 5 }}
+          onSubmit={handleSubmitComment}
+          initValues={{ rating: 5 }}
         >
-          <Form.Item
-            name="rating"
+          <Form.Rating
+            field="rating"
             label="评分"
             rules={[{ required: true, message: '请选择评分' }]}
-          >
-            <Rate />
-          </Form.Item>
-          <Form.Item name="comment" label="评论">
-            <Input.TextArea rows={3} placeholder="说说你对这个模板的看法" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={submitting}>
-              提交评论
-            </Button>
-          </Form.Item>
+          />
+          <Form.TextArea field="comment" label="评论" rows={3} placeholder="说说你对这个模板的看法" />
+          <Button theme="solid" type="primary" htmlType="submit" loading={submitting}>
+            提交评论
+          </Button>
         </Form>
       </Card>
 
@@ -184,17 +177,19 @@ export default function MarketplaceDetailPage() {
             <List
               dataSource={comments}
               renderItem={(item) => (
-                <li key={item.id}>
+                <List.Item key={item.id}>
                   <div style={{ display: 'flex', gap: 12, padding: '12px 0' }}>
-                    <Avatar icon={<UserOutlined />} />
+                    <Avatar>
+                      <UserOutlined />
+                    </Avatar>
                     <div style={{ flex: 1 }}>
                       <div style={{ marginBottom: 4 }}>
                         <Typography.Text strong>{item.userId}</Typography.Text>
-                        <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                        <Typography.Text type="tertiary" style={{ marginLeft: 8, fontSize: 12 }}>
                           {new Date(item.updatedAt).toLocaleString()}
                         </Typography.Text>
                       </div>
-                      <Rate disabled value={item.rating} style={{ fontSize: 12 }} />
+                      <Rating disabled value={item.rating} style={{ fontSize: 12 }} />
                       {item.comment ? (
                         <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
                           {item.comment}
@@ -202,7 +197,7 @@ export default function MarketplaceDetailPage() {
                       ) : null}
                     </div>
                   </div>
-                </li>
+                </List.Item>
               )}
             />
           )}

@@ -11,8 +11,9 @@ import {
   Spin,
   Tabs,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+  TextArea,
+} from '@douyinfe/semi-ui';
 import { ArrowLeftOutlined, SaveOutlined, EyeOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { getPage, savePage } from '@/api/apphub/pages';
 import DashboardCanvas from './components/DashboardCanvas';
@@ -34,6 +35,14 @@ const DATA_SOURCE_TYPE_OPTIONS: Array<{ label: string; value: DataSourceType }> 
   { label: '静态数据', value: 'static' },
   { label: '自定义 API', value: 'api' },
 ];
+
+// 供页面脚本（new Function 运行时）使用的 message 兼容对象，基于 Semi Toast 实现
+const scriptContextMessage = {
+  success: Toast.success,
+  error: Toast.error,
+  warning: Toast.warning,
+  info: Toast.info,
+};
 
 export default function PageDesignerPage() {
   const { pageId } = useParams<{ pageId: string }>();
@@ -73,7 +82,7 @@ export default function PageDesignerPage() {
               };
             });
             widgets = [...widgets, ...importedWidgets];
-            message.success(`从 AI 导入 ${importedWidgets.length} 个组件`);
+            Toast.success(`从 AI 导入 ${importedWidgets.length} 个组件`);
           }
         }
       } catch {
@@ -89,7 +98,7 @@ export default function PageDesignerPage() {
     setSaving(true);
     try {
       await savePage(pageId, config);
-      message.success('已保存');
+      Toast.success('已保存');
     } finally {
       setSaving(false);
     }
@@ -100,22 +109,22 @@ export default function PageDesignerPage() {
       ...config,
       widgets: [...config.widgets, ...widgets],
     });
-    message.success('已应用 AI 生成的组件');
+    Toast.success('已应用 AI 生成的组件');
   };
 
   const handleTestScript = () => {
     const script = config.scripts?.onLoad;
     if (!script || !script.trim()) {
-      message.warning('请先输入 onLoad 脚本');
+      Toast.warning('请先输入 onLoad 脚本');
       return;
     }
     try {
       // eslint-disable-next-line no-new-func
       const fn = new Function('context', script);
-      fn({ config, message });
-      message.success('onLoad 脚本执行成功');
+      fn({ config, message: scriptContextMessage });
+      Toast.success('onLoad 脚本执行成功');
     } catch (e) {
-      message.error(`脚本执行失败: ${e instanceof Error ? e.message : String(e)}`);
+      Toast.error(`脚本执行失败: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -154,7 +163,7 @@ export default function PageDesignerPage() {
     if (w.type === 'iframe') {
       const url = (w.config?.url as string) || '';
       return (
-        <Card title={w.title} size="small">
+        <Card title={w.title}>
           {url ? (
             <iframe
               title={w.title}
@@ -162,7 +171,7 @@ export default function PageDesignerPage() {
               style={{ width: '100%', height: 240, border: 'none' }}
             />
           ) : (
-            <div style={{ color: '#999', padding: 24, textAlign: 'center' }}>
+            <div style={{ color: 'var(--semi-color-text-2)', padding: 24, textAlign: 'center' }}>
               请在 config.url 中配置嵌入地址
             </div>
           )}
@@ -172,7 +181,7 @@ export default function PageDesignerPage() {
     if (w.type === 'rich-text') {
       const content = (w.config?.content as string) || '';
       return (
-        <Card title={w.title} size="small">
+        <Card title={w.title}>
           <div style={{ minHeight: 80, padding: 12, whiteSpace: 'pre-wrap' }}>
             {content || '富文本内容为空'}
           </div>
@@ -181,16 +190,16 @@ export default function PageDesignerPage() {
     }
     if (w.type === 'stat') {
       return (
-        <Card title={w.title} size="small">
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#1677ff' }}>
+        <Card title={w.title}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--semi-color-primary)' }}>
             {Math.floor(Math.random() * 10000)}
           </div>
-          <Typography.Text type="secondary">同比 +12%</Typography.Text>
+          <Typography.Text type="tertiary">同比 +12%</Typography.Text>
         </Card>
       );
     }
     return (
-      <Card title={w.title} size="small">
+      <Card title={w.title}>
         <div style={{ minHeight: 80, padding: 12 }}>{(w.config?.text as string) || '文本'}</div>
       </Card>
     );
@@ -210,7 +219,7 @@ export default function PageDesignerPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps')}>
           返回
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           页面设计器 - {config.name}
         </Typography.Title>
         <Button
@@ -220,6 +229,7 @@ export default function PageDesignerPage() {
           预览
         </Button>
         <Button
+          theme="solid"
           type="primary"
           icon={<SaveOutlined />}
           loading={saving}
@@ -229,200 +239,205 @@ export default function PageDesignerPage() {
         </Button>
       </Space>
 
-      <Tabs
-        items={[
-          {
-            key: 'design',
-            label: '设计',
-            children: (
-              <DashboardCanvas
-                config={config}
-                onChange={setConfig}
-                onPreview={setPreviewing}
-              />
-            ),
-          },
-          {
-            key: 'settings',
-            label: '属性',
-            children: (
-              <Card>
-                <Form layout="vertical" style={{ maxWidth: 720 }}>
-                  <Form.Item label="页面名称">
-                    <Input
-                      value={config.name}
-                      onChange={(e) => setConfig({ ...config, name: e.target.value })}
-                    />
-                  </Form.Item>
-                  <Form.Item label="描述">
-                    <Input.TextArea
-                      rows={2}
-                      value={config.description || ''}
-                      onChange={(e) => setConfig({ ...config, description: e.target.value })}
-                    />
-                  </Form.Item>
-                  <Form.Item label="布局">
-                    <Tabs
-                      items={[
-                        { key: 'grid', label: '网格' },
-                        { key: 'free', label: '自由' },
-                      ]}
-                      activeKey={config.layout}
-                      onChange={(k) => setConfig({ ...config, layout: k as 'grid' | 'free' })}
-                    />
-                  </Form.Item>
-                </Form>
-              </Card>
-            ),
-          },
-          {
-            key: 'scripts',
-            label: '页面脚本',
-            children: (
-              <Card>
-                <Form layout="vertical" style={{ maxWidth: 720 }}>
-                  <Typography.Paragraph type="secondary">
-                    编辑页面生命周期脚本（onLoad / onShow）。脚本以字符串形式保存，运行时通过
-                    <code> new Function('context', script) </code>
-                    执行，<code>context</code> 包含当前页面配置与 antd message。
-                  </Typography.Paragraph>
-                  <Form.Item label="onLoad（页面加载时执行）">
-                    <Input.TextArea
-                      rows={8}
-                      placeholder="// 可访问 context.config / context.message&#10;context.message.info('页面已加载');"
-                      value={config.scripts?.onLoad || ''}
-                      onChange={(e) => handleUpdateScripts('onLoad', e.target.value)}
-                    />
-                  </Form.Item>
-                  <Form.Item label="onShow（页面显示时执行）">
-                    <Input.TextArea
-                      rows={6}
-                      placeholder="// 可访问 context.config / context.message&#10;context.message.info('页面已展示');"
-                      value={config.scripts?.onShow || ''}
-                      onChange={(e) => handleUpdateScripts('onShow', e.target.value)}
-                    />
-                  </Form.Item>
-                  <Form.Item>
-                    <Button
-                      icon={<PlayCircleOutlined />}
-                      onClick={handleTestScript}
-                    >
-                      测试运行 onLoad
-                    </Button>
-                  </Form.Item>
-                </Form>
-              </Card>
-            ),
-          },
-          {
-            key: 'datasource',
-            label: '数据源',
-            children: (
-              <Card>
-                <Form layout="vertical" style={{ maxWidth: 720 }}>
-                  {config.widgets.length === 0 ? (
-                    <Typography.Text type="secondary">
-                      画布暂无组件，请先在「设计」Tab 添加组件。
-                    </Typography.Text>
-                  ) : (
-                    <>
-                      <Form.Item label="选择组件">
-                        <Select
-                          value={selectedDsWidget?.id}
-                          onChange={(v) => setDsWidgetId(v)}
-                          options={config.widgets.map((w) => ({
-                            label: `${w.title} (${w.type})`,
-                            value: w.id,
-                          }))}
-                        />
-                      </Form.Item>
-                      {selectedDsWidget && (
-                        <>
-                          <Form.Item label="数据源类型">
-                            <Select
-                              value={selectedDsWidget.dataSource?.type || 'static'}
-                              options={DATA_SOURCE_TYPE_OPTIONS}
-                              onChange={(v: DataSourceType) =>
-                                handleUpdateWidgetDataSource(selectedDsWidget.id, { type: v })
-                              }
-                            />
-                          </Form.Item>
-                          <Form.Item label="sourceId（本体概念ID / RAG知识库ID / 数据源ID / API URL）">
-                            <Input
-                              value={selectedDsWidget.dataSource?.sourceId || ''}
-                              placeholder="例如 /v1/ont/concepts/employee 或 https://example.com/api"
-                              onChange={(e) =>
-                                handleUpdateWidgetDataSource(selectedDsWidget.id, {
-                                  sourceId: e.target.value,
-                                })
-                              }
-                            />
-                          </Form.Item>
-                          <Form.Item label="query（查询语句或 PromQL）">
-                            <Input.TextArea
-                              rows={3}
-                              value={selectedDsWidget.dataSource?.query || ''}
-                              placeholder="例如 MATCH (n:Employee) RETURN n 或 员工流失率趋势"
-                              onChange={(e) =>
-                                handleUpdateWidgetDataSource(selectedDsWidget.id, {
-                                  query: e.target.value,
-                                })
-                              }
-                            />
-                          </Form.Item>
-                          <Form.Item label="refreshInterval（秒，0 = 不自动刷新）">
-                            <InputNumber
-                              min={0}
-                              value={selectedDsWidget.dataSource?.refreshInterval ?? 0}
-                              onChange={(v) =>
-                                handleUpdateWidgetDataSource(selectedDsWidget.id, {
-                                  refreshInterval: typeof v === 'number' ? v : 0,
-                                })
-                              }
-                              style={{ width: 200 }}
-                            />
-                          </Form.Item>
-                          <Typography.Text type="secondary">
-                            当前绑定：{JSON.stringify(selectedDsWidget.dataSource || { type: 'static' })}
-                          </Typography.Text>
-                        </>
-                      )}
-                    </>
-                  )}
-                </Form>
-              </Card>
-            ),
-          },
-          {
-            key: 'ai',
-            label: 'AI 生成',
-            children: (
-              <AIDashboardGenerate
-                onApply={handleApplyAIGenerated}
-              />
-            ),
-          },
-          {
-            key: 'preview',
-            label: '预览',
-            children: (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(12, 1fr)',
-                  gap: 12,
-                }}
-              >
-                {config.widgets.map((w) => (
-                  <div key={w.id} style={{ gridColumn: `span ${w.position.w}` }}>
-                    {renderWidget(w)}
-                  </div>
-                ))}
+      <Tabs>
+        <Tabs.TabPane
+          tab="设计"
+          itemKey="design"
+          children={
+            <DashboardCanvas
+              config={config}
+              onChange={setConfig}
+              onPreview={setPreviewing}
+            />
+          }
+        />
+        <Tabs.TabPane
+          tab="属性"
+          itemKey="settings"
+          children={
+            <Card>
+              <div style={{ maxWidth: 720 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <Form.Label>页面名称</Form.Label>
+                  <Input
+                    value={config.name}
+                    onChange={(v) => setConfig({ ...config, name: v })}
+                  />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <Form.Label>描述</Form.Label>
+                  <TextArea
+                    rows={2}
+                    value={config.description || ''}
+                    onChange={(v) => setConfig({ ...config, description: v })}
+                  />
+                </div>
+                <div>
+                  <Form.Label>布局</Form.Label>
+                  <Tabs
+                    activeKey={config.layout}
+                    onChange={(k) => setConfig({ ...config, layout: k as 'grid' | 'free' })}
+                  >
+                    <Tabs.TabPane tab="网格" itemKey="grid" />
+                    <Tabs.TabPane tab="自由" itemKey="free" />
+                  </Tabs>
+                </div>
               </div>
-            ),
-          },
-        ]}
-      />
+            </Card>
+          }
+        />
+        <Tabs.TabPane
+          tab="页面脚本"
+          itemKey="scripts"
+          children={
+            <Card>
+              <div style={{ maxWidth: 720 }}>
+                <Typography.Paragraph type="tertiary">
+                  编辑页面生命周期脚本（onLoad / onShow）。脚本以字符串形式保存，运行时通过
+                  <code> new Function('context', script) </code>
+                  执行，<code>context</code> 包含当前页面配置与 message（兼容 antd message API，基于 Semi Toast）。
+                </Typography.Paragraph>
+                <div style={{ marginBottom: 16 }}>
+                  <Form.Label>onLoad（页面加载时执行）</Form.Label>
+                  <TextArea
+                    rows={8}
+                    placeholder="// 可访问 context.config / context.message&#10;context.message.info('页面已加载');"
+                    value={config.scripts?.onLoad || ''}
+                    onChange={(v) => handleUpdateScripts('onLoad', v)}
+                  />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <Form.Label>onShow（页面显示时执行）</Form.Label>
+                  <TextArea
+                    rows={6}
+                    placeholder="// 可访问 context.config / context.message&#10;context.message.info('页面已展示');"
+                    value={config.scripts?.onShow || ''}
+                    onChange={(v) => handleUpdateScripts('onShow', v)}
+                  />
+                </div>
+                <Button
+                  icon={<PlayCircleOutlined />}
+                  onClick={handleTestScript}
+                >
+                  测试运行 onLoad
+                </Button>
+              </div>
+            </Card>
+          }
+        />
+        <Tabs.TabPane
+          tab="数据源"
+          itemKey="datasource"
+          children={
+            <Card>
+              <div style={{ maxWidth: 720 }}>
+                {config.widgets.length === 0 ? (
+                  <Typography.Text type="tertiary">
+                    画布暂无组件，请先在「设计」Tab 添加组件。
+                  </Typography.Text>
+                ) : (
+                  <>
+                    <div style={{ marginBottom: 16 }}>
+                      <Form.Label>选择组件</Form.Label>
+                      <Select
+                        value={selectedDsWidget?.id}
+                        onChange={(v) => setDsWidgetId(v as string | undefined)}
+                        optionList={config.widgets.map((w) => ({
+                          label: `${w.title} (${w.type})`,
+                          value: w.id,
+                        }))}
+                      />
+                    </div>
+                    {selectedDsWidget && (
+                      <>
+                        <div style={{ marginBottom: 16 }}>
+                          <Form.Label>数据源类型</Form.Label>
+                          <Select
+                            value={selectedDsWidget.dataSource?.type || 'static'}
+                            optionList={DATA_SOURCE_TYPE_OPTIONS}
+                            onChange={(v) =>
+                              handleUpdateWidgetDataSource(selectedDsWidget.id, { type: v as DataSourceType })
+                            }
+                          />
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <Form.Label>sourceId（本体概念ID / RAG知识库ID / 数据源ID / API URL）</Form.Label>
+                          <Input
+                            value={selectedDsWidget.dataSource?.sourceId || ''}
+                            placeholder="例如 /v1/ont/concepts/employee 或 https://example.com/api"
+                            onChange={(v) =>
+                              handleUpdateWidgetDataSource(selectedDsWidget.id, {
+                                sourceId: v,
+                              })
+                            }
+                          />
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <Form.Label>query（查询语句或 PromQL）</Form.Label>
+                          <TextArea
+                            rows={3}
+                            value={selectedDsWidget.dataSource?.query || ''}
+                            placeholder="例如 MATCH (n:Employee) RETURN n 或 员工流失率趋势"
+                            onChange={(v) =>
+                              handleUpdateWidgetDataSource(selectedDsWidget.id, {
+                                query: v,
+                              })
+                            }
+                          />
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <Form.Label>refreshInterval（秒，0 = 不自动刷新）</Form.Label>
+                          <InputNumber
+                            min={0}
+                            value={selectedDsWidget.dataSource?.refreshInterval ?? 0}
+                            onChange={(v) =>
+                              handleUpdateWidgetDataSource(selectedDsWidget.id, {
+                                refreshInterval: typeof v === 'number' ? v : 0,
+                              })
+                            }
+                            style={{ width: 200 }}
+                          />
+                        </div>
+                        <Typography.Text type="tertiary">
+                          当前绑定：{JSON.stringify(selectedDsWidget.dataSource || { type: 'static' })}
+                        </Typography.Text>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </Card>
+          }
+        />
+        <Tabs.TabPane
+          tab="AI 生成"
+          itemKey="ai"
+          children={
+            <AIDashboardGenerate
+              onApply={handleApplyAIGenerated}
+            />
+          }
+        />
+        <Tabs.TabPane
+          tab="预览"
+          itemKey="preview"
+          children={
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(12, 1fr)',
+                gap: 12,
+              }}
+            >
+              {config.widgets.map((w) => (
+                <div key={w.id} style={{ gridColumn: `span ${w.position.w}` }}>
+                  {renderWidget(w)}
+                </div>
+              ))}
+            </div>
+          }
+        />
+      </Tabs>
 
       {previewing && (
         <Card
