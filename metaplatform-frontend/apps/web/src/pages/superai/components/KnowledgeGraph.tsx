@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Button, Select, Space, Typography, Tooltip, Tag, message } from 'antd';
+import { Button, Select, Space, Typography, Tooltip, Tag, Toast } from '@douyinfe/semi-ui';
 import {
   UndoOutlined,
   RedoOutlined,
@@ -388,7 +388,7 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
         const existingEdgeIds = new Set(data.edges.map((e) => e.id));
         const newEdges = sub.edges.filter((e) => !existingEdgeIds.has(e.id));
         if (newNodes.length === 0 && newEdges.length === 0) {
-          message.info('节点没有更多可展开的邻居');
+          Toast.info('节点没有更多可展开的邻居');
         } else {
           data.nodes.push(...newNodes);
           data.edges.push(...newEdges);
@@ -398,7 +398,7 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
             next.delete(nodeId);
             return next;
           });
-          message.success(`展开成功：新增 ${newNodes.length} 节点 / ${newEdges.length} 边`);
+          Toast.success(`展开成功：新增 ${newNodes.length} 节点 / ${newEdges.length} 边`);
         }
       } finally {
         setExpanding(false);
@@ -412,21 +412,21 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
     (format: ExportFormat) => {
       const graph = graphRef.current;
       if (!graph) {
-        message.error('图谱尚未初始化');
+        Toast.error('图谱尚未初始化');
         return;
       }
       if (format === 'json') {
         const json = graph.toJSON();
         const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
         downloadBlob(blob, `knowledge-graph-${Date.now()}.json`);
-        message.success('已导出 JSON');
+        Toast.success('已导出 JSON');
         return;
       }
       if (format === 'svg') {
         (graph as any).toSVG((svg: string) => {
           const blob = new Blob([svg], { type: 'image/svg+xml' });
           downloadBlob(blob, `knowledge-graph-${Date.now()}.svg`);
-          message.success('已导出 SVG');
+          Toast.success('已导出 SVG');
         });
         return;
       }
@@ -435,7 +435,7 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
         link.download = `knowledge-graph-${Date.now()}.png`;
         link.href = dataUrl;
         link.click();
-        message.success('已导出 PNG');
+        Toast.success('已导出 PNG');
       });
     },
     [],
@@ -455,14 +455,14 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
 
   return (
     <div>
-      <Space style={{ marginBottom: 8, flexWrap: 'wrap' }} size="small">
+      <Space style={{ marginBottom: 8, flexWrap: 'wrap' }} spacing="tight">
         <Typography.Text type="secondary">布局：</Typography.Text>
         <Select
           size="small"
           value={layout}
-          onChange={(v) => setLayout(v)}
+          onChange={(v) => setLayout(v as LayoutType)}
           style={{ width: 100 }}
-          options={[
+          optionList={[
             { label: '力导向', value: 'force' },
             { label: '环形', value: 'circular' },
             { label: '网格', value: 'grid' },
@@ -471,19 +471,19 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
         <Typography.Text type="secondary">类型：</Typography.Text>
         <Select
           size="small"
-          mode="multiple"
-          allowClear
+          multiple
+          showClear
           placeholder="全部"
           value={typeFilter}
-          onChange={(vals) => setTypeFilter(vals as string[])}
+          onChange={(vals) => setTypeFilter((vals as string[]) ?? [])}
           style={{ minWidth: 140 }}
-          options={[
+          optionList={[
             { label: '概念', value: 'concept' },
             { label: '实体', value: 'entity' },
             { label: '关系', value: 'relation' },
           ]}
         />
-        <Tooltip title="撤销 (Undo)">
+        <Tooltip content="撤销 (Undo)">
           <Button
             size="small"
             icon={<UndoOutlined />}
@@ -491,7 +491,7 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
             onClick={handleUndo}
           />
         </Tooltip>
-        <Tooltip title="重做 (Redo)">
+        <Tooltip content="重做 (Redo)">
           <Button
             size="small"
             icon={<RedoOutlined />}
@@ -499,20 +499,20 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
             onClick={handleRedo}
           />
         </Tooltip>
-        <Tooltip title="导出 PNG">
+        <Tooltip content="导出 PNG">
           <Button size="small" icon={<DownloadOutlined />} onClick={() => handleExport('png')} />
         </Tooltip>
-        <Tooltip title="导出 SVG">
+        <Tooltip content="导出 SVG">
           <Button size="small" onClick={() => handleExport('svg')}>
             SVG
           </Button>
         </Tooltip>
-        <Tooltip title="导出 JSON">
+        <Tooltip content="导出 JSON">
           <Button size="small" onClick={() => handleExport('json')}>
             JSON
           </Button>
         </Tooltip>
-        <Tooltip title={expanding ? '正在展开...' : '展开/折叠选中节点'}>
+        <Tooltip content={expanding ? '正在展开...' : '展开/折叠选中节点'}>
           <Button
             size="small"
             icon={selectedNode && expandedNodesRef.current.has(selectedNode) ? <CompressOutlined /> : <ExpandAltOutlined />}
@@ -521,7 +521,7 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
             onClick={() => selectedNode && handleExpand(selectedNode)}
           />
         </Tooltip>
-        <Tooltip title="重置视图">
+        <Tooltip content="重置视图">
           <Button
             size="small"
             icon={<ReloadOutlined />}
@@ -543,10 +543,10 @@ export default function KnowledgeGraph({ data, height = 400, width, onNodeClick 
           minWidth: 0,
           maxWidth: '100%',
           height,
-          border: '1px solid #f0f0f0',
+          border: '1px solid var(--border)',
           borderRadius: 8,
           overflow: 'hidden',
-          background: '#fafafa',
+          background: 'var(--muted)',
         }}
       />
       <Typography.Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>

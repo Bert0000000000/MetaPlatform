@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from 'react';
-import { Card, Empty, Progress, Space, Tag, Typography } from 'antd';
+import { useEffect, useState } from 'react';
+import { Card, Empty, Progress, Space, Tag, Typography } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 
 interface SubStep {
   id: string;
@@ -33,8 +34,8 @@ export default function ParallelExecutionPage() {
     return () => clearInterval(id);
   }, []);
 
-  const COLOR: Record<SubStep['status'], string> = {
-    pending: 'default',
+  const COLOR: Record<SubStep['status'], TagColor> = {
+    pending: 'grey',
     running: 'blue',
     completed: 'green',
     failed: 'red',
@@ -42,20 +43,23 @@ export default function ParallelExecutionPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>并行执行监控</Typography.Title>
+      <Typography.Title heading={4}>并行执行监控</Typography.Title>
       <Card>
         {steps.length === 0 ? (
           <Empty />
         ) : (
-          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+          <Space vertical spacing="medium" style={{ width: '100%' }}>
             {steps.map((s) => (
-              <Card key={s.id} type="inner" title={s.name}>
-                <Space orientation="vertical" style={{ width: '100%' }}>
+              <Card key={s.id} title={s.name}>
+                <Space vertical style={{ width: '100%' }}>
                   <Space>
                     <Tag color={COLOR[s.status]}>{s.status}</Tag>
                     {s.duration && <Tag>耗时 {s.duration}s</Tag>}
                   </Space>
-                  <Progress percent={Math.round(s.progress)} status={s.status === 'completed' ? 'success' : 'active'} />
+                  <Progress
+                    percent={Math.round(s.progress)}
+                    stroke={s.status === 'completed' ? 'var(--success)' : undefined}
+                  />
                 </Space>
               </Card>
             ))}

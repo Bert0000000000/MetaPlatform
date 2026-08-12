@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
-  Drawer,
-  Form,
+  SideSheet,
   Input,
   Select,
   Space,
   Table,
   Tag,
   Typography,
-  message,
-} from "antd";
-import type { ColumnsType } from "antd/es/table";
+  Toast,
+} from "@douyinfe/semi-ui";
+import type { TagColor } from "@douyinfe/semi-ui/lib/es/tag";
+import type { ColumnProps } from "@douyinfe/semi-ui/lib/es/table";
 import { ReloadOutlined, DownloadOutlined, EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import {
   auditLogsExportUrl,
@@ -25,23 +25,23 @@ import { formatDateTime } from "@/utils/datetime";
 import { useSettings } from "@/contexts/SettingsContext";
 import { apiClient } from "@/api/client";
 
+const { Text } = Typography;
 
-
-const ACTION_COLORS: Record<AuditAction, string> = {
+const ACTION_COLORS: Record<AuditAction, TagColor> = {
   CREATE: "green",
   UPDATE: "blue",
   DELETE: "red",
   ENABLE: "green",
-  DISABLE: "default",
+  DISABLE: "grey",
   RESET_PASSWORD: "purple",
   LOGIN: "cyan",
-  LOGOUT: "default",
+  LOGOUT: "grey",
   ASSIGN: "blue",
-  REVOKE: "volcano",
-  EXPORT: "geekblue",
-  CONFIG_CHANGE: "gold",
-  IMPORT: "gold",
-  OTHER: "default",
+  REVOKE: "red",
+  EXPORT: "indigo",
+  CONFIG_CHANGE: "yellow",
+  IMPORT: "yellow",
+  OTHER: "grey",
 };
 
 const ACTION_LABEL: Record<AuditAction, string> = {
@@ -60,6 +60,33 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   IMPORT: "导入",
   OTHER: "其他",
 };
+
+// 轻量搜索框（antd Input.Search 无 Semi 等价物：Enter 或点击放大镜触发）
+function SearchInput({
+  value,
+  onChange,
+  onSearch,
+  placeholder,
+  style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSearch: () => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onEnterPress={() => onSearch()}
+      showClear
+      suffix={<SearchOutlined style={{ cursor: "pointer" }} onClick={() => onSearch()} />}
+      style={{ maxWidth: 240, ...style }}
+    />
+  );
+}
 
 export default function LogsPage() {
   const { settings } = useSettings();
@@ -143,13 +170,13 @@ export default function LogsPage() {
       link.download = "audit-logs.csv";
       link.click();
       URL.revokeObjectURL(link.href);
-      message.success("已导出");
+      Toast.success("已导出");
     } catch {
-      message.error("导出失败");
+      Toast.error("导出失败");
     }
   };
 
-  const columns: ColumnsType<AdminAuditLog> = useMemo(
+  const columns: ColumnProps<AdminAuditLog>[] = useMemo(
     () => [
       {
         title: "时间",
@@ -164,7 +191,7 @@ export default function LogsPage() {
         title: "操作者",
         key: "actor",
         render: (_v, r) => (
-          <Space size={4}>
+          <Space spacing={4}>
             <span>{r.actorName || r.actorId}</span>
             {r.ip && <Tag style={{ fontFamily: "var(--font-mono)" }}>{r.ip}</Tag>}
           </Space>
@@ -175,7 +202,7 @@ export default function LogsPage() {
         title: "动作",
         dataIndex: "action",
         render: (v: AuditAction) => (
-          <Tag color={ACTION_COLORS[v] ?? "default"}>{ACTION_LABEL[v] ?? v}</Tag>
+          <Tag color={ACTION_COLORS[v] ?? "grey"}>{ACTION_LABEL[v] ?? v}</Tag>
         ),
       },
       {
@@ -194,7 +221,7 @@ export default function LogsPage() {
         key: "actions",
         width: 100,
         render: (_v, r) => (
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(r)}>
+          <Button theme="borderless" size="small" icon={<EyeOutlined />} onClick={() => openDetail(r)}>
             详情
           </Button>
         ),
@@ -231,10 +258,10 @@ export default function LogsPage() {
           </Button>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>
             导出 CSV
-        </Button>
-      </Space>
-    }
-  >
+          </Button>
+        </Space>
+      }
+    >
       <StatGrid>
         <StatCard label="总日志" value={total} />
         <StatCard label="今日日志" value={todayCount} color="warning" />
@@ -257,29 +284,27 @@ export default function LogsPage() {
           flexWrap: "wrap",
         }}
       >
-        <Input.Search
+        <SearchInput
           placeholder="按操作者搜索"
-          allowClear
           value={actor}
-          onChange={(e) => setActor(e.target.value)}
+          onChange={(v) => setActor(v)}
           onSearch={() => { setPage(1); load(); }}
-          style={{ maxWidth: 240 }}
         />
         <Select
           placeholder="模块"
           value={moduleFilter}
-          onChange={(v) => { setModuleFilter(v); setPage(1); }}
-          allowClear
+          onChange={(v) => { setModuleFilter(v as string | undefined); setPage(1); }}
+          showClear
           style={{ width: 140 }}
-          options={Array.isArray(modules) ? modules.map((m) => ({ value: m.value, label: m.value + " (" + m.count + ")" })) : []}
+          optionList={Array.isArray(modules) ? modules.map((m) => ({ value: m.value, label: m.value + " (" + m.count + ")" })) : []}
         />
         <Select
           placeholder="动作"
           value={actionFilter}
-          onChange={(v) => { setActionFilter(v as AuditAction); setPage(1); }}
-          allowClear
+          onChange={(v) => { setActionFilter(v as AuditAction | undefined); setPage(1); }}
+          showClear
           style={{ width: 140 }}
-          options={Array.isArray(actions) ? actions.map((a) => ({ value: a.value, label: a.value + " (" + a.count + ")" })) : []}
+          optionList={Array.isArray(actions) ? actions.map((a) => ({ value: a.value, label: a.value + " (" + a.count + ")" })) : []}
         />
         <input
           type="datetime-local"
@@ -294,7 +319,7 @@ export default function LogsPage() {
           onChange={(e) => setDateRange([dateRange?.[0] ?? "", e.target.value ? new Date(e.target.value).toISOString() : ""])}
           style={{ background: "var(--muted)", border: "1px solid var(--border)", borderRadius: 4, padding: "6px 8px", color: "var(--foreground)" }}
         />
-        <Button type="primary" icon={<SearchOutlined />} onClick={() => { setPage(1); load(); }}>
+        <Button theme="solid" type="primary" icon={<SearchOutlined />} onClick={() => { setPage(1); load(); }}>
           查询
         </Button>
         <Button
@@ -319,41 +344,64 @@ export default function LogsPage() {
           columns={columns}
           dataSource={items ?? []}
           pagination={{
-            current: page,
+            currentPage: page,
             pageSize,
             total,
             showSizeChanger: true,
-            onChange: (p, ps) => { setPage(p); setPageSize(ps); },
+            onPageChange: (p) => setPage(p),
+            onPageSizeChange: (ps) => setPageSize(ps),
           }}
           size="middle"
         />
       </div>
-      <Drawer
+      <SideSheet
         title={detail ? "日志详情 #" + detail.id : ""}
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        size={620}
+        visible={detailOpen}
+        onCancel={() => setDetailOpen(false)}
+        width={620}
       >
         {detail && (
-          <Form layout="vertical" size="small">
-            <Form.Item label="时间">{formatDateTime(detail.occurredAt, settings)}</Form.Item>
-            <Form.Item label="操作者">{detail.actorName} ({detail.actorId})</Form.Item>
-            <Form.Item label="模块"><Tag>{detail.module}</Tag></Form.Item>
-            <Form.Item label="动作">
-              <Tag color={ACTION_COLORS[detail.action] ?? "default"}>{ACTION_LABEL[detail.action] ?? detail.action}</Tag>
-            </Form.Item>
-            <Form.Item label="资源">
-              {detail.resourceType && <Tag>{detail.resourceType}</Tag>}
-              {detail.resourceName} <span style={{ color: "var(--muted-foreground)" }}>#{detail.resourceId}</span>
-            </Form.Item>
-            <Form.Item label="摘要">{detail.summary || "-"}</Form.Item>
-            <Form.Item label="IP / UA">
-              <Typography.Text code>{detail.ip ?? "-"}</Typography.Text>
-              <div style={{ color: "var(--muted-foreground)", fontSize: 12, marginTop: 4 }}>
-                {detail.userAgent || "-"}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>时间</div>
+              <div>{formatDateTime(detail.occurredAt, settings)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>操作者</div>
+              <div>{detail.actorName} ({detail.actorId})</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>模块</div>
+              <div><Tag>{detail.module}</Tag></div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>动作</div>
+              <div>
+                <Tag color={ACTION_COLORS[detail.action] ?? "grey"}>{ACTION_LABEL[detail.action] ?? detail.action}</Tag>
               </div>
-            </Form.Item>
-            <Form.Item label="详情 (JSON)">
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>资源</div>
+              <div>
+                {detail.resourceType && <Tag>{detail.resourceType}</Tag>}
+                {detail.resourceName} <span style={{ color: "var(--muted-foreground)" }}>#{detail.resourceId}</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>摘要</div>
+              <div>{detail.summary || "-"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>IP / UA</div>
+              <div>
+                <Text code>{detail.ip ?? "-"}</Text>
+                <div style={{ color: "var(--muted-foreground)", fontSize: 12, marginTop: 4 }}>
+                  {detail.userAgent || "-"}
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>详情 (JSON)</div>
               <pre
                 style={{
                   background: "var(--muted)",
@@ -362,14 +410,15 @@ export default function LogsPage() {
                   fontSize: 12,
                   overflow: "auto",
                   maxHeight: 300,
+                  margin: 0,
                 }}
               >
                 {detail.detail ? JSON.stringify(JSON.parse(detail.detail), null, 2) : "-"}
               </pre>
-            </Form.Item>
-          </Form>
+            </div>
+          </div>
         )}
-      </Drawer>
+      </SideSheet>
     </AdminLayout>
   );
 }

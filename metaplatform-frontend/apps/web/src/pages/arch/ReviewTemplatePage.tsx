@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Space, Form, Input, Tag, message, Popconfirm, Typography } from 'antd';
+import { Table, Button, Space, Form, Input, Tag, Toast, Popconfirm, Typography } from '@douyinfe/semi-ui';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import {
   listReviewTemplates,
@@ -46,7 +46,7 @@ export default function ReviewTemplatePage() {
     (experts || []).map((e) => `${e.userId},${e.name}${e.role ? `,${e.role}` : ''}`).join('\n');
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     const payload: Partial<ReviewTemplate> = {
       ...values,
       dimensions: buildDimensions(values.dimensions as unknown as string),
@@ -56,14 +56,14 @@ export default function ReviewTemplatePage() {
     try {
       if (editing) {
         await updateReviewTemplate(editing.id, payload);
-        message.success('更新成功');
+        Toast.success('更新成功');
       } else {
         await createReviewTemplate(payload);
-        message.success('创建成功');
+        Toast.success('创建成功');
       }
       setModalOpen(false);
       setEditing(null);
-      form.resetFields();
+      form.reset();
       load();
     } finally {
       setSubmitting(false);
@@ -108,12 +108,13 @@ export default function ReviewTemplatePage() {
       render: (_: unknown, r: ReviewTemplate) => (
         <Space>
           <Button
-            type="link"
+            theme="borderless"
+            type="primary"
             size="small"
             icon={<EditOutlined />}
             onClick={() => {
               setEditing(r);
-              form.setFieldsValue({
+              form.setValues({
                 ...r,
                 dimensions: dimensionsToText(r.dimensions),
                 experts: expertsToText(r.experts),
@@ -125,9 +126,9 @@ export default function ReviewTemplatePage() {
           </Button>
           <Popconfirm
             title="确认删除？"
-            onConfirm={async () => { await deleteReviewTemplate(r.id); message.success('已删除'); load(); }}
+            onConfirm={async () => { await deleteReviewTemplate(r.id); Toast.success('已删除'); load(); }}
           >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -138,7 +139,7 @@ export default function ReviewTemplatePage() {
     <SectionCard
       title="评审模板与专家组"
       extra={(
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.reset(); setModalOpen(true); }}>
           新增模板
         </Button>
       )}
@@ -157,19 +158,17 @@ export default function ReviewTemplatePage() {
         title={editing ? '编辑评审模板' : '新增评审模板'}
         form={form}
         onSubmit={handleSubmit}
-        onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }}
+        onCancel={() => { setModalOpen(false); setEditing(null); form.reset(); }}
         submitting={submitting}
         width={640}
       >
-        <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-        <Form.Item name="code" label="编码" rules={[{ required: true }]}><Input /></Form.Item>
-        <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
-        <Form.Item name="dimensions" label="评审维度（每行一个维度）">
-          <Input.TextArea rows={4} placeholder={'可扩展性\n可维护性\n安全性'} />
-        </Form.Item>
-        <Form.Item name="experts" label="专家组（每行：userId,姓名,角色）">
-          <Input.TextArea rows={4} placeholder={'arch-1,张三,架构师\nsecurity-1,李四,安全专家'} />
-        </Form.Item>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Input field="code" label="编码" rules={[{ required: true }]} />
+          <Form.TextArea field="description" label="描述" rows={2} />
+          <Form.TextArea field="dimensions" label="评审维度（每行一个维度）" rows={4} placeholder={'可扩展性\n可维护性\n安全性'} />
+          <Form.TextArea field="experts" label="专家组（每行：userId,姓名,角色）" rows={4} placeholder={'arch-1,张三,架构师\nsecurity-1,李四,安全专家'} />
+        </Form>
       </FormModal>
     </SectionCard>
   );

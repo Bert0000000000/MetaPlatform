@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Button, Input, Typography } from 'antd';
-import type { MenuProps } from 'antd';
+import { Button, Input, Typography } from '@douyinfe/semi-ui';
 import { Conversations } from '@ant-design/x';
 import type { ConversationItemType, ItemType } from '@ant-design/x/es/conversations/interface';
 import {
@@ -58,7 +57,7 @@ export default function HistorySidebar({
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {s.title}
             </span>
-            {s.favorite && <StarFilled style={{ color: '#faad14', fontSize: 12 }} />}
+            {s.favorite && <StarFilled style={{ color: 'var(--warning)', fontSize: 12 }} />}
           </div>
         ),
         icon: <MessageOutlined />,
@@ -80,22 +79,23 @@ export default function HistorySidebar({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
-      <Button type="primary" icon={<PlusOutlined />} block onClick={onNew}>
+      <Button theme="solid" type="primary" icon={<PlusOutlined />} block onClick={onNew}>
         新建会话
       </Button>
 
       <Input
         placeholder="搜索会话..."
         prefix={<SearchOutlined />}
-        allowClear
+        showClear
         value={searchKeyword}
-        onChange={(e) => setSearchKeyword(e.target.value)}
+        onChange={(v) => setSearchKeyword(v)}
         size="small"
       />
 
       <Button
         size="small"
-        type={showFavoritesOnly ? 'primary' : 'default'}
+        theme={showFavoritesOnly ? 'solid' : 'light'}
+        type="primary"
         icon={showFavoritesOnly ? <StarFilled /> : <StarOutlined />}
         onClick={() => setShowFavoritesOnly((v) => !v)}
         block
@@ -123,7 +123,7 @@ export default function HistorySidebar({
               },
             ],
             onClick: (info) => handleMenuClick(info, conversation.key),
-          } satisfies MenuProps)}
+          })}
         />
       </div>
 

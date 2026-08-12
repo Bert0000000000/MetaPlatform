@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Table, Tag, Button, Spin } from 'antd';
+import { Button, Card, Empty, Spin, Table, Tag } from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { ReloadOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
 import { getEmployeeOperationLogs } from '@/api/dw/employees';
 import type { EmployeeOperationLog } from '@/api/dw/types';
+
+type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
 
 interface OperationLogPanelProps {
   employeeId: string;
@@ -31,7 +33,7 @@ export default function OperationLogPanel({ employeeId }: OperationLogPanelProps
     load();
   }, [employeeId]);
 
-  const columns: ColumnsType<EmployeeOperationLog> = [
+  const columns: SemiColumns<EmployeeOperationLog> = [
     { title: '操作人', dataIndex: 'actor', width: 100 },
     { title: '动作', dataIndex: 'action', width: 100 },
     { title: '资源', dataIndex: 'resource', width: 120 },
@@ -65,7 +67,7 @@ export default function OperationLogPanel({ employeeId }: OperationLogPanelProps
     return (
       <Card
         title="操作日志"
-        extra={
+        headerExtraContent={
           <Button icon={<ReloadOutlined />} onClick={load} size="small">
             重试
           </Button>
@@ -79,7 +81,7 @@ export default function OperationLogPanel({ employeeId }: OperationLogPanelProps
   return (
     <Card
       title="操作日志"
-      extra={<Button icon={<ReloadOutlined />} onClick={load} size="small">刷新</Button>}
+      headerExtraContent={<Button icon={<ReloadOutlined />} onClick={load} size="small">刷新</Button>}
     >
       {logs.length === 0 ? (
         <Empty description="暂无操作日志" />

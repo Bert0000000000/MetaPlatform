@@ -1,4 +1,4 @@
-import { Card, Tag, Typography, Space, Empty } from 'antd';
+import { Card, Empty, Space, Tag, Typography } from '@douyinfe/semi-ui';
 import { LinkOutlined } from '@ant-design/icons';
 
 interface TraceLinkViewerProps {
@@ -28,7 +28,7 @@ export default function TraceLinkViewer({ traceId }: TraceLinkViewerProps) {
   return (
     <Card title={`Trace 链路 - ${traceId}`}>
       <Space style={{ marginBottom: 12 }}>
-        <Typography.Text type="secondary">
+        <Typography.Text type="tertiary">
           完整分布式追踪日志请前往{' '}
           <a href="#" target="_blank" rel="noreferrer">
             <LinkOutlined /> TECH-OBS
@@ -43,16 +43,16 @@ export default function TraceLinkViewer({ traceId }: TraceLinkViewerProps) {
             style={{
               padding: 8,
               marginBottom: 4,
-              borderLeft: `4px solid ${s.status === 'ok' ? '#52c41a' : '#f5222d'}`,
-              background: '#fafafa',
+              borderLeft: `4px solid ${s.status === 'ok' ? 'var(--semi-color-success)' : 'var(--semi-color-danger)'}`,
+              background: 'var(--semi-color-fill-0)',
               borderRadius: 4,
             }}
           >
             <Space>
               <Tag color="blue">{s.service}</Tag>
               <Typography.Text strong>{s.name}</Typography.Text>
-              <Tag color={s.status === 'ok' ? 'success' : 'error'}>{s.status}</Tag>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Tag color={s.status === 'ok' ? 'green' : 'red'}>{s.status}</Tag>
+              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                 {s.duration}ms
               </Typography.Text>
             </Space>

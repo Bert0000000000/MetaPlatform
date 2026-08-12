@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Empty, Input, Space, Typography, message } from 'antd';
+import { Button, Card, Empty, Input, Space, Typography, Toast } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined, FileTextOutlined } from '@ant-design/icons';
 import { aggregateResults } from '@/api/superai/schedule';
 
@@ -10,7 +10,7 @@ export default function ResultSummaryPage() {
 
   const handleGenerate = async () => {
     if (!execId.trim()) {
-      message.warning('请输入 Execution ID');
+      Toast.warning('请输入 Execution ID');
       return;
     }
     setLoading(true);
@@ -24,17 +24,18 @@ export default function ResultSummaryPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>执行结果汇总</Typography.Title>
+      <Typography.Title heading={4}>执行结果汇总</Typography.Title>
 
       <Card style={{ marginBottom: 16 }}>
         <Space>
           <Input
             value={execId}
-            onChange={(e) => setExecId(e.target.value)}
+            onChange={(v) => setExecId(v)}
             style={{ width: 320 }}
             placeholder="Execution ID"
           />
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={loading}
@@ -57,7 +58,7 @@ export default function ResultSummaryPage() {
 }
 
 const codeStyle: React.CSSProperties = {
-  background: '#fafafa',
+  background: 'var(--muted)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

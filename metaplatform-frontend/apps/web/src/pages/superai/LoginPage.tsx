@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { Form, Input, Button, Card, Typography, Toast } from '@douyinfe/semi-ui';
 import { login } from '@/api/superai/auth';
 import type { LoginRequest } from '@/api/superai/types';
 
@@ -12,7 +12,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(values);
-      message.success('登录成功');
+      Toast.success('登录成功');
       navigate('/chat');
     } finally {
       setLoading(false);
@@ -26,44 +26,39 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f5f5f5',
+        background: 'var(--background)',
       }}
     >
       <Card style={{ width: 400 }}>
-        <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
+        <Typography.Title heading={3} style={{ textAlign: 'center', marginBottom: 24 }}>
           SuperAI
         </Typography.Title>
-        <Form<LoginRequest>
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{ tenantId: 'default' }}
+        <Form
+          onSubmit={handleSubmit}
+          initValues={{ tenantId: 'default' }}
         >
-          <Form.Item
-            name="tenantId"
+          <Form.Input
+            field="tenantId"
             label="租户 ID"
             rules={[{ required: true, message: '请输入租户 ID' }]}
-          >
-            <Input placeholder="例如：default" />
-          </Form.Item>
-          <Form.Item
-            name="username"
+            placeholder="例如：default"
+          />
+          <Form.Input
+            field="username"
             label="用户名"
             rules={[{ required: true, message: '请输入用户名' }]}
-          >
-            <Input placeholder="请输入用户名" />
-          </Form.Item>
-          <Form.Item
-            name="password"
+            placeholder="请输入用户名"
+          />
+          <Form.Input
+            field="password"
             label="密码"
+            mode="password"
             rules={[{ required: true, message: '请输入密码' }]}
-          >
-            <Input.Password placeholder="请输入密码" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
-              登录
-            </Button>
-          </Form.Item>
+            placeholder="请输入密码"
+          />
+          <Button theme="solid" type="primary" htmlType="submit" loading={loading} block>
+            登录
+          </Button>
         </Form>
       </Card>
     </div>

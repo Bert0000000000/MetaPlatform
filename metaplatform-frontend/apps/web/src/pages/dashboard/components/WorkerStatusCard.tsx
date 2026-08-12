@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Card, Tag, Typography, Space, Empty, Button, Statistic, Row, Col } from 'antd';
+import { Card, Tag, Typography, Space, Empty, Button } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { ArrowRightOutlined, RobotOutlined } from '@ant-design/icons';
 import { getEmployeeStatus } from '@/api/dashboard/employees';
 import type { WorkerStatus } from '@/api/dashboard/types';
+
+const { Text } = Typography;
 
 export default function WorkerStatusCard() {
   const [workers, setWorkers] = useState<WorkerStatus[]>([]);
@@ -32,22 +35,36 @@ export default function WorkerStatusCard() {
   return (
     <Card
       title="数字员工状态"
-      extra={<Button type="text" icon={<ArrowRightOutlined />} onClick={handleJumpToDW} />}
+      headerExtraContent={
+        <Button theme="borderless" icon={<ArrowRightOutlined />} onClick={handleJumpToDW} />
+      }
       loading={loading}
     >
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={8}>
-          <Statistic title="在线员工" value={activeCount} prefix={<RobotOutlined />} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 4 }}>在线员工</div>
+            <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--foreground)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <RobotOutlined style={{ fontSize: 20, color: 'var(--muted-foreground)' }} />
+              {activeCount}
+            </div>
+          </div>
         </Col>
         <Col span={8}>
-          <Statistic title="运行中任务" value={totalRunning} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 4 }}>运行中任务</div>
+            <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--foreground)' }}>{totalRunning}</div>
+          </div>
         </Col>
         <Col span={8}>
-          <Statistic title="今日完成" value={workers.reduce((s, w) => s + w.completedToday, 0)} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 4 }}>今日完成</div>
+            <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--foreground)' }}>{workers.reduce((s, w) => s + w.completedToday, 0)}</div>
+          </div>
         </Col>
       </Row>
       {workers.length === 0 ? (
-        <Empty description="暂无数字员工" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description="暂无数字员工" />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {workers.slice(0, 5).map((w) => (
@@ -59,30 +76,30 @@ export default function WorkerStatusCard() {
                 justifyContent: 'space-between',
                 gap: 12,
                 padding: '8px 0',
-                borderBottom: '1px solid #f0f0f0',
+                borderBottom: '1px solid var(--border)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
                 <div style={{ flexShrink: 0 }}>
-                  <RobotOutlined style={{ fontSize: 24, color: w.status === 'ACTIVE' ? '#52c41a' : '#999' }} />
+                  <RobotOutlined style={{ fontSize: 24, color: w.status === 'ACTIVE' ? 'var(--success)' : 'var(--muted-foreground)' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div>
-                    <Space>
-                      <Typography.Text strong>{w.name}</Typography.Text>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{w.code}</Typography.Text>
+                    <Space spacing={8}>
+                      <Text strong>{w.name}</Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>{w.code}</Text>
                     </Space>
                   </div>
-                  <div style={{ color: '#999', fontSize: 12 }}>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <div style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
                       运行中 {w.runningTasks} · 今日完成 {w.completedToday}
                       {w.lastActiveAt && ` · 最后活跃 ${new Date(w.lastActiveAt).toLocaleString('zh-CN')}`}
-                    </Typography.Text>
+                    </Text>
                   </div>
                 </div>
               </div>
               <div style={{ flexShrink: 0 }}>
-                <Tag color={w.status === 'ACTIVE' ? 'green' : 'default'}>
+                <Tag color={w.status === 'ACTIVE' ? 'green' : 'grey'}>
                   {w.status === 'ACTIVE' ? '在线' : '离线'}
                 </Tag>
               </div>

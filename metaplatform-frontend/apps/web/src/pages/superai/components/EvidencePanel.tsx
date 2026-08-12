@@ -1,4 +1,3 @@
-import { Tag, Typography } from 'antd';
 import type { Claim, Evidence } from '@/api/superai/types';
 
 /**
@@ -8,7 +7,7 @@ import type { Claim, Evidence } from '@/api/superai/types';
  * - Claims：事实 / 推断 / 建议，带置信度。
  * - Evidence：知识库文档（DOCUMENT）与本体关系（ONTOLOGY_OBJECT）等。
  *
- * 深色主题配色，与聊天卡片一致。
+ * 配色跟随主题（深浅色自动切换）。
  */
 
 const CLAIM_META: Record<Claim['type'], { color: string; label: string }> = {
@@ -41,13 +40,13 @@ export default function EvidencePanel({
       {claims && claims.length > 0 && (
         <div
           style={{
-            background: '#1a1a1a',
-            border: '1px solid #262626',
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
             borderRadius: 6,
             padding: 10,
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#a1a1a1', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
             关键论断
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -69,10 +68,10 @@ export default function EvidencePanel({
                   >
                     {meta.label}
                   </span>
-                  <span style={{ fontSize: 13, lineHeight: 1.6, color: '#fafafa' }}>
+                  <span style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--foreground)' }}>
                     {c.content}
                     {c.confidence != null && (
-                      <span style={{ marginLeft: 6, color: '#a1a1a1', fontSize: 11 }}>
+                      <span style={{ marginLeft: 6, color: 'var(--muted-foreground)', fontSize: 11 }}>
                         · {(c.confidence * 100).toFixed(0)}%
                       </span>
                     )}
@@ -88,13 +87,13 @@ export default function EvidencePanel({
       {evidence && evidence.length > 0 && (
         <div
           style={{
-            background: '#1a1a1a',
-            border: '1px solid #262626',
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
             borderRadius: 6,
             padding: 10,
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#a1a1a1', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
             证据
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -104,28 +103,28 @@ export default function EvidencePanel({
                 <div
                   key={e.evidenceId ?? i}
                   style={{
-                    border: '1px solid #262626',
+                    border: '1px solid var(--border)',
                     borderRadius: 4,
                     padding: '4px 10px',
                     fontSize: 12,
-                    color: '#d4d4d4',
-                    background: '#141414',
+                    color: 'var(--muted-foreground)',
+                    background: 'var(--muted)',
                     maxWidth: 320,
                   }}
                 >
                   <span style={{ color: meta.color, fontWeight: 600, marginRight: 6 }}>
                     {meta.label}
                   </span>
-                  <span>{e.title ?? e.ref}</span>
+                  <span style={{ color: 'var(--foreground)' }}>{e.title ?? e.ref}</span>
                   {e.score != null && (
-                    <span style={{ marginLeft: 6, color: '#a1a1a1', fontSize: 11 }}>
+                    <span style={{ marginLeft: 6, color: 'var(--muted-foreground)', fontSize: 11 }}>
                       {Math.round(e.score * 100)}%
                     </span>
                   )}
                   {e.fragment && (
                     <div
                       style={{
-                        color: '#a1a1a1',
+                        color: 'var(--muted-foreground)',
                         fontSize: 11,
                         marginTop: 2,
                         overflow: 'hidden',

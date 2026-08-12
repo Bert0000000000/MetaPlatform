@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   Card,
@@ -9,27 +9,28 @@ import {
   Space,
   Tag,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
 import { PlayCircleOutlined } from '@ant-design/icons';
 import { startExecution } from '@/api/superai/schedule';
 import type { ScheduleExecution } from '@/api/superai/schedule';
 
 export default function ScheduleExecutionPage() {
-  const [planId, setPlanId] = useState('');
+  const [form] = Form.useForm();
   const [exec, setExec] = useState<ScheduleExecution | null>(null);
   const [running, setRunning] = useState(false);
 
   const handleStart = async () => {
+    const planId = String(form.getValues().planId ?? '');
     if (!planId.trim()) {
-      message.warning('请输入 Plan ID');
+      Toast.warning('请输入 Plan ID');
       return;
     }
     setRunning(true);
     try {
       const e = await startExecution(planId);
       setExec(e);
-      message.success('已启动');
+      Toast.success('已启动');
       let progress = 0;
       const interval = setInterval(() => {
         progress += Math.random() * 15;
@@ -48,14 +49,18 @@ export default function ScheduleExecutionPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>执行面板</Typography.Title>
+      <Typography.Title heading={4}>执行面板</Typography.Title>
 
       <Card style={{ marginBottom: 16 }}>
-        <Form layout="vertical">
-          <Form.Item label="Plan ID">
-            <Input value={planId} onChange={(e) => setPlanId(e.target.value)} />
-          </Form.Item>
+        <Form form={form}>
+          <Form.Input
+            field="planId"
+            label="Plan ID"
+            initValue=""
+            placeholder="请输入 Plan ID"
+          />
           <Button
+            theme="solid"
             type="primary"
             icon={<PlayCircleOutlined />}
             loading={running}
@@ -68,9 +73,12 @@ export default function ScheduleExecutionPage() {
 
       {exec ? (
         <Card title={`Execution #${exec.executionId}`}>
-          <Space orientation="vertical" style={{ width: '100%' }}>
+          <Space vertical style={{ width: '100%' }}>
             <Tag color={exec.status === 'completed' ? 'green' : 'blue'}>{exec.status}</Tag>
-            <Progress percent={Math.round(exec.progress)} status={exec.status === 'completed' ? 'success' : 'active'} />
+            <Progress
+              percent={Math.round(exec.progress)}
+              stroke={exec.status === 'completed' ? 'var(--success)' : undefined}
+            />
           </Space>
         </Card>
       ) : (

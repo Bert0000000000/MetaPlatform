@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Card, Table, Tag, Select, Space, Statistic, Row, Col } from 'antd';
+import { Card, Table, Tag, Select, Space } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import axios from 'axios';
 
 /**
@@ -15,12 +16,18 @@ export default function VersionDiffPage() {
     axios.get(`/api/v1/ont/diff?toVersion=${toVersion}`).then(r => setDiffs(r.data?.data ?? []));
   }, [toVersion]);
 
+  const statCards = [
+    { title: '新增条目', value: diffs.filter(d => d.diffType.includes('ADDED')).length },
+    { title: '修改条目', value: diffs.filter(d => d.diffType.includes('MODIFIED')).length },
+    { title: '删除条目', value: diffs.filter(d => d.diffType.includes('REMOVED')).length },
+  ];
+
   return (
     <div style={{ padding: 24 }}>
       <Card title="Ontology 版本差异">
         <Space style={{ marginBottom: 16 }}>
           <span>查看版本：</span>
-          <Select value={toVersion} onChange={setToVersion} options={[
+          <Select value={toVersion} onChange={(v) => setToVersion(v as string)} optionList={[
             { value: 'v1', label: 'v1 (基线)' },
             { value: 'v2', label: 'v2' },
             { value: 'v3', label: 'v3' },
@@ -28,9 +35,12 @@ export default function VersionDiffPage() {
         </Space>
 
         <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={8}><Statistic title="新增条目" value={diffs.filter(d => d.diffType.includes('ADDED')).length} /></Col>
-          <Col span={8}><Statistic title="修改条目" value={diffs.filter(d => d.diffType.includes('MODIFIED')).length} /></Col>
-          <Col span={8}><Statistic title="删除条目" value={diffs.filter(d => d.diffType.includes('REMOVED')).length} /></Col>
+          {statCards.map((s) => (
+            <Col key={s.title} span={8}>
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{s.title}</div>
+              <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{s.value}</div>
+            </Col>
+          ))}
         </Row>
 
         <Table

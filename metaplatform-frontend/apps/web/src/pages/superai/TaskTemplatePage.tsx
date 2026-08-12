@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -9,10 +9,10 @@ import {
   Space,
   Table,
   Typography,
-  message,
+  Toast,
   Popconfirm,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createTemplate, listTemplates } from '@/api/superai/templates';
 import type { ScheduleTemplate } from '@/api/superai/schedule';
@@ -38,7 +38,7 @@ export default function TaskTemplatePage() {
   }, []);
 
   const handleSubmit = async () => {
-    const v = await form.validateFields();
+    const v = await form.validate();
     setSubmitting(true);
     try {
       await createTemplate({
@@ -54,21 +54,21 @@ export default function TaskTemplatePage() {
         },
         createdBy: 'admin',
       });
-      message.success('已创建');
+      Toast.success('已创建');
       setEditorOpen(false);
-      form.resetFields();
+      form.reset();
       load();
     } finally {
       setSubmitting(false);
     }
   };
 
-  const columns: ColumnsType<ScheduleTemplate> = [
+  const columns: ColumnProps<ScheduleTemplate>[] = [
     {
       title: '模板',
       key: 'name',
       render: (_, t) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>{t.name}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t.description}</Typography.Text>
         </Space>
@@ -85,9 +85,9 @@ export default function TaskTemplatePage() {
       key: 'actions',
       render: (_, _t) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />}>编辑</Button>
+          <Button theme="borderless" icon={<EditOutlined />}>编辑</Button>
           <Popconfirm title="确定删除？">
-            <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button theme="borderless" type="danger" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -97,10 +97,10 @@ export default function TaskTemplatePage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           任务模板
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditorOpen(true)}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setEditorOpen(true)}>
           创建模板
         </Button>
       </div>
@@ -114,23 +114,16 @@ export default function TaskTemplatePage() {
       </Card>
 
       <Modal
-        open={editorOpen}
+        visible={editorOpen}
         title="创建任务模板"
         onCancel={() => setEditorOpen(false)}
         onOk={handleSubmit}
         confirmLoading={submitting}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="intentPattern" label="意图模式" extra="示例：每周一上午汇总销售数据">
-            <Input />
-          </Form.Item>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.TextArea field="description" label="描述" rows={2} />
+          <Form.Input field="intentPattern" label="意图模式" extraText="示例：每周一上午汇总销售数据" />
         </Form>
       </Modal>
     </div>

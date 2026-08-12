@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -10,9 +10,10 @@ import {
   Table,
   Tag,
   Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EyeOutlined, MessageOutlined } from '@ant-design/icons';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { PlusOutlined, EyeOutlined, MessageOutlined, SearchOutlined } from '@ant-design/icons';
 import { listTasks, getTaskStats } from '@/api/dw/tasks';
 import { listEmployees } from '@/api/dw/employees';
 import { recordFeedback } from '@/api/dw/learning';
@@ -20,12 +21,14 @@ import TaskAssignment from './components/TaskAssignment';
 import TaskFeedbackModal from './components/TaskFeedbackModal';
 import type { Employee, EmployeeTask, ExecutionResult, FeedbackType } from '@/api/dw/types';
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pending: { label: '待处理', color: 'default' },
+type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
+
+const STATUS_MAP: Record<string, { label: string; color: TagColor }> = {
+  pending: { label: '待处理', color: 'grey' },
   running: { label: '运行中', color: 'blue' },
   completed: { label: '已完成', color: 'green' },
   failed: { label: '失败', color: 'red' },
-  cancelled: { label: '已取消', color: 'default' },
+  cancelled: { label: '已取消', color: 'grey' },
   in_progress: { label: '运行中', color: 'blue' },
   done: { label: '已完成', color: 'green' },
   error: { label: '失败', color: 'red' },
@@ -37,6 +40,7 @@ export default function TaskListPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [keywordInput, setKeywordInput] = useState('');
   const [status, setStatus] = useState<string>();
   const [employeeId, setEmployeeId] = useState<string>();
   const [feedbackTask, setFeedbackTask] = useState<EmployeeTask | null>(null);
@@ -63,14 +67,14 @@ export default function TaskListPage() {
     load();
   }, [employeeId]);
 
-  const columns: ColumnsType<EmployeeTask> = [
+  const columns: SemiColumns<EmployeeTask> = [
     {
       title: '任务',
       key: 'title',
       render: (_, t) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>{t.title}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
             {t.description}
           </Typography.Text>
         </Space>
@@ -80,7 +84,7 @@ export default function TaskListPage() {
       title: '状态',
       dataIndex: 'status',
       render: (v) => {
-        const s = STATUS_MAP[v as string] ?? { label: v, color: 'default' };
+        const s = STATUS_MAP[v as string] ?? { label: v, color: 'grey' as TagColor };
         return <Tag color={s.color}>{s.label}</Tag>;
       },
     },
@@ -88,7 +92,7 @@ export default function TaskListPage() {
       title: '优先级',
       dataIndex: 'priority',
       render: (v) => (
-        <Tag color={v === 'high' ? 'red' : v === 'medium' ? 'orange' : 'default'}>{v}</Tag>
+        <Tag color={v === 'high' ? 'red' : v === 'medium' ? 'orange' : 'grey'}>{v}</Tag>
       ),
     },
     {
@@ -106,11 +110,11 @@ export default function TaskListPage() {
       key: 'actions',
       render: (_, t) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/agents/tasks/${t.id}`)}>
+          <Button theme="borderless" icon={<EyeOutlined />} onClick={() => navigate(`/agents/tasks/${t.id}`)}>
             详情
           </Button>
           <Button
-            type="link"
+            theme="borderless"
             icon={<MessageOutlined />}
             onClick={() => setFeedbackTask(t)}
           >
@@ -154,10 +158,10 @@ export default function TaskListPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           任务列表
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/tasks/create')}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/tasks/create')}>
           创建任务
         </Button>
       </div>
@@ -167,22 +171,32 @@ export default function TaskListPage() {
           placeholder="选择数字员工"
           style={{ width: 200 }}
           value={employeeId}
-          onChange={setEmployeeId}
-          options={employees.map((e) => ({ label: e.name, value: e.employeeId }))}
+          onChange={(v) => setEmployeeId(v as string | undefined)}
+          optionList={employees.map((e) => ({ label: e.name, value: e.employeeId }))}
         />
-        <Input.Search
+        <Input
+          showClear
           placeholder="搜索任务"
-          allowClear
-          onSearch={setKeyword}
+          value={keywordInput}
+          onChange={(v: string) => setKeywordInput(v)}
+          onEnterPress={() => setKeyword(keywordInput)}
+          suffix={
+            <Button
+              theme="borderless"
+              size="small"
+              icon={<SearchOutlined />}
+              onClick={() => setKeyword(keywordInput)}
+            />
+          }
           style={{ width: 240 }}
         />
         <Select
           placeholder="状态"
-          allowClear
+          showClear
           style={{ width: 140 }}
           value={status}
-          onChange={setStatus}
-          options={[
+          onChange={(v) => setStatus(v as string | undefined)}
+          optionList={[
             { label: '待处理', value: 'pending' },
             { label: '运行中', value: 'running' },
             { label: '已完成', value: 'completed' },

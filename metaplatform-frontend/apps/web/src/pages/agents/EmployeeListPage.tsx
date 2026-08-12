@@ -1,25 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Avatar,
   Button,
   Card,
   Empty,
-  Select,
-  Space,
-  Tag,
-  Typography,
-  App,
   Popconfirm,
   Dropdown,
-  Avatar,
-  Row,
-  Col,
-  Table,
-  Badge,
-  Result,
   Input,
+  Select,
+  Space,
   Spin,
-} from 'antd';
+  Table,
+  Tag,
+  Toast,
+  Typography,
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlusOutlined,
   EditOutlined,
@@ -45,12 +43,22 @@ import {
   ROLE_CATEGORY_MAP,
   EMPLOYEE_STATUS_MAP,
 } from '@/api/dw/types';
-import type { MenuProps } from 'antd';
 import EmployeeCloneButton from './components/EmployeeCloneButton';
 import EmployeeCard from './components/EmployeeCard';
 import EmployeeCreateDrawer from './components/EmployeeCreateDrawer';
 
 const { Text } = Typography;
+
+const TAG_COLOR_MAP: Record<string, TagColor> = {
+  magenta: 'pink',
+  geekblue: 'indigo',
+  blue: 'blue',
+  cyan: 'cyan',
+  green: 'green',
+  red: 'red',
+  purple: 'purple',
+  default: 'grey',
+};
 
 const STATUS_FILTERS = [
   { label: '全部', value: '' },
@@ -68,7 +76,6 @@ const QUICK_TEMPLATES = [
 
 export default function EmployeeListPage() {
   const navigate = useNavigate();
-  const { message } = App.useApp();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -106,10 +113,10 @@ export default function EmployeeListPage() {
   const handleDelete = async (employee: Employee) => {
     try {
       await deleteEmployee(employee.employeeId);
-      message.success('数字员工已删除');
+      Toast.success('数字员工已删除');
       load();
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '删除失败');
+      Toast.error(err instanceof Error ? err.message : '删除失败');
     }
   };
 
@@ -117,14 +124,14 @@ export default function EmployeeListPage() {
     try {
       if (employee.status === 'ACTIVE') {
         await deactivateEmployee(employee.employeeId);
-        message.success('数字员工已停用');
+        Toast.success('数字员工已停用');
       } else {
         await activateEmployee(employee.employeeId);
-        message.success('数字员工已启用');
+        Toast.success('数字员工已启用');
       }
       load();
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '操作失败');
+      Toast.error(err instanceof Error ? err.message : '操作失败');
     }
   };
 
@@ -144,33 +151,25 @@ export default function EmployeeListPage() {
     return `${d.getMonth() + 1}-${d.getDate()}`;
   };
 
-  const renderActions = (employee: Employee): MenuProps['items'] => [
-    { key: 'detail', icon: <EyeOutlined />, label: '查看详情', onClick: () => navigate(`/agents/${employee.code}`) },
-    { key: 'edit', icon: <EditOutlined />, label: '编辑配置', onClick: () => navigate(`/agents/${employee.code}/capabilities`) },
-    {
-      key: 'clone',
-      icon: <CopyOutlined />,
-      label: <EmployeeCloneButton source={employee} asMenuItem onCloned={handleCloned} />,
-    },
-    { type: 'divider' },
-    {
-      key: 'toggle',
-      icon: employee.status === 'ACTIVE' ? <PauseCircleOutlined /> : <PlayCircleOutlined />,
-      label: employee.status === 'ACTIVE' ? '停用' : '启用',
-      onClick: () => handleToggleStatus(employee),
-    },
-    { type: 'divider' },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      danger: true,
-      label: (
-        <Popconfirm title="确认删除" description={`确定删除「${employee.name}」吗？`} onConfirm={() => handleDelete(employee)}>
+  const renderActionsMenu = (employee: Employee) => (
+    <Dropdown.Menu>
+      <Dropdown.Item icon={<EyeOutlined />} onClick={() => navigate(`/agents/${employee.code}`)}>查看详情</Dropdown.Item>
+      <Dropdown.Item icon={<EditOutlined />} onClick={() => navigate(`/agents/${employee.code}/capabilities`)}>编辑配置</Dropdown.Item>
+      <Dropdown.Item icon={<CopyOutlined />}>
+        <EmployeeCloneButton source={employee} asMenuItem onCloned={handleCloned} />
+      </Dropdown.Item>
+      <Dropdown.Divider />
+      <Dropdown.Item icon={employee.status === 'ACTIVE' ? <PauseCircleOutlined /> : <PlayCircleOutlined />} onClick={() => handleToggleStatus(employee)}>
+        {employee.status === 'ACTIVE' ? '停用' : '启用'}
+      </Dropdown.Item>
+      <Dropdown.Divider />
+      <Dropdown.Item type="danger" icon={<DeleteOutlined />}>
+        <Popconfirm title="确认删除" content={`确定删除「${employee.name}」吗？`} onConfirm={() => handleDelete(employee)}>
           <span>删除</span>
         </Popconfirm>
-      ),
-    },
-  ];
+      </Dropdown.Item>
+    </Dropdown.Menu>
+  );
 
   const stats = {
     active: employees.filter((e) => e.status === 'ACTIVE').length,
@@ -186,13 +185,13 @@ export default function EmployeeListPage() {
       key: 'name',
       render: (_: string, record: Employee) => (
         <Space>
-          <Avatar size={32} src={record.avatar} style={{ background: '#1a1a1a', color: '#60a5fa', border: '1px solid #262626' }}>
+          <Avatar size="extra-large" src={record.avatar} style={{ width: 32, height: 32, background: 'var(--semi-color-bg-2)', color: '#60a5fa', border: '1px solid var(--semi-color-border)' }}>
             {record.name.slice(0, 1)}
           </Avatar>
           <a onClick={() => navigate(`/agents/${record.code}`)} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 500 }}>
             {record.name}
           </a>
-          {record.builtin && <Tag color="gold" style={{ fontSize: 10 }}>内置</Tag>}
+          {record.builtin && <Tag color="yellow" style={{ fontSize: 10 }}>内置</Tag>}
         </Space>
       ),
     },
@@ -203,7 +202,7 @@ export default function EmployeeListPage() {
       width: 100,
       render: (cat: string) => {
         const role = ROLE_CATEGORY_MAP[cat as Employee['roleCategory']];
-        return role ? <Tag color={role.color}>{role.label}</Tag> : '-';
+        return role ? <Tag color={TAG_COLOR_MAP[role.color] ?? 'grey'}>{role.label}</Tag> : '-';
       },
     },
     {
@@ -214,7 +213,19 @@ export default function EmployeeListPage() {
       render: (s: string) => {
         const st = EMPLOYEE_STATUS_MAP[s];
         const isOnline = s === 'ACTIVE';
-        return <Badge status={isOnline ? 'success' : s === 'INACTIVE' ? 'warning' : 'default'} text={st?.label ?? s} />;
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: isOnline ? 'var(--semi-color-success)' : s === 'INACTIVE' ? 'var(--semi-color-warning)' : 'var(--semi-color-tertiary)',
+              }}
+            />
+            <Text type="tertiary" style={{ fontSize: 12 }}>{st?.label ?? s}</Text>
+          </span>
+        );
       },
     },
     {
@@ -222,7 +233,7 @@ export default function EmployeeListPage() {
       dataIndex: 'roleIdentity',
       key: 'roleIdentity',
       width: 120,
-      render: (v: string) => <Text type="secondary">{v || '-'}</Text>,
+      render: (v: string) => <Text type="tertiary">{v || '-'}</Text>,
     },
     {
       title: '工具数',
@@ -235,18 +246,18 @@ export default function EmployeeListPage() {
       dataIndex: 'updatedAt',
       key: 'updatedAt',
       width: 120,
-      render: (v?: string) => <Text type="secondary" style={{ fontSize: 12 }}>{formatTime(v)}</Text>,
+      render: (v?: string) => <Text type="tertiary" style={{ fontSize: 12 }}>{formatTime(v)}</Text>,
     },
     {
       title: '操作',
       key: 'actions',
       width: 120,
       render: (_: unknown, record: Employee) => (
-        <Space size={4}>
-          <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/agents/${record.code}`)} />
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/agents/${record.code}/capabilities`)} />
-          <Dropdown menu={{ items: renderActions(record) }}>
-            <Button type="text" size="small" icon={<MoreOutlined />} />
+        <Space spacing={4}>
+          <Button theme="borderless" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/agents/${record.code}`)} />
+          <Button theme="borderless" size="small" icon={<EditOutlined />} onClick={() => navigate(`/agents/${record.code}/capabilities`)} />
+          <Dropdown render={renderActionsMenu(record)}>
+            <Button theme="borderless" size="small" icon={<MoreOutlined />} />
           </Dropdown>
         </Space>
       ),
@@ -258,27 +269,27 @@ export default function EmployeeListPage() {
       {/* 统计卡片 */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
-          <Card size="small">
+          <Card>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{stats.total}</div>
-            <div style={{ fontSize: 12, color: '#a1a1a1', marginTop: 4 }}>总数</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>总数</div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card size="small">
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#62d178' }}>{stats.active}</div>
-            <div style={{ fontSize: 12, color: '#a1a1a1', marginTop: 4 }}>在线</div>
+          <Card>
+            <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--semi-color-success)' }}>{stats.active}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>在线</div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card size="small">
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#eab308' }}>{stats.inactive}</div>
-            <div style={{ fontSize: 12, color: '#a1a1a1', marginTop: 4 }}>停用</div>
+          <Card>
+            <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--semi-color-warning)' }}>{stats.inactive}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>停用</div>
           </Card>
         </Col>
         <Col span={6}>
-          <Card size="small">
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#737373' }}>{stats.draft}</div>
-            <div style={{ fontSize: 12, color: '#a1a1a1', marginTop: 4 }}>草稿</div>
+          <Card>
+            <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--muted-foreground)' }}>{stats.draft}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>草稿</div>
           </Card>
         </Col>
       </Row>
@@ -292,9 +303,9 @@ export default function EmployeeListPage() {
               <Button
                 key={f.value}
                 size="small"
-                type="text"
+                theme="borderless"
                 onClick={() => setStatusFilter(f.value)}
-                style={active ? { background: '#1a1a1a', color: '#fafafa', borderColor: 'transparent' } : undefined}
+                style={active ? { background: 'var(--muted)', color: 'var(--foreground)', borderColor: 'transparent' } : undefined}
               >
                 {f.label}
               </Button>
@@ -302,40 +313,37 @@ export default function EmployeeListPage() {
           })}
           <Select
             placeholder="全部类型"
-            allowClear
+            showClear
             size="small"
             style={{ width: 140 }}
             value={roleCategory || undefined}
-            onChange={(v) => setRoleCategory(v || '')}
-          >
-            {ROLE_CATEGORY_OPTIONS.map((role) => (
-              <Select.Option key={role.value} value={role.value}>{role.label}</Select.Option>
-            ))}
-          </Select>
+            onChange={(v) => setRoleCategory((v as string) || '')}
+            optionList={ROLE_CATEGORY_OPTIONS}
+          />
         </Space>
         <Space>
           <Input
             placeholder="搜索数字员工..."
-            prefix={<SearchOutlined style={{ color: '#737373' }} />}
-            allowClear
+            prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
+            showClear
             size="small"
             style={{ width: 220 }}
-            onPressEnter={(e) => setKeyword((e.target as HTMLInputElement).value)}
-            onChange={(e) => { if (!e.target.value) setKeyword(''); }}
+            onEnterPress={(e) => setKeyword((e.target as HTMLInputElement).value)}
+            onChange={(v: string) => { if (!v) setKeyword(''); }}
           />
           <Button
             size="small"
-            type={viewMode === 'table' ? 'text' : 'default'}
+            theme={viewMode === 'table' ? 'borderless' : 'light'}
             icon={<UnorderedListOutlined />}
             onClick={() => setViewMode('table')}
           />
           <Button
             size="small"
-            type={viewMode === 'card' ? 'default' : 'text'}
+            theme={viewMode === 'card' ? 'light' : 'borderless'}
             icon={<AppstoreOutlined />}
             onClick={() => setViewMode('card')}
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             创建数字员工
           </Button>
         </Space>
@@ -345,16 +353,15 @@ export default function EmployeeListPage() {
       {loading ? (
         <Card><Spin style={{ display: 'block', margin: '40px auto' }} /></Card>
       ) : error ? (
-        <Result
-          status="error"
-          title="加载失败"
-          subTitle={error.message}
-          extra={<Button type="primary" icon={<ReloadOutlined />} onClick={load}>重试</Button>}
-        />
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>加载失败</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 16 }}>{error.message}</div>
+          <Button theme="solid" type="primary" icon={<ReloadOutlined />} onClick={load}>重试</Button>
+        </div>
       ) : employees.length === 0 ? (
         <Card>
-          <Empty description="还没有数字员工，点击创建第一位吧" image={Empty.PRESENTED_IMAGE_SIMPLE}>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/create')}>
+          <Empty description="还没有数字员工，点击创建第一位吧">
+            <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/create')}>
               创建数字员工
             </Button>
           </Empty>
@@ -377,24 +384,28 @@ export default function EmployeeListPage() {
           dataSource={employees}
           rowKey="employeeId"
           columns={columns}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: true }}
           scroll={{ x: 'max-content' }}
-          onRow={(record) => ({ onClick: () => navigate(`/agents/${record.code}`), style: { cursor: 'pointer' } })}
+          onRow={(record) => ({
+            onClick: () => {
+              if (record) navigate(`/agents/${record.code}`);
+            },
+            style: { cursor: 'pointer' },
+          })}
         />
       )}
 
       {/* 快速创建 */}
       <div style={{ marginTop: 24 }}>
-        <Typography.Title level={5}>快速创建</Typography.Title>
+        <Typography.Title heading={5}>快速创建</Typography.Title>
         <Row gutter={16}>
           {QUICK_TEMPLATES.map((tpl) => (
             <Col key={tpl.title} span={6}>
               <Card
-                size="small"
-                hoverable
-                onClick={() => setCreateOpen(true)}
+                shadows="hover"
                 style={{ textAlign: 'center', padding: '20px 0' }}
               >
+                <div onClick={() => setCreateOpen(true)}>
                 <div style={{
                   width: 40,
                   height: 40,
@@ -410,7 +421,8 @@ export default function EmployeeListPage() {
                   {tpl.icon}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 500 }}>{tpl.title}</div>
-                <div style={{ fontSize: 11, color: '#a1a1a1', marginTop: 2 }}>{tpl.desc}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>{tpl.desc}</div>
+                </div>
               </Card>
             </Col>
           ))}

@@ -7,11 +7,11 @@ import {
   Switch,
   Upload,
   Image,
-  message,
+  Toast,
   Input,
   Slider,
-} from 'antd';
-import type { UploadFile } from 'antd/es/upload/interface';
+} from '@douyinfe/semi-ui';
+import type { FileItem } from '@douyinfe/semi-ui/lib/es/upload';
 import {
   RobotOutlined,
   UserOutlined,
@@ -189,11 +189,11 @@ const MAX_IMAGE_SIZE_MB = 5;
 function beforeUpload(file: File): boolean {
   const isAllowedType = ALLOWED_IMAGE_TYPES.includes(file.type);
   if (!isAllowedType) {
-    message.error('仅支持 png、jpeg、webp 格式的图片');
+    Toast.error('仅支持 png、jpeg、webp 格式的图片');
   }
   const isLt5M = file.size / 1024 / 1024 < MAX_IMAGE_SIZE_MB;
   if (!isLt5M) {
-    message.error('单张图片不能超过 5MB');
+    Toast.error('单张图片不能超过 5MB');
   }
   return isAllowedType && isLt5M;
 }
@@ -246,19 +246,19 @@ function CitationList({ citations }: { citations?: Citation[] }) {
   if (!citations || citations.length === 0) return null;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-      <Typography.Text style={{ fontSize: 12, color: '#a1a1a1' }}>
+      <Typography.Text style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
         📚 参考来源：
       </Typography.Text>
       {citations.map((c) => (
-        <Tooltip key={c.id} title={c.snippet} placement="topLeft">
+        <Tooltip key={c.id} content={c.snippet} position="topLeft">
           <span
             style={{
               display: 'inline-block',
               cursor: 'pointer',
               maxWidth: 200,
-              background: '#1a1a1a',
-              border: '1px solid #262626',
-              color: '#a1a1a1',
+              background: 'var(--muted)',
+              border: '1px solid var(--border)',
+              color: 'var(--muted-foreground)',
               borderRadius: 4,
               padding: '2px 8px',
               fontSize: 11,
@@ -288,7 +288,7 @@ function ThinkingSection({ content, duration }: { content?: string; duration?: s
           alignItems: 'center',
           gap: 8,
           fontSize: 12,
-          color: '#a1a1a1',
+          color: 'var(--muted-foreground)',
           cursor: 'pointer',
           padding: '8px 0 4px',
           userSelect: 'none',
@@ -308,10 +308,10 @@ function ThinkingSection({ content, duration }: { content?: string; duration?: s
         <div
           style={{
             fontSize: 12,
-            color: '#a1a1a1',
+            color: 'var(--muted-foreground)',
             lineHeight: 1.6,
             padding: '8px 0 12px',
-            borderBottom: '1px solid #262626',
+            borderBottom: '1px solid var(--border)',
             marginBottom: 12,
           }}
         >
@@ -330,7 +330,7 @@ function MessageActions({ onCopy, onRegenerate }: { onCopy: () => void; onRegene
     gap: 4,
     background: 'transparent',
     border: 'none',
-    color: '#a1a1a1',
+    color: 'var(--muted-foreground)',
     fontSize: 12,
     padding: '4px 8px',
     borderRadius: 4,
@@ -369,15 +369,15 @@ function ActionResultCard({ result }: { result: ActionResult }) {
     .filter(([k]) => ['applied_at', 'side_effects_emitted', 'action_rid', 'audit_id'].includes(k))
     .map(([k, v]) => [k, Array.isArray(v) ? (v as string[]).join(', ') : String(v)] as [string, string]);
   return (
-    <div style={{ marginTop: 8, background: '#1a1a1a', border: '1px solid #262626', borderRadius: 4, padding: 12, fontSize: 12 }}>
+    <div style={{ marginTop: 8, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 4, padding: 12, fontSize: 12 }}>
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 }}>
-        <ThunderboltOutlined style={{ fontSize: 12, color: result.success ? '#52c41a' : '#ff4d4f' }} />
-        <Typography.Text style={{ fontSize: 12, color: '#fafafa' }}>执行结果</Typography.Text>
+        <ThunderboltOutlined style={{ fontSize: 12, color: result.success ? 'var(--success)' : 'var(--destructive)' }} />
+        <Typography.Text style={{ fontSize: 12, color: 'var(--foreground)' }}>执行结果</Typography.Text>
       </div>
       {[...fields, ...kernelFields].map(([k, v]) => (
         <div key={k} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
-          <Typography.Text style={{ fontSize: 11, color: '#a1a1a1', minWidth: 120, display: 'inline-block' }}>{k}</Typography.Text>
-          <Typography.Text style={{ fontSize: 11, color: '#fafafa', wordBreak: 'break-all' }}>{v}</Typography.Text>
+          <Typography.Text style={{ fontSize: 11, color: 'var(--muted-foreground)', minWidth: 120, display: 'inline-block' }}>{k}</Typography.Text>
+          <Typography.Text style={{ fontSize: 11, color: 'var(--foreground)', wordBreak: 'break-all' }}>{v}</Typography.Text>
         </div>
       ))}
     </div>
@@ -425,12 +425,12 @@ function MessageRow({
             width: 24,
             height: 24,
             borderRadius: '50%',
-            background: '#1a1a1a',
+            background: 'var(--muted)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            color: '#a1a1a1',
+            color: 'var(--muted-foreground)',
           }}
         >
           {isUser ? (
@@ -439,10 +439,10 @@ function MessageRow({
             <RobotOutlined style={{ fontSize: 14 }} />
           )}
         </div>
-        <span style={{ fontSize: 12, fontWeight: 500, color: '#a1a1a1' }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)' }}>
           {isUser ? 'Admin' : 'SuperAI'}
         </span>
-        <span style={{ fontSize: 11, color: '#a1a1a1' }}>{time}</span>
+        <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{time}</span>
       </div>
 
       {/* 消息气泡 */}
@@ -453,14 +453,14 @@ function MessageRow({
           borderRadius: 4,
           fontSize: 14,
           lineHeight: 1.7,
-          background: isUser ? '#1a1a1a' : '#111111',
-          color: '#fafafa',
-          border: isUser ? 'none' : '1px solid #262626',
+          background: isUser ? 'var(--muted)' : 'var(--card)',
+          color: 'var(--foreground)',
+          border: isUser ? 'none' : '1px solid var(--border)',
         }}
       >
         {/* 思考中状态 */}
         {msg.streaming && !streamingContent && msg.content === '' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#a1a1a1', padding: '8px 0 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0 4px' }}>
             <div style={{ display: 'inline-flex', gap: 3 }}>
               <span className="thinking-dot" />
               <span className="thinking-dot" />
@@ -480,18 +480,16 @@ function MessageRow({
           <div>
             <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
             {msg.images && msg.images.length > 0 && (
-              <Image.PreviewGroup>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                  {msg.images.map((img, idx) => (
-                    <Image
-                      key={idx}
-                      src={img.base64 || img.url}
-                      alt="用户上传图片"
-                      style={{ maxHeight: 120, borderRadius: 4, cursor: 'pointer' }}
-                    />
-                  ))}
-                </div>
-              </Image.PreviewGroup>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {msg.images.map((img, idx) => (
+                  <Image
+                    key={idx}
+                    src={img.base64 || img.url}
+                    alt="用户上传图片"
+                    style={{ maxHeight: 120, borderRadius: 4, cursor: 'pointer' }}
+                  />
+                ))}
+              </div>
             )}
           </div>
         ) : (
@@ -501,8 +499,8 @@ function MessageRow({
               <div
                 style={{
                   marginTop: 12,
-                  background: '#1a1a1a',
-                  border: '1px solid #262626',
+                  background: 'var(--muted)',
+                  border: '1px solid var(--border)',
                   borderRadius: 4,
                   padding: 8,
                 }}
@@ -517,8 +515,8 @@ function MessageRow({
                   }}
                 >
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <BookOutlined style={{ fontSize: 12, color: '#a1a1a1' }} />
-                    <Typography.Text style={{ fontSize: 12, color: '#a1a1a1' }}>
+                    <BookOutlined style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                    <Typography.Text style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
                       知识图谱 · {graphData.nodes.length} 节点 / {graphData.edges.length} 关系
                     </Typography.Text>
                   </div>
@@ -527,7 +525,7 @@ function MessageRow({
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: '#a1a1a1',
+                      color: 'var(--muted-foreground)',
                       fontSize: 12,
                       cursor: 'pointer',
                       padding: '2px 6px',
@@ -597,7 +595,7 @@ export default function ChatPage() {
   const [isMultimodal, setIsMultimodal] = useState(false);
   const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
-  const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
+  const [imageFiles, setImageFiles] = useState<FileItem[]>([]);
   const [currentModel, setCurrentModel] = useState('');
   const [availableModels, setAvailableModels] = useState<{ label: string; value: string }[]>([]);
   // 流式草稿：assistantId → 累积中的 content（onDelta 阶段），onDone 后并入消息并清空
@@ -606,7 +604,7 @@ export default function ChatPage() {
   const modelsLoadedRef = useRef(false);
 
   useEffect(() => {
-    listKnowledgeBases().then(setKnowledgeBases).catch((error) => { message.warning('知识库加载失败，已使用本地默认列表'); console.warn(error); });
+    listKnowledgeBases().then(setKnowledgeBases).catch((error) => { Toast.warning('知识库加载失败，已使用本地默认列表'); console.warn(error); });
     // 加载后端会话列表，与本地兜底会话合并
     listConversations()
       .then((convs) => {
@@ -626,7 +624,7 @@ export default function ChatPage() {
       })
       .catch((error) => {
         /* 后端未就绪时降级到本地会话，但需告知用户 */
-        message.warning('后端会话加载失败，已使用本地缓存');
+        Toast.warning('后端会话加载失败，已使用本地缓存');
         console.warn(error);
       });
   }, []);
@@ -642,7 +640,7 @@ export default function ChatPage() {
           }
         })
         .catch(() => {
-          message.error('加载多模态模型失败');
+          Toast.error('加载多模态模型失败');
         });
     }
   }, [isMultimodal]);
@@ -745,7 +743,7 @@ export default function ChatPage() {
       })
       .catch((error) => {
         /* 后端不可用时保留本地会话，但需告知用户 */
-        message.warning('后端会话同步失败，保留本地会话');
+        Toast.warning('后端会话同步失败，保留本地会话');
         console.warn(error);
       });
   }, []);
@@ -780,7 +778,7 @@ export default function ChatPage() {
     if (wasBackend) {
       deleteConversation(key).catch((error) => {
         /* 后端删除失败，本地状态保持 */
-        message.error('会话同步删除失败，请手动清理本地缓存');
+        Toast.error('会话同步删除失败，请手动清理本地缓存');
         console.warn(error);
       });
     }
@@ -816,11 +814,11 @@ export default function ChatPage() {
 
       if (isMultimodal) {
         if (imageFiles.length === 0) {
-          message.warning('请至少上传一张图片');
+          Toast.warning('请至少上传一张图片');
           return;
         }
         if (!selectedModelId) {
-          message.warning('请选择多模态模型');
+          Toast.warning('请选择多模态模型');
           return;
         }
 
@@ -829,15 +827,15 @@ export default function ChatPage() {
         try {
           chatImages = await Promise.all(
             filesToSend
-              .filter((f) => f.originFileObj)
+              .filter((f) => f.fileInstance)
               .map(async (f) => ({
                 uid: f.uid,
-                base64: await fileToBase64(f.originFileObj as File),
+                base64: await fileToBase64(f.fileInstance as File),
                 detail: 'auto' as const,
               })),
           );
         } catch {
-          message.error('读取图片失败，请重试');
+          Toast.error('读取图片失败，请重试');
           return;
         }
 
@@ -871,7 +869,7 @@ export default function ChatPage() {
           const resp = await multimodalUploadChat({
             modelId: selectedModelId,
             text: trimmed,
-            images: filesToSend.map((f) => f.originFileObj as File).filter(Boolean),
+            images: filesToSend.map((f) => f.fileInstance as File).filter(Boolean),
             systemPrompt: UNIFIED_SYSTEM_PROMPT,
             conversationId,
           });
@@ -1136,9 +1134,9 @@ export default function ChatPage() {
 
   const handleCopyMessage = useCallback((text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      message.success('已复制');
+      Toast.success('已复制');
     }).catch(() => {
-      message.error('复制失败');
+      Toast.error('复制失败');
     });
   }, []);
 
@@ -1159,7 +1157,7 @@ export default function ChatPage() {
         flex: 1,
         minHeight: 0,
         alignSelf: 'stretch',
-        background: '#0a0a0a',
+        background: 'var(--background)',
         width: '100%',
       }}
     >
@@ -1168,8 +1166,8 @@ export default function ChatPage() {
         style={{
           width: 240,
           minWidth: 240,
-          background: '#0a0a0a',
-          borderRight: '1px solid #262626',
+          background: 'var(--background)',
+          borderRight: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -1181,16 +1179,16 @@ export default function ChatPage() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: 12,
-            borderBottom: '1px solid #262626',
+            borderBottom: '1px solid var(--border)',
           }}
         >
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>会话</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--foreground)' }}>会话</h2>
           <button
             onClick={handleNewConversation}
             style={{
               background: 'transparent',
-              color: '#fafafa',
-              border: '1px solid #262626',
+              color: 'var(--foreground)',
+              border: '1px solid var(--border)',
               borderRadius: 4,
               height: 32,
               padding: '0 12px',
@@ -1209,14 +1207,14 @@ export default function ChatPage() {
         <div style={{ padding: '8px 12px 4px' }}>
           <Input
             placeholder="搜索会话..."
-            prefix={<SearchOutlined style={{ color: '#a1a1a1' }} />}
-            allowClear
+            prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
+            showClear
             value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+            onChange={(v) => setSearchKeyword(v)}
             size="small"
             style={{
-              background: '#1a1a1a',
-              borderColor: '#262626',
+              background: 'var(--muted)',
+              borderColor: 'var(--border)',
               borderRadius: 4,
             }}
           />
@@ -1233,11 +1231,11 @@ export default function ChatPage() {
                 borderRadius: 4,
                 cursor: 'pointer',
                 marginBottom: 2,
-                background: s.id === activeId ? '#1a1a1a' : 'transparent',
+                background: s.id === activeId ? 'var(--muted)' : 'transparent',
                 transition: 'background .15s',
               }}
               onMouseEnter={(e) => {
-                if (s.id !== activeId) e.currentTarget.style.background = '#111111';
+                if (s.id !== activeId) e.currentTarget.style.background = 'var(--card)';
               }}
               onMouseLeave={(e) => {
                 if (s.id !== activeId) e.currentTarget.style.background = 'transparent';
@@ -1251,11 +1249,12 @@ export default function ChatPage() {
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  color: 'var(--foreground)',
                 }}
               >
                 {s.title}
               </div>
-              <div style={{ fontSize: 11, color: '#a1a1a1' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
                 {new Date(s.updatedAt).toLocaleString('zh-CN', {
                   month: '2-digit',
                   day: '2-digit',
@@ -1270,15 +1269,15 @@ export default function ChatPage() {
                     fontSize: 10,
                     padding: '1px 6px',
                     borderRadius: 4,
-                    background: '#111111',
-                    border: '1px solid #262626',
-                    color: '#a1a1a1',
+                    background: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--muted-foreground)',
                   }}
                 >
                   SuperAI
                 </span>
                 {s.favorite && (
-                  <StarFilled style={{ fontSize: 10, color: '#eab308' }} />
+                  <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />
                 )}
                 <button
                   onClick={(e) => {
@@ -1289,7 +1288,7 @@ export default function ChatPage() {
                     marginLeft: 'auto',
                     background: 'transparent',
                     border: 'none',
-                    color: '#737373',
+                    color: 'var(--muted-foreground)',
                     cursor: 'pointer',
                     padding: 2,
                   }}
@@ -1303,14 +1302,14 @@ export default function ChatPage() {
         </div>
 
         {/* conversation-footer - 知识库选择 */}
-        <div style={{ padding: 12, borderTop: '1px solid #262626' }}>
+        <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
           <Select
-            mode="multiple"
+            multiple
             placeholder="选择知识库"
             value={selectedKbIds}
-            onChange={setSelectedKbIds}
+            onChange={(vals) => setSelectedKbIds((vals as string[]) ?? [])}
             style={{ width: '100%' }}
-            options={knowledgeBases.map((kb) => ({
+            optionList={knowledgeBases.map((kb) => ({
               label: `${kb.name} (${kb.documentCount}篇)`,
               value: kb.id,
             }))}
@@ -1327,7 +1326,7 @@ export default function ChatPage() {
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          background: '#0a0a0a',
+          background: 'var(--background)',
         }}
       >
         {/* chat-topbar */}
@@ -1337,29 +1336,29 @@ export default function ChatPage() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '12px 24px',
-            borderBottom: '1px solid #262626',
+            borderBottom: '1px solid var(--border)',
             minHeight: 48,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Tooltip title={`上下文 ${contextTurns}/${MAX_CONTEXT_TURNS} 轮`}>
-              <span style={{ fontSize: 14, fontWeight: 500 }}>
+            <Tooltip content={`上下文 ${contextTurns}/${MAX_CONTEXT_TURNS} 轮`}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--foreground)' }}>
                 {activeSession.title}
               </span>
             </Tooltip>
             {activeSession.favorite && (
-              <StarFilled style={{ fontSize: 12, color: '#eab308' }} />
+              <StarFilled style={{ fontSize: 12, color: 'var(--warning)' }} />
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 12, color: '#a1a1a1' }}>Temperature</span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Temperature</span>
             <Slider
               min={0}
               max={100}
               value={temperature}
               onChange={setTemperature}
               style={{ width: 100, margin: 0 }}
-              tooltip={{ open: false }}
+              tooltipVisible={false}
             />
             <span
               style={{
@@ -1367,6 +1366,7 @@ export default function ChatPage() {
                 fontSize: 12,
                 minWidth: 28,
                 textAlign: 'right',
+                color: 'var(--foreground)',
               }}
             >
               {(temperature / 100).toFixed(1)}
@@ -1397,7 +1397,7 @@ export default function ChatPage() {
             >
               <Welcome
                 variant="borderless"
-                icon={<RobotOutlined style={{ fontSize: 36, color: '#fafafa' }} />}
+                icon={<RobotOutlined style={{ fontSize: 36, color: 'var(--foreground)' }} />}
                 title="你好，我是 SuperAI"
                 description="统一 AI 交互入口，自动识别您的意图 — 智能问答、数据分析、知识图谱、代码生成，一个输入框搞定。"
                 extra={
@@ -1407,9 +1407,9 @@ export default function ChatPage() {
                         key={prompt}
                         onClick={() => handleSend(prompt)}
                         style={{
-                          background: '#1a1a1a',
-                          border: '1px solid #262626',
-                          color: '#a1a1a1',
+                          background: 'var(--muted)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--muted-foreground)',
                           borderRadius: 4,
                           padding: '6px 12px',
                           fontSize: 12,
@@ -1451,8 +1451,8 @@ export default function ChatPage() {
         {/* input-bar */}
         <div
           style={{
-            background: '#111111',
-            borderTop: '1px solid #262626',
+            background: 'var(--card)',
+            borderTop: '1px solid var(--border)',
             padding: '16px 24px',
             display: 'flex',
             alignItems: 'flex-end',
@@ -1465,34 +1465,34 @@ export default function ChatPage() {
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              background: '#1a1a1a',
-              border: '1px solid #262626',
+              background: 'var(--muted)',
+              border: '1px solid var(--border)',
               borderRadius: 4,
             }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = '#fafafa')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = '#262626')}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--foreground)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
           >
             {isMultimodal && (
               <div style={{ padding: '8px 12px 0', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <Switch
                   checked={isMultimodal}
                   onChange={handleMultimodalToggle}
-                  checkedChildren="多模态"
-                  unCheckedChildren="文本"
+                  checkedText="多模态"
+                  uncheckedText="文本"
                   size="small"
                 />
                 <Select
                   placeholder="选择多模态模型"
                   value={selectedModelId}
-                  onChange={setSelectedModelId}
-                  options={multimodalModels.map((m) => ({
+                  onChange={(v) => setSelectedModelId(v as string)}
+                  optionList={multimodalModels.map((m) => ({
                     label: m.displayName || m.modelCode,
                     value: m.modelId,
                   }))}
                   style={{ width: 180 }}
                   size="small"
                 />
-                <span style={{ fontSize: 11, color: '#737373' }}>
+                <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
                   最多 8 张 · 单张 ≤5MB
                 </span>
               </div>
@@ -1502,11 +1502,11 @@ export default function ChatPage() {
                 <Upload
                   fileList={imageFiles}
                   onChange={({ fileList }) =>
-                    setImageFiles(fileList.map((f) => ({ ...f, status: 'done' })))
+                    setImageFiles(fileList.map((f) => ({ ...f, status: 'success' })))
                   }
-                  beforeUpload={beforeUpload}
+                  beforeUpload={({ file }) => beforeUpload(file.fileInstance as File)}
                   multiple
-                  maxCount={8}
+                  limit={8}
                   listType="picture-card"
                   accept="image/png,image/jpeg,image/webp"
                 >
@@ -1536,7 +1536,7 @@ export default function ChatPage() {
                 resize: 'none',
                 background: 'transparent',
                 border: 'none',
-                color: '#fafafa',
+                color: 'var(--foreground)',
                 fontSize: 14,
                 fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
                 padding: '10px 14px',
@@ -1553,12 +1553,12 @@ export default function ChatPage() {
                 padding: '4px 8px 6px 8px',
               }}
             >
-              <Tooltip title={isMultimodal ? '关闭多模态' : '开启多模态（图片上传）'}>
+              <Tooltip content={isMultimodal ? '关闭多模态' : '开启多模态（图片上传）'}>
                 <button
                   onClick={() => handleMultimodalToggle(!isMultimodal)}
                   style={{
                     background: 'transparent',
-                    color: isMultimodal ? '#fafafa' : '#a1a1a1',
+                    color: isMultimodal ? 'var(--foreground)' : 'var(--muted-foreground)',
                     border: 'none',
                     borderRadius: 4,
                     height: 28,
@@ -1571,10 +1571,10 @@ export default function ChatPage() {
                     flexShrink: 0,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#fafafa';
+                    e.currentTarget.style.color = 'var(--foreground)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.color = isMultimodal ? '#fafafa' : '#a1a1a1';
+                    e.currentTarget.style.color = isMultimodal ? 'var(--foreground)' : 'var(--muted-foreground)';
                   }}
                 >
                   <PaperClipOutlined style={{ fontSize: 14 }} />
@@ -1582,12 +1582,11 @@ export default function ChatPage() {
               </Tooltip>
               <Select
                 size="small"
-                variant="borderless"
                 value={currentModel}
-                onChange={setCurrentModel}
-                options={availableModels}
+                onChange={(v) => setCurrentModel(v as string)}
+                optionList={availableModels}
                 style={{ width: 160, fontSize: 11 }}
-                popupMatchSelectWidth={false}
+                dropdownMatchSelectWidth={false}
               />
             </div>
           </div>
@@ -1602,8 +1601,8 @@ export default function ChatPage() {
             }}
             disabled={!loading && !input.trim()}
             style={{
-              background: loading ? '#1a1a1a' : '#fafafa',
-              color: loading ? '#a1a1a1' : '#0a0a0a',
+              background: loading ? 'var(--muted)' : 'var(--foreground)',
+              color: loading ? 'var(--muted-foreground)' : 'var(--background)',
               border: 'none',
               borderRadius: 4,
               height: 40,

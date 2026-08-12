@@ -1,18 +1,18 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   Card,
-  Col,
   Collapse,
   Empty,
   Input,
-  message,
+  Toast,
   Progress,
-  Row,
   Space,
   Tag,
   Typography,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { ThunderboltOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { autoScoreConversation, batchAutoScore } from '@/api/dw/evaluations';
 import { DIMENSION_META } from '@/api/dw/types';
@@ -34,8 +34,8 @@ interface BatchRow {
   result: AutoScoreResult;
 }
 
-/** 根据分数返回 antd Tag 的颜色 */
-function scoreTagColor(s: number): string {
+/** 根据分数返回 Tag 的颜色 */
+function scoreTagColor(s: number): TagColor {
   if (s >= 85) return 'green';
   if (s >= 70) return 'orange';
   return 'red';
@@ -43,9 +43,9 @@ function scoreTagColor(s: number): string {
 
 /** 根据分数返回进度环的描边颜色 */
 function scoreStrokeColor(s: number): string {
-  if (s >= 85) return '#52c41a';
-  if (s >= 70) return '#faad14';
-  return '#f5222d';
+  if (s >= 85) return 'var(--semi-color-success)';
+  if (s >= 70) return 'var(--semi-color-warning)';
+  return 'var(--semi-color-danger)';
 }
 
 /**
@@ -68,7 +68,7 @@ export default function AutoScorePanel({
   const handleSingleScore = async () => {
     const targetId = inputConvId.trim() || conversationId;
     if (!targetId) {
-      message.warning('请输入或通过 props 提供对话 ID');
+      Toast.warning('请输入或通过 props 提供对话 ID');
       return;
     }
     setSingleLoading(true);
@@ -76,7 +76,7 @@ export default function AutoScorePanel({
       const r = await autoScoreConversation(targetId);
       setResult(r);
       onScored?.(r);
-      message.success(`评分完成：总分 ${r.overallScore}`);
+      Toast.success(`评分完成：总分 ${r.overallScore}`);
     } finally {
       setSingleLoading(false);
     }
@@ -84,14 +84,14 @@ export default function AutoScorePanel({
 
   const handleBatchScore = async () => {
     if (!employeeId) {
-      message.warning('批量评分需要 employeeId');
+      Toast.warning('批量评分需要 employeeId');
       return;
     }
     setBatchLoading(true);
     try {
       const r = await batchAutoScore(employeeId, { limit: 3 });
       setBatchResults(r.results);
-      message.success(`批量评分完成：${r.scored}/${r.total}`);
+      Toast.success(`批量评分完成：${r.scored}/${r.total}`);
     } finally {
       setBatchLoading(false);
     }
@@ -107,17 +107,18 @@ export default function AutoScorePanel({
   }));
 
   return (
-    <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+    <Space vertical style={{ width: '100%' }} spacing="medium">
       <Card title="自动评分">
         <Space wrap>
           <Input
             placeholder="对话 ID（留空则使用 props.conversationId）"
             value={inputConvId}
-            onChange={(e) => setInputConvId(e.target.value)}
+            onChange={(v: string) => setInputConvId(v)}
             style={{ width: 320 }}
-            allowClear
+            showClear
           />
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={singleLoading}
@@ -140,12 +141,12 @@ export default function AutoScorePanel({
         <Card title="评分结果">
           <Row gutter={24}>
             <Col xs={24} md={8}>
-              <Card size="small" title="总分">
+              <Card title="总分">
                 <div style={{ textAlign: 'center', padding: '12px 0' }}>
                   <Progress
                     type="circle"
                     percent={result.overallScore}
-                    strokeColor={scoreStrokeColor(result.overallScore)}
+                    stroke={scoreStrokeColor(result.overallScore)}
                     format={(p) => <span style={{ fontSize: 24, fontWeight: 700 }}>{p}</span>}
                   />
                   <Typography.Paragraph
@@ -165,28 +166,30 @@ export default function AutoScorePanel({
               </Card>
             </Col>
             <Col xs={24} md={8}>
-              <Card size="small" title="维度雷达">
+              <Card title="维度雷达">
                 <DimensionScoreChart dimensions={result.dimensions} size={300} />
               </Card>
             </Col>
             <Col xs={24} md={8}>
-              <Card size="small" title="维度明细">
-                <Collapse
-                  items={result.dimensions.map((d) => ({
-                    key: d.dimension,
-                    label: (
-                      <Space>
-                        <Typography.Text strong>{DIMENSION_META[d.dimension].label}</Typography.Text>
-                        <Tag color={scoreTagColor(d.score)}>{d.score}</Tag>
-                        {d.weight != null && (
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            权重 {(d.weight * 100).toFixed(0)}%
-                          </Typography.Text>
-                        )}
-                      </Space>
-                    ),
-                    children: (
-                      <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+              <Card title="维度明细">
+                <Collapse>
+                  {result.dimensions.map((d) => (
+                    <Collapse.Panel
+                      key={d.dimension}
+                      itemKey={d.dimension}
+                      header={
+                        <Space>
+                          <Typography.Text strong>{DIMENSION_META[d.dimension].label}</Typography.Text>
+                          <Tag color={scoreTagColor(d.score)}>{d.score}</Tag>
+                          {d.weight != null && (
+                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                              权重 {(d.weight * 100).toFixed(0)}%
+                            </Typography.Text>
+                          )}
+                        </Space>
+                      }
+                    >
+                      <Space vertical spacing="tight" style={{ width: '100%' }}>
                         {d.reasoning && (
                           <Typography.Paragraph style={{ marginBottom: 0 }}>
                             <Typography.Text type="secondary">理由：</Typography.Text>
@@ -206,9 +209,9 @@ export default function AutoScorePanel({
                           </div>
                         )}
                       </Space>
-                    ),
-                  }))}
-                />
+                    </Collapse.Panel>
+                  ))}
+                </Collapse>
               </Card>
             </Col>
           </Row>
@@ -216,40 +219,43 @@ export default function AutoScorePanel({
       )}
 
       {batchResults.length > 0 && (
-        <Card title="批量评分结果" size="small">
-          <Collapse
-            items={batchRows.map((row) => ({
-              key: row.key,
-              label: (
-                <Space>
-                  <Typography.Text>{row.conversationId}</Typography.Text>
-                  <Tag color={scoreTagColor(row.overallScore)}>
-                    总分 {row.overallScore}
-                  </Tag>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {new Date(row.evaluatedAt).toLocaleString()}
-                  </Typography.Text>
-                </Space>
-              ),
-              children: (
+        <Card title="批量评分结果">
+          <Collapse>
+            {batchRows.map((row) => (
+              <Collapse.Panel
+                key={row.key}
+                itemKey={row.key}
+                header={
+                  <Space>
+                    <Typography.Text>{row.conversationId}</Typography.Text>
+                    <Tag color={scoreTagColor(row.overallScore)}>
+                      总分 {row.overallScore}
+                    </Tag>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {new Date(row.evaluatedAt).toLocaleString()}
+                    </Typography.Text>
+                  </Space>
+                }
+              >
                 <Row gutter={16}>
                   <Col xs={24} md={10}>
                     <DimensionScoreChart dimensions={row.result.dimensions} size={260} />
                   </Col>
                   <Col xs={24} md={14}>
                     <Typography.Paragraph>{row.result.summary}</Typography.Paragraph>
-                    <Collapse
-                      size="small"
-                      items={row.result.dimensions.map((d) => ({
-                        key: d.dimension,
-                        label: (
-                          <Space>
-                            <Typography.Text strong>{DIMENSION_META[d.dimension].label}</Typography.Text>
-                            <Tag>{d.score}</Tag>
-                          </Space>
-                        ),
-                        children: (
-                          <Space orientation="vertical" size={4} style={{ width: '100%' }}>
+                    <Collapse>
+                      {row.result.dimensions.map((d) => (
+                        <Collapse.Panel
+                          key={d.dimension}
+                          itemKey={d.dimension}
+                          header={
+                            <Space>
+                              <Typography.Text strong>{DIMENSION_META[d.dimension].label}</Typography.Text>
+                              <Tag>{d.score}</Tag>
+                            </Space>
+                          }
+                        >
+                          <Space vertical spacing={4} style={{ width: '100%' }}>
                             {d.reasoning && <Typography.Text>{d.reasoning}</Typography.Text>}
                             {d.evidence && d.evidence.length > 0 && (
                               <ul style={{ margin: 0, paddingLeft: 16 }}>
@@ -261,14 +267,14 @@ export default function AutoScorePanel({
                               </ul>
                             )}
                           </Space>
-                        ),
-                      }))}
-                    />
+                        </Collapse.Panel>
+                      ))}
+                    </Collapse>
                   </Col>
                 </Row>
-              ),
-            }))}
-          />
+              </Collapse.Panel>
+            ))}
+          </Collapse>
         </Card>
       )}
 

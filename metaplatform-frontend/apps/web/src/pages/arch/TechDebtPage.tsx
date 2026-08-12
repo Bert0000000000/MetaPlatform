@@ -9,29 +9,29 @@ import {
   Input,
   Select,
   Tag,
-  message,
+  Toast,
   Popconfirm,
   Timeline,
   Typography,
   Progress,
   Row,
   Col,
-  Statistic,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EditOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons';
 import { listTechDebt, createTechDebt, updateTechDebt, deleteTechDebt } from '@/api/arch/governance';
 import type { TechDebt, RepaymentMilestone } from '@/api/arch/types';
 
-const SEVERITY_TAG: Record<string, string> = { CRITICAL: 'red', HIGH: 'volcano', MEDIUM: 'orange', LOW: 'blue' };
-const STATUS_TAG: Record<string, { color: string; label: string }> = {
+const SEVERITY_TAG: Record<string, TagColor> = { CRITICAL: 'red', HIGH: 'orange', MEDIUM: 'orange', LOW: 'blue' };
+const STATUS_TAG: Record<string, { color: TagColor; label: string }> = {
   OPEN: { color: 'orange', label: '待处理' },
   IN_PROGRESS: { color: 'blue', label: '处理中' },
   RESOLVED: { color: 'green', label: '已解决' },
-  WONT_FIX: { color: 'default', label: '暂不修复' },
+  WONT_FIX: { color: 'grey', label: '暂不修复' },
 };
-const LEVEL_TAG: Record<string, { color: string; label: string }> = {
+const LEVEL_TAG: Record<string, { color: TagColor; label: string }> = {
   FATAL: { color: 'red', label: '致命' },
-  SERIOUS: { color: 'volcano', label: '严重' },
+  SERIOUS: { color: 'orange', label: '严重' },
   GENERAL: { color: 'orange', label: '一般' },
   MINOR: { color: 'blue', label: '轻微' },
 };
@@ -61,7 +61,7 @@ export default function TechDebtPage() {
     });
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     const plan = values.repaymentPlan || {};
     const payload: Partial<TechDebt> = {
       ...values,
@@ -75,21 +75,21 @@ export default function TechDebtPage() {
     };
     if (editing) {
       await updateTechDebt(editing.id, payload);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createTechDebt(payload);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
     setEditing(null);
-    form.resetFields();
+    form.reset();
     load();
   };
 
   const openEdit = (debt: TechDebt) => {
     setEditing(debt);
     const plan = debt.repaymentPlan || {};
-    form.setFieldsValue({
+    form.setValues({
       ...debt,
       repaymentPlan: {
         ...plan,
@@ -139,10 +139,10 @@ export default function TechDebtPage() {
       key: 'action',
       render: (_: unknown, r: TechDebt) => (
         <Space>
-          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => setDetail(r)}>详情</Button>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>编辑</Button>
-          <Popconfirm title="确认删除？" onConfirm={async () => { await deleteTechDebt(r.id); message.success('已删除'); load(); }}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button theme="borderless" type="primary" size="small" icon={<FileTextOutlined />} onClick={() => setDetail(r)}>详情</Button>
+          <Button theme="borderless" type="primary" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>编辑</Button>
+          <Popconfirm title="确认删除？" onConfirm={async () => { await deleteTechDebt(r.id); Toast.success('已删除'); load(); }}>
+            <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -159,107 +159,117 @@ export default function TechDebtPage() {
   return (
     <Card
       title="技术债务分级与清偿计划"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新增</Button>}
+      headerExtraContent={<Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.reset(); setModalOpen(true); }}>新增</Button>}
     >
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}><Statistic title="债务总数" value={summary.total} /></Col>
-        <Col span={6}><Statistic title="致命级" value={summary.fatal} valueStyle={{ color: '#cf1322' }} /></Col>
-        <Col span={6}><Statistic title="严重级" value={summary.serious} valueStyle={{ color: '#ff4d4f' }} /></Col>
-        <Col span={6}><Statistic title="已解决" value={summary.resolved} valueStyle={{ color: '#3f8600' }} /></Col>
+        <Col span={6}>
+          <div>
+            <div style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>债务总数</div>
+            <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>{summary.total}</div>
+          </div>
+        </Col>
+        <Col span={6}>
+          <div>
+            <div style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>致命级</div>
+            <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4, color: 'var(--semi-color-danger)' }}>{summary.fatal}</div>
+          </div>
+        </Col>
+        <Col span={6}>
+          <div>
+            <div style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>严重级</div>
+            <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4, color: 'var(--semi-color-danger)' }}>{summary.serious}</div>
+          </div>
+        </Col>
+        <Col span={6}>
+          <div>
+            <div style={{ fontSize: 14, color: 'var(--semi-color-text-2)' }}>已解决</div>
+            <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4, color: 'var(--semi-color-success)' }}>{summary.resolved}</div>
+          </div>
+        </Col>
       </Row>
 
       <Table rowKey="id" columns={columns} dataSource={list ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
 
       <Modal
         title={editing ? '编辑技术债务' : '新增技术债务'}
-        open={modalOpen}
+        visible={modalOpen}
         onOk={handleSubmit}
-        onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }}
+        onCancel={() => { setModalOpen(false); setEditing(null); form.reset(); }}
         width={720}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="title" label="标题" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="code" label="编码" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="category" label="分类" initialValue="TECH_UPGRADE"><Input /></Form.Item>
-          <Form.Item name="severity" label="严重度" initialValue="MEDIUM">
-            <Select>
-              <Select.Option value="CRITICAL">严重</Select.Option>
-              <Select.Option value="HIGH">高</Select.Option>
-              <Select.Option value="MEDIUM">中</Select.Option>
-              <Select.Option value="LOW">低</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="debtLevel" label="债务等级" initialValue="GENERAL">
-            <Select>
-              <Select.Option value="FATAL">致命</Select.Option>
-              <Select.Option value="SERIOUS">严重</Select.Option>
-              <Select.Option value="GENERAL">一般</Select.Option>
-              <Select.Option value="MINOR">轻微</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="status" label="状态" initialValue="OPEN">
-            <Select>
-              <Select.Option value="OPEN">待处理</Select.Option>
-              <Select.Option value="IN_PROGRESS">处理中</Select.Option>
-              <Select.Option value="RESOLVED">已解决</Select.Option>
-              <Select.Option value="WONT_FIX">暂不修复</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="scopeType" label="影响范围类型">
-            <Select allowClear placeholder="APPLICATION / TECH_STACK / INFRASTRUCTURE / DATA_ENTITY">
-              <Select.Option value="APPLICATION">应用</Select.Option>
-              <Select.Option value="TECH_STACK">技术栈</Select.Option>
-              <Select.Option value="INFRASTRUCTURE">基础设施</Select.Option>
-              <Select.Option value="DATA_ENTITY">数据实体</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="scopeId" label="影响范围 ID"><Input /></Form.Item>
-          <Form.Item name="impactScore" label="影响分"><Input type="number" /></Form.Item>
-          <Form.Item name="remediation" label="修复方案"><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="estimatedEffort" label="预估投入"><Input placeholder="人天 / 工时" /></Form.Item>
-          <Form.Item name="owner" label="负责人"><Input /></Form.Item>
+        <Form form={form}>
+          <Form.Input field="title" label="标题" rules={[{ required: true }]} />
+          <Form.Input field="code" label="编码" rules={[{ required: true }]} />
+          <Form.TextArea field="description" label="描述" rows={2} />
+          <Form.Input field="category" label="分类" initValue="TECH_UPGRADE" />
+          <Form.Select field="severity" label="严重度" initValue="MEDIUM" optionList={[
+            { value: 'CRITICAL', label: '严重' },
+            { value: 'HIGH', label: '高' },
+            { value: 'MEDIUM', label: '中' },
+            { value: 'LOW', label: '低' },
+          ]} />
+          <Form.Select field="debtLevel" label="债务等级" initValue="GENERAL" optionList={[
+            { value: 'FATAL', label: '致命' },
+            { value: 'SERIOUS', label: '严重' },
+            { value: 'GENERAL', label: '一般' },
+            { value: 'MINOR', label: '轻微' },
+          ]} />
+          <Form.Select field="status" label="状态" initValue="OPEN" optionList={[
+            { value: 'OPEN', label: '待处理' },
+            { value: 'IN_PROGRESS', label: '处理中' },
+            { value: 'RESOLVED', label: '已解决' },
+            { value: 'WONT_FIX', label: '暂不修复' },
+          ]} />
+          <Form.Select field="scopeType" label="影响范围类型" showClear placeholder="APPLICATION / TECH_STACK / INFRASTRUCTURE / DATA_ENTITY" optionList={[
+            { value: 'APPLICATION', label: '应用' },
+            { value: 'TECH_STACK', label: '技术栈' },
+            { value: 'INFRASTRUCTURE', label: '基础设施' },
+            { value: 'DATA_ENTITY', label: '数据实体' },
+          ]} />
+          <Form.Input field="scopeId" label="影响范围 ID" />
+          <Form.InputNumber field="impactScore" label="影响分" />
+          <Form.TextArea field="remediation" label="修复方案" rows={2} />
+          <Form.Input field="estimatedEffort" label="预估投入" placeholder="人天 / 工时" />
+          <Form.Input field="owner" label="负责人" />
           <Typography.Text strong>清偿计划</Typography.Text>
-          <Form.Item name={['repaymentPlan', 'targetDate']} label="目标日期"><Input placeholder="YYYY-MM-DD" /></Form.Item>
-          <Form.Item name={['repaymentPlan', 'owner']} label="清偿负责人"><Input /></Form.Item>
-          <Form.Item name={['repaymentPlan', 'budget']} label="预算"><Input /></Form.Item>
-          <Form.Item name={['repaymentPlan', 'milestones']} label="里程碑（每行：名称,目标日期,状态）">
-            <Input.TextArea rows={3} placeholder="方案设计,2026-08-01,PENDING\n落地实施,2026-09-01,PENDING" />
-          </Form.Item>
-          <Form.Item name={['repaymentPlan', 'notes']} label="备注"><Input.TextArea rows={2} /></Form.Item>
+          <Form.Input field="repaymentPlan.targetDate" label="目标日期" placeholder="YYYY-MM-DD" />
+          <Form.Input field="repaymentPlan.owner" label="清偿负责人" />
+          <Form.Input field="repaymentPlan.budget" label="预算" />
+          <Form.TextArea field="repaymentPlan.milestones" label="里程碑（每行：名称,目标日期,状态）" rows={3} placeholder="方案设计,2026-08-01,PENDING\n落地实施,2026-09-01,PENDING" />
+          <Form.TextArea field="repaymentPlan.notes" label="备注" rows={2} />
         </Form>
       </Modal>
 
-      <Modal title="技术债务详情" open={!!detail} onCancel={() => setDetail(null)} footer={<Button type="primary" onClick={() => setDetail(null)}>关闭</Button>} width={640}>
+      <Modal title="技术债务详情" visible={!!detail} onCancel={() => setDetail(null)} footer={<Button theme="solid" type="primary" onClick={() => setDetail(null)}>关闭</Button>} width={640}>
         {detail && (
           <div>
-            <Typography.Title level={5}>{detail.title}</Typography.Title>
-            <Typography.Paragraph type="secondary">编码：{detail.code}</Typography.Paragraph>
-            <Typography.Paragraph type="secondary">描述：{detail.description || '-'}</Typography.Paragraph>
-            <Typography.Paragraph type="secondary">
+            <Typography.Title heading={5}>{detail.title}</Typography.Title>
+            <Typography.Paragraph type="tertiary">编码：{detail.code}</Typography.Paragraph>
+            <Typography.Paragraph type="tertiary">描述：{detail.description || '-'}</Typography.Paragraph>
+            <Typography.Paragraph type="tertiary">
               等级：<Tag color={LEVEL_TAG[detail.debtLevel]?.color}>{LEVEL_TAG[detail.debtLevel]?.label}</Tag>
             </Typography.Paragraph>
-            <Typography.Paragraph type="secondary">
+            <Typography.Paragraph type="tertiary">
               状态：<Tag color={STATUS_TAG[detail.status]?.color}>{STATUS_TAG[detail.status]?.label}</Tag>
             </Typography.Paragraph>
-            <Typography.Paragraph type="secondary">负责人：{detail.owner || '-'}</Typography.Paragraph>
+            <Typography.Paragraph type="tertiary">负责人：{detail.owner || '-'}</Typography.Paragraph>
             {detail.repaymentPlan && (
               <>
                 <Typography.Text strong>清偿计划</Typography.Text>
                 <Timeline
-                  items={(detail.repaymentPlan.milestones || []).map((m) => ({
+                  dataSource={(detail.repaymentPlan.milestones || []).map((m) => ({
                     color: m.status === 'DONE' ? 'green' : 'blue',
-                    children: (
+                    content: (
                       <div>
                         <Typography.Text strong>{m.name}</Typography.Text>
-                        <Tag color={m.status === 'DONE' ? 'green' : 'default'} style={{ marginLeft: 8 }}>{m.status || 'PENDING'}</Tag>
+                        <Tag color={m.status === 'DONE' ? 'green' : 'grey'} style={{ marginLeft: 8 }}>{m.status || 'PENDING'}</Tag>
                         <br />
-                        <Typography.Text type="secondary">{m.targetDate || '未排期'}</Typography.Text>
+                        <Typography.Text type="tertiary">{m.targetDate || '未排期'}</Typography.Text>
                       </div>
                     ),
                   }))}
                 />
-                {detail.repaymentPlan.notes && <Typography.Paragraph type="secondary">备注：{detail.repaymentPlan.notes}</Typography.Paragraph>}
+                {detail.repaymentPlan.notes && <Typography.Paragraph type="tertiary">备注：{detail.repaymentPlan.notes}</Typography.Paragraph>}
               </>
             )}
           </div>

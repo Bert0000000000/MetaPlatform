@@ -3,15 +3,15 @@ import {
   Button,
   Card,
   Empty,
+  Form,
   Input,
   Space,
   Table,
   Tag,
   Typography,
-  message,
-  Form,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+  Toast,
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { detectIntent, listIntentHistory } from '@/api/superai/schedule';
 import type { ScheduleIntent } from '@/api/superai/schedule';
@@ -19,8 +19,8 @@ import type { ScheduleIntent } from '@/api/superai/schedule';
 export default function ScheduleIntentPage() {
   const [intents, setIntents] = useState<ScheduleIntent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [form] = Form.useForm();
 
   const load = async () => {
     setLoading(true);
@@ -36,22 +36,23 @@ export default function ScheduleIntentPage() {
   }, []);
 
   const handleDetect = async () => {
+    const text = String(form.getValues().intentText ?? '');
     if (!text.trim()) {
-      message.warning('请输入');
+      Toast.warning('请输入');
       return;
     }
     setSubmitting(true);
     try {
       const i = await detectIntent(text);
-      setText('');
-      message.success(`识别为 ${i.detectedIntent}, 置信度 ${(i.confidence * 100).toFixed(0)}%`);
+      form.setValue('intentText', '');
+      Toast.success(`识别为 ${i.detectedIntent}, 置信度 ${(i.confidence * 100).toFixed(0)}%`);
       load();
     } finally {
       setSubmitting(false);
     }
   };
 
-  const columns: ColumnsType<ScheduleIntent> = [
+  const columns: ColumnProps<ScheduleIntent>[] = [
     {
       title: '原话',
       dataIndex: 'rawUtterance',
@@ -89,19 +90,19 @@ export default function ScheduleIntentPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>调度意图识别</Typography.Title>
+      <Typography.Title heading={4}>调度意图识别</Typography.Title>
 
       <Card style={{ marginBottom: 16 }}>
-        <Form layout="vertical">
-          <Form.Item label="输入一句话">
-            <Input.TextArea
-              rows={3}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="例如：每周一早上发邮件给我本周团队数据..."
-            />
-          </Form.Item>
+        <Form form={form}>
+          <Form.TextArea
+            field="intentText"
+            label="输入一句话"
+            rows={3}
+            initValue=""
+            placeholder="例如：每周一早上发邮件给我本周团队数据..."
+          />
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={submitting}

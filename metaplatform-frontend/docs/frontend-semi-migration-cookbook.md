@@ -27,7 +27,7 @@
 | `Button danger` | `type="danger"`（配 theme） | Semi 无 danger prop |
 | `Tag color="success/processing/error/default"` | `green/blue/red/grey` | TagColor 是预设联合类型，从 `@douyinfe/semi-ui/lib/es/tag` 导入 |
 | `message.success/error/warning/info` | `Toast.success/error/warning/info` | 全局命令式，无需 Provider |
-| `Modal` | `Modal` | `open/onOk/onCancel/confirmLoading/width` 兼容；无 `destroyOnClose` |
+| `Modal` | `Modal` | **`visible=`（没有 `open`！Semi 源码只读 props.visible）；`onOk/onCancel/confirmLoading/width` 兼容；无 `destroyOnClose` |
 | `Drawer` | **`SideSheet`** | 打开状态用 **`visible=`**（不是 open！）；无 keepDOM 类型 |
 | `Drawer extra=` | 自定义 title（flex 容器里放按钮） | SideSheet 无 extra |
 | `Alert` | `Banner` | 更名 |

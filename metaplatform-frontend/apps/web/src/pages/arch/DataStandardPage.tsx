@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Button, Table, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, Drawer } from 'antd';
+import { Card, Button, Table, Space, Modal, Form, Input, Select, Tag, Toast, Popconfirm, SideSheet } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { listStandards, createStandard, updateStandard, deleteStandard } from '@/api/arch/dataArchitecture';
 import type { DataStandard } from '@/api/arch/types';
@@ -22,42 +23,42 @@ export default function DataStandardPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.resetFields();
+    form.reset();
     setModalOpen(true);
   };
 
   const openEdit = (record: DataStandard) => {
     setEditing(record);
-    form.setFieldsValue(record);
+    form.setValues(record);
     setModalOpen(true);
   };
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     if (editing) {
       await updateStandard(editing.id, values);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createStandard(values);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
-    form.resetFields();
+    form.reset();
     load();
   };
 
   const handleDelete = async (id: string) => {
     await deleteStandard(id);
-    message.success('已删除');
+    Toast.success('已删除');
     load();
   };
 
-  const typeColor: Record<string, string> = { format: 'blue', enum: 'green', rule: 'orange', range: 'purple', regex: 'cyan' };
+  const typeColor: Record<string, TagColor> = { format: 'blue', enum: 'green', rule: 'orange', range: 'purple', regex: 'cyan' };
 
   const columns = [
     { title: '编码', dataIndex: 'code', key: 'code' },
     { title: '名称', dataIndex: 'name', key: 'name' },
-    { title: '类型', dataIndex: 'standardType', key: 'standardType', render: (v: string) => <Tag color={typeColor[v] || 'default'}>{v}</Tag> },
+    { title: '类型', dataIndex: 'standardType', key: 'standardType', render: (v: string) => <Tag color={typeColor[v] || 'grey'}>{v}</Tag> },
     { title: '规则', dataIndex: 'rule', key: 'rule', ellipsis: true },
     { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
     {
@@ -65,10 +66,10 @@ export default function DataStandardPage() {
       key: 'action',
       render: (_: unknown, r: DataStandard) => (
         <Space>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setPreview(r)}>预览</Button>
-          <Button type="link" size="small" onClick={() => openEdit(r)}>编辑</Button>
+          <Button theme="borderless" type="primary" size="small" icon={<EyeOutlined />} onClick={() => setPreview(r)}>预览</Button>
+          <Button theme="borderless" type="primary" size="small" onClick={() => openEdit(r)}>编辑</Button>
           <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -78,34 +79,32 @@ export default function DataStandardPage() {
   return (
     <Card
       title="数据标准管理"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建标准</Button>}
+      headerExtraContent={<Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建标准</Button>}
     >
       <Table rowKey="id" columns={columns} dataSource={standards ?? []} size="small" scroll={{ x: 'max-content' }} />
 
-      <Modal title={editing ? '编辑数据标准' : '新建数据标准'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.resetFields(); }}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="code" label="编码" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="standardType" label="类型" rules={[{ required: true }]}>
-            <Select options={STANDARD_TYPES.map((t) => ({ label: t, value: t }))} />
-          </Form.Item>
-          <Form.Item name="rule" label="规则"><Input.TextArea rows={3} placeholder="如正则表达式、枚举值、阈值范围等" /></Form.Item>
-          <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
+      <Modal title={editing ? '编辑数据标准' : '新建数据标准'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.reset(); }}>
+        <Form form={form}>
+          <Form.Input field="code" label="编码" rules={[{ required: true }]} />
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Select field="standardType" label="类型" rules={[{ required: true }]} optionList={STANDARD_TYPES.map((t) => ({ label: t, value: t }))} />
+          <Form.TextArea field="rule" label="规则" rows={3} placeholder="如正则表达式、枚举值、阈值范围等" />
+          <Form.TextArea field="description" label="描述" rows={2} />
         </Form>
       </Modal>
 
-      <Drawer title="规则预览" open={!!preview} onClose={() => setPreview(null)}>
+      <SideSheet title="规则预览" visible={!!preview} onCancel={() => setPreview(null)}>
         {preview && (
-          <Space orientation="vertical" style={{ width: '100%' }}>
+          <Space vertical style={{ width: '100%' }}>
             <div><strong>编码：</strong>{preview.code}</div>
             <div><strong>名称：</strong>{preview.name}</div>
-            <div><strong>类型：</strong><Tag color={typeColor[preview.standardType] || 'default'}>{preview.standardType}</Tag></div>
+            <div><strong>类型：</strong><Tag color={typeColor[preview.standardType] || 'grey'}>{preview.standardType}</Tag></div>
             <div><strong>规则：</strong></div>
-            <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4 }}>{preview.rule || '无'}</pre>
+            <pre style={{ background: 'var(--semi-color-fill-0)', padding: 12, borderRadius: 4 }}>{preview.rule || '无'}</pre>
             <div><strong>描述：</strong>{preview.description || '无'}</div>
           </Space>
         )}
-      </Drawer>
+      </SideSheet>
     </Card>
   );
 }

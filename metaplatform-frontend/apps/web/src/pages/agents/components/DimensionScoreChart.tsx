@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Empty } from 'antd';
+import { Empty } from '@douyinfe/semi-ui';
 import { DIMENSION_META } from '@/api/dw/types';
 import type { DimensionScore, EvaluationDimension } from '@/api/dw/types';
 
@@ -83,7 +83,7 @@ export default function DimensionScoreChart({
             key={idx}
             points={polygonPoints(radius * ring)}
             fill="none"
-            stroke="#e6e8eb"
+            stroke="var(--border)"
             strokeWidth={1}
           />
         ))}
@@ -97,7 +97,7 @@ export default function DimensionScoreChart({
               x={v.x + 4}
               y={v.y - 2}
               fontSize={9}
-              fill="#bfbfbf"
+              fill="var(--muted-foreground)"
             >
               {Math.round(ring * max)}
             </text>
@@ -114,7 +114,7 @@ export default function DimensionScoreChart({
               y1={cy}
               x2={v.x}
               y2={v.y}
-              stroke="#d9d9d9"
+              stroke="var(--border)"
               strokeWidth={1}
             />
           );
@@ -161,7 +161,7 @@ export default function DimensionScoreChart({
                 y={v.y}
                 fontSize={12}
                 fontWeight={600}
-                fill="#262626"
+                fill="var(--foreground)"
                 textAnchor={anchor}
                 dominantBaseline="middle"
               >

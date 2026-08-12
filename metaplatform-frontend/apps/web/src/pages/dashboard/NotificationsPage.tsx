@@ -1,7 +1,8 @@
 import { useApiErrorBoundary } from '@mate/shared';
 import type { NormalizedError } from '@mate/shared';
 import { useState } from 'react';
-import { Card, Tag, Typography, Space, Button, Segmented, Modal, Form, Switch, message } from 'antd';
+import { Card, Tag, Typography, Space, Button, Radio, Modal, Form, Switch, Toast } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useNavigate } from 'react-router-dom';
 import {
   getNotifications,
@@ -17,10 +18,12 @@ import { useAsync } from '@/hooks/useAsync';
 import { StateContainer, PageHeader } from '@/components/common';
 import { formatRelative } from '@/utils/datetime';
 
-const TYPE_LABEL: Record<NotificationType, { label: string; color: string }> = {
+const { Text } = Typography;
+
+const TYPE_LABEL: Record<NotificationType, { label: string; color: TagColor }> = {
   approval: { label: '审批', color: 'blue' },
   task: { label: '任务', color: 'green' },
-  system: { label: '系统', color: 'default' },
+  system: { label: '系统', color: 'grey' },
   mention: { label: '提及', color: 'purple' },
   alert: { label: '告警', color: 'red' },
 };
@@ -61,7 +64,7 @@ export default function NotificationsPage() {
     try {
       await markAllAsRead();
       reload();
-      message.success('已全部标记为已读');
+      Toast.success('已全部标记为已读');
     } catch (e) {
       report(e);
     }
@@ -70,7 +73,7 @@ export default function NotificationsPage() {
   const openSettings = async () => {
     try {
       const s = await getNotificationSettings();
-      form.setFieldsValue(s);
+      form.setValues(s);
       setSettingsOpen(true);
     } catch (e) {
       report(e);
@@ -81,7 +84,7 @@ export default function NotificationsPage() {
     try {
       await updateNotificationSettings(values);
       setSettingsOpen(false);
-      message.success('通知设置已保存');
+      Toast.success('通知设置已保存');
     } catch (e) {
       report(e);
     }
@@ -102,14 +105,15 @@ export default function NotificationsPage() {
         }
       />
       <Card>
-        <Segmented
+        <Radio.Group
+          type="button"
           options={[
             { label: '全部', value: 'all' },
             { label: '未读', value: 'unread' },
             { label: '已读', value: 'read' },
           ]}
           value={filter}
-          onChange={(v) => setFilter(v as NotificationReadStatus)}
+          onChange={(e) => setFilter(e.target.value as NotificationReadStatus)}
           style={{ marginBottom: 16 }}
         />
         <StateContainer
@@ -129,7 +133,7 @@ export default function NotificationsPage() {
                   justifyContent: 'space-between',
                   gap: 12,
                   padding: '12px 0',
-                  borderBottom: '1px solid #f0f0f0',
+                  borderBottom: '1px solid var(--border)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
@@ -139,27 +143,27 @@ export default function NotificationsPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div>
                       <Space>
-                        <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
-                        {!item.read && <Tag color="processing">未读</Tag>}
+                        <Text strong={!item.read}>{item.title}</Text>
+                        {!item.read && <Tag color="blue">未读</Tag>}
                       </Space>
                     </div>
-                    <div style={{ color: '#999', fontSize: 12 }}>
-                      <Typography.Text type="secondary">{item.content}</Typography.Text>
+                    <div style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
+                      <Text type="secondary">{item.content}</Text>
                       <div>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
                           {formatRelative(item.createdAt, settings)}
-                        </Typography.Text>
+                        </Text>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div style={{ flexShrink: 0 }}>
                   {item.read ? (
-                    <Button type="link" size="small" onClick={() => handleMarkUnread(item.id)}>
+                    <Button theme="borderless" size="small" onClick={() => handleMarkUnread(item.id)}>
                       标为未读
                     </Button>
                   ) : (
-                    <Button type="link" size="small" onClick={() => handleMarkRead(item.id)}>
+                    <Button theme="borderless" size="small" onClick={() => handleMarkRead(item.id)}>
                       标为已读
                     </Button>
                   )}
@@ -172,34 +176,20 @@ export default function NotificationsPage() {
 
       <Modal
         title="通知设置"
-        open={settingsOpen}
+        visible={settingsOpen}
         onCancel={() => setSettingsOpen(false)}
-        onOk={() => form.submit()}
+        onOk={() => form.submitForm()}
       >
-        <Form form={form} layout="vertical" onFinish={handleSaveSettings}>
-          <Typography.Text strong>通知类型</Typography.Text>
-          <Form.Item name="approval" label="审批通知" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="task" label="任务通知" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="system" label="系统通知" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="mention" label="提及通知" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="alert" label="告警通知" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Typography.Text strong>推送方式</Typography.Text>
-          <Form.Item name="email" label="邮件推送" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item name="push" label="实时推送" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+        <Form form={form} onSubmit={handleSaveSettings}>
+          <Text strong>通知类型</Text>
+          <Form.Switch field="approval" label="审批通知" />
+          <Form.Switch field="task" label="任务通知" />
+          <Form.Switch field="system" label="系统通知" />
+          <Form.Switch field="mention" label="提及通知" />
+          <Form.Switch field="alert" label="告警通知" />
+          <Text strong>推送方式</Text>
+          <Form.Switch field="email" label="邮件推送" />
+          <Form.Switch field="push" label="实时推送" />
         </Form>
       </Modal>
     </>

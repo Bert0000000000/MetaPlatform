@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Input, Spin, Typography, Empty } from 'antd';
+import { Input, Spin, Typography, Empty } from '@douyinfe/semi-ui';
 import { SearchOutlined } from '@ant-design/icons';
 import { globalSearch } from '@/api/dashboard/search';
 import type { SearchResult, SearchCategory } from '@/api/dashboard/types';
+
+const { Text } = Typography;
 
 const CATEGORY_LABEL: Record<SearchCategory, string> = {
   app: '应用',
@@ -53,9 +55,9 @@ export default function GlobalSearch() {
       <Input
         placeholder="全局搜索应用、知识、本体、任务..."
         prefix={<SearchOutlined />}
-        allowClear
+        showClear
         value={keyword}
-        onChange={(e) => setKeyword(e.target.value)}
+        onChange={(v) => setKeyword(v)}
         onFocus={() => setFocused(true)}
         onBlur={() => setTimeout(() => setFocused(false), 200)}
       />
@@ -66,7 +68,7 @@ export default function GlobalSearch() {
             top: '100%',
             left: 0,
             right: 0,
-            background: '#fff',
+            background: 'var(--card)',
             borderRadius: 8,
             boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
             zIndex: 1000,
@@ -79,17 +81,17 @@ export default function GlobalSearch() {
               <Spin />
             </div>
           ) : results.length === 0 ? (
-            <Empty description="未找到相关结果" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 16 }} />
+            <Empty description="未找到相关结果" style={{ padding: 16 }} />
           ) : (
             Object.entries(grouped).map(([cat, items]) => (
               <div key={cat}>
-                <Typography.Text type="secondary" style={{ fontSize: 12, padding: '8px 16px', display: 'block', background: '#fafafa' }}>
+                <Text type="secondary" style={{ fontSize: 12, padding: '8px 16px', display: 'block', background: 'var(--muted)' }}>
                   {CATEGORY_LABEL[cat as SearchCategory]}
-                </Typography.Text>
+                </Text>
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    style={{ padding: '8px 16px', cursor: 'pointer', borderBottom: '1px solid #f5f5f5' }}
+                    style={{ padding: '8px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
                     onMouseDown={() => {
                       window.open(item.link, '_blank');
                       setKeyword('');
@@ -97,11 +99,11 @@ export default function GlobalSearch() {
                   >
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <span>{CATEGORY_ICON[item.category]}</span>
-                      <Typography.Text strong>{item.title}</Typography.Text>
+                      <Text strong>{item.title}</Text>
                     </div>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
                       {item.description}
-                    </Typography.Text>
+                    </Text>
                   </div>
                 ))}
               </div>

@@ -1,4 +1,4 @@
-import { Card, Empty, Space, Steps, Tag, Typography } from 'antd';
+import { Card, Empty, Space, Steps, Tag, Typography } from '@douyinfe/semi-ui';
 import type { ExecutionPlan } from '@/api/superai/schedule';
 
 const PLAN: ExecutionPlan = {
@@ -18,9 +18,9 @@ const PLAN: ExecutionPlan = {
 export default function SchedulePlanCardPage() {
   return (
     <div>
-      <Typography.Title level={4}>调度计划卡片</Typography.Title>
+      <Typography.Title heading={4}>调度计划卡片</Typography.Title>
       <Card title={`计划 #${PLAN.planId}`} style={{ maxWidth: 720 }}>
-        <Space orientation="vertical" style={{ width: '100%' }}>
+        <Space vertical style={{ width: '100%' }}>
           <div>
             <Tag color="blue">{(PLAN.parallelGroups?.length || 0) > 0 ? '混合' : '顺序'}</Tag>
             <Typography.Text type="secondary">
@@ -30,17 +30,21 @@ export default function SchedulePlanCardPage() {
           <Steps
             direction="vertical"
             size="small"
-            items={PLAN.steps.map((s) => ({
-              title: s.name,
-              description: (
-                <Space>
-                  {s.employeeId && <Tag color="purple">{s.employeeId}</Tag>}
-                  {s.tool && <Tag color="cyan">{s.tool}</Tag>}
-                  <Tag>{s.estimatedDuration}s</Tag>
-                </Space>
-              ),
-            }))}
-          />
+          >
+            {PLAN.steps.map((s) => (
+              <Steps.Step
+                key={s.id}
+                title={s.name}
+                description={(
+                  <Space>
+                    {s.employeeId && <Tag color="purple">{s.employeeId}</Tag>}
+                    {s.tool && <Tag color="cyan">{s.tool}</Tag>}
+                    <Tag>{s.estimatedDuration}s</Tag>
+                  </Space>
+                )}
+              />
+            ))}
+          </Steps>
         </Space>
       </Card>
       <Empty description="这是示例卡片，实际生成的计划卡可见执行计划页" style={{ marginTop: 32 }} />

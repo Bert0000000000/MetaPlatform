@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Card, Input, Button, Empty, Tag, Space, Select, message, Row, Col, Statistic } from 'antd';
+import { Card, Input, InputGroup, Button, Empty, Tag, Space, Select } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { SendOutlined, ThunderboltOutlined, useApiErrorBoundary } from '@mate/shared';
 import {
   InteractionProvider, useInteractionContext, toInteractionContextJson,
@@ -68,9 +69,9 @@ function SuperAIInner() {
     <div style={{ padding: 24 }}>
       <Card
         title={<Space><ThunderboltOutlined /> SuperAI 统一入口</Space>}
-        extra={
+        headerExtraContent={
           <Space>
-            <Select value={mode} onChange={setMode} options={[
+            <Select value={mode} onChange={(v) => setMode(v as 'fast' | 'deep')} optionList={[
               { value: 'fast', label: 'Fast Query (简单事实)' },
               { value: 'deep', label: 'Deep Task (深度分析)' },
             ]} style={{ width: 220 }} />
@@ -82,13 +83,28 @@ function SuperAIInner() {
       >
         {latency != null && (
           <Row gutter={16} style={{ marginBottom: 12 }}>
-            <Col span={8}><Statistic title="总耗时" value={latency} suffix="ms" /></Col>
-            <Col span={8}><Statistic title="模式" value={mode === 'fast' ? 'Fast' : 'Deep'} /></Col>
-            <Col span={8}><Statistic title="消息数" value={messages.length} /></Col>
+            <Col span={8}>
+              <div>
+                <div style={{ color: 'var(--muted-foreground)', fontSize: 13 }}>总耗时</div>
+                <div style={{ fontSize: 24, fontWeight: 600 }}>{latency} ms</div>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div>
+                <div style={{ color: 'var(--muted-foreground)', fontSize: 13 }}>模式</div>
+                <div style={{ fontSize: 24, fontWeight: 600 }}>{mode === 'fast' ? 'Fast' : 'Deep'}</div>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div>
+                <div style={{ color: 'var(--muted-foreground)', fontSize: 13 }}>消息数</div>
+                <div style={{ fontSize: 24, fontWeight: 600 }}>{messages.length}</div>
+              </div>
+            </Col>
           </Row>
         )}
 
-        <div style={{ minHeight: 400, maxHeight: 600, overflowY: 'auto', border: '1px solid #f0f0f0', padding: 12, borderRadius: 6 }}>
+        <div style={{ minHeight: 400, maxHeight: 600, overflowY: 'auto', border: '1px solid var(--border)', padding: 12, borderRadius: 6 }}>
           {messages.length === 0 ? (
             <Empty description="输入问题开始对话" />
           ) : (
@@ -96,7 +112,7 @@ function SuperAIInner() {
               {messages.map((msg, i) => (
                 <div key={i} style={{ border: 'none', padding: '6px 0' }}>
                   {msg.role === 'user' ? (
-                    <div style={{ background: '#1677ff', color: 'white', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
+                    <div style={{ background: 'var(--primary)', color: 'var(--white, #fff)', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
                       {msg.content}
                     </div>
                   ) : (
@@ -109,7 +125,7 @@ function SuperAIInner() {
                         </Space>
                       )}
                       {msg.content && (
-                        <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, marginBottom: 8 }}>{msg.content}</div>
+                        <div style={{ background: 'var(--muted)', padding: 12, borderRadius: 6, marginBottom: 8 }}>{msg.content}</div>
                       )}
                       {msg.claims?.map((c: any, k: number) => <ClaimRenderer key={k} claim={c} />)}
                       {(msg.evidences ?? []).length > 0 && (
@@ -128,17 +144,17 @@ function SuperAIInner() {
           )}
         </div>
 
-        <Input.Group compact style={{ marginTop: 12 }}>
+        <InputGroup style={{ marginTop: 12 }}>
           <Input
             style={{ width: '85%' }}
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onPressEnter={send}
+            onChange={(v) => setInput(v)}
+            onEnterPress={send}
             placeholder="例如：分析华东区销售下降原因"
             disabled={streaming}
           />
-          <Button type="primary" icon={<SendOutlined />} loading={streaming} onClick={send}>发送</Button>
-        </Input.Group>
+          <Button theme="solid" type="primary" icon={<SendOutlined />} loading={streaming} onClick={send}>发送</Button>
+        </InputGroup>
       </Card>
     </div>
   );

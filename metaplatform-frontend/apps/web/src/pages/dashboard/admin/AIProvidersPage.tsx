@@ -6,21 +6,20 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  App,
+  Banner,
   Button,
   Card,
   Form,
   Input,
   Modal,
-  Radio,
   Select,
   Space,
   Spin,
   Switch,
   Tag,
   Tooltip,
-} from "antd";
+  Toast,
+} from "@douyinfe/semi-ui";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -123,9 +122,18 @@ interface TestState {
   latencyMs?: number;
 }
 
+// 表单字段 label（Form.Item 无 Semi 等价物，用 div 呈现）
+function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div style={{ fontSize: 14, marginBottom: hint ? 2 : 0 }}>{children}</div>
+      {hint && <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{hint}</div>}
+    </div>
+  );
+}
+
 export default function AIProvidersPage() {
   const { settings } = useSettings();
-  const { message } = App.useApp();
   const [items, setItems] = useState<AdminSystemConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [defaultActive, setDefaultActive] = useState<string>("openai");
@@ -198,12 +206,12 @@ export default function AIProvidersPage() {
   const handleAddCustom = async () => {
     const name = newProviderName.trim();
     if (!name) {
-      message.warning("请输入名称");
+      Toast.warning("请输入名称");
       return;
     }
     const instanceId = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").slice(0, 20);
     if (customProviderIds.includes(instanceId)) {
-      message.warning("该 Provider 已存在");
+      Toast.warning("该 Provider 已存在");
       return;
     }
     setAdding(true);
@@ -215,12 +223,12 @@ export default function AIProvidersPage() {
         { key: `ai.provider.${instanceId}.default_model`, value: "", value_type: "string", label: `${name} 默认模型` },
         { key: `ai.provider.${instanceId}.label`, value: name, value_type: "string", label: `${name} 显示名` },
       ]);
-      message.success(`已添加 ${name}`);
+      Toast.success(`已添加 ${name}`);
       setAddModalOpen(false);
       setNewProviderName("");
       await load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : "添加失败");
+      Toast.error(e instanceof Error ? e.message : "添加失败");
     } finally {
       setAdding(false);
     }
@@ -256,7 +264,7 @@ export default function AIProvidersPage() {
     const cfg = pickByKey(provider, "base_url");
     const baseUrl = cfg && typeof cfg.value === "string" ? cfg.value : "";
     if (!baseUrl) {
-      message.warning("请先填写 Base URL");
+      Toast.warning("请先填写 Base URL");
       return;
     }
     const apiKeyCfg = pickByKey(provider, "api_key");
@@ -279,7 +287,7 @@ export default function AIProvidersPage() {
         timeout_sec: 15,
       });
       if (!result.ok || result.models.length === 0) {
-        message.warning(result.message || "未获取到模型");
+        Toast.warning(result.message || "未获取到模型");
         return;
       }
       await saveAiModelsBulk(
@@ -291,11 +299,11 @@ export default function AIProvidersPage() {
           enabled: true,
         })),
       );
-      message.success(`已获取 ${result.models.length} 个模型并保存`);
+      Toast.success(`已获取 ${result.models.length} 个模型并保存`);
       const refreshed = await listAiModels({ provider });
       setModels((s) => ({ ...s, [provider]: refreshed }));
     } catch (e) {
-      message.error(e instanceof Error ? e.message : "获取模型失败");
+      Toast.error(e instanceof Error ? e.message : "获取模型失败");
     } finally {
       setFetchingModels((s) => ({ ...s, [provider]: false }));
     }
@@ -309,7 +317,7 @@ export default function AIProvidersPage() {
       const refreshed = await listAiModels({ provider });
       setModels((s) => ({ ...s, [provider]: refreshed }));
     } catch {
-      message.error("更新失败");
+      Toast.error("更新失败");
     }
   };
 
@@ -322,9 +330,9 @@ export default function AIProvidersPage() {
         ...s,
         [provider]: s[provider].filter((m) => m.id !== model.id),
       }));
-      message.success("已删除模型");
+      Toast.success("已删除模型");
     } catch {
-      message.error("删除失败");
+      Toast.error("删除失败");
     }
   };
 
@@ -348,7 +356,7 @@ export default function AIProvidersPage() {
       for (const s of suffixes) {
         const cfg = pickByKey(provider, s);
         if (!cfg) continue;
-        // 从 DOM 读最新值：antd Input / Input.Password 渲染为 <input>
+        // 从 DOM 读最新值：Input / Input(mode=password) 渲染为 <input>
         const el = document.querySelector(`[data-cfg-key="${cfg.key}"]`) as HTMLInputElement | null;
         if (!el) continue;
         const raw = el.value;
@@ -361,7 +369,7 @@ export default function AIProvidersPage() {
         if (cfg.valueType === "int") payload = parseInt(raw, 10);
         await updateConfig(cfg.key, payload, "AI Provider 配置调整");
       }
-      message.success("已保存");
+      Toast.success("已保存");
       await load();
     } catch {
       /* ignore */
@@ -379,7 +387,7 @@ export default function AIProvidersPage() {
   const handleToggle = async (provider: ProviderId, enabled: boolean) => {
     try {
       await setField(provider, "enabled", enabled, "bool");
-      message.success((enabled ? "已启用 " : "已禁用 ") + getProviderMeta(provider).name);
+      Toast.success((enabled ? "已启用 " : "已禁用 ") + getProviderMeta(provider).name);
       load();
     } catch {
       /* ignore */
@@ -390,7 +398,7 @@ export default function AIProvidersPage() {
     setDefaultActive(val);
     try {
       await updateConfig("ai.provider.default_active", val, "切换默认 AI Provider");
-      message.success("默认 Provider 已切换");
+      Toast.success("默认 Provider 已切换");
       load();
     } catch {
       /* ignore */
@@ -404,7 +412,7 @@ export default function AIProvidersPage() {
     const cfg = pickByKey(provider, "base_url");
     const baseUrl = cfg && typeof cfg.value === "string" ? cfg.value : "";
     if (!baseUrl) {
-      message.warning("请先填写 Base URL");
+      Toast.warning("请先填写 Base URL");
       return;
     }
     setTestStates((s) => ({ ...s, [provider]: { status: "loading" } }));
@@ -471,84 +479,87 @@ export default function AIProvidersPage() {
           <Space>
             <span style={{ color: meta.color, fontSize: 18 }}>{meta.icon}</span>
             <strong>{meta.name}</strong>
-            {isEnabled ? <Tag color="success">已启用</Tag> : <Tag>未启用</Tag>}
-            {defaultActive === id && <Tag color="processing">默认</Tag>}
+            {isEnabled ? <Tag color="green">已启用</Tag> : <Tag>未启用</Tag>}
+            {defaultActive === id && <Tag color="blue">默认</Tag>}
           </Space>
         }
-        extra={
+        headerExtraContent={
           <Switch
             checked={isEnabled}
             onChange={(v) => handleToggle(id, v)}
-            checkedChildren="ON"
-            unCheckedChildren="OFF"
+            checkedText="ON"
+            uncheckedText="OFF"
           />
         }
         style={{ borderRadius: 8 }}
       >
         <p style={{ color: "var(--muted-foreground)", marginTop: 0 }}>{meta.description}</p>
-        <Form layout="vertical">
-          <Form.Item
-            label={
-              <Space>
-                <span>Base URL</span>
-                <Tooltip title={`示例：${meta.baseUrlExample}`}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div style={{ marginBottom: 6 }}>
+              <Space spacing={8}>
+                <span style={{ fontSize: 14 }}>Base URL</span>
+                <Tooltip content={`示例：${meta.baseUrlExample}`}>
                   <Tag style={{ marginLeft: 0 }}>示例</Tag>
                 </Tooltip>
               </Space>
-            }
-          >
+            </div>
             <Input
               data-cfg-key={baseUrl?.key}
               defaultValue={renderValue(baseUrl, id, meta.baseUrlExample)}
               placeholder={meta.baseUrlExample}
               disabled={!isEnabled}
             />
-          </Form.Item>
-          <Form.Item label="API Key">
-            <Input.Password
+          </div>
+          <div>
+            <FieldLabel>API Key</FieldLabel>
+            <Input
+              mode="password"
               data-cfg-key={apiKey?.key}
               defaultValue={(apiKey?.value as string) ?? ""}
               placeholder={apiKey?.value ? "已设置（输入新值覆盖）" : "输入 API Key"}
               disabled={!isEnabled}
             />
-          </Form.Item>
-          <Form.Item label="默认模型">
+          </div>
+          <div>
+            <FieldLabel>默认模型</FieldLabel>
             <Input
               data-cfg-key={defaultModel?.key}
               defaultValue={renderValue(defaultModel, id, meta.defaultModelExample)}
               placeholder={meta.defaultModelExample}
               disabled={!isEnabled}
             />
-          </Form.Item>
+          </div>
           {apiVersion && (
-            <Form.Item label="API Version">
+            <div>
+              <FieldLabel>API Version</FieldLabel>
               <Input
                 data-cfg-key={apiVersion.key}
                 defaultValue={renderValue(apiVersion, id, "2024-02-01")}
                 placeholder="2024-02-01"
                 disabled={!isEnabled}
               />
-            </Form.Item>
+            </div>
           )}
-        </Form>
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
           <Space>
             {testState.status === "idle" && (
-              <Tag icon={<ThunderboltOutlined />}>未测试</Tag>
+              <Tag prefixIcon={<ThunderboltOutlined />}>未测试</Tag>
             )}
             {testState.status === "loading" && (
-              <Tag icon={<LoadingOutlined />} color="processing">
+              <Tag prefixIcon={<LoadingOutlined />} color="blue">
                 测试中…
               </Tag>
             )}
             {testState.status === "ok" && (
-              <Tag icon={<CheckCircleOutlined />} color="success">
+              <Tag prefixIcon={<CheckCircleOutlined />} color="green">
                 {testState.message}
                 {testState.latencyMs ? " · " + testState.latencyMs + "ms" : ""}
               </Tag>
             )}
             {testState.status === "fail" && (
-              <Tag icon={<CloseCircleOutlined />} color="error">
+              <Tag prefixIcon={<CloseCircleOutlined />} color="red">
                 {testState.message}
               </Tag>
             )}
@@ -570,6 +581,7 @@ export default function AIProvidersPage() {
               获取模型
             </Button>
             <Button
+              theme="solid"
               type="primary"
               icon={<CheckCircleOutlined />}
               onClick={() => handleSave(id)}
@@ -587,16 +599,16 @@ export default function AIProvidersPage() {
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "var(--muted-foreground)" }}>
               已配置模型（{models[id].length}）
             </div>
-            <Space wrap size={[4, 4]}>
+            <Space wrap spacing={[4, 4]}>
               {models[id].map((m) => (
                 <Tag
                   key={m.id}
                   closable
-                  onClose={(e) => {
+                  onClose={(_v, e) => {
                     e.preventDefault();
                     handleDeleteModel(m);
                   }}
-                  icon={
+                  prefixIcon={
                     <Switch
                       size="small"
                       checked={m.enabled}
@@ -622,6 +634,7 @@ export default function AIProvidersPage() {
       extra={
         <Space>
           <Button
+            theme="solid"
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setAddModalOpen(true)}
@@ -645,13 +658,12 @@ export default function AIProvidersPage() {
         />
       </StatGrid>
 
-      <Alert
+      <Banner
         style={{ marginBottom: 16 }}
         type="info"
-        showIcon
         title="AI Provider 配置对接到外部第三方模型服务"
         description={
-          <Space orientation="vertical" size={4} style={{ width: "100%" }}>
+          <Space vertical spacing={4} style={{ width: "100%" }}>
             <span>
               下游 AI 助手 / Agent / 知识库检索会按"默认生效"选择实际调用的 provider。修改后请使用「测试连接」验证连通性。
             </span>
@@ -660,9 +672,9 @@ export default function AIProvidersPage() {
               <Select
                 size="small"
                 value={defaultActive}
-                onChange={handleDefaultChange}
+                onChange={(v) => handleDefaultChange(v as string)}
                 style={{ marginLeft: 8, minWidth: 200 }}
-                options={[
+                optionList={[
                   ...BUILTIN_PROVIDERS.map((id) => ({ value: id, label: `${PROVIDER_META[id as keyof typeof PROVIDER_META].name}（内置）` })),
                   ...customProviderIds.map((id) => ({ value: id, label: getProviderMeta(id).name })),
                   { value: "disabled", label: "禁用（临时下线）" },
@@ -691,28 +703,23 @@ export default function AIProvidersPage() {
 
       <Modal
         title="添加自定义 Provider"
-        open={addModalOpen}
+        visible={addModalOpen}
         onCancel={() => setAddModalOpen(false)}
         onOk={handleAddCustom}
         confirmLoading={adding}
         okText="添加"
         cancelText="取消"
       >
-        <Form layout="vertical">
-          <Form.Item
-            label="Provider 名称"
-            help="输入显示名称（如「智谱 GLM」「DeepSeek」「公司自建」），系统自动生成 instanceId"
-            required
-          >
-            <Input
-              value={newProviderName}
-              onChange={(e) => setNewProviderName(e.target.value)}
-              placeholder="例如：智谱 GLM"
-              maxLength={20}
-              onPressEnter={handleAddCustom}
-            />
-          </Form.Item>
-        </Form>
+        <FieldLabel hint="输入显示名称（如「智谱 GLM」「DeepSeek」「公司自建」），系统自动生成 instanceId">
+          Provider 名称
+        </FieldLabel>
+        <Input
+          value={newProviderName}
+          onChange={(v) => setNewProviderName(v)}
+          placeholder="例如：智谱 GLM"
+          maxLength={20}
+          onEnterPress={handleAddCustom}
+        />
       </Modal>
     </AdminLayout>
   );

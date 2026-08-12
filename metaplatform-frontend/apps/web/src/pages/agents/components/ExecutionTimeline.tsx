@@ -1,4 +1,5 @@
-import { Card, Tag, Timeline, Typography } from 'antd';
+import { Card, Tag, Timeline, Typography } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import type { EmployeeTask } from '@/api/dw/types';
 
 interface ExecutionTimelineProps {
@@ -21,7 +22,7 @@ const MOCK_STEPS: Step[] = [
   { id: '5', name: '汇总输出', status: 'pending', timestamp: '', type: 'finalize' },
 ];
 
-const STEP_TYPE_COLOR: Record<Step['type'], string> = {
+const STEP_TYPE_COLOR: Record<Step['type'], TagColor> = {
   plan: 'blue',
   tool: 'purple',
   retrieve: 'cyan',
@@ -29,43 +30,42 @@ const STEP_TYPE_COLOR: Record<Step['type'], string> = {
   finalize: 'green',
 };
 
+// Timeline 圆点颜色（Semi Timeline.Item color 直接作为 CSS backgroundColor）
+const DOT_COLOR: Record<Step['status'], string> = {
+  completed: 'var(--semi-color-success)',
+  current: 'var(--semi-color-primary)',
+  pending: 'var(--semi-color-tertiary)',
+  failed: 'var(--semi-color-danger)',
+};
+
+const STATUS_TAG_COLOR: Record<Step['status'], TagColor> = {
+  completed: 'green',
+  current: 'blue',
+  pending: 'grey',
+  failed: 'red',
+};
+
 export default function ExecutionTimeline({ task }: ExecutionTimelineProps) {
   return (
     <Card title={`执行轨迹 - ${task.title}`}>
-      <Timeline
-        items={MOCK_STEPS.map((s) => ({
-          color:
-            s.status === 'completed'
-              ? 'green'
-              : s.status === 'current'
-                ? 'blue'
-                : s.status === 'failed'
-                  ? 'red'
-                  : 'gray',
-          children: (
+      <Timeline>
+        {MOCK_STEPS.map((s) => (
+          <Timeline.Item key={s.id} color={DOT_COLOR[s.status]}>
             <div>
               <Typography.Text strong>{s.name}</Typography.Text>
               <div>
                 <Tag color={STEP_TYPE_COLOR[s.type]}>{s.type}</Tag>
-                <Tag color={
-                  s.status === 'completed'
-                    ? 'green'
-                    : s.status === 'current'
-                      ? 'blue'
-                      : s.status === 'failed'
-                        ? 'red'
-                        : 'default'
-                }>{s.status}</Tag>
+                <Tag color={STATUS_TAG_COLOR[s.status]}>{s.status}</Tag>
                 {s.timestamp && (
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                     {' '} {new Date(s.timestamp).toLocaleTimeString()}
                   </Typography.Text>
                 )}
               </div>
             </div>
-          ),
-        }))}
-      />
+          </Timeline.Item>
+        ))}
+      </Timeline>
     </Card>
   );
 }

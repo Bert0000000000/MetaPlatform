@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
-  Drawer,
+  SideSheet,
   Form,
   Input,
   InputNumber,
   Select,
   Space,
-  Switch,
   Table,
   Tag,
-  message,
-} from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, ReloadOutlined } from "@ant-design/icons";
+  Toast,
+} from "@douyinfe/semi-ui";
+import type { TagColor } from "@douyinfe/semi-ui/lib/es/tag";
+import type { ColumnProps } from "@douyinfe/semi-ui/lib/es/table";
+import { EditOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import {
   listConfigCategories,
   listConfigs,
@@ -35,16 +35,43 @@ const CATEGORY_LABEL: Record<ConfigCategory, string> = {
   OTHER: "其他",
 };
 
-const CATEGORY_COLOR: Record<ConfigCategory, string> = {
-  SSO: "geekblue",
-  LICENSE: "gold",
+const CATEGORY_COLOR: Record<ConfigCategory, TagColor> = {
+  SSO: "indigo",
+  LICENSE: "yellow",
   MESSAGE: "purple",
   RATE_LIMIT: "orange",
   SECURITY: "red",
   BRANDING: "cyan",
-  AI_PROVIDER: "magenta",
-  OTHER: "default",
+  AI_PROVIDER: "pink",
+  OTHER: "grey",
 };
+
+// 轻量搜索框（antd Input.Search 无 Semi 等价物：Enter 或点击放大镜触发）
+function SearchInput({
+  value,
+  onChange,
+  onSearch,
+  placeholder,
+  style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSearch: () => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onEnterPress={() => onSearch()}
+      showClear
+      suffix={<SearchOutlined style={{ cursor: "pointer" }} onClick={() => onSearch()} />}
+      style={{ maxWidth: 280, ...style }}
+    />
+  );
+}
 
 export default function ConfigsPage() {
   const { settings } = useSettings();
@@ -98,7 +125,7 @@ export default function ConfigsPage() {
     if (cfg.isSensitive) return <span style={{ fontFamily: "var(--font-mono)" }}>****</span>;
     switch (cfg.valueType) {
       case "bool":
-        return <Tag color={cfg.value ? "success" : "default"}>{cfg.value ? "true" : "false"}</Tag>;
+        return <Tag color={cfg.value ? "green" : "grey"}>{cfg.value ? "true" : "false"}</Tag>;
       case "int":
         return <span style={{ fontFamily: "var(--font-mono)" }}>{String(cfg.value ?? "")}</span>;
       case "enum":
@@ -116,7 +143,7 @@ export default function ConfigsPage() {
 
   const openEdit = (cfg: AdminSystemConfig) => {
     setEditTarget(cfg);
-    editForm.setFieldsValue({
+    editForm.setValues({
       value: cfg.value ?? "",
       note: "",
     });
@@ -125,19 +152,19 @@ export default function ConfigsPage() {
 
   const submit = async () => {
     if (!editTarget) return;
-    const v = await editForm.validateFields();
+    const v = await editForm.validate();
     try {
       let payload = v.value;
       if (editTarget.valueType === "json" && typeof v.value === "string") {
         try {
           payload = JSON.parse(v.value);
         } catch {
-          message.error("JSON 格式不合法");
+          Toast.error("JSON 格式不合法");
           return;
         }
       }
       await updateConfig(editTarget.key, payload, v.note);
-      message.success("已更新");
+      Toast.success("已更新");
       setEditOpen(false);
       load();
     } catch {
@@ -145,7 +172,7 @@ export default function ConfigsPage() {
     }
   };
 
-  const columns: ColumnsType<AdminSystemConfig> = useMemo(
+  const columns: ColumnProps<AdminSystemConfig>[] = useMemo(
     () => [
       { title: "Key", dataIndex: "key", render: (v: string) => (<span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{v}</span>) },
       { title: "名称", dataIndex: "label" },
@@ -155,7 +182,7 @@ export default function ConfigsPage() {
       { title: "敏感", dataIndex: "isSensitive", render: (v: boolean) => (v ? <Tag color="red">是</Tag> : <Tag>否</Tag>) },
       { title: "更新时间", dataIndex: "updatedAt", render: (v: string) => (<span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{formatDateTime(v, settings)}</span>) },
       { title: "更新人", dataIndex: "updatedBy", render: (v?: string) => v ?? "-" },
-      { title: "操作", key: "actions", width: 100, render: (_v, r) => (<Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>编辑</Button>) },
+      { title: "操作", key: "actions", width: 100, render: (_v, r) => (<Button theme="borderless" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>编辑</Button>) },
     ],
     [settings],
   );
@@ -164,18 +191,18 @@ export default function ConfigsPage() {
     if (!editTarget) return null;
     const t = editTarget.valueType;
     if (t === "bool") {
-      return <Form.Item name="value" label="值" valuePropName="checked"><Switch /></Form.Item>;
+      return <Form.Switch field="value" label="值" />;
     }
     if (t === "int") {
-      return <Form.Item name="value" label="值" rules={[{ required: true }]}><InputNumber style={{ width: "100%" }} /></Form.Item>;
+      return <Form.InputNumber field="value" label="值" rules={[{ required: true }]} style={{ width: "100%" }} />;
     }
     if (t === "enum") {
-      return <Form.Item name="value" label="值" rules={[{ required: true }]}><Select options={editTarget.enumOptions.map((o) => ({ value: o, label: o }))} /></Form.Item>;
+      return <Form.Select field="value" label="值" rules={[{ required: true }]} optionList={editTarget.enumOptions.map((o) => ({ value: o, label: o }))} />;
     }
     if (t === "json") {
-      return <Form.Item name="value" label="值 (JSON)" rules={[{ required: true }]}><Input.TextArea autoSize={{ minRows: 4 }} placeholder='{"key": "value"}' /></Form.Item>;
+      return <Form.TextArea field="value" label="值 (JSON)" rules={[{ required: true }]} autosize={{ minRows: 4 }} placeholder='{"key": "value"}' />;
     }
-    return <Form.Item name="value" label="值" rules={[{ required: true }]}><Input.Password placeholder={editTarget.isSensitive ? "敏感字段，输入新值" : ""} /></Form.Item>;
+    return <Form.Input field="value" label="值" rules={[{ required: true }]} mode="password" placeholder={editTarget.isSensitive ? "敏感字段，输入新值" : ""} />;
   };
 
   const stats = useMemo(() => {
@@ -202,29 +229,45 @@ export default function ConfigsPage() {
         <StatCard label="系统配置" value={stats.systemConfig} color="warning" />
       </StatGrid>
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, marginBottom: 12, display: "flex", gap: 8 }}>
-        <Input.Search placeholder="搜索 Key" allowClear value={keyword} onChange={(e) => setKeyword(e.target.value)} onSearch={() => { setPage(1); load(); }} style={{ maxWidth: 280 }} />
-        <Select placeholder="分类" value={category} onChange={(v) => { setCategory(v); setPage(1); }} allowClear style={{ width: 200 }} options={Array.isArray(categories) ? categories.map((c) => ({ value: c.value, label: (CATEGORY_LABEL[c.value as ConfigCategory] ?? c.value) + " (" + c.count + ")" })) : []} />
+        <SearchInput placeholder="搜索 Key" value={keyword} onChange={(v) => setKeyword(v)} onSearch={() => { setPage(1); load(); }} />
+        <Select placeholder="分类" value={category} onChange={(v) => { setCategory(v as ConfigCategory | undefined); setPage(1); }} showClear style={{ width: 200 }} optionList={Array.isArray(categories) ? categories.map((c) => ({ value: c.value, label: (CATEGORY_LABEL[c.value as ConfigCategory] ?? c.value) + " (" + c.count + ")" })) : []} />
       </div>
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, padding: 8 }}>
-        <Table rowKey="id" loading={loading} columns={columns} dataSource={items ?? []} pagination={{ current: page, pageSize, total, showSizeChanger: true, onChange: (p, ps) => { setPage(p); setPageSize(ps); } }} size="middle" />
+        <Table rowKey="id" loading={loading} columns={columns} dataSource={items ?? []} pagination={{ currentPage: page, pageSize, total, showSizeChanger: true, onPageChange: (p) => setPage(p), onPageSizeChange: (ps) => setPageSize(ps) }} size="middle" />
       </div>
-      <Drawer
+      <SideSheet
         title={editTarget ? "编辑配置 - " + editTarget.key : ""}
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        size={520}
-        extra={<Space><Button onClick={() => setEditOpen(false)}>取消</Button><Button type="primary" onClick={submit}>保存</Button></Space>}
+        visible={editOpen}
+        onCancel={() => setEditOpen(false)}
+        width={520}
+        footer={
+          <Space>
+            <Button onClick={() => setEditOpen(false)}>取消</Button>
+            <Button theme="solid" type="primary" onClick={submit}>保存</Button>
+          </Space>
+        }
       >
         {editTarget && (
-          <Form form={editForm} layout="vertical" preserve={false}>
-            <Form.Item label="Key"><Input value={editTarget.key} disabled /></Form.Item>
-            <Form.Item label="名称"><Input value={editTarget.label ?? ""} disabled /></Form.Item>
-            <Form.Item label="分类"><Tag color={CATEGORY_COLOR[editTarget.category]}>{CATEGORY_LABEL[editTarget.category] ?? editTarget.category}</Tag></Form.Item>
+          <Form form={editForm}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>Key</div>
+                <Input value={editTarget.key} disabled />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>名称</div>
+                <Input value={editTarget.label ?? ""} disabled />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 4 }}>分类</div>
+                <Tag color={CATEGORY_COLOR[editTarget.category]}>{CATEGORY_LABEL[editTarget.category] ?? editTarget.category}</Tag>
+              </div>
+            </div>
             {renderValueInput()}
-            <Form.Item name="note" label="变更原因（写入审计日志）"><Input.TextArea autoSize={{ minRows: 2 }} placeholder="说明本次变更的背景" /></Form.Item>
+            <Form.TextArea field="note" label="变更原因（写入审计日志）" autosize={{ minRows: 2 }} placeholder="说明本次变更的背景" />
           </Form>
         )}
-      </Drawer>
+      </SideSheet>
     </AdminLayout>
   );
 }

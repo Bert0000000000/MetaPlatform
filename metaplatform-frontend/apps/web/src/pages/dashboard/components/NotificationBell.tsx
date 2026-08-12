@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Badge, Button, Dropdown, Typography, Space, Empty, Tabs, Popconfirm, Tooltip } from 'antd';
+import { Badge, Button, Dropdown, Typography, Space, Empty, Tabs, Popconfirm, Tooltip } from '@douyinfe/semi-ui';
 import { BellOutlined, CheckOutlined, ClearOutlined } from '@ant-design/icons';
 import { getNotifications, markAsRead, markAllAsRead, getUnreadCount } from '@/api/dashboard/notifications';
 import { useWebSocket, type WsMessage } from '../hooks/useWebSocket';
 import type { NotificationItem, NotificationType, NotificationCategory } from '@/api/dashboard/types';
 import { categorizeNotification } from '@/api/dashboard/types';
+
+const { Text } = Typography;
 
 const TYPE_ICON: Record<NotificationType, string> = {
   approval: '📋',
@@ -105,7 +107,7 @@ export default function NotificationBell() {
     <div
       style={{
         width: 380,
-        background: '#fff',
+        background: 'var(--card)',
         borderRadius: 8,
         boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
         maxHeight: 520,
@@ -120,14 +122,14 @@ export default function NotificationBell() {
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '12px 16px',
-          borderBottom: '1px solid #f0f0f0',
+          borderBottom: '1px solid var(--border)',
         }}
       >
-        <Typography.Text strong>通知</Typography.Text>
-        <Space size="small">
-          <Tooltip title="将当前可见通知全部标记为已读">
+        <Text strong>通知</Text>
+        <Space spacing="tight">
+          <Tooltip content="将当前可见通知全部标记为已读">
             <Button
-              type="link"
+              theme="borderless"
               size="small"
               icon={<CheckOutlined />}
               onClick={handleMarkAll}
@@ -138,15 +140,15 @@ export default function NotificationBell() {
           </Tooltip>
           <Popconfirm
             title="确认清空通知列表？"
-            description="将清空当前所有通知（含未读），不可恢复。"
+            content="将清空当前所有通知（含未读），不可恢复。"
             okText="清空"
             cancelText="取消"
-            okButtonProps={{ danger: true }}
+            okType="danger"
             onConfirm={handleClearAll}
             disabled={list.length === 0}
           >
-            <Tooltip title="清空所有通知">
-              <Button type="link" size="small" danger icon={<ClearOutlined />} disabled={list.length === 0}>
+            <Tooltip content="清空所有通知">
+              <Button theme="borderless" size="small" type="danger" icon={<ClearOutlined />} disabled={list.length === 0}>
                 清空
               </Button>
             </Tooltip>
@@ -159,31 +161,33 @@ export default function NotificationBell() {
         onChange={(key) => setActiveCategory(key as NotificationCategory)}
         size="small"
         style={{ padding: '0 16px', margin: 0 }}
-        items={CATEGORY_ORDER.map((cat) => {
+      >
+        {CATEGORY_ORDER.map((cat) => {
           const stat = categoryStats[cat];
           const label = (
-            <Space size={4}>
+            <Space spacing={4}>
               <span>{CATEGORY_LABELS[cat]}</span>
               {stat.unread > 0 ? (
-                <Badge count={stat.unread} size="small" offset={[2, -2]} />
+                <Badge count={stat.unread} />
               ) : (
                 stat.total > 0 && (
-                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
                     {stat.total}
-                  </Typography.Text>
+                  </Text>
                 )
               )}
             </Space>
           );
-          return { key: cat, label };
+          return (
+            <Tabs.TabPane key={cat} itemKey={cat} tab={label} />
+          );
         })}
-      />
+      </Tabs>
 
       <div style={{ flex: 1, overflow: 'auto' }}>
         {filteredList.length === 0 ? (
           <Empty
             description={activeCategory === 'all' ? '暂无通知' : `暂无${CATEGORY_LABELS[activeCategory]}通知`}
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
             style={{ padding: 32 }}
           />
         ) : (
@@ -194,8 +198,8 @@ export default function NotificationBell() {
                 style={{
                   padding: '12px 16px',
                   cursor: 'pointer',
-                  background: item.read ? 'transparent' : '#f0f5ff',
-                  borderBottom: '1px solid #f5f5f5',
+                  background: item.read ? 'transparent' : 'var(--semi-color-primary-light-default)',
+                  borderBottom: '1px solid var(--muted)',
                 }}
                 onClick={() => !item.read && handleMarkRead(item.id)}
               >
@@ -205,21 +209,21 @@ export default function NotificationBell() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div>
-                      <Space>
-                        <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
-                        {!item.read && <Badge status="processing" />}
+                      <Space spacing={8}>
+                        <Text strong={!item.read}>{item.title}</Text>
+                        {!item.read && <Badge dot type="primary" />}
                       </Space>
                     </div>
-                    <div style={{ color: '#999', fontSize: 12 }}>
+                    <div style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
                       <div>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
                           {item.content}
-                        </Typography.Text>
+                        </Text>
                       </div>
                       <div>
-                        <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                        <Text type="secondary" style={{ fontSize: 11 }}>
                           {new Date(item.createdAt).toLocaleString('zh-CN')}
-                        </Typography.Text>
+                        </Text>
                       </div>
                     </div>
                   </div>
@@ -233,9 +237,9 @@ export default function NotificationBell() {
   );
 
   return (
-    <Dropdown popupRender={() => dropdownContent} trigger={['click']} open={open} onOpenChange={setOpen} placement="bottomRight">
-      <Badge count={unread} size="small">
-        <Button type="text" icon={<BellOutlined />} style={{ fontSize: 18 }} />
+    <Dropdown render={dropdownContent} trigger="click" visible={open} onVisibleChange={setOpen} position="bottomRight">
+      <Badge count={unread}>
+        <Button theme="borderless" icon={<BellOutlined />} style={{ fontSize: 18 }} />
       </Badge>
     </Dropdown>
   );

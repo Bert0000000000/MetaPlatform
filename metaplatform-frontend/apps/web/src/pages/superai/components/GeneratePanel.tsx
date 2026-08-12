@@ -1,17 +1,18 @@
-﻿import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Button,
-  Input,
   Card,
   Tag,
   Space,
   Typography,
   Select,
-  Segmented,
-  Alert,
+  Radio,
+  RadioGroup,
+  Banner,
   Descriptions,
   Table,
-} from 'antd';
+  TextArea,
+} from '@douyinfe/semi-ui';
 import {
   CodeOutlined,
   FormOutlined,
@@ -41,8 +42,6 @@ import type {
   GeneratedConfig,
   CodeSnippet,
 } from '@/api/superai/types';
-
-const { TextArea } = Input;
 
 type GenMode = 'form' | 'process' | 'code' | 'explain' | 'review' | 'dashboard';
 
@@ -133,7 +132,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderFormResult = () => {
     if (!formResult) return null;
     return (
-      <Card size="small" title={formResult.name}>
+      <Card  title={formResult.name}>
         <Typography.Paragraph type="secondary">{formResult.description}</Typography.Paragraph>
         <Table
           size="small"
@@ -145,7 +144,8 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
             { title: '必填', dataIndex: 'required', key: 'required', render: (v: boolean) => v ? <Tag color="red">必填</Tag> : <Tag>可选</Tag> },
           ]}
           pagination={false}
-         scroll={{ x: 'max-content' }}/>
+          scroll={{ x: 'max-content' }}
+        />
       </Card>
     );
   };
@@ -154,12 +154,11 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
     if (!processResult) return null;
     return (
       <Card
-        size="small"
         title={processResult.name}
-        extra={
+        headerExtraContent={
           <Button
             size="small"
-            type="link"
+            theme="borderless"
             icon={<ExportOutlined />}
             onClick={() =>
               handleImportToDesigner({
@@ -175,7 +174,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         }
       >
         <Typography.Paragraph type="secondary">{processResult.description}</Typography.Paragraph>
-        <Typography.Title level={5}>流程节点</Typography.Title>
+        <Typography.Title heading={5}>流程节点</Typography.Title>
         {processResult.nodes.map((node, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <Tag color={node.type === 'startEvent' ? 'green' : node.type === 'endEvent' ? 'red' : 'blue'}>
@@ -185,8 +184,8 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
             {node.assignee && <Tag color="purple">{node.assignee}</Tag>}
           </div>
         ))}
-        <Typography.Title level={5} style={{ marginTop: 12 }}>BPMN XML</Typography.Title>
-        <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, fontSize: 12, overflow: 'auto' }}>
+        <Typography.Title heading={5} style={{ marginTop: 12 }}>BPMN XML</Typography.Title>
+        <pre style={{ background: 'var(--muted)', padding: 8, borderRadius: 4, fontSize: 12, overflow: 'auto' }}>
           {processResult.bpmnXml}
         </pre>
       </Card>
@@ -209,7 +208,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderExplainResult = () => {
     if (!explainResult) return null;
     return (
-      <Card size="small" title={explainResult.title}>
+      <Card  title={explainResult.title}>
         <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{explainResult.content}</pre>
       </Card>
     );
@@ -218,15 +217,14 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderReviewResult = () => {
     if (!reviewResult) return null;
     return (
-      <Card size="small" title="代码审查报告">
-        <Space orientation="vertical" style={{ width: '100%' }} size="small">
-          <Alert
-            type={reviewResult.overallScore >= 80 ? 'success' : reviewResult.overallScore >= 50 ? 'warning' : 'error'}
-            message={`综合评分：${reviewResult.overallScore}/100`}
-            showIcon
+      <Card  title="代码审查报告">
+        <Space vertical spacing="tight" style={{ width: '100%' }}>
+          <Banner
+            type={reviewResult.overallScore >= 80 ? 'success' : reviewResult.overallScore >= 50 ? 'warning' : 'danger'}
+            description={`综合评分：${reviewResult.overallScore}/100`}
           />
           {reviewResult.securityIssues.length > 0 && (
-            <Card size="small" title={<Typography.Text type="danger">安全问题</Typography.Text>}>
+            <Card  title={<Typography.Text type="danger">安全问题</Typography.Text>}>
               <Table
                 size="small"
                 dataSource={reviewResult.securityIssues.map((i, idx) => ({ ...i, key: idx }))}
@@ -237,11 +235,12 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
                   { title: '规则', dataIndex: 'rule', key: 'rule' },
                 ]}
                 pagination={false}
-               scroll={{ x: 'max-content' }}/>
+                scroll={{ x: 'max-content' }}
+              />
             </Card>
           )}
           {reviewResult.qualityIssues.length > 0 && (
-            <Card size="small" title={<Typography.Text type="warning">质量问题</Typography.Text>}>
+            <Card  title={<Typography.Text type="warning">质量问题</Typography.Text>}>
               <Table
                 size="small"
                 dataSource={reviewResult.qualityIssues.map((i, idx) => ({ ...i, key: idx }))}
@@ -252,11 +251,12 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
                   { title: '规则', dataIndex: 'rule', key: 'rule' },
                 ]}
                 pagination={false}
-               scroll={{ x: 'max-content' }}/>
+                scroll={{ x: 'max-content' }}
+              />
             </Card>
           )}
           {reviewResult.suggestions.length > 0 && (
-            <Card size="small" title="改进建议">
+            <Card  title="改进建议">
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {reviewResult.suggestions.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -273,12 +273,11 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
     if (!dashboardResult) return null;
     return (
       <Card
-        size="small"
         title={dashboardResult.title}
-        extra={
+        headerExtraContent={
           <Button
             size="small"
-            type="link"
+            theme="borderless"
             icon={<ExportOutlined />}
             onClick={() =>
               handleImportToDesigner({
@@ -294,15 +293,21 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         }
       >
         <Typography.Paragraph type="secondary">{dashboardResult.description}</Typography.Paragraph>
-        <Typography.Title level={5}>仪表盘组件</Typography.Title>
+        <Typography.Title heading={5}>仪表盘组件</Typography.Title>
         {dashboardResult.widgets.map((w) => (
-          <Descriptions key={w.id} size="small" bordered column={1} style={{ marginBottom: 8 }}>
-            <Descriptions.Item label="标题">{w.title}</Descriptions.Item>
-            <Descriptions.Item label="类型"><Tag color="blue">{w.type}</Tag></Descriptions.Item>
-            <Descriptions.Item label="数据源">{w.dataSource}</Descriptions.Item>
-          </Descriptions>
+          <Descriptions
+            key={w.id}
+            size="small"
+            column={1}
+            style={{ marginBottom: 8 }}
+            data={[
+              { key: '标题', value: w.title },
+              { key: '类型', value: <Tag color="blue">{w.type}</Tag> },
+              { key: '数据源', value: w.dataSource },
+            ]}
+          />
         ))}
-        <Typography.Title level={5}>API 示例</Typography.Title>
+        <Typography.Title heading={5}>API 示例</Typography.Title>
         {dashboardResult.apiExamples.map((api, i) => (
           <Card key={i} size="small" style={{ marginBottom: 8 }}>
             <Space>
@@ -310,7 +315,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
               <Typography.Text code>{api.url}</Typography.Text>
             </Space>
             <Typography.Paragraph style={{ marginTop: 4 }}>{api.description}</Typography.Paragraph>
-            <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, fontSize: 12, overflow: 'auto' }}>
+            <pre style={{ background: 'var(--muted)', padding: 8, borderRadius: 4, fontSize: 12, overflow: 'auto' }}>
               {api.curl}
             </pre>
           </Card>
@@ -323,19 +328,25 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const showLanguageSelect = mode === 'code';
 
   return (
-    <Card size="small" style={{ marginBottom: 8 }}>
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
-        <Segmented
+    <Card  style={{ marginBottom: 8 }}>
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
+        <RadioGroup
+          type="button"
           value={mode}
-          onChange={(v) => setMode(v as GenMode)}
-          options={GEN_MODES.map((m) => ({ label: <Space size={4}>{m.icon}{m.label}</Space>, value: m.value }))}
-          block
-        />
+          onChange={(e) => setMode(e.target.value as GenMode)}
+          style={{ width: '100%' }}
+        >
+          {GEN_MODES.map((m) => (
+            <Radio key={m.value} value={m.value}>
+              <Space spacing={4}>{m.icon}{m.label}</Space>
+            </Radio>
+          ))}
+        </RadioGroup>
 
         {showCodeInput ? (
           <TextArea
             value={codeInput}
-            onChange={(e) => setCodeInput(e.target.value)}
+            onChange={(v) => setCodeInput(v)}
             placeholder="粘贴要解释或审查的代码..."
             rows={4}
             style={{ fontFamily: 'monospace', fontSize: 13 }}
@@ -344,7 +355,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
           <>
             <TextArea
               value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
+              onChange={(v) => onQueryChange(v)}
               placeholder={
                 mode === 'form' ? '描述您想生成的表单，如：客户信息登记表单' :
                 mode === 'process' ? '描述审批流程，如：费用报销审批流程' :
@@ -357,9 +368,9 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
             {showLanguageSelect && (
               <Select
                 value={language}
-                onChange={setLanguage}
+                onChange={(v) => setLanguage(v as string)}
                 style={{ width: 160 }}
-                options={[
+                optionList={[
                   { label: 'Python', value: 'python' },
                   { label: 'TypeScript', value: 'typescript' },
                   { label: 'SQL', value: 'sql' },
@@ -369,7 +380,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
           </>
         )}
 
-        <Button type="primary" icon={<PlayCircleOutlined />} loading={loading} onClick={handleGenerate}>
+        <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} loading={loading} onClick={handleGenerate}>
           生成
         </Button>
 

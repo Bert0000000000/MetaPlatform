@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, Typography, Tabs } from 'antd';
+import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, Toast, Popconfirm, Typography, Tabs } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { listProcesses, createProcess, updateProcess, deleteProcess, linkProcessRoles, getProcessRoleIds } from '@/api/arch/businessProcesses';
 import { listCapabilities } from '@/api/arch/capabilities';
@@ -7,9 +8,9 @@ import { listApplications } from '@/api/arch/applications';
 import { listRoles } from '@/api/arch/roles';
 import type { BusinessProcess, Capability, ArchApplication, ArchRole, BusinessProcessCreateRequest, BusinessProcessUpdateRequest } from '@/api/arch/types';
 
-const STATUS_TAG: Record<string, { color: string; label: string }> = {
+const STATUS_TAG: Record<string, { color: TagColor; label: string }> = {
   ACTIVE: { color: 'green', label: '生效' },
-  DRAFT: { color: 'default', label: '草稿' },
+  DRAFT: { color: 'grey', label: '草稿' },
   DEPRECATED: { color: 'red', label: '废弃' },
 };
 
@@ -57,7 +58,7 @@ export default function BusinessProcessPage() {
   useEffect(() => { load(); }, []);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     if (editing) {
       const payload: BusinessProcessUpdateRequest = {
         name: values.name,
@@ -70,7 +71,7 @@ export default function BusinessProcessPage() {
         status: typeof values.status === 'string' ? values.status.toUpperCase() : values.status,
       };
       await updateProcess(editing.id, payload);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       const payload: BusinessProcessCreateRequest = {
         name: values.name,
@@ -83,29 +84,29 @@ export default function BusinessProcessPage() {
         bpmnXml: values.bpmnXml,
       };
       await createProcess(payload);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
-    setModalOpen(false); setEditing(null); form.resetFields(); load();
+    setModalOpen(false); setEditing(null); form.reset(); load();
   };
 
   const openRoleModal = async (process: BusinessProcess) => {
     setSelectedProcess(process);
     const ids = await getProcessRoleIds(process.id);
-    roleForm.setFieldsValue({ roleIds: ids, relationship: 'RESPONSIBLE' });
+    roleForm.setValues({ roleIds: ids, relationship: 'RESPONSIBLE' });
     setRoleModalOpen(true);
   };
 
   const handleRoleSubmit = async () => {
     if (!selectedProcess) return;
-    const values = await roleForm.validateFields();
+    const values = await roleForm.validate();
     await linkProcessRoles(selectedProcess.id, { roleIds: values.roleIds, relationship: values.relationship });
-    message.success('角色关联成功');
+    Toast.success('角色关联成功');
     setRoleModalOpen(false);
     load();
   };
 
   const columns = [
-    { title: '流程名称', dataIndex: 'name', key: 'name', render: (v: string, r: BusinessProcess) => <Typography.Link onClick={() => setDetail(r)}>{v}</Typography.Link> },
+    { title: '流程名称', dataIndex: 'name', key: 'name', render: (v: string, r: BusinessProcess) => <Typography.Text link onClick={() => setDetail(r)}>{v}</Typography.Text> },
     { title: '编码', dataIndex: 'code', key: 'code' },
     { title: '流程类型', dataIndex: 'processType', key: 'processType' },
     { title: '频率', dataIndex: 'frequency', key: 'frequency' },
@@ -119,11 +120,11 @@ export default function BusinessProcessPage() {
       title: '操作', key: 'action',
       render: (_: unknown, r: BusinessProcess) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => {
+          <Button theme="borderless" type="primary" size="small" icon={<EditOutlined />} onClick={() => {
             setEditing(r);
             const pt = r.processType;
             const statusUpper = typeof r.status === 'string' ? r.status.toUpperCase() : r.status;
-            form.setFieldsValue({
+            form.setValues({
               name: r.name,
               code: r.code,
               description: r.description,
@@ -138,8 +139,8 @@ export default function BusinessProcessPage() {
             });
             setModalOpen(true);
           }}>编辑</Button>
-          <Button type="link" size="small" onClick={() => openRoleModal(r)}>角色</Button>
-          <Popconfirm title="确认删除？" onConfirm={async () => { await deleteProcess(r.id); message.success('已删除'); load(); }}><Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button></Popconfirm>
+          <Button theme="borderless" type="primary" size="small" onClick={() => openRoleModal(r)}>角色</Button>
+          <Popconfirm title="确认删除？" onConfirm={async () => { await deleteProcess(r.id); Toast.success('已删除'); load(); }}><Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button></Popconfirm>
         </Space>
       ),
     },
@@ -147,16 +148,18 @@ export default function BusinessProcessPage() {
 
   return (
     <div>
-      <Card title="业务流程管理" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新建</Button>}>
+      <Card title="业务流程管理" headerExtraContent={<Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.reset(); setModalOpen(true); }}>新建</Button>}>
         <Table rowKey="id" columns={columns} dataSource={list ?? []} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
       </Card>
 
       {detail && (
         <Card title={`流程详情 - ${detail.name}`} style={{ marginTop: 16 }}>
-          <Tabs items={[
-            {
-              key: 'steps', label: '流程步骤',
-              children: detail.processSteps && detail.processSteps.length > 0 ? (
+          <Tabs>
+            <Tabs.TabPane
+              itemKey="steps"
+              tab="流程步骤"
+            >
+              {detail.processSteps && detail.processSteps.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {detail.processSteps.map((step, idx) => (
                     <div key={idx} style={{ padding: '4px 0' }}>
@@ -164,59 +167,58 @@ export default function BusinessProcessPage() {
                     </div>
                   ))}
                 </div>
-              ) : <Typography.Text type="secondary">暂无步骤</Typography.Text>
-            },
-            {
-              key: 'bpmn', label: 'BPMN',
-              children: detail.bpmnXml ? <pre style={{ maxHeight: 400, overflow: 'auto' }}>{detail.bpmnXml}</pre> : <Typography.Text type="secondary">未配置 BPMN</Typography.Text>
-            },
-            {
-              key: 'apps', label: '应用系统',
-              children: detail.applicationIds?.length ? detail.applicationIds.map((id) => <Tag key={id}>{apps.find((a) => a.appId === id)?.name || id}</Tag>) : <Typography.Text type="secondary">未关联应用</Typography.Text>
-            }
-          ]} />
+              ) : <Typography.Text type="tertiary">暂无步骤</Typography.Text>}
+            </Tabs.TabPane>
+            <Tabs.TabPane
+              itemKey="bpmn"
+              tab="BPMN"
+            >
+              {detail.bpmnXml ? <pre style={{ maxHeight: 400, overflow: 'auto' }}>{detail.bpmnXml}</pre> : <Typography.Text type="tertiary">未配置 BPMN</Typography.Text>}
+            </Tabs.TabPane>
+            <Tabs.TabPane
+              itemKey="apps"
+              tab="应用系统"
+            >
+              {detail.applicationIds?.length ? detail.applicationIds.map((id) => <Tag key={id}>{apps.find((a) => a.appId === id)?.name || id}</Tag>) : <Typography.Text type="tertiary">未关联应用</Typography.Text>}
+            </Tabs.TabPane>
+          </Tabs>
         </Card>
       )}
 
-      <Modal title={editing ? '编辑流程' : '新建流程'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="code" label="编码" rules={[{ required: true }]}><Input disabled={!!editing} /></Form.Item>
-          <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="processType" label="流程类型" initialValue="MAIN">
-            <Select><Select.Option value="MAIN">主流程</Select.Option><Select.Option value="SUB">子流程</Select.Option></Select>
-          </Form.Item>
-          <Form.Item name="frequency" label="执行频率" initialValue="DAILY">
-            <Select>
-              <Select.Option value="DAILY">每日</Select.Option>
-              <Select.Option value="WEEKLY">每周</Select.Option>
-              <Select.Option value="MONTHLY">每月</Select.Option>
-              <Select.Option value="YEARLY">每年</Select.Option>
-              <Select.Option value="ONCE">一次性</Select.Option>
-              <Select.Option value="CONTINUOUS">持续</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="capabilityIds" label="关联能力">
-            <Select mode="multiple">{caps.map((c) => <Select.Option key={c.capabilityId} value={c.capabilityId}>{c.name}</Select.Option>)}</Select>
-          </Form.Item>
-          <Form.Item name="applicationIds" label="应用系统">
-            <Select mode="multiple">{apps.map((a) => <Select.Option key={a.appId} value={a.appId}>{a.name}</Select.Option>)}</Select>
-          </Form.Item>
-          <Form.Item name="bpmnXml" label="BPMN XML"><Input.TextArea rows={4} placeholder="粘贴 BPMN 2.0 XML" /></Form.Item>
-          <Form.Item name="status" label="状态" initialValue="draft">
-            <Select><Select.Option value="active">生效</Select.Option><Select.Option value="draft">草稿</Select.Option><Select.Option value="deprecated">废弃</Select.Option></Select>
-          </Form.Item>
+      <Modal title={editing ? '编辑流程' : '新建流程'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.reset(); }}>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Input field="code" label="编码" rules={[{ required: true }]} disabled={!!editing} />
+          <Form.TextArea field="description" label="描述" rows={2} />
+          <Form.Select field="processType" label="流程类型" initValue="MAIN" optionList={[{ value: 'MAIN', label: '主流程' }, { value: 'SUB', label: '子流程' }]} />
+          <Form.Select field="frequency" label="执行频率" initValue="DAILY" optionList={[
+            { value: 'DAILY', label: '每日' },
+            { value: 'WEEKLY', label: '每周' },
+            { value: 'MONTHLY', label: '每月' },
+            { value: 'YEARLY', label: '每年' },
+            { value: 'ONCE', label: '一次性' },
+            { value: 'CONTINUOUS', label: '持续' },
+          ]} />
+          <Form.Select field="capabilityIds" label="关联能力" multiple optionList={caps.map((c) => ({ value: c.capabilityId, label: c.name }))} />
+          <Form.Select field="applicationIds" label="应用系统" multiple optionList={apps.map((a) => ({ value: a.appId, label: a.name }))} />
+          <Form.TextArea field="bpmnXml" label="BPMN XML" rows={4} placeholder="粘贴 BPMN 2.0 XML" />
+          <Form.Select field="status" label="状态" initValue="draft" optionList={[
+            { value: 'active', label: '生效' },
+            { value: 'draft', label: '草稿' },
+            { value: 'deprecated', label: '废弃' },
+          ]} />
         </Form>
       </Modal>
 
-      <Modal title="关联角色" open={roleModalOpen} onOk={handleRoleSubmit} onCancel={() => { setRoleModalOpen(false); setSelectedProcess(null); roleForm.resetFields(); }}>
-        <Form form={roleForm} layout="vertical">
-          <Form.Item name="roleIds" label="负责角色">
-            <Select mode="multiple">{roles.map((r) => <Select.Option key={r.id} value={r.id}>{r.name}</Select.Option>)}</Select>
-          </Form.Item>
-          <Form.Item name="relationship" label="关系类型" initialValue="RESPONSIBLE">
-            <Select><Select.Option value="RESPONSIBLE">负责</Select.Option><Select.Option value="ACCOUNTABLE">问责</Select.Option><Select.Option value="CONSULTED">咨询</Select.Option><Select.Option value="INFORMED">知会</Select.Option></Select>
-          </Form.Item>
+      <Modal title="关联角色" visible={roleModalOpen} onOk={handleRoleSubmit} onCancel={() => { setRoleModalOpen(false); setSelectedProcess(null); roleForm.reset(); }}>
+        <Form form={roleForm}>
+          <Form.Select field="roleIds" label="负责角色" multiple optionList={roles.map((r) => ({ value: r.id, label: r.name }))} />
+          <Form.Select field="relationship" label="关系类型" initValue="RESPONSIBLE" optionList={[
+            { value: 'RESPONSIBLE', label: '负责' },
+            { value: 'ACCOUNTABLE', label: '问责' },
+            { value: 'CONSULTED', label: '咨询' },
+            { value: 'INFORMED', label: '知会' },
+          ]} />
         </Form>
       </Modal>
     </div>

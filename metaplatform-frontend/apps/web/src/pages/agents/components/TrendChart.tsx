@@ -1,4 +1,4 @@
-import { Card } from 'antd';
+import { Card } from '@douyinfe/semi-ui';
 import {
   ResponsiveContainer,
   LineChart,

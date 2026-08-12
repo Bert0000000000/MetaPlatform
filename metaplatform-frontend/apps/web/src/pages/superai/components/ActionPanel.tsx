@@ -10,12 +10,12 @@ import {
   Select,
   InputNumber,
   Switch,
-  Alert,
+  Banner,
   Modal,
   Descriptions,
   Table,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
 import {
   ThunderboltOutlined,
   SearchOutlined,
@@ -51,7 +51,7 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
       .then((results) => setMatches(results))
       .catch((error) => {
         console.warn('[ActionMatchCard] match failed', error);
-        message.warning('Action 匹配失败');
+        Toast.warning('Action 匹配失败');
       });
   }, [query]);
 
@@ -63,13 +63,13 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
         formValues[p.name] = p.defaultValue;
       }
     });
-    form.setFieldsValue(formValues);
+    form.setValues(formValues);
   }, [form]);
 
   const handleExecute = useCallback(async () => {
     if (!selectedAction) return;
     try {
-      const values = await form.validateFields();
+      const values = await form.validate();
       setConfirmOpen(false);
       setExecuting(true);
       const res = await executeAction(selectedAction.id, values);
@@ -82,25 +82,35 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
   }, [selectedAction, form, onResult]);
 
   const renderParamField = (param: ActionParam) => {
+    const fieldProps = {
+      field: param.name,
+      label: (
+        <Space spacing={4}>
+          <span>{param.label}</span>
+          {param.required && <Tag color="red" style={{ fontSize: 10 }}>必填</Tag>}
+        </Space>
+      ),
+      rules: param.required ? [{ required: true, message: `请输入${param.label}` }] : [],
+    };
     switch (param.type) {
       case 'string':
-        return <Input placeholder={param.description || `请输入${param.label}`} />;
+        return <Form.Input {...fieldProps} placeholder={param.description || `请输入${param.label}`} size="small" />;
       case 'number':
-        return <InputNumber style={{ width: '100%' }} placeholder={param.description} />;
+        return <Form.InputNumber {...fieldProps} placeholder={param.description} size="small" style={{ width: '100%' }} />;
       case 'boolean':
-        return <Switch />;
+        return <Form.Switch {...fieldProps} size="small" />;
       case 'select':
-        return <Select placeholder={`请选择${param.label}`} options={param.options} />;
+        return <Form.Select {...fieldProps} placeholder={`请选择${param.label}`} optionList={param.options} size="small" />;
       default:
-        return <Input />;
+        return <Form.Input {...fieldProps} size="small" />;
     }
   };
 
   return (
-    <Card size="small" style={{ marginTop: 8, maxWidth: 480 }}>
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
+    <Card  style={{ marginTop: 8, maxWidth: 480 }}>
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
         <Space>
-          <ThunderboltOutlined style={{ color: '#1677ff' }} />
+          <ThunderboltOutlined style={{ color: 'var(--primary)' }} />
           <Typography.Text strong>匹配「{query}」的 Action</Typography.Text>
         </Space>
 
@@ -112,15 +122,14 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
               <Card
                 key={m.action.id}
                 size="small"
-                hoverable
                 style={{
                   width: 220,
-                  border: selectedAction?.id === m.action.id ? '2px solid #1677ff' : '1px solid #d9d9d9',
+                  border: selectedAction?.id === m.action.id ? '2px solid var(--primary)' : '1px solid var(--border)',
                   cursor: 'pointer',
                 }}
                 onClick={() => handleSelectAction(m.action)}
               >
-                <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+                <Space vertical spacing="tight" style={{ width: '100%' }}>
                   <Typography.Text strong>{m.action.name}</Typography.Text>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>{m.action.description}</Typography.Text>
                   <Space>
@@ -134,25 +143,16 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
         )}
 
         {selectedAction && (
-          <Card size="small" title={`${selectedAction.name} - 参数配置`}>
-            <Form form={form} layout="vertical" size="small">
+          <Card  title={`${selectedAction.name} - 参数配置`}>
+            <Form form={form}>
               {selectedAction.inputSchema.map((param) => (
-                <Form.Item
-                  key={param.name}
-                  name={param.name}
-                  label={
-                    <Space size={4}>
-                      <span>{param.label}</span>
-                      {param.required && <Tag color="red" style={{ fontSize: 10 }}>必填</Tag>}
-                    </Space>
-                  }
-                  rules={param.required ? [{ required: true, message: `请输入${param.label}` }] : []}
-                >
+                <div key={param.name} style={{ marginBottom: 12 }}>
                   {renderParamField(param)}
-                </Form.Item>
+                </div>
               ))}
             </Form>
             <Button
+              theme="solid"
               type="primary"
               icon={<PlayCircleOutlined />}
               loading={executing}
@@ -167,7 +167,7 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
 
       <Modal
         title="确认执行 Action"
-        open={confirmOpen}
+        visible={confirmOpen}
         onOk={handleExecute}
         onCancel={() => setConfirmOpen(false)}
         confirmLoading={executing}
@@ -175,11 +175,9 @@ export default function ActionMatchCard({ query, onResult }: ActionMatchCardProp
         cancelText="取消"
       >
         {selectedAction && (
-          <Alert
-            message={`即将执行：${selectedAction.name}`}
-            description="请确认参数无误后执行。该操作将调用后端 Action Engine。"
+          <Banner
             type="info"
-            showIcon
+            description={`即将执行：${selectedAction.name}。请确认参数无误后执行。该操作将调用后端 Action Engine。`}
           />
         )}
       </Modal>

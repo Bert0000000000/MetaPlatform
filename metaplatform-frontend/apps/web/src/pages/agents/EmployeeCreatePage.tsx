@@ -1,25 +1,19 @@
 ﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Avatar,
   Button,
   Card,
-  Form,
-  Input,
-  Select,
-  Steps,
-  Space,
-  Typography,
-  message,
-  Upload,
-  Checkbox,
-  Slider,
-  InputNumber,
-  Switch,
-  Divider,
   Descriptions,
-  Avatar,
+  Divider,
+  Form,
+  Space,
+  Steps,
   Tag,
-} from 'antd';
+  Toast,
+  Typography,
+  Upload,
+} from '@douyinfe/semi-ui';
 import { ArrowLeftOutlined, UploadOutlined, SaveOutlined } from '@ant-design/icons';
 import { createEmployee } from '@/api/dw/employees';
 import type { EmployeeCapability, EmployeeCreateRequest, RoleCategory } from '@/api/dw/types';
@@ -30,8 +24,6 @@ import {
   MOCK_MODELS,
 } from '@/api/dw/types';
 import { useEmployeeOptions, actionName } from './components/useEmployeeOptions';
-
-const { TextArea } = Input;
 
 interface FormValues {
   name: string;
@@ -118,7 +110,7 @@ const roleTemplates: Record<string, Partial<FormValues>> = {
 
 export default function EmployeeCreatePage() {
   const navigate = useNavigate();
-  const [form] = Form.useForm<FormValues>();
+  const [form, , formValues] = Form.useForm<FormValues>();
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
@@ -138,39 +130,39 @@ export default function EmployeeCreatePage() {
   const applyTemplate = (key: string) => {
     const template = roleTemplates[key];
     if (!template) return;
-    form.setFieldsValue(template as FormValues);
+    form.setValues(template as FormValues);
     if (template.systemPrompt) {
-      form.setFieldValue('systemPrompt', template.systemPrompt);
+      form.setValue('systemPrompt', template.systemPrompt);
     }
-    message.success('已应用角色模板，可继续修改');
+    Toast.success('已应用角色模板，可继续修改');
   };
 
   const next = async () => {
     try {
       if (currentStep === 0) {
-        await form.validateFields([
+        await form.validate([
           'name',
           'code',
           'roleCategory',
           'roleIdentity',
           'description',
-        ]);
+        ] as unknown as Array<keyof FormValues>);
       } else if (currentStep === 1) {
-        await form.validateFields(['model', 'tools', 'systemPrompt']);
-        const values = form.getFieldsValue();
+        await form.validate(['model', 'tools', 'systemPrompt']);
+        const values = form.getValues();
         if (values.tools.length === 0 && values.ragKnowledgeBaseIds.length === 0) {
-          message.warning('请至少配置一项能力（工具或知识库）');
+          Toast.warning('请至少配置一项能力（工具或知识库）');
           return;
         }
       } else if (currentStep === 2) {
-        const values = form.getFieldsValue();
+        const values = form.getValues();
         if (values.ragKnowledgeBaseIds.length === 0) {
-          message.warning('未绑定知识库可能影响回答准确性，建议返回配置');
+          Toast.warning('未绑定知识库可能影响回答准确性，建议返回配置');
         }
       }
       setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
     } catch {
-      message.error('请完善必填项');
+      Toast.error('请完善必填项');
     }
   };
 
@@ -180,8 +172,8 @@ export default function EmployeeCreatePage() {
 
   const handleSave = async () => {
     try {
-      await form.validateFields();
-      const values = form.getFieldsValue();
+      await form.validate();
+      const values = form.getValues();
       setSubmitting(true);
 
       const request: EmployeeCreateRequest = {
@@ -206,10 +198,10 @@ export default function EmployeeCreatePage() {
       };
 
       const created = await createEmployee(request);
-      message.success(`数字员工「${created.name}」创建成功，编码 ${created.code}`);
+      Toast.success(`数字员工「${created.name}」创建成功，编码 ${created.code}`);
       navigate(`/agents/${created.code}`);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '创建失败');
+      Toast.error(error instanceof Error ? error.message : '创建失败');
     } finally {
       setSubmitting(false);
     }
@@ -217,110 +209,104 @@ export default function EmployeeCreatePage() {
 
   const renderBasicStep = () => (
     <div>
-      <Typography.Title level={5}>选择角色模板</Typography.Title>
+      <Typography.Title heading={5}>选择角色模板</Typography.Title>
       <Space wrap style={{ marginBottom: 16 }}>
         {Object.entries(roleTemplates).map(([key, template]) => (
           <Card
             key={key}
-            size="small"
-            hoverable
+            shadows="hover"
             style={{ width: 160, cursor: 'pointer' }}
-            onClick={() => applyTemplate(key)}
           >
-            <Typography.Text strong>
-              {template.roleIdentity}
-            </Typography.Text>
-            <div>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {ROLE_CATEGORY_MAP[template.roleCategory as RoleCategory]?.label}
+            <div onClick={() => applyTemplate(key)}>
+              <Typography.Text strong>
+                {template.roleIdentity}
               </Typography.Text>
+              <div>
+                <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                  {ROLE_CATEGORY_MAP[template.roleCategory as RoleCategory]?.label}
+                </Typography.Text>
+              </div>
             </div>
           </Card>
         ))}
       </Space>
 
-      <Form.Item
-        name="name"
+      <Form.Input
+        field="name"
         label="员工名称"
         rules={[
           { required: true, message: '请输入员工名称' },
           { min: 2, message: '员工名称至少 2 个字符' },
           { max: 30, message: '员工名称最多 30 个字符' },
         ]}
-      >
-        <Input placeholder="例如：财务小助手" />
-      </Form.Item>
-      <Form.Item
-        name="roleCategory"
+        placeholder="例如：财务小助手"
+      />
+      <Form.Select
+        field="roleCategory"
         label="角色分类"
         rules={[{ required: true, message: '请选择角色分类' }]}
-      >
-        <Select placeholder="请选择角色分类">
-          {ROLE_CATEGORY_OPTIONS.map((role) => (
-            <Select.Option key={role.value} value={role.value}>
-              {role.label}
-            </Select.Option>
-          ))}
-        </Select>
-      </Form.Item>
-      <Form.Item
-        name="roleIdentity"
+        placeholder="请选择角色分类"
+        optionList={ROLE_CATEGORY_OPTIONS}
+      />
+      <Form.Input
+        field="roleIdentity"
         label="角色身份"
         rules={[
           { required: true, message: '请输入角色身份' },
           { max: 50, message: '角色身份最多 50 个字符' },
         ]}
-      >
-        <Input placeholder="例如：报销审批助手" />
-      </Form.Item>
-      <Form.Item label="头像">
+        placeholder="例如：报销审批助手"
+      />
+      <Form.Slot label="头像">
         <Upload
-          listType="picture-card"
+          action=""
           showUploadList={false}
-          beforeUpload={(file) => {
-            const url = URL.createObjectURL(file);
-            setAvatarUrl(url);
+          beforeUpload={({ file }) => {
+            if (file.fileInstance) {
+              const url = URL.createObjectURL(file.fileInstance);
+              setAvatarUrl(url);
+            }
             return false;
           }}
         >
           {avatarUrl ? (
-            <Avatar size={64} src={avatarUrl} />
+            <Avatar size="extra-large" src={avatarUrl} style={{ width: 64, height: 64 }} />
           ) : (
-            <div>
+            <div style={{ border: '1px dashed var(--semi-color-border)', borderRadius: 8, padding: '24px 32px', textAlign: 'center' }}>
               <UploadOutlined />
               <div style={{ marginTop: 8 }}>上传头像</div>
             </div>
           )}
         </Upload>
-      </Form.Item>
-      <Form.Item
-        name="description"
+      </Form.Slot>
+      <Form.TextArea
+        field="description"
         label="职责描述"
+        rows={3}
+        placeholder="描述该数字员工的职责范围和工作目标"
         rules={[
           { required: true, message: '请输入职责描述' },
           { min: 10, message: '职责描述至少 10 个字符' },
           { max: 500, message: '职责描述最多 500 个字符' },
         ]}
-      >
-        <TextArea rows={3} placeholder="描述该数字员工的职责范围和工作目标" />
-      </Form.Item>
-      <Form.Item
-        name="systemPrompt"
+      />
+      <Form.TextArea
+        field="systemPrompt"
         label="System Prompt"
+        rows={4}
+        placeholder="数字员工的系统提示词"
         rules={[{ max: 2000, message: 'System Prompt 最多 2000 个字符' }]}
-      >
-        <TextArea rows={4} placeholder="数字员工的系统提示词" />
-      </Form.Item>
+      />
     </div>
   );
 
   const renderCapabilityStep = () => {
-    const model = Form.useWatch('model', form);
-    const temperature = Form.useWatch('temperature', form);
+    const model = formValues.model as string | undefined;
+    const temperature = formValues.temperature as number | undefined;
 
     const applyDialogStyle = (index: number) => {
       const preset = DIALOG_STYLE_PRESETS[index];
-      form.setFieldsValue({
+      form.setValues({
         temperature: preset.temperature,
         topP: preset.topP,
         maxTokens: preset.maxTokens,
@@ -329,46 +315,37 @@ export default function EmployeeCreatePage() {
 
     return (
       <div>
-        <Typography.Title level={5}>Tool 工具选择</Typography.Title>
-        <Form.Item name="tools">
-          <Checkbox.Group style={{ width: '100%' }}>
-            <Space orientation="vertical">
-              {realTools.map((tool) => (
-                <Checkbox key={tool.code} value={tool.code}>
-                  <Tag>{tool.kind || 'tool'}</Tag> {tool.name}
-                </Checkbox>
-              ))}
-            </Space>
-          </Checkbox.Group>
-        </Form.Item>
+        <Typography.Title heading={5}>Tool 工具选择</Typography.Title>
+        <Form.CheckboxGroup
+          field="tools"
+          direction="vertical"
+          options={realTools.map((tool) => ({
+            label: (<><Tag>{tool.kind || 'tool'}</Tag> {tool.name}</>),
+            value: tool.code,
+          }))}
+        />
 
         <Divider />
 
-        <Typography.Title level={5}>动作选择（可触发 ActionType）</Typography.Title>
-        <Form.Item name="actionRids">
-          <Checkbox.Group style={{ width: '100%' }}>
-            <Space orientation="vertical">
-              {realActions.map((act) => (
-                <Checkbox key={act.rid} value={act.rid}>
-                  <Tag>{act.category}</Tag> {act.name}
-                </Checkbox>
-              ))}
-            </Space>
-          </Checkbox.Group>
-        </Form.Item>
+        <Typography.Title heading={5}>动作选择（可触发 ActionType）</Typography.Title>
+        <Form.CheckboxGroup
+          field="actionRids"
+          direction="vertical"
+          options={realActions.map((act) => ({
+            label: (<><Tag>{act.category}</Tag> {act.name}</>),
+            value: act.rid,
+          }))}
+        />
 
         <Divider />
 
-        <Typography.Title level={5}>模型选择</Typography.Title>
-        <Form.Item name="model" rules={[{ required: true, message: '请选择模型' }]}>
-          <Select placeholder="请选择 LLM 模型">
-            {MOCK_MODELS.map((m) => (
-              <Select.Option key={m.id} value={m.id}>
-                {m.name} - {m.description}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
+        <Typography.Title heading={5}>模型选择</Typography.Title>
+        <Form.Select
+          field="model"
+          rules={[{ required: true, message: '请选择模型' }]}
+          placeholder="请选择 LLM 模型"
+          optionList={MOCK_MODELS.map((m) => ({ label: `${m.name} - ${m.description}`, value: m.id }))}
+        />
         <Space style={{ marginBottom: 16 }}>
           {DIALOG_STYLE_PRESETS.map((preset, index) => (
             <Button key={preset.label} onClick={() => applyDialogStyle(index)}>
@@ -376,30 +353,24 @@ export default function EmployeeCreatePage() {
             </Button>
           ))}
         </Space>
-        <Form.Item label="Temperature">
+        <Form.Slot label="Temperature">
           <Space>
-            <Form.Item name="temperature" noStyle>
-              <Slider style={{ width: 200 }} min={0} max={1} step={0.1} />
-            </Form.Item>
+            <Form.Slider field="temperature" style={{ width: 200 }} min={0} max={1} step={0.1} />
             <span>{temperature}</span>
           </Space>
-        </Form.Item>
-        <Form.Item label="Max Tokens" name="maxTokens" rules={[{ required: true }]}>
-          <InputNumber min={100} max={8192} />
-        </Form.Item>
-        <Form.Item label="Top P" name="topP">
-          <InputNumber min={0.1} max={1} step={0.05} />
-        </Form.Item>
-        <Form.Item
+        </Form.Slot>
+        <Form.InputNumber field="maxTokens" label="Max Tokens" min={100} max={8192} rules={[{ required: true }]} />
+        <Form.InputNumber field="topP" label="Top P" min={0.1} max={1} step={0.05} />
+        <Form.TextArea
+          field="systemPrompt"
           label="System Prompt"
-          name="systemPrompt"
+          rows={4}
+          placeholder="系统提示词"
           rules={[{ required: true, message: '请输入 System Prompt' }]}
-        >
-          <TextArea rows={4} placeholder="系统提示词" />
-        </Form.Item>
+        />
 
         {model && (
-          <Typography.Text type="secondary">
+          <Typography.Text type="tertiary">
             当前模型：{MOCK_MODELS.find((m) => m.id === model)?.name}
           </Typography.Text>
         )}
@@ -409,98 +380,93 @@ export default function EmployeeCreatePage() {
 
   const renderKnowledgeStep = () => (
     <div>
-      <Typography.Title level={5}>RAG 知识库绑定</Typography.Title>
-      <Form.Item name="ragKnowledgeBaseIds">
-        <Checkbox.Group style={{ width: '100%' }}>
-          <Space orientation="vertical">
-            {realKb.map((kb) => (
-              <Checkbox key={kb.id} value={kb.id}>
-                {kb.name}（{kb.documentCount ?? 0} 篇文档）
-              </Checkbox>
-            ))}
-          </Space>
-        </Checkbox.Group>
-      </Form.Item>
+      <Typography.Title heading={5}>RAG 知识库绑定</Typography.Title>
+      <Form.CheckboxGroup
+        field="ragKnowledgeBaseIds"
+        direction="vertical"
+        options={realKb.map((kb) => ({
+          label: `${kb.name}（${kb.documentCount ?? 0} 篇文档）`,
+          value: kb.id,
+        }))}
+      />
 
-      <Form.Item name="retrievalMethod" label="检索策略">
-        <Select>
-          <Select.Option value="hybrid">混合检索（向量+关键词）</Select.Option>
-          <Select.Option value="vector">纯向量检索</Select.Option>
-          <Select.Option value="keyword">纯关键词检索</Select.Option>
-        </Select>
-      </Form.Item>
-      <Form.Item name="topK" label="Top-K">
-        <InputNumber min={1} max={20} />
-      </Form.Item>
-      <Form.Item name="rerank" label="重排序" valuePropName="checked">
-        <Switch />
-      </Form.Item>
+      <Form.Select
+        field="retrievalMethod"
+        label="检索策略"
+        optionList={[
+          { value: 'hybrid', label: '混合检索（向量+关键词）' },
+          { value: 'vector', label: '纯向量检索' },
+          { value: 'keyword', label: '纯关键词检索' },
+        ]}
+      />
+      <Form.InputNumber field="topK" label="Top-K" min={1} max={20} />
+      <Form.Switch field="rerank" label="重排序" />
 
       <Divider />
 
-      <Typography.Title level={5}>知识提炼</Typography.Title>
-      <Typography.Paragraph type="secondary">
+      <Typography.Title heading={5}>知识提炼</Typography.Title>
+      <Typography.Paragraph type="tertiary">
         还没有足够的知识？上传企业制度/流程文档，AI 自动提炼知识结构。
       </Typography.Paragraph>
-      <Upload beforeUpload={() => false}>
+      <Upload action="" beforeUpload={() => false} showUploadList={false}>
         <Button icon={<UploadOutlined />}>上传文档提炼（占位）</Button>
       </Upload>
     </div>
   );
 
   const renderReviewStep = () => {
-    const values = form.getFieldsValue();
+    const values = form.getValues();
     return (
       <div>
-        <Typography.Title level={5}>配置汇总</Typography.Title>
-        <Descriptions bordered column={2}>
-          <Descriptions.Item label="员工名称">{values.name}</Descriptions.Item>
-          <Descriptions.Item label="员工编码">提交后系统自动生成</Descriptions.Item>
-          <Descriptions.Item label="角色分类">
+        <Typography.Title heading={5}>配置汇总</Typography.Title>
+        <Descriptions column={2}>
+          <Descriptions.Item itemKey="员工名称">{values.name}</Descriptions.Item>
+          <Descriptions.Item itemKey="员工编码">提交后系统自动生成</Descriptions.Item>
+          <Descriptions.Item itemKey="角色分类">
             {ROLE_CATEGORY_MAP[values.roleCategory]?.label}
           </Descriptions.Item>
-          <Descriptions.Item label="角色身份">{values.roleIdentity}</Descriptions.Item>
-          <Descriptions.Item label="头像">
+          <Descriptions.Item itemKey="角色身份">{values.roleIdentity}</Descriptions.Item>
+          <Descriptions.Item itemKey="头像">
             {avatarUrl ? <Avatar src={avatarUrl} /> : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="职责描述" span={2}>
+          <Descriptions.Item itemKey="职责描述" span={2}>
             {values.description}
           </Descriptions.Item>
         </Descriptions>
 
-        <Typography.Title level={5} style={{ marginTop: 16 }}>
+        <Typography.Title heading={5} style={{ marginTop: 16 }}>
           能力配置
         </Typography.Title>
-        <Descriptions bordered column={2}>
-          <Descriptions.Item label="已选工具">
+        <Descriptions column={2}>
+          <Descriptions.Item itemKey="已选工具">
             {values.tools.length > 0
               ? values.tools
                   .map((id: string) => realTools.find((t) => t.code === id)?.name || id)
                   .join('、')
               : '未选择'}
           </Descriptions.Item>
-          <Descriptions.Item label="模型">{values.model}</Descriptions.Item>
-          <Descriptions.Item label="Temperature">{values.temperature}</Descriptions.Item>
-          <Descriptions.Item label="Max Tokens">{values.maxTokens}</Descriptions.Item>
-          <Descriptions.Item label="System Prompt" span={2}>
+          <Descriptions.Item itemKey="模型">{values.model}</Descriptions.Item>
+          <Descriptions.Item itemKey="Temperature">{values.temperature}</Descriptions.Item>
+          <Descriptions.Item itemKey="Max Tokens">{values.maxTokens}</Descriptions.Item>
+          <Descriptions.Item itemKey="System Prompt" span={2}>
             {values.systemPrompt}
           </Descriptions.Item>
         </Descriptions>
 
-        <Typography.Title level={5} style={{ marginTop: 16 }}>
+        <Typography.Title heading={5} style={{ marginTop: 16 }}>
           知识范围
         </Typography.Title>
-        <Descriptions bordered column={2}>
-          <Descriptions.Item label="已绑定知识库">
+        <Descriptions column={2}>
+          <Descriptions.Item itemKey="已绑定知识库">
             {values.ragKnowledgeBaseIds.length > 0
               ? values.ragKnowledgeBaseIds
                   .map((id: string) => realKb.find((k) => k.id === id)?.name || id)
                   .join('、')
               : '未绑定'}
           </Descriptions.Item>
-          <Descriptions.Item label="检索策略">{values.retrievalMethod}</Descriptions.Item>
-          <Descriptions.Item label="Top-K">{values.topK}</Descriptions.Item>
-          <Descriptions.Item label="重排序">{values.rerank ? '开启' : '关闭'}</Descriptions.Item>
+          <Descriptions.Item itemKey="检索策略">{values.retrievalMethod}</Descriptions.Item>
+          <Descriptions.Item itemKey="Top-K">{values.topK}</Descriptions.Item>
+          <Descriptions.Item itemKey="重排序">{values.rerank ? '开启' : '关闭'}</Descriptions.Item>
         </Descriptions>
       </div>
     );
@@ -529,8 +495,8 @@ export default function EmployeeCreatePage() {
 
       <Card
         title="创建数字员工"
-        extra={
-          <Button type="text" icon={<SaveOutlined />} onClick={() => message.info('已保存为草稿（占位）')}>
+        headerExtraContent={
+          <Button theme="borderless" icon={<SaveOutlined />} onClick={() => Toast.info('已保存为草稿（占位）')}>
             保存为草稿
           </Button>
         }
@@ -538,13 +504,15 @@ export default function EmployeeCreatePage() {
         <Steps
           current={currentStep}
           style={{ marginBottom: 24 }}
-          items={steps.map((title) => ({ title }))}
-        />
+        >
+          {steps.map((title) => (
+            <Steps.Step key={title} title={title} />
+          ))}
+        </Steps>
 
         <Form
           form={form}
-          layout="vertical"
-          initialValues={initialValues as FormValues}
+          initValues={initialValues as FormValues}
           style={{ maxWidth: 800 }}
         >
           {renderStepContent()}
@@ -553,12 +521,12 @@ export default function EmployeeCreatePage() {
         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           {currentStep > 0 && <Button onClick={prev}>上一步</Button>}
           {currentStep < steps.length - 1 && (
-            <Button type="primary" onClick={next}>
+            <Button theme="solid" type="primary" onClick={next}>
               下一步
             </Button>
           )}
           {currentStep === steps.length - 1 && (
-            <Button type="primary" loading={submitting} onClick={handleSave}>
+            <Button theme="solid" type="primary" loading={submitting} onClick={handleSave}>
               完成创建
             </Button>
           )}

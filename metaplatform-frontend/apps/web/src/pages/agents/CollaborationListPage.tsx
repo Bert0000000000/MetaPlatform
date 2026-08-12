@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -9,14 +9,17 @@ import {
   Table,
   Tag,
   Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EyeOutlined } from '@ant-design/icons';
 import { listCollaborations } from '@/api/dw/collaborations';
 import type { CollaborationTask, CollabStatus, SplitStrategy } from '@/api/dw/collaborations';
 
-const STATUS_COLOR: Record<CollabStatus, string> = {
-  pending: 'default',
+type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
+
+const STATUS_COLOR: Record<CollabStatus, TagColor> = {
+  pending: 'grey',
   running: 'blue',
   completed: 'green',
   failed: 'red',
@@ -55,12 +58,12 @@ export default function CollaborationListPage() {
     load();
   }, [status]);
 
-  const columns: ColumnsType<CollaborationTask> = [
+  const columns: SemiColumns<CollaborationTask> = [
     {
       title: '协作任务',
       key: 'title',
       render: (_, t) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>{t.title}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t.goal}
@@ -95,7 +98,8 @@ export default function CollaborationListPage() {
       key: 'actions',
       render: (_, t) => (
         <Button
-          type="link"
+          theme="borderless"
+          type="primary"
           icon={<EyeOutlined />}
           onClick={() => navigate(`/agents/collab/${t.collaborationId}`)}
         >
@@ -108,10 +112,11 @@ export default function CollaborationListPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           多员工协作
         </Typography.Title>
         <Button
+          theme="solid"
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => navigate('/dw/collaborations/new')}
@@ -123,11 +128,11 @@ export default function CollaborationListPage() {
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
           placeholder="状态筛选"
-          allowClear
+          showClear
           style={{ width: 160 }}
           value={status}
-          onChange={(v) => setStatus(v)}
-          options={[
+          onChange={(v) => setStatus(v as CollabStatus | undefined)}
+          optionList={[
             { label: '待执行', value: 'pending' },
             { label: '执行中', value: 'running' },
             { label: '已完成', value: 'completed' },

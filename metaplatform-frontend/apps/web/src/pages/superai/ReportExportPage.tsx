@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { Button, Card, Input, Radio, Space, Tag, Typography, message } from 'antd';
+import { useState } from 'react';
+import { Button, Card, Input, Radio, RadioGroup, Space, Tag, Typography, Toast } from '@douyinfe/semi-ui';
 import { DownloadOutlined } from '@ant-design/icons';
 
 export default function ReportExportPage() {
@@ -16,28 +16,29 @@ export default function ReportExportPage() {
     a.download = `${execId}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
-    message.success('已下载');
+    Toast.success('已下载');
   };
 
   return (
     <div>
-      <Typography.Title level={4}>报告导出</Typography.Title>
+      <Typography.Title heading={4}>报告导出</Typography.Title>
 
       <Card>
-        <Space orientation="vertical" style={{ width: '100%' }}>
+        <Space vertical style={{ width: '100%' }}>
           <Input
             value={execId}
-            onChange={(e) => setExecId(e.target.value)}
+            onChange={(v) => setExecId(v)}
             placeholder="Execution ID"
           />
-          <Radio.Group value={format} onChange={(e) => setFormat(e.target.value as typeof format)}>
-            <Radio.Button value="md">Markdown</Radio.Button>
-            <Radio.Button value="pdf">PDF</Radio.Button>
-            <Radio.Button value="docx">Word</Radio.Button>
-            <Radio.Button value="html">HTML</Radio.Button>
-          </Radio.Group>
+          <RadioGroup type="button" value={format} onChange={(e) => setFormat(e.target.value as typeof format)}>
+            <Radio value="md">Markdown</Radio>
+            <Radio value="pdf">PDF</Radio>
+            <Radio value="docx">Word</Radio>
+            <Radio value="html">HTML</Radio>
+          </RadioGroup>
           <Tag>当前格式：{format.toUpperCase()}</Tag>
           <Button
+            theme="solid"
             type="primary"
             icon={<DownloadOutlined />}
             onClick={handleDownload}

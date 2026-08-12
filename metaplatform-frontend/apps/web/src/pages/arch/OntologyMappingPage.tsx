@@ -11,10 +11,11 @@ import {
   Form,
   Select,
   Input,
-  message,
+  Toast,
   Popconfirm,
   Typography,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlusOutlined,
   EditOutlined,
@@ -49,15 +50,15 @@ import type {
   ImpactAnalysisResult,
 } from '@/api/arch/types';
 
-const MAPPING_TYPE_TAG: Record<string, { color: string; label: string }> = {
+const MAPPING_TYPE_TAG: Record<string, { color: TagColor; label: string }> = {
   DIRECT: { color: 'green', label: '直接映射' },
   DERIVED: { color: 'blue', label: '派生映射' },
   ABSTRACT: { color: 'purple', label: '抽象映射' },
 };
 
-const ASSET_TYPE_TAG: Record<string, { color: string; label: string }> = {
+const ASSET_TYPE_TAG: Record<string, { color: TagColor; label: string }> = {
   CAPABILITY: { color: 'cyan', label: '业务能力' },
-  APPLICATION: { color: 'geekblue', label: '应用系统' },
+  APPLICATION: { color: 'indigo', label: '应用系统' },
 };
 
 export default function OntologyMappingPage() {
@@ -71,9 +72,8 @@ export default function OntologyMappingPage() {
   const [syncing, setSyncing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ConceptMappingRule | null>(null);
+  const [assetType, setAssetType] = useState<string | undefined>(undefined);
   const [form] = Form.useForm<CreateMappingRuleRequest>();
-
-  const assetType = Form.useWatch('assetType', form);
 
   const conceptDetailUrl = (conceptId: string) => `/ontology-studio/concepts/${conceptId}`;
 
@@ -148,7 +148,7 @@ export default function OntologyMappingPage() {
   );
 
   const handleCreate = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     const assetName =
       assetType === 'CAPABILITY'
         ? capabilities.find((c) => c.capabilityId === values.assetId)?.name
@@ -157,46 +157,46 @@ export default function OntologyMappingPage() {
 
     if (editing) {
       await updateMappingRule(editing.id, payload);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createMappingRule(payload);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
     setEditing(null);
-    form.resetFields();
+    form.reset();
     load();
   };
 
   const handleDelete = async (id: string) => {
     await deleteMappingRule(id);
-    message.success('删除成功');
+    Toast.success('删除成功');
     load();
   };
 
   const handleSync = async (direction: 'to' | 'from') => {
     setSyncing(true);
     const result = direction === 'to' ? await syncToOntology() : await syncFromOntology();
-    message.success(result.summary);
+    Toast.success(result.summary);
     load();
     setSyncing(false);
   };
 
   const handleResolve = async (id: string) => {
     await resolveChange(id);
-    message.success('已标记为已处理');
+    Toast.success('已标记为已处理');
     load();
   };
 
   const openCreate = () => {
     setEditing(null);
-    form.resetFields();
+    form.reset();
     setModalOpen(true);
   };
 
   const openEdit = (rule: ConceptMappingRule) => {
     setEditing(rule);
-    form.setFieldsValue({
+    form.setValues({
       assetType: rule.assetType,
       assetId: rule.assetId,
       conceptId: rule.conceptId,
@@ -238,11 +238,11 @@ export default function OntologyMappingPage() {
       key: 'action',
       render: (_: unknown, r: ConceptMappingRule) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>
+          <Button theme="borderless" type="primary" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>
             编辑
           </Button>
           <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -272,14 +272,14 @@ export default function OntologyMappingPage() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (s: string) => <Tag color={s === 'PENDING' ? 'orange' : 'default'}>{s === 'PENDING' ? '待处理' : '已处理'}</Tag>,
+      render: (s: string) => <Tag color={s === 'PENDING' ? 'orange' : 'grey'}>{s === 'PENDING' ? '待处理' : '已处理'}</Tag>,
     },
     {
       title: '操作',
       key: 'action',
       render: (_: unknown, r: OntologyChangeEvent) =>
         r.status === 'PENDING' ? (
-          <Button type="link" size="small" icon={<CheckOutlined />} onClick={() => handleResolve(r.id)}>
+          <Button theme="borderless" type="primary" size="small" icon={<CheckOutlined />} onClick={() => handleResolve(r.id)}>
             标记已处理
           </Button>
         ) : null,
@@ -296,8 +296,8 @@ export default function OntologyMappingPage() {
         <Col span={16}>
           <Card
             title="映射规则"
-            size="small"
-            extra={
+            bodyStyle={{ padding: 12 }}
+            headerExtraContent={
               <Space>
                 <Button loading={syncing} icon={<SyncOutlined />} onClick={() => handleSync('to')}>
                   同步到本体
@@ -305,7 +305,7 @@ export default function OntologyMappingPage() {
                 <Button loading={syncing} icon={<SyncOutlined />} onClick={() => handleSync('from')}>
                   从本体同步
                 </Button>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>
                   新增映射
                 </Button>
               </Space>
@@ -321,7 +321,7 @@ export default function OntologyMappingPage() {
           </Card>
         </Col>
         <Col span={8}>
-          <Card title="本体变更联动（待处理）" size="small">
+          <Card title="本体变更联动（待处理）" bodyStyle={{ padding: 12 }}>
             <Table
               rowKey="id"
               columns={eventColumns}
@@ -336,57 +336,59 @@ export default function OntologyMappingPage() {
 
       <Modal
         title={editing ? '编辑映射规则' : '新增映射规则'}
-        open={modalOpen}
+        visible={modalOpen}
         onOk={handleCreate}
         onCancel={() => {
           setModalOpen(false);
           setEditing(null);
-          form.resetFields();
+          form.reset();
         }}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="assetType" label="资产类型" rules={[{ required: true, message: '请选择资产类型' }]}>
-            <Select
-              placeholder="选择资产类型"
-              options={[
-                { label: '业务能力', value: 'CAPABILITY' },
-                { label: '应用系统', value: 'APPLICATION' },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="assetId" label="架构资产" rules={[{ required: true, message: '请选择架构资产' }]}>
-            <Select
-              showSearch
-              optionFilterProp="label"
-              placeholder="选择资产"
-              disabled={!assetType}
-              options={assetOptions}
-            />
-          </Form.Item>
-          <Form.Item name="conceptId" label="Ontology 概念" rules={[{ required: true, message: '请选择 Ontology 概念' }]}>
-            <Select showSearch optionFilterProp="label" placeholder="选择概念" options={conceptOptions} />
-          </Form.Item>
-          <Form.Item
-            name="mappingType"
+        <Form
+          form={form}
+          onValueChange={(values) => setAssetType(values.assetType as string | undefined)}
+        >
+          <Form.Select
+            field="assetType"
+            label="资产类型"
+            rules={[{ required: true, message: '请选择资产类型' }]}
+            placeholder="选择资产类型"
+            optionList={[
+              { label: '业务能力', value: 'CAPABILITY' },
+              { label: '应用系统', value: 'APPLICATION' },
+            ]}
+          />
+          <Form.Select
+            field="assetId"
+            label="架构资产"
+            rules={[{ required: true, message: '请选择架构资产' }]}
+            filter
+            placeholder="选择资产"
+            disabled={!assetType}
+            optionList={assetOptions}
+          />
+          <Form.Select
+            field="conceptId"
+            label="Ontology 概念"
+            rules={[{ required: true, message: '请选择 Ontology 概念' }]}
+            filter
+            placeholder="选择概念"
+            optionList={conceptOptions}
+          />
+          <Form.Select
+            field="mappingType"
             label="映射类型"
             rules={[{ required: true, message: '请选择映射类型' }]}
-            initialValue="DIRECT"
-          >
-            <Select
-              placeholder="选择映射类型"
-              options={[
-                { label: '直接映射', value: 'DIRECT' },
-                { label: '派生映射', value: 'DERIVED' },
-                { label: '抽象映射', value: 'ABSTRACT' },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="description" label="说明">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="metadata" label="元数据（JSON）">
-            <Input.TextArea rows={2} placeholder="{}" />
-          </Form.Item>
+            initValue="DIRECT"
+            placeholder="选择映射类型"
+            optionList={[
+              { label: '直接映射', value: 'DIRECT' },
+              { label: '派生映射', value: 'DERIVED' },
+              { label: '抽象映射', value: 'ABSTRACT' },
+            ]}
+          />
+          <Form.TextArea field="description" label="说明" rows={2} />
+          <Form.TextArea field="metadata" label="元数据（JSON）" rows={2} placeholder="{}" />
         </Form>
       </Modal>
     </div>

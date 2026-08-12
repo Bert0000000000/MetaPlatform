@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm, Space, Typography, Row, Col } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, Toast, Popconfirm, Space, Typography, Row, Col } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { listTechnologyStacks, createTechnologyStack, updateTechnologyStack, deleteTechnologyStack } from '@/api/arch/technologyStacks';
 import { listTechnologyComponents } from '@/api/arch/technologyComponents';
 import type { TechnologyStack, TechnologyComponent } from '@/api/arch/types';
 
-const STATUS_MAP: Record<string, { color: string; label: string }> = {
+const STATUS_MAP: Record<string, { color: TagColor; label: string }> = {
   active: { color: 'green', label: '活跃' },
   draft: { color: 'blue', label: '草稿' },
-  archived: { color: 'default', label: '已归档' },
+  archived: { color: 'grey', label: '已归档' },
 };
 
 const COMPONENT_COLORS: Record<string, string> = {
@@ -20,6 +21,16 @@ const COMPONENT_COLORS: Record<string, string> = {
   tool: '#2f54eb',
   infrastructure: '#eb2f96',
   other: '#8c8c8c',
+};
+
+const COMPONENT_TAG_COLORS: Record<string, TagColor> = {
+  database: 'blue',
+  framework: 'purple',
+  middleware: 'orange',
+  language: 'cyan',
+  tool: 'indigo',
+  infrastructure: 'pink',
+  other: 'grey',
 };
 
 export default function TechStackPage() {
@@ -107,29 +118,29 @@ export default function TechStackPage() {
   }, [selectedStack, components]);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     if (editing) {
       await updateTechnologyStack(editing.id, values);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createTechnologyStack(values);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
     setEditing(null);
-    form.resetFields();
+    form.reset();
     load();
   };
 
   const handleEdit = (record: TechnologyStack) => {
     setEditing(record);
-    form.setFieldsValue({ ...record });
+    form.setValues({ ...record });
     setModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     await deleteTechnologyStack(id);
-    message.success('已删除');
+    Toast.success('已删除');
     if (selectedStack?.id === id) setSelectedStack(null);
     load();
   };
@@ -141,10 +152,10 @@ export default function TechStackPage() {
     { title: '状态', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={STATUS_MAP[s]?.color}>{STATUS_MAP[s]?.label}</Tag> },
     { title: '操作', key: 'action', render: (_: unknown, r: TechnologyStack) => (
       <Space>
-        <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-        <Button type="link" size="small" onClick={() => setSelectedStack(r)}>查看图谱</Button>
+        <Button theme="borderless" type="primary" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
+        <Button theme="borderless" type="primary" size="small" onClick={() => setSelectedStack(r)}>查看图谱</Button>
         <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button>
         </Popconfirm>
       </Space>
     )},
@@ -152,9 +163,9 @@ export default function TechStackPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>技术栈画像</Typography.Title>
+      <Typography.Title heading={4}>技术栈画像</Typography.Title>
       <Card>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }} style={{ marginBottom: 16 }}>新增技术栈</Button>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.reset(); setModalOpen(true); }} style={{ marginBottom: 16 }}>新增技术栈</Button>
         <Table rowKey="id" columns={columns} dataSource={stacks ?? []} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
       </Card>
 
@@ -172,7 +183,7 @@ export default function TechStackPage() {
                 return (
                   <div key={`${ref.componentId}-${idx}`} style={{ padding: '6px 0' }}>
                     <Space>
-                      <Tag color={comp ? COMPONENT_COLORS[comp.type] ?? 'default' : 'default'}>{idx + 1}</Tag>
+                      <Tag color={comp ? COMPONENT_TAG_COLORS[comp.type] ?? 'grey' : 'grey'}>{idx + 1}</Tag>
                       <span>{comp?.name ?? ref.componentName ?? ref.componentId}</span>
                       {ref.version && <Tag>{ref.version}</Tag>}
                     </Space>
@@ -184,18 +195,16 @@ export default function TechStackPage() {
         </Col>
       </Row>
 
-      <Modal title={editing ? '编辑技术栈' : '新增技术栈'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }} width={640}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="applicationId" label="应用ID"><Input placeholder="关联应用系统ID" /></Form.Item>
-          <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="status" label="状态" initialValue="active">
-            <Select options={[
-              { value: 'active', label: '活跃' },
-              { value: 'draft', label: '草稿' },
-              { value: 'archived', label: '已归档' },
-            ]} />
-          </Form.Item>
+      <Modal title={editing ? '编辑技术栈' : '新增技术栈'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.reset(); }} width={640}>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Input field="applicationId" label="应用ID" placeholder="关联应用系统ID" />
+          <Form.TextArea field="description" label="描述" rows={2} />
+          <Form.Select field="status" label="状态" initValue="active" optionList={[
+            { value: 'active', label: '活跃' },
+            { value: 'draft', label: '草稿' },
+            { value: 'archived', label: '已归档' },
+          ]} />
         </Form>
       </Modal>
     </div>

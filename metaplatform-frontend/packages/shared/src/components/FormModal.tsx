@@ -36,7 +36,7 @@ export default function FormModal({
   const loading = submitting ?? confirmLoading;
   return (
     <Modal
-      open={open}
+      visible={open}
       title={title}
       onCancel={onCancel}
       onOk={handleOk}

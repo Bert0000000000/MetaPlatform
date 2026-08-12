@@ -1,12 +1,17 @@
-﻿import { useState } from 'react';
-import { Card, Empty, Input, Progress, Space, Table, Typography, Button } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { useState } from 'react';
+import { Card, Empty, TextArea, Progress, Space, Table, Typography, Button } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { matchEmployees } from '@/api/superai/schedule';
 
+interface MatchRow {
+  employeeId: string;
+  name: string;
+  confidence: number;
+}
+
 export default function EmployeeMatchingPage() {
   const [intent, setIntent] = useState('汇总本月销售数据并发送邮件');
-  const [results, setResults] = useState<Array<{ employeeId: string; name: string; confidence: number }>>([]);
+  const [results, setResults] = useState<MatchRow[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleMatch = async () => {
@@ -19,14 +24,14 @@ export default function EmployeeMatchingPage() {
     }
   };
 
-  const columns: ColumnsType<{ employeeId: string; name: string; confidence: number }> = [
+  const columns = [
     { title: '员工', dataIndex: 'name' },
     { title: 'ID', dataIndex: 'employeeId' },
     {
       title: '置信度',
       dataIndex: 'confidence',
-      render: (v) => (
-        <Space orientation="vertical" size={0} style={{ width: 200 }}>
+      render: (v: number) => (
+        <Space vertical spacing={0} style={{ width: 200 }}>
           <Progress percent={Math.round(v * 100)} size="small" />
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {(v * 100).toFixed(1)}%
@@ -37,22 +42,23 @@ export default function EmployeeMatchingPage() {
     {
       title: '行动',
       key: 'actions',
-      render: () => <Button type="link">分配给此员工</Button>,
+      render: () => <Button theme="borderless">分配给此员工</Button>,
     },
   ];
 
   return (
     <div>
-      <Typography.Title level={4}>员工匹配</Typography.Title>
+      <Typography.Title heading={4}>员工匹配</Typography.Title>
 
       <Card style={{ marginBottom: 16 }}>
-        <Input.TextArea
+        <TextArea
           rows={2}
           value={intent}
-          onChange={(e) => setIntent(e.target.value)}
+          onChange={(v) => setIntent(v)}
           style={{ marginBottom: 12 }}
         />
         <Button
+          theme="solid"
           type="primary"
           icon={<ThunderboltOutlined />}
           loading={loading}

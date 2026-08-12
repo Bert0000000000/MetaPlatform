@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Segmented } from "antd";
+import { Radio } from "@douyinfe/semi-ui";
 import { SectionCard } from "@mate/shared";
 import { FlowRunner, flowDataToFlowgram, HYBRID_SUPPLIER_PRESET, HYBRID_PARALLEL_PRESET } from "@mate/shared/flow";
 import { AdminLayout, StatCard, StatGrid } from "./__AdminLayout";
@@ -36,9 +36,10 @@ export default function FlowgramDemoPage() {
       <SectionCard
         title="混合流程画布 · FlowRunner"
         extra={
-          <Segmented
+          <Radio.Group
+            type="button"
             value={variant}
-            onChange={(v) => setVariant(v as FlowVariant)}
+            onChange={(e) => setVariant(e.target.value as FlowVariant)}
             options={[
               { label: "顺序示例（含审批 + HITL）", value: "serial" },
               { label: "并行示例（三路并行分支）", value: "parallel" },

@@ -10,7 +10,8 @@
  *   4) 来源 / 地域 / 设备 三张分布图
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Col, Row, Segmented, Skeleton, Space, Statistic, Tag, Tooltip, Typography } from 'antd';
+import { Button, Card, Radio, Space, Tag, Tooltip, Typography } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { ReloadOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { PageContainer, SectionCard, EmptyState, ErrorState } from '@mate/shared';
 import {
@@ -32,6 +33,8 @@ import { AdminLayout, StatCard, StatGrid } from './__AdminLayout';
 import UvPvTrendChart from './components/UvPvTrendChart';
 import FunnelCard from './components/FunnelCard';
 import DistributionCard from './components/DistributionCard';
+
+const { Text } = Typography;
 
 const RANGE_OPTIONS: Array<{ label: string; value: AnalyticsRange }> = [
   { label: '今日', value: 'today' },
@@ -65,6 +68,55 @@ function pickApplications(summary: ApplicationSummary, r: AnalyticsRange) {
   if (r === 'today') return summary.applicationsToday;
   if (r === '7d') return summary.applicationsLast7d;
   return summary.applicationsLast30d;
+}
+
+// 骨架屏（Skeleton 无 Semi 等价物，自建 shimmer 块）
+function Shimmer({ rows, height = '14px' }: { rows: number; height?: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            height,
+            background: 'linear-gradient(90deg, var(--muted) 0%, var(--border) 50%, var(--muted) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'workbench-shimmer 1.4s ease-in-out infinite',
+            borderRadius: 4,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// 指标卡片（Statistic 无 Semi 等价物，自建 label + 大数字）
+function Stat({
+  title,
+  value,
+  suffix,
+  prefix,
+  precision,
+  valueStyle,
+}: {
+  title: string;
+  value: number | string;
+  suffix?: React.ReactNode;
+  prefix?: React.ReactNode;
+  precision?: number;
+  valueStyle?: React.CSSProperties;
+}) {
+  const shown = typeof value === 'number' && precision !== undefined ? value.toFixed(precision) : typeof value === 'number' ? value.toLocaleString() : value;
+  return (
+    <div>
+      <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--foreground)', display: 'flex', alignItems: 'center', gap: 8, ...valueStyle }}>
+        {prefix}
+        {shown}
+        {suffix}
+      </div>
+    </div>
+  );
 }
 
 export default function AnalyticsPage() {
@@ -169,11 +221,12 @@ export default function AnalyticsPage() {
   const appCount = appSummary ? pickApplications(appSummary, range) : 0;
 
   const headerExtra = (
-    <Space size="small">
-      <Segmented
+    <Space spacing="tight">
+      <Radio.Group
+        type="button"
         options={RANGE_OPTIONS}
         value={range}
-        onChange={(v) => setRange(v as AnalyticsRange)}
+        onChange={(e) => setRange(e.target.value as AnalyticsRange)}
       />
       <Button icon={<ReloadOutlined />} onClick={reloadAll} loading={summaryLoading || trendLoading || funnelLoading || distributionLoading}>
         刷新
@@ -185,38 +238,38 @@ export default function AnalyticsPage() {
   const overviewGrid = (
     <Row gutter={[16, 16]}>
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic title={`今日 UV`} value={summaryView?.uv ?? 0} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Card style={{ height: '100%' }}>
+          <Stat title={`今日 UV`} value={summaryView?.uv ?? 0} />
+          <Text type="secondary" style={{ fontSize: 12 }}>
             7 日 {uvPvSummary?.uv.last7d.toLocaleString() ?? '-'} · 30 日 {uvPvSummary?.uv.last30d.toLocaleString() ?? '-'}
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic title={`今日 PV`} value={summaryView?.pv ?? 0} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Card style={{ height: '100%' }}>
+          <Stat title={`今日 PV`} value={summaryView?.pv ?? 0} />
+          <Text type="secondary" style={{ fontSize: 12 }}>
             7 日 {uvPvSummary?.pv.last7d.toLocaleString() ?? '-'} · 30 日 {uvPvSummary?.pv.last30d.toLocaleString() ?? '-'}
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic title={`今日申请数`} value={appCount} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Card style={{ height: '100%' }}>
+          <Stat title={`今日申请数`} value={appCount} />
+          <Text type="secondary" style={{ fontSize: 12 }}>
             7 日 {appSummary?.applicationsLast7d.toLocaleString() ?? '-'} · 30 日 {appSummary?.applicationsLast30d.toLocaleString() ?? '-'}
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic
+        <Card style={{ height: '100%' }}>
+          <Stat
             title="申请通过率"
             value={appSummary ? +(appSummary.approvedRate * 100).toFixed(1) : 0}
             suffix="%"
             valueStyle={{ color: 'var(--success)' }}
           />
-          <Typography.Text
+          <Text
             style={{
               fontSize: 12,
               color:
@@ -225,46 +278,46 @@ export default function AnalyticsPage() {
           >
             {(appSummary?.approvedRateDelta ?? 0) >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}{' '}
             较上期 {((appSummary?.approvedRateDelta ?? 0) * 100).toFixed(1)} pp
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
 
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic title="7 日 UV" value={uvPvSummary?.uv.last7d ?? 0} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Card style={{ height: '100%' }}>
+          <Stat title="7 日 UV" value={uvPvSummary?.uv.last7d ?? 0} />
+          <Text type="secondary" style={{ fontSize: 12 }}>
             较 7 日前 {uvPvSummary ? Math.round(uvPvSummary.uv.last7d * 0.06) : 0}（参考）
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic title="7 日 PV" value={uvPvSummary?.pv.last7d ?? 0} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Card style={{ height: '100%' }}>
+          <Stat title="7 日 PV" value={uvPvSummary?.pv.last7d ?? 0} />
+          <Text type="secondary" style={{ fontSize: 12 }}>
             人均 {summaryView?.pvPerUv ?? 0} 次访问
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic title="7 日申请数" value={appSummary?.applicationsLast7d ?? 0} />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Card style={{ height: '100%' }}>
+          <Stat title="7 日申请数" value={appSummary?.applicationsLast7d ?? 0} />
+          <Text type="secondary" style={{ fontSize: 12 }}>
             日均 {appSummary ? Math.round(appSummary.applicationsLast7d / 7) : 0} 条
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
       <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-        <Card size="small" style={{ height: '100%' }}>
-          <Statistic
+        <Card style={{ height: '100%' }}>
+          <Stat
             title="平均审批耗时"
             value={appSummary?.approvalDurationHours ?? 0}
             suffix="h"
             precision={1}
           />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
             较上周期{' '}
             <span style={{ color: 'var(--muted-foreground)' }}>数据采集中</span>
-          </Typography.Text>
+          </Text>
         </Card>
       </Col>
     </Row>
@@ -275,7 +328,7 @@ export default function AnalyticsPage() {
       return <ErrorState description="总览数据加载失败" onRetry={() => void loadSummary(range)} />;
     }
     if (summaryLoading && !uvPvSummary && !appSummary) {
-      return <Skeleton active paragraph={{ rows: 4 }} />;
+      return <Shimmer rows={4} />;
     }
     if (!uvPvSummary && !appSummary) {
       return <EmptyState description="暂无总览数据" />;
@@ -288,7 +341,7 @@ export default function AnalyticsPage() {
       return <ErrorState description="趋势数据加载失败" onRetry={() => void loadTrend()} />;
     }
     if (trendLoading && trend.length === 0) {
-      return <Skeleton active paragraph={{ rows: 6 }} />;
+      return <Shimmer rows={6} />;
     }
     if (trend.length === 0) {
       return <EmptyState description="暂无趋势数据" />;
@@ -301,7 +354,7 @@ export default function AnalyticsPage() {
       return <ErrorState description="漏斗数据加载失败" onRetry={() => void loadFunnel(range)} />;
     }
     if (funnelLoading && funnel.length === 0) {
-      return <Skeleton active paragraph={{ rows: 4 }} />;
+      return <Shimmer rows={4} />;
     }
     if (funnel.length === 0) {
       return <EmptyState description="暂无漏斗数据" />;
@@ -319,7 +372,7 @@ export default function AnalyticsPage() {
       );
     }
     if (distributionLoading && !distribution) {
-      return <Skeleton active paragraph={{ rows: 4 }} />;
+      return <Shimmer rows={4} />;
     }
     if (!distribution) {
       return <EmptyState description="暂无分布数据" />;
@@ -372,8 +425,8 @@ export default function AnalyticsPage() {
       <PageContainer
         title="数据分析"
         description={
-          <Space size={8}>
-            <Tooltip title="时间范围影响总览卡片、漏斗和分布数据；趋势图始终展示最近 30 天">
+          <Space spacing={8}>
+            <Tooltip content="时间范围影响总览卡片、漏斗和分布数据；趋势图始终展示最近 30 天">
               <Tag color="blue">{rangeLabel(range)}</Tag>
             </Tooltip>
             <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
@@ -382,17 +435,17 @@ export default function AnalyticsPage() {
           </Space>
         }
       >
-        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
-          <SectionCard title="总览" extra={<Tag color="default">{rangeLabel(range)}</Tag>}>
+        <Space vertical spacing="loose" style={{ width: '100%' }}>
+          <SectionCard title="总览" extra={<Tag color="grey">{rangeLabel(range)}</Tag>}>
             {renderSummaryBody()}
           </SectionCard>
 
           <SectionCard
             title="30 天趋势"
             extra={
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
                 每日 UV / PV / 申请数
-              </Typography.Text>
+              </Text>
             }
           >
             {renderTrendBody()}
@@ -402,7 +455,7 @@ export default function AnalyticsPage() {
             <Col xs={24} lg={14}>
               <SectionCard
                 title="申请漏斗"
-                extra={<Tag color="default">访问 → 提交</Tag>}
+                extra={<Tag color="grey">访问 → 提交</Tag>}
                 style={{ height: '100%' }}
               >
                 {renderFunnelBody()}
@@ -411,25 +464,25 @@ export default function AnalyticsPage() {
             <Col xs={24} lg={10}>
               <SectionCard
                 title="访问质量"
-                extra={<Tag color="default">{rangeLabel(range)}</Tag>}
+                extra={<Tag color="grey">{rangeLabel(range)}</Tag>}
                 style={{ height: '100%' }}
               >
                 <Row gutter={[8, 8]}>
                   <Col span={12}>
-                    <Statistic
+                    <Stat
                       title="PV / UV"
                       value={summaryView?.pvPerUv ?? 0}
                       precision={2}
                     />
                   </Col>
                   <Col span={12}>
-                    <Statistic title="申请 / UV" value={appSummary ? +((appCount / Math.max(1, summaryView?.uv ?? 0)) * 100).toFixed(2) : 0} suffix="%" />
+                    <Stat title="申请 / UV" value={appSummary ? +((appCount / Math.max(1, summaryView?.uv ?? 0)) * 100).toFixed(2) : 0} suffix="%" />
                   </Col>
                   <Col span={12}>
-                    <Statistic title="日均 UV" value={uvPvSummary ? Math.round(uvPvSummary.uv.last7d / 7) : 0} />
+                    <Stat title="日均 UV" value={uvPvSummary ? Math.round(uvPvSummary.uv.last7d / 7) : 0} />
                   </Col>
                   <Col span={12}>
-                    <Statistic
+                    <Stat
                       title="日均申请"
                       value={appSummary ? Math.round(appSummary.applicationsLast7d / 7) : 0}
                     />
@@ -442,9 +495,9 @@ export default function AnalyticsPage() {
           <SectionCard
             title="来源 / 地域 / 设备分布"
             extra={
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
                 基于 {rangeLabel(range)} 期间 UV 拆分
-              </Typography.Text>
+              </Text>
             }
           >
             {renderDistributionBody()}

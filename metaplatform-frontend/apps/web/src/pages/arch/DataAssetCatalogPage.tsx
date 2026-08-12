@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Tree, Input, Select, Button, Space, Drawer, Tag, Form, Modal, message, Popconfirm } from 'antd';
+import { Card, Tree, Input, Select, Button, Space, SideSheet, Tag, Form, Modal, Toast, Popconfirm } from '@douyinfe/semi-ui';
 import { SearchOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { getAssetCatalog, listAssets, createAsset, updateAsset, deleteAsset, listEntities } from '@/api/arch/dataArchitecture';
 import type { DataAsset, DataAssetCatalog, DataEntity } from '@/api/arch/types';
@@ -52,18 +52,18 @@ export default function DataAssetCatalogPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.resetFields();
+    form.reset();
     setModalOpen(true);
   };
 
   const openEdit = (asset: DataAsset) => {
     setEditing(asset);
-    form.setFieldsValue({ ...asset, tags: asset.tags?.join(',') });
+    form.setValues({ ...asset, tags: asset.tags?.join(',') });
     setModalOpen(true);
   };
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     const { tags, ...rest } = values;
     const payload = {
       ...rest,
@@ -71,29 +71,29 @@ export default function DataAssetCatalogPage() {
     };
     if (editing) {
       await updateAsset(editing.id, payload);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createAsset(payload);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
-    form.resetFields();
+    form.reset();
     loadCatalog();
     loadAssets();
   };
 
   const handleDelete = async (id: string) => {
     await deleteAsset(id);
-    message.success('已删除');
+    Toast.success('已删除');
     loadCatalog();
     loadAssets();
   };
 
   const treeData = catalog?.groups.map((g) => ({
-    title: `${g.label} (${g.assets.length})`,
+    label: `${g.label} (${g.assets.length})`,
     key: g.key,
     children: g.assets.map((a) => ({
-      title: a.name,
+      label: a.name,
       key: a.id,
       isLeaf: true,
       asset: a,
@@ -107,18 +107,18 @@ export default function DataAssetCatalogPage() {
   return (
     <Card
       title="数据资产目录"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>登记资产</Button>}
+      headerExtraContent={<Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>登记资产</Button>}
     >
       <Space style={{ marginBottom: 16 }}>
         <Input
           placeholder="搜索资产"
           prefix={<SearchOutlined />}
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          onPressEnter={loadAssets}
+          onChange={(value) => setKeyword(value)}
+          onEnterPress={loadAssets}
           style={{ width: 240 }}
         />
-        <Select value={groupBy} options={GROUP_OPTIONS} onChange={setGroupBy} style={{ width: 160 }} />
+        <Select value={groupBy} optionList={GROUP_OPTIONS} onChange={(v) => setGroupBy(v as string)} style={{ width: 160 }} />
         <Button onClick={() => { loadAssets(); loadCatalog(); }}>刷新</Button>
       </Space>
 
@@ -126,9 +126,9 @@ export default function DataAssetCatalogPage() {
         <div style={{ width: 320 }}>
           <Tree
             treeData={treeData}
-            onSelect={(_, info) => {
-              const asset = (info.selectedNodes[0] as unknown as { asset?: DataAsset })?.asset;
-              if (asset) {
+            onSelect={(key, selected, node) => {
+              const asset = (node as unknown as { asset?: DataAsset })?.asset;
+              if (selected && asset) {
                 setSelectedAsset(asset);
                 setDrawerOpen(true);
               }
@@ -137,30 +137,32 @@ export default function DataAssetCatalogPage() {
         </div>
         <div style={{ flex: 1 }}>
           {filteredAssets.map((asset) => (
-            <Card key={asset.id} size="small" style={{ marginBottom: 12 }} hoverable onClick={() => { setSelectedAsset(asset); setDrawerOpen(true); }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong>{asset.name}</strong> <Tag>{asset.assetType}</Tag>
-                  <div style={{ color: '#888', fontSize: 12 }}>{asset.code} {asset.classification ? `· ${asset.classification}` : ''}</div>
+            <Card key={asset.id} bodyStyle={{ padding: 12 }} style={{ marginBottom: 12 }} shadows="hover">
+              <div onClick={() => { setSelectedAsset(asset); setDrawerOpen(true); }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>{asset.name}</strong> <Tag>{asset.assetType}</Tag>
+                    <div style={{ color: 'var(--semi-color-text-2)', fontSize: 12 }}>{asset.code} {asset.classification ? `· ${asset.classification}` : ''}</div>
+                  </div>
+                  <Space>
+                    <Button theme="borderless" type="primary" size="small" onClick={(e) => { e.stopPropagation(); openEdit(asset); }}>编辑</Button>
+                    <Popconfirm title="确认删除？" onConfirm={(e) => { e?.stopPropagation(); handleDelete(asset.id); }}>
+                      <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()}>删除</Button>
+                    </Popconfirm>
+                  </Space>
                 </div>
-                <Space>
-                  <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openEdit(asset); }}>编辑</Button>
-                  <Popconfirm title="确认删除？" onConfirm={(e) => { e?.stopPropagation(); handleDelete(asset.id); }}>
-                    <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()}>删除</Button>
-                  </Popconfirm>
-                </Space>
-              </div>
-              <div style={{ marginTop: 8 }}>
-                {asset.tags?.map((tag) => <Tag key={tag} color="blue">{tag}</Tag>)}
+                <div style={{ marginTop: 8 }}>
+                  {asset.tags?.map((tag) => <Tag key={tag} color="blue">{tag}</Tag>)}
+                </div>
               </div>
             </Card>
           ))}
         </div>
       </div>
 
-      <Drawer title={selectedAsset ? selectedAsset.name : '资产详情'} open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+      <SideSheet title={selectedAsset ? selectedAsset.name : '资产详情'} visible={drawerOpen} onCancel={() => setDrawerOpen(false)}>
         {selectedAsset && (
-          <Space orientation="vertical" style={{ width: '100%' }}>
+          <Space vertical style={{ width: '100%' }}>
             <div><strong>编码：</strong>{selectedAsset.code}</div>
             <div><strong>类型：</strong><Tag>{selectedAsset.assetType}</Tag></div>
             <div><strong>主题域：</strong>{selectedAsset.classification || '-'}</div>
@@ -169,19 +171,17 @@ export default function DataAssetCatalogPage() {
             <div><strong>标签：</strong>{selectedAsset.tags?.map((t) => <Tag key={t}>{t}</Tag>) || '-'}</div>
           </Space>
         )}
-      </Drawer>
+      </SideSheet>
 
-      <Modal title={editing ? '编辑资产' : '登记资产'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.resetFields(); }}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="code" label="编码" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="assetType" label="系统类型" rules={[{ required: true }]}><Input placeholder="如 TABLE / API / TOPIC" /></Form.Item>
-          <Form.Item name="classification" label="主题域"><Input placeholder="如 L1 / 客户域" /></Form.Item>
-          <Form.Item name="entityId" label="关联实体">
-            <Select allowClear options={entities.map((e) => ({ label: e.name, value: e.id }))} />
-          </Form.Item>
-          <Form.Item name="tags" label="标签"><Input placeholder="逗号分隔" /></Form.Item>
-          <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
+      <Modal title={editing ? '编辑资产' : '登记资产'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.reset(); }}>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Input field="code" label="编码" rules={[{ required: true }]} />
+          <Form.Input field="assetType" label="系统类型" rules={[{ required: true }]} placeholder="如 TABLE / API / TOPIC" />
+          <Form.Input field="classification" label="主题域" placeholder="如 L1 / 客户域" />
+          <Form.Select field="entityId" label="关联实体" showClear optionList={entities.map((e) => ({ label: e.name, value: e.id }))} />
+          <Form.Input field="tags" label="标签" placeholder="逗号分隔" />
+          <Form.TextArea field="description" label="描述" rows={2} />
         </Form>
       </Modal>
     </Card>

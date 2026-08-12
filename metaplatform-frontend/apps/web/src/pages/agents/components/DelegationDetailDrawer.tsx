@@ -2,15 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Descriptions,
-  Drawer,
+  SideSheet,
   Space,
   Spin,
   Steps,
   Tag,
   Timeline,
+  Toast,
   Typography,
-  message,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { cancelDelegation, getDelegation, streamDelegation } from '@/api/dw/a2a';
 import type { Delegation, DelegationStatus, StatusHistoryEntry } from '@/api/dw/a2a';
@@ -23,17 +24,38 @@ interface DelegationDetailDrawerProps {
 
 const STATUS_FLOW: DelegationStatus[] = ['SUBMITTED', 'WORKING', 'INPUT_REQUIRED', 'COMPLETED'];
 
-const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  SUBMITTED: { label: '已提交', color: 'default' },
-  WORKING: { label: '执行中', color: 'processing' },
-  INPUT_REQUIRED: { label: '需输入', color: 'warning' },
-  COMPLETED: { label: '已完成', color: 'success' },
-  FAILED: { label: '失败', color: 'error' },
-  CANCELED: { label: '已取消', color: 'default' },
-  PENDING: { label: '待处理', color: 'default' },
-  SENT: { label: '已发送', color: 'processing' },
-  IN_PROGRESS: { label: '进行中', color: 'processing' },
-  CANCELLED: { label: '已取消', color: 'default' },
+const STATUS_LABEL: Record<string, { label: string; color: TagColor }> = {
+  SUBMITTED: { label: '已提交', color: 'grey' },
+  WORKING: { label: '执行中', color: 'blue' },
+  INPUT_REQUIRED: { label: '需输入', color: 'orange' },
+  COMPLETED: { label: '已完成', color: 'green' },
+  FAILED: { label: '失败', color: 'red' },
+  CANCELED: { label: '已取消', color: 'grey' },
+  PENDING: { label: '待处理', color: 'grey' },
+  SENT: { label: '已发送', color: 'blue' },
+  IN_PROGRESS: { label: '进行中', color: 'blue' },
+  CANCELLED: { label: '已取消', color: 'grey' },
+};
+
+// Timeline 圆点颜色（Semi Timeline.Item color 直接作为 CSS backgroundColor）
+const TAG_TO_DOT: Record<TagColor, string> = {
+  grey: 'var(--semi-color-tertiary)',
+  blue: 'var(--semi-color-primary)',
+  green: 'var(--semi-color-success)',
+  red: 'var(--semi-color-danger)',
+  orange: 'var(--semi-color-warning)',
+  amber: 'var(--semi-color-warning)',
+  cyan: 'var(--semi-color-primary)',
+  indigo: 'var(--semi-color-primary)',
+  'light-blue': 'var(--semi-color-primary)',
+  'light-green': 'var(--semi-color-success)',
+  lime: 'var(--semi-color-success)',
+  pink: 'var(--semi-color-danger)',
+  purple: 'var(--semi-color-primary)',
+  teal: 'var(--semi-color-success)',
+  violet: 'var(--semi-color-primary)',
+  yellow: 'var(--semi-color-warning)',
+  white: 'var(--semi-color-tertiary)',
 };
 
 function isTerminal(status: string): boolean {
@@ -111,7 +133,7 @@ export default function DelegationDetailDrawer({
       const d = await cancelDelegation(delegationId);
       setDelegation(d);
       onChange?.(d);
-      message.success('委托已取消');
+      Toast.success('委托已取消');
     } finally {
       setCanceling(false);
     }
@@ -123,15 +145,15 @@ export default function DelegationDetailDrawer({
   }, [delegation, liveEvents]);
 
   return (
-    <Drawer
+    <SideSheet
       title="委托详情"
-      size={720}
-      open={!!delegationId}
-      onClose={onClose}
+      width={720}
+      visible={!!delegationId}
+      onCancel={onClose}
       footer={
         delegation && !isTerminal(delegation.status) ? (
           <Button
-            danger
+            type="danger"
             icon={<CloseCircleOutlined />}
             loading={canceling}
             onClick={handleCancel}
@@ -144,21 +166,21 @@ export default function DelegationDetailDrawer({
       {loading && !delegation ? (
         <Spin tip="加载中..." />
       ) : delegation ? (
-        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="目标 Agent" span={2}>
+        <Space vertical spacing="loose" style={{ width: '100%' }}>
+          <Descriptions column={2} size="small">
+            <Descriptions.Item itemKey="目标 Agent" span={2}>
               <Typography.Text code>{delegation.targetAgentId}</Typography.Text>
             </Descriptions.Item>
-            <Descriptions.Item label="任务类型">{delegation.taskType}</Descriptions.Item>
-            <Descriptions.Item label="当前状态">
-              <Tag color={STATUS_LABEL[delegation.status]?.color || 'default'}>
+            <Descriptions.Item itemKey="任务类型">{delegation.taskType}</Descriptions.Item>
+            <Descriptions.Item itemKey="当前状态">
+              <Tag color={STATUS_LABEL[delegation.status]?.color || 'grey'}>
                 {STATUS_LABEL[delegation.status]?.label || delegation.status}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="创建时间">
+            <Descriptions.Item itemKey="创建时间">
               {new Date(delegation.createdAt).toLocaleString()}
             </Descriptions.Item>
-            <Descriptions.Item label="完成时间">
+            <Descriptions.Item itemKey="完成时间">
               {delegation.completedAt ? new Date(delegation.completedAt).toLocaleString() : '-'}
             </Descriptions.Item>
           </Descriptions>
@@ -170,22 +192,23 @@ export default function DelegationDetailDrawer({
                 ? 'error'
                 : 'process'
             }
-            items={[
-              { title: '已提交' },
-              { title: '执行中' },
-              { title: '需输入' },
-              { title: '已完成' },
-            ]}
-          />
+          >
+            <Steps.Step title="已提交" />
+            <Steps.Step title="执行中" />
+            <Steps.Step title="需输入" />
+            <Steps.Step title="已完成" />
+          </Steps>
 
           <div>
-            <Typography.Title level={5}>状态时间线</Typography.Title>
-            <Timeline
-              items={mergedHistory.map((h) => ({
-                color: STATUS_LABEL[h.status]?.color || 'blue',
-                children: (
-                  <Space orientation="vertical" size={0}>
-                    <Tag color={STATUS_LABEL[h.status]?.color || 'default'}>
+            <Typography.Title heading={5}>状态时间线</Typography.Title>
+            <Timeline>
+              {mergedHistory.map((h, idx) => (
+                <Timeline.Item
+                  key={idx}
+                  color={TAG_TO_DOT[STATUS_LABEL[h.status]?.color || 'blue']}
+                >
+                  <Space vertical spacing={0}>
+                    <Tag color={STATUS_LABEL[h.status]?.color || 'grey'}>
                       {STATUS_LABEL[h.status]?.label || h.status}
                     </Tag>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -195,15 +218,15 @@ export default function DelegationDetailDrawer({
                       <Typography.Text style={{ fontSize: 13 }}>{h.detail}</Typography.Text>
                     ) : null}
                   </Space>
-                ),
-              }))}
-            />
+                </Timeline.Item>
+              ))}
+            </Timeline>
           </div>
 
           {delegation.status === 'COMPLETED' && delegation.result && (
             <div>
-              <Typography.Title level={5}>执行结果</Typography.Title>
-              <pre style={{ background: '#f6f6f6', padding: 12, borderRadius: 8, overflow: 'auto' }}>
+              <Typography.Title heading={5}>执行结果</Typography.Title>
+              <pre style={{ background: 'var(--muted)', padding: 12, borderRadius: 8, overflow: 'auto' }}>
                 {JSON.stringify(delegation.result, null, 2)}
               </pre>
             </div>
@@ -212,7 +235,7 @@ export default function DelegationDetailDrawer({
           {(delegation.status === 'FAILED' || delegation.status === 'CANCELED' || delegation.status === 'CANCELLED') &&
             delegation.error && (
               <div>
-                <Typography.Title level={5}>错误信息</Typography.Title>
+                <Typography.Title heading={5}>错误信息</Typography.Title>
                 <Typography.Text type="danger">{delegation.error}</Typography.Text>
               </div>
             )}
@@ -220,6 +243,6 @@ export default function DelegationDetailDrawer({
       ) : (
         <Typography.Text type="secondary">未找到委托</Typography.Text>
       )}
-    </Drawer>
+    </SideSheet>
   );
 }

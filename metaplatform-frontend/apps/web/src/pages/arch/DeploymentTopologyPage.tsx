@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm, Space, Typography, Row, Col } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, Toast, Popconfirm, Space, Typography, Row, Col } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { listDeploymentTopologies, createDeploymentTopology, updateDeploymentTopology, deleteDeploymentTopology } from '@/api/arch/deployments';
@@ -20,7 +21,7 @@ const ENV_OPTIONS = [
   { value: 'prod', label: '生产环境' },
 ];
 
-const HEALTH_MAP: Record<string, { color: string; label: string }> = {
+const HEALTH_MAP: Record<string, { color: TagColor; label: string }> = {
   healthy: { color: 'green', label: '健康' },
   warning: { color: 'orange', label: '告警' },
   critical: { color: 'red', label: '严重' },
@@ -122,7 +123,7 @@ export default function DeploymentTopologyPage() {
   };
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     const payload = {
       name: values.name,
       environment: values.environment,
@@ -132,20 +133,20 @@ export default function DeploymentTopologyPage() {
     };
     if (editing) {
       await updateDeploymentTopology(editing.id, payload);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createDeploymentTopology(payload);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
     setEditing(null);
-    form.resetFields();
+    form.reset();
     load();
   };
 
   const handleEdit = (record: DeploymentTopology) => {
     setEditing(record);
-    form.setFieldsValue({
+    form.setValues({
       name: record.name,
       environment: record.environment,
       healthStatus: record.healthStatus,
@@ -157,7 +158,7 @@ export default function DeploymentTopologyPage() {
 
   const handleDelete = async (id: string) => {
     await deleteDeploymentTopology(id);
-    message.success('已删除');
+    Toast.success('已删除');
     if (selectedTopology?.id === id) setSelectedTopology(null);
     load();
   };
@@ -169,10 +170,10 @@ export default function DeploymentTopologyPage() {
     { title: '健康状态', dataIndex: 'healthStatus', key: 'healthStatus', render: (s: string) => <Tag color={HEALTH_MAP[s]?.color}>{HEALTH_MAP[s]?.label}</Tag> },
     { title: '操作', key: 'action', render: (_: unknown, r: DeploymentTopology) => (
       <Space>
-        <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-        <Button type="link" size="small" onClick={() => setSelectedTopology(r)}>查看拓扑</Button>
+        <Button theme="borderless" type="primary" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
+        <Button theme="borderless" type="primary" size="small" onClick={() => setSelectedTopology(r)}>查看拓扑</Button>
         <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button>
         </Popconfirm>
       </Space>
     )},
@@ -180,11 +181,11 @@ export default function DeploymentTopologyPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>部署拓扑可视化</Typography.Title>
+      <Typography.Title heading={4}>部署拓扑可视化</Typography.Title>
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新增拓扑</Button>
-          <Select value={filteredEnv} onChange={setFilteredEnv} style={{ width: 160 }} options={[{ value: 'all', label: '全部环境' }, ...ENV_OPTIONS]} />
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.reset(); setModalOpen(true); }}>新增拓扑</Button>
+          <Select value={filteredEnv} onChange={(v) => setFilteredEnv(v as string)} style={{ width: 160 }} optionList={[{ value: 'all', label: '全部环境' }, ...ENV_OPTIONS]} />
         </Space>
         <Table rowKey="id" columns={columns} dataSource={topologies ?? []} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
       </Card>
@@ -197,25 +198,17 @@ export default function DeploymentTopologyPage() {
         </Col>
       </Row>
 
-      <Modal title={editing ? '编辑部署拓扑' : '新增部署拓扑'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }} width={720}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="environment" label="环境" rules={[{ required: true }]} initialValue="dev">
-            <Select options={ENV_OPTIONS} />
-          </Form.Item>
-          <Form.Item name="healthStatus" label="健康状态" initialValue="healthy">
-            <Select options={[
-              { value: 'healthy', label: '健康' },
-              { value: 'warning', label: '告警' },
-              { value: 'critical', label: '严重' },
-            ]} />
-          </Form.Item>
-          <Form.Item name="nodes" label="节点（JSON）" rules={[{ required: true }]} initialValue="[]">
-            <Input.TextArea rows={6} placeholder='[{&quot;id&quot;:&quot;n1&quot;,&quot;name&quot;:&quot;Gateway&quot;,&quot;type&quot;:&quot;gateway&quot;,&quot;x&quot;:100,&quot;y&quot;:100}]' />
-          </Form.Item>
-          <Form.Item name="edges" label="连接（JSON）" rules={[{ required: true }]} initialValue="[]">
-            <Input.TextArea rows={4} placeholder='[{&quot;id&quot;:&quot;e1&quot;,&quot;source&quot;:&quot;n1&quot;,&quot;target&quot;:&quot;n2&quot;,&quot;label&quot;:&quot;HTTP&quot;}]' />
-          </Form.Item>
+      <Modal title={editing ? '编辑部署拓扑' : '新增部署拓扑'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.reset(); }} width={720}>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Select field="environment" label="环境" rules={[{ required: true }]} initValue="dev" optionList={ENV_OPTIONS} />
+          <Form.Select field="healthStatus" label="健康状态" initValue="healthy" optionList={[
+            { value: 'healthy', label: '健康' },
+            { value: 'warning', label: '告警' },
+            { value: 'critical', label: '严重' },
+          ]} />
+          <Form.TextArea field="nodes" label="节点（JSON）" rules={[{ required: true }]} initValue="[]" rows={6} placeholder='[{&quot;id&quot;:&quot;n1&quot;,&quot;name&quot;:&quot;Gateway&quot;,&quot;type&quot;:&quot;gateway&quot;,&quot;x&quot;:100,&quot;y&quot;:100}]' />
+          <Form.TextArea field="edges" label="连接（JSON）" rules={[{ required: true }]} initValue="[]" rows={4} placeholder='[{&quot;id&quot;:&quot;e1&quot;,&quot;source&quot;:&quot;n1&quot;,&quot;target&quot;:&quot;n2&quot;,&quot;label&quot;:&quot;HTTP&quot;}]' />
         </Form>
       </Modal>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Upload, Button, Empty, Tag, Typography, Space, Progress, Spin, message, Popconfirm, Input } from 'antd';
-import type { UploadProps } from 'antd';
+import { Upload, Button, Empty, Tag, Typography, Space, Progress, Spin, Popconfirm, Input, Toast } from '@douyinfe/semi-ui';
+import type { UploadProps } from '@douyinfe/semi-ui/lib/es/upload';
 import {
   InboxOutlined,
   FilePdfOutlined,
@@ -30,19 +30,19 @@ interface DocumentUploadProps {
 // 设计 token — 与 packages/shared/src/theme.ts 保持一致
 // ---------------------------------------------------------------------------
 const TOKENS = {
-  bgBody: '#0a0a0a',
-  bgContainer: '#111111',
-  bgElevated: '#1a1a1a',
-  bgHover: '#1a1a1a',
-  border: '#262626',
-  borderStrong: '#525252',
-  textPrimary: '#fafafa',
-  textSecondary: '#a1a1a1',
-  textTertiary: '#737373',
-  success: '#22c55e',
-  warning: '#eab308',
-  error: '#ef4444',
-  info: '#3b82f6',
+  bgBody: 'var(--background)',
+  bgContainer: 'var(--card)',
+  bgElevated: 'var(--muted)',
+  bgHover: 'var(--muted)',
+  border: 'var(--border)',
+  borderStrong: 'var(--border)',
+  textPrimary: 'var(--foreground)',
+  textSecondary: 'var(--muted-foreground)',
+  textTertiary: 'var(--muted-foreground)',
+  success: 'var(--success)',
+  warning: 'var(--warning)',
+  error: 'var(--destructive)',
+  info: 'var(--info)',
 };
 
 // ---------------------------------------------------------------------------
@@ -51,9 +51,9 @@ const TOKENS = {
 const FILE_TYPE_META: Record<DocumentItem['fileType'], { icon: React.ReactNode; color: string; bg: string; label: string }> = {
   pdf:  { icon: <FilePdfOutlined />,   color: '#f87171', bg: 'rgba(239, 68, 68, 0.12)',  label: 'PDF' },
   word: { icon: <FileWordOutlined />,  color: '#60a5fa', bg: 'rgba(59, 130, 246, 0.12)', label: 'Word' },
-  txt:  { icon: <FileTextOutlined />,  color: '#a3a3a3', bg: 'rgba(163, 163, 163, 0.10)', label: 'TXT' },
-  md:   { icon: <FileTextOutlined />,  color: '#a3a3a3', bg: 'rgba(163, 163, 163, 0.10)', label: 'MD' },
-  other:{ icon: <FileUnknownOutlined />, color: '#a3a3a3', bg: 'rgba(163, 163, 163, 0.10)', label: '文件' },
+  txt:  { icon: <FileTextOutlined />,  color: 'var(--muted-foreground)', bg: 'rgba(163, 163, 163, 0.10)', label: 'TXT' },
+  md:   { icon: <FileTextOutlined />,  color: 'var(--muted-foreground)', bg: 'rgba(163, 163, 163, 0.10)', label: 'MD' },
+  other:{ icon: <FileUnknownOutlined />, color: 'var(--muted-foreground)', bg: 'rgba(163, 163, 163, 0.10)', label: '文件' },
 };
 
 // ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
       const docs = await listDocuments(employeeId);
       setDocuments(docs);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载文档失败');
+      Toast.error(e instanceof Error ? e.message : '加载文档失败');
     } finally {
       setLoading(false);
     }
@@ -112,11 +112,11 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
     setUploading(true);
     try {
       const doc = await uploadDocument(employeeId, file);
-      message.success(`「${file.name}」上传成功`);
+      Toast.success(`「${file.name}」上传成功`);
       setDocuments((prev) => [doc, ...prev]);
       onDocumentProcessed?.(doc);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '上传失败');
+      Toast.error(error instanceof Error ? error.message : '上传失败');
     } finally {
       setUploading(false);
     }
@@ -125,24 +125,26 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
   const handleDelete = async (docId: string) => {
     try {
       await deleteDocument(docId);
-      message.success('文档已删除');
+      Toast.success('文档已删除');
       setDocuments((prev) => prev.filter((d) => d.id !== docId));
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '删除失败');
+      Toast.error(error instanceof Error ? error.message : '删除失败');
     }
   };
 
   const uploadProps: UploadProps = {
-    name: 'file',
+    // Semi Upload 以 action 为必填；uploadTrigger="custom" 时不会发起网络请求，
+    // 由 onFileChange 拿到原始 File 后走既有 uploadDocument API 手动上传（等价原 beforeUpload 返回 false）。
+    action: '',
+    uploadTrigger: 'custom',
     multiple: true,
     accept: '.pdf,.doc,.docx,.txt,.md',
+    draggable: true,
     showUploadList: false,
-    beforeUpload: (file) => {
-      handleUpload(file);
-      return false;
+    onFileChange: (files) => {
+      files.forEach((f) => handleUpload(f));
     },
   };
-  const { Dragger } = Upload;
 
   // 过滤后文档
   const filtered = useMemo(() => {
@@ -164,7 +166,7 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
   return (
     <div>
       {/* 顶部：上传区（紧凑化） */}
-      <Dragger
+      <Upload
         {...uploadProps}
         style={{
           marginBottom: 20,
@@ -200,11 +202,11 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
               支持 PDF / Word / TXT / Markdown 格式，单个文件不超过 50MB
             </div>
           </div>
-          <Button type="primary" icon={<InboxOutlined />} disabled={uploading}>
+          <Button theme="solid" type="primary" icon={<InboxOutlined />} disabled={uploading}>
             选择文件
           </Button>
         </div>
-      </Dragger>
+      </Upload>
 
       {uploading && (
         <div
@@ -216,7 +218,7 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
             borderRadius: 4,
           }}
         >
-          <Progress percent={100} status="active" size="small" showInfo={false} />
+          <Progress percent={100} showInfo={false} />
         </div>
       )}
 
@@ -232,7 +234,7 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
         <Typography.Text style={{ color: TOKENS.textPrimary, fontSize: 14, fontWeight: 500 }}>
           文档库
         </Typography.Text>
-        <Space size={8} style={{ flex: 1 }}>
+        <Space spacing={8} style={{ flex: 1 }}>
           {(['ready', 'processing', 'uploaded', 'failed'] as DocumentStatus[]).map((s) =>
             counts[s] > 0 ? (
               <Tag
@@ -263,11 +265,11 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
           )}
         </Space>
         <Input
-          allowClear
+          showClear
           prefix={<SearchOutlined style={{ color: TOKENS.textTertiary }} />}
           placeholder="搜索文件名"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(v: string) => setSearch(v)}
           style={{
             width: 220,
             background: TOKENS.bgElevated,
@@ -281,8 +283,7 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
           style={{ background: TOKENS.bgContainer, border: `1px solid ${TOKENS.border}` }}
         >
           刷新
-        </Button>
-      </div>
+        </Button>      </div>
 
       {/* 文档列表 */}
       <Spin spinning={loading && documents.length === 0}>
@@ -455,18 +456,18 @@ export default function DocumentUpload({ employeeId, onDocumentProcessed }: Docu
                   <div style={{ textAlign: 'right' }}>
                     <Popconfirm
                       title="确认删除文档"
-                      description={
+                      content={
                         <span style={{ color: TOKENS.textSecondary }}>
                           将永久删除「{doc.filename}」，且无法恢复
                         </span>
                       }
                       okText="删除"
                       cancelText="取消"
-                      okButtonProps={{ danger: true }}
+                      okType="danger"
                       onConfirm={() => handleDelete(doc.id)}
                     >
                       <Button
-                        type="text"
+                        theme="borderless"
                         size="small"
                         icon={<DeleteOutlined />}
                         style={{ color: TOKENS.textTertiary }}

@@ -4,23 +4,23 @@ import {
   Button,
   Form,
   Input,
-  Select,
   Space,
   Table,
   Tag,
   Modal,
   Popconfirm,
-  message,
-  Drawer,
+  Toast,
+  SideSheet,
   Descriptions,
-} from "antd";
-import type { ColumnsType } from "antd/es/table";
+} from "@douyinfe/semi-ui";
+import type { ColumnProps } from "@douyinfe/semi-ui/lib/es/table";
 import {
   PlusOutlined,
   ReloadOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { CatalogEditor } from "./CatalogEditor";
 import {
@@ -33,6 +33,7 @@ import {
   listRoles,
   updateRole,
 } from "@/api/admin/permissions";
+import type { CreateRolePayload } from "@/api/admin/permissions";
 import type {
   AdminPermission,
   AdminRole,
@@ -51,6 +52,33 @@ const DATA_SCOPE_LABEL: Record<string, string> = {
   CUSTOM: "自定义",
 };
 
+// 轻量搜索框（antd Input.Search 无 Semi 等价物：Enter 或点击放大镜触发）
+function SearchInput({
+  value,
+  onChange,
+  onSearch,
+  placeholder,
+  style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSearch: () => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onEnterPress={() => onSearch()}
+      showClear
+      suffix={<SearchOutlined style={{ cursor: "pointer" }} onClick={() => onSearch()} />}
+      style={{ maxWidth: 280, ...style }}
+    />
+  );
+}
+
 export default function PermissionsPage() {
   const { settings } = useSettings();
   const [roles, setRoles] = useState<AdminRole[]>([]);
@@ -66,7 +94,7 @@ export default function PermissionsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [detail, setDetail] = useState<AdminRoleDetail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [createForm] = Form.useForm();
+  const [createForm] = Form.useForm<CreateRolePayload>();
   const [editForm] = Form.useForm();
   const [assignForm] = Form.useForm();
 
@@ -105,12 +133,12 @@ export default function PermissionsPage() {
   }, [page, pageSize]);
 
   const handleCreate = async () => {
-    const v = await createForm.validateFields();
+    const v = await createForm.validate();
     try {
       await createRole(v);
-      message.success("角色已创建");
+      Toast.success("角色已创建");
       setCreateOpen(false);
-      createForm.resetFields();
+      createForm.reset();
       loadRoles();
       loadMatrix();
     } catch {
@@ -123,14 +151,14 @@ export default function PermissionsPage() {
     try {
       const detailRes = await getRoleDetail(r.id);
       setEditTarget({ ...r, ...detailRes });
-      editForm.setFieldsValue({
+      editForm.setValues({
         name: r.name,
         description: r.description ?? "",
         dataScope: r.dataScope,
         permissionIds: detailRes.permissions.map((p) => p.id),
       });
     } catch {
-      editForm.setFieldsValue({
+      editForm.setValues({
         name: r.name,
         description: r.description ?? "",
         dataScope: r.dataScope,
@@ -141,10 +169,10 @@ export default function PermissionsPage() {
 
   const handleEdit = async () => {
     if (!editTarget) return;
-    const v = await editForm.validateFields();
+    const v = await editForm.validate();
     try {
       await updateRole(editTarget.id, v);
-      message.success("已更新");
+      Toast.success("已更新");
       setEditOpen(false);
       loadRoles();
       loadMatrix();
@@ -156,7 +184,7 @@ export default function PermissionsPage() {
   const handleDelete = async (r: AdminRole) => {
     try {
       await deleteRole(r.id);
-      message.success(`已删除 ${r.name}`);
+      Toast.success(`已删除 ${r.name}`);
       loadRoles();
       loadMatrix();
     } catch {
@@ -198,7 +226,7 @@ export default function PermissionsPage() {
     }
   };
 
-  const columns: ColumnsType<AdminRole> = useMemo(
+  const columns: ColumnProps<AdminRole>[] = useMemo(
     () => [
       {
         title: "编码",
@@ -247,27 +275,27 @@ export default function PermissionsPage() {
         width: 220,
         render: (_v, r) => (
           <span style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}>
-            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetail(r)}>
+            <Button theme="borderless" size="small" icon={<EyeOutlined />} onClick={() => openDetail(r)}>
               查看
             </Button>
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>
+            <Button theme="borderless" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)}>
               编辑
             </Button>
             {!r.isBuiltin ? (
               <Popconfirm
                 title={"确认删除 " + r.name + "？"}
-                description="该角色下的用户绑定关系也会一并解除"
+                content="该角色下的用户绑定关系也会一并解除"
                 onConfirm={() => handleDelete(r)}
                 okType="danger"
                 okText="删除"
                 cancelText="取消"
               >
-                <Button type="link" size="small" icon={<DeleteOutlined />} danger>
+                <Button theme="borderless" size="small" icon={<DeleteOutlined />} type="danger">
                   删除
                 </Button>
               </Popconfirm>
             ) : (
-              <Button type="link" size="small" disabled>
+              <Button theme="borderless" size="small" disabled>
                 删除
               </Button>
             )}
@@ -307,7 +335,7 @@ export default function PermissionsPage() {
           }}>
             刷新
           </Button>
-          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+          <Button key="create" theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             新建角色
           </Button>
         </span>
@@ -335,16 +363,14 @@ export default function PermissionsPage() {
                 }}
               >
                 <div style={{ display: "flex", gap: 8, marginBottom: 12, padding: 8 }}>
-                  <Input.Search
+                  <SearchInput
                     placeholder="搜索角色编码 / 名称"
                     value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
+                    onChange={(v) => setKeyword(v)}
                     onSearch={() => {
                       setPage(1);
                       loadRoles();
                     }}
-                    style={{ maxWidth: 280 }}
-                    allowClear
                   />
                 </div>
                 <Table
@@ -353,11 +379,12 @@ export default function PermissionsPage() {
                   columns={columns}
                   dataSource={roles}
                   pagination={{
-                    current: page,
+                    currentPage: page,
                     pageSize,
                     total,
                     showSizeChanger: true,
-                    onChange: (p, ps) => { setPage(p); setPageSize(ps); },
+                    onPageChange: (p) => setPage(p),
+                    onPageSizeChange: (ps) => setPageSize(ps),
                   }}
                   size="middle"
                 />
@@ -374,7 +401,7 @@ export default function PermissionsPage() {
                 onSave={async (roleId, permissionIds) => {
                   try {
                     await assignPermissions({ type: "role", targetId: roleId, permissionIds });
-                    message.success("权限已保存");
+                    Toast.success("权限已保存");
                     loadRoles();
                     loadMatrix();
                   } catch {
@@ -488,124 +515,111 @@ export default function PermissionsPage() {
 
       <Modal
         title="新建角色"
-        open={createOpen}
+        visible={createOpen}
         onCancel={() => setCreateOpen(false)}
         onOk={handleCreate}
         okText="创建"
         cancelText="取消"
       >
-        <Form form={createForm} layout="vertical" preserve={false}>
-          <Form.Item name="code" label="角色编码" rules={[{ required: true, min: 2, max: 64 }]}>
-            <Input placeholder="建议大写字母+下划线" />
-          </Form.Item>
-          <Form.Item name="name" label="显示名" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea autoSize={{ minRows: 2 }} />
-          </Form.Item>
-          <Form.Item name="dataScope" label="数据范围" initialValue="SELF">
-            <Select
-              options={[
-                { value: "ALL", label: DATA_SCOPE_LABEL.ALL },
-                { value: "DEPT", label: DATA_SCOPE_LABEL.DEPT },
-                { value: "DEPT_AND_SUB", label: DATA_SCOPE_LABEL.DEPT_AND_SUB },
-                { value: "SELF", label: DATA_SCOPE_LABEL.SELF },
-                { value: "CUSTOM", label: DATA_SCOPE_LABEL.CUSTOM },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="permissionIds" label="权限">
-            <Select
-              mode="multiple"
-              options={Array.isArray(catalog) ? catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name })) : []}
-              placeholder="选择权限"
-              showSearch
-              optionFilterProp="label"
-            />
-          </Form.Item>
+        <Form form={createForm}>
+          <Form.Input field="code" label="角色编码" rules={[{ required: true, min: 2, max: 64 }]} placeholder="建议大写字母+下划线" />
+          <Form.Input field="name" label="显示名" rules={[{ required: true }]} />
+          <Form.TextArea field="description" label="描述" autosize={{ minRows: 2 }} />
+          <Form.Select
+            field="dataScope"
+            label="数据范围"
+            initValue="SELF"
+            optionList={[
+              { value: "ALL", label: DATA_SCOPE_LABEL.ALL },
+              { value: "DEPT", label: DATA_SCOPE_LABEL.DEPT },
+              { value: "DEPT_AND_SUB", label: DATA_SCOPE_LABEL.DEPT_AND_SUB },
+              { value: "SELF", label: DATA_SCOPE_LABEL.SELF },
+              { value: "CUSTOM", label: DATA_SCOPE_LABEL.CUSTOM },
+            ]}
+          />
+          <Form.Select
+            field="permissionIds"
+            label="权限"
+            multiple
+            optionList={Array.isArray(catalog) ? catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name })) : []}
+            placeholder="选择权限"
+            filter
+          />
         </Form>
       </Modal>
 
       <Modal
         title={editTarget ? "编辑 " + editTarget.name : "编辑"}
-        open={editOpen}
+        visible={editOpen}
         onCancel={() => setEditOpen(false)}
         onOk={handleEdit}
         okText="保存"
         cancelText="取消"
         width={560}
       >
-        <Form form={editForm} layout="vertical" preserve={false}>
-          <Form.Item name="name" label="显示名" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea autoSize={{ minRows: 2 }} />
-          </Form.Item>
-          <Form.Item name="dataScope" label="数据范围">
-            <Select
-              options={[
-                { value: "ALL", label: DATA_SCOPE_LABEL.ALL },
-                { value: "DEPT", label: DATA_SCOPE_LABEL.DEPT },
-                { value: "DEPT_AND_SUB", label: DATA_SCOPE_LABEL.DEPT_AND_SUB },
-                { value: "SELF", label: DATA_SCOPE_LABEL.SELF },
-                { value: "CUSTOM", label: DATA_SCOPE_LABEL.CUSTOM },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="permissionIds" label="权限">
-            <Select
-              mode="multiple"
-              options={Array.isArray(catalog) ? catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name })) : []}
-              showSearch
-              optionFilterProp="label"
-            />
-          </Form.Item>
+        <Form form={editForm}>
+          <Form.Input field="name" label="显示名" rules={[{ required: true }]} />
+          <Form.TextArea field="description" label="描述" autosize={{ minRows: 2 }} />
+          <Form.Select
+            field="dataScope"
+            label="数据范围"
+            optionList={[
+              { value: "ALL", label: DATA_SCOPE_LABEL.ALL },
+              { value: "DEPT", label: DATA_SCOPE_LABEL.DEPT },
+              { value: "DEPT_AND_SUB", label: DATA_SCOPE_LABEL.DEPT_AND_SUB },
+              { value: "SELF", label: DATA_SCOPE_LABEL.SELF },
+              { value: "CUSTOM", label: DATA_SCOPE_LABEL.CUSTOM },
+            ]}
+          />
+          <Form.Select
+            field="permissionIds"
+            label="权限"
+            multiple
+            optionList={Array.isArray(catalog) ? catalog.map((p) => ({ value: p.id, label: p.code + " - " + p.name })) : []}
+            filter
+          />
         </Form>
       </Modal>
 
-      <Drawer
+      <SideSheet
         key="drawer-detail"
         title={detail ? "角色详情：" + detail.name : ""}
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        size={520}
+        visible={detailOpen}
+        onCancel={() => setDetailOpen(false)}
+        width={520}
       >
         {detail && (
           <Descriptions
             column={1}
-            bordered
             size="small"
-            items={[
-              { key: "code", label: "编码", children: detail.code },
-              { key: "name", label: "名称", children: detail.name },
-              { key: "desc", label: "描述", children: detail.description || "—" },
+            data={[
+              { key: "编码", value: detail.code },
+              { key: "名称", value: detail.name },
+              { key: "描述", value: detail.description || "—" },
               {
-                key: "scope",
-                label: "数据范围",
-                children: <Tag>{DATA_SCOPE_LABEL[detail.dataScope] ?? detail.dataScope}</Tag>,
+                key: "数据范围",
+                value: <Tag>{DATA_SCOPE_LABEL[detail.dataScope] ?? detail.dataScope}</Tag>,
               },
-              { key: "builtin", label: "内置", children: detail.isBuiltin ? "是" : "否" },
+              { key: "内置", value: detail.isBuiltin ? "是" : "否" },
               {
-                key: "perms",
-                label: "权限（" + detail.permissions.length + "）",
-                children: (
-                  <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
-                    {detail.permissions.length === 0
-                      ? "—"
-                      : detail.permissions.map((p) => (
-                          <Tag key={p.id} color="blue">
-                            {p.code}
-                          </Tag>
-                        ))}
-                  </span>
-                ),
+                key: "权限（" + detail.permissions.length + "）",
+                value:
+                  detail.permissions.length === 0
+                    ? "—"
+                    : (
+                        <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
+                          {detail.permissions.map((p) => (
+                            <Tag key={p.id} color="blue">
+                              {p.code}
+                            </Tag>
+                          ))}
+                        </span>
+                      ),
               },
             ]}
           />
         )}
-      </Drawer>
+      </SideSheet>
     </AdminLayout>
     </Fragment>
   );

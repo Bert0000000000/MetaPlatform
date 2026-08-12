@@ -1,19 +1,20 @@
 import { useState } from 'react';
-import { Card, Form, Input, Button, Space, Tag, Typography, Steps, message } from 'antd';
+import { Card, Form, Input, Button, Space, Tag, Typography, Steps, Toast } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { detectIntent, generatePlan } from '@/api/superai/schedule';
 import type { ScheduleIntent, ExecutionPlan } from '@/api/superai/schedule';
 
 export default function TaskOrchestrationPage() {
+  const [form] = Form.useForm();
   const [step, setStep] = useState(0);
-  const [text, setText] = useState('');
   const [intent, setIntent] = useState<ScheduleIntent | null>(null);
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleDetectIntent = async () => {
+    const text = String(form.getValues().taskDesc ?? '');
     if (!text.trim()) {
-      message.warning('请输入任务描述');
+      Toast.warning('请输入任务描述');
       return;
     }
     setLoading(true);
@@ -40,31 +41,28 @@ export default function TaskOrchestrationPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>任务编排</Typography.Title>
+      <Typography.Title heading={4}>任务编排</Typography.Title>
 
       <Card style={{ marginBottom: 16 }}>
-        <Steps
-          current={step}
-          items={[
-            { title: '任务输入' },
-            { title: '意图识别' },
-            { title: '执行计划' },
-            { title: '执行' },
-          ]}
-        />
+        <Steps current={step}>
+          <Steps.Step title="任务输入" />
+          <Steps.Step title="意图识别" />
+          <Steps.Step title="执行计划" />
+          <Steps.Step title="执行" />
+        </Steps>
       </Card>
 
       <Card title="1. 输入任务" style={{ marginBottom: 16 }}>
-        <Form layout="vertical">
-          <Form.Item label="用一句话描述你的任务">
-            <Input.TextArea
-              rows={3}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="例如：每周一早上汇总本团队的销售数据并邮件通知给我"
-            />
-          </Form.Item>
+        <Form form={form}>
+          <Form.TextArea
+            field="taskDesc"
+            label="用一句话描述你的任务"
+            rows={3}
+            initValue=""
+            placeholder="例如：每周一早上汇总本团队的销售数据并邮件通知给我"
+          />
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={loading}
@@ -77,7 +75,7 @@ export default function TaskOrchestrationPage() {
 
       {intent && (
         <Card title="2. 意图识别" style={{ marginBottom: 16 }}>
-          <Space orientation="vertical">
+          <Space vertical>
             <Typography.Paragraph>
               <Tag color={intent.detectedIntent === 'scheduled' ? 'blue' : 'green'}>
                 {intent.detectedIntent === 'scheduled' ? '定时任务' : '即时任务'}
@@ -93,7 +91,7 @@ export default function TaskOrchestrationPage() {
                 ))}
               </Space>
             </div>
-            <Button type="primary" onClick={handlePlan} loading={loading}>
+            <Button theme="solid" type="primary" onClick={handlePlan} loading={loading}>
               生成执行计划
             </Button>
           </Space>
@@ -106,22 +104,26 @@ export default function TaskOrchestrationPage() {
             direction="vertical"
             size="small"
             current={plan.steps.length}
-            items={plan.steps.map((s) => ({
-              title: (
-                <Space>
-                  <span>{s.name}</span>
-                  {s.employeeId && <Tag color="purple">{s.employeeId}</Tag>}
-                  {s.tool && <Tag color="cyan">{s.tool}</Tag>}
-                </Space>
-              ),
-              description: `预计耗时 ${s.estimatedDuration}s`,
-            }))}
-          />
+          >
+            {plan.steps.map((s) => (
+              <Steps.Step
+                key={s.id}
+                title={(
+                  <Space>
+                    <span>{s.name}</span>
+                    {s.employeeId && <Tag color="purple">{s.employeeId}</Tag>}
+                    {s.tool && <Tag color="cyan">{s.tool}</Tag>}
+                  </Space>
+                )}
+                description={`预计耗时 ${s.estimatedDuration}s`}
+              />
+            ))}
+          </Steps>
           <Typography.Paragraph type="secondary" style={{ marginTop: 16 }}>
             总预计耗时：{plan.totalEstimatedDuration}s
             {plan.parallelGroups && plan.parallelGroups.length > 0 && '（部分步骤可并行）'}
           </Typography.Paragraph>
-          <Button type="primary">开始执行</Button>
+          <Button theme="solid" type="primary">开始执行</Button>
         </Card>
       )}
     </div>

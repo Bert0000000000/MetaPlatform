@@ -1,21 +1,20 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
-  Col,
   Empty,
   List,
-  Row,
   Select,
   Space,
   Spin,
   Table,
   Tag,
   Tabs,
+  TabPane,
   Typography,
-  message,
-  theme,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import {
   PlayCircleOutlined,
   FileExcelOutlined,
@@ -63,8 +62,6 @@ function formatTime(value?: string) {
 }
 
 export default function DataAnalysisPage() {
-  const { token } = theme.useToken();
-
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [selectedDataSource, setSelectedDataSource] = useState<string>('');
   const [sql, setSql] = useState('SELECT * FROM users LIMIT 100');
@@ -84,7 +81,7 @@ export default function DataAnalysisPage() {
         setSelectedDataSource(items[0].id);
       }
     } catch (err) {
-      message.error('加载数据源失败');
+      Toast.error('加载数据源失败');
     }
   };
 
@@ -94,7 +91,7 @@ export default function DataAnalysisPage() {
       const items = await listQueryHistory();
       setHistory(items);
     } catch (err) {
-      message.error('加载分析历史失败');
+      Toast.error('加载分析历史失败');
     } finally {
       setHistoryLoading(false);
     }
@@ -108,11 +105,11 @@ export default function DataAnalysisPage() {
 
   const handleExecute = async () => {
     if (!selectedDataSource) {
-      message.warning('请先选择数据源');
+      Toast.warning('请先选择数据源');
       return;
     }
     if (!sql.trim()) {
-      message.warning('请输入 SQL');
+      Toast.warning('请输入 SQL');
       return;
     }
     setExecuting(true);
@@ -132,7 +129,7 @@ export default function DataAnalysisPage() {
 
   const handleShowPlan = async () => {
     if (!result?.queryId) {
-      message.warning('请先执行查询');
+      Toast.warning('请先执行查询');
       return;
     }
     setPlanLoading(true);
@@ -149,7 +146,7 @@ export default function DataAnalysisPage() {
 
   const handleExport = async (format: ExportFormat) => {
     if (!result?.queryId) {
-      message.warning('请先执行查询');
+      Toast.warning('请先执行查询');
       return;
     }
     try {
@@ -157,7 +154,7 @@ export default function DataAnalysisPage() {
       const ext = format === 'excel' ? 'xlsx' : format;
       downloadBlob(blob, `query-${result.queryId}.${ext}`);
     } catch (err) {
-      message.error('导出失败');
+      Toast.error('导出失败');
     }
   };
 
@@ -216,8 +213,8 @@ export default function DataAnalysisPage() {
   return (
     <div style={{ height: '100%', display: 'flex', gap: 16 }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Card size="small">
-          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+        <Card >
+          <Space vertical spacing="medium" style={{ width: '100%' }}>
             <Row gutter={16} align="middle">
               <Col flex="auto">
                 <Space>
@@ -227,8 +224,8 @@ export default function DataAnalysisPage() {
                     style={{ minWidth: 240 }}
                     placeholder="选择数据源"
                     value={selectedDataSource || undefined}
-                    onChange={setSelectedDataSource}
-                    options={dataSources.map((ds) => ({
+                    onChange={(v) => setSelectedDataSource(v as string)}
+                    optionList={dataSources.map((ds) => ({
                       label: `${ds.name} (${ds.sourceType})`,
                       value: ds.id,
                     }))}
@@ -238,6 +235,7 @@ export default function DataAnalysisPage() {
               <Col>
                 <Space>
                   <Button
+                    theme="solid"
                     type="primary"
                     icon={<PlayCircleOutlined />}
                     loading={executing}
@@ -254,8 +252,8 @@ export default function DataAnalysisPage() {
 
             <div
               style={{
-                border: `1px solid ${token.colorBorder}`,
-                borderRadius: token.borderRadius,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
                 overflow: 'hidden',
               }}
             >
@@ -289,60 +287,58 @@ export default function DataAnalysisPage() {
           </Space>
         </Card>
 
-        <Card size="small" style={{ flex: 1, minHeight: 0 }}>
+        <Card  style={{ flex: 1, minHeight: 0 }}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
             size="small"
-            items={[
-              {
-                key: 'result',
-                label: '查询结果',
-                children: result ? (
-                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <Space style={{ marginBottom: 8 }}>
-                      <Tag color="blue">{result.rowCount} 行</Tag>
-                      <Tag>{result.executionTime} ms</Tag>
-                    </Space>
-                    <Table
-                      dataSource={result.rows}
-                      columns={resultColumns}
-                      rowKey={(_, index) => String(index)}
-                      size="small"
-                      pagination={{ pageSize: 10 }}
-                      scroll={{ x: 'max-content' }}
-                    />
-                  </div>
-                ) : (
-                  <Empty description="执行 SQL 后查看结果" />
-                ),
-              },
-              {
-                key: 'plan',
-                label: '执行计划',
-                children: plan ? (
-                  <div
-                    style={{
-                      maxHeight: 480,
-                      overflow: 'auto',
-                      background: token.colorBgContainerDisabled,
-                      padding: 12,
-                      borderRadius: token.borderRadius,
-                    }}
-                  >
-                    {renderPlan(plan.plan)}
-                  </div>
-                ) : (
-                  <Empty description="执行查询后查看执行计划" />
-                ),
-              },
+            tabList={[
+              { itemKey: 'result', tab: '查询结果' },
+              { itemKey: 'plan', tab: '执行计划' },
             ]}
-          />
+          >
+            <TabPane itemKey="result">
+              {result ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Space style={{ marginBottom: 8 }}>
+                    <Tag color="blue">{result.rowCount} 行</Tag>
+                    <Tag>{result.executionTime} ms</Tag>
+                  </Space>
+                  <Table
+                    dataSource={result.rows}
+                    columns={resultColumns}
+                    rowKey={(_, index) => String(index)}
+                    size="small"
+                    pagination={{ pageSize: 10 }}
+                    scroll={{ x: 'max-content' }}
+                  />
+                </div>
+              ) : (
+                <Empty description="执行 SQL 后查看结果" />
+              )}
+            </TabPane>
+            <TabPane itemKey="plan">
+              {plan ? (
+                <div
+                  style={{
+                    maxHeight: 480,
+                    overflow: 'auto',
+                    background: 'var(--muted)',
+                    padding: 12,
+                    borderRadius: 'var(--radius)',
+                  }}
+                >
+                  {renderPlan(plan.plan)}
+                </div>
+              ) : (
+                <Empty description="执行查询后查看执行计划" />
+              )}
+            </TabPane>
+          </Tabs>
         </Card>
       </div>
 
       <Card
-        size="small"
         title={
           <Space>
             <HistoryOutlined />
@@ -354,40 +350,35 @@ export default function DataAnalysisPage() {
         <Spin spinning={historyLoading}>
           <List
             dataSource={history}
-            locale={{ emptyText: '暂无分析历史' }}
+            emptyContent={<Empty description="暂无分析历史" />}
             renderItem={(item) => (
               <List.Item
-                actions={[
+                extra={
                   <Button
-                    key="restore"
-                    type="link"
+                    theme="borderless"
                     size="small"
                     onClick={() => handleRestoreHistory(item)}
                   >
                     恢复
-                  </Button>,
-                ]}
+                  </Button>
+                }
               >
-                <List.Item.Meta
-                  title={
-                    <Typography.Paragraph
-                      ellipsis={{ rows: 2 }}
-                      style={{ marginBottom: 0, fontSize: 12 }}
-                    >
-                      {item.sql}
-                    </Typography.Paragraph>
-                  }
-                  description={
-                    <Space size="small">
-                      <Tag color={item.status === 'success' ? 'success' : 'error'}>
-                        {item.status === 'success' ? '成功' : '失败'}
-                      </Tag>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        {item.rowCount} 行 · {formatTime(item.createdAt)}
-                      </Text>
-                    </Space>
-                  }
-                />
+                <div>
+                  <Typography.Paragraph
+                    ellipsis={{ rows: 2 }}
+                    style={{ marginBottom: 0, fontSize: 12 }}
+                  >
+                    {item.sql}
+                  </Typography.Paragraph>
+                  <Space spacing="tight">
+                    <Tag color={item.status === 'success' ? 'green' : 'red'}>
+                      {item.status === 'success' ? '成功' : '失败'}
+                    </Tag>
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                      {item.rowCount} 行 · {formatTime(item.createdAt)}
+                    </Text>
+                  </Space>
+                </div>
               </List.Item>
             )}
           />

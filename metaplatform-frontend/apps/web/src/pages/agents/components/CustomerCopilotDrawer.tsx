@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Drawer, Input, Button, Empty, Spin, Tag, Space, message } from 'antd';
+import { SideSheet, Input, Button, Empty, Spin, Tag, Space, Toast } from '@douyinfe/semi-ui';
 import { SendOutlined, RobotOutlined } from '@mate/shared';
 import {
   InteractionProvider, useInteractionContext, toInteractionContextJson,
@@ -50,11 +50,11 @@ function CustomerCopilotInner({ customerId, customerName }: { customerId: string
           }
         },
         onError: (err) => {
-          message.error('流式响应失败：' + (err as Error).message);
+          Toast.error('流式响应失败：' + (err as Error).message);
         },
       });
     } catch (e) {
-      message.error('调用失败：' + (e as Error).message);
+      Toast.error('调用失败：' + (e as Error).message);
     } finally {
       setStreaming(false);
       abortRef.current = null;
@@ -63,7 +63,7 @@ function CustomerCopilotInner({ customerId, customerName }: { customerId: string
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ marginBottom: 12, padding: 8, background: '#f5f5f5', borderRadius: 6 }}>
+      <div style={{ marginBottom: 12, padding: 8, background: 'var(--muted)', borderRadius: 6 }}>
         <Space>
           <RobotOutlined />
           <strong>{customerName}</strong>
@@ -80,13 +80,13 @@ function CustomerCopilotInner({ customerId, customerName }: { customerId: string
             {messages.map((msg, idx) => (
               <div key={idx} style={{ border: 'none', padding: '8px 0' }}>
                 {msg.role === 'user' ? (
-                  <div style={{ background: '#1677ff', color: 'white', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
+                  <div style={{ background: 'var(--semi-color-primary)', color: 'white', padding: 8, borderRadius: 6, maxWidth: '80%', marginLeft: 'auto' }}>
                     {msg.content}
                   </div>
                 ) : (
                   <div style={{ maxWidth: '90%' }}>
                     {msg.content && (
-                      <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, marginBottom: 8 }}>
+                      <div style={{ background: 'var(--muted)', padding: 12, borderRadius: 6, marginBottom: 8 }}>
                         {msg.content}
                       </div>
                     )}
@@ -109,19 +109,19 @@ function CustomerCopilotInner({ customerId, customerName }: { customerId: string
         )}
       </div>
 
-      <Input.Group compact style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <Input
-          style={{ width: '85%' }}
+          style={{ flex: 1 }}
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onPressEnter={send}
+          onChange={(v) => setInput(v)}
+          onEnterPress={send}
           placeholder={`分析 ${customerName}...`}
           disabled={streaming}
         />
-        <Button type="primary" icon={<SendOutlined />} loading={streaming} onClick={send}>
+        <Button theme="solid" type="primary" icon={<SendOutlined />} loading={streaming} onClick={send}>
           发送
         </Button>
-      </Input.Group>
+      </div>
     </div>
   );
 }
@@ -135,17 +135,16 @@ export interface CustomerCopilotDrawerProps {
 
 export function CustomerCopilotDrawer(props: CustomerCopilotDrawerProps) {
   return (
-    <Drawer
+    <SideSheet
       title="SuperAI 客户分析"
-      open={props.open}
-      onClose={props.onClose}
-      size={560}
-      destroyOnClose
+      visible={props.open}
+      onCancel={props.onClose}
+      width={560}
+      keepDOM={false}
     >
       <InteractionProvider appCode="dw" pageCode="customer-detail">
         <CustomerCopilotInner customerId={props.customerId} customerName={props.customerName} />
       </InteractionProvider>
-    </Drawer>
+    </SideSheet>
   );
 }
-

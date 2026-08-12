@@ -1,9 +1,9 @@
-import { Card, Empty, Typography } from 'antd';
+import { Card, Empty, Typography } from '@douyinfe/semi-ui';
 
 export default function ResultAggregationPage() {
   return (
     <div>
-      <Typography.Title level={4}>结果汇聚</Typography.Title>
+      <Typography.Title heading={4}>结果汇聚</Typography.Title>
       <Card>
         <Empty description="没有正在汇聚的执行" />
         <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
@@ -12,9 +12,9 @@ export default function ResultAggregationPage() {
         <Typography.Paragraph>
           可用 API：<code>POST /v1/superai/schedule/aggregate</code>
         </Typography.Paragraph>
-        <Typography.Paragraph code>
+        <Typography.Text code style={{ display: 'block' }}>
           {JSON.stringify({ function: 'aggregateResults', args: ['execution-id'] }, null, 2)}
-        </Typography.Paragraph>
+        </Typography.Text>
       </Card>
     </div>
   );

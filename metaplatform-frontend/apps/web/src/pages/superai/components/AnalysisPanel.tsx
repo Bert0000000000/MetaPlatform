@@ -1,17 +1,18 @@
-﻿import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Button,
-  Input,
   Card,
   Table,
   Tag,
   Space,
   Typography,
-  Alert,
+  Banner,
   Select,
   Spin,
   Tabs,
-} from 'antd';
+  TabPane,
+  TextArea,
+} from '@douyinfe/semi-ui';
 import {
   PlayCircleOutlined,
   SafetyOutlined,
@@ -38,8 +39,6 @@ import {
 } from 'recharts';
 import { generateSql, executeSql, auditSql, autoDetectChartType } from '@/api/superai/analysis';
 import type { SqlGenerationResult, SqlExecutionResult, SqlAuditResult, ChartType } from '@/api/superai/types';
-
-const { TextArea } = Input;
 
 const PIE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16'];
 
@@ -116,11 +115,10 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
   const renderAuditResult = () => {
     if (!auditResult) return <Typography.Text type="secondary">点击"安全检查"执行 SQL 安全校验</Typography.Text>;
     return (
-      <Space orientation="vertical" style={{ width: '100%' }}>
-        <Alert
-          type={auditResult.level === 'safe' ? 'success' : auditResult.level === 'warning' ? 'warning' : 'error'}
-          message={auditResult.level === 'safe' ? 'SQL 安全检查通过' : auditResult.level === 'warning' ? '存在安全警告' : '存在严重安全风险'}
-          showIcon
+      <Space vertical style={{ width: '100%' }}>
+        <Banner
+          type={auditResult.level === 'safe' ? 'success' : auditResult.level === 'warning' ? 'warning' : 'danger'}
+          description={auditResult.level === 'safe' ? 'SQL 安全检查通过' : auditResult.level === 'warning' ? '存在安全警告' : '存在严重安全风险'}
           icon={
             auditResult.level === 'safe' ? <CheckCircleOutlined /> :
             auditResult.level === 'warning' ? <WarningOutlined /> :
@@ -128,19 +126,19 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
           }
         />
         {auditResult.risks.length > 0 && (
-          <Card size="small" title={<Typography.Text type="danger">严重风险</Typography.Text>}>
+          <Card title={<Typography.Text type="danger">严重风险</Typography.Text>}>
             {auditResult.risks.map((r, i) => (
-              <Tag key={i} color="red" icon={<CloseCircleOutlined />} style={{ marginBottom: 4 }}>
-                {r}
+              <Tag key={i} color="red" style={{ marginBottom: 4 }}>
+                <CloseCircleOutlined style={{ marginRight: 4 }} />{r}
               </Tag>
             ))}
           </Card>
         )}
         {auditResult.warnings.length > 0 && (
-          <Card size="small" title={<Typography.Text type="warning">警告</Typography.Text>}>
+          <Card title={<Typography.Text type="warning">警告</Typography.Text>}>
             {auditResult.warnings.map((w, i) => (
-              <Tag key={i} color="orange" icon={<WarningOutlined />} style={{ marginBottom: 4 }}>
-                {w}
+              <Tag key={i} color="orange" style={{ marginBottom: 4 }}>
+                <WarningOutlined style={{ marginRight: 4 }} />{w}
               </Tag>
             ))}
           </Card>
@@ -152,7 +150,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
   const renderChart = () => {
     if (!execResult) return <Typography.Text type="secondary">执行 SQL 后查看可视化</Typography.Text>;
     const { columns, rows } = execResult;
-    if (columns.length < 2) return <Table dataSource={rows} columns={columns.map((c) => ({ title: c, dataIndex: c, key: c }))} rowKey={(_, i) => String(i)} size="small"  scroll={{ x: 'max-content' }}/>;
+    if (columns.length < 2) return <Table dataSource={rows.map((r, i) => ({ ...r, __rowKey: String(i) }))} rowKey="__rowKey" columns={columns.map((c) => ({ title: c, dataIndex: c, key: c }))} scroll={{ x: 'max-content' }} />;
 
     const effectiveChartType = chartType === 'auto' ? 'bar' : chartType;
 
@@ -215,27 +213,27 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
       default:
         return (
           <Table
-            dataSource={rows}
+            dataSource={rows.map((r, i) => ({ ...r, __rowKey: String(i) }))}
+            rowKey="__rowKey"
             columns={columns.map((c) => ({ title: c, dataIndex: c, key: c }))}
-            rowKey={(_, i) => String(i)}
-            size="small"
             pagination={{ pageSize: 10 }}
-           scroll={{ x: 'max-content' }}/>
+            scroll={{ x: 'max-content' }}
+          />
         );
     }
   };
 
   return (
-    <Card size="small" style={{ marginBottom: 8 }}>
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
+    <Card  style={{ marginBottom: 8 }}>
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
         <TextArea
           value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
+          onChange={(v) => onQueryChange(v)}
           placeholder="描述您想分析的数据，如：按部门统计本月销售额"
           rows={2}
         />
         <Space>
-          <Button type="primary" icon={<PlayCircleOutlined />} loading={loading} onClick={handleGenerate}>
+          <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} loading={loading} onClick={handleGenerate}>
             生成 SQL
           </Button>
         </Space>
@@ -246,88 +244,82 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
               activeKey={activeTab}
               onChange={setActiveTab}
               size="small"
-              items={[
-                {
-                  key: 'sql',
-                  label: 'SQL 语句',
-                  children: (
-                    <Space orientation="vertical" style={{ width: '100%' }} size="small">
-                      {sqlResult.explanation && (
-                        <Typography.Text type="secondary">{sqlResult.explanation}</Typography.Text>
-                      )}
-                      <TextArea
-                        value={editableSql}
-                        onChange={(e) => setEditableSql(e.target.value)}
-                        rows={6}
-                        style={{ fontFamily: 'monospace', fontSize: 13 }}
-                      />
-                      {sqlResult.referencedTables.length > 0 && (
-                        <Space wrap>
-                          <Typography.Text type="secondary">引用表：</Typography.Text>
-                          {sqlResult.referencedTables.map((t) => (
-                            <Tag key={t}>{t}</Tag>
-                          ))}
-                        </Space>
-                      )}
-                      <Space>
-                        <Button type="primary" icon={<PlayCircleOutlined />} loading={loading} onClick={handleExecute}>
-                          执行 SQL
-                        </Button>
-                        <Button icon={<SafetyOutlined />} loading={loading} onClick={handleAudit}>
-                          安全检查
-                        </Button>
-                        <Select
-                          size="small"
-                          value={chartType}
-                          onChange={setChartType}
-                          style={{ width: 120 }}
-                          options={[
-                            { label: '自动检测', value: 'auto' },
-                            { label: '柱状图', value: 'bar' },
-                            { label: '折线图', value: 'line' },
-                            { label: '饼图', value: 'pie' },
-                            { label: '散点图', value: 'scatter' },
-                            { label: '表格', value: 'table' },
-                          ]}
-                        />
-                      </Space>
-                    </Space>
-                  ),
-                },
-                {
-                  key: 'audit',
-                  label: <Space size={4}><SafetyOutlined />安全检查</Space>,
-                  children: renderAuditResult(),
-                },
-                {
-                  key: 'result',
-                  label: '查询结果',
-                  children: execResult ? (
-                    <Space orientation="vertical" style={{ width: '100%' }} size="small">
-                      <Space>
-                        <Tag color="blue">{execResult.rowCount} 行</Tag>
-                        <Tag>{execResult.executionTime}ms</Tag>
-                      </Space>
-                      <Table
-                        dataSource={execResult.rows}
-                        columns={execResult.columns.map((c) => ({ title: c, dataIndex: c, key: c }))}
-                        rowKey={(_, i) => String(i)}
-                        size="small"
-                        pagination={{ pageSize: 5 }}
-                        scroll={{ x: 'max-content' }}
-                      />
-                    </Space>
-                  ) : (
-                    <Typography.Text type="secondary">执行 SQL 后查看结果</Typography.Text>
-                  ),
-                },
-                {
-                  key: 'chart',
-                  label: '可视化',
-                  children: loading ? <Spin /> : renderChart(),
-                },
+              tabList={[
+                { itemKey: 'sql', tab: 'SQL 语句' },
+                { itemKey: 'audit', tab: <Space spacing={4}><SafetyOutlined />安全检查</Space> },
+                { itemKey: 'result', tab: '查询结果' },
+                { itemKey: 'chart', tab: '可视化' },
               ]}
-            />
+            >
+              <TabPane itemKey="sql">
+                <Space vertical spacing="tight" style={{ width: '100%' }}>
+                  {sqlResult.explanation && (
+                    <Typography.Text type="secondary">{sqlResult.explanation}</Typography.Text>
+                  )}
+                  <TextArea
+                    value={editableSql}
+                    onChange={(v) => setEditableSql(v)}
+                    rows={6}
+                    style={{ fontFamily: 'monospace', fontSize: 13 }}
+                  />
+                  {sqlResult.referencedTables.length > 0 && (
+                    <Space wrap>
+                      <Typography.Text type="secondary">引用表：</Typography.Text>
+                      {sqlResult.referencedTables.map((t) => (
+                        <Tag key={t}>{t}</Tag>
+                      ))}
+                    </Space>
+                  )}
+                  <Space>
+                    <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} loading={loading} onClick={handleExecute}>
+                      执行 SQL
+                    </Button>
+                    <Button icon={<SafetyOutlined />} loading={loading} onClick={handleAudit}>
+                      安全检查
+                    </Button>
+                    <Select
+                      size="small"
+                      value={chartType}
+                      onChange={(v) => setChartType(v as ChartType | 'auto')}
+                      style={{ width: 120 }}
+                      optionList={[
+                        { label: '自动检测', value: 'auto' },
+                        { label: '柱状图', value: 'bar' },
+                        { label: '折线图', value: 'line' },
+                        { label: '饼图', value: 'pie' },
+                        { label: '散点图', value: 'scatter' },
+                        { label: '表格', value: 'table' },
+                      ]}
+                    />
+                  </Space>
+                </Space>
+              </TabPane>
+              <TabPane itemKey="audit">
+                {renderAuditResult()}
+              </TabPane>
+              <TabPane itemKey="result">
+                {execResult ? (
+                  <Space vertical spacing="tight" style={{ width: '100%' }}>
+                    <Space>
+                      <Tag color="blue">{execResult.rowCount} 行</Tag>
+                      <Tag>{execResult.executionTime}ms</Tag>
+                    </Space>
+                    <Table
+                      dataSource={execResult.rows.map((r, i) => ({ ...r, __rowKey: String(i) }))}
+                      rowKey="__rowKey"
+                      columns={execResult.columns.map((c) => ({ title: c, dataIndex: c, key: c }))}
+                      pagination={{ pageSize: 5 }}
+                      scroll={{ x: 'max-content' }}
+                    />
+                  </Space>
+                ) : (
+                  <Typography.Text type="secondary">执行 SQL 后查看结果</Typography.Text>
+                )}
+              </TabPane>
+              <TabPane itemKey="chart">
+                {loading ? <Spin /> : renderChart()}
+              </TabPane>
+            </Tabs>
           </>
         )}
       </Space>

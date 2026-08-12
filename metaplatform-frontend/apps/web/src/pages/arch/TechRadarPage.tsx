@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm, Space, Typography, Row, Col } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, Toast, Popconfirm, Space, Typography, Row, Col } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { listTechnologyRadars, createTechnologyRadar, updateTechnologyRadar, deleteTechnologyRadar } from '@/api/arch/technologyRadar';
 import type { TechnologyRadar, TechnologyRadarItem } from '@/api/arch/types';
@@ -12,16 +13,16 @@ interface TechnologyRadarFormValues {
   items: string;
 }
 
-const STATUS_MAP: Record<string, { color: string; label: string }> = {
+const STATUS_MAP: Record<string, { color: TagColor; label: string }> = {
   active: { color: 'green', label: '活跃' },
   draft: { color: 'blue', label: '草稿' },
-  archived: { color: 'default', label: '已归档' },
+  archived: { color: 'grey', label: '已归档' },
 };
 
-const TREND_MAP: Record<string, { color: string; label: string }> = {
+const TREND_MAP: Record<string, { color: TagColor; label: string }> = {
   up: { color: 'green', label: '上升' },
   down: { color: 'red', label: '下降' },
-  stable: { color: 'default', label: '平稳' },
+  stable: { color: 'grey', label: '平稳' },
 };
 
 const DEFAULT_QUADRANTS = ['语言与框架', '数据与存储', '平台与基础设施', '工具与流程'];
@@ -114,7 +115,7 @@ export default function TechRadarPage() {
   const stringifyJson = (value: unknown) => JSON.stringify(value ?? [], null, 2);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     const payload = {
       name: values.name,
       status: values.status,
@@ -124,20 +125,20 @@ export default function TechRadarPage() {
     };
     if (editing) {
       await updateTechnologyRadar(editing.id, payload);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createTechnologyRadar(payload);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
     setEditing(null);
-    form.resetFields();
+    form.reset();
     load();
   };
 
   const handleEdit = (record: TechnologyRadar) => {
     setEditing(record);
-    form.setFieldsValue({
+    form.setValues({
       name: record.name,
       status: record.status,
       quadrants: stringifyJson(record.quadrants),
@@ -149,7 +150,7 @@ export default function TechRadarPage() {
 
   const handleDelete = async (id: string) => {
     await deleteTechnologyRadar(id);
-    message.success('已删除');
+    Toast.success('已删除');
     if (selectedRadar?.id === id) setSelectedRadar(null);
     load();
   };
@@ -162,10 +163,10 @@ export default function TechRadarPage() {
     { title: '状态', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={STATUS_MAP[s]?.color}>{STATUS_MAP[s]?.label}</Tag> },
     { title: '操作', key: 'action', render: (_: unknown, r: TechnologyRadar) => (
       <Space>
-        <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-        <Button type="link" size="small" onClick={() => setSelectedRadar(r)}>查看雷达</Button>
+        <Button theme="borderless" type="primary" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
+        <Button theme="borderless" type="primary" size="small" onClick={() => setSelectedRadar(r)}>查看雷达</Button>
         <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>删除</Button>
         </Popconfirm>
       </Space>
     )},
@@ -181,10 +182,10 @@ export default function TechRadarPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>技术雷达</Typography.Title>
+      <Typography.Title heading={4}>技术雷达</Typography.Title>
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }}>新增雷达</Button>
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.reset(); setModalOpen(true); }}>新增雷达</Button>
         </Space>
         <Table rowKey="id" columns={radarColumns} dataSource={radars ?? []} loading={loading} size="small" pagination={false} scroll={{ x: 'max-content' }} />
       </Card>
@@ -254,25 +255,17 @@ export default function TechRadarPage() {
         </Col>
       </Row>
 
-      <Modal title={editing ? '编辑技术雷达' : '新增技术雷达'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }} width={720}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="status" label="状态" initialValue="active">
-            <Select options={[
-              { value: 'active', label: '活跃' },
-              { value: 'draft', label: '草稿' },
-              { value: 'archived', label: '已归档' },
-            ]} />
-          </Form.Item>
-          <Form.Item name="quadrants" label="象限（JSON 数组）" rules={[{ required: true }]} initialValue={stringifyJson(DEFAULT_QUADRANTS)}>
-            <Input.TextArea rows={2} placeholder='["语言与框架","数据与存储","平台与基础设施","工具与流程"]' />
-          </Form.Item>
-          <Form.Item name="rings" label="环（JSON 数组）" rules={[{ required: true }]} initialValue={stringifyJson(DEFAULT_RINGS)}>
-            <Input.TextArea rows={2} placeholder='["采纳","试用","评估","暂缓"]' />
-          </Form.Item>
-          <Form.Item name="items" label="技术项（JSON 数组）" rules={[{ required: true }]} initialValue="[]">
-            <Input.TextArea rows={8} placeholder='[{"id":"1","name":"React","quadrant":"语言与框架","ring":"采纳","trend":"stable","description":"..."}]' />
-          </Form.Item>
+      <Modal title={editing ? '编辑技术雷达' : '新增技术雷达'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); setEditing(null); form.reset(); }} width={720}>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Select field="status" label="状态" initValue="active" optionList={[
+            { value: 'active', label: '活跃' },
+            { value: 'draft', label: '草稿' },
+            { value: 'archived', label: '已归档' },
+          ]} />
+          <Form.TextArea field="quadrants" label="象限（JSON 数组）" rules={[{ required: true }]} initValue={stringifyJson(DEFAULT_QUADRANTS)} rows={2} placeholder='["语言与框架","数据与存储","平台与基础设施","工具与流程"]' />
+          <Form.TextArea field="rings" label="环（JSON 数组）" rules={[{ required: true }]} initValue={stringifyJson(DEFAULT_RINGS)} rows={2} placeholder='["采纳","试用","评估","暂缓"]' />
+          <Form.TextArea field="items" label="技术项（JSON 数组）" rules={[{ required: true }]} initValue="[]" rows={8} placeholder='[{"id":"1","name":"React","quadrant":"语言与框架","ring":"采纳","trend":"stable","description":"..."}]' />
         </Form>
       </Modal>
     </div>

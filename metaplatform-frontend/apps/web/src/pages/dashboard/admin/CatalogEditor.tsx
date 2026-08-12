@@ -22,9 +22,9 @@ import {
   Table,
   Tag,
   Tooltip,
-  message,
-} from "antd";
-import type { ColumnsType } from "antd/es/table";
+  Toast,
+} from "@douyinfe/semi-ui";
+import type { ColumnProps } from "@douyinfe/semi-ui/lib/es/table";
 import {
   CheckSquareOutlined,
   CloseSquareOutlined,
@@ -34,6 +34,7 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import type { AdminPermission, AdminRole } from "@/types";
 import {
@@ -63,6 +64,30 @@ interface PermissionForm {
   resource_type: string;
   actions: string[]; // 改为 array 形式，保存时再 join
   description?: string;
+}
+
+// 轻量搜索框（antd Input.Search 无 Semi 等价物：Enter 或点击放大镜触发）
+function SearchInput({
+  value,
+  onChange,
+  placeholder,
+  style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      showClear
+      suffix={<SearchOutlined style={{ cursor: "pointer" }} />}
+      style={{ width: 280, ...style }}
+    />
+  );
 }
 
 export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
@@ -124,7 +149,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
         setInitial(ids);
       })
       .catch(() => {
-        if (!cancelled) message.error("加载角色权限失败");
+        if (!cancelled) Toast.error("加载角色权限失败");
       })
       .finally(() => {
         if (!cancelled) setLoadingRole(false);
@@ -169,11 +194,11 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
 
   const handleSave = async () => {
     if (selectedRoleId == null) {
-      message.warning("请先选择目标角色");
+      Toast.warning("请先选择目标角色");
       return;
     }
     if (builtin) {
-      message.warning("内置角色不可修改权限");
+      Toast.warning("内置角色不可修改权限");
       return;
     }
     setSaving(true);
@@ -188,8 +213,8 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
   // --- CRUD: 新建 ---
   const openCreate = () => {
     setEditing({ code: "", name: "", resource_type: resourceTypeFilter ?? "", actions: [] });
-    form.resetFields();
-    form.setFieldsValue({ code: "", name: "", resource_type: resourceTypeFilter ?? "", actions: [] });
+    form.reset();
+    form.setValues({ code: "", name: "", resource_type: resourceTypeFilter ?? "", actions: [] });
     setFormOpen(true);
   };
 
@@ -211,14 +236,14 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       description: (p.description ?? "") as string,
     };
     setEditing(formData);
-    form.setFieldsValue(formData);
+    form.setValues(formData);
     setFormOpen(true);
   };
 
   // --- CRUD: 保存 ---
   const handleFormOk = async () => {
     try {
-      const values = await form.validateFields();
+      const values = await form.validate();
       const payload = {
         code: values.code.trim(),
         name: values.name.trim(),
@@ -228,10 +253,10 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       };
       if (editing?.id) {
         await updatePermission(editing.id, payload);
-        message.success("权限已更新");
+        Toast.success("权限已更新");
       } else {
         await createPermission(payload);
-        message.success("权限已创建");
+        Toast.success("权限已创建");
       }
       setFormOpen(false);
       setEditing(null);
@@ -246,14 +271,14 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
   const handleDelete = async (p: AdminPermission) => {
     try {
       await deletePermission(p.id);
-      message.success("权限已删除");
+      Toast.success("权限已删除");
       onRefresh();
     } catch {
       /* ignore */
     }
   };
 
-  const columns: ColumnsType<AdminPermission> = [
+  const columns: ColumnProps<AdminPermission>[] = [
     {
       title: "",
       key: "select",
@@ -287,9 +312,9 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       title: "资源类型",
       key: "resource_type",
       width: 140,
-      render: (_v, p) => <Tag color="blue">{getResourceType(p)}</Tag>,
+      render: (_v, p) => <Tag color="blue">{p ? getResourceType(p) : ''}</Tag>,
       filters: resourceTypes.map((rt) => ({ text: rt, value: rt })),
-      onFilter: (value, record) => getResourceType(record) === value,
+      onFilter: (value, record) => (record ? getResourceType(record) === value : false),
     },
     {
       title: "动作",
@@ -297,7 +322,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       key: "actions",
       width: 280,
       render: (actions: string[]) => (
-        <Space size={2} wrap>
+        <Space spacing={2} wrap>
           {(actions ?? []).map((a) => (
             <Tag key={a} style={{ fontSize: 10, margin: 0 }}>
               {a}
@@ -319,9 +344,9 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       width: 140,
       fixed: "right",
       render: (_v, p) => (
-        <Space size={4}>
+        <Space spacing={4}>
           <Button
-            type="link"
+            theme="borderless"
             size="small"
             icon={<EditOutlined />}
             onClick={() => openEdit(p)}
@@ -330,13 +355,13 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
           </Button>
           <Popconfirm
             title={"删除权限 " + p.code + "？"}
-            description="此操作不可撤销"
+            content="此操作不可撤销"
             okType="danger"
             okText="删除"
             cancelText="取消"
             onConfirm={() => handleDelete(p)}
           >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+            <Button theme="borderless" size="small" type="danger" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -349,8 +374,8 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
     ? undefined
     : {
         selectedRowKeys: Array.from(selected),
-        onChange: (keys: React.Key[]) => {
-          setSelected(new Set(keys.map((k) => Number(k))));
+        onChange: (keys?: (string | number)[]) => {
+          setSelected(new Set((keys ?? []).map((k) => Number(k))));
         },
       };
 
@@ -381,10 +406,10 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
         <Select
           placeholder="选择目标角色"
           value={selectedRoleId ?? undefined}
-          onChange={(v) => setSelectedRoleId(v ?? null)}
+          onChange={(v) => setSelectedRoleId((v as number) ?? null)}
           style={{ minWidth: 240 }}
-          allowClear
-          options={roles.map((r) => ({
+          showClear
+          optionList={roles.map((r) => ({
             value: r.id,
             label: (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -400,44 +425,43 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
         />
         <Select
           placeholder="资源类型"
-          allowClear
+          showClear
           value={resourceTypeFilter}
-          onChange={(v) => setResourceTypeFilter(v)}
+          onChange={(v) => setResourceTypeFilter(v as string | undefined)}
           style={{ minWidth: 160 }}
-          options={resourceTypes.map((rt) => ({ value: rt, label: rt }))}
+          optionList={resourceTypes.map((rt) => ({ value: rt, label: rt }))}
         />
-        <Input.Search
+        <SearchInput
           placeholder="搜索 code / 名称 / 资源类型"
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          allowClear
-          style={{ width: 280 }}
+          onChange={(v) => setKeyword(v)}
         />
         <span style={{ color: "var(--muted-foreground)", fontSize: 12 }}>
           已选 {selectedCount} / {totalCount}
         </span>
         <div style={{ flex: 1 }} />
-        <Tooltip title="全选（当前筛选范围）">
+        <Tooltip content="全选（当前筛选范围）">
           <Button icon={<CheckSquareOutlined />} onClick={selectAll} size="small">
             全选
           </Button>
         </Tooltip>
-        <Tooltip title="全不选">
+        <Tooltip content="全不选">
           <Button icon={<CloseSquareOutlined />} onClick={clearAll} size="small">
             全不选
           </Button>
         </Tooltip>
-        <Tooltip title="反选">
+        <Tooltip content="反选">
           <Button icon={<SwapOutlined />} onClick={invert} size="small">
             反选
           </Button>
         </Tooltip>
-        <Tooltip title="还原初始状态">
+        <Tooltip content="还原初始状态">
           <Button icon={<ReloadOutlined />} onClick={reset} size="small" disabled={!dirty}>
             还原
           </Button>
         </Tooltip>
         <Button
+          theme="solid"
           type="primary"
           icon={<SaveOutlined />}
           onClick={handleSave}
@@ -455,7 +479,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
         >
           保存到当前角色
         </Button>
-        <Button icon={<PlusOutlined />} type="dashed" onClick={openCreate}>
+        <Button icon={<PlusOutlined />} type="secondary" onClick={openCreate}>
           新建权限
         </Button>
       </div>
@@ -476,7 +500,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
           pagination={{
             pageSize: 20,
             showSizeChanger: true,
-            showTotal: (t) => `共 ${t} 条`,
+            showTotal: true,
           }}
           rowSelection={rowSelection}
           scroll={{ x: 1100 }}
@@ -487,7 +511,7 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
       {/* 新建 / 编辑 Modal */}
       <Modal
         title={editing?.id ? "编辑权限" : "新建权限"}
-        open={formOpen}
+        visible={formOpen}
         onCancel={() => {
           setFormOpen(false);
           setEditing(null);
@@ -495,39 +519,32 @@ export function CatalogEditor({ catalog, roles, onSave, onRefresh }: Props) {
         onOk={handleFormOk}
         okText="保存"
         cancelText="取消"
-        destroyOnClose
       >
-        <Form form={form} layout="vertical" preserve={false}>
-          <Form.Item
-            name="code"
+        <Form form={form}>
+          <Form.Input
+            field="code"
             label="权限编码"
             rules={[
               { required: true, message: "请输入权限编码" },
               { pattern: /^[a-z_]+:[a-z_]+$/, message: "格式错误，应为 resource:action，如 user:create" },
             ]}
-          >
-            <Input placeholder="例如 user:create" disabled={!!editing?.id} />
-          </Form.Item>
-          <Form.Item
-            name="name"
+            placeholder="例如 user:create"
+            disabled={!!editing?.id}
+          />
+          <Form.Input
+            field="name"
             label="显示名"
             rules={[{ required: true, message: "请输入显示名" }]}
-          >
-            <Input placeholder="例如 创建用户" />
-          </Form.Item>
-          <Form.Item
-            name="resource_type"
+            placeholder="例如 创建用户"
+          />
+          <Form.Input
+            field="resource_type"
             label="资源类型"
             rules={[{ required: true, message: "请输入资源类型" }]}
-          >
-            <Input placeholder="例如 user / role / org" />
-          </Form.Item>
-          <Form.Item name="actions" label="动作列表">
-            <Select mode="tags" placeholder="如 create, read, update, delete" tokenSeparators={[","]} />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea autoSize={{ minRows: 2 }} />
-          </Form.Item>
+            placeholder="例如 user / role / org"
+          />
+          <Form.TagInput field="actions" label="动作列表" placeholder="如 create, read, update, delete" />
+          <Form.TextArea field="description" label="描述" autosize={{ minRows: 2 }} />
         </Form>
       </Modal>
     </div>

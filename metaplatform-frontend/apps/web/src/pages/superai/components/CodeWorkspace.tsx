@@ -1,18 +1,19 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
+  Banner,
   Button,
   Card,
   Empty,
   Input,
+  InputGroup,
   Modal,
   Select,
   Space,
   Table,
   Tag,
   Typography,
-  message,
-} from 'antd';
+  Toast,
+} from '@douyinfe/semi-ui';
 import {
   PlayCircleOutlined,
   SaveOutlined,
@@ -137,7 +138,7 @@ export default function CodeWorkspace({
 
   const handleSave = useCallback(async () => {
     if (!saveTitle.trim()) {
-      message.warning('请输入片段标题');
+      Toast.warning('请输入片段标题');
       return;
     }
     setSaving(true);
@@ -150,7 +151,7 @@ export default function CodeWorkspace({
         setSnippetId(updated.snippetId);
         setCurrentVersion(updated.version);
         onSnippetChange?.(updated);
-        message.success(`已保存到 v${updated.version}`);
+        Toast.success(`已保存到 v${updated.version}`);
       } else {
         const created = await createCodeSnippet({
           title: saveTitle,
@@ -161,7 +162,7 @@ export default function CodeWorkspace({
         setSnippetId(created.snippetId);
         setCurrentVersion(created.version);
         onSnippetChange?.(created);
-        message.success(`已保存为新片段 (v${created.version})`);
+        Toast.success(`已保存为新片段 (v${created.version})`);
       }
       setSaveModalOpen(false);
     } catch {
@@ -184,7 +185,7 @@ export default function CodeWorkspace({
 
   const openHistory = useCallback(async () => {
     if (!snippetId) {
-      message.warning('请先保存片段后再查看历史版本');
+      Toast.warning('请先保存片段后再查看历史版本');
       return;
     }
     setHistoryOpen(true);
@@ -224,7 +225,7 @@ export default function CodeWorkspace({
         setCode(record.code);
         setLanguage(record.language);
         setCurrentVersion(record.version);
-        message.success(`已加载 v${version} 内容到编辑器`);
+        Toast.success(`已加载 v${version} 内容到编辑器`);
       } catch {
         // swallowed
       }
@@ -253,7 +254,7 @@ export default function CodeWorkspace({
     setSnippetId(undefined);
     setCurrentVersion(undefined);
     setTemplatesOpen(false);
-    message.success(`已加载模板：${template.name}`);
+    Toast.success(`已加载模板：${template.name}`);
   }, []);
 
   const openTemplateModal = useCallback(() => {
@@ -264,7 +265,7 @@ export default function CodeWorkspace({
 
   const handleSaveAsTemplate = useCallback(async () => {
     if (!templateName.trim()) {
-      message.warning('请输入模板名称');
+      Toast.warning('请输入模板名称');
       return;
     }
     try {
@@ -274,7 +275,7 @@ export default function CodeWorkspace({
         code,
         category: templateCategory || undefined,
       });
-      message.success('模板已保存');
+      Toast.success('模板已保存');
       setTemplateModalOpen(false);
     } catch {
       // swallowed
@@ -316,9 +317,9 @@ export default function CodeWorkspace({
   const handleCopyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
-      message.success('已复制到剪贴板');
+      Toast.success('已复制到剪贴板');
     } catch {
-      message.error('复制失败，请手动选择文本复制');
+      Toast.error('复制失败，请手动选择文本复制');
     }
   }, [code]);
 
@@ -328,10 +329,9 @@ export default function CodeWorkspace({
     if (!execution) return null;
     if (!execution.success) {
       return (
-        <Alert
-          type="error"
-          showIcon
-          message={`执行失败：${execution.errorName ?? 'Error'}`}
+        <Banner
+          type="danger"
+          title={`执行失败：${execution.errorName ?? 'Error'}`}
           description={execution.errorMessage ?? execution.stderr}
           style={{ marginTop: 8 }}
         />
@@ -346,7 +346,6 @@ export default function CodeWorkspace({
       }));
       return (
         <Card
-          size="small"
           title={
             <Space>
               <Tag color="green">执行成功</Tag>
@@ -360,7 +359,7 @@ export default function CodeWorkspace({
             rowKey={(_, idx) => String(idx)}
             dataSource={execution.rows}
             columns={columns}
-            pagination={{ pageSize: 10, size: 'small' }}
+            pagination={{ pageSize: 10 }}
             scroll={{ x: 'max-content' }}
           />
         </Card>
@@ -368,7 +367,6 @@ export default function CodeWorkspace({
     }
     return (
       <Card
-        size="small"
         title={
           <Space>
             <Tag color="green">执行成功</Tag>
@@ -380,7 +378,7 @@ export default function CodeWorkspace({
         {execution.stdout && (
           <Paragraph style={{ marginBottom: 8 }}>
             <Text type="secondary">stdout:</Text>
-            <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, margin: 4, fontSize: 12 }}>
+            <pre style={{ background: 'var(--muted)', padding: 8, borderRadius: 4, margin: 4, fontSize: 12 }}>
               {execution.stdout}
             </pre>
           </Paragraph>
@@ -388,7 +386,7 @@ export default function CodeWorkspace({
         {execution.text && (
           <Paragraph>
             <Text type="secondary">result:</Text>
-            <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, margin: 4, fontSize: 12 }}>
+            <pre style={{ background: 'var(--muted)', padding: 8, borderRadius: 4, margin: 4, fontSize: 12 }}>
               {execution.text}
             </pre>
           </Paragraph>
@@ -399,14 +397,14 @@ export default function CodeWorkspace({
 
   const renderTemplatesModal = () => (
     <Modal
-      open={templatesOpen}
+      visible={templatesOpen}
       title="代码模板库"
       footer={null}
       onCancel={() => setTemplatesOpen(false)}
       width={720}
     >
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
-        <Button type="primary" icon={<PlusOutlined />} onClick={openTemplateModal}>
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
+        <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openTemplateModal}>
           保存当前代码为模板
         </Button>
         {templatesLoading ? (
@@ -418,7 +416,7 @@ export default function CodeWorkspace({
             size="small"
             rowKey="templateId"
             dataSource={templates}
-            pagination={{ pageSize: 8, size: 'small' }}
+            pagination={{ pageSize: 8 }}
             columns={[
               { title: '名称', dataIndex: 'name', key: 'name' },
               {
@@ -435,7 +433,7 @@ export default function CodeWorkspace({
                 width: 80,
                 render: (_: unknown, record: CodeTemplate) => (
                   <Button
-                    type="link"
+                    theme="borderless"
                     size="small"
                     onClick={() => handleLoadTemplate(record)}
                   >
@@ -444,7 +442,8 @@ export default function CodeWorkspace({
                 ),
               },
             ]}
-           scroll={{ x: 'max-content' }}/>
+            scroll={{ x: 'max-content' }}
+          />
         )}
       </Space>
     </Modal>
@@ -452,23 +451,23 @@ export default function CodeWorkspace({
 
   const renderTemplateModal = () => (
     <Modal
-      open={templateModalOpen}
+      visible={templateModalOpen}
       title="保存为模板"
       onCancel={() => setTemplateModalOpen(false)}
       onOk={handleSaveAsTemplate}
       okText="保存"
       cancelText="取消"
     >
-      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+      <Space vertical spacing="medium" style={{ width: '100%' }}>
         <Input
           placeholder="模板名称"
           value={templateName}
-          onChange={(e) => setTemplateName(e.target.value)}
+          onChange={(v) => setTemplateName(v)}
         />
         <Input
           placeholder="分类（如 math / query / utility）"
           value={templateCategory}
-          onChange={(e) => setTemplateCategory(e.target.value)}
+          onChange={(v) => setTemplateCategory(v)}
         />
         <Text type="secondary">语言：{language} · 代码长度：{code.length} 字符</Text>
       </Space>
@@ -477,7 +476,7 @@ export default function CodeWorkspace({
 
   const renderSaveModal = () => (
     <Modal
-      open={saveModalOpen}
+      visible={saveModalOpen}
       title={snippetId ? '保存为新版本' : '保存为代码片段'}
       onCancel={() => setSaveModalOpen(false)}
       onOk={handleSave}
@@ -485,18 +484,18 @@ export default function CodeWorkspace({
       cancelText="取消"
       confirmLoading={saving}
     >
-      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+      <Space vertical spacing="medium" style={{ width: '100%' }}>
         <Input
           placeholder="片段标题"
           value={saveTitle}
-          onChange={(e) => setSaveTitle(e.target.value)}
+          onChange={(v) => setSaveTitle(v)}
           disabled={!!snippetId}
         />
         {snippetId && (
           <Input
             placeholder="变更说明（可选）"
             value={saveChangeLog}
-            onChange={(e) => setSaveChangeLog(e.target.value)}
+            onChange={(v) => setSaveChangeLog(v)}
           />
         )}
         <Text type="secondary">
@@ -509,16 +508,16 @@ export default function CodeWorkspace({
 
   const renderShareModal = () => (
     <Modal
-      open={shareModalOpen}
+      visible={shareModalOpen}
       title="分享链接"
       onCancel={() => setShareModalOpen(false)}
       footer={[
         <Button key="copy" icon={<CopyOutlined />} onClick={() => {
-          navigator.clipboard.writeText(shareUrl).then(() => message.success('链接已复制'));
+          navigator.clipboard.writeText(shareUrl).then(() => Toast.success('链接已复制'));
         }}>
           复制链接
         </Button>,
-        <Button key="close" type="primary" onClick={() => setShareModalOpen(false)}>
+        <Button key="close" theme="solid" type="primary" onClick={() => setShareModalOpen(false)}>
           关闭
         </Button>,
       ]}
@@ -526,34 +525,35 @@ export default function CodeWorkspace({
       <Paragraph>
         <Text type="secondary">分享链接（30 天有效）：</Text>
       </Paragraph>
-      <Input.Group compact>
+      <InputGroup>
         <Input
           style={{ width: 'calc(100% - 100px)' }}
           value={shareUrl}
           readOnly
         />
         <Button
+          theme="solid"
           type="primary"
           icon={<CopyOutlined />}
           onClick={() => {
-            navigator.clipboard.writeText(shareUrl).then(() => message.success('链接已复制'));
+            navigator.clipboard.writeText(shareUrl).then(() => Toast.success('链接已复制'));
           }}
         >
           复制
         </Button>
-      </Input.Group>
+      </InputGroup>
     </Modal>
   );
 
   const renderHistoryModal = () => (
     <Modal
-      open={historyOpen}
+      visible={historyOpen}
       title="版本历史"
       onCancel={() => setHistoryOpen(false)}
       footer={null}
       width={900}
     >
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
         {versionsLoading ? (
           <Text type="secondary">加载中...</Text>
         ) : versions.length === 0 ? (
@@ -586,10 +586,10 @@ export default function CodeWorkspace({
                   key: 'action',
                   width: 160,
                   render: (_: unknown, record: CodeSnippetVersion) => (
-                    <Space size="small">
+                    <Space spacing="tight">
                       <Button
                         size="small"
-                        type="link"
+                        theme="borderless"
                         onClick={() => handleRestoreVersion(record.version)}
                       >
                         加载
@@ -599,27 +599,23 @@ export default function CodeWorkspace({
                           size="small"
                           placeholder="对比"
                           style={{ width: 90 }}
-                          onChange={(target: number) => handleDiff(target, record.version)}
+                          onChange={(target) => handleDiff(Number(target), record.version)}
                           value={undefined}
-                        >
-                          {versions
+                          optionList={versions
                             .filter((v) => v.version !== record.version)
-                            .map((v) => (
-                              <Select.Option key={v.version} value={v.version}>
-                                对比 v{v.version}
-                              </Select.Option>
-                            ))}
-                        </Select>
+                            .map((v) => ({ value: v.version, label: `对比 v${v.version}` }))}
+                        />
                       )}
                     </Space>
                   ),
                 },
               ]}
-             scroll={{ x: 'max-content' }}/>
+              scroll={{ x: 'max-content' }}
+            />
             {diffLoading && <Text type="secondary">计算差异中...</Text>}
             {diffResult && (
-              <Card size="small" title={`差异：v${diffResult.versionA} → v${diffResult.versionB}`}>
-                <Space orientation="vertical" style={{ width: '100%' }} size="small">
+              <Card  title={`差异：v${diffResult.versionA} → v${diffResult.versionB}`}>
+                <Space vertical spacing="tight" style={{ width: '100%' }}>
                   {diffResult.addedLines.length > 0 && (
                     <div>
                       <Text type="success">新增（{diffResult.addedLines.length} 行）</Text>
@@ -638,7 +634,7 @@ export default function CodeWorkspace({
                   )}
                   <details>
                     <summary>查看 Unified Diff</summary>
-                    <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, fontSize: 12, marginTop: 4 }}>
+                    <pre style={{ background: 'var(--muted)', padding: 8, borderRadius: 4, fontSize: 12, marginTop: 4 }}>
                       {diffResult.unifiedDiff}
                     </pre>
                   </details>
@@ -653,7 +649,6 @@ export default function CodeWorkspace({
 
   return (
     <Card
-      size="small"
       title={
         <Space>
           <span>代码工作台</span>
@@ -661,10 +656,11 @@ export default function CodeWorkspace({
           <Tag color="blue">{language}</Tag>
         </Space>
       }
-      extra={
-        <Space size="small">
+      headerExtraContent={
+        <Space spacing="tight">
           <Button
             size="small"
+            theme="solid"
             type="primary"
             icon={<PlayCircleOutlined />}
             loading={executing}
@@ -719,12 +715,12 @@ export default function CodeWorkspace({
         </Space>
       }
     >
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
         <Select
           value={language}
-          onChange={setLanguage}
+          onChange={(v) => setLanguage(v as string)}
           style={{ width: 160 }}
-          options={LANGUAGE_OPTIONS}
+          optionList={LANGUAGE_OPTIONS}
         />
         <Editor
           height={360}

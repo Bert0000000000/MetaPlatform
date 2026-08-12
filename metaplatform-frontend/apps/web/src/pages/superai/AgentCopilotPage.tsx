@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Card, Space, Typography, Tag } from 'antd';
+import { Card, Space, Typography, Tag } from '@douyinfe/semi-ui';
 import { InteractionContextProvider } from '@/api/superai/types';
 import AgentChatPanelImpl from './components/AgentChatPanel';
 
@@ -34,7 +34,7 @@ export default function AgentCopilotPage() {
     >
       <div style={{ padding: 16, height: '100vh', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Space>
-          <Title level={4} style={{ margin: 0 }}>Object Copilot</Title>
+          <Title heading={4} style={{ margin: 0 }}>Object Copilot</Title>
           {subject && (
             <Tag color="blue">
               {subject.conceptCode}#{subject.objectId}

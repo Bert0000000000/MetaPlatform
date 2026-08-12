@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Tag, Timeline, Typography, Spin, Button } from 'antd';
+import { Button, Card, Empty, Spin, Tag, Timeline, Typography } from '@douyinfe/semi-ui';
 import { ReloadOutlined } from '@ant-design/icons';
 import { getEmployeeVersions } from '@/api/dw/employees';
 import type { EmployeeVersion } from '@/api/dw/types';
@@ -44,7 +44,7 @@ export default function EmployeeVersionHistory({ employeeId }: EmployeeVersionHi
     return (
       <Card
         title="版本历史"
-        extra={
+        headerExtraContent={
           <Button icon={<ReloadOutlined />} onClick={load} size="small">
             重试
           </Button>
@@ -56,26 +56,25 @@ export default function EmployeeVersionHistory({ employeeId }: EmployeeVersionHi
   }
 
   return (
-    <Card title="版本历史" extra={<Button icon={<ReloadOutlined />} onClick={load} size="small">刷新</Button>}>
+    <Card title="版本历史" headerExtraContent={<Button icon={<ReloadOutlined />} onClick={load} size="small">刷新</Button>}>
       {versions.length === 0 ? (
         <Empty description="暂无版本" />
       ) : (
-        <Timeline
-          items={versions.map((v) => ({
-            color: 'blue',
-            content: (
+        <Timeline>
+          {versions.map((v) => (
+            <Timeline.Item key={v.version} color="blue">
               <div>
                 <Typography.Text strong>v{v.version}</Typography.Text>
                 <Tag color="blue" style={{ marginLeft: 8 }}>
                   {new Date(v.timestamp).toLocaleString('zh-CN')}
                 </Tag>
                 <div>
-                  <Typography.Text type="secondary">{v.changeLog}</Typography.Text>
+                  <Typography.Text type="tertiary">{v.changeLog}</Typography.Text>
                 </div>
               </div>
-            ),
-          }))}
-        />
+            </Timeline.Item>
+          ))}
+        </Timeline>
       )}
     </Card>
   );

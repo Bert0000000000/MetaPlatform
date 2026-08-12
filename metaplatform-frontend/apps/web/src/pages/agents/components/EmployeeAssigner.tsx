@@ -1,4 +1,4 @@
-﻿import { Card, Empty, Select, Space, Tag, Typography } from 'antd';
+﻿import { Card, Empty, Select, Space, Tag, Typography } from '@douyinfe/semi-ui';
 import type { Employee } from '@/api/dw/types';
 
 interface SubTask {
@@ -19,9 +19,9 @@ export default function EmployeeAssigner({ subTasks, employees, onAssign }: Empl
 
   return (
     <Card title="员工分配">
-      <Space orientation="vertical" style={{ width: '100%' }}>
+      <Space vertical style={{ width: '100%' }}>
         {subTasks.map((st, i) => (
-          <Card key={i} type="inner" size="small" title={st.title}>
+          <Card key={i} bordered={false} title={st.title}>
             <Space>
               <Typography.Text>分配给：</Typography.Text>
               <Select
@@ -29,10 +29,10 @@ export default function EmployeeAssigner({ subTasks, employees, onAssign }: Empl
                 style={{ width: 200 }}
                 onChange={(v) => {
                   const next = [...subTasks];
-                  next[i] = { ...st, assignee: v };
+                  next[i] = { ...st, assignee: v as string };
                   onAssign(next);
                 }}
-                options={employees.map((e) => ({
+                optionList={employees.map((e) => ({
                   label: `${e.name} - ${e.roleIdentity}`,
                   value: e.name,
                 }))}

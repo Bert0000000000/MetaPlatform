@@ -1,4 +1,5 @@
-import { Card, Col, Row, Tag } from "antd";
+import { Card, Tag } from "@douyinfe/semi-ui";
+import { Row, Col } from "@douyinfe/semi-ui/lib/es/grid";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -74,7 +75,8 @@ export default function OverviewPage() {
           <Row gutter={[16, 16]}>
             {cards.map((c) => (
               <Col key={c.key} xs={24} sm={12} md={8} lg={8} xl={6}>
-                <Card hoverable onClick={() => navigate(c.path)} styles={{ body: { padding: 16 } }} style={{ borderRadius: 8, height: "100%" }}>
+                <div style={{ cursor: 'pointer', height: '100%' }} onClick={() => navigate(c.path)}>
+                  <Card shadows="hover" bodyStyle={{ padding: 16 }} style={{ borderRadius: 8, height: '100%' }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                     <div style={{ width: 44, height: 44, borderRadius: 8, background: c.color + "22", color: c.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
                       {c.icon}
@@ -90,6 +92,7 @@ export default function OverviewPage() {
                     </div>
                   </div>
                 </Card>
+                </div>
               </Col>
             ))}
           </Row>

@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { Bubble, Sender } from '@ant-design/x';
-import { Typography, Space, Tag, theme } from 'antd';
+import { Typography, Space, Tag } from '@douyinfe/semi-ui';
 import { RobotOutlined, UserOutlined } from '@ant-design/icons';
 import { getToken } from '@mate/shared';
 import type { Employee } from '@/api/dw/types';
@@ -36,10 +36,6 @@ interface EmbeddedChatProps {
 }
 
 export default function EmbeddedChat({ employee, heightMode = 'fixed' }: EmbeddedChatProps) {
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken();
-
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -252,9 +248,9 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
         </Space>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, background: colorBgContainer, padding: 12, borderRadius: 8, overflow: 'auto' }}>
+      <div style={{ flex: 1, minHeight: 0, background: 'var(--semi-color-bg-1)', padding: 12, borderRadius: 8, overflow: 'auto' }}>
         {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: 60, color: '#999' }}>
+          <div style={{ textAlign: 'center', paddingTop: 60, color: 'var(--muted-foreground)' }}>
             <RobotOutlined style={{ fontSize: 40, marginBottom: 12 }} />
             <div>开始与 {employee.name} 对话</div>
           </div>

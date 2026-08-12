@@ -9,7 +9,8 @@ import {
   Tabs,
   Tag,
   Typography,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import ExecutionProgress from './components/ExecutionProgress';
 import ExecutionTimeline from './components/ExecutionTimeline';
@@ -18,12 +19,12 @@ import TaskControls from './components/TaskControls';
 import TraceLinkViewer from './components/TraceLinkViewer';
 import type { EmployeeTask } from '@/api/dw/types';
 
-const STATUS_MAP: Record<EmployeeTask['status'], { label: string; color: string }> = {
-  pending: { label: '待处理', color: 'default' },
+const STATUS_MAP: Record<EmployeeTask['status'], { label: string; color: TagColor }> = {
+  pending: { label: '待处理', color: 'grey' },
   running: { label: '运行中', color: 'blue' },
   completed: { label: '已完成', color: 'green' },
   failed: { label: '失败', color: 'red' },
-  cancelled: { label: '已取消', color: 'default' },
+  cancelled: { label: '已取消', color: 'grey' },
 };
 
 export default function TaskDetailPage() {
@@ -63,35 +64,43 @@ export default function TaskDetailPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dw/tasks')}>
           返回
         </Button>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           {task.title}
         </Typography.Title>
         <Tag color={STATUS_MAP[task.status].color}>{STATUS_MAP[task.status].label}</Tag>
       </Space>
 
       <Card style={{ marginBottom: 16 }}>
-        <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="任务 ID">{task.id}</Descriptions.Item>
-          <Descriptions.Item label="员工">{task.employeeId}</Descriptions.Item>
-          <Descriptions.Item label="描述" span={2}>{task.description}</Descriptions.Item>
-          <Descriptions.Item label="优先级">
+        <Descriptions column={2} size="small">
+          <Descriptions.Item itemKey="任务 ID">{task.id}</Descriptions.Item>
+          <Descriptions.Item itemKey="员工">{task.employeeId}</Descriptions.Item>
+          <Descriptions.Item itemKey="描述" span={2}>{task.description}</Descriptions.Item>
+          <Descriptions.Item itemKey="优先级">
             <Tag color={task.priority === 'high' ? 'red' : 'orange'}>{task.priority}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="进度">{task.progress}%</Descriptions.Item>
-          <Descriptions.Item label="创建">{new Date(task.createdAt).toLocaleString()}</Descriptions.Item>
-          <Descriptions.Item label="开始">{task.startedAt ? new Date(task.startedAt).toLocaleString() : '-'}</Descriptions.Item>
+          <Descriptions.Item itemKey="进度">{task.progress}%</Descriptions.Item>
+          <Descriptions.Item itemKey="创建">{new Date(task.createdAt).toLocaleString()}</Descriptions.Item>
+          <Descriptions.Item itemKey="开始">{task.startedAt ? new Date(task.startedAt).toLocaleString() : '-'}</Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Tabs
-        items={[
-          { key: 'progress', label: '实时进度', children: <ExecutionProgress task={task} /> },
-          { key: 'timeline', label: '执行轨迹', children: <ExecutionTimeline task={task} /> },
-          { key: 'replay', label: '执行回放', children: <ReplayPanel traceId={task.id} /> },
-          { key: 'controls', label: '任务干预', children: <TaskControls task={task} onChange={setTask} /> },
-          { key: 'trace', label: 'Trace 链路', children: <TraceLinkViewer traceId={task.id} /> },
-        ]}
-      />
+      <Tabs>
+        <Tabs.TabPane itemKey="progress" tab="实时进度">
+          <ExecutionProgress task={task} />
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="timeline" tab="执行轨迹">
+          <ExecutionTimeline task={task} />
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="replay" tab="执行回放">
+          <ReplayPanel traceId={task.id} />
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="controls" tab="任务干预">
+          <TaskControls task={task} onChange={setTask} />
+        </Tabs.TabPane>
+        <Tabs.TabPane itemKey="trace" tab="Trace 链路">
+          <TraceLinkViewer traceId={task.id} />
+        </Tabs.TabPane>
+      </Tabs>
     </div>
   );
 }

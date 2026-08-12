@@ -1,15 +1,16 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
   Collapse,
   Empty,
-  message,
-  Segmented,
+  Radio,
   Space,
   Tag,
+  Toast,
   Typography,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { BulbOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { generateSuggestions, listSuggestions } from '@/api/dw/evaluations';
 import {
@@ -32,6 +33,20 @@ const PERIOD_OPTIONS = [
 ];
 
 const PRIORITY_ORDER: Record<SuggestionPriority, number> = { high: 0, medium: 1, low: 2 };
+
+// api/dw/types 的 meta.color 是旧 UI 颜色名，这里映射到 Semi TagColor
+const TAG_COLOR_MAP: Record<string, TagColor> = {
+  blue: 'blue',
+  cyan: 'cyan',
+  purple: 'purple',
+  geekblue: 'indigo',
+  magenta: 'pink',
+  gold: 'yellow',
+  red: 'red',
+  orange: 'orange',
+  green: 'green',
+  grey: 'grey',
+};
 
 /**
  * 优化建议卡片：
@@ -67,7 +82,7 @@ export default function OptimizationSuggestionsCard({
 
   const handleGenerate = async () => {
     if (!employeeId) {
-      message.warning('请先选择数字员工');
+      Toast.warning('请先选择数字员工');
       return;
     }
     setLoading(true);
@@ -75,7 +90,7 @@ export default function OptimizationSuggestionsCard({
       const resp = await generateSuggestions({ employeeId, period });
       setSuggestions(resp.suggestions);
       setGeneratedAt(resp.generatedAt);
-      message.success(`已生成 ${resp.suggestions.length} 条优化建议`);
+      Toast.success(`已生成 ${resp.suggestions.length} 条优化建议`);
     } finally {
       setLoading(false);
     }
@@ -99,34 +114,33 @@ export default function OptimizationSuggestionsCard({
     return (
       <Card
         key={s.id}
-        size="small"
         style={{ marginBottom: 8 }}
         title={
           <Space wrap>
             <Typography.Text strong>{s.title}</Typography.Text>
-            <Tag color={catMeta.color}>{catMeta.label}</Tag>
-            <Tag color={priMeta.color}>优先级：{priMeta.label}</Tag>
+            <Tag color={TAG_COLOR_MAP[catMeta.color] ?? 'grey'}>{catMeta.label}</Tag>
+            <Tag color={TAG_COLOR_MAP[priMeta.color] ?? 'grey'}>优先级：{priMeta.label}</Tag>
           </Space>
         }
       >
-        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+        <Space vertical spacing="tight" style={{ width: '100%' }}>
           <Typography.Paragraph style={{ marginBottom: 0 }}>
-            <Typography.Text type="secondary">描述：</Typography.Text>
+            <Typography.Text type="tertiary">描述：</Typography.Text>
             {s.description}
           </Typography.Paragraph>
           <Typography.Paragraph style={{ marginBottom: 0 }}>
-            <Typography.Text type="secondary">
+            <Typography.Text type="tertiary">
               <ArrowRightOutlined /> 行动：
             </Typography.Text>
             {s.action}
           </Typography.Paragraph>
           <Typography.Paragraph style={{ marginBottom: 0 }}>
-            <Typography.Text type="secondary">预期影响：</Typography.Text>
+            <Typography.Text type="tertiary">预期影响：</Typography.Text>
             <Typography.Text type="success">{s.expectedImpact}</Typography.Text>
           </Typography.Paragraph>
           {s.relatedEvidence && s.relatedEvidence.length > 0 && (
             <div>
-              <Typography.Text type="secondary">关联证据：</Typography.Text>
+              <Typography.Text type="tertiary">关联证据：</Typography.Text>
               <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
                 {s.relatedEvidence.map((e, i) => (
                   <li key={i}>
@@ -142,10 +156,11 @@ export default function OptimizationSuggestionsCard({
   };
 
   return (
-    <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+    <Space vertical style={{ width: '100%' }} spacing="medium">
       <Card title="优化建议">
         <Space wrap>
           <Button
+            theme="solid"
             type="primary"
             icon={<BulbOutlined />}
             loading={loading}
@@ -154,13 +169,14 @@ export default function OptimizationSuggestionsCard({
           >
             生成优化建议
           </Button>
-          <Segmented
-            options={PERIOD_OPTIONS}
+          <Radio.Group
+            type="button"
             value={period}
-            onChange={(v) => setPeriod(v as string)}
+            onChange={(e) => setPeriod(e.target.value as string)}
+            options={PERIOD_OPTIONS}
           />
           {generatedAt && (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
               最近生成：{new Date(generatedAt).toLocaleString()}
             </Typography.Text>
           )}
@@ -172,23 +188,26 @@ export default function OptimizationSuggestionsCard({
           <Empty description={loading ? '加载中...' : '暂无优化建议，点击上方按钮生成'} />
         </Card>
       ) : (
-        <Collapse
-          defaultActiveKey={['high']}
-          items={(['high', 'medium', 'low'] as SuggestionPriority[]).map((p) => ({
-            key: p,
-            label: (
-              <Space>
-                <Typography.Text strong>{SUGGESTION_PRIORITY_META[p].label}优先级</Typography.Text>
-                <Tag color={SUGGESTION_PRIORITY_META[p].color}>{grouped[p].length}</Tag>
-              </Space>
-            ),
-            children: grouped[p].length === 0 ? (
-              <Empty description={`暂无${SUGGESTION_PRIORITY_META[p].label}优先级建议`} />
-            ) : (
-              <div>{grouped[p].map(renderSuggestionCard)}</div>
-            ),
-          }))}
-        />
+        <Collapse defaultActiveKey={['high']}>
+          {(['high', 'medium', 'low'] as SuggestionPriority[]).map((p) => (
+            <Collapse.Panel
+              key={p}
+              itemKey={p}
+              header={
+                <Space>
+                  <Typography.Text strong>{SUGGESTION_PRIORITY_META[p].label}优先级</Typography.Text>
+                  <Tag color={TAG_COLOR_MAP[SUGGESTION_PRIORITY_META[p].color] ?? 'grey'}>{grouped[p].length}</Tag>
+                </Space>
+              }
+            >
+              {grouped[p].length === 0 ? (
+                <Empty description={`暂无${SUGGESTION_PRIORITY_META[p].label}优先级建议`} />
+              ) : (
+                <div>{grouped[p].map(renderSuggestionCard)}</div>
+              )}
+            </Collapse.Panel>
+          ))}
+        </Collapse>
       )}
     </Space>
   );

@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Card, Tabs, Table, Tag, Space, Button, Modal, Alert, message } from 'antd';
+import { Card, Table, Tag, Space, Button, Modal, Banner, Toast } from '@douyinfe/semi-ui';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
@@ -41,20 +41,20 @@ export default function OntologyDraftTab({ objectId }: { objectId: string }) {
       content: `将对 ${Object.keys(decisions).length} 条候选事实的处理提交为草稿。`,
       onOk: async () => {
         await axios.post(`/api/v1/ont/drafts/${draft.id}/publish?approver=USER-1001`);
-        message.success('草稿已提交');
+        Toast.success('草稿已提交');
         fetchDraft();
       },
     });
   };
 
   if (!draft) {
-    return <Alert type="info" message="暂无 Ontology 草稿" showIcon />;
+    return <Banner type="info" description="暂无 Ontology 草稿" />;
   }
 
   return (
     <Card
       title={<Space>Ontology 候选事实 <Tag color="blue">{draft.id}</Tag></Space>}
-      extra={<Button type="primary" onClick={onSubmit}>提交草稿</Button>}
+      headerExtraContent={<Button theme="solid" type="primary" onClick={onSubmit}>提交草稿</Button>}
     >
       <Table
         rowKey="id"
@@ -69,7 +69,7 @@ export default function OntologyDraftTab({ objectId }: { objectId: string }) {
             title: '冲突',
             dataIndex: 'conflictLevel',
             render: (l: string) => {
-              const color = l === 'HIGH' ? 'red' : l === 'MEDIUM' ? 'orange' : l === 'LOW' ? 'gold' : 'green';
+              const color = l === 'HIGH' ? 'red' : l === 'MEDIUM' ? 'orange' : l === 'LOW' ? 'yellow' : 'green';
               return <Tag color={color}>{l}</Tag>;
             },
           },
@@ -80,13 +80,14 @@ export default function OntologyDraftTab({ objectId }: { objectId: string }) {
               <Space>
                 <Button
                   size="small"
-                  type={decisions[record.id] === 'ACCEPT' ? 'primary' : 'default'}
+                  theme={decisions[record.id] === 'ACCEPT' ? 'solid' : 'light'}
+                  type="primary"
                   icon={<CheckCircleOutlined />}
                   onClick={() => onDecision(record.id, 'ACCEPT')}
                 >采纳</Button>
                 <Button
                   size="small"
-                  danger={decisions[record.id] === 'REJECT'}
+                  type={decisions[record.id] === 'REJECT' ? 'danger' : 'primary'}
                   icon={<CloseCircleOutlined />}
                   onClick={() => onDecision(record.id, 'REJECT')}
                 >忽略</Button>

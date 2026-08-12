@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { Button } from 'antd';
+import { Button } from '@douyinfe/semi-ui';
 import { RobotOutlined } from '@ant-design/icons';
 import { CustomerCopilotDrawer } from './CustomerCopilotDrawer';
 
@@ -12,7 +12,7 @@ export function CustomerCopilotTrigger({ customerId, customerName }: { customerI
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button type="primary" icon={<RobotOutlined />} onClick={() => setOpen(true)}>
+      <Button theme="solid" type="primary" icon={<RobotOutlined />} onClick={() => setOpen(true)}>
         AI 分析
       </Button>
       <CustomerCopilotDrawer

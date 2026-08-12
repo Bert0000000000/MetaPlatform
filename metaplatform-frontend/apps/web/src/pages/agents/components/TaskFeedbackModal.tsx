@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Radio, Input, Tag, Space, Typography } from 'antd';
+import { Form, Input, Modal, Radio, Space, Tag, Typography } from '@douyinfe/semi-ui';
 import { LikeOutlined, DislikeOutlined, EditOutlined } from '@ant-design/icons';
 import type { EmployeeTask, ExecutionResult, FeedbackType } from '@/api/dw/types';
 
@@ -30,6 +30,12 @@ const EXECUTION_OPTIONS: { value: ExecutionResult; label: string }[] = [
 
 const PRESET_TAGS = ['参数优化', '工具选择', 'Prompt', '结果格式', '超时处理', '权限问题'];
 
+type FeedbackFormValues = {
+  executionResult: ExecutionResult;
+  feedbackType: FeedbackType;
+  suggestion: string;
+};
+
 export default function TaskFeedbackModal({
   open,
   task,
@@ -37,14 +43,14 @@ export default function TaskFeedbackModal({
   onSubmit,
   loading,
 }: TaskFeedbackModalProps) {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<FeedbackFormValues>();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
 
   const handleOk = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     await onSubmit({ ...values, tags: selectedTags });
-    form.resetFields();
+    form.reset();
     setSelectedTags([]);
     setCustomTag('');
   };
@@ -66,54 +72,54 @@ export default function TaskFeedbackModal({
   return (
     <Modal
       title={`任务反馈：${task?.title ?? ''}`}
-      open={open}
+      visible={open}
       onOk={handleOk}
       onCancel={onCancel}
       confirmLoading={loading}
-      destroyOnClose
     >
       <Form
         form={form}
-        layout="vertical"
-        initialValues={{
+        initValues={{
           executionResult: task?.status === 'failed' ? 'failed' : 'success',
           feedbackType: 'thumb_up',
           suggestion: '',
         }}
       >
-        <Form.Item name="executionResult" label="执行结果">
-          <Radio.Group optionType="button" buttonStyle="solid">
-            {EXECUTION_OPTIONS.map((opt) => (
-              <Radio.Button key={opt.value} value={opt.value}>
+        <Form.RadioGroup field="executionResult" label="执行结果" type="button">
+          {EXECUTION_OPTIONS.map((opt) => (
+            <Radio key={opt.value} value={opt.value}>
+              {opt.label}
+            </Radio>
+          ))}
+        </Form.RadioGroup>
+
+        <Form.RadioGroup field="feedbackType" label="反馈类型" type="button">
+          {FEEDBACK_OPTIONS.map((opt) => (
+            <Radio key={opt.value} value={opt.value}>
+              <Space spacing={4}>
+                {opt.icon}
                 {opt.label}
-              </Radio.Button>
-            ))}
-          </Radio.Group>
-        </Form.Item>
+              </Space>
+            </Radio>
+          ))}
+        </Form.RadioGroup>
 
-        <Form.Item name="feedbackType" label="反馈类型">
-          <Radio.Group optionType="button" buttonStyle="solid">
-            {FEEDBACK_OPTIONS.map((opt) => (
-              <Radio.Button key={opt.value} value={opt.value}>
-                <Space size={4}>
-                  {opt.icon}
-                  {opt.label}
-                </Space>
-              </Radio.Button>
-            ))}
-          </Radio.Group>
-        </Form.Item>
+        <Form.TextArea
+          field="suggestion"
+          label="修改建议 / 备注"
+          rows={4}
+          placeholder="请输入具体建议，帮助员工学习优化"
+        />
 
-        <Form.Item name="suggestion" label="修改建议 / 备注">
-          <Input.TextArea rows={4} placeholder="请输入具体建议，帮助员工学习优化" />
-        </Form.Item>
-
-        <Form.Item label="标签">
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            <Typography.Text>标签</Typography.Text>
+          </div>
           <Space wrap>
             {PRESET_TAGS.map((tag) => (
               <Tag
                 key={tag}
-                color={selectedTags.includes(tag) ? 'blue' : 'default'}
+                color={selectedTags.includes(tag) ? 'blue' : 'grey'}
                 style={{ cursor: 'pointer' }}
                 onClick={() => toggleTag(tag)}
               >
@@ -127,10 +133,10 @@ export default function TaskFeedbackModal({
                 size="small"
                 placeholder="自定义标签"
                 value={customTag}
-                onChange={(e) => setCustomTag(e.target.value)}
-                onPressEnter={addCustomTag}
+                onChange={(v: string) => setCustomTag(v)}
+                onEnterPress={addCustomTag}
               />
-              <Typography.Link onClick={addCustomTag}>添加</Typography.Link>
+              <Typography.Text link onClick={addCustomTag}>添加</Typography.Text>
             </Space>
           </div>
           {selectedTags.length > 0 && (
@@ -142,7 +148,7 @@ export default function TaskFeedbackModal({
               ))}
             </div>
           )}
-        </Form.Item>
+        </div>
       </Form>
     </Modal>
   );

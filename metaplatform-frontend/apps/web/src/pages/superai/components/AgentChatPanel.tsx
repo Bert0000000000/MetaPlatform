@@ -1,5 +1,5 @@
-﻿import React, { useCallback, useMemo } from 'react';
-import { Alert, Button, Card, Empty, Space, Spin, Tag, Typography } from 'antd';
+import React, { useCallback, useMemo } from 'react';
+import { Banner, Button, Card, Empty, Space, Spin, Tag, Typography } from '@douyinfe/semi-ui';
 import { PlayCircleOutlined, StopOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useAgentStream, useInteractionContext } from '@/api/superai/types';
 import { ClaimRenderer } from './ClaimRenderer';
@@ -56,7 +56,6 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>
       <Card
-        size="small"
         title={
           <Space>
             <ThunderboltOutlined />
@@ -66,14 +65,14 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
             {streaming && <Spin size="small" />}
           </Space>
         }
-        extra={
+        headerExtraContent={
           <Space>
             {streaming ? (
-              <Button danger icon={<StopOutlined />} onClick={onAbort}>
+              <Button type="danger" icon={<StopOutlined />} onClick={onAbort}>
                 Stop
               </Button>
             ) : (
-              <Button type="primary" icon={<PlayCircleOutlined />} onClick={onSend}>
+              <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} onClick={onSend}>
                 Run
               </Button>
             )}
@@ -85,7 +84,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
         </Paragraph>
         <textarea
           rows={3}
-          style={{ width: '100%', padding: 8, border: '1px solid #d9d9d9', borderRadius: 6, fontFamily: 'inherit' }}
+          style={{ width: '100%', padding: 8, border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'inherit' }}
           placeholder={placeholder || '请输入分析问题，例如：分析 CUST-10086 最近的销售下降原因'}
           value={context.message}
           onChange={(e) => setMessage(e.target.value)}
@@ -93,15 +92,15 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
         />
       </Card>
 
-      {error && <Alert type="error" message={error} showIcon />}
+      {error && <Banner type="error" description={error} />}
 
-      <Card size="small" title={<Text strong>Run Events ({events.length})</Text>}>
+      <Card  title={<Text strong>Run Events ({events.length})</Text>}>
         {events.length === 0 ? (
-          <Empty description="No events yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <Empty description="No events yet" />
         ) : (
-          <Space orientation="vertical" style={{ width: '100%' }} size={4}>
+          <Space vertical spacing={4} style={{ width: '100%' }}>
             {events.slice(-10).map((ev) => (
-              <Space key={ev.eventId} size={6}>
+              <Space key={ev.eventId} spacing={6}>
                 <Tag color={eventColor(ev.type)} style={{ minWidth: 130, textAlign: 'center' }}>
                   {ev.type}
                 </Tag>
@@ -119,13 +118,13 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
       </Card>
 
       {answer && (
-        <Card size="small" title={<Text strong>Final Answer</Text>}>
+        <Card  title={<Text strong>Final Answer</Text>}>
           <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{answer}</Paragraph>
         </Card>
       )}
 
       {claims.length > 0 && (
-        <Card size="small" title={<Text strong>Claims ({claims.length})</Text>}>
+        <Card  title={<Text strong>Claims ({claims.length})</Text>}>
           {claims.map((c: Claim) => (
             <ClaimRenderer key={c.claimId} claim={c} />
           ))}
@@ -133,7 +132,7 @@ export function AgentChatPanel({ initialMessage, subject, placeholder }: AgentCh
       )}
 
       {evidence.length > 0 && (
-        <Card size="small" title={<Text strong>Evidence ({evidence.length})</Text>}>
+        <Card  title={<Text strong>Evidence ({evidence.length})</Text>}>
           <EvidenceRenderer evidenceList={evidence} />
         </Card>
       )}
@@ -148,16 +147,16 @@ function statusColor(s: string): string {
     case 'aborted': return 'orange';
     case 'running': return 'blue';
     case 'starting': return 'cyan';
-    default: return 'default';
+    default: return 'grey';
   }
 }
 
 function eventColor(t: string): string {
   if (t.startsWith('RUN_COMPLETED') || t === 'CLAIM_PRODUCED') return 'green';
   if (t.startsWith('RUN_FAILED') || t === 'TOOL_FAILED') return 'red';
-  if (t === 'EVIDENCE_ATTACHED') return 'geekblue';
+  if (t === 'EVIDENCE_ATTACHED') return 'violet';
   if (t.startsWith('TOOL_')) return 'blue';
-  return 'default';
+  return 'grey';
 }
 
 export default AgentChatPanel;

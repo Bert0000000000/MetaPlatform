@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Graph } from '@antv/x6';
-import { Spin } from 'antd';
+import { Spin } from '@douyinfe/semi-ui';
 import type { Capability } from '@/api/arch/types';
 
 interface Props {
@@ -96,7 +96,7 @@ export default function CapabilityGraph({ data }: Props) {
 
   return (
     <div>
-      <div ref={containerRef} style={{ width: '100%', height: 480, border: '1px solid #f0f0f0', borderRadius: 8 }} />
+      <div ref={containerRef} style={{ width: '100%', height: 480, border: '1px solid var(--semi-color-border)', borderRadius: 8 }} />
       {data.length === 0 && <Spin />}
     </div>
   );

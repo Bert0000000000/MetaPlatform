@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Card, Progress, Space, Typography } from 'antd';
+import { Card, Progress, Space, Typography } from '@douyinfe/semi-ui';
 import type { EmployeeTask } from '@/api/dw/types';
 
 interface ExecutionProgressProps {
@@ -33,11 +33,15 @@ export default function ExecutionProgress({ task }: ExecutionProgressProps) {
   return (
     <div>
       <Card>
-        <Space orientation="vertical" style={{ width: '100%' }}>
+        <Space vertical style={{ width: '100%' }}>
           <Typography.Text>当前进度：{Math.round(progress)}%</Typography.Text>
-          <Progress percent={Math.round(progress)} status={progress >= 100 ? 'success' : 'active'} />
+          {/* Semi Progress 无 status prop：完成态用 stroke 语义色，进行中默认主题色 */}
+          <Progress
+            percent={Math.round(progress)}
+            stroke={progress >= 100 ? 'var(--semi-color-success)' : undefined}
+          />
           <Typography.Text strong>实时日志：</Typography.Text>
-          <Card type="inner" size="small">
+          <Card>
             <pre style={codeStyle}>
               {logs.join('\n')}
             </pre>
@@ -61,7 +65,7 @@ function randomLog(): string {
 }
 
 const codeStyle: CSSProperties = {
-  background: '#fafafa',
+  background: 'var(--semi-color-fill-0)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

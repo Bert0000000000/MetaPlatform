@@ -1,4 +1,4 @@
-import { Tabs } from 'antd';
+import { Tabs } from '@douyinfe/semi-ui';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
@@ -131,7 +131,7 @@ export default function ArchLayout({ children }: { children: ReactNode }) {
             navigate(tab.subTabs[0].path);
           }
         }}
-        items={ARCH_TABS.map((t) => ({ key: t.key, label: t.label }))}
+        tabList={ARCH_TABS.map((t) => ({ tab: t.label, itemKey: t.key }))}
         size="large"
         tabBarStyle={{ marginBottom: 0 }}
       />
@@ -140,25 +140,25 @@ export default function ArchLayout({ children }: { children: ReactNode }) {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', paddingTop: 4 }}>
         {currentTab.subTabs.length > 0 && (
           <Tabs
-            tabPlacement="start"
+            tabPosition="left"
             activeKey={activeSubTab}
             onChange={(key) => {
               const sub = currentTab.subTabs.find((s) => s.key === key);
               if (sub) navigate(sub.path);
             }}
-            items={currentTab.subTabs.map((s) => ({
-              key: s.key,
-              label: s.label,
-              children:
-                s.key === activeSubTab ? (
+            tabBarStyle={{ minWidth: 132, marginTop: 4 }}
+            style={{ flex: 1, minHeight: 0 }}
+          >
+            {currentTab.subTabs.map((s) => (
+              <Tabs.TabPane itemKey={s.key} tab={s.label} key={s.key}>
+                {s.key === activeSubTab ? (
                   <div style={{ height: '100%', overflowY: 'auto', paddingRight: 8, paddingBottom: 24 }}>
                     {children}
                   </div>
-                ) : null,
-            }))}
-            tabBarStyle={{ minWidth: 132, marginTop: 4 }}
-            style={{ flex: 1, minHeight: 0 }}
-          />
+                ) : null}
+              </Tabs.TabPane>
+            ))}
+          </Tabs>
         )}
       </div>
     </div>

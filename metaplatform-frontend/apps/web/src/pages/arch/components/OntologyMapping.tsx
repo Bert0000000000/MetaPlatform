@@ -81,8 +81,8 @@ export default function OntologyMappingGraph({ mappings, onImpact }: Props) {
 
   return (
     <div>
-      <div ref={containerRef} style={{ width: '100%', height: 400, border: '1px solid #f0f0f0', borderRadius: 8 }} />
-      <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>双击能力节点可查看影响分析</div>
+      <div ref={containerRef} style={{ width: '100%', height: 400, border: '1px solid var(--semi-color-border)', borderRadius: 8 }} />
+      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--semi-color-text-2)' }}>双击能力节点可查看影响分析</div>
     </div>
   );
 }

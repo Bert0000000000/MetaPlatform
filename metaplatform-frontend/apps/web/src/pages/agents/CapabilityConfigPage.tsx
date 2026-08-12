@@ -3,20 +3,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
+  Checkbox,
   Form,
   Input,
-  Select,
-  Checkbox,
-  Slider,
   InputNumber,
-  Switch,
-  Typography,
+  Select,
+  Slider,
   Space,
-  App,
   Spin,
-  Row,
-  Col,
-} from 'antd';
+  Switch,
+  Toast,
+  Typography,
+} from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import {
   ArrowLeftOutlined,
   SaveOutlined,
@@ -35,7 +34,6 @@ import {
   DIALOG_STYLE_PRESETS,
 } from '@/api/dw/types';
 
-const { TextArea } = Input;
 const { Title, Text } = Typography;
 
 function groupByProvider(items: AiModelItem[]): { provider: string; models: AiModelItem[] }[] {
@@ -52,8 +50,7 @@ export default function CapabilityConfigPage() {
   const { employeeId } = useParams<{ employeeId: string }>();
   const id = employeeId;
   const navigate = useNavigate();
-  const [form] = Form.useForm();
-  const { message } = App.useApp();
+  const [form, , formValues] = Form.useForm<Record<string, any>>();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -73,7 +70,7 @@ export default function CapabilityConfigPage() {
     getEmployee(id)
       .then((emp) => {
         setEmployee(emp);
-        form.setFieldsValue({
+        form.setValues({
           name: emp.name,
           roleCategory: emp.roleCategory,
           roleIdentity: emp.roleIdentity,
@@ -94,10 +91,17 @@ export default function CapabilityConfigPage() {
       .finally(() => setLoading(false));
   }, [id, form]);
 
+  const toggleInArray = (field: 'tools' | 'actionRids' | 'ragKnowledgeBaseIds', value: string) => {
+    const current = new Set<string>(formValues[field] ?? []);
+    if (current.has(value)) current.delete(value);
+    else current.add(value);
+    form.setValue(field, [...current]);
+  };
+
   const handleSave = async () => {
     if (!id || !employee) return;
     try {
-      const values = await form.validateFields();
+      const values = await form.validate();
       setSubmitting(true);
       await updateEmployee(id, {
         name: values.name,
@@ -119,7 +123,7 @@ export default function CapabilityConfigPage() {
           rerank: values.rerank,
         },
       });
-      message.success('数字员工已更新');
+      Toast.success('数字员工已更新');
       if (window.history.length > 1) {
         navigate(-1);
       } else {
@@ -127,7 +131,7 @@ export default function CapabilityConfigPage() {
       }
     } catch (error) {
       if (error instanceof Error && error.message.includes('validated')) return;
-      message.error(error instanceof Error ? error.message : '保存失败');
+      Toast.error(error instanceof Error ? error.message : '保存失败');
     } finally {
       setSubmitting(false);
     }
@@ -135,7 +139,7 @@ export default function CapabilityConfigPage() {
 
   const applyDialogStyle = (index: number) => {
     const preset = DIALOG_STYLE_PRESETS[index];
-    form.setFieldsValue({
+    form.setValues({
       temperature: preset.temperature,
       topP: preset.topP,
       maxTokens: preset.maxTokens,
@@ -154,93 +158,79 @@ export default function CapabilityConfigPage() {
           返回详情
         </Button>
         <Space>
-          <Typography.Title level={4} style={{ margin: 0 }}>编辑数字员工</Typography.Title>
-          <Button type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
+          <Title heading={4} style={{ margin: 0 }}>编辑数字员工</Title>
+          <Button theme="solid" type="primary" icon={<SaveOutlined />} loading={submitting} onClick={handleSave}>
             保存
           </Button>
         </Space>
       </div>
 
-      <Form form={form} layout="vertical">
+      <Form form={form}>
         {/* 基本信息 */}
         <Card
-          size="small"
           title={<Space><RobotOutlined /> 基本信息</Space>}
           style={{ marginBottom: 16 }}
         >
           <Row gutter={24}>
             <Col span={8}>
-              <Form.Item name="name" label="员工名称" rules={[{ required: true, message: '请输入员工名称' }]}>
-                <Input placeholder="请输入员工名称" />
-              </Form.Item>
+              <Form.Input field="name" label="员工名称" rules={[{ required: true, message: '请输入员工名称' }]} placeholder="请输入员工名称" />
             </Col>
             <Col span={8}>
-              <Form.Item name="roleCategory" label="角色分类" rules={[{ required: true }]}>
-                <Select placeholder="选择角色分类">
-                  {ROLE_CATEGORY_OPTIONS.map((opt) => (
-                    <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
+              <Form.Select field="roleCategory" label="角色分类" rules={[{ required: true }]} placeholder="选择角色分类" optionList={ROLE_CATEGORY_OPTIONS} />
             </Col>
             <Col span={8}>
-              <Form.Item label="员工编码">
+              <Form.Slot label="员工编码">
                 <Input value={employee.code} disabled />
-              </Form.Item>
+              </Form.Slot>
             </Col>
           </Row>
           <Row gutter={24}>
             <Col span={12}>
-              <Form.Item name="roleIdentity" label="角色身份">
-                <Input placeholder="角色身份" />
-              </Form.Item>
+              <Form.Input field="roleIdentity" label="角色身份" placeholder="角色身份" />
             </Col>
             <Col span={12}>
-              <Form.Item name="description" label="职责描述">
-                <Input placeholder="职责描述" />
-              </Form.Item>
+              <Form.Input field="description" label="职责描述" placeholder="职责描述" />
             </Col>
           </Row>
         </Card>
 
         {/* 模型配置 */}
         <Card
-          size="small"
           title={<Space><RobotOutlined /> 模型配置</Space>}
           style={{ marginBottom: 16 }}
         >
           <Row gutter={24}>
             <Col span={12}>
-              <Form.Item name="model" label="LLM 模型" rules={[{ required: true, message: '请选择模型' }]}>
-                <Select
-                  placeholder="选择模型"
-                  loading={loading && aiModels.length === 0}
-                  showSearch
-                  optionFilterProp="label"
-                >
-                  {aiModels.length === 0 && (
-                    <Select.Option value="" disabled>
-                      暂无可选模型（请先到后台 AI Providers 获取模型）
-                    </Select.Option>
-                  )}
-                  {groupByProvider(aiModels).map((group) => (
-                    <Select.OptGroup key={group.provider} label={`${group.provider} 模型`}>
-                      {group.models.map((m) => (
-                        <Select.Option
-                          key={`${m.provider}-${m.modelId}`}
-                          value={m.modelId}
-                          label={m.displayName || m.modelId}
-                        >
-                          {m.displayName || m.modelId}
-                        </Select.Option>
-                      ))}
-                    </Select.OptGroup>
-                  ))}
-                </Select>
-              </Form.Item>
+              <Form.Select
+                field="model"
+                label="LLM 模型"
+                rules={[{ required: true, message: '请选择模型' }]}
+                placeholder="选择模型"
+                loading={loading && aiModels.length === 0}
+                filter
+              >
+                {aiModels.length === 0 && (
+                  <Select.Option value="" disabled>
+                    暂无可选模型（请先到后台 AI Providers 获取模型）
+                  </Select.Option>
+                )}
+                {groupByProvider(aiModels).map((group) => (
+                  <Select.OptGroup key={group.provider} label={`${group.provider} 模型`}>
+                    {group.models.map((m) => (
+                      <Select.Option
+                        key={`${m.provider}-${m.modelId}`}
+                        value={m.modelId}
+                        label={m.displayName || m.modelId}
+                      >
+                        {m.displayName || m.modelId}
+                      </Select.Option>
+                    ))}
+                  </Select.OptGroup>
+                ))}
+              </Form.Select>
             </Col>
             <Col span={12}>
-              <Form.Item label="对话风格预设">
+              <Form.Slot label="对话风格预设">
                 <Space wrap>
                   {DIALOG_STYLE_PRESETS.map((preset, index) => (
                     <Button key={preset.label} size="small" onClick={() => applyDialogStyle(index)}>
@@ -248,168 +238,169 @@ export default function CapabilityConfigPage() {
                     </Button>
                   ))}
                 </Space>
-              </Form.Item>
+              </Form.Slot>
             </Col>
           </Row>
           <Row gutter={24}>
             <Col span={8}>
-              <Form.Item label="Temperature">
+              <Form.Slot label="Temperature">
                 <Space>
-                  <Form.Item name="temperature" noStyle>
-                    <Slider style={{ width: 120 }} min={0} max={1} step={0.1} />
-                  </Form.Item>
-                  <Form.Item name="temperature" noStyle>
-                    <InputNumber min={0} max={1} step={0.1} style={{ width: 70 }} size="small" />
-                  </Form.Item>
+                  <Slider
+                    value={formValues.temperature ?? 0.7}
+                    onChange={(v) => form.setValue('temperature', v)}
+                    style={{ width: 120 }}
+                    min={0}
+                    max={1}
+                    step={0.1}
+                  />
+                  <InputNumber
+                    value={formValues.temperature ?? 0.7}
+                    onChange={(v) => form.setValue('temperature', v ?? 0.7)}
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    style={{ width: 70 }}
+                    size="small"
+                  />
                 </Space>
-              </Form.Item>
+              </Form.Slot>
             </Col>
             <Col span={8}>
-              <Form.Item label="Top P" name="topP">
-                <InputNumber min={0.1} max={1} step={0.05} style={{ width: '100%' }} />
-              </Form.Item>
+              <Form.InputNumber field="topP" label="Top P" min={0.1} max={1} step={0.05} style={{ width: '100%' }} />
             </Col>
             <Col span={8}>
-              <Form.Item label="Max Tokens" name="maxTokens" rules={[{ required: true }]}>
-                <InputNumber min={100} max={8192} style={{ width: '100%' }} />
-              </Form.Item>
+              <Form.InputNumber field="maxTokens" label="Max Tokens" min={100} max={8192} style={{ width: '100%' }} rules={[{ required: true }]} />
             </Col>
           </Row>
         </Card>
 
         {/* System Prompt */}
         <Card
-          size="small"
           title={<Space><CodeOutlined /> Prompt 模板</Space>}
           style={{ marginBottom: 16 }}
         >
-          <Form.Item
-            name="systemPrompt"
+          <Form.TextArea
+            field="systemPrompt"
+            rows={6}
+            placeholder="系统提示词，定义数字员工的角色、职责和输出规范"
+            style={{ fontFamily: 'monospace', fontSize: 13 }}
             rules={[{ required: true, message: '请输入 System Prompt' }]}
-          >
-            <TextArea
-              rows={6}
-              placeholder="系统提示词，定义数字员工的角色、职责和输出规范"
-              style={{ fontFamily: 'monospace', fontSize: 13 }}
-            />
-          </Form.Item>
+          />
         </Card>
 
         {/* 工具配置 */}
         <Card
-          size="small"
           title={
             <Space>
               <ToolOutlined /> 工具配置
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="tertiary" style={{ fontSize: 12 }}>
                 {realTools.length} 个可用
               </Text>
             </Space>
           }
           style={{ marginBottom: 16 }}
         >
-          <Form.Item name="tools">
-            <Checkbox.Group style={{ width: '100%' }}>
-              <Row gutter={[16, 12]}>
-                {realTools.map((tool) => (
-                  <Col key={tool.code} span={12}>
-                    <Checkbox value={tool.code} style={{ alignItems: 'flex-start' }}>
-                      <Space orientation="vertical" size={0}>
-                        <Space size={4}>
-                          <Text strong style={{ fontSize: 13 }}>{tool.name}</Text>
-                          <Text type="secondary" style={{ fontSize: 11 }}>{tool.kind}</Text>
-                        </Space>
-                      </Space>
-                    </Checkbox>
-                  </Col>
-                ))}
-              </Row>
-            </Checkbox.Group>
-          </Form.Item>
+          <Row gutter={[16, 12]}>
+            {realTools.map((tool) => (
+              <Col key={tool.code} span={12}>
+                <Checkbox
+                  checked={(formValues.tools ?? []).includes(tool.code)}
+                  onChange={() => toggleInArray('tools', tool.code)}
+                  style={{ alignItems: 'flex-start' }}
+                >
+                  <Space vertical spacing={0}>
+                    <Space spacing={4}>
+                      <Text strong style={{ fontSize: 13 }}>{tool.name}</Text>
+                      <Text type="tertiary" style={{ fontSize: 11 }}>{tool.kind}</Text>
+                    </Space>
+                  </Space>
+                </Checkbox>
+              </Col>
+            ))}
+          </Row>
         </Card>
 
         {/* 动作配置：数字员工可触发的 ActionType */}
         <Card
-          size="small"
           title={
             <Space>
               <ThunderboltOutlined /> 动作配置
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="tertiary" style={{ fontSize: 12 }}>
                 {realActions.length} 个可触发 ActionType
               </Text>
             </Space>
           }
           style={{ marginBottom: 16 }}
         >
-          <Form.Item name="actionRids" label="可触发的动作">
-            <Checkbox.Group style={{ width: '100%' }}>
-              <Row gutter={[16, 12]}>
-                {realActions.map((act) => (
-                  <Col key={act.rid} span={12}>
-                    <Checkbox value={act.rid} style={{ alignItems: 'flex-start' }}>
-                      <Space orientation="vertical" size={0}>
-                        <Space size={4}>
-                          <Text strong style={{ fontSize: 13 }}>{act.name}</Text>
-                          <Text type="secondary" style={{ fontSize: 11 }}>{act.category}</Text>
-                        </Space>
-                        <Text type="secondary" style={{ fontSize: 11 }}>{act.desc}</Text>
+          <Form.Slot label="可触发的动作">
+            <Row gutter={[16, 12]}>
+              {realActions.map((act) => (
+                <Col key={act.rid} span={12}>
+                  <Checkbox
+                    checked={(formValues.actionRids ?? []).includes(act.rid)}
+                    onChange={() => toggleInArray('actionRids', act.rid)}
+                    style={{ alignItems: 'flex-start' }}
+                  >
+                    <Space vertical spacing={0}>
+                      <Space spacing={4}>
+                        <Text strong style={{ fontSize: 13 }}>{act.name}</Text>
+                        <Text type="tertiary" style={{ fontSize: 11 }}>{act.category}</Text>
                       </Space>
-                    </Checkbox>
-                  </Col>
-                ))}
-              </Row>
-            </Checkbox.Group>
-          </Form.Item>
+                      <Text type="tertiary" style={{ fontSize: 11 }}>{act.desc}</Text>
+                    </Space>
+                  </Checkbox>
+                </Col>
+              ))}
+            </Row>
+          </Form.Slot>
         </Card>
 
         {/* RAG 知识库配置 */}
         <Card
-          size="small"
           title={
             <Space>
               <DatabaseOutlined /> RAG 知识库配置
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="tertiary" style={{ fontSize: 12 }}>
                 {realKb.length} 个可用
               </Text>
             </Space>
           }
           style={{ marginBottom: 16 }}
         >
-          <Form.Item name="ragKnowledgeBaseIds" label="知识库范围">
-            <Checkbox.Group style={{ width: '100%' }}>
-              <Row gutter={[16, 8]}>
-                {realKb.map((kb) => (
-                  <Col key={kb.id} span={12}>
-                    <Checkbox value={kb.id}>
-                      <Space size={4}>
-                        <Text style={{ fontSize: 13 }}>{kb.name}</Text>
-                        <Text type="secondary" style={{ fontSize: 11 }}>({kb.documentCount ?? 0} 篇)</Text>
-                      </Space>
-                    </Checkbox>
-                  </Col>
-                ))}
-              </Row>
-            </Checkbox.Group>
-          </Form.Item>
+          <Form.Slot label="知识库范围">
+            <Row gutter={[16, 8]}>
+              {realKb.map((kb) => (
+                <Col key={kb.id} span={12}>
+                  <Checkbox
+                    checked={(formValues.ragKnowledgeBaseIds ?? []).includes(kb.id)}
+                    onChange={() => toggleInArray('ragKnowledgeBaseIds', kb.id)}
+                  >
+                    <Space spacing={4}>
+                      <Text style={{ fontSize: 13 }}>{kb.name}</Text>
+                      <Text type="tertiary" style={{ fontSize: 11 }}>({kb.documentCount ?? 0} 篇)</Text>
+                    </Space>
+                  </Checkbox>
+                </Col>
+              ))}
+            </Row>
+          </Form.Slot>
           <Row gutter={24}>
             <Col span={8}>
-              <Form.Item name="retrievalMethod" label="检索策略">
-                <Select>
-                  <Select.Option value="hybrid">混合检索（向量+关键词）</Select.Option>
-                  <Select.Option value="vector">纯向量检索</Select.Option>
-                  <Select.Option value="keyword">纯关键词检索</Select.Option>
-                </Select>
-              </Form.Item>
+              <Form.Select
+                field="retrievalMethod"
+                label="检索策略"
+                optionList={[
+                  { value: 'hybrid', label: '混合检索（向量+关键词）' },
+                  { value: 'vector', label: '纯向量检索' },
+                  { value: 'keyword', label: '纯关键词检索' },
+                ]}
+              />
             </Col>
             <Col span={8}>
-              <Form.Item name="topK" label="Top-K">
-                <InputNumber min={1} max={20} style={{ width: '100%' }} />
-              </Form.Item>
+              <Form.InputNumber field="topK" label="Top-K" min={1} max={20} style={{ width: '100%' }} />
             </Col>
             <Col span={8}>
-              <Form.Item name="rerank" label="重排序" valuePropName="checked">
-                <Switch />
-              </Form.Item>
+              <Form.Switch field="rerank" label="重排序" />
             </Col>
           </Row>
         </Card>

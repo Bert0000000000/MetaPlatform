@@ -1,4 +1,5 @@
-import { Card, Rate, Space, Tag, Typography } from 'antd';
+import { Card, Rating, Space, Tag, Typography } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import type { ExternalAgent } from '@/api/dw/a2a';
 
 interface ExternalAgentCardProps {
@@ -7,16 +8,16 @@ interface ExternalAgentCardProps {
   onViewDetail: (a: ExternalAgent) => void;
 }
 
-const STATUS_COLOR: Record<ExternalAgent['status'], string> = {
+const STATUS_COLOR: Record<ExternalAgent['status'], TagColor> = {
   online: 'green',
-  offline: 'default',
+  offline: 'grey',
   error: 'red',
 };
 
 export default function ExternalAgentCard({ agent, onDelegate, onViewDetail }: ExternalAgentCardProps) {
   return (
     <Card
-      hoverable
+      shadows="hover"
       title={
         <Space>
           <Typography.Text strong>{agent.name}</Typography.Text>
@@ -37,7 +38,7 @@ export default function ExternalAgentCard({ agent, onDelegate, onViewDetail }: E
         ))}
       </Space>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Rate disabled defaultValue={agent.rating} allowHalf style={{ fontSize: 14 }} />
+        <Rating disabled defaultValue={agent.rating} allowHalf style={{ fontSize: 14 }} />
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {agent.totalDelegations} 委托
         </Typography.Text>

@@ -1,9 +1,7 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
-  Col,
-  Row,
   Button,
   Modal,
   Form,
@@ -12,7 +10,7 @@ import {
   Space,
   Typography,
   Tooltip,
-} from 'antd';
+} from '@douyinfe/semi-ui';
 import {
   AppstoreOutlined,
   RobotOutlined,
@@ -52,6 +50,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ShortcutItem } from '@/api/dashboard/types';
+
+const { Text } = Typography;
 
 const STORAGE_KEY = 'mate_dashboard_shortcuts';
 
@@ -121,18 +121,22 @@ function SortableShortcutCard({ item, isEditing, onEdit, onDelete, onClick }: So
   const iconNode = AVAILABLE_ICONS[item.icon] ?? <AppstoreOutlined />;
 
   return (
-    <Col span={8} ref={setNodeRef} style={style} {...attributes}>
+    <div
+      ref={setNodeRef}
+      style={{ ...style, cursor: isEditing ? 'default' : 'pointer' }}
+      {...attributes}
+      onClick={() => {
+        if (!isEditing) {
+          onClick(item);
+        }
+      }}
+    >
       <Card
-        hoverable={!isEditing}
-        onClick={() => {
-          if (!isEditing) {
-            onClick(item);
-          }
-        }}
+        {...(isEditing ? {} : { shadows: 'hover' as const })}
         style={{ height: '100%', position: 'relative' }}
         bodyStyle={{ padding: 16 }}
       >
-        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+        <Space vertical spacing="medium" style={{ width: '100%' }}>
           <Space style={{ justifyContent: 'space-between', width: '100%' }}>
             <div
               style={{
@@ -151,35 +155,35 @@ function SortableShortcutCard({ item, isEditing, onEdit, onDelete, onClick }: So
             </div>
             {isEditing && (
               <Space>
-                <Tooltip title="拖拽排序">
+                <Tooltip content="拖拽排序">
                   <Button
-                    type="text"
+                    theme="borderless"
                     icon={<HolderOutlined style={{ cursor: 'grab' }} />}
                     {...listeners}
                   />
                 </Tooltip>
-                <Tooltip title="编辑">
-                  <Button type="text" icon={<EditOutlined />} onClick={() => onEdit(item)} />
+                <Tooltip content="编辑">
+                  <Button theme="borderless" icon={<EditOutlined />} onClick={() => onEdit(item)} />
                 </Tooltip>
-                <Tooltip title="删除">
-                  <Button type="text" danger icon={<DeleteOutlined />} onClick={() => onDelete(item.id)} />
+                <Tooltip content="删除">
+                  <Button theme="borderless" type="danger" icon={<DeleteOutlined />} onClick={() => onDelete(item.id)} />
                 </Tooltip>
               </Space>
             )}
           </Space>
           <div>
-            <Typography.Text strong style={{ fontSize: 16 }}>
+            <Text strong style={{ fontSize: 16 }}>
               {item.title}
-            </Typography.Text>
+            </Text>
           </div>
           {!isEditing && (
-            <Typography.Link>
+            <Text link>
               进入 <ArrowRightOutlined />
-            </Typography.Link>
+            </Text>
           )}
         </Space>
       </Card>
-    </Col>
+    </div>
   );
 }
 
@@ -250,14 +254,14 @@ export default function ShortcutPanel() {
 
   const handleAdd = () => {
     setEditingItem(null);
-    form.resetFields();
-    form.setFieldsValue({ color: PRESET_COLORS[0], icon: 'AppstoreOutlined' });
+    form.reset();
+    form.setValues({ color: PRESET_COLORS[0], icon: 'AppstoreOutlined' });
     setIsModalOpen(true);
   };
 
   const handleEdit = (item: ShortcutItem) => {
     setEditingItem(item);
-    form.setFieldsValue(item);
+    form.setValues(item);
     setIsModalOpen(true);
   };
 
@@ -266,14 +270,15 @@ export default function ShortcutPanel() {
   };
 
   const handleModalOk = () => {
-    form.validateFields().then((values: Omit<ShortcutItem, 'id'>) => {
+    form.validate().then((values) => {
+      const v = values as unknown as Omit<ShortcutItem, 'id'>;
       if (editingItem) {
         setItems((prev) =>
-          prev.map((i) => (i.id === editingItem.id ? { ...i, ...values } : i))
+          prev.map((i) => (i.id === editingItem.id ? { ...i, ...v } : i))
         );
       } else {
         const newItem: ShortcutItem = {
-          ...values,
+          ...v,
           id: `${Date.now()}`,
         };
         setItems((prev) => [...prev, newItem]);
@@ -289,7 +294,7 @@ export default function ShortcutPanel() {
   return (
     <Card
       title="快捷入口"
-      extra={
+      headerExtraContent={
         <Space>
           {isEditing && (
             <Button icon={<PlusOutlined />} onClick={handleAdd}>
@@ -301,7 +306,8 @@ export default function ShortcutPanel() {
           )}
           <Button
             icon={isEditing ? <CheckOutlined /> : <EditOutlined />}
-            type={isEditing ? 'primary' : 'default'}
+            theme={isEditing ? 'solid' : undefined}
+            type={isEditing ? 'primary' : undefined}
             onClick={() => setIsEditing((prev) => !prev)}
           >
             {isEditing ? '完成' : '编辑'}
@@ -316,7 +322,7 @@ export default function ShortcutPanel() {
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={itemIds}>
-          <Row gutter={[16, 16]}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {items.map((item) => (
               <SortableShortcutCard
                 key={item.id}
@@ -327,87 +333,84 @@ export default function ShortcutPanel() {
                 onClick={handleClick}
               />
             ))}
-          </Row>
+          </div>
         </SortableContext>
       </DndContext>
 
       <Modal
         title={editingItem ? '编辑快捷入口' : '添加快捷入口'}
-        open={isModalOpen}
+        visible={isModalOpen}
         onOk={handleModalOk}
         onCancel={() => setIsModalOpen(false)}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical" autoComplete="off">
-          <Form.Item
-            name="title"
+        <Form form={form}>
+          <Form.Input
+            field="title"
             label="标题"
             rules={[{ required: true, message: '请输入标题' }]}
-          >
-            <Input placeholder="例如：应用中心" />
-          </Form.Item>
-          <Form.Item
-            name="link"
+            placeholder="例如：应用中心"
+          />
+          <Form.Input
+            field="link"
             label="链接地址"
             rules={[
               { required: true, message: '请输入链接地址' },
               {
-                validator: (_, value: string) => {
-                  if (
+                validator: (_rule: unknown, value: unknown, callback: (error?: string | string[]) => void) => {
+                  const ok =
                     typeof value === 'string' &&
                     (value.startsWith('/') ||
                       value.startsWith('http://') ||
-                      value.startsWith('https://'))
-                  ) {
-                    return Promise.resolve();
+                      value.startsWith('https://'));
+                  if (ok) {
+                    callback();
+                    return true;
                   }
-                  return Promise.reject(new Error('链接需以 / 或 http(s):// 开头'));
+                  callback('链接需以 / 或 http(s):// 开头');
+                  return new Error('链接需以 / 或 http(s):// 开头');
                 },
               },
             ]}
-          >
-            <Input placeholder="/notifications 或 http://example.com" />
-          </Form.Item>
-          <Form.Item
-            name="icon"
+            placeholder="/notifications 或 http://example.com"
+          />
+          <Form.Select
+            field="icon"
             label="图标"
             rules={[{ required: true, message: '请选择图标' }]}
-          >
-            <Select placeholder="选择图标">
-              {Object.keys(AVAILABLE_ICONS).map((name) => (
-                <Select.Option key={name} value={name}>
-                  <Space>
-                    {AVAILABLE_ICONS[name]}
-                    <span>{name}</span>
-                  </Space>
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="color"
+            placeholder="选择图标"
+            optionList={Object.keys(AVAILABLE_ICONS).map((name) => ({
+              value: name,
+              label: (
+                <Space>
+                  {AVAILABLE_ICONS[name]}
+                  <span>{name}</span>
+                </Space>
+              ),
+            }))}
+          />
+          <Form.Select
+            field="color"
             label="颜色标识"
             rules={[{ required: true, message: '请选择颜色' }]}
-          >
-            <Select placeholder="选择颜色">
-              {PRESET_COLORS.map((color) => (
-                <Select.Option key={color} value={color}>
-                  <Space>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: 16,
-                        height: 16,
-                        borderRadius: 4,
-                        background: color,
-                      }}
-                    />
-                    <span>{color}</span>
-                  </Space>
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+            placeholder="选择颜色"
+            optionList={PRESET_COLORS.map((color) => ({
+              value: color,
+              label: (
+                <Space>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 16,
+                      height: 16,
+                      borderRadius: 4,
+                      background: color,
+                    }}
+                  />
+                  <span>{color}</span>
+                </Space>
+              ),
+            }))}
+          />
         </Form>
       </Modal>
     </Card>

@@ -1,18 +1,20 @@
-﻿import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Button,
   Input,
+  TextArea,
   Card,
   Tag,
   Space,
   Typography,
   Tabs,
+  TabPane,
   Table,
   Empty,
-  Input as AntInput,
   Select,
-  message,
-} from 'antd';
+  InputGroup,
+  Toast,
+} from '@douyinfe/semi-ui';
 import {
   ApartmentOutlined,
   SearchOutlined,
@@ -27,9 +29,6 @@ import {
   searchConcepts,
 } from '@/api/superai/ontology';
 import type { OntologyConcept, GraphData } from '@/api/superai/types';
-
-const { TextArea } = Input;
-const { Search } = AntInput;
 
 interface ExplorePanelProps {
   query: string;
@@ -51,7 +50,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
   /** 语义查询：同时拉取图谱与概念列表。 */
   const handleSemanticQuery = useCallback(async () => {
     if (!query.trim()) {
-      message.warning('请输入查询内容');
+      Toast.warning('请输入查询内容');
       return;
     }
     setLoading(true);
@@ -105,7 +104,7 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
     async (nodeId: string, nodeType: string) => {
       // 仅 concept 节点跳转概念详情；entity 节点提示
       if (nodeType !== 'concept') {
-        message.info(`实体节点：${nodeId}（详情可至数据中心查看）`);
+        Toast.info(`实体节点：${nodeId}（详情可至数据中心查看）`);
         return;
       }
       try {
@@ -122,19 +121,19 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
   const renderConceptDetail = () => {
     if (!selectedConcept) return <Empty description="请选择一个概念查看详情" />;
     return (
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
-        <Typography.Title level={5}>{selectedConcept.name}</Typography.Title>
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
+        <Typography.Title heading={5}>{selectedConcept.name}</Typography.Title>
         <Typography.Paragraph type="secondary">{selectedConcept.definition}</Typography.Paragraph>
 
         {selectedConcept.tags && selectedConcept.tags.length > 0 && (
-          <Space wrap size="small">
+          <Space wrap spacing="tight">
             {selectedConcept.tags.map((t) => (
-              <Tag key={t} color="geekblue">{t}</Tag>
+              <Tag key={t} color="violet">{t}</Tag>
             ))}
           </Space>
         )}
 
-        <Card size="small" title="属性定义">
+        <Card  title="属性定义">
           <Table
             size="small"
             dataSource={selectedConcept.attributes.map((a, i) => ({ ...a, key: i }))}
@@ -150,10 +149,11 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
               { title: '说明', dataIndex: 'description', key: 'description' },
             ]}
             pagination={false}
-           scroll={{ x: 'max-content' }}/>
+            scroll={{ x: 'max-content' }}
+          />
         </Card>
 
-        <Card size="small" title={`实例列表 (${selectedConcept.instances.length})`}>
+        <Card  title={`实例列表 (${selectedConcept.instances.length})`}>
           <Table
             size="small"
             dataSource={selectedConcept.instances.map((inst) => ({ ...inst, key: inst.id }))}
@@ -167,11 +167,12 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
               })),
             ]}
             pagination={{ pageSize: 5 }}
-           scroll={{ x: 'max-content' }}/>
+            scroll={{ x: 'max-content' }}
+          />
         </Card>
 
         {selectedConcept.relatedConcepts.length > 0 && (
-          <Card size="small" title="关联概念">
+          <Card  title="关联概念">
             <Space wrap>
               {selectedConcept.relatedConcepts.map((c) => (
                 <Tag
@@ -191,15 +192,15 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
   };
 
   return (
-    <Card size="small" style={{ marginBottom: 8 }}>
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
+    <Card  style={{ marginBottom: 8 }}>
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
         <TextArea
           value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
+          onChange={(v) => onQueryChange(v)}
           placeholder="探索企业数据关系，如：客户A有哪些关联的合同和订单"
           rows={2}
         />
-        <Button type="primary" icon={<SearchOutlined />} loading={loading} onClick={handleSemanticQuery}>
+        <Button theme="solid" type="primary" icon={<SearchOutlined />} loading={loading} onClick={handleSemanticQuery}>
           语义查询
         </Button>
 
@@ -207,117 +208,125 @@ export default function ExplorePanel({ query, onQueryChange, onResult }: Explore
           activeKey={activeTab}
           onChange={setActiveTab}
           size="small"
-          items={[
+          tabList={[
             {
-              key: 'graph',
-              label: (
-                <Space size={4}>
+              itemKey: 'graph',
+              tab: (
+                <Space spacing={4}>
                   <ApartmentOutlined />
                   图谱
                 </Space>
               ),
-              children: graphData ? (
-                <KnowledgeGraph data={graphData} height={350} onNodeClick={handleGraphNodeClick} />
-              ) : (
-                <Empty description="输入查询后展示知识图谱" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-              ),
             },
             {
-              key: 'concepts',
-              label: (
-                <Space size={4}>
+              itemKey: 'concepts',
+              tab: (
+                <Space spacing={4}>
                   <NodeIndexOutlined />
                   概念搜索
                 </Space>
               ),
-              children: (
-                <Space orientation="vertical" style={{ width: '100%' }} size="small">
-                  <Space.Compact style={{ width: '100%' }}>
-                    <Select
-                      value={searchField}
-                      onChange={(v) => setSearchField(v)}
-                      style={{ width: 120 }}
-                      options={[
-                        { label: '关键字', value: 'keyword' },
-                        { label: '属性', value: 'attribute' },
-                        { label: '标签', value: 'tag' },
-                      ]}
-                      suffixIcon={<FilterOutlined />}
-                    />
-                    <Search
-                      placeholder={
-                        searchField === 'keyword'
-                          ? '搜索概念名称/定义/编码'
-                          : searchField === 'attribute'
-                            ? '按属性名/编码搜索概念'
-                            : '按标签过滤概念'
-                      }
-                      enterButton="搜索"
-                      value={conceptSearchKeyword}
-                      onChange={(e) => setConceptSearchKeyword(e.target.value)}
-                      onSearch={handleConceptSearch}
-                      loading={loading}
-                      style={{ flex: 1 }}
-                    />
-                  </Space.Compact>
-                  {concepts.length === 0 ? (
-                    <Empty description="暂无搜索结果" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                  ) : (
-                    concepts.map((concept) => (
-                      <Card
-                        key={concept.id}
-                        size="small"
-                        hoverable
-                        onClick={() => handleConceptClick(concept.id)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <Space orientation="vertical" size="small" style={{ width: '100%' }}>
-                          <Space>
-                            <Typography.Text strong>{concept.name}</Typography.Text>
-                            <Tag>{concept.attributes.length} 属性</Tag>
-                            <Tag>{concept.instances.length} 实例</Tag>
-                            {concept.tags && concept.tags.length > 0 && (
-                              <Tag color="geekblue">{concept.tags.length} 标签</Tag>
-                            )}
-                          </Space>
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            {concept.definition}
-                          </Typography.Text>
-                          {concept.relatedConcepts.length > 0 && (
-                            <Space wrap size="small">
-                              {concept.relatedConcepts.slice(0, 5).map((r) => (
-                                <Tag key={r} color="blue">
-                                  {r}
-                                </Tag>
-                              ))}
-                              {concept.relatedConcepts.length > 5 && (
-                                <Tag>+{concept.relatedConcepts.length - 5}</Tag>
-                              )}
-                            </Space>
-                          )}
-                          {concept.tags && concept.tags.length > 0 && (
-                            <Space wrap size="small">
-                              {concept.tags.map((t) => (
-                                <Tag key={t} color="geekblue">
-                                  {t}
-                                </Tag>
-                              ))}
-                            </Space>
+            },
+            { itemKey: 'detail', tab: '概念详情' },
+          ]}
+        >
+          <TabPane itemKey="graph">
+            {graphData ? (
+              <KnowledgeGraph data={graphData} height={350} onNodeClick={handleGraphNodeClick} />
+            ) : (
+              <Empty description="输入查询后展示知识图谱" />
+            )}
+          </TabPane>
+          <TabPane itemKey="concepts">
+            <Space vertical spacing="tight" style={{ width: '100%' }}>
+              <InputGroup style={{ width: '100%' }}>
+                <Select
+                  value={searchField}
+                  onChange={(v) => setSearchField(v as SearchField)}
+                  style={{ width: 120 }}
+                  optionList={[
+                    { label: '关键字', value: 'keyword' },
+                    { label: '属性', value: 'attribute' },
+                    { label: '标签', value: 'tag' },
+                  ]}
+                  suffixIcon={<FilterOutlined />}
+                />
+                <Input
+                  placeholder={
+                    searchField === 'keyword'
+                      ? '搜索概念名称/定义/编码'
+                      : searchField === 'attribute'
+                        ? '按属性名/编码搜索概念'
+                        : '按标签过滤概念'
+                  }
+                  value={conceptSearchKeyword}
+                  onChange={(v) => setConceptSearchKeyword(v)}
+                  onEnterPress={() => handleConceptSearch(conceptSearchKeyword)}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  theme="solid"
+                  type="primary"
+                  icon={<SearchOutlined />}
+                  loading={loading}
+                  onClick={() => handleConceptSearch(conceptSearchKeyword)}
+                >
+                  搜索
+                </Button>
+              </InputGroup>
+              {concepts.length === 0 ? (
+                <Empty description="暂无搜索结果" />
+              ) : (
+                concepts.map((concept) => (
+                  <Card
+                    key={concept.id}
+                    size="small"
+                    onClick={() => handleConceptClick(concept.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <Space vertical spacing="tight" style={{ width: '100%' }}>
+                      <Space>
+                        <Typography.Text strong>{concept.name}</Typography.Text>
+                        <Tag>{concept.attributes.length} 属性</Tag>
+                        <Tag>{concept.instances.length} 实例</Tag>
+                        {concept.tags && concept.tags.length > 0 && (
+                          <Tag color="violet">{concept.tags.length} 标签</Tag>
+                        )}
+                      </Space>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {concept.definition}
+                      </Typography.Text>
+                      {concept.relatedConcepts.length > 0 && (
+                        <Space wrap spacing="tight">
+                          {concept.relatedConcepts.slice(0, 5).map((r) => (
+                            <Tag key={r} color="blue">
+                              {r}
+                            </Tag>
+                          ))}
+                          {concept.relatedConcepts.length > 5 && (
+                            <Tag>+{concept.relatedConcepts.length - 5}</Tag>
                           )}
                         </Space>
-                      </Card>
-                    ))
-                  )}
-                </Space>
-              ),
-            },
-            {
-              key: 'detail',
-              label: '概念详情',
-              children: renderConceptDetail(),
-            },
-          ]}
-        />
+                      )}
+                      {concept.tags && concept.tags.length > 0 && (
+                        <Space wrap spacing="tight">
+                          {concept.tags.map((t) => (
+                            <Tag key={t} color="violet">
+                              {t}
+                            </Tag>
+                          ))}
+                        </Space>
+                      )}
+                    </Space>
+                  </Card>
+                ))
+              )}
+            </Space>
+          </TabPane>
+          <TabPane itemKey="detail">
+            {renderConceptDetail()}
+          </TabPane>
+        </Tabs>
       </Space>
     </Card>
   );

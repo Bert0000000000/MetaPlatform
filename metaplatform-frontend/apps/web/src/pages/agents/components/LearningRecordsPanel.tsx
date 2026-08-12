@@ -7,10 +7,11 @@ import {
   Button,
   Empty,
   Spin,
-  Rate,
+  Rating,
   Timeline,
   Badge,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   LikeOutlined,
   DislikeOutlined,
@@ -42,7 +43,7 @@ const FEEDBACK_ICON: Record<FeedbackType, React.ReactNode> = {
   suggestion: <EditOutlined />,
 };
 
-const FEEDBACK_COLOR: Record<FeedbackType, string> = {
+const FEEDBACK_COLOR: Record<FeedbackType, TagColor> = {
   thumb_up: 'green',
   thumb_down: 'red',
   suggestion: 'blue',
@@ -123,9 +124,9 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <Card size="small" title="学习统计" style={{ minWidth: 240 }}>
+        <Card title="学习统计" style={{ minWidth: 240 }}>
           {stats ? (
-            <Space orientation="vertical" size={4}>
+            <Space vertical spacing={4}>
               <Typography.Text>反馈总数：{stats.totalFeedback}</Typography.Text>
               <Typography.Text>
                 <LikeOutlined /> {stats.thumbUp} &nbsp;
@@ -144,12 +145,12 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
               </Space>
             </Space>
           ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty />
           )}
         </Card>
 
-        <Card size="small" title="操作" style={{ minWidth: 200 }}>
-          <Space orientation="vertical" style={{ width: '100%' }}>
+        <Card title="操作" style={{ minWidth: 200 }}>
+          <Space vertical style={{ width: '100%' }}>
             <Button
               icon={<SyncOutlined spin={extracting} />}
               loading={extracting}
@@ -159,6 +160,7 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
               提炼知识
             </Button>
             <Button
+              theme="solid"
               type="primary"
               icon={<SyncOutlined spin={syncing} />}
               loading={syncing}
@@ -171,24 +173,26 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
         </Card>
       </Space>
 
-      <Typography.Title level={5}>学习记录</Typography.Title>
+      <Typography.Title heading={5}>学习记录</Typography.Title>
       {records.length === 0 ? (
-        <Empty description="暂无学习记录" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description="暂无学习记录" />
       ) : (
-        <Timeline
-          items={records.map((record) => ({
-            color: FEEDBACK_COLOR[record.feedbackType],
-            icon: FEEDBACK_ICON[record.feedbackType],
-            content: (
-              <Card size="small" style={{ marginBottom: 8 }}>
-                <Space orientation="vertical" size={4} style={{ width: '100%' }}>
+        <Timeline>
+          {records.map((record) => (
+            <Timeline.Item
+              key={record.feedbackId}
+              color={FEEDBACK_COLOR[record.feedbackType]}
+              dot={FEEDBACK_ICON[record.feedbackType]}
+            >
+              <Card style={{ marginBottom: 8 }}>
+                <Space vertical spacing={4} style={{ width: '100%' }}>
                   <Space>
                     <Badge
-                      status={
+                      type={
                         record.executionResult === 'success'
                           ? 'success'
                           : record.executionResult === 'failed'
-                            ? 'error'
+                            ? 'danger'
                             : 'warning'
                       }
                     />
@@ -214,29 +218,28 @@ export default function LearningRecordsPanel({ employee }: LearningRecordsPanelP
                   </Typography.Text>
                 </Space>
               </Card>
-            ),
-          }))}
-        />
+            </Timeline.Item>
+          ))}
+        </Timeline>
       )}
 
-      <Typography.Title level={5} style={{ marginTop: 16 }}>
+      <Typography.Title heading={5} style={{ marginTop: 16 }}>
         知识片段
       </Typography.Title>
       {knowledge.length === 0 ? (
-        <Empty description="暂无知识片段" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description="暂无知识片段" />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {knowledge.map((item) => (
             <Card
               key={item.knowledgeId}
-              size="small"
               title={item.title}
-              extra={
+              headerExtraContent={
                 <Space>
-                  <Tag color={item.syncedToKb ? 'green' : 'default'}>
+                  <Tag color={item.syncedToKb ? 'green' : 'grey'}>
                     {item.syncedToKb ? '已同步' : '未同步'}
                   </Tag>
-                  <Rate disabled defaultValue={Math.round(item.confidence * 5)} count={5} />
+                  <Rating disabled defaultValue={Math.round(item.confidence * 5)} count={5} />
                 </Space>
               }
             >

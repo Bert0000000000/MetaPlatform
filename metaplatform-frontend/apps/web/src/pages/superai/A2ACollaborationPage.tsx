@@ -9,11 +9,11 @@ import {
   Table,
   Tag,
   Typography,
-  message,
+  Toast,
   Modal,
   Descriptions,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { SendOutlined } from '@ant-design/icons';
 import { delegateA2A, listExternalAgents } from '@/api/superai/a2a';
 import type { ExternalAgent } from '@/api/superai/a2a';
@@ -35,25 +35,25 @@ export default function A2ACollaborationPage() {
 
   const handleDelegate = async () => {
     if (!selectedAgent) return;
-    const v = await form.validateFields();
+    const v = await form.validate();
     setLoading(true);
     try {
       const res = await delegateA2A(selectedAgent.agentId, v.task);
       if (res.success) {
-        message.success('已完成');
+        Toast.success('已完成');
         Modal.info({
           title: '外部 Agent 返回',
           content: res.output,
         });
       }
       setDelegateOpen(false);
-      form.resetFields();
+      form.reset();
     } finally {
       setLoading(false);
     }
   };
 
-  const columns: ColumnsType<ExternalAgent> = [
+  const columns: ColumnProps<ExternalAgent>[] = [
     { title: '名称', dataIndex: 'name' },
     {
       title: '能力',
@@ -75,7 +75,7 @@ export default function A2ACollaborationPage() {
       key: 'actions',
       render: (_, a) => (
         <Button
-          type="link"
+          theme="borderless"
           icon={<SendOutlined />}
           onClick={() => {
             setSelectedAgent(a);
@@ -91,7 +91,7 @@ export default function A2ACollaborationPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           A2A 外部协作
         </Typography.Title>
       </div>
@@ -105,35 +105,41 @@ export default function A2ACollaborationPage() {
             dataSource={agents}
             columns={columns}
             loading={loading}
-            expandable={{
-              expandedRowRender: (a) => (
-                <Descriptions column={2} bordered size="small">
-                  <Descriptions.Item label="名称" span={2}>{a.name}</Descriptions.Item>
-                  <Descriptions.Item label="能力" span={2}>
-                    {a.capabilities.map((c) => <Tag key={c}>{c}</Tag>)}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="端点" span={2}>
-                    <code>{a.endpoint}</code>
-                  </Descriptions.Item>
-                </Descriptions>
-              ),
-            }}
-           scroll={{ x: 'max-content' }}/>
+            expandedRowRender={(a) => (
+              <Descriptions
+                column={2}
+                size="small"
+                data={[
+                  { key: '名称', value: a.name, span: 2 },
+                  {
+                    key: '能力',
+                    value: <>{a.capabilities.map((c) => <Tag key={c}>{c}</Tag>)}</>,
+                    span: 2,
+                  },
+                  { key: '端点', value: <code>{a.endpoint}</code>, span: 2 },
+                ]}
+              />
+            )}
+            scroll={{ x: 'max-content' }}
+          />
         )}
       </Card>
 
       <Modal
         title={`委托任务给 ${selectedAgent?.name ?? ''}`}
-        open={delegateOpen}
+        visible={delegateOpen}
         onCancel={() => setDelegateOpen(false)}
         onOk={handleDelegate}
         confirmLoading={loading}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="task" label="任务" rules={[{ required: true }]}>
-            <Input.TextArea rows={3} placeholder="详细任务描述..." />
-          </Form.Item>
+        <Form form={form}>
+          <Form.TextArea
+            field="task"
+            label="任务"
+            rules={[{ required: true }]}
+            rows={3}
+            placeholder="详细任务描述..."
+          />
         </Form>
       </Modal>
     </div>

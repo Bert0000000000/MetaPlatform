@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Space, Tag, Divider, Form, Switch, Input, App } from "antd";
+import { Space, Tag, Divider, Form, Toast } from "@douyinfe/semi-ui";
 import {
   AdminLayout,
   StatCard,
@@ -40,7 +40,6 @@ const MARKDOWN_SAMPLE = `# 组件展示
 
 export default function ComponentDemoPage() {
   const navigate = useNavigate();
-  const { message } = App.useApp();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [publishing, setPublishing] = useState(false);
@@ -59,14 +58,14 @@ export default function ComponentDemoPage() {
       const hit = existing.items?.find((s) => s.name === 'platform-ui-components');
       if (hit) {
         await updateSkill(hit.id, body);
-        message.success('组件 Skill 已更新');
+        Toast.success('组件 Skill 已更新');
       } else {
         await uploadSkill(body);
-        message.success('组件 Skill 已发布');
+        Toast.success('组件 Skill 已发布');
       }
       navigate('/mcp/skill-hub');
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '发布失败');
+      Toast.error(err instanceof Error ? err.message : '发布失败');
     } finally {
       setPublishing(false);
     }
@@ -90,7 +89,7 @@ export default function ComponentDemoPage() {
 
       {/* 按钮 */}
       <SectionCard title="PlatformButton · 平台按钮">
-        <Space wrap size={8}>
+        <Space wrap spacing={8}>
           <PlatformButton variant="primary">主按钮</PlatformButton>
           <PlatformButton variant="default">次按钮</PlatformButton>
           <PlatformButton variant="danger">危险按钮</PlatformButton>
@@ -110,10 +109,10 @@ export default function ComponentDemoPage() {
       {/* 分页 */}
       <SectionCard title="PlatformPagination · 平台分页">
         <PlatformPagination
-          current={page}
+          currentPage={page}
           total={120}
           pageSize={10}
-          onChange={(p) => setPage(p)}
+          onPageChange={(p) => setPage(p)}
         />
       </SectionCard>
 
@@ -126,7 +125,7 @@ export default function ComponentDemoPage() {
 
       {/* MarkdownRenderer 深色 */}
       <SectionCard title="MarkdownRenderer · 深色（SuperAI 聊天）">
-        <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, background: "#0a0a0a" }}>
+        <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, background: "var(--background)" }}>
           <MarkdownRenderer content={MARKDOWN_SAMPLE} variant="dark" />
         </div>
       </SectionCard>
@@ -156,13 +155,9 @@ export default function ComponentDemoPage() {
         onCancel={() => setDrawerOpen(false)}
         onOk={() => setDrawerOpen(false)}
       >
-        <Form layout="vertical" size="small">
-          <Form.Item label="示例字段">
-            <Input placeholder="点击右上角切换 1/3·2/3·全屏" />
-          </Form.Item>
-          <Form.Item label="开关" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+        <Form>
+          <Form.Input field="sample" label="示例字段" placeholder="点击右上角切换 1/3·2/3·全屏" />
+          <Form.Switch field="switch" label="开关" />
         </Form>
       </FormDrawer>
 
@@ -192,5 +187,5 @@ function PlatformMenu2Preview() {
 }
 
 function PlatformMenu2Demo({ items }: { items: any[] }) {
-  return <PlatformMenu2 items={items} mode="inline" />;
+  return <PlatformMenu2 items={items} />;
 }

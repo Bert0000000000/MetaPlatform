@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -10,7 +10,8 @@ import {
   Tag,
   Timeline,
   Typography,
-} from 'antd';
+} from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -200,15 +201,22 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
     }
   });
 
-  const colorMap: Record<ReplayStepType, string> = {
+  const colorMap: Record<ReplayStepType, TagColor> = {
     llm: 'green',
     tool: 'purple',
     system: 'blue',
   };
 
+  // Timeline 圆点颜色（Semi Timeline.Item color 直接作为 CSS backgroundColor）
+  const dotColorMap: Record<ReplayStepType, string> = {
+    llm: 'var(--semi-color-success)',
+    tool: 'var(--semi-color-data-3)',
+    system: 'var(--semi-color-primary)',
+  };
+
   return (
     <Card title={`执行回放 - ${trace.traceId}`}>
-      <Space orientation="vertical" style={{ width: '100%' }}>
+      <Space vertical style={{ width: '100%' }}>
         <Space style={{ width: '100%', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <Space>
             <Button
@@ -217,6 +225,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
               onClick={() => setCurrent(Math.max(0, current - 1))}
             />
             <Button
+              theme="solid"
               type="primary"
               icon={playing ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
               onClick={() => setPlaying((p) => !p)}
@@ -230,12 +239,12 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
             />
             <Select
               value={speed}
-              options={SPEED_OPTIONS}
-              onChange={setSpeed}
+              optionList={SPEED_OPTIONS}
+              onChange={(v) => setSpeed(v as number)}
               style={{ width: 80 }}
             />
           </Space>
-          <Typography.Text type="secondary">
+          <Typography.Text type="tertiary">
             步骤 {current + 1} / {steps.length} · 总耗时 {formatDuration(trace.durationUs)}
           </Typography.Text>
         </Space>
@@ -250,21 +259,23 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
             setPlaying(false);
           }}
           marks={marks}
-          tooltip={{ formatter: (v) => `步骤 ${(v as number) + 1}` }}
+          tipFormatter={(v) => `步骤 ${Number(v) + 1}`}
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Card type="inner" size="small" title="时间轴">
-            <Timeline
-              items={steps.map((s) => ({
-                color: s.index === current ? 'red' : colorMap[s.type],
-                children: (
+          <Card title="时间轴">
+            <Timeline>
+              {steps.map((s) => (
+                <Timeline.Item
+                  key={s.index}
+                  color={s.index === current ? 'var(--semi-color-danger)' : dotColorMap[s.type]}
+                >
                   <div
                     style={{
                       cursor: 'pointer',
                       padding: 4,
                       borderRadius: 4,
-                      background: s.index === current ? '#fff2f0' : 'transparent',
+                      background: s.index === current ? 'var(--semi-color-danger-light-default)' : 'transparent',
                     }}
                     onClick={() => {
                       setCurrent(s.index);
@@ -276,40 +287,40 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
                         {s.type === 'llm' ? 'AI' : s.type === 'tool' ? '工具' : '系统'}
                       </Tag>
                       <Typography.Text strong={s.index === current}>{s.title}</Typography.Text>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                         +{formatRelativeTime(s.timestamp)}
                       </Typography.Text>
                     </Space>
                   </div>
-                ),
-              }))}
-            />
+                </Timeline.Item>
+              ))}
+            </Timeline>
           </Card>
 
-          <Card type="inner" size="small" title={`当前步骤：${step.title}`}>
-            <Space orientation="vertical" style={{ width: '100%' }}>
+          <Card title={`当前步骤：${step.title}`}>
+            <Space vertical style={{ width: '100%' }}>
               <Space>
                 <Tag color={colorMap[step.type]}>
                   {step.type === 'llm' ? 'AI 调用' : step.type === 'tool' ? '工具调用' : '系统调用'}
                 </Tag>
-                <Tag color={step.status === 'ERROR' ? 'error' : 'success'}>{step.status}</Tag>
-                <Typography.Text type="secondary">{step.subtitle}</Typography.Text>
+                <Tag color={step.status === 'ERROR' ? 'red' : 'green'}>{step.status}</Tag>
+                <Typography.Text type="tertiary">{step.subtitle}</Typography.Text>
               </Space>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                 耗时 {formatDuration(step.durationUs)} · 相对开始时间{' '}
                 {formatRelativeTime(step.timestamp)}
               </Typography.Text>
 
               {step.input && (
                 <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                     输入
                   </Typography.Text>
                   <pre
                     style={{
                       margin: '4px 0 0 0',
                       padding: 8,
-                      background: '#f6ffed',
+                      background: 'var(--semi-color-success-light-default)',
                       borderRadius: 4,
                       fontSize: 12,
                       fontFamily: 'monospace',
@@ -324,14 +335,14 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
 
               {step.output && (
                 <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
                     输出
                   </Typography.Text>
                   <pre
                     style={{
                       margin: '4px 0 0 0',
                       padding: 8,
-                      background: '#f0f5ff',
+                      background: 'var(--semi-color-primary-light-default)',
                       borderRadius: 4,
                       fontSize: 12,
                       fontFamily: 'monospace',
@@ -345,7 +356,7 @@ export default function ReplayPlayer({ traceId }: ReplayPlayerProps) {
               )}
 
               {!step.input && !step.output && (
-                <Typography.Text type="secondary">该步骤暂无输入/输出明细</Typography.Text>
+                <Typography.Text type="tertiary">该步骤暂无输入/输出明细</Typography.Text>
               )}
             </Space>
           </Card>

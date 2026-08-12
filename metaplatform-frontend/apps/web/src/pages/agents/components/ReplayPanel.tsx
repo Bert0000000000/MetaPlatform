@@ -1,4 +1,4 @@
-﻿import { Card, Empty, Space, Tag, Timeline, Typography } from 'antd';
+import { Card, Empty, Space, Tag, Timeline, Typography } from '@douyinfe/semi-ui';
 import type { ReactNode } from 'react';
 import ReplayPlayer from './ReplayPlayer';
 import type { ConversationRecord } from '@/api/dw/evaluations';
@@ -30,21 +30,29 @@ export default function ReplayPanel(props: ReplayPanelProps) {
     const { conversation } = props;
     return (
       <Card title={`对话回放 - ${conversation.conversationId}`}>
-        <Timeline
-          items={conversation.messages.map((m) => ({
-            color: m.role === 'user' ? 'blue' : m.role === 'assistant' ? 'green' : 'purple',
-            children: (
+        <Timeline>
+          {conversation.messages.map((m, idx) => (
+            <Timeline.Item
+              key={idx}
+              color={
+                m.role === 'user'
+                  ? 'var(--semi-color-primary)'
+                  : m.role === 'assistant'
+                    ? 'var(--semi-color-success)'
+                    : 'var(--semi-color-data-3)'
+              }
+            >
               <div>
-                <Space orientation="vertical" size={0} style={{ width: '100%' }}>
+                <Space vertical spacing={0} style={{ width: '100%' }}>
                   <Typography.Text strong>
                     {ICON[m.role] ?? null} {m.role}
-                    <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                    <Typography.Text type="tertiary" style={{ marginLeft: 8, fontSize: 12 }}>
                       {new Date(m.timestamp).toLocaleString()}
                     </Typography.Text>
                   </Typography.Text>
                   <Typography.Paragraph style={{ marginTop: 4 }}>{m.content}</Typography.Paragraph>
                   {m.toolCall && (
-                    <Card type="inner" size="small" style={{ background: '#fafafa' }}>
+                    <Card style={{ background: 'var(--semi-color-fill-0)' }}>
                       <Tag color="purple">tool: {m.toolCall.name}</Tag>
                       <pre style={{ margin: '8px 0 0 0', fontSize: 11, fontFamily: 'monospace' }}>
                         {JSON.stringify(m.toolCall.args, null, 2)}
@@ -58,9 +66,9 @@ export default function ReplayPanel(props: ReplayPanelProps) {
                   )}
                 </Space>
               </div>
-            ),
-          }))}
-        />
+            </Timeline.Item>
+          ))}
+        </Timeline>
       </Card>
     );
   }

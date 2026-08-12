@@ -1,21 +1,24 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
-  Alert,
+  Banner,
   Button,
   Card,
   Empty,
   Skeleton,
   Space,
-  Statistic,
   Table,
   Tag,
+  Toast,
   Typography,
-  message,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import { getCollaborationReport } from '@/api/dw/collaborations';
 import type { CollaborationReport, Contribution } from '@/api/dw/collaborations';
+
+type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
 
 interface CollaborationReportProps {
   collaborationId: string;
@@ -27,6 +30,41 @@ function formatSeconds(s?: number | null): string {
   const m = Math.floor(s / 60);
   const r = s % 60;
   return r > 0 ? `${m}m ${r}s` : `${m}m`;
+}
+
+function Stat({
+  title,
+  value,
+  suffix,
+  valueStyle,
+}: {
+  title: string;
+  value: ReactNode;
+  suffix?: string;
+  valueStyle?: CSSProperties;
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+        {title}
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 600, lineHeight: 1, ...valueStyle }}>
+        {value}
+        {suffix && (
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 400,
+              color: 'var(--muted-foreground)',
+              marginLeft: 4,
+            }}
+          >
+            {suffix}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function CollaborationReport({
@@ -64,13 +102,13 @@ export default function CollaborationReport({
     a.download = `collaboration_${collaborationId}.md`;
     a.click();
     URL.revokeObjectURL(url);
-    message.success('已下载 Markdown 报告');
+    Toast.success('已下载 Markdown 报告');
   };
 
   if (loading) {
     return (
       <Card>
-        <Skeleton active paragraph={{ rows: 6 }} />
+        <Skeleton placeholder={<Skeleton.Paragraph rows={6} />} loading />
       </Card>
     );
   }
@@ -78,12 +116,11 @@ export default function CollaborationReport({
   if (error) {
     return (
       <Card>
-        <Alert
+        <Banner
           type="warning"
-          showIcon
-          message="协作报告暂不可用"
+          title="协作报告暂不可用"
           description={
-            <Space orientation="vertical">
+            <Space vertical>
               <Typography.Text type="secondary">{error}</Typography.Text>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 请先执行协作任务后再查看报告。
@@ -106,7 +143,7 @@ export default function CollaborationReport({
     );
   }
 
-  const contributionColumns: ColumnsType<Contribution> = [
+  const contributionColumns: SemiColumns<Contribution> = [
     {
       title: '员工 ID',
       dataIndex: 'employeeId',
@@ -143,7 +180,7 @@ export default function CollaborationReport({
   return (
     <Card
       title="协作报告"
-      extra={
+      headerExtraContent={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={load}>
             刷新
@@ -158,30 +195,30 @@ export default function CollaborationReport({
         </Space>
       }
     >
-      <Space orientation="vertical" style={{ width: '100%' }} size="large">
-        <Card type="inner" title="基础信息">
-          <Space size="large" wrap>
-            <Statistic title="协作任务" value={report.title} />
-            <Statistic
+      <Space vertical style={{ width: '100%' }} spacing="loose">
+        <Card title="基础信息">
+          <Space spacing="loose" wrap>
+            <Stat title="协作任务" value={report.title} />
+            <Stat
               title="状态"
               value={report.status}
               valueStyle={{ textTransform: 'capitalize' }}
             />
-            <Statistic
+            <Stat
               title="子任务总数"
               value={report.totalSubtasks}
               suffix="个"
             />
-            <Statistic
+            <Stat
               title="已完成"
               value={report.completedSubtasks}
-              valueStyle={{ color: '#3f8600' }}
+              valueStyle={{ color: 'var(--semi-color-success)' }}
             />
             {report.failedSubtasks > 0 && (
-              <Statistic
+              <Stat
                 title="失败"
                 value={report.failedSubtasks}
-                valueStyle={{ color: '#cf1322' }}
+                valueStyle={{ color: 'var(--semi-color-danger)' }}
               />
             )}
           </Space>
@@ -191,54 +228,51 @@ export default function CollaborationReport({
           </Typography.Paragraph>
         </Card>
 
-        <Card type="inner" title="效率提升分析">
-          <Space size="large" wrap>
-            <Statistic
+        <Card title="效率提升分析">
+          <Space spacing="loose" wrap>
+            <Stat
               title="实际总耗时（并行执行）"
               value={formatSeconds(report.parallelDurationSeconds)}
             />
-            <Statistic
+            <Stat
               title="顺序执行预估耗时"
               value={formatSeconds(report.sequentialDurationSeconds)}
             />
-            <Statistic
+            <Stat
               title="效率提升"
               value={report.efficiencyImprovementPct}
               suffix="%"
               valueStyle={{
-                color: efficiencyPositive ? '#3f8600' : '#cf1322',
+                color: efficiencyPositive ? 'var(--semi-color-success)' : 'var(--semi-color-danger)',
               }}
             />
           </Space>
           {report.efficiencyImprovementPct >= 30 ? (
-            <Alert
+            <Banner
               style={{ marginTop: 12 }}
               type="success"
-              showIcon
-              message={`协作效率提升 ${report.efficiencyImprovementPct.toFixed(
+              title={`协作效率提升 ${report.efficiencyImprovementPct.toFixed(
                 1,
               )}%，达到 V15-04 验收标准（≥30%）`}
             />
           ) : report.efficiencyImprovementPct > 0 ? (
-            <Alert
+            <Banner
               style={{ marginTop: 12 }}
               type="warning"
-              showIcon
-              message={`协作效率提升 ${report.efficiencyImprovementPct.toFixed(
+              title={`协作效率提升 ${report.efficiencyImprovementPct.toFixed(
                 1,
               )}%，未达 V15-04 验收标准（≥30%）`}
             />
           ) : (
-            <Alert
+            <Banner
               style={{ marginTop: 12 }}
               type="info"
-              showIcon
-              message="本次任务为顺序执行，无并行效率提升"
+              title="本次任务为顺序执行，无并行效率提升"
             />
           )}
         </Card>
 
-        <Card type="inner" title="各员工贡献">
+        <Card title="各员工贡献">
           <Table
             rowKey="employeeId"
             dataSource={report.contributions ?? []}
@@ -248,10 +282,10 @@ export default function CollaborationReport({
         </Card>
 
         {report.finalReport && (
-          <Card type="inner" title="完整报告（Markdown）">
+          <Card title="完整报告（Markdown）">
             <pre
               style={{
-                background: '#fafafa',
+                background: 'var(--muted)',
                 padding: 12,
                 borderRadius: 4,
                 fontFamily: 'Menlo, Consolas, monospace',

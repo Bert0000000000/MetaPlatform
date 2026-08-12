@@ -1,20 +1,22 @@
 import { useState } from 'react';
-import { Card, Empty, Form, Input, Button, Space, Tag, Typography, Steps, Row, Col, message } from 'antd';
+import { Card, Empty, Form, Input, Button, Space, Tag, Typography, Steps, Toast } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { generatePlan } from '@/api/superai/schedule';
 import type { ExecutionPlan } from '@/api/superai/schedule';
 
 export default function ExecutionPlanPage() {
-  const [intent, setIntent] = useState('intent-001');
+  const [form] = Form.useForm();
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
     try {
+      const intent = String(form.getValues().intent ?? 'intent-001');
       const p = await generatePlan(intent);
       setPlan(p);
-      message.success('执行计划已生成');
+      Toast.success('执行计划已生成');
     } finally {
       setLoading(false);
     }
@@ -22,18 +24,22 @@ export default function ExecutionPlanPage() {
 
   return (
     <div>
-      <Typography.Title level={4}>执行计划生成</Typography.Title>
+      <Typography.Title heading={4}>执行计划生成</Typography.Title>
 
       <Card style={{ marginBottom: 16 }}>
-        <Form layout="vertical">
+        <Form form={form}>
           <Row gutter={16}>
             <Col span={18}>
-              <Form.Item label="意图 ID">
-                <Input value={intent} onChange={(e) => setIntent(e.target.value)} />
-              </Form.Item>
+              <Form.Input
+                field="intent"
+                label="意图 ID"
+                initValue="intent-001"
+                placeholder="请输入意图 ID"
+              />
             </Col>
             <Col span={6}>
               <Button
+                theme="solid"
                 type="primary"
                 icon={<ThunderboltOutlined />}
                 loading={loading}
@@ -52,19 +58,21 @@ export default function ExecutionPlanPage() {
         <Row gutter={16}>
           <Col span={16}>
             <Card title="计划步骤">
-              <Steps
-                direction="vertical"
-                items={plan.steps.map((s) => ({
-                  title: s.name,
-                  description: (
-                    <Space>
-                      {s.employeeId && <Tag color="purple">{s.employeeId}</Tag>}
-                      {s.tool && <Tag color="cyan">{s.tool}</Tag>}
-                      <Tag>{s.estimatedDuration}s</Tag>
-                    </Space>
-                  ),
-                }))}
-              />
+              <Steps direction="vertical">
+                {plan.steps.map((s) => (
+                  <Steps.Step
+                    key={s.id}
+                    title={s.name}
+                    description={(
+                      <Space>
+                        {s.employeeId && <Tag color="purple">{s.employeeId}</Tag>}
+                        {s.tool && <Tag color="cyan">{s.tool}</Tag>}
+                        <Tag>{s.estimatedDuration}s</Tag>
+                      </Space>
+                    )}
+                  />
+                ))}
+              </Steps>
             </Card>
           </Col>
           <Col span={8}>

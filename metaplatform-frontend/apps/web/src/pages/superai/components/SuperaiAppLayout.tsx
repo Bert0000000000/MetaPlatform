@@ -1,20 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Layout, theme, Typography, Button, Grid, Drawer } from 'antd';
+import { Layout, Typography, Button, SideSheet } from '@douyinfe/semi-ui';
 import { LogoutOutlined, MenuOutlined } from '@ant-design/icons';
 import { PlatformMenu } from '@mate/shared';
 import { removeToken } from '@mate/shared';
 
 const { Header, Sider, Content } = Layout;
 
+/** 移动端断点检测（与 antd Grid md = 992px 语义一致）。 */
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return !window.matchMedia('(min-width: 992px)').matches;
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(min-width: 992px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(!e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
 export default function AppLayout() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const screens = Grid.useBreakpoint();
-  const isMobile = !screens.md;
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const isMobile = useIsMobile();
 
   const handleLogout = () => {
     removeToken();
@@ -30,22 +42,22 @@ export default function AppLayout() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: colorBgContainer,
+          background: 'var(--card)',
           padding: '0 24px',
-          borderBottom: '1px solid #f0f0f0',
+          borderBottom: '1px solid var(--border)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
           {isMobile && (
             <Button
-              type="text"
+              theme="borderless"
               icon={<MenuOutlined />}
               onClick={() => setMenuOpen(true)}
               style={{ marginRight: 8 }}
             />
           )}
           <Typography.Title
-            level={4}
+            heading={4}
             style={{
               margin: 0,
               overflow: 'hidden',
@@ -56,23 +68,23 @@ export default function AppLayout() {
             SuperAI
           </Typography.Title>
         </div>
-        <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
+        <Button theme="borderless" icon={<LogoutOutlined />} onClick={handleLogout}>
           {!isMobile && '退出'}
         </Button>
       </Header>
       <Layout>
         {!isMobile && (
-          <Sider width={240} style={{ background: colorBgContainer }}>
+          <Sider style={{ width: 240, flexShrink: 0, background: 'var(--card)' }}>
             {menu}
           </Sider>
         )}
         <Layout className="mate-page-layout">
           <Content
             style={{
-              background: colorBgContainer,
+              background: 'var(--card)',
               padding: 'var(--mate-content-padding)',
               margin: 0,
-              borderRadius: borderRadiusLG,
+              borderRadius: 'var(--radius)',
               minHeight: 280,
               overflow: 'auto',
             }}
@@ -81,15 +93,15 @@ export default function AppLayout() {
           </Content>
         </Layout>
       </Layout>
-      <Drawer
+      <SideSheet
         placement="left"
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        size={240}
-        styles={{ body: { padding: 0 } }}
+        visible={menuOpen}
+        onCancel={() => setMenuOpen(false)}
+        width={240}
+        bodyStyle={{ padding: 0 }}
       >
         {menu}
-      </Drawer>
+      </SideSheet>
     </Layout>
   );
 }

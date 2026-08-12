@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Rate, Table, Tag, Typography, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Card, Empty, Rating, Table, Tag, Typography, Toast } from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { listConversations, scoreConversation } from '@/api/dw/evaluations';
 import type { ConversationRecord } from '@/api/dw/evaluations';
+
+type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
 
 interface ConversationListProps {
   employeeId?: string;
@@ -29,11 +31,11 @@ export default function ConversationList({ employeeId, onSelect }: ConversationL
 
   const handleRate = async (c: ConversationRecord, score: number) => {
     await scoreConversation(c.conversationId, score, 'admin');
-    message.success(`已为对话评分：${score}`);
+    Toast.success(`已为对话评分：${score}`);
     load();
   };
 
-  const columns: ColumnsType<ConversationRecord> = [
+  const columns: SemiColumns<ConversationRecord> = [
     {
       title: '对话',
       key: 'id',
@@ -57,9 +59,9 @@ export default function ConversationList({ employeeId, onSelect }: ConversationL
       dataIndex: 'qualityScore',
       render: (v?: number, r?: ConversationRecord) => (
         v ? (
-          <Rate disabled value={Math.round(v * 5)} />
+          <Rating disabled value={Math.round(v * 5)} />
         ) : (
-          <Rate onChange={(s) => r && handleRate(r, s / 5)} />
+          <Rating onChange={(s) => r && handleRate(r, s / 5)} />
         )
       ),
     },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Card, Button, Space, Modal, Form, Input, Select, message, Popconfirm } from 'antd';
+import { Card, Button, Space, Modal, Form, Input, Select, Toast, Popconfirm } from '@douyinfe/semi-ui';
 import { PlusOutlined, ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { listEntities, listFlows, createFlow, updateFlow, deleteFlow } from '@/api/arch/dataArchitecture';
@@ -89,73 +89,67 @@ export default function DataFlowPage() {
 
   const openCreate = () => {
     setEditingFlow(null);
-    form.resetFields();
+    form.reset();
     setModalOpen(true);
   };
 
   const openEdit = (flow: DataFlow) => {
     setEditingFlow(flow);
-    form.setFieldsValue(flow);
+    form.setValues(flow);
     setModalOpen(true);
   };
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const values = await form.validate();
     if (editingFlow) {
       await updateFlow(editingFlow.id, values);
-      message.success('更新成功');
+      Toast.success('更新成功');
     } else {
       await createFlow(values);
-      message.success('创建成功');
+      Toast.success('创建成功');
     }
     setModalOpen(false);
-    form.resetFields();
+    form.reset();
     load();
   };
 
   const handleDelete = async (id: string) => {
     await deleteFlow(id);
-    message.success('已删除');
+    Toast.success('已删除');
     load();
   };
 
   return (
     <Card
       title="数据流可视化"
-      extra={
+      headerExtraContent={
         <Space>
           <Button icon={<ReloadOutlined />} onClick={load}>刷新</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建数据流</Button>
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建数据流</Button>
         </Space>
       }
     >
-      <div ref={containerRef} style={{ width: '100%', height: 600, border: '1px solid #f0f0f0' }} />
+      <div ref={containerRef} style={{ width: '100%', height: 600, border: '1px solid var(--semi-color-border)' }} />
       <div style={{ marginTop: 16 }}>
         {flows.map((flow) => (
-          <Button key={flow.id} type="link" onClick={() => openEdit(flow)}>
+          <Button key={flow.id} theme="borderless" type="primary" onClick={() => openEdit(flow)}>
             {flow.name}
           </Button>
         ))}
       </div>
 
-      <Modal title={editingFlow ? '编辑数据流' : '新建数据流'} open={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.resetFields(); }}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="sourceEntityId" label="源实体" rules={[{ required: true }]}>
-            <Select options={entities.map((e) => ({ label: e.name, value: e.id }))} />
-          </Form.Item>
-          <Form.Item name="targetEntityId" label="目标实体" rules={[{ required: true }]}>
-            <Select options={entities.map((e) => ({ label: e.name, value: e.id }))} />
-          </Form.Item>
-          <Form.Item name="flowType" label="流类型">
-            <Select options={['REALTIME', 'BATCH', 'STREAM'].map((t) => ({ label: t, value: t }))} allowClear />
-          </Form.Item>
-          <Form.Item name="schedule" label="调度"><Input placeholder="如 @hourly" /></Form.Item>
-          <Form.Item name="description" label="描述"><Input.TextArea rows={2} /></Form.Item>
+      <Modal title={editingFlow ? '编辑数据流' : '新建数据流'} visible={modalOpen} onOk={handleSubmit} onCancel={() => { setModalOpen(false); form.reset(); }}>
+        <Form form={form}>
+          <Form.Input field="name" label="名称" rules={[{ required: true }]} />
+          <Form.Select field="sourceEntityId" label="源实体" rules={[{ required: true }]} optionList={entities.map((e) => ({ label: e.name, value: e.id }))} />
+          <Form.Select field="targetEntityId" label="目标实体" rules={[{ required: true }]} optionList={entities.map((e) => ({ label: e.name, value: e.id }))} />
+          <Form.Select field="flowType" label="流类型" showClear optionList={['REALTIME', 'BATCH', 'STREAM'].map((t) => ({ label: t, value: t }))} />
+          <Form.Input field="schedule" label="调度" placeholder="如 @hourly" />
+          <Form.TextArea field="description" label="描述" rows={2} />
         </Form>
         {editingFlow && (
           <Popconfirm title="确认删除？" onConfirm={() => handleDelete(editingFlow.id)}>
-            <Button danger icon={<DeleteOutlined />}>删除</Button>
+            <Button theme="outline" type="danger" icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         )}
       </Modal>

@@ -1,9 +1,9 @@
-﻿/**
+/**
  * 通用分布条形图（来源 / 地域 / 设备）
  * Recharts BarChart + layout="vertical" 实现横向条形图，
  * 显示前 N 项，并在右侧展示占比和绝对值。
  */
-import { Space, Tag, Typography } from 'antd';
+import { Space, Tag, Typography } from '@douyinfe/semi-ui';
 import {
   Bar,
   BarChart,
@@ -15,6 +15,8 @@ import {
   type TooltipProps,
 } from 'recharts';
 import type { DistributionItem } from '@/types/analytics';
+
+const { Text } = Typography;
 
 interface Props {
   title: string;
@@ -69,24 +71,24 @@ export default function DistributionCard({
   const sliced = safeData.slice(0, topN);
   const total = sliced.reduce((acc, it) => acc + it.value, 0);
   return (
-    <Space orientation="vertical" style={{ width: '100%' }} size={8}>
+    <Space vertical style={{ width: '100%' }} spacing={8}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography.Text strong style={{ fontSize: 14 }}>
+        <Text strong style={{ fontSize: 14 }}>
           {title}
-        </Typography.Text>
-        <Tag color="default">Top {sliced.length}</Tag>
+        </Text>
+        <Tag color="grey">Top {sliced.length}</Tag>
       </div>
       {loading ? (
         <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
             加载中…
-          </Typography.Text>
+          </Text>
         </div>
       ) : sliced.length === 0 ? (
         <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
             暂无数据
-          </Typography.Text>
+          </Text>
         </div>
       ) : (
         <>
@@ -117,9 +119,9 @@ export default function DistributionCard({
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <Space size={6} wrap>
+          <Space spacing={6} wrap>
             {sliced.map((it, idx) => (
-              <Tag key={it.key} color="default" style={{ fontSize: 11 }}>
+              <Tag key={it.key} color="grey" style={{ fontSize: 11 }}>
                 <span
                   style={{
                     display: 'inline-block',

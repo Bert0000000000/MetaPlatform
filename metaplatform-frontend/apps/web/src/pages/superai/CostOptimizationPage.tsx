@@ -1,9 +1,29 @@
 import { useState } from 'react';
-import { Card, Form, InputNumber, Select, Button, Table, Alert, Statistic, Row, Col } from 'antd';
+import { Card, Form, Button, Table, Banner, Space } from '@douyinfe/semi-ui';
+import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { PageContainer } from '@mate/shared';
 import { recommendModel, type RoutingRecommendation } from '@/api/superai/costOptimization';
 
-const { Option } = Select;
+const STRATEGY_OPTIONS = [
+  { value: 'cheapest', label: '最便宜' },
+  { value: 'balanced', label: '均衡' },
+  { value: 'best_quality', label: '质量优先' },
+];
+
+const CAPABILITY_OPTIONS = [
+  { value: 'CHAT', label: '对话' },
+  { value: 'VISION', label: '视觉' },
+  { value: 'FUNCTION_CALLING', label: '函数调用' },
+];
+
+function StatItem({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ color: 'var(--muted-foreground)', fontSize: 13, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--foreground)' }}>{value}</div>
+    </div>
+  );
+}
 
 export default function CostOptimizationPage() {
   const [form] = Form.useForm();
@@ -41,46 +61,30 @@ export default function CostOptimizationPage() {
   return (
     <PageContainer title="成本优化" description="选择性价比最高的模型">
       <Card title="路由模拟" style={{ marginBottom: 24 }}>
-        <Form form={form} layout="inline" onFinish={handleSubmit} initialValues={{ promptTokens: 1000, completionTokens: 500, strategy: 'balanced', requiredCapabilities: ['CHAT'] }}>
-          <Form.Item name="promptTokens" label="输入 Token">
-            <InputNumber min={1} />
-          </Form.Item>
-          <Form.Item name="completionTokens" label="输出 Token">
-            <InputNumber min={1} />
-          </Form.Item>
-          <Form.Item name="strategy" label="策略">
-            <Select style={{ width: 140 }}>
-              <Option value="cheapest">最便宜</Option>
-              <Option value="balanced">均衡</Option>
-              <Option value="best_quality">质量优先</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="requiredCapabilities" label="必需能力">
-            <Select mode="multiple" style={{ width: 180 }}>
-              <Option value="CHAT">对话</Option>
-              <Option value="VISION">视觉</Option>
-              <Option value="FUNCTION_CALLING">函数调用</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>获取推荐</Button>
-          </Form.Item>
+        <Form form={form} onSubmit={handleSubmit} initValues={{ promptTokens: 1000, completionTokens: 500, strategy: 'balanced', requiredCapabilities: ['CHAT'] }}>
+          <Space wrap>
+            <Form.InputNumber field="promptTokens" label="输入 Token" min={1} />
+            <Form.InputNumber field="completionTokens" label="输出 Token" min={1} />
+            <Form.Select field="strategy" label="策略" optionList={STRATEGY_OPTIONS} style={{ width: 140 }} />
+            <Form.Select field="requiredCapabilities" label="必需能力" multiple optionList={CAPABILITY_OPTIONS} style={{ width: 180 }} />
+            <Button theme="solid" type="primary" htmlType="submit" loading={loading}>获取推荐</Button>
+          </Space>
         </Form>
       </Card>
 
-      {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 24 }} />}
+      {error && <Banner type="danger" description={error} style={{ marginBottom: 24 }} />}
 
       {result && (
         <>
           <Row gutter={16} style={{ marginBottom: 24 }}>
             <Col span={8}>
-              <Card><Statistic title="推荐模型" value={result.recommendedDisplayName} /></Card>
+              <Card><StatItem label="推荐模型" value={result.recommendedDisplayName} /></Card>
             </Col>
             <Col span={8}>
-              <Card><Statistic title="预估成本" value={`$${result.estimatedCost.toFixed(6)}`} /></Card>
+              <Card><StatItem label="预估成本" value={`$${result.estimatedCost.toFixed(6)}`} /></Card>
             </Col>
             <Col span={8}>
-              <Card><Statistic title="可节省" value={`$${result.potentialSavings.toFixed(6)}`} suffix={`(${Math.round(result.savingsRate * 100)}%)`} /></Card>
+              <Card><StatItem label="可节省" value={<>{`$${result.potentialSavings.toFixed(6)}`} <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>({Math.round(result.savingsRate * 100)}%)</span></>} /></Card>
             </Col>
           </Row>
           <Card title="候选模型排名">
@@ -89,8 +93,13 @@ export default function CostOptimizationPage() {
               dataSource={result.candidates}
               columns={columns}
               pagination={false}
-              rowClassName={(record) => (record.modelId === result.recommendedModelId ? 'ant-table-row-selected' : '')}
-             scroll={{ x: 'max-content' }}/>
+              onRow={(record) =>
+                record && record.modelId === result.recommendedModelId
+                  ? { style: { background: 'var(--semi-color-primary-light-default)' } }
+                  : {}
+              }
+              scroll={{ x: 'max-content' }}
+            />
           </Card>
         </>
       )}

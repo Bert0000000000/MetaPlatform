@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Form, Input, Modal, message } from 'antd';
+import { Button, Form, Modal, Toast } from '@douyinfe/semi-ui';
 import { CopyOutlined } from '@ant-design/icons';
 import { cloneEmployee } from '@/api/dw/employees';
 import type { Employee } from '@/api/dw/types';
@@ -24,7 +24,7 @@ export default function EmployeeCloneButton({
 
   const handleOpen = () => {
     onMenuClick?.();
-    form.setFieldsValue({
+    form.setValues({
       name: `${source.name} - 副本`,
       code: `${source.code}_copy`,
     });
@@ -32,15 +32,15 @@ export default function EmployeeCloneButton({
   };
 
   const handleOk = async () => {
-    const v = await form.validateFields();
+    const v = await form.validate();
     setLoading(true);
     try {
       const created = await cloneEmployee(source, v.name);
-      message.success(`已克隆为「${created.name}」`);
+      Toast.success(`已克隆为「${created.name}」`);
       onCloned?.(created);
       setOpen(false);
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '克隆失败');
+      Toast.error(err instanceof Error ? err.message : '克隆失败');
     } finally {
       setLoading(false);
     }
@@ -61,24 +61,20 @@ export default function EmployeeCloneButton({
       {trigger}
       <Modal
         title="克隆数字员工"
-        open={open}
+        visible={open}
         onCancel={() => setOpen(false)}
         onOk={handleOk}
         confirmLoading={loading}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="新员工名称" rules={[{ required: true }]}>
-            <Input placeholder="请输入新员工名称" />
-          </Form.Item>
-          <Form.Item
-            name="code"
+        <Form form={form}>
+          <Form.Input field="name" label="新员工名称" rules={[{ required: true }]} placeholder="请输入新员工名称" />
+          <Form.Input
+            field="code"
             label="新员工编码"
             rules={[{ required: true }, { pattern: /^[A-Za-z][A-Za-z0-9_]*$/, message: '字母开头，仅含字母数字下划线' }]}
-          >
-            <Input placeholder="请输入新员工编码" />
-          </Form.Item>
-          <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12, margin: 0 }}>
+            placeholder="请输入新员工编码"
+          />
+          <p style={{ color: 'var(--semi-color-text-2)', fontSize: 12, margin: 0 }}>
             将复制「{source.name}」的角色分类、能力配置、知识库绑定等全部设置。
           </p>
         </Form>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Card,
   Tabs,
@@ -11,7 +11,7 @@ import {
   Space,
   Modal,
   Typography,
-  message,
+  Toast,
   Popconfirm,
   List,
   Divider,
@@ -20,7 +20,7 @@ import {
   Descriptions,
   Empty,
   Spin,
-} from 'antd';
+} from '@douyinfe/semi-ui';
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -55,6 +55,8 @@ import type {
 } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatDateTime } from '@/utils/datetime';
+
+const { Text, Title, Paragraph } = Typography;
 
 const WIDGET_OPTIONS = [
   { label: '指标面板', value: 'metrics' },
@@ -167,24 +169,24 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    preferencesForm.setFieldsValue(settings);
-    layoutForm.setFieldsValue(settings);
+    preferencesForm.setValues(settings);
+    layoutForm.setValues(settings);
   }, [settings, preferencesForm, layoutForm]);
 
   const handleSavePreferences = async (values: Partial<UserSettings>) => {
     await updateSettings(values);
-    message.success('设置已保存并即时生效');
+    Toast.success('设置已保存并即时生效');
   };
 
   const handleThemeChange = async (next: ThemeMode) => {
     await setTheme(next);
     const label = next === 'system' ? '跟随系统' : next === 'dark' ? '深色' : '浅色';
-    message.success(`已切换到「${label}」主题，全局即时生效`);
+    Toast.success(`已切换到「${label}」主题，全局即时生效`);
   };
 
   const handleCreateToken = async () => {
     if (!newTokenName.trim()) {
-      message.warning('请输入 Token 名称');
+      Toast.warning('请输入 Token 名称');
       return;
     }
     const token = await createApiToken(newTokenName);
@@ -192,19 +194,19 @@ export default function SettingsPage() {
     setTokens((prev) => [token, ...prev]);
     setTokenModalOpen(false);
     setNewTokenName('');
-    message.success('Token 创建成功');
+    Toast.success('Token 创建成功');
   };
 
   const handleRevokeToken = async (id: string) => {
     await revokeApiToken(id);
     setTokens((prev) => prev.filter((t) => t.id !== id));
-    message.success('Token 已撤销');
+    Toast.success('Token 已撤销');
   };
 
   const handleRevokeSession = async (id: string) => {
     await revokeSession(id);
     setSessions((prev) => prev.filter((s) => s.id !== id));
-    message.success('会话已注销');
+    Toast.success('会话已注销');
   };
 
   const tokenColumns = [
@@ -214,9 +216,9 @@ export default function SettingsPage() {
       dataIndex: 'token',
       key: 'token',
       render: (v: string) => (
-        <Typography.Text code style={{ maxWidth: 240, display: 'inline-block' }} ellipsis>
+        <Text code style={{ maxWidth: 240, display: 'inline-block' }} ellipsis>
           {v}
-        </Typography.Text>
+        </Text>
       ),
     },
     {
@@ -236,7 +238,7 @@ export default function SettingsPage() {
       key: 'action',
       render: (_: unknown, record: ApiToken) => (
         <Popconfirm title="确认撤销此 Token？" onConfirm={() => handleRevokeToken(record.id)}>
-          <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+          <Button theme="borderless" type="danger" size="small" icon={<DeleteOutlined />}>
             撤销
           </Button>
         </Popconfirm>
@@ -252,425 +254,421 @@ export default function SettingsPage() {
 
   return (
     <Card>
-      <Tabs
-        items={[
-          {
-            key: 'profile',
-            label: (
-              <span>
-                <UserOutlined /> 个人信息
-              </span>
-            ),
-            children: (
-              <Spin spinning={profileLoading}>
-                {profile ? (
-                  <div style={{ maxWidth: 720 }}>
-                    <Space size="large" align="center" style={{ marginBottom: 24 }}>
-                      <Avatar size={72} icon={<UserOutlined />} src={undefined} style={{ backgroundColor: '#1677ff' }}>
-                        {initials}
-                      </Avatar>
-                      <div>
-                        <Typography.Title level={4} style={{ margin: 0 }}>
-                          {displayName}
-                        </Typography.Title>
-                        <Typography.Text type="secondary">{profile.email}</Typography.Text>
-                      </div>
-                    </Space>
-                    <Descriptions
-                      column={2}
-                      bordered
-                      size="middle"
-                      labelStyle={{ width: 140 }}
-                      items={[
-                        { label: '用户 ID', children: profile.id },
-                        { label: '用户名', children: profile.username },
-                        { label: '真实姓名', children: profile.realName || '-' },
-                        { label: '邮箱', children: profile.email },
-                        { label: '租户', children: profile.tenantId },
-                        {
-                          label: '角色',
-                          children:
-                            profile.roles.length > 0 ? (
-                              <Space wrap>
-                                {profile.roles.map((r) => (
-                                  <Tag color="blue" key={r}>
-                                    {r}
-                                  </Tag>
-                                ))}
-                              </Space>
-                            ) : (
-                              <Typography.Text type="secondary">无</Typography.Text>
-                            ),
-                        },
-                        {
-                          label: '部门',
-                          children:
-                            profile.departments.length > 0 ? (
-                              <Space orientation="vertical" size={0}>
-                                {profile.departments.map((d) => (
-                                  <Space key={d.departmentId} size={4}>
-                                    <Typography.Text>{d.departmentName || d.departmentId}</Typography.Text>
-                                    {d.isPrimary && (
-                                      <Tag color="green" style={{ marginLeft: 4 }}>
-                                        主部门
-                                      </Tag>
-                                    )}
-                                  </Space>
-                                ))}
-                              </Space>
-                            ) : (
-                              <Typography.Text type="secondary">无</Typography.Text>
-                            ),
-                        },
-                      ]}
-                    />
+      <Tabs>
+        <Tabs.TabPane
+          itemKey="profile"
+          tab={
+            <span>
+              <UserOutlined /> 个人信息
+            </span>
+          }
+        >
+          <Spin spinning={profileLoading}>
+            {profile ? (
+              <div style={{ maxWidth: 720 }}>
+                <Space spacing="loose" align="center" style={{ marginBottom: 24 }}>
+                  <Avatar size="extra-large" style={{ backgroundColor: 'var(--primary)' }}>
+                    {initials}
+                  </Avatar>
+                  <div>
+                    <Title heading={4} style={{ margin: 0 }}>
+                      {displayName}
+                    </Title>
+                    <Text type="secondary">{profile.email}</Text>
                   </div>
-                ) : (
-                  <Empty description="暂无用户信息" />
-                )}
-                <Divider />
-                <Button icon={<IdcardOutlined />} onClick={loadProfile}>
-                  重新加载个人信息
-                </Button>
-              </Spin>
-            ),
-          },
-          {
-            key: 'preferences',
-            label: (
-              <span>
-                <GlobalOutlined /> 偏好设置
-              </span>
-            ),
-            children: (
-              <>
-                <Form
-                  form={preferencesForm}
-                  layout="vertical"
-                  onFinish={handleSavePreferences}
-                  style={{ maxWidth: 560 }}
-                >
-                  <Form.Item name="language" label="语言">
-                    <Select options={LANGUAGE_OPTIONS} />
-                  </Form.Item>
-                  <Form.Item name="timezone" label="时区">
-                    <Select options={TIMEZONE_OPTIONS} />
-                  </Form.Item>
-                  <Form.Item name="dateFormat" label="日期格式">
-                    <Select options={DATE_FORMAT_OPTIONS} />
-                  </Form.Item>
-                  <Form.Item name="defaultPage" label="默认首页">
-                    <Select options={DEFAULT_PAGE_OPTIONS} />
-                  </Form.Item>
-                  <Form.Item>
-                    <Button type="primary" htmlType="submit">
-                      保存设置
-                    </Button>
-                  </Form.Item>
-                </Form>
-                <Divider>实时预览</Divider>
-                <Space orientation="vertical" style={{ maxWidth: 560, width: '100%' }}>
-                  <Typography.Text type="secondary">
-                    当前语言: {settings.language} · 时区: {settings.timezone}
-                  </Typography.Text>
-                  <Typography.Text>
-                    日期示例: <Typography.Text strong>{formatDateTime(previewDate, settings)}</Typography.Text>
-                  </Typography.Text>
                 </Space>
-              </>
-            ),
-          },
-          {
-            key: 'theme',
-            label: (
-              <span>
-                <BgColorsOutlined /> 主题
-              </span>
-            ),
-            children: (
-              <div style={{ maxWidth: 480 }}>
-                <Typography.Title level={5}>主题模式</Typography.Title>
-                <Form.Item label="选择主题" style={{ marginBottom: 16 }}>
-                  <Radio.Group
-                    value={settings.theme}
-                    onChange={(e) => handleThemeChange(e.target.value as ThemeMode)}
-                    optionType="button"
-                    buttonStyle="solid"
-                  >
-                    {THEME_OPTIONS.map((opt) => (
-                      <Radio.Button key={opt.value} value={opt.value}>
-                        <Space size={4}>
-                          {opt.icon}
-                          {opt.label}
-                        </Space>
-                      </Radio.Button>
-                    ))}
-                  </Radio.Group>
-                </Form.Item>
-                <Typography.Paragraph type="secondary">
-                  当前实际主题：
-                  <Tag color={resolvedTheme === 'dark' ? 'geekblue' : 'gold'}>
-                    {resolvedTheme === 'dark' ? '深色' : '浅色'}
-                  </Tag>
-                  {settings.theme === 'system' && '（跟随系统，OS 切换将自动响应）'}
-                </Typography.Paragraph>
-                <Typography.Paragraph type="secondary">
-                  主题切换会立即生效，并通过 ConfigProvider 同步到所有 Ant Design 组件；
-                  偏好同时持久化到 localStorage 与后端，下次登录自动恢复。
-                </Typography.Paragraph>
-              </div>
-            ),
-          },
-          {
-            key: 'permissions',
-            label: (
-              <span>
-                <SafetyOutlined /> 权限查看
-              </span>
-            ),
-            children: (
-              <Spin spinning={permissionsLoading}>
-                {permissions ? (
-                  <div style={{ maxWidth: 900 }}>
-                    <Descriptions
-                      column={2}
-                      size="small"
-                      bordered
-                      style={{ marginBottom: 16 }}
-                      items={[
-                        { label: '用户 ID', children: permissions.userId },
-                        { label: '租户', children: permissions.tenantId },
-                        {
-                          label: '角色',
-                          children:
-                            permissions.roles.length > 0 ? (
-                              <Space wrap>
-                                {permissions.roles.map((r) => (
-                                  <Tag color="blue" key={r.roleId}>
-                                    {r.roleName}
-                                    <span style={{ marginLeft: 4, opacity: 0.7 }}>
-                                      ({DATA_SCOPE_LABEL[r.dataScope] || r.dataScope})
-                                    </span>
+                <Descriptions
+                  column={2}
+                  size="medium"
+                  data={[
+                    { key: '用户 ID', value: profile.id },
+                    { key: '用户名', value: profile.username },
+                    { key: '真实姓名', value: profile.realName || '-' },
+                    { key: '邮箱', value: profile.email },
+                    { key: '租户', value: profile.tenantId },
+                    {
+                      key: '角色',
+                      value:
+                        profile.roles.length > 0 ? (
+                          <Space wrap>
+                            {profile.roles.map((r) => (
+                              <Tag color="blue" key={r}>
+                                {r}
+                              </Tag>
+                            ))}
+                          </Space>
+                        ) : (
+                          <Text type="secondary">无</Text>
+                        ),
+                    },
+                    {
+                      key: '部门',
+                      value:
+                        profile.departments.length > 0 ? (
+                          <Space vertical spacing={0}>
+                            {profile.departments.map((d) => (
+                              <Space key={d.departmentId} spacing={4}>
+                                <Text>{d.departmentName || d.departmentId}</Text>
+                                {d.isPrimary && (
+                                  <Tag color="green" style={{ marginLeft: 4 }}>
+                                    主部门
                                   </Tag>
-                                ))}
+                                )}
                               </Space>
-                            ) : (
-                              <Typography.Text type="secondary">无角色</Typography.Text>
-                            ),
-                        },
-                        {
-                          label: '权限编码数',
-                          children: permissions.permissionCodes.length,
-                        },
-                      ]}
-                    />
-                    {permissionGroups.length === 0 ? (
-                      <Empty description="当前用户未关联任何权限" />
-                    ) : (
-                      <List
-                        dataSource={permissionGroups}
-                        renderItem={(group) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              title={
-                                <Space>
-                                  <Tag color="purple">{group.resourceType}</Tag>
-                                  <Typography.Text type="secondary">
-                                    {group.items.length} 项权限
-                                  </Typography.Text>
-                                </Space>
-                              }
-                              description={
-                                <Table
-                                  rowKey="permissionId"
-                                  size="small"
-                                  pagination={false}
-                                  dataSource={group.items}
-                                  columns={[
-                                    {
-                                      title: '权限编码',
-                                      dataIndex: 'permissionCode',
-                                      key: 'permissionCode',
-                                      render: (v: string) => <Typography.Text code>{v}</Typography.Text>,
-                                    },
-                                    { title: '名称', dataIndex: 'permissionName', key: 'permissionName' },
-                                    {
-                                      title: '操作',
-                                      dataIndex: 'actions',
-                                      key: 'actions',
-                                      render: (actions: string[]) => (
-                                        <Space wrap>
-                                          {actions.map((a) => (
-                                            <Tag key={a}>{a}</Tag>
-                                          ))}
-                                        </Space>
-                                      ),
-                                    },
-                                    {
-                                      title: '效果',
-                                      dataIndex: 'effect',
-                                      key: 'effect',
-                                      render: (effect: string) => (
-                                        <Tag color={effect === 'DENY' ? 'red' : 'green'}>{effect}</Tag>
-                                      ),
-                                    },
-                                  ]}
-                                 scroll={{ x: 'max-content' }}/>
-                              }
+                            ))}
+                          </Space>
+                        ) : (
+                          <Text type="secondary">无</Text>
+                        ),
+                    },
+                  ]}
+                />
+              </div>
+            ) : (
+              <Empty description="暂无用户信息" />
+            )}
+            <Divider />
+            <Button icon={<IdcardOutlined />} onClick={loadProfile}>
+              重新加载个人信息
+            </Button>
+          </Spin>
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          itemKey="preferences"
+          tab={
+            <span>
+              <GlobalOutlined /> 偏好设置
+            </span>
+          }
+        >
+          <>
+            <Form
+              form={preferencesForm}
+              onSubmit={handleSavePreferences}
+              style={{ maxWidth: 560 }}
+            >
+              <Form.Select field="language" label="语言" optionList={LANGUAGE_OPTIONS} />
+              <Form.Select field="timezone" label="时区" optionList={TIMEZONE_OPTIONS} />
+              <Form.Select field="dateFormat" label="日期格式" optionList={DATE_FORMAT_OPTIONS} />
+              <Form.Select field="defaultPage" label="默认首页" optionList={DEFAULT_PAGE_OPTIONS} />
+              <Button theme="solid" type="primary" htmlType="submit">
+                保存设置
+              </Button>
+            </Form>
+            <Divider>实时预览</Divider>
+            <Space vertical style={{ maxWidth: 560, width: '100%' }}>
+              <Text type="secondary">
+                当前语言: {settings.language} · 时区: {settings.timezone}
+              </Text>
+              <Text>
+                日期示例: <Text strong>{formatDateTime(previewDate, settings)}</Text>
+              </Text>
+            </Space>
+          </>
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          itemKey="theme"
+          tab={
+            <span>
+              <BgColorsOutlined /> 主题
+            </span>
+          }
+        >
+          <div style={{ maxWidth: 480 }}>
+            <Title heading={5}>主题模式</Title>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 8 }}>选择主题</div>
+              <Radio.Group
+                type="button"
+                value={settings.theme}
+                onChange={(e) => handleThemeChange(e.target.value as ThemeMode)}
+                options={THEME_OPTIONS.map((opt) => ({
+                  value: opt.value,
+                  label: (
+                    <Space spacing={4}>
+                      {opt.icon}
+                      {opt.label}
+                    </Space>
+                  ),
+                }))}
+              />
+            </div>
+            <Paragraph type="secondary">
+              当前实际主题：
+              <Tag color={resolvedTheme === 'dark' ? 'indigo' : 'yellow'}>
+                {resolvedTheme === 'dark' ? '深色' : '浅色'}
+              </Tag>
+              {settings.theme === 'system' && '（跟随系统，OS 切换将自动响应）'}
+            </Paragraph>
+            <Paragraph type="secondary">
+              主题切换会立即生效，并同步到所有平台组件；偏好同时持久化到 localStorage 与后端，下次登录自动恢复。
+            </Paragraph>
+          </div>
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          itemKey="permissions"
+          tab={
+            <span>
+              <SafetyOutlined /> 权限查看
+            </span>
+          }
+        >
+          <Spin spinning={permissionsLoading}>
+            {permissions ? (
+              <div style={{ maxWidth: 900 }}>
+                <Descriptions
+                  column={2}
+                  size="small"
+                  style={{ marginBottom: 16 }}
+                  data={[
+                    { key: '用户 ID', value: permissions.userId },
+                    { key: '租户', value: permissions.tenantId },
+                    {
+                      key: '角色',
+                      value:
+                        permissions.roles.length > 0 ? (
+                          <Space wrap>
+                            {permissions.roles.map((r) => (
+                              <Tag color="blue" key={r.roleId}>
+                                {r.roleName}
+                                <span style={{ marginLeft: 4, opacity: 0.7 }}>
+                                  ({DATA_SCOPE_LABEL[r.dataScope] || r.dataScope})
+                                </span>
+                              </Tag>
+                            ))}
+                          </Space>
+                        ) : (
+                          <Text type="secondary">无角色</Text>
+                        ),
+                    },
+                    {
+                      key: '权限编码数',
+                      value: permissions.permissionCodes.length,
+                    },
+                  ]}
+                />
+                {permissionGroups.length === 0 ? (
+                  <Empty description="当前用户未关联任何权限" />
+                ) : (
+                  <List
+                    dataSource={permissionGroups}
+                    renderItem={(group) => (
+                      <List.Item
+                        main={
+                          <>
+                            <div style={{ marginBottom: 8 }}>
+                              <Space>
+                                <Tag color="purple">{group.resourceType}</Tag>
+                                <Text type="secondary">
+                                  {group.items.length} 项权限
+                                </Text>
+                              </Space>
+                            </div>
+                            <Table
+                              rowKey="permissionId"
+                              size="small"
+                              pagination={false}
+                              dataSource={group.items}
+                              columns={[
+                                {
+                                  title: '权限编码',
+                                  dataIndex: 'permissionCode',
+                                  key: 'permissionCode',
+                                  render: (v: string) => <Text code>{v}</Text>,
+                                },
+                                { title: '名称', dataIndex: 'permissionName', key: 'permissionName' },
+                                {
+                                  title: '操作',
+                                  dataIndex: 'actions',
+                                  key: 'actions',
+                                  render: (actions: string[]) => (
+                                    <Space wrap>
+                                      {actions.map((a) => (
+                                        <Tag key={a}>{a}</Tag>
+                                      ))}
+                                    </Space>
+                                  ),
+                                },
+                                {
+                                  title: '效果',
+                                  dataIndex: 'effect',
+                                  key: 'effect',
+                                  render: (effect: string) => (
+                                    <Tag color={effect === 'DENY' ? 'red' : 'green'}>{effect}</Tag>
+                                  ),
+                                },
+                              ]}
+                              scroll={{ x: 'max-content' }}
                             />
-                          </List.Item>
-                        )}
+                          </>
+                        }
                       />
                     )}
-                    <Divider />
-                    <Button icon={<SafetyOutlined />} onClick={loadPermissions}>
-                      重新加载权限
-                    </Button>
-                  </div>
-                ) : (
-                  <Empty description="暂无权限数据，可点击下方按钮重新加载" />
+                  />
                 )}
-              </Spin>
-            ),
-          },
-          {
-            key: 'layout',
-            label: (
-              <span>
-                <LayoutOutlined /> 布局定制
-              </span>
-            ),
-            children: (
-              <Form
-                form={layoutForm}
-                layout="vertical"
-                onFinish={handleSavePreferences}
-                style={{ maxWidth: 560 }}
-              >
-                <Form.Item
-                  name="layout"
-                  label="工作台组件排列"
-                  help="按选择顺序展示，拖动可调整顺序（暂未实现）"
-                >
-                  <Select mode="multiple" options={WIDGET_OPTIONS} />
-                </Form.Item>
-                <Form.Item>
-                  <Button type="primary" htmlType="submit">
-                    保存布局
-                  </Button>
-                </Form.Item>
-              </Form>
-            ),
-          },
-          {
-            key: 'tokens',
-            label: (
-              <span>
-                <KeyOutlined /> API Token
-              </span>
-            ),
-            children: (
-              <div>
-                <Space style={{ marginBottom: 16 }}>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => {
-                      setCreatedToken(null);
-                      setTokenModalOpen(true);
-                    }}
-                  >
-                    创建 Token
-                  </Button>
-                </Space>
-                <Table
-                  rowKey="id"
-                  columns={tokenColumns}
-                  dataSource={tokens}
-                  pagination={false}
-                  size="small"
-                  locale={{ emptyText: '暂无 Token' }} scroll={{ x: 'max-content' }} />
+                <Divider />
+                <Button icon={<SafetyOutlined />} onClick={loadPermissions}>
+                  重新加载权限
+                </Button>
               </div>
-            ),
-          },
-          {
-            key: 'sessions',
-            label: (
-              <span>
-                <SafetyOutlined /> 会话管理
-              </span>
-            ),
-            children: (
-              <List
-                dataSource={sessions}
-                locale={{ emptyText: '暂无活动会话' }}
-                renderItem={(s) => (
-                  <List.Item
-                    actions={
-                      s.current
-                        ? [<Tag key="current" color="green">当前会话</Tag>]
-                        : [
-                            <Popconfirm
-                              key="revoke"
-                              title="确认注销此会话？"
-                              onConfirm={() => handleRevokeSession(s.id)}
-                            >
-                              <Button type="link" danger size="small">
-                                注销
-                              </Button>
-                            </Popconfirm>,
-                          ]
-                    }
-                  >
-                    <List.Item.Meta
-                      title={s.device}
-                      description={`IP: ${s.ip} · 位置: ${s.location} · 最后活跃: ${formatDateTime(
-                        s.lastActiveAt,
-                        settings,
-                      )}`}
-                    />
-                  </List.Item>
-                )}
-              />
-            ),
-          },
-        ]}
-      />
+            ) : (
+              <Empty description="暂无权限数据，可点击下方按钮重新加载" />
+            )}
+          </Spin>
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          itemKey="layout"
+          tab={
+            <span>
+              <LayoutOutlined /> 布局定制
+            </span>
+          }
+        >
+          <Form
+            form={layoutForm}
+            onSubmit={handleSavePreferences}
+            style={{ maxWidth: 560 }}
+          >
+            <Form.Select
+              field="layout"
+              label="工作台组件排列"
+              extraText="按选择顺序展示，拖动可调整顺序（暂未实现）"
+              multiple
+              optionList={WIDGET_OPTIONS}
+            />
+            <Button theme="solid" type="primary" htmlType="submit">
+              保存布局
+            </Button>
+          </Form>
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          itemKey="tokens"
+          tab={
+            <span>
+              <KeyOutlined /> API Token
+            </span>
+          }
+        >
+          <div>
+            <Space style={{ marginBottom: 16 }}>
+              <Button
+                theme="solid"
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setCreatedToken(null);
+                  setTokenModalOpen(true);
+                }}
+              >
+                创建 Token
+              </Button>
+            </Space>
+            <Table
+              rowKey="id"
+              columns={tokenColumns}
+              dataSource={tokens}
+              pagination={false}
+              size="small"
+              empty="暂无 Token"
+              scroll={{ x: 'max-content' }}
+            />
+          </div>
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          itemKey="sessions"
+          tab={
+            <span>
+              <SafetyOutlined /> 会话管理
+            </span>
+          }
+        >
+          {sessions.length === 0 ? (
+            <Empty description="暂无活动会话" />
+          ) : (
+            <List
+              dataSource={sessions}
+              renderItem={(s) => (
+                <List.Item
+                  main={
+                    <div>
+                      <Text strong>{s.device}</Text>
+                      <div style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
+                        IP: {s.ip} · 位置: {s.location} · 最后活跃: {formatDateTime(
+                          s.lastActiveAt,
+                          settings,
+                        )}
+                      </div>
+                    </div>
+                  }
+                  extra={
+                    s.current ? (
+                      <Tag color="green">当前会话</Tag>
+                    ) : (
+                      <Popconfirm
+                        title="确认注销此会话？"
+                        onConfirm={() => handleRevokeSession(s.id)}
+                      >
+                        <Button theme="borderless" type="danger" size="small">
+                          注销
+                        </Button>
+                      </Popconfirm>
+                    )
+                  }
+                />
+              )}
+            />
+          )}
+        </Tabs.TabPane>
+      </Tabs>
 
       <Modal
         title="创建 API Token"
-        open={tokenModalOpen}
+        visible={tokenModalOpen}
         onCancel={() => setTokenModalOpen(false)}
         onOk={handleCreateToken}
       >
         <Input
           placeholder="Token 名称，如：CI/CD Token"
           value={newTokenName}
-          onChange={(e) => setNewTokenName(e.target.value)}
+          onChange={(v) => setNewTokenName(v)}
         />
       </Modal>
 
       <Modal
         title="Token 已创建"
-        open={!!createdToken}
+        visible={!!createdToken}
         onCancel={() => setCreatedToken(null)}
         footer={
-          <Button type="primary" onClick={() => setCreatedToken(null)}>
+          <Button theme="solid" type="primary" onClick={() => setCreatedToken(null)}>
             完成
           </Button>
         }
       >
-        <Typography.Text>请复制保存以下 Token，关闭后将不再显示：</Typography.Text>
-        <Input.Search
+        <Text>请复制保存以下 Token，关闭后将不再显示：</Text>
+        <Input
           value={createdToken || ''}
-          readOnly
-          enterButton={<CopyOutlined />}
-          onSearch={() => {
+          readonly
+          onEnterPress={() => {
             if (createdToken) {
               navigator.clipboard.writeText(createdToken);
-              message.success('已复制到剪贴板');
+              Toast.success('已复制到剪贴板');
             }
           }}
+          suffix={
+            <Button
+              theme="borderless"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                if (createdToken) {
+                  navigator.clipboard.writeText(createdToken);
+                  Toast.success('已复制到剪贴板');
+                }
+              }}
+            >
+              复制
+            </Button>
+          }
           style={{ marginTop: 8 }}
         />
       </Modal>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Table, Input, Select, Switch, InputNumber, Space, Form, message, Popconfirm } from 'antd';
+import { Card, Button, Table, Input, Select, Switch, InputNumber, Space, Form, TextArea, Toast, Popconfirm } from '@douyinfe/semi-ui';
 import { PlusOutlined, ArrowLeftOutlined, DeleteOutlined, DragOutlined, SaveOutlined } from '@ant-design/icons';
 import { getEntity, updateEntity } from '@/api/arch/dataArchitecture';
 import type { DataEntity, DataField } from '@/api/arch/types';
@@ -29,7 +29,7 @@ export default function DataEntityDetailPage() {
   const handleSave = async () => {
     if (!id || !entity) return;
     await updateEntity(id, { ...entity, fields });
-    message.success('保存成功');
+    Toast.success('保存成功');
   };
 
   const addField = () => {
@@ -68,13 +68,13 @@ export default function DataEntityDetailPage() {
 
   const columns = [
     { title: '', key: 'drag', width: 40, render: (_: unknown, __: DataField, index: number) => <DragOutlined draggable onDragStart={() => onDragStart(index)} style={{ cursor: 'grab' }} /> },
-    { title: '字段名', dataIndex: 'name', key: 'name', render: (_: unknown, __: DataField, index: number) => <Input value={fields[index].name} onChange={(e) => updateField(index, { name: e.target.value })} placeholder="字段名" /> },
-    { title: '类型', dataIndex: 'type', key: 'type', width: 140, render: (_: unknown, __: DataField, index: number) => <Select value={fields[index].type} options={FIELD_TYPES.map((t) => ({ label: t, value: t }))} onChange={(v) => updateField(index, { type: v })} style={{ width: '100%' }} /> },
-    { title: '长度', dataIndex: 'length', key: 'length', width: 100, render: (_: unknown, __: DataField, index: number) => <InputNumber value={fields[index].length} onChange={(v) => updateField(index, { length: v ?? undefined })} placeholder="长度" style={{ width: '100%' }} /> },
+    { title: '字段名', dataIndex: 'name', key: 'name', render: (_: unknown, __: DataField, index: number) => <Input value={fields[index].name} onChange={(value) => updateField(index, { name: value })} placeholder="字段名" /> },
+    { title: '类型', dataIndex: 'type', key: 'type', width: 140, render: (_: unknown, __: DataField, index: number) => <Select value={fields[index].type} optionList={FIELD_TYPES.map((t) => ({ label: t, value: t }))} onChange={(v) => updateField(index, { type: v as string })} style={{ width: '100%' }} /> },
+    { title: '长度', dataIndex: 'length', key: 'length', width: 100, render: (_: unknown, __: DataField, index: number) => <InputNumber value={fields[index].length} onChange={(v) => updateField(index, { length: v === null || v === undefined || v === '' ? undefined : Number(v) })} placeholder="长度" style={{ width: '100%' }} /> },
     { title: '必填', dataIndex: 'required', key: 'required', width: 80, render: (_: unknown, __: DataField, index: number) => <Switch checked={!!fields[index].required} onChange={(v) => updateField(index, { required: v })} /> },
-    { title: '默认值', dataIndex: 'defaultValue', key: 'defaultValue', width: 140, render: (_: unknown, __: DataField, index: number) => <Input value={fields[index].defaultValue} onChange={(e) => updateField(index, { defaultValue: e.target.value })} placeholder="默认值" /> },
-    { title: '注释', dataIndex: 'description', key: 'description', render: (_: unknown, __: DataField, index: number) => <Input value={fields[index].description} onChange={(e) => updateField(index, { description: e.target.value })} placeholder="注释" /> },
-    { title: '操作', key: 'action', width: 80, render: (_: unknown, __: DataField, index: number) => <Popconfirm title="确认删除？" onConfirm={() => removeField(index)}><Button type="link" danger icon={<DeleteOutlined />} /></Popconfirm> },
+    { title: '默认值', dataIndex: 'defaultValue', key: 'defaultValue', width: 140, render: (_: unknown, __: DataField, index: number) => <Input value={fields[index].defaultValue} onChange={(value) => updateField(index, { defaultValue: value })} placeholder="默认值" /> },
+    { title: '注释', dataIndex: 'description', key: 'description', render: (_: unknown, __: DataField, index: number) => <Input value={fields[index].description} onChange={(value) => updateField(index, { description: value })} placeholder="注释" /> },
+    { title: '操作', key: 'action', width: 80, render: (_: unknown, __: DataField, index: number) => <Popconfirm title="确认删除？" onConfirm={() => removeField(index)}><Button theme="borderless" type="danger" icon={<DeleteOutlined />} /></Popconfirm> },
   ];
 
   return (
@@ -86,20 +86,19 @@ export default function DataEntityDetailPage() {
           <span>{entity ? `${entity.name} (${entity.code})` : '数据实体详情'}</span>
         </Space>
       }
-      extra={
+      headerExtraContent={
         <Space>
           <Button icon={<PlusOutlined />} onClick={addField}>添加字段</Button>
-          <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>保存</Button>
+          <Button theme="solid" type="primary" icon={<SaveOutlined />} onClick={handleSave}>保存</Button>
         </Space>
       }
     >
-      <Form layout="vertical">
-        <Form.Item label="描述">
-          <Input.TextArea value={entity?.description} onChange={(e) => entity && setEntity({ ...entity, description: e.target.value })} rows={2} />
-        </Form.Item>
+      <Form>
+        <Form.Label text="描述" />
+        <TextArea value={entity?.description} onChange={(value) => entity && setEntity({ ...entity, description: value })} rows={2} />
       </Form>
       <Table
-        rowKey={(_, index) => `${index}`}
+        rowKey={(record) => (record ? `${fields.indexOf(record)}` : '-1')}
         columns={columns}
         dataSource={fields ?? []}
         size="small"

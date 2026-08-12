@@ -6,15 +6,15 @@ import {
   Button,
   Space,
   Typography,
-  Alert,
+  Banner,
   Tooltip,
   Popconfirm,
   Spin,
   Empty,
   Timeline,
-  Input,
-  message,
-} from 'antd';
+  TextArea,
+  Toast,
+} from '@douyinfe/semi-ui';
 import {
   ScheduleOutlined,
   CheckCircleOutlined,
@@ -35,8 +35,7 @@ import {
   getPlan,
 } from '@/api/superai/plans';
 import type { Plan, PlanStep, PlanStepStatus, PlanStatus } from '@/api/superai/types';
-
-const { TextArea } = Input;
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 
 interface PlanPanelProps {
   query: string;
@@ -46,34 +45,34 @@ interface PlanPanelProps {
 
 interface StepStatusMeta {
   label: string;
-  color: string;
+  color: TagColor;
   icon: React.ReactNode;
 }
 
 const STEP_STATUS_META: Record<PlanStepStatus, StepStatusMeta> = {
   pending: {
     label: '待执行',
-    color: 'default',
+    color: 'grey',
     icon: <ClockCircleOutlined />,
   },
   running: {
     label: '执行中',
-    color: 'processing',
+    color: 'blue',
     icon: <LoadingOutlined />,
   },
   completed: {
     label: '已完成',
-    color: 'success',
+    color: 'green',
     icon: <CheckCircleOutlined />,
   },
   failed: {
     label: '失败',
-    color: 'error',
+    color: 'red',
     icon: <CloseCircleOutlined />,
   },
   skipped: {
     label: '已跳过',
-    color: 'warning',
+    color: 'orange',
     icon: <MinusCircleOutlined />,
   },
   approved: {
@@ -83,13 +82,13 @@ const STEP_STATUS_META: Record<PlanStepStatus, StepStatusMeta> = {
   },
 };
 
-const PLAN_STATUS_META: Record<PlanStatus, { label: string; color: string }> = {
-  draft: { label: '草稿', color: 'default' },
+const PLAN_STATUS_META: Record<PlanStatus, { label: string; color: TagColor }> = {
+  draft: { label: '草稿', color: 'grey' },
   ready: { label: '待执行', color: 'blue' },
-  running: { label: '执行中', color: 'processing' },
-  completed: { label: '已完成', color: 'success' },
-  failed: { label: '失败', color: 'error' },
-  cancelled: { label: '已取消', color: 'default' },
+  running: { label: '执行中', color: 'blue' },
+  completed: { label: '已完成', color: 'green' },
+  failed: { label: '失败', color: 'red' },
+  cancelled: { label: '已取消', color: 'grey' },
 };
 
 function timelineColorFor(status: PlanStepStatus): string {
@@ -113,7 +112,7 @@ function stepsToTimelineItems(steps: PlanStep[]) {
         dot: meta.icon,
         children: (
           <div>
-            <Space size={6} align="center">
+            <Space spacing={6} align="center">
               <Typography.Text strong>{step.title}</Typography.Text>
               <Tag color={meta.color} style={{ fontSize: 11 }}>
                 {meta.label}
@@ -137,7 +136,7 @@ function stepsToTimelineItems(steps: PlanStep[]) {
                 style={{
                   marginTop: 4,
                   padding: 6,
-                  background: 'rgba(0,0,0,0.03)',
+                  background: 'var(--muted)',
                   borderRadius: 4,
                   fontSize: 12,
                 }}
@@ -167,56 +166,61 @@ function stepsToTimelineItems(steps: PlanStep[]) {
     });
 }
 
-function stepsToAntSteps(plan: Plan) {
+function stepsToSemiSteps(plan: Plan) {
   const currentIdx = plan.steps.findIndex(
     (s) => s.status === 'running' || s.status === 'pending' || s.status === 'approved',
   );
   const current = currentIdx === -1 ? plan.steps.length : currentIdx;
+
+  const statusFor = (step: PlanStep): 'wait' | 'process' | 'finish' | 'error' =>
+    step.status === 'completed'
+      ? 'finish'
+      : step.status === 'running'
+        ? 'process'
+        : step.status === 'failed'
+          ? 'error'
+          : 'wait';
 
   return (
     <Steps
       size="small"
       current={current}
       direction="vertical"
-      items={plan.steps
+    >
+      {plan.steps
         .slice()
         .sort((a, b) => a.order - b.order)
         .map((step) => {
           const meta = STEP_STATUS_META[step.status];
-          const status: 'wait' | 'process' | 'finish' | 'error' =
-            step.status === 'completed'
-              ? 'finish'
-              : step.status === 'running'
-                ? 'process'
-                : step.status === 'failed'
-                  ? 'error'
-                  : 'wait';
-          return {
-            title: (
-              <Space size={4} align="center">
-                <Typography.Text strong>{step.title}</Typography.Text>
-                <Tag color={meta.color} style={{ fontSize: 11 }}>
-                  {meta.label}
-                </Tag>
-              </Space>
-            ),
-            description: (
-              <div>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {step.description}
-                </Typography.Text>
-                {step.action && (
-                  <div style={{ marginTop: 2 }}>
-                    <Tag style={{ fontSize: 10 }}>{step.action}</Tag>
-                  </div>
-                )}
-              </div>
-            ),
-            status,
-            icon: meta.icon,
-          };
+          return (
+            <Steps.Step
+              key={step.stepId}
+              title={(
+                <Space spacing={4} align="center">
+                  <Typography.Text strong>{step.title}</Typography.Text>
+                  <Tag color={meta.color} style={{ fontSize: 11 }}>
+                    {meta.label}
+                  </Tag>
+                </Space>
+              )}
+              description={(
+                <div>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    {step.description}
+                  </Typography.Text>
+                  {step.action && (
+                    <div style={{ marginTop: 2 }}>
+                      <Tag style={{ fontSize: 10 }}>{step.action}</Tag>
+                    </div>
+                  )}
+                </div>
+              )}
+              status={statusFor(step)}
+              icon={meta.icon}
+            />
+          );
         })}
-    />
+    </Steps>
   );
 }
 
@@ -257,7 +261,7 @@ export default function PlanPanel({
 
   const handleGenerate = useCallback(async () => {
     if (!query.trim()) {
-      message.warning('请先输入任务描述');
+      Toast.warning('请先输入任务描述');
       return;
     }
     setLoading(true);
@@ -338,12 +342,12 @@ export default function PlanPanel({
     const skipLoading = actionLoading === `skip:${step.stepId}`;
 
     return (
-      <Space size="small">
+      <Space spacing="tight">
         {step.status === 'pending' && step.requiresApproval && (
-          <Tooltip title="批准执行此步骤">
+          <Tooltip content="批准执行此步骤">
             <Button
               size="small"
-              type="link"
+              theme="borderless"
               icon={<CheckOutlined />}
               loading={approveLoading}
               onClick={() => handleApprove(step.stepId)}
@@ -360,11 +364,11 @@ export default function PlanPanel({
             okText="跳过"
             cancelText="取消"
           >
-            <Tooltip title="跳过此步骤">
+            <Tooltip content="跳过此步骤">
               <Button
                 size="small"
-                type="link"
-                danger
+                theme="borderless"
+                type="danger"
                 icon={<SwapOutlined />}
                 loading={skipLoading}
                 data-testid={`skip-${step.stepId}`}
@@ -375,8 +379,8 @@ export default function PlanPanel({
           </Popconfirm>
         )}
         {step.status === 'running' && (
-          <Tag icon={<LoadingOutlined />} color="processing">
-            执行中
+          <Tag color="blue">
+            <LoadingOutlined style={{ marginRight: 4 }} />执行中
           </Tag>
         )}
       </Space>
@@ -385,11 +389,10 @@ export default function PlanPanel({
 
   return (
     <Card
-      size="small"
       style={{ marginBottom: 8 }}
       title={
         <Space>
-          <ScheduleOutlined style={{ color: '#1677ff' }} />
+          <ScheduleOutlined style={{ color: 'var(--primary)' }} />
           <Typography.Text strong>任务计划</Typography.Text>
           {plan && planStatusMeta && (
             <Tag color={planStatusMeta.color}>{planStatusMeta.label}</Tag>
@@ -407,15 +410,16 @@ export default function PlanPanel({
         </Space>
       }
     >
-      <Space orientation="vertical" style={{ width: '100%' }} size="small">
+      <Space vertical spacing="tight" style={{ width: '100%' }}>
         <TextArea
           value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
+          onChange={(v) => onQueryChange(v)}
           placeholder="描述您的复杂任务，如：分析销售数据并生成周报"
           rows={2}
         />
         <Space>
           <Button
+            theme="solid"
             type="primary"
             icon={<SearchOutlined />}
             loading={loading}
@@ -439,19 +443,17 @@ export default function PlanPanel({
         <Spin spinning={loading}>
           {!plan ? (
             <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <span style={{ fontSize: 12, color: '#999' }}>
+                <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
                   输入复杂任务后点击「生成计划」，Agent 将自主分解步骤
                 </span>
               }
             />
           ) : (
-            <Space orientation="vertical" style={{ width: '100%' }} size="small">
-              <Alert
+            <Space vertical spacing="tight" style={{ width: '100%' }}>
+              <Banner
                 type="info"
-                showIcon
-                message={plan.title}
+                title={plan.title}
                 description={
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {plan.description}（共 {plan.steps.length} 步）
@@ -460,16 +462,19 @@ export default function PlanPanel({
                 style={{ padding: '6px 12px' }}
               />
 
-              <div style={{ padding: '8px 0' }}>{stepsToAntSteps(plan)}</div>
+              <div style={{ padding: '8px 0' }}>{stepsToSemiSteps(plan)}</div>
 
-              <div style={{ borderTop: '1px dashed #e8e8e8', paddingTop: 8 }}>
+              <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 8 }}>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   步骤详情：
                 </Typography.Text>
-                <Timeline
-                  items={stepsToTimelineItems(plan.steps).map((item) => ({
-                    ...item,
-                    children: (
+                <Timeline style={{ marginTop: 8 }}>
+                  {stepsToTimelineItems(plan.steps).map((item) => (
+                    <Timeline.Item
+                      key={item.key}
+                      dot={item.dot}
+                      color={item.color}
+                    >
                       <div>
                         {item.children as React.ReactNode}
                         <div style={{ marginTop: 4 }}>
@@ -480,21 +485,18 @@ export default function PlanPanel({
                           )}
                         </div>
                       </div>
-                    ),
-                  }))}
-                  style={{ marginTop: 8 }}
-                />
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
               </div>
 
               {plan.status === 'running' && (
-                <Tag icon={<LoadingOutlined />} color="processing">
-                  正在执行…
+                <Tag color="blue">
+                  <LoadingOutlined style={{ marginRight: 4 }} />正在执行…
                 </Tag>
               )}
             </Space>
           )}
         </Spin>
       </Space>
-    </Card>
-  );
-}
+   

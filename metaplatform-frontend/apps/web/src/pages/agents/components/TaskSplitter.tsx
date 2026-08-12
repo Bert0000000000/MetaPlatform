@@ -1,4 +1,4 @@
-import { Card, Form, Input, Select, Button, Space } from 'antd';
+import { Button, Card, Form, Input, Select, Space } from '@douyinfe/semi-ui';
 import { useState } from 'react';
 import { ThunderboltOutlined } from '@ant-design/icons';
 
@@ -11,7 +11,7 @@ export default function TaskSplitter({ onSubTasksGenerated }: TaskSplitterProps)
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = async () => {
-    const v = await form.validateFields();
+    const v = await form.validate();
     setLoading(true);
     try {
       await new Promise((r) => setTimeout(r, 800));
@@ -35,27 +35,38 @@ export default function TaskSplitter({ onSubTasksGenerated }: TaskSplitterProps)
 
   return (
     <Card title="任务拆分">
-      <Form form={form} layout="vertical">
-        <Form.Item name="title" label="任务标题" rules={[{ required: true }]}>
-          <Input placeholder="例如：季度复盘报告" />
-        </Form.Item>
-        <Form.Item name="description" label="任务描述">
-          <Input.TextArea rows={3} placeholder="任务的背景、目标、产出" />
-        </Form.Item>
-        <Form.Item name="strategy" label="拆分策略" rules={[{ required: true }]}>
-          <Select
-            options={[
-              { label: '并行执行', value: 'parallel' },
-              { label: '顺序执行', value: 'sequential' },
-              { label: '混合模式', value: 'hybrid' },
-            ]}
-          />
-        </Form.Item>
-        <Form.Item name="count" label="子任务数量">
-          <Input placeholder="AI 会根据策略自动拆分" disabled />
-        </Form.Item>
+      <Form form={form}>
+        <Form.Input
+          field="title"
+          label="任务标题"
+          rules={[{ required: true }]}
+          placeholder="例如：季度复盘报告"
+        />
+        <Form.TextArea
+          field="description"
+          label="任务描述"
+          rows={3}
+          placeholder="任务的背景、目标、产出"
+        />
+        <Form.Select
+          field="strategy"
+          label="拆分策略"
+          rules={[{ required: true }]}
+          optionList={[
+            { label: '并行执行', value: 'parallel' },
+            { label: '顺序执行', value: 'sequential' },
+            { label: '混合模式', value: 'hybrid' },
+          ]}
+        />
+        <Form.Input
+          field="count"
+          label="子任务数量"
+          placeholder="AI 会根据策略自动拆分"
+          disabled
+        />
         <Space>
           <Button
+            theme="solid"
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={loading}

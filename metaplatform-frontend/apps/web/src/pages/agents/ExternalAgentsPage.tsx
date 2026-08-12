@@ -6,25 +6,29 @@ import {
   Empty,
   Input,
   Modal,
-  Rate,
+  Rating,
   Space,
   Table,
   Tag,
   Typography,
-  message,
-} from 'antd';
-import { PlusOutlined, SyncOutlined, EyeOutlined } from '@ant-design/icons';
+  Toast,
+} from '@douyinfe/semi-ui';
+import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import { PlusOutlined, SyncOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import { discoverAgents, listDelegations } from '@/api/dw/a2a';
 import ExternalAgentCard from './components/ExternalAgentCard';
 import DelegationForm from './components/DelegationForm';
 import DelegationDetailDrawer from './components/DelegationDetailDrawer';
 import type { Delegation, ExternalAgent } from '@/api/dw/a2a';
 
+type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
+
 export default function ExternalAgentsPage() {
   const [agents, setAgents] = useState<ExternalAgent[]>([]);
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [delegatingAgent, setDelegatingAgent] = useState<ExternalAgent | null>(null);
   const [viewingAgent, setViewingAgent] = useState<ExternalAgent | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -48,7 +52,7 @@ export default function ExternalAgentsPage() {
     setLoading(true);
     try {
       await discoverAgents();
-      message.success('已发现外部 Agent');
+      Toast.success('已发现外部 Agent');
       await load();
     } finally {
       setLoading(false);
@@ -71,12 +75,12 @@ export default function ExternalAgentsPage() {
     );
   };
 
-  const columns = [
+  const columns: SemiColumns<Delegation> = [
     {
       title: '委托任务',
       key: 'task',
       render: (_: unknown, d: Delegation) => (
-        <Space orientation="vertical" size={0}>
+        <Space vertical spacing={0}>
           <Typography.Text strong>
             {typeof d.payload?.task === 'string' ? d.payload.task : d.taskType}
           </Typography.Text>
@@ -93,14 +97,14 @@ export default function ExternalAgentsPage() {
         <Tag
           color={
             v === 'COMPLETED'
-              ? 'success'
+              ? 'green'
               : v === 'FAILED' || v === 'CANCELED' || v === 'CANCELLED'
-              ? 'error'
+              ? 'red'
               : v === 'WORKING'
-              ? 'processing'
+              ? 'blue'
               : v === 'INPUT_REQUIRED'
-              ? 'warning'
-              : 'default'
+              ? 'orange'
+              : 'grey'
           }
         >
           {v}
@@ -123,7 +127,8 @@ export default function ExternalAgentsPage() {
       key: 'actions',
       render: (_: unknown, d: Delegation) => (
         <Button
-          type="link"
+          theme="borderless"
+          type="primary"
           icon={<EyeOutlined />}
           onClick={() => setDetailId(d.taskId)}
         >
@@ -136,15 +141,18 @@ export default function ExternalAgentsPage() {
   return (
     <div>
       <div className="mcphub-page-header">
-        <Typography.Title level={4} style={{ margin: 0 }}>
+        <Typography.Title heading={4} style={{ margin: 0 }}>
           A2A 外部协作
         </Typography.Title>
         <Space>
-          <Input.Search
+          <Input
             placeholder="搜索外部 Agent"
-            allowClear
-            onSearch={setKeyword}
+            showClear
+            prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
             style={{ width: 240 }}
+            value={searchInput}
+            onChange={(v: string) => setSearchInput(v)}
+            onEnterPress={() => setKeyword(searchInput)}
           />
           <Button icon={<SyncOutlined />} onClick={handleDiscover} loading={loading}>
             发现外部 Agent
@@ -153,11 +161,8 @@ export default function ExternalAgentsPage() {
       </div>
 
       {filteredAgents.length === 0 && !loading ? (
-        <Empty
-          description="尚未发现外部 Agent"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        >
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleDiscover}>
+        <Empty description="尚未发现外部 Agent">
+          <Button theme="solid" type="primary" icon={<PlusOutlined />} onClick={handleDiscover}>
             开始发现
           </Button>
         </Empty>
@@ -204,37 +209,37 @@ export default function ExternalAgentsPage() {
 
       <Modal
         title="外部 Agent 详情"
-        open={!!viewingAgent}
+        visible={!!viewingAgent}
         onCancel={() => setViewingAgent(null)}
         footer={null}
         width={560}
       >
         {viewingAgent && (
-          <Space orientation="vertical" style={{ width: '100%' }}>
-            <Typography.Title level={5}>{viewingAgent.name}</Typography.Title>
+          <Space vertical style={{ width: '100%' }}>
+            <Typography.Title heading={5}>{viewingAgent.name}</Typography.Title>
             <Typography.Paragraph type="secondary">
               {viewingAgent.description || '暂无描述'}
             </Typography.Paragraph>
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Agent ID">{viewingAgent.agentId}</Descriptions.Item>
-              <Descriptions.Item label="Endpoint">{viewingAgent.endpoint}</Descriptions.Item>
-              <Descriptions.Item label="认证方式">{viewingAgent.authType}</Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Tag color={viewingAgent.status === 'online' ? 'green' : viewingAgent.status === 'error' ? 'red' : 'default'}>
+            <Descriptions column={1} size="small">
+              <Descriptions.Item itemKey="Agent ID">{viewingAgent.agentId}</Descriptions.Item>
+              <Descriptions.Item itemKey="Endpoint">{viewingAgent.endpoint}</Descriptions.Item>
+              <Descriptions.Item itemKey="认证方式">{viewingAgent.authType}</Descriptions.Item>
+              <Descriptions.Item itemKey="状态">
+                <Tag color={viewingAgent.status === 'online' ? 'green' : viewingAgent.status === 'error' ? 'red' : 'grey'}>
                   {viewingAgent.status}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="评分">
-                <Rate disabled defaultValue={viewingAgent.rating} allowHalf />
+              <Descriptions.Item itemKey="评分">
+                <Rating disabled defaultValue={viewingAgent.rating} allowHalf />
               </Descriptions.Item>
-              <Descriptions.Item label="委托次数">{viewingAgent.totalDelegations}</Descriptions.Item>
+              <Descriptions.Item itemKey="委托次数">{viewingAgent.totalDelegations}</Descriptions.Item>
             </Descriptions>
             <Space wrap>
               {viewingAgent.capabilities.map((c) => (
                 <Tag key={c} color="blue">{c}</Tag>
               ))}
             </Space>
-            <Button type="primary" onClick={() => { setDelegatingAgent(viewingAgent); setViewingAgent(null); }}>
+            <Button theme="solid" type="primary" onClick={() => { setDelegatingAgent(viewingAgent); setViewingAgent(null); }}>
               委托任务
             </Button>
           </Space>

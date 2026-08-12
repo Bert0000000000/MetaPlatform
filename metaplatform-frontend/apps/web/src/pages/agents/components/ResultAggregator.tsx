@@ -1,6 +1,6 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Button, Card, Empty, Space, Tag, Typography, message } from 'antd';
+import { Button, Card, Empty, Space, Tag, Toast, Typography } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined, FileTextOutlined } from '@ant-design/icons';
 import { aggregateReport } from '@/api/dw/evaluations';
 import type { CollaborationTask } from '@/api/dw/collaborations';
@@ -34,7 +34,7 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
 
   const handleAggregate = async () => {
     if (employeeIds.length === 0) {
-      message.warning('子任务未关联任何员工，无法聚合');
+      Toast.warning('子任务未关联任何员工，无法聚合');
       return;
     }
     setLoading(true);
@@ -50,7 +50,7 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
         avgQualityScore: resp.avgQualityScore,
         successRate: resp.successRate,
       });
-      message.success('已聚合');
+      Toast.success('已聚合');
     } finally {
       setLoading(false);
     }
@@ -64,11 +64,11 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
 
   return (
     <Card title="结果汇聚">
-      <Space orientation="vertical" style={{ width: '100%' }}>
-        <Typography.Text type="secondary">
+      <Space vertical style={{ width: '100%' }}>
+        <Typography.Text type="tertiary">
           子任务完成情况：{completed} / {task.subtasks.length}
         </Typography.Text>
-        <Typography.Text type="secondary">
+        <Typography.Text type="tertiary">
           参与员工：{employeeIds.length > 0 ? employeeIds.map((id) => (
             <Tag key={id} color="blue" style={{ marginRight: 4 }}>
               {id}
@@ -76,6 +76,7 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
           )) : '（无）'}
         </Typography.Text>
         <Button
+          theme="solid"
           type="primary"
           icon={<ThunderboltOutlined />}
           loading={loading}
@@ -86,8 +87,8 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
         </Button>
 
         {metrics && (
-          <Card type="inner" size="small" title="聚合指标">
-            <Space size="large" wrap>
+          <Card title="聚合指标">
+            <Space spacing="loose" wrap>
               <Typography.Text>
                 员工数：<strong>{metrics.totalEmployees}</strong>
               </Typography.Text>
@@ -106,7 +107,7 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
         )}
 
         {aggregated && (
-          <Card type="inner" size="small" title={<><FileTextOutlined /> 汇聚结果</>}>
+          <Card title={<><FileTextOutlined /> 汇聚结果</>}>
             <pre style={codeStyle}>
               {aggregated}
             </pre>
@@ -118,7 +119,7 @@ export default function ResultAggregator({ task }: ResultAggregatorProps) {
 }
 
 const codeStyle: CSSProperties = {
-  background: '#fafafa',
+  background: 'var(--semi-color-fill-0)',
   padding: 12,
   borderRadius: 4,
   fontFamily: 'Menlo, Consolas, monospace',

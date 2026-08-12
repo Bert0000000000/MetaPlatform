@@ -1,4 +1,4 @@
-import { message } from 'antd';
+import { Toast } from '@douyinfe/semi-ui';
 import type { GenerateType, GeneratedConfig } from '@/api/superai/types';
 
 const STORAGE_KEY = 'metaplatform:designer:import';
@@ -30,7 +30,7 @@ const MODULE_LABEL: Record<DesignerModuleType, string> = {
 export function importToDesigner(config: GeneratedConfig): void {
   const targetModuleType = TYPE_TO_MODULE[config.type];
   if (!targetModuleType) {
-    message.warning('当前生成类型暂不支持导入到设计器');
+    Toast.warning('当前生成类型暂不支持导入到设计器');
     return;
   }
 
@@ -44,11 +44,11 @@ export function importToDesigner(config: GeneratedConfig): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {
-    message.error('写入本地存储失败，请检查浏览器存储权限');
+    Toast.error('写入本地存储失败，请检查浏览器存储权限');
     return;
   }
 
   const url = URL_BY_MODULE[targetModuleType];
   window.open(url, '_blank');
-  message.success(`已跳转到${MODULE_LABEL[targetModuleType]}设计器`);
+  Toast.success(`已跳转到${MODULE_LABEL[targetModuleType]}设计器`);
 }
