@@ -28,12 +28,10 @@ import {
 } from '@ant-design/icons';
 import { getEmployee, updateEmployee } from '@/api/dw/employees';
 import { listAiModels, type AiModelItem } from '@/api/admin/models';
+import { useEmployeeOptions } from './components/useEmployeeOptions';
 import type { Employee } from '@/api/dw/types';
 import {
   ROLE_CATEGORY_OPTIONS,
-  MOCK_TOOLS,
-  MOCK_KNOWLEDGE_BASES,
-  MOCK_ACTIONS,
   DIALOG_STYLE_PRESETS,
 } from '@/api/dw/types';
 
@@ -60,6 +58,7 @@ export default function CapabilityConfigPage() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [aiModels, setAiModels] = useState<AiModelItem[]>([]);
+  const { tools: realTools, actions: realActions, kb: realKb } = useEmployeeOptions();
 
   useEffect(() => {
     // 从后台 provider 注册表拉真实模型清单（AI Providers 页「获取模型」产物）
@@ -303,7 +302,7 @@ export default function CapabilityConfigPage() {
             <Space>
               <ToolOutlined /> 工具配置
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {MOCK_TOOLS.length} 个可用
+                {realTools.length} 个可用
               </Text>
             </Space>
           }
@@ -312,13 +311,13 @@ export default function CapabilityConfigPage() {
           <Form.Item name="tools">
             <Checkbox.Group style={{ width: '100%' }}>
               <Row gutter={[16, 12]}>
-                {MOCK_TOOLS.map((tool) => (
-                  <Col key={tool.id} span={12}>
-                    <Checkbox value={tool.id} style={{ alignItems: 'flex-start' }}>
+                {realTools.map((tool) => (
+                  <Col key={tool.code} span={12}>
+                    <Checkbox value={tool.code} style={{ alignItems: 'flex-start' }}>
                       <Space orientation="vertical" size={0}>
                         <Space size={4}>
                           <Text strong style={{ fontSize: 13 }}>{tool.name}</Text>
-                          <Text type="secondary" style={{ fontSize: 11 }}>{tool.category}</Text>
+                          <Text type="secondary" style={{ fontSize: 11 }}>{tool.kind}</Text>
                         </Space>
                       </Space>
                     </Checkbox>
@@ -336,7 +335,7 @@ export default function CapabilityConfigPage() {
             <Space>
               <ThunderboltOutlined /> 动作配置
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {MOCK_ACTIONS.length} 个可触发 ActionType
+                {realActions.length} 个可触发 ActionType
               </Text>
             </Space>
           }
@@ -345,9 +344,9 @@ export default function CapabilityConfigPage() {
           <Form.Item name="actionRids" label="可触发的动作">
             <Checkbox.Group style={{ width: '100%' }}>
               <Row gutter={[16, 12]}>
-                {MOCK_ACTIONS.map((act) => (
-                  <Col key={act.id} span={12}>
-                    <Checkbox value={act.id} style={{ alignItems: 'flex-start' }}>
+                {realActions.map((act) => (
+                  <Col key={act.rid} span={12}>
+                    <Checkbox value={act.rid} style={{ alignItems: 'flex-start' }}>
                       <Space orientation="vertical" size={0}>
                         <Space size={4}>
                           <Text strong style={{ fontSize: 13 }}>{act.name}</Text>
@@ -370,7 +369,7 @@ export default function CapabilityConfigPage() {
             <Space>
               <DatabaseOutlined /> RAG 知识库配置
               <Text type="secondary" style={{ fontSize: 12 }}>
-                {MOCK_KNOWLEDGE_BASES.length} 个可用
+                {realKb.length} 个可用
               </Text>
             </Space>
           }
@@ -379,12 +378,12 @@ export default function CapabilityConfigPage() {
           <Form.Item name="ragKnowledgeBaseIds" label="知识库范围">
             <Checkbox.Group style={{ width: '100%' }}>
               <Row gutter={[16, 8]}>
-                {MOCK_KNOWLEDGE_BASES.map((kb) => (
+                {realKb.map((kb) => (
                   <Col key={kb.id} span={12}>
                     <Checkbox value={kb.id}>
                       <Space size={4}>
                         <Text style={{ fontSize: 13 }}>{kb.name}</Text>
-                        <Text type="secondary" style={{ fontSize: 11 }}>({kb.documentCount} 篇)</Text>
+                        <Text type="secondary" style={{ fontSize: 11 }}>({kb.documentCount ?? 0} 篇)</Text>
                       </Space>
                     </Checkbox>
                   </Col>

@@ -11,7 +11,9 @@ import type { Employee, EmployeeCapability } from './types';
 export interface AgentTool {
   id: string;
   name: string;
-  category: string;
+  code: string;
+  kind?: string;
+  enabled?: boolean;
 }
 
 export interface LlmModel {
@@ -23,19 +25,26 @@ export interface LlmModel {
 export interface KnowledgeBase {
   id: string;
   name: string;
-  documentCount: number;
+  code: string;
+  documentCount?: number;
 }
 
-export async function listTools(): Promise<AgentTool[]> {
-  return get<AgentTool[]>('/dw/tools');
+/** 解包标准 `{data:{items:[...]}}` 分页响应为数组。 */
+async function listItems<T>(url: string): Promise<T[]> {
+  const res = await get<{ items?: T[] }>(url);
+  return res?.items ?? [];
 }
 
-export async function listModels(): Promise<LlmModel[]> {
-  return get<LlmModel[]>('/dw/models');
+export function listTools(): Promise<AgentTool[]> {
+  return listItems<AgentTool>('/dw/tools');
 }
 
-export async function listKnowledgeBases(): Promise<KnowledgeBase[]> {
-  return get<KnowledgeBase[]>('/dw/knowledge-bases');
+export function listModels(): Promise<LlmModel[]> {
+  return listItems<LlmModel>('/dw/models');
+}
+
+export function listKnowledgeBases(): Promise<KnowledgeBase[]> {
+  return listItems<KnowledgeBase>('/dw/knowledge-bases');
 }
 
 export async function updateCapability(

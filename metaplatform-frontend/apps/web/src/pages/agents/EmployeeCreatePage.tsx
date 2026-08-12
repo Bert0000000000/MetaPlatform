@@ -27,11 +27,9 @@ import {
   ROLE_CATEGORY_OPTIONS,
   ROLE_CATEGORY_MAP,
   DIALOG_STYLE_PRESETS,
-  MOCK_TOOLS,
   MOCK_MODELS,
-  MOCK_KNOWLEDGE_BASES,
-  MOCK_ACTIONS,
 } from '@/api/dw/types';
+import { useEmployeeOptions, actionName } from './components/useEmployeeOptions';
 
 const { TextArea } = Input;
 
@@ -124,6 +122,7 @@ export default function EmployeeCreatePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const { tools: realTools, actions: realActions, kb: realKb } = useEmployeeOptions();
 
   // 优先使用浏览器历史回退；若直接打开创建页（无历史）则跳到列表页
   const goBack = () => {
@@ -334,9 +333,9 @@ export default function EmployeeCreatePage() {
         <Form.Item name="tools">
           <Checkbox.Group style={{ width: '100%' }}>
             <Space orientation="vertical">
-              {MOCK_TOOLS.map((tool) => (
-                <Checkbox key={tool.id} value={tool.id}>
-                  <Tag>{tool.category}</Tag> {tool.name}
+              {realTools.map((tool) => (
+                <Checkbox key={tool.code} value={tool.code}>
+                  <Tag>{tool.kind || 'tool'}</Tag> {tool.name}
                 </Checkbox>
               ))}
             </Space>
@@ -349,8 +348,8 @@ export default function EmployeeCreatePage() {
         <Form.Item name="actionRids">
           <Checkbox.Group style={{ width: '100%' }}>
             <Space orientation="vertical">
-              {MOCK_ACTIONS.map((act) => (
-                <Checkbox key={act.id} value={act.id}>
+              {realActions.map((act) => (
+                <Checkbox key={act.rid} value={act.rid}>
                   <Tag>{act.category}</Tag> {act.name}
                 </Checkbox>
               ))}
@@ -414,9 +413,9 @@ export default function EmployeeCreatePage() {
       <Form.Item name="ragKnowledgeBaseIds">
         <Checkbox.Group style={{ width: '100%' }}>
           <Space orientation="vertical">
-            {MOCK_KNOWLEDGE_BASES.map((kb) => (
+            {realKb.map((kb) => (
               <Checkbox key={kb.id} value={kb.id}>
-                {kb.name}（{kb.documentCount} 篇文档）
+                {kb.name}（{kb.documentCount ?? 0} 篇文档）
               </Checkbox>
             ))}
           </Space>
@@ -476,7 +475,7 @@ export default function EmployeeCreatePage() {
           <Descriptions.Item label="已选工具">
             {values.tools.length > 0
               ? values.tools
-                  .map((id: string) => MOCK_TOOLS.find((t) => t.id === id)?.name)
+                  .map((id: string) => realTools.find((t) => t.code === id)?.name || id)
                   .join('、')
               : '未选择'}
           </Descriptions.Item>
@@ -495,7 +494,7 @@ export default function EmployeeCreatePage() {
           <Descriptions.Item label="已绑定知识库">
             {values.ragKnowledgeBaseIds.length > 0
               ? values.ragKnowledgeBaseIds
-                  .map((id: string) => MOCK_KNOWLEDGE_BASES.find((k) => k.id === id)?.name)
+                  .map((id: string) => realKb.find((k) => k.id === id)?.name || id)
                   .join('、')
               : '未绑定'}
           </Descriptions.Item>
