@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { Button } from '@douyinfe/semi-ui';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Upload, Search, FileText, BarChart3, BrainCircuit, FileSpreadsheet,
@@ -103,10 +104,10 @@ export default function DeliverablesPage() {
               <span title="API 不可达，使用本地兜底数据" style={{ fontSize: 10, padding: '1px 6px', borderRadius: 9999, background: 'var(--warning-subtle)', color: 'var(--warning)' }}>本地数据</span>
             )}
           </div>
-          <button className="v-btn v-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Button theme="solid" type="primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Upload style={{ width: 14, height: 14 }} />
             <span>上传材料</span>
-          </button>
+          </Button>
         </div>
 
         {/* Stats cards */}
