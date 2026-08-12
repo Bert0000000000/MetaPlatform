@@ -572,6 +572,13 @@ export default function ChatPage() {
     [],
   );
 
+  // 挂载后 / 切换到后端会话时自动加载历史（消息已持久化，刷新不再为空）
+  useEffect(() => {
+    if (isBackendConversation(activeId)) {
+      void loadHistoryIfNeeded(activeId);
+    }
+  }, [activeId, loadHistoryIfNeeded]);
+
   const activeSession = useMemo(
     () => sessions.find((s) => s.id === activeId) || sessions[0],
     [sessions, activeId],
@@ -677,6 +684,8 @@ export default function ChatPage() {
       if (!trimmed || loading) return;
 
       const sessionId = activeSession.id;
+      // 仅后端会话（conv-*）可持久化消息；本地临时会话不传 conversationId。
+      const conversationId = isBackendConversation(sessionId) ? sessionId : undefined;
 
       if (isMultimodal) {
         if (imageFiles.length === 0) {
@@ -737,6 +746,7 @@ export default function ChatPage() {
             text: trimmed,
             images: filesToSend.map((f) => f.originFileObj as File).filter(Boolean),
             systemPrompt: UNIFIED_SYSTEM_PROMPT,
+            conversationId,
           });
           updateMessage(sessionId, assistantId, (msg) => ({
             ...msg,
@@ -889,7 +899,7 @@ export default function ChatPage() {
           },
         },
         controller.signal,
-        { model: currentModel },
+        { model: currentModel, conversationId },
       );
     },
     [activeSession, loading, updateSession, updateMessage, selectedKbIds, isMultimodal, selectedModelId, imageFiles, currentModel],

@@ -19,7 +19,7 @@ from typing import Any
 
 import os
 import sqlparse
-from fastapi import APIRouter, Body, HTTPException, Query, Request
+from fastapi import APIRouter, Body, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, select
 from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
@@ -44,6 +44,7 @@ from ..clients.llmgw_stream import LlmgwStreamClient, LlmgwStreamError
 from ..llm import stub_provider
 from ..repositories import (
     AssetRecord,
+    Conversation,
     list_actions,
     list_assets,
     list_conversations,
@@ -55,6 +56,8 @@ from ..repositories import (
     list_queries,
     list_templates,
     put_asset,
+    put_conversation,
+    delete_conversation as in_memory_delete_conversation,
 )
 from ..repositories.sql_models import ConversationORM, MessageORM
 
@@ -67,6 +70,19 @@ router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
 def _tid(request: Request) -> str:
     ctx = request.state.ctx
     return str(require_tenant(ctx))
+
+
+def _mark_deprecated(response: Response) -> None:
+    """A3 吸收标记：scheduling 编排入口已迁移到 mate-tech-orchestrator。"""
+    response.headers["Deprecation"] = "true"
+    response.headers["X-Sunset"] = "2026-12-31"
+    response.headers["X-Migrated-To"] = "/api/v1/orchestrator/scheduling/*"
+
+
+def _uid(request: Request) -> str:
+    """当前用户 ID（JWT sub）。会话/消息按 tenant + user 两级隔离。"""
+    ctx = request.state.ctx
+    return str(getattr(ctx, "user_id", "") or "")
 
 
 def _now_iso() -> str:
@@ -83,6 +99,7 @@ def _conv_orm_to_dict(orm: Any) -> dict[str, Any]:
         "createdAt": orm.created_at,
         "updatedAt": getattr(orm, "updated_at", orm.created_at),
         "preview": getattr(orm, "preview", orm.summary or ""),
+        "userId": getattr(orm, "user_id", ""),
     }
 
 
@@ -94,6 +111,22 @@ def _msg_orm_to_dict(orm: Any) -> dict[str, Any]:
         "content": orm.content,
         "createdAt": orm.created_at,
         "metadata": json.loads(orm.metadata_json) if orm.metadata_json else {},
+        "userId": getattr(orm, "user_id", ""),
+    }
+
+
+def _conv_in_memory_to_dict(conv: Any) -> dict[str, Any]:
+    """In-memory Conversation dataclass → 与 ORM 路径一致的响应形状。"""
+    return {
+        "id": conv.id,
+        "title": conv.title,
+        "mode": getattr(conv, "mode", "chat"),
+        "favorite": getattr(conv, "favorite", False),
+        "messageCount": conv.message_count,
+        "createdAt": conv.created_at,
+        "updatedAt": getattr(conv, "updated_at", conv.created_at),
+        "preview": getattr(conv, "preview", conv.summary or ""),
+        "userId": getattr(conv, "user_id", ""),
     }
 
 
@@ -620,23 +653,27 @@ async def get_code(request: Request) -> dict[str, Any]:
 @router.get("/conversations")
 async def get_conversations(request: Request) -> dict[str, Any]:
     tid = _tid(request)
+    uid = _uid(request)
     # Read from PostgreSQL (merge with in-memory fallback)
     try:
         session = get_session()
         try:
-            orms = session.query(ConversationORM).filter_by(tenant_id=tid).order_by(ConversationORM.created_at.desc()).all()
+            orms = session.query(ConversationORM).filter_by(tenant_id=tid, user_id=uid).order_by(ConversationORM.created_at.desc()).all()
             db_items = [_conv_orm_to_dict(o) for o in orms]
             return {"items": db_items, "total": len(db_items)}
         finally:
             session.close()
     except Exception:
         # Fallback to in-memory if DB unavailable
-        return _resp(list_conversations(tid))
+        rows = list_conversations(tid, user_id=uid)
+        items = [_conv_in_memory_to_dict(c) for c in rows]
+        return {"items": items, "total": len(items)}
 
 
 @router.post("/conversations")
 async def create_conversation(request: Request, body: dict = Body(...)) -> dict[str, Any]:
     tid = _tid(request)
+    uid = _uid(request)
     conv_id = f"conv-{uuid.uuid4().hex[:12]}"
     now = _now_iso()
     title = body.get("title", "新会话")
@@ -644,7 +681,7 @@ async def create_conversation(request: Request, body: dict = Body(...)) -> dict[
     session = get_session()
     try:
         orm = ConversationORM(
-            id=conv_id, tenant_id=tid, title=title,
+            id=conv_id, tenant_id=tid, user_id=uid, title=title,
             summary="", message_count=0, created_at=now,
         )
         setattr(orm, "mode", mode)
@@ -656,6 +693,18 @@ async def create_conversation(request: Request, body: dict = Body(...)) -> dict[
         session.refresh(orm)
         _emit(request, "copilot.conversation.created", conv_id, {"title": title}, tid)
         return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
+    except Exception:  # noqa: BLE001 — DB 不可用时 in-memory 兜底
+        conv = Conversation(
+            id=conv_id, tenant_id=tid, title=title, user_id=uid,
+            summary="", message_count=0, created_at=now,
+        )
+        setattr(conv, "mode", mode)
+        setattr(conv, "favorite", False)
+        setattr(conv, "updated_at", now)
+        setattr(conv, "preview", "")
+        put_conversation(tid, conv)
+        _emit(request, "copilot.conversation.created", conv_id, {"title": title}, tid)
+        return {"code": 0, "data": _conv_in_memory_to_dict(conv), "message": "ok"}
     finally:
         session.close()
 
@@ -663,9 +712,10 @@ async def create_conversation(request: Request, body: dict = Body(...)) -> dict[
 @router.get("/conversations/{conv_id}")
 async def get_conversation_detail(request: Request, conv_id: str) -> dict[str, Any]:
     tid = _tid(request)
+    uid = _uid(request)
     session = get_session()
     try:
-        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid).first()
+        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
         if not orm:
             raise HTTPException(status_code=404, detail="Conversation not found")
         return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
@@ -676,15 +726,20 @@ async def get_conversation_detail(request: Request, conv_id: str) -> dict[str, A
 @router.delete("/conversations/{conv_id}")
 async def delete_conversation(request: Request, conv_id: str) -> dict[str, Any]:
     tid = _tid(request)
+    uid = _uid(request)
     session = get_session()
     try:
-        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid).first()
+        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
         if orm:
             session.delete(orm)
-            session.query(MessageORM).filter_by(conversation_id=conv_id).delete()
+            session.query(MessageORM).filter_by(conversation_id=conv_id, user_id=uid).delete()
             session.commit()
             _emit(request, "copilot.conversation.deleted", conv_id, {}, tid)
         # Idempotent: return success even if not found
+        return {"code": 0, "data": None, "message": "ok"}
+    except Exception:  # noqa: BLE001 — DB 不可用时 in-memory 兜底
+        if in_memory_delete_conversation(tid, conv_id, uid):
+            _emit(request, "copilot.conversation.deleted", conv_id, {}, tid)
         return {"code": 0, "data": None, "message": "ok"}
     finally:
         session.close()
@@ -693,9 +748,10 @@ async def delete_conversation(request: Request, conv_id: str) -> dict[str, Any]:
 @router.post("/conversations/{conv_id}/favorite")
 async def toggle_favorite(request: Request, conv_id: str) -> dict[str, Any]:
     tid = _tid(request)
+    uid = _uid(request)
     session = get_session()
     try:
-        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid).first()
+        orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
         if not orm:
             raise HTTPException(status_code=404, detail="Conversation not found")
         setattr(orm, "favorite", not getattr(orm, "favorite", False))
@@ -703,6 +759,19 @@ async def toggle_favorite(request: Request, conv_id: str) -> dict[str, Any]:
         session.commit()
         session.refresh(orm)
         return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
+    except HTTPException:
+        raise
+    except Exception:  # noqa: BLE001 — DB 不可用时 in-memory 兜底
+        conv = next(
+            (c for c in list_conversations(tid, user_id=uid) if c.id == conv_id),
+            None,
+        )
+        if conv is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        setattr(conv, "favorite", not getattr(conv, "favorite", False))
+        setattr(conv, "updated_at", _now_iso())
+        put_conversation(tid, conv)
+        return {"code": 0, "data": _conv_in_memory_to_dict(conv), "message": "ok"}
     finally:
         session.close()
 
@@ -712,10 +781,11 @@ async def get_messages(
     request: Request, conv_id: str, page: int = 1, pageSize: int = 50,
 ) -> dict[str, Any]:
     tid = _tid(request)
+    uid = _uid(request)
     session = get_session()
     try:
         q = select(MessageORM).filter_by(
-            conversation_id=conv_id, tenant_id=tid,
+            conversation_id=conv_id, tenant_id=tid, user_id=uid,
         ).order_by(MessageORM.created_at)
         orms = session.execute(q).scalars().all()
         items = [_msg_orm_to_dict(o) for o in orms]
@@ -729,12 +799,24 @@ async def get_messages(
 
 
 # --- Chat stream (1) --------------------------------------------------------
+def _strip_chain_of_thought(content: str) -> str:
+    """Strip reasoning blocks (`<think>...</think>`) from LLM output.
+
+    Chain-of-thought is model-internal reasoning, not user-facing content.
+    MiniMax reasoning models emit the whole think span before the visible
+    answer; leaking it into the chat card looks like an error. Applied both
+    while streaming (so the tokens never reach the frontend) and as a final
+    cleanup on the non-streaming fallback path.
+    """
+    return re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+
+
 @router.post("/chat/completions/stream")
 async def chat_completions_stream(
     request: Request, body: dict = Body(...),
 ) -> StreamingResponse:
     tid = _tid(request)
-    uid = str(getattr(request.state, "user_id", "anonymous")) if hasattr(request, "state") else "anonymous"
+    uid = _uid(request)
     # ADR-0018 §2.2: open copilot.invoke journey span. The span lives
     # for the duration of this request; outcome is set before close.
     # We deliberately do NOT wrap the 140-line handler in a `with`
@@ -766,6 +848,7 @@ async def chat_completions_stream(
                 id=f"msg-{uuid.uuid4().hex[:12]}",
                 conversation_id=conv_id,
                 tenant_id=tid,
+                user_id=uid,
                 role="user",
                 content=messages[-1]["content"] if messages else "",
                 created_at=_now_iso(),
@@ -778,6 +861,9 @@ async def chat_completions_stream(
 
     async def event_stream():
         full_response = ""
+        # Streaming chain-of-thought strip state (see _strip_chain_of_thought).
+        _in_think = False
+        _think_buf = ""
         # Build the streaming client. The host/port come from env so the
         # service is portable across docker-compose / staging / prod
         # (default targets the docker-compose service name + port 8008).
@@ -846,6 +932,32 @@ async def chat_completions_stream(
                     elif "content" in chunk:
                         text = chunk["content"]
                     if text:
+                        # 剥离 <think>…</think> 思维链：MiniMax 把整段 reasoning 放在
+                        # 可见答案之前，边读边缓冲，块关闭后再流式输出干净内容。
+                        if _in_think:
+                            _think_buf += text
+                            end = _think_buf.find("</think>")
+                            if end == -1:
+                                continue
+                            _in_think = False
+                            text = _think_buf[end + len("</think>"):]
+                            _think_buf = ""
+                            if not text:
+                                continue
+                        else:
+                            start = text.find("<think>")
+                            if start != -1:
+                                before = text[:start]
+                                rest = text[start + len("<think>"):]
+                                end = rest.find("</think>")
+                                if end != -1:
+                                    text = before + rest[end + len("</think>"):]
+                                else:
+                                    _in_think = True
+                                    _think_buf = rest
+                                    text = before
+                                if not text:
+                                    continue
                         full_response += text
                         openai_chunk = {
                             "choices": [{"delta": {"content": text}, "index": 0}],
@@ -864,10 +976,10 @@ async def chat_completions_stream(
                         base_url=llm_base_url,
                         api_key=llm_api_key,
                     )
-                    full_response = data.get(
+                    full_response = _strip_chain_of_thought(data.get(
                         "content",
                         data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
-                    )
+                    ))
                 except LlmgwStreamError:
                     full_response = "抱歉，LLM 服务暂时不可用。"
                 chunk = {
@@ -902,14 +1014,24 @@ async def chat_completions_stream(
                     id=f"msg-{uuid.uuid4().hex[:12]}",
                     conversation_id=conv_id,
                     tenant_id=tid,
+                    user_id=uid,
                     role="assistant",
                     content=full_response,
                     created_at=_now_iso(),
                     metadata_json=json.dumps({"model": model}),
                 )
                 session.add(ai_msg)
-                conv = session.query(ConversationORM).filter_by(id=conv_id).first()
+                conv = session.query(ConversationORM).filter_by(
+                    id=conv_id, tenant_id=tid, user_id=uid,
+                ).first()
                 if conv:
+                    # 首条消息触发标题更新（"新对话" → 第一条用户输入）
+                    if not conv.title or conv.title in ("新对话", "新会话"):
+                        first_user = next(
+                            (m.get("content", "") for m in messages if m.get("role") == "user"),
+                            "",
+                        )
+                        setattr(conv, "title", (first_user or conv.title)[:24])
                     conv.message_count = (conv.message_count or 0) + 2
                     setattr(conv, "preview", full_response[:100])
                     setattr(conv, "updated_at", _now_iso())
@@ -1094,6 +1216,36 @@ async def get_multimodal_models(request: Request) -> dict[str, Any]:
 
 
 # --- Ontology (3) -----------------------------------------------------------
+def _walk_cap_nodes(
+    nodes: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Flatten the nested capability tree into a flat node list.
+
+    ``list_capability_tree`` (mate_app_arch) returns a nested dict tree
+    ``{id, code, name, level, children: [...]}`` — this helper walks
+    every level so the copilot handlers can iterate all capabilities.
+    """
+    flat: list[dict[str, Any]] = []
+    for n in nodes:
+        flat.append(n)
+        flat.extend(_walk_cap_nodes(n.get("children", []) or []))
+    return flat
+
+
+def _find_cap_node(
+    nodes: list[dict[str, Any]],
+    node_id: str,
+) -> dict[str, Any] | None:
+    """Find a capability node by id anywhere in the nested tree."""
+    for n in nodes:
+        if n.get("id") == node_id:
+            return n
+        found = _find_cap_node(n.get("children", []) or [], node_id)
+        if found is not None:
+            return found
+    return None
+
+
 @router.get("/ontology/concepts/search")
 async def search_concepts(
     request: Request,
@@ -1102,8 +1254,8 @@ async def search_concepts(
     tid = _tid(request)
     # P2-W4: pull concepts from arch Capability tree + DataEntity store
     concepts: list[dict[str, Any]] = []
-    for cap in list_capability_tree(tid):
-        concepts.append({"id": cap.id, "name": cap.name, "category": "capability"})
+    for cap in _walk_cap_nodes(list_capability_tree(tid)):
+        concepts.append({"id": cap["id"], "name": cap["name"], "category": "capability"})
     for ent in list_data_entities(tid):
         concepts.append({"id": ent.id, "name": ent.name, "category": "entity"})
     kw = keyword.lower()
@@ -1122,13 +1274,12 @@ async def expand_graph(
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
     caps = list_capability_tree(tid)
-    root = next((c for c in caps if c.id == node_id), None)
-    if root:
-        nodes.append({"id": root.id, "label": root.name})
-    children = [c for c in caps if c.parent_id == node_id]
-    for child in children:
-        nodes.append({"id": child.id, "label": child.name})
-        edges.append({"source": node_id, "target": child.id, "label": "contains"})
+    target = _find_cap_node(caps, node_id)
+    if target is not None:
+        nodes.append({"id": target["id"], "label": target["name"]})
+        for child in target.get("children", []) or []:
+            nodes.append({"id": child["id"], "label": child["name"]})
+            edges.append({"source": node_id, "target": child["id"], "label": "contains"})
     # also pull data flows touching this node
     for flow in list_data_flows(tid):
         if node_id in {flow.source_entity_id, flow.target_entity_id}:
@@ -1153,11 +1304,14 @@ async def query_graph(
     # P2-W4: full graph from arch Capability tree + DataEntity store
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
-    for cap in list_capability_tree(tid):
-        nodes.append({"id": cap.id, "label": cap.name, "type": "capability"})
-        if cap.parent_id:
+    caps = list_capability_tree(tid)
+    flat_caps = _walk_cap_nodes(caps)
+    for cap in flat_caps:
+        nodes.append({"id": cap["id"], "label": cap["name"], "type": "capability"})
+    for cap in flat_caps:
+        for child in cap.get("children", []) or []:
             edges.append(
-                {"source": cap.parent_id, "target": cap.id, "label": "contains"}
+                {"source": cap["id"], "target": child["id"], "label": "contains"}
             )
     for ent in list_data_entities(tid):
         nodes.append({"id": ent.id, "label": ent.name, "type": "entity"})
@@ -1195,19 +1349,12 @@ async def query_history(request: Request) -> dict[str, Any]:
 # --- Scheduling (5) ---------------------------------------------------------
 @router.post("/scheduling/employees/match")
 async def match_employees(
+    response: Response,
     request: Request,
     body: dict = Body(...),
 ) -> dict[str, Any]:
-    """意图匹配 → 候选员工列表。
-
-    GOVERN-11 P0：候选池改为从 dw 域主数据 (`GET /api/v1/dw/employees`)
-    实时拉取，**删除** copilot 内部硬编码 employee 影子表。
-
-    命中策略：
-      1) 把 task_type 拆 token，按 token 子串匹配 capabilities/roleCategory
-      2) 全部候选（无 task_type）走全量返回，confidence 全部 1.0
-      3) dw 调用失败 → 回退 in-memory seed（保证不 500）
-    """
+    """意图匹配 → 候选员工列表。A3 已迁移到 orchestrator（本端点弃用）。"""
+    _mark_deprecated(response)
     tenant_id = _tid(request)
     task_type = str(body.get("task_type", body.get("taskType", "")))
     tokens = [t for t in re.split(r"[\s,/_-]+", task_type.lower()) if t]
@@ -1282,7 +1429,8 @@ async def match_employees(
 
 
 @router.post("/scheduling/execution/start")
-async def start_execution(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+async def start_execution(response: Response, request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _mark_deprecated(response)
     tid = _tid(request)
     plan_id = str(body.get("plan_id", "plan-1"))
     execution_id = f"exec-{uuid.uuid4().hex[:8]}"
@@ -1297,7 +1445,8 @@ async def start_execution(request: Request, body: dict[str, Any]) -> dict[str, A
 
 
 @router.post("/scheduling/intent/detect")
-async def detect_intent(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+async def detect_intent(response: Response, request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _mark_deprecated(response)
     tid = _tid(request)
     text = str(body.get("text", ""))
     text_lower = text.lower()
@@ -1339,12 +1488,14 @@ async def detect_intent(request: Request, body: dict[str, Any]) -> dict[str, Any
 
 
 @router.get("/scheduling/intents")
-async def get_intents(request: Request) -> dict[str, Any]:
+async def get_intents(response: Response, request: Request) -> dict[str, Any]:
+    _mark_deprecated(response)
     return _resp(list_intents(_tid(request)))
 
 
 @router.post("/scheduling/plan/generate")
-async def generate_plan(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+async def generate_plan(response: Response, request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _mark_deprecated(response)
     _tid(request)
     goal = str(body.get("goal", ""))
     plan_id = f"plan-{uuid.uuid4().hex[:8]}"
@@ -1368,6 +1519,7 @@ async def generate_plan(request: Request, body: dict[str, Any]) -> dict[str, Any
 
 @router.get("/scheduling/templates")
 async def get_scheduling_templates(
+    response: Response,
     request: Request,
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
@@ -1375,8 +1527,9 @@ async def get_scheduling_templates(
     """List scheduling templates (FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES).
 
     Templates are reusable plan skeletons; we surface the copilot
-    Template catalog, optionally filtered by category.
+    Template catalog, optionally filtered by category. A3: 已迁移 orchestrator。
     """
+    _mark_deprecated(response)
     rows = list_templates(_tid(request))
     return _paginate(rows, page, size)
 

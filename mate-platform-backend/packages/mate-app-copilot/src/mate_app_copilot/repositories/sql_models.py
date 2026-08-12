@@ -21,6 +21,7 @@ class ConversationORM(Base):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, default="", index=True)
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     summary: Mapped[str] = mapped_column(Text, default="")
     message_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -37,6 +38,7 @@ class MessageORM(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     conversation_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, default="", index=True)
     role: Mapped[str] = mapped_column(String(16), nullable=False)  # user|assistant
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[str] = mapped_column(String(64), default="")

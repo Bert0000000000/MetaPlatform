@@ -1117,6 +1117,7 @@ paths:
       - copilot
       summary: /v1/copilot/scheduling/employees/match
       operationId: copilotGetCopilotSchedulingEmployeesMatch
+      deprecated: true
       parameters:
       - $ref: '#/components/parameters/Page'
       - $ref: '#/components/parameters/Size'
@@ -1154,6 +1155,7 @@ paths:
       - copilot
       summary: /v1/copilot/scheduling/execution/start
       operationId: copilotPostCopilotSchedulingExecutionStart
+      deprecated: true
       parameters: []
       requestBody:
         required: true
@@ -1195,6 +1197,7 @@ paths:
       - copilot
       summary: /v1/copilot/scheduling/intent/detect
       operationId: copilotPostCopilotSchedulingIntentDetect
+      deprecated: true
       parameters: []
       requestBody:
         required: true
@@ -1236,6 +1239,7 @@ paths:
       - copilot
       summary: /v1/copilot/scheduling/intents
       operationId: copilotGetCopilotSchedulingIntents
+      deprecated: true
       parameters:
       - $ref: '#/components/parameters/Page'
       - $ref: '#/components/parameters/Size'
@@ -1273,6 +1277,7 @@ paths:
       - copilot
       summary: /v1/copilot/scheduling/plan/generate
       operationId: copilotPostCopilotSchedulingPlanGenerate
+      deprecated: true
       parameters: []
       requestBody:
         required: true
@@ -1314,6 +1319,7 @@ paths:
       - copilot
       summary: /v1/copilot/scheduling/templates
       operationId: copilotGetCopilotSchedulingTemplates
+      deprecated: true
       parameters:
       - $ref: '#/components/parameters/Page'
       - $ref: '#/components/parameters/Size'

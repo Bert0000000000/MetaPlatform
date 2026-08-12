@@ -26,14 +26,19 @@ from dataclasses import dataclass, field
 # ---------------------------------------------------------------------------
 # Dataclasses
 # ---------------------------------------------------------------------------
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Conversation:
     id: str
     tenant_id: str
     title: str
+    user_id: str = ""
     summary: str = ""
     message_count: int = 0
     created_at: str = ""
+    mode: str = "chat"
+    favorite: bool = False
+    updated_at: str = ""
+    preview: str = ""
 
 
 @dataclass(frozen=True)
@@ -356,11 +361,35 @@ def _ensure_tenant(tenant_id: str) -> None:
 # ---------------------------------------------------------------------------
 # Public read API
 # ---------------------------------------------------------------------------
-def list_conversations(tenant_id: str) -> list[Conversation]:
+def list_conversations(tenant_id: str, user_id: str = "") -> list[Conversation]:
     if not tenant_id:
         return []
     _ensure_tenant(tenant_id)
-    return sorted(_CONVERSATIONS[tenant_id].values(), key=lambda c: c.id)
+    rows = _CONVERSATIONS[tenant_id].values()
+    if user_id:
+        rows = [c for c in rows if c.user_id == user_id]
+    return sorted(rows, key=lambda c: c.id)
+
+
+def put_conversation(tenant_id: str, conv: Conversation) -> Conversation:
+    """Upsert a conversation (in-memory fallback when PostgreSQL is down)."""
+    if not tenant_id:
+        return conv
+    _ensure_tenant(tenant_id)
+    _CONVERSATIONS[tenant_id][conv.id] = conv
+    return conv
+
+
+def delete_conversation(tenant_id: str, conv_id: str, user_id: str = "") -> bool:
+    """Delete a conversation (in-memory fallback). Returns True if removed."""
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    row = _CONVERSATIONS[tenant_id].get(conv_id)
+    if row is None or (user_id and row.user_id != user_id):
+        return False
+    del _CONVERSATIONS[tenant_id][conv_id]
+    return True
 
 
 def list_queries(tenant_id: str) -> list[QueryLog]:

@@ -1,6 +1,7 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('copilot', '') });
+// A3: scheduling 编排入口已由 copilot 吸收到 orchestrator。
+const client = createApiClient({ baseURL: '/api/v1/orchestrator' });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }

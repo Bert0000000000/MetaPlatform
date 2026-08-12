@@ -15,12 +15,14 @@ INITIAL_SCHEMA = """
 CREATE TABLE IF NOT EXISTS copilot_conversations (
     id VARCHAR(64) PRIMARY KEY,
     tenant_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(64) NOT NULL DEFAULT '',
     title VARCHAR(256) NOT NULL,
     summary TEXT DEFAULT '',
     message_count INTEGER DEFAULT 0,
     created_at VARCHAR(64) DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_cc_tenant ON copilot_conversations(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_cc_user ON copilot_conversations(user_id);
 
 CREATE TABLE IF NOT EXISTS copilot_queries (
     id VARCHAR(64) PRIMARY KEY,

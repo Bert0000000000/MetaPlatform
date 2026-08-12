@@ -21,7 +21,7 @@ from typing import Any
 import httpx
 import jwt
 import structlog
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import APIRouter, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -550,6 +550,11 @@ install_auth(
         "/api/v1/iam/auth/login",
         "/api/v1/iam/auth/logout",
         "/api/v1/iam/auth/refresh",
+        # /api/v1/iam/sso-providers is the login page's pre-auth probe
+        # (SharedLoginPage lists enabled SSO providers before any token
+        # exists). It was dropped during GOVERN-02-FIX — restore it here so
+        # the login page can render SSO buttons instead of always 401'ing.
+        "/api/v1/iam/sso-providers",
         # /dashboard/auth/login is the workbench mock-login route — never
         # receives a bearer token; it mints the `mb_at_...` workbench token.
         "/api/v1/dashboard/auth/login",
@@ -559,7 +564,27 @@ install_auth(
 # Mount 7 IAM routers (skip auth_router — auth-service owns /iam/auth/login|logout|refresh
 # via Keycloak password grant, with its own implementation).
 # Auth login/refresh/logout stay in auth-service; /iam/auth/me and /iam/sso-providers
-# are not currently called by frontend, so they're dropped.
+# were dropped during GOVERN-02-FIX because the frontend was believed not to call them.
+# SharedLoginPage DOES call /iam/sso-providers pre-auth — restore a minimal handler
+# (no SSO providers are configured in the default dev deployment).
+_sso_router = APIRouter(prefix="/api/v1/iam", tags=["iam-sso"])
+
+
+@_sso_router.get("/sso-providers")
+async def list_sso_providers(
+    page: int = 1,
+    size: int = 100,
+) -> dict[str, Any]:
+    """List enabled SSO providers (empty in default dev deployment)."""
+    return {
+        "code": 0,
+        "data": {"items": [], "total": 0, "page": page, "size": size},
+        "message": "ok",
+    }
+
+
+app.include_router(_sso_router)
+
 from mate_tech_iam.api import (  # noqa: E402
     configs_router,
     dashboard_router,

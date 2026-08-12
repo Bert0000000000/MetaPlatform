@@ -25,6 +25,7 @@ from .in_memory import (
     Plan,
     QueryLog,
     Template,
+    delete_conversation,
     get_asset,
     list_actions,
     list_assets,
@@ -37,6 +38,7 @@ from .in_memory import (
     list_queries,
     list_templates,
     put_asset,
+    put_conversation,
     reset_store,
 )
 
@@ -52,6 +54,7 @@ __all__ = [
     "Plan",
     "QueryLog",
     "Template",
+    "delete_conversation",
     "get_asset",
     "in_memory",
     "list_actions",
@@ -65,6 +68,7 @@ __all__ = [
     "list_queries",
     "list_templates",
     "put_asset",
+    "put_conversation",
     "reset_store",
     "sql_store",
 ]

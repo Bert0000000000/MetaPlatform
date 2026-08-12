@@ -7,6 +7,8 @@ client-routed code explanation endpoint.
 """
 from __future__ import annotations
 
+from conftest import _keycloak_token
+
 
 def test_auth_login_returns_token(client) -> None:
     r = client.post("/api/v1/copilot/auth/login")
@@ -21,11 +23,29 @@ def test_auth_login_returns_token(client) -> None:
 
 
 def test_list_conversations(client, auth_headers_acme) -> None:
+    """会话按 tenant + user 两级隔离：同一租户下不同用户互不可见。"""
+    created = client.post(
+        "/api/v1/copilot/conversations",
+        json={"title": "用户会话", "mode": "chat"},
+        headers=auth_headers_acme,
+    )
+    assert created.status_code == 200, created.text
+    conv_id = created.json()["data"]["id"]
+
+    # 创建者（u-1 / tenant-acme）能看到自己的会话
     r = client.get("/api/v1/copilot/conversations", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["total"] >= 10, body
-    assert all(c["tenant_id"] == "tenant-acme" for c in body["items"])
+    assert any(c["id"] == conv_id for c in body["items"]), body
+    assert all(c["userId"] == "u-1" for c in body["items"]), body
+
+    # 同一租户下的另一用户（u-2）看不到 u-1 的会话
+    other = client.get(
+        "/api/v1/copilot/conversations",
+        headers={"Authorization": f"Bearer {_keycloak_token(sub='u-2', tenant_id='tenant-acme')}"},
+    )
+    assert other.status_code == 200, other.text
+    assert all(c["id"] != conv_id for c in other.json()["items"]), other.json()
 
 
 def test_audit_sql_detects_select_star(client, auth_headers_acme) -> None:
@@ -148,8 +168,12 @@ def test_actions_execute_by_body(client, auth_headers_acme) -> None:
 
 
 def test_generate_process_paginated(client, auth_headers_acme) -> None:
-    """GET /generate/process lists generation processes (FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS)."""
-    r = client.get("/api/v1/copilot/generate/process", headers=auth_headers_acme)
+    """POST /generate/process lists generation processes (FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS)."""
+    r = client.post(
+        "/api/v1/copilot/generate/process",
+        json={},
+        headers=auth_headers_acme,
+    )
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["total"] >= 1, body

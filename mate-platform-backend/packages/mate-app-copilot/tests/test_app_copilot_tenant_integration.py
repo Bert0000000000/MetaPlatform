@@ -152,20 +152,36 @@ def test_new_get_endpoints_tenant_isolation(fresh_app: TestClient) -> None:
 
     Seed data uses fixed ids across tenants (the storage dict is
     per-tenant), so we verify isolation via the ``tenant_id`` field on
-    each row rather than id disjointness.
+    each row rather than id disjointness. ``generate/process`` is a POST
+    endpoint (OpenAPI contract), ``scheduling/templates`` a GET one.
     """
     token_acme = _token(tenant_id="tenant-acme")
     token_globex = _token(tenant_id="tenant-globex")
 
-    for path in ("generate/process", "scheduling/templates"):
-        r_acme = fresh_app.get(
-            f"/api/v1/copilot/{path}",
-            headers={"Authorization": f"Bearer {token_acme}"},
-        )
-        r_globex = fresh_app.get(
-            f"/api/v1/copilot/{path}",
-            headers={"Authorization": f"Bearer {token_globex}"},
-        )
+    for path, method, payload in (
+        ("generate/process", "POST", {}),
+        ("scheduling/templates", "GET", None),
+    ):
+        if method == "POST":
+            r_acme = fresh_app.post(
+                f"/api/v1/copilot/{path}",
+                json=payload,
+                headers={"Authorization": f"Bearer {token_acme}"},
+            )
+            r_globex = fresh_app.post(
+                f"/api/v1/copilot/{path}",
+                json=payload,
+                headers={"Authorization": f"Bearer {token_globex}"},
+            )
+        else:
+            r_acme = fresh_app.get(
+                f"/api/v1/copilot/{path}",
+                headers={"Authorization": f"Bearer {token_acme}"},
+            )
+            r_globex = fresh_app.get(
+                f"/api/v1/copilot/{path}",
+                headers={"Authorization": f"Bearer {token_globex}"},
+            )
         assert r_acme.status_code == 200, (path, r_acme.text)
         assert r_globex.status_code == 200, (path, r_globex.text)
         for item in r_acme.json()["items"]:
@@ -207,7 +223,7 @@ def test_new_endpoints_no_tenant_400(fresh_app: TestClient) -> None:
     """P2-W4: the 3 new endpoints reject requests with no tenant context."""
     token = _token(tenant_id="")
     for method, path, payload in (
-        ("GET", "generate/process", None),
+        ("POST", "generate/process", {}),
         ("GET", "scheduling/templates", None),
         ("POST", "actions/execute", {"action_id": "act-send-email"}),
     ):

@@ -56,6 +56,7 @@ export async function multimodalUploadChat(params: {
   temperature?: number;
   maxTokens?: number;
   systemPrompt?: string;
+  conversationId?: string;
 }): Promise<MultimodalResponse> {
   const formData = new FormData();
   formData.append('modelId', params.modelId);
@@ -64,6 +65,9 @@ export async function multimodalUploadChat(params: {
   formData.append('maxTokens', String(params.maxTokens ?? 1024));
   if (params.systemPrompt) {
     formData.append('systemPrompt', params.systemPrompt);
+  }
+  if (params.conversationId) {
+    formData.append('conversationId', params.conversationId);
   }
   for (const image of params.images) {
     formData.append('image', image);
@@ -79,7 +83,7 @@ export async function streamChat(
   messages: StreamMessage[],
   callbacks: StreamCallbacks,
   signal?: AbortSignal,
-  options?: { model?: string; temperature?: number; maxTokens?: number },
+  options?: { model?: string; temperature?: number; maxTokens?: number; conversationId?: string },
 ): Promise<void> {
   const token = getToken();
   const user = getUser();
@@ -98,6 +102,7 @@ export async function streamChat(
         maxTokens: options?.maxTokens ?? 2048,
         user: user?.id,
         appId: 'app-superai',
+        ...(options?.conversationId ? { conversationId: options.conversationId } : {}),
       }),
       signal,
     });
