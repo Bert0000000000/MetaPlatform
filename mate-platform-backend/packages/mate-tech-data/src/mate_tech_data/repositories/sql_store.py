@@ -12,6 +12,7 @@ dynamic and not part of the persistence contract.
 from __future__ import annotations
 
 import json
+import uuid
 from typing import Any
 
 from sqlalchemy import select
@@ -20,7 +21,7 @@ from sqlalchemy.orm import Session
 from mate_tech_db.base import get_session
 
 from . import sql_models as models
-from .in_memory import CdcTask, DataProduct, DataSource
+from .in_memory import CdcTask, DataProduct, DataSource, _now
 
 
 # ---------------------------------------------------------------------------
@@ -410,3 +411,164 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
         [put_data_product(tenant_id, p) for p in mem.list_data_products(tenant_id)]
     )
     return counts
+
+
+# ---------------------------------------------------------------------------
+# create_*/update_* aliases（与 in_memory 同签名，底层走 put_*）
+# 让 API 层在 SQL 模式下能以完全相同的接口调用。
+# ---------------------------------------------------------------------------
+def create_cdc_task(
+    tenant_id: str,
+    name: str,
+    source_id: str,
+    target_table: str,
+    config: dict[str, Any] | None = None,
+) -> CdcTask:
+    """Create a new CDC task and persist it via put_cdc_task."""
+    now = _now()
+    task = CdcTask(
+        id=f"cdc-{uuid.uuid4().hex[:8]}",
+        tenant_id=tenant_id,
+        name=name,
+        source_id=source_id,
+        target_table=target_table,
+        status="running",
+        config=dict(config or {}),
+        created_at=now,
+        updated_at=now,
+    )
+    return put_cdc_task(tenant_id, task)
+
+
+def update_cdc_task(
+    tenant_id: str,
+    task_id: str,
+    *,
+    name: str | None = None,
+    source_id: str | None = None,
+    target_table: str | None = None,
+    config: dict[str, Any] | None = None,
+) -> CdcTask | None:
+    """Patch mutable fields of an existing CDC task. Returns None if missing."""
+    task = get_cdc_task(tenant_id, task_id)
+    if task is None:
+        return None
+    if name is not None:
+        task.name = name
+    if source_id is not None:
+        task.source_id = source_id
+    if target_table is not None:
+        task.target_table = target_table
+    if config is not None:
+        task.config = dict(config)
+    task.updated_at = _now()
+    return put_cdc_task(tenant_id, task)
+
+
+def create_source(
+    tenant_id: str,
+    name: str,
+    type: str,
+    connection_config: dict[str, Any] | None = None,
+) -> DataSource:
+    """Create a new data source and persist it via put_source."""
+    now = _now()
+    source = DataSource(
+        id=f"src-{uuid.uuid4().hex[:8]}",
+        tenant_id=tenant_id,
+        name=name,
+        type=type,
+        connection_config=dict(connection_config or {}),
+        status="connected",
+        created_at=now,
+        updated_at=now,
+    )
+    return put_source(tenant_id, source)
+
+
+def update_source(
+    tenant_id: str,
+    source_id: str,
+    *,
+    name: str | None = None,
+    type: str | None = None,
+    connection_config: dict[str, Any] | None = None,
+) -> DataSource | None:
+    """Patch mutable fields of an existing data source. Returns None if missing."""
+    source = get_source(tenant_id, source_id)
+    if source is None:
+        return None
+    if name is not None:
+        source.name = name
+    if type is not None:
+        source.type = type
+    if connection_config is not None:
+        source.connection_config = dict(connection_config)
+    source.updated_at = _now()
+    return put_source(tenant_id, source)
+
+
+def create_data_product(
+    tenant_id: str,
+    name: str,
+    source_paimon_table: str,
+    target_iceberg_table: str,
+    *,
+    modality: str = "structured",
+    owner: str = "",
+    description: str = "",
+    tags: list[str] | None = None,
+) -> DataProduct:
+    """Create a new DataProduct and persist it via put_data_product."""
+    from .in_memory import DATA_PRODUCT_MODALITIES
+    now = _now()
+    normalised = modality if modality in DATA_PRODUCT_MODALITIES else "structured"
+    product = DataProduct(
+        id=f"dp-{uuid.uuid4().hex[:8]}",
+        tenant_id=tenant_id,
+        name=name,
+        source_paimon_table=source_paimon_table,
+        target_iceberg_table=target_iceberg_table,
+        version=1,
+        modality=normalised,
+        status="draft",
+        owner=owner,
+        description=description,
+        tags=list(tags or []),
+        history=[{"version": 1, "status": "draft", "at": now}],
+        created_at=now,
+        updated_at=now,
+    )
+    return put_data_product(tenant_id, product)
+
+
+def update_data_product(
+    tenant_id: str,
+    product_id: str,
+    **fields: Any,
+) -> DataProduct | None:
+    """Patch mutable fields of an existing DataProduct. Returns None if missing."""
+    from .in_memory import DATA_PRODUCT_MODALITIES
+    product = get_data_product(tenant_id, product_id)
+    if product is None:
+        return None
+    mutable_fields = {
+        "name",
+        "source_paimon_table",
+        "target_iceberg_table",
+        "modality",
+        "owner",
+        "description",
+        "tags",
+    }
+    for key, value in fields.items():
+        if key not in mutable_fields:
+            continue
+        if key == "modality" and value not in DATA_PRODUCT_MODALITIES:
+            continue
+        if key == "tags" and value is not None:
+            product.tags = list(value)
+            continue
+        setattr(product, key, value)
+    product.updated_at = _now()
+    return put_data_product(tenant_id, product)

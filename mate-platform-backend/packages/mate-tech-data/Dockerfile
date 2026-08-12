@@ -24,7 +24,7 @@ ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install --no-cache-dir \
         fastapi pydantic uvicorn structlog \
         httpx pydantic-settings 'pyjwt[crypto]' \
-        python-multipart sqlalchemy sqlmodel \
+        python-multipart sqlalchemy sqlmodel psycopg2-binary \
         opentelemetry-api opentelemetry-sdk \
         opentelemetry-exporter-otlp-proto-grpc \
         opentelemetry-instrumentation-fastapi
