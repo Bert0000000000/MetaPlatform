@@ -645,6 +645,8 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      # Task11: MATE_DB_URL 设置后 data 服务走 sql_store（PostgreSQL 持久化），启动时 create_all + seed 默认租户；不设置则维持 in-memory。
+      MATE_DB_URL: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-data
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -692,6 +694,43 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8502/api/v1/a2a/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # mate-tech-orchestrator: multi-role digital-employee dynamic scheduling
+  # over the MCP / A2A service centers (W3).
+  mate-tech-orchestrator:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-orchestrator/Dockerfile
+    image: mate-tech-orchestrator:dev
+    container_name: mate-tech-orchestrator
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: metaplatform
+      SERVICE_CLIENT_ID: ${SERVICE_CLIENT_ID:-metaplatform-backend}
+      SERVICE_CLIENT_SECRET: ${SERVICE_CLIENT_SECRET:-}
+      MCP_URL: http://mate-tech-mcp:8081
+      A2A_URL: http://mate-app-a2a:8502
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-orchestrator
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+      PYTHONPATH: "/app/packages/mate-tech-orchestrator/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
+    ports:
+      - "${MATE_ORCH_PORT:-8505}:8505"
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8505/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -1019,6 +1058,81 @@ services:
   # 7. API 缂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮闁汇値鍠楅妵鍕冀椤愵澀绮堕梺鎼炲妼閸婂潡寮婚敐澶婎潊闁靛繆鏅濋崝鎼佹⒑?+ 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柣鎴ｅГ閸婂潡鏌ㄩ弴妤€浜惧銈庡幖濞层倝鍩㈡惔銊ョ闁哄鍨冲Σ鎰版⒒娓氣偓濞佳団€﹂崼銉ョ？婵炲樊浜濋崐鍨归悩宸剱闁绘挻娲橀妵鍕箛椤斿す銏ゆ煕閺冣偓瀹€鎼佸箖濡も偓椤繈顢楁径瀣撱劑姊洪柅鐐茶嫰婢ь喚绱掗悩鑼х€规洘娲熼弻鍡楊吋閸涱垳鏋冮梺鐟板悑閹矂鎮℃径宀€绀?(濠电姷鏁告慨鐢割敊閺嶎厼绐楁俊銈呭暞閺嗘粍淇婇妶鍛殶闁活厽鐟╅弻鐔兼倻濡晲绮堕梺閫炲苯澧剧紒鐘虫尭閻ｉ攱绺界粙璇俱劍銇勯弮鍥撴繛鍛Т閳规垿鎮╅崹顐ｆ瘎婵犳鍠氶弫濠氬箠濠靛绀堢憸搴ㄥ窗閸℃稒鐓ラ柡鍌涱儥濞肩喎霉濠婂嫮鐭掗柡灞糕偓鎰佸悑闁告劑鍔岄～鍛節閵忥綆娼愭い顓炴喘楠?
   # ===========================================================================
 
+  # ETL 任务控制面（Task12 数据平台服务）
+  mate-tech-etl:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-etl/Dockerfile
+    image: mate-tech-etl:dev
+    container_name: mate-tech-etl
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-etl
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_ETL_PORT:-8022}:8022"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8022/api/v1/etl/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # 调度任务控制面（Task12 数据平台服务）
+  mate-tech-scheduler:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-scheduler/Dockerfile
+    image: mate-tech-scheduler:dev
+    container_name: mate-tech-scheduler
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-scheduler
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_SCHEDULER_PORT:-8023}:8023"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8023/api/v1/scheduler/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # 指标控制面（Task12 数据平台服务）
+  mate-tech-metrics:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-metrics/Dockerfile
+    image: mate-tech-metrics:dev
+    container_name: mate-tech-metrics
+    environment:
+      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "true"
+      KEYCLOAK_URL: http://keycloak:8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-metrics
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MATE_METRICS_PORT:-8024}:8024"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8024/api/v1/metrics/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # mate-api-gateway: L7 闂傚倸鍊搁崐宄懊归崶褏鏆﹂柛顭戝亝閸欏繒鈧娲栧ú锔藉垔娴煎瓨鐓ラ柡鍥╁仜閳ь剚鎮傚畷褰掑磼閻愬鍘甸梺璇″灣婢ф藟婢舵劖鐓?+ 闂傚倸鍊搁崐鎼佸磹瀹勬噴褰掑炊閵娧呭骄闂佸壊鍋嗛崰鍡樼閸儲鐓欓梻鍌氼嚟閸斿秹鏌涢妶鍛板閾绘牠鏌ㄥ┑鍡樺櫣闁哄棙鐟х槐?+ Redis 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌涘┑鍕姉闁稿鎸搁～婵嬫偂鎼达紕鐫勯柣搴ゎ潐濞叉鎹㈤崼婵愬殨濞寸姴顑愰弫鍐煏閸繃宸濋柛?
   mate-api-gateway:
     <<: [*restart, *logging]
@@ -1047,6 +1161,9 @@ services:
       APPHUB_URL: http://mate-app-hub:8301
       DATA_URL: http://mate-tech-data:8701
       A2A_URL: http://mate-app-a2a:8502
+      ETL_URL: http://mate-tech-etl:8022
+      SCHEDULER_URL: http://mate-tech-scheduler:8023
+      METRICS_URL: http://mate-tech-metrics:8024
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-api-gateway
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -1067,6 +1184,12 @@ services:
         condition: service_healthy
       mate-auth-service:
         condition: service_started
+      mate-tech-etl:
+        condition: service_healthy
+      mate-tech-scheduler:
+        condition: service_healthy
+      mate-tech-metrics:
+        condition: service_healthy
       # mate-tech-iam 已退役（GOVERN-02）；如需 audit profile 才解注下面这行
       # mate-tech-iam:
       #   condition: service_started

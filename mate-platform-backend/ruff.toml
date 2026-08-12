@@ -48,6 +48,15 @@ ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF0
 # mate-tech-iam: camelCase API response models (frontend contract)
 "packages/mate-tech-iam/src/mate_tech_iam/api/auth.py" = ["N815"]
 "packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py" = ["N803", "N815", "PLW0603"]
+# mate-app-a2a: W3C A2A wire field names are camelCase by protocol
+"packages/mate-app-a2a/src/mate_app_a2a/api/app.py" = ["N815"]
+# mate-tech-orchestrator: scheduler singleton DI seam (global) + lazy worker imports
+"packages/mate-tech-orchestrator/src/mate_tech_orchestrator/scheduler/*.py" = ["PLW0603", "PLC0415"]
+"packages/mate-tech-orchestrator/src/mate_tech_orchestrator/workers/*.py" = ["PLW0603"]
+# mate-tech-orchestrator: scheduling api lazy imports (avoid circular deps)
+"packages/mate-tech-orchestrator/src/mate_tech_orchestrator/api/scheduling.py" = ["PLC0415"]
+# mate-platform marketplace skillhub: singleton DI seam (global)
+"packages/mate-platform/src/mate_platform/marketplace/skillhub/store.py" = ["PLW0603"]
 # mate-tech-iam: FastAPI route handlers (Depends/Query in defaults, many params, lazy imports)
 "packages/mate-tech-iam/src/mate_tech_iam/api/*.py" = ["B008", "PLR0917", "PLC0415", "PLR0911"]
 # mate-tech-iam: app bootstrap ordered imports, container host, lazy loads

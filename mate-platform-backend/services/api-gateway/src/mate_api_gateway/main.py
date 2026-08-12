@@ -36,6 +36,11 @@ SERVICES: dict[str, str] = {
     "apphub":  os.getenv("APPHUB_URL",  "http://mate-app-hub:8301"),
     "data":    os.getenv("DATA_URL",    "http://mate-tech-data:8701"),
     "a2a":     os.getenv("A2A_URL",     "http://mate-app-a2a:8502"),
+    "orchestrator": os.getenv("ORCH_URL", "http://mate-tech-orchestrator:8505"),
+    # Task12: ETL / 调度 / 指标独立服务
+    "etl":      os.getenv("ETL_URL",      "http://mate-tech-etl:8022"),
+    "scheduler": os.getenv("SCHEDULER_URL", "http://mate-tech-scheduler:8023"),
+    "metrics":  os.getenv("METRICS_URL",  "http://mate-tech-metrics:8024"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -65,9 +70,12 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/apphub/", "apphub"),
     ("/api/v1/marketplace/", "apphub"),
     ("/api/v1/data/", "data"),
-    ("/api/v1/etl/", "data"),
-    ("/api/v1/scheduler/", "data"),
+    ("/api/v1/etl/", "etl"),          # Task12: 独立 ETL 服务
+    ("/api/v1/scheduler/", "scheduler"),  # Task12: 独立调度服务
+    ("/api/v1/metrics/", "metrics"),  # Task12: 独立指标服务
+    ("/api/v1/metrics", "metrics"),   # Task12: 裸 /metrics（list 端点无尾斜杠）
     ("/api/v1/a2a/", "a2a"),
+    ("/api/v1/orchestrator/", "orchestrator"),
 ]
 
 
