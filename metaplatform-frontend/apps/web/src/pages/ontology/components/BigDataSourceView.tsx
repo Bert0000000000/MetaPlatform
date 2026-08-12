@@ -1,6 +1,6 @@
 import { useApiErrorBoundary } from '@mate/shared';
 import React, { useState, useEffect } from 'react';
-import { App, Modal } from 'antd';
+import { Modal, Toast } from '@douyinfe/semi-ui';
 import {
   Database, Plus, Search, Settings2, Trash2, RefreshCw, CheckCircle2,
   XCircle, Loader2, AlertCircle, Play,
@@ -19,25 +19,12 @@ const STATUS_META = {
   DELETED:  { label: '已删除', color: '#6b7280', bg: 'rgba(107,114,128,0.12)', icon: Trash2 },
 };
 
-function InternalBody({ message, modal, report }: { message: any; modal: any; report: any }) {
-  return <InnerBody message={message} modal={modal} report={report} />;
-}
-
-function BigDataSourceViewImpl({ report }: { report: any }) {
-  const { message, modal } = App.useApp();
-  return <InternalBody message={message} modal={modal} report={report} />;
-}
-
-function BigDataSourceViewShell() {
-  const { report } = useApiErrorBoundary();
-  return <App><BigDataSourceViewImpl report={report} /></App>;
-}
-
 export default function BigDataSourceView() {
-  return <BigDataSourceViewShell />;
+  const { report } = useApiErrorBoundary();
+  return <InnerBody report={report} />;
 }
 
-function InnerBody({ message, modal, report }: { message: any; modal: any; report: any }) {
+function InnerBody({ report }: { report: any }) {
   const [sources, setSources] = useState<BigDataSource[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<{ keyword?: string; sourceType?: SourceType; status?: BigDataSourceStatus }>({});
@@ -64,9 +51,9 @@ function InnerBody({ message, modal, report }: { message: any; modal: any; repor
     try {
       const result: any = await testBigDataSourceConnection(id);
       if (result?.success) {
-        message.success('连接成功! 延迟: ' + result.latency + 'ms');
+        Toast.success('连接成功! 延迟: ' + result.latency + 'ms');
       } else {
-        message.error('连接失败: ' + (result?.message || 'unknown'));
+        Toast.error('连接失败: ' + (result?.message || 'unknown'));
       }
     } finally {
       setTesting(null);
@@ -74,16 +61,16 @@ function InnerBody({ message, modal, report }: { message: any; modal: any; repor
   };
 
   const handleDelete = async (id: string) => {
-    modal.confirm({
+    Modal.confirm({
       title: '确认删除此数据源？',
       content: '相关 ETL/CDC 任务将失败。',
       okText: '确认删除',
-      okButtonProps: { danger: true },
+      okType: 'danger',
       cancelText: '取消',
       onOk: async () => {
         try {
           await deleteBigDataSource(id);
-          message.success('已删除数据源');
+          Toast.success('已删除数据源');
           await load();
         } catch (e) {
           report(e);
@@ -263,7 +250,6 @@ function InnerBody({ message, modal, report }: { message: any; modal: any; repor
 }
 
 function CreateSourceModal({ onClose, onSuccess, report }: { onClose: () => void; onSuccess: () => void; report: any }) {
-  const { message } = App.useApp();
   const [form, setForm] = useState<Partial<BigDataSource>>({
     sourceType: 'CLICKHOUSE',
     authType: 'NONE',
@@ -276,13 +262,13 @@ function CreateSourceModal({ onClose, onSuccess, report }: { onClose: () => void
 
   const handleSubmit = async () => {
     if (!form.name || !form.host || !form.port) {
-      message.warning('请填写必填字段：名称、主机、端口');
+      Toast.warning('请填写必填字段：名称、主机、端口');
       return;
     }
     setSubmitting(true);
     try {
       await createBigDataSource(form);
-      message.success('已创建数据源');
+      Toast.success('已创建数据源');
       onSuccess();
     } catch (e) {
       report(e);
@@ -292,7 +278,7 @@ function CreateSourceModal({ onClose, onSuccess, report }: { onClose: () => void
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div className="v-card" style={{ width: 640, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建大数据源</div>

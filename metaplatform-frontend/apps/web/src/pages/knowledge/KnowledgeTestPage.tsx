@@ -6,24 +6,16 @@
  *          保留 4-tab 导航壳。
  */
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Card, Input, Button, Select, Space, Empty, Tag, Typography, Toast } from '@douyinfe/semi-ui';
 import { Search, FileText, Zap } from 'lucide-react';
-import { SubTabs, type SubTabItem, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
+import { useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
 import { listKb, search, type KbEntity, type Evidence } from '@/api/kb';
 
-const KB_TABS: SubTabItem[] = [
-  { label: '知识库列表', path: '/knowledge' },
-  { label: '文档管理', path: '/knowledge/docs' },
-  { label: '检索测试', path: '/knowledge/test' },
-  { label: '检索配置', path: '/knowledge/config' },
-];
 
 const DEFAULT_TENANT = 'tenant-default';
 
 export default function KnowledgeTestPage() {
   const { report } = useApiErrorBoundary();
-  const location = useLocation();
   const [query, setQuery] = useState('');
   const [kbId, setKbId] = useState<string | undefined>(undefined);
   const [evidences, setEvidences] = useState<Evidence[]>([]);
@@ -56,7 +48,6 @@ export default function KnowledgeTestPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={KB_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
         <Card
           style={{ marginTop: 16 }}

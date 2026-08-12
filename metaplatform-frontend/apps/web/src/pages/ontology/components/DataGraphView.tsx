@@ -7,7 +7,7 @@ import {
   Circle, Box, ChevronRight, ArrowRight,
   RefreshCw, Download, Eye, EyeOff,
 } from 'lucide-react';
-import { App, message } from 'antd';
+import { Toast } from '@douyinfe/semi-ui';
 import { Graph } from '@antv/g6';
 import { listBigDataSources, listCDCTasks, listDataProducts, deriveLineageGraph, type LineageGraphNode, type LineageGraphEdge } from '../../../api/ontology-bigdata';
 
@@ -272,7 +272,7 @@ export default function DataGraphView() {
     const g = graphRef.current;
     if (!g) return;
     g.setData(buildGraphData(filteredNodes, filteredEdges));
-    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); message.warning('图谱渲染失败，请稍后重试'); });
+    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); Toast.warning('图谱渲染失败，请稍后重试'); });
     setSelectedNode(null);
   }, [filteredNodes, filteredEdges]);
 
@@ -281,7 +281,7 @@ export default function DataGraphView() {
     const g = graphRef.current;
     if (!g) return;
     g.setLayout(getLayoutConfig(layoutType));
-    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); message.warning('图谱渲染失败，请稍后重试'); });
+    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); Toast.warning('图谱渲染失败，请稍后重试'); });
   }, [layoutType]);
 
   // ============== 工具栏操作 ==============

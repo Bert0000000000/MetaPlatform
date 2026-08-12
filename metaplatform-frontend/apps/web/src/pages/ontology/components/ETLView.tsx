@@ -7,7 +7,7 @@ import {
   listETLTasks, runETLTask, stopETLTask, createETLTask,
   ETLTask, ETLMode, ETLPriority, ETLTriggerType, BigDataSource, ETL_MODE_META,
 } from '../../../api/ontology-bigdata';
-import { App, message } from 'antd';
+import { Toast } from '@douyinfe/semi-ui';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 import { formatDuration, formatNumber, formatTimestamp } from './common';
 
@@ -187,7 +187,7 @@ function CreateETLDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
 
   const handleSubmit = async () => {
     if (!form.name || !form.targetSourceId || !form.targetTable) {
-      message.warning('请填写任务名、目标源、目标表');
+      Toast.warning('请填写任务名、目标源、目标表');
       return;
     }
     setSubmitting(true);
@@ -195,7 +195,7 @@ function CreateETLDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div className="v-card" style={{ width: 600, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建 ETL 任务</div>

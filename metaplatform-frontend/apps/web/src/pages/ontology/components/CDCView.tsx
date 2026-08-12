@@ -7,7 +7,7 @@ import {
   listCDCTasks, createCDCTask, pauseCDCTask, resumeCDCTask, getCDCTaskStatus,
   CDCTask, CDCSyncMode, CDCStartPosition, CDCTargetType, BigDataSource,
 } from '../../../api/ontology-bigdata';
-import { App, message } from 'antd';
+import { Toast } from '@douyinfe/semi-ui';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 
 const STATUS_META = {
@@ -202,7 +202,7 @@ function CreateCDCDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
 
   const handleSubmit = async () => {
     if (!form.name || !form.sourceId || !form.targetName) {
-      message.warning('请填写名称、源数据源、目标');
+      Toast.warning('请填写名称、源数据源、目标');
       return;
     }
     setSubmitting(true);
@@ -213,7 +213,7 @@ function CreateCDCDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
   const relationSources = sources.filter(s => ['MYSQL', 'POSTGRES', 'HIVE', 'CLICKHOUSE', 'DORIS', 'STARROCKS'].includes(s.sourceType) && s.status === 'ACTIVE');
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div className="v-card" style={{ width: 560, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建 CDC 任务</div>

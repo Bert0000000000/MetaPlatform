@@ -3,19 +3,12 @@
  * Uses the TECH-KB API instead of the retired static mock table.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Button, Card, Empty, Input, Select, Space, Table, Tag, Typography } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { FileText, RefreshCw, Search } from 'lucide-react';
-import { SubTabs, type SubTabItem, useAsync, useApiErrorBoundary } from '@mate/shared';
+import { useAsync, useApiErrorBoundary } from '@mate/shared';
 import { listDocuments, listKb, type KbDocument, type KbEntity } from '@/api/kb';
 
-const KB_TABS: SubTabItem[] = [
-  { label: '知识库列表', path: '/knowledge' },
-  { label: '文档管理', path: '/knowledge/docs' },
-  { label: '检索测试', path: '/knowledge/test' },
-  { label: '检索配置', path: '/knowledge/config' },
-];
 
 const STATUS_LABELS: Record<string, { label: string; color: TagColor }> = {
   PROCESSED: { label: '已处理', color: 'green' },
@@ -36,7 +29,6 @@ type SemiColumns<T> = NonNullable<SemiTableProps['columns']>;
 
 export default function KnowledgeDocsPage() {
   const { report } = useApiErrorBoundary();
-  const location = useLocation();
   const [kbId, setKbId] = useState<string>();
   const [keyword, setKeyword] = useState('');
 
@@ -113,7 +105,6 @@ export default function KnowledgeDocsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={KB_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
         <Card
           style={{ marginTop: 16 }}

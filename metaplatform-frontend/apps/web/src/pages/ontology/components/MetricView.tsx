@@ -7,7 +7,7 @@ import {
   listMetrics, createMetric, computeMetric, getMetricLineage,
   Metric, MetricType, MetricAggregation, MetricFrequency, BigDataSource, METRIC_TYPE_META,
 } from '../../../api/ontology-bigdata';
-import { App, message } from 'antd';
+import { Toast } from '@douyinfe/semi-ui';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 import { formatNumber, formatTimestamp } from './common';
 
@@ -163,7 +163,7 @@ function CreateMetricDialog({ sources, onClose, onSuccess }: { sources: BigDataS
 
   const handleSubmit = async () => {
     if (!form.name || !form.code || !form.sourceId || !form.sourceTable || !form.sourceField) {
-      message.warning('请填写必填字段');
+      Toast.warning('请填写必填字段');
       return;
     }
     setSubmitting(true);
@@ -171,7 +171,7 @@ function CreateMetricDialog({ sources, onClose, onSuccess }: { sources: BigDataS
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div className="v-card" style={{ width: 560, maxHeight: '90vh', overflow: 'auto' }}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建数据指标</div>
@@ -229,7 +229,7 @@ function CreateMetricDialog({ sources, onClose, onSuccess }: { sources: BigDataS
 
 function LineageDialog({ metric, onClose }: { metric: Metric; onClose: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div className="v-card" style={{ width: 520, padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>指标血缘: {metric.name}</div>

@@ -7,7 +7,7 @@ import {
   listSchedulerTasks, triggerScheduler, pauseScheduler, resumeScheduler,
   SchedulerTask,
 } from '../../../api/ontology-bigdata';
-import { App, message } from 'antd';
+import { Toast } from '@douyinfe/semi-ui';
 import { formatTimestamp } from './common';
 
 const TYPE_META = {
@@ -72,7 +72,7 @@ export default function SchedulerView() {
         <button onClick={() => load()} style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <RefreshCw style={{ width: 14, height: 14 }} />刷新
         </button>
-        <button onClick={() => message.info('新建调度计划正在补全，预计在 P3 阶段上线')} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+        <button onClick={() => Toast.info('新建调度计划正在补全，预计在 P3 阶段上线')} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Plus style={{ width: 14, height: 14 }} />新建调度
         </button>
       </div>

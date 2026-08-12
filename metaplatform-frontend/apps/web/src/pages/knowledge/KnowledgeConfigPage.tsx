@@ -5,16 +5,8 @@
  * 路由：/knowledge/config
  */
 import { useState } from 'react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
-import { useLocation } from 'react-router-dom';
 import { Settings, Save, RefreshCw } from 'lucide-react';
 
-const KB_TABS: SubTabItem[] = [
-  { label: '知识库列表', path: '/knowledge' },
-  { label: '文档管理', path: '/knowledge/docs' },
-  { label: '检索测试', path: '/knowledge/test' },
-  { label: '检索配置', path: '/knowledge/config' },
-];
 
 // MOCK: 检索配置分组
 type ConfigItem =
@@ -69,7 +61,6 @@ const CONFIG_GROUPS: Array<{ title: string; desc: string; items: ConfigItem[] }>
 ];
 
 export default function KnowledgeConfigPage() {
-  const location = useLocation();
   const [configs, setConfigs] = useState<Record<string, unknown>>(() => {
     const map: Record<string, unknown> = {};
     CONFIG_GROUPS.forEach((g) => g.items.forEach((it) => { map[it.key] = it.value; }));
@@ -82,7 +73,6 @@ export default function KnowledgeConfigPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <SubTabs items={KB_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
