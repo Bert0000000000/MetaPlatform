@@ -41,7 +41,6 @@ export default defineConfig({
       '@flowgram.ai/free-hover-plugin',
       '@douyinfe/semi-ui',
       '@douyinfe/semi-icons',
-      '@antv/g6',
     ],
     // sql_more 已通过 resolve.alias 指向实际文件，react-syntax-highlighter 纳入预构建。
   },

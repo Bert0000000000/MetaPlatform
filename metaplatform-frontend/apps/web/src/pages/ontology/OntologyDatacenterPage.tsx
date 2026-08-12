@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
-import { Card, Tag } from '@douyinfe/semi-ui';
+import { Card, Tag, Table } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useEffect, useState } from 'react';
 import {
   RefreshCw, GitBranch, Plus, Activity, PlugZap, Layers,
@@ -34,6 +35,13 @@ const DATACENTER_SUBTABS = [
 
 const badgeColor = (type: string) =>
   type === 'success' ? 'var(--success)' : type === 'warning' ? 'var(--warning)' : type === 'error' ? 'var(--destructive)' : 'var(--muted-foreground)';
+
+// 状态类型 → Semi Tag 颜色预设（表格内 v-badge 迁移）
+const STATUS_TYPE_COLOR: Record<string, TagColor> = {
+  success: 'green',
+  warning: 'amber',
+  error: 'red',
+};
 
 // 真实数据的状态 → 中文标签/颜色（key 为前端适配后的大写枚举）
 const SOURCE_STATUS: Record<string, { label: string; type: string }> = {
@@ -173,8 +181,19 @@ function MappingView() {
 
   const sourceName = (id: string) => sources.find((s) => s.sourceId === id)?.name || id;
 
+  interface MappingRow {
+    name: string;
+    source: string;
+    target: string;
+    mode: string;
+    lastSync: string;
+    status: string;
+    statusType: string;
+    statusLabel: string;
+  }
+
   // 真实映射流：CDC（源 → ODS）+ 数据产品（Paimon → Iceberg ADS）
-  const rows = [
+  const rows: MappingRow[] = [
     ...tasks.map((t) => ({
       name: `${sourceName(t.sourceId)} → ${t.targetName}`,
       source: sourceName(t.sourceId),
@@ -213,23 +232,19 @@ function MappingView() {
         ) : rows.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>暂无映射（尚无 CDC 任务或数据产品）</div>
         ) : (
-        <table className="v-table">
-          <thead>
-            <tr><th>映射名</th><th>源</th><th>目标</th><th>模式</th><th>最后同步</th><th>状态</th></tr>
-          </thead>
-          <tbody>
-            {rows.map((m, i) => (
-              <tr key={i}>
-                <td style={{ fontWeight: 500 }}>{m.name}</td>
-                <td style={{ fontSize: 12 }}>{m.source}</td>
-                <td style={{ fontSize: 12 }}>{m.target}</td>
-                <td><Tag style={{ background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 10 }}>{m.mode}</Tag></td>
-                <td style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{m.lastSync}</td>
-                <td><span className={`v-badge v-badge-${m.statusType}`}>{m.statusLabel}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table
+          rowKey="key"
+          dataSource={rows.map((r, i) => ({ ...r, key: i }))}
+          pagination={false}
+          columns={[
+            { title: '映射名', dataIndex: 'name', render: (v: string) => <span style={{ fontWeight: 500 }}>{v}</span> },
+            { title: '源', dataIndex: 'source', render: (v: string) => <span style={{ fontSize: 12 }}>{v}</span> },
+            { title: '目标', dataIndex: 'target', render: (v: string) => <span style={{ fontSize: 12 }}>{v}</span> },
+            { title: '模式', dataIndex: 'mode', render: (v: string) => <Tag style={{ background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 10 }}>{v}</Tag> },
+            { title: '最后同步', dataIndex: 'lastSync', render: (v: string) => <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{v}</span> },
+            { title: '状态', dataIndex: 'status', render: (_v: string, r: MappingRow) => <Tag color={(STATUS_TYPE_COLOR[r.statusType] ?? 'grey') as TagColor}>{r.statusLabel}</Tag> },
+          ]}
+        />
         )}
       </Card>
     </div>
@@ -275,7 +290,16 @@ function QualityView() {
   ];
 
   // 真实资源状态记录（源 / CDC / 产品）
-  const records = [
+  interface QualityRecord {
+    time?: string;
+    rule: string;
+    source: string;
+    dim: string;
+    score: string;
+    scoreColor: string;
+    anomalies: number;
+  }
+  const records: QualityRecord[] = [
     ...sources.map((s) => ({ time: s.updatedAt, rule: 'data_source', source: s.name, dim: '数据源', score: SOURCE_STATUS[s.status]?.label ?? s.status, scoreColor: SOURCE_STATUS[s.status]?.type ?? 'warning', anomalies: 0 })),
     ...tasks.map((t) => ({ time: t.lastSyncAt ?? '', rule: 'cdc_sync', source: t.name, dim: 'CDC 同步', score: CDC_STATUS[t.status]?.label ?? t.status, scoreColor: CDC_STATUS[t.status]?.type ?? 'warning', anomalies: 0 })),
     ...products.map((p) => ({ time: p.updatedAt, rule: 'data_product', source: p.name, dim: '数据产品', score: PRODUCT_STATUS[p.status]?.label ?? p.status, scoreColor: PRODUCT_STATUS[p.status]?.type ?? 'warning', anomalies: 0 })),
@@ -304,23 +328,19 @@ function QualityView() {
           ) : records.length === 0 ? (
             <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>暂无资源数据</div>
           ) : (
-          <table className="v-table">
-            <thead>
-              <tr><th>更新时间</th><th>资源类型</th><th>资源名</th><th>维度</th><th>状态</th><th>异常数</th></tr>
-            </thead>
-            <tbody>
-              {records.map((r, i) => (
-                <tr key={i}>
-                  <td><span className="v-meta">{r.time ? new Date(r.time).toLocaleString('zh-CN') : '-'}</span></td>
-                  <td><span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{r.rule}</span></td>
-                  <td>{r.source}</td>
-                  <td>{r.dim}</td>
-                  <td><span className={`v-badge v-badge-${r.scoreColor}`}>{r.score}</span></td>
-                  <td style={{ fontFamily: 'var(--font-mono)' }}>{r.anomalies}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table
+            rowKey="key"
+            dataSource={records.map((r, i) => ({ ...r, key: i }))}
+            pagination={false}
+            columns={[
+              { title: '更新时间', dataIndex: 'time', render: (v?: string) => <span className="v-meta">{v ? new Date(v).toLocaleString('zh-CN') : '-'}</span> },
+              { title: '资源类型', dataIndex: 'rule', render: (v: string) => <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{v}</span> },
+              { title: '资源名', dataIndex: 'source' },
+              { title: '维度', dataIndex: 'dim' },
+              { title: '状态', dataIndex: 'score', render: (_v: string, r: QualityRecord) => <Tag color={(STATUS_TYPE_COLOR[r.scoreColor] ?? 'grey') as TagColor}>{r.score}</Tag> },
+              { title: '异常数', dataIndex: 'anomalies', render: (v: number) => <span style={{ fontFamily: 'var(--font-mono)' }}>{v}</span> },
+            ]}
+          />
           )}
         </Card>
       </div>
@@ -357,26 +377,31 @@ function LakeView() {
         ) : products.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>暂无数据产品</div>
         ) : (
-        <table className="v-table">
-          <thead>
-            <tr><th>表名</th><th>格式</th><th>来源表</th><th>同步方式</th><th>操作</th></tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id}>
-                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{p.targetIcebergTable}</td>
-                <td style={{ fontSize: 12 }}>Iceberg / {p.modality}</td>
-                <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{p.sourcePaimonTable} · v{p.version}</td>
-                <td><span className={`v-badge v-badge-${(PRODUCT_STATUS[p.status] ?? { type: 'warning' }).type}`}>{(PRODUCT_STATUS[p.status] ?? { label: p.status }).label}</span></td>
-                <td>
-                  <button style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer' }} title="查看详情">
-                    <Settings2 style={{ width: 14, height: 14 }} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table
+          rowKey="id"
+          dataSource={products}
+          pagination={false}
+          columns={[
+            { title: '表名', dataIndex: 'targetIcebergTable', render: (v: string) => <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{v}</span> },
+            { title: '格式', dataIndex: 'modality', render: (v: string) => <span style={{ fontSize: 12 }}>Iceberg / {v}</span> },
+            { title: '来源表', dataIndex: 'sourcePaimonTable', render: (_v: string, r: DataProduct) => <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{r.sourcePaimonTable} · v{r.version}</span> },
+            {
+              title: '同步方式', dataIndex: 'status',
+              render: (v: string) => {
+                const st = PRODUCT_STATUS[v] ?? { label: v, type: 'warning' };
+                return <Tag color={(STATUS_TYPE_COLOR[st.type] ?? 'grey') as TagColor}>{st.label}</Tag>;
+              },
+            },
+            {
+              title: '操作', dataIndex: 'id',
+              render: () => (
+                <button style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer' }} title="查看详情">
+                  <Settings2 style={{ width: 14, height: 14 }} />
+                </button>
+              ),
+            },
+          ]}
+        />
         )}
       </Card>
     </div>

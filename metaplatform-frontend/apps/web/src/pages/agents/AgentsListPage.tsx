@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@douyinfe/semi-ui';
+import { Button, Table, Tag } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useState } from 'react';
 import {
   Headphones, FileCheck, BarChart3, PenTool, BookOpen, ShieldCheck,
@@ -40,6 +41,20 @@ const MOCK_TEMPLATES = [
   { icon: FileCheck, title: '审核助手', desc: '文档合同审核' },
   { icon: BarChart3, title: '分析助手', desc: '数据报告分析' },
 ];
+
+// v-badge 类名 → Semi Tag 颜色预设（表格内徽标迁移）
+const AGENT_BADGE_COLOR: Record<string, TagColor> = {
+  'v-badge-info': 'blue',
+  'v-badge-success': 'green',
+  'v-badge-warning': 'amber',
+  'v-badge-error': 'red',
+  'v-badge-purple': 'purple',
+  'v-badge-cyan': 'cyan',
+  'v-badge-orange': 'orange',
+  'v-badge-neutral': 'grey',
+};
+const badgeColorOf = (cls: string) =>
+  (AGENT_BADGE_COLOR[cls.split(' ').pop() || ''] ?? 'grey') as TagColor;
 
 export default function AgentsListPage() {
   const navigate = useNavigate();
@@ -138,47 +153,41 @@ export default function AgentsListPage() {
       </div>
 
       {/* Table */}
-      <table className="v-table">
-        <thead>
-          <tr>
-            <th>名称</th>
-            <th>类型</th>
-            <th>状态</th>
-            <th>已完成任务</th>
-            <th>成功率</th>
-            <th>最近活跃</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {MOCK_AGENT_ROWS.map((agent) => {
-            const Icon = agent.icon;
-            return (
-              <tr key={agent.id}>
-                <td>
-                  <div className="al-worker-name">
-                    <Icon style={{ width: 18, height: 18, color: 'var(--muted-foreground)' }} />
-                    <a className="al-agent-link" onClick={() => navigate('/agents/detail')}>{agent.name}</a>
-                  </div>
-                </td>
-                <td><span className={agent.typeBadge}>{agent.type}</span></td>
-                <td><span className={agent.statusBadge}>{agent.status}</span></td>
-                <td>{agent.tasks}</td>
-                <td>{agent.successRate}</td>
-                <td><span className="v-meta">{agent.lastActive}</span></td>
-                <td>
-                  <div className="al-actions-cell">
-                    <button className="al-v-btn-sm" title="查看" onClick={() => navigate('/agents/detail')}><Eye style={{ width: 13, height: 13 }} /></button>
-                    <button className="al-v-btn-sm" title="编辑"><Pencil style={{ width: 13, height: 13 }} /></button>
-                    <button className="al-v-btn-sm" title="暂停"><Pause style={{ width: 13, height: 13 }} /></button>
-                    <button className="al-v-btn-sm" title="删除"><Trash2 style={{ width: 13, height: 13 }} /></button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <Table
+        rowKey="id"
+        dataSource={MOCK_AGENT_ROWS}
+        pagination={false}
+        columns={[
+          {
+            title: '名称', dataIndex: 'name',
+            render: (_v: string, r: AgentRow) => {
+              const Icon = r.icon;
+              return (
+                <div className="al-worker-name">
+                  <Icon style={{ width: 18, height: 18, color: 'var(--muted-foreground)' }} />
+                  <a className="al-agent-link" onClick={() => navigate('/agents/detail')}>{r.name}</a>
+                </div>
+              );
+            },
+          },
+          { title: '类型', dataIndex: 'type', render: (v: string, r: AgentRow) => <Tag color={badgeColorOf(r.typeBadge)}>{v}</Tag> },
+          { title: '状态', dataIndex: 'status', render: (v: string, r: AgentRow) => <Tag color={badgeColorOf(r.statusBadge)}>{v}</Tag> },
+          { title: '已完成任务', dataIndex: 'tasks' },
+          { title: '成功率', dataIndex: 'successRate' },
+          { title: '最近活跃', dataIndex: 'lastActive', render: (v: string) => <span className="v-meta">{v}</span> },
+          {
+            title: '操作', dataIndex: 'id',
+            render: () => (
+              <div className="al-actions-cell">
+                <button className="al-v-btn-sm" title="查看" onClick={() => navigate('/agents/detail')}><Eye style={{ width: 13, height: 13 }} /></button>
+                <button className="al-v-btn-sm" title="编辑"><Pencil style={{ width: 13, height: 13 }} /></button>
+                <button className="al-v-btn-sm" title="暂停"><Pause style={{ width: 13, height: 13 }} /></button>
+                <button className="al-v-btn-sm" title="删除"><Trash2 style={{ width: 13, height: 13 }} /></button>
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {/* Quick create section */}
       <div className="al-quick-create-section">

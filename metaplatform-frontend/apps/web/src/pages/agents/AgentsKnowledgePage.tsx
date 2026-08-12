@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card } from '@douyinfe/semi-ui';
+import { Card, Table, Tag } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useState } from 'react';
 import {
   Plus, Eye, CheckCheck, FileText, Check, X, Pencil,
@@ -8,7 +9,29 @@ import { StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@ma
 
 
 // MOCK: 提炼任务列表
-const MOCK_TASKS = [
+interface KnowledgeTaskRow {
+  id: string;
+  doc: string;
+  typeBadge: string;
+  type: string;
+  statusBadge: string;
+  status: string;
+  items: string;
+  accuracy: string;
+  time: string;
+}
+
+// v-badge 类名 → Semi Tag 颜色预设
+const TASK_BADGE_COLOR: Record<string, TagColor> = {
+  'v-badge-success': 'green',
+  'v-badge-warning': 'amber',
+  'v-badge-error': 'red',
+  'v-badge-info': 'blue',
+  'v-badge-neutral': 'grey',
+  'v-badge-purple': 'purple',
+};
+
+const MOCK_TASKS: KnowledgeTaskRow[] = [
   { id: 'KT-20260721-001', doc: '退款流程FAQ v3.2', typeBadge: 'v-badge-info', type: 'FAQ生成', statusBadge: 'v-badge-success', status: '已完成', items: '32', accuracy: '96.8%', time: '2026-07-21 16:30' },
   { id: 'KT-20260721-002', doc: '产品功能常见问题汇总', typeBadge: 'v-badge-purple', type: '实体抽取', statusBadge: 'v-badge-success', status: '已完成', items: '45', accuracy: '94.1%', time: '2026-07-21 14:12' },
   { id: 'KT-20260722-003', doc: '会员权益说明 2026版', typeBadge: 'v-badge-warning', type: '规则提炼', statusBadge: 'v-badge-warning', status: '进行中', items: '--', accuracy: '--', time: '2026-07-22 10:05' },
@@ -133,32 +156,20 @@ export default function AgentsKnowledgePage() {
         <button className="ak-action-btn" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 14, height: 14 }} />新建提炼任务</button>
       </div>
       <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 28 }}>
-        <table className="v-table" style={{ border: 'none' }}>
-          <thead>
-            <tr>
-              <th style={{ width: 130 }}>任务ID</th>
-              <th>来源文档</th>
-              <th style={{ width: 110 }}>提炼类型</th>
-              <th style={{ width: 90 }}>状态</th>
-              <th style={{ width: 100, textAlign: 'right' }}>提取条目数</th>
-              <th style={{ width: 80, textAlign: 'right' }}>准确率</th>
-              <th style={{ width: 140, textAlign: 'right' }}>时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_TASKS.map((task) => (
-              <tr key={task.id}>
-                <td><span className="ak-font-mono" style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{task.id}</span></td>
-                <td>{task.doc}</td>
-                <td><span className={`v-badge ${task.typeBadge}`}>{task.type}</span></td>
-                <td><span className={`v-badge ${task.statusBadge}`}>{task.status}</span></td>
-                <td style={{ textAlign: 'right' }}>{task.items}</td>
-                <td style={{ textAlign: 'right' }}>{task.accuracy}</td>
-                <td style={{ textAlign: 'right' }}><span className="v-meta">{task.time}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table
+          rowKey="id"
+          dataSource={MOCK_TASKS}
+          pagination={false}
+          columns={[
+            { title: '任务ID', dataIndex: 'id', width: 130, render: (v: string) => <span className="ak-font-mono" style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{v}</span> },
+            { title: '来源文档', dataIndex: 'doc' },
+            { title: '提炼类型', dataIndex: 'type', width: 110, render: (v: string, r: KnowledgeTaskRow) => <Tag color={(TASK_BADGE_COLOR[r.typeBadge] ?? 'grey') as TagColor}>{v}</Tag> },
+            { title: '状态', dataIndex: 'status', width: 90, render: (v: string, r: KnowledgeTaskRow) => <Tag color={(TASK_BADGE_COLOR[r.statusBadge] ?? 'grey') as TagColor}>{v}</Tag> },
+            { title: '提取条目数', dataIndex: 'items', width: 100, align: 'right' },
+            { title: '准确率', dataIndex: 'accuracy', width: 80, align: 'right' },
+            { title: '时间', dataIndex: 'time', width: 140, align: 'right', render: (v: string) => <span className="v-meta">{v}</span> },
+          ]}
+        />
       </Card>
 
       {/* 3. Knowledge Item Preview */}

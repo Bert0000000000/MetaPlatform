@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Card, Tag } from '@douyinfe/semi-ui';
+import { Button, Card, Tag, Table } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useState } from 'react';
 import {
   ScanSearch, CircleDot, Pencil, Play, History, Power,
@@ -50,7 +51,28 @@ const MOCK_TOOLS = [
 ];
 
 // MOCK: 运行日志
-const MOCK_LOGS = [
+interface LogRow {
+  time: string;
+  trigger: string;
+  triggerBadge: string;
+  input: string;
+  output: string;
+  duration: string;
+  token: string;
+  status: string;
+  statusBadge: string;
+}
+
+// v-badge 类名 → Semi Tag 颜色预设
+const LOG_BADGE_COLOR: Record<string, TagColor> = {
+  'v-badge-success': 'green',
+  'v-badge-warning': 'amber',
+  'v-badge-error': 'red',
+  'v-badge-info': 'blue',
+  'v-badge-neutral': 'grey',
+};
+
+const MOCK_LOGS: LogRow[] = [
   { time: '07-22 08:00', trigger: 'Cron', triggerBadge: 'v-badge-neutral', input: '全量数据源日检（12 库 / 86 表）', output: '发现 3 个异常，质量评分 92.4', duration: '3.1s', token: '412', status: '完成', statusBadge: 'v-badge-success' },
   { time: '07-21 08:00', trigger: 'Cron', triggerBadge: 'v-badge-neutral', input: '全量数据源日检（12 库 / 86 表）', output: '发现 1 个异常，质量评分 94.1', duration: '2.7s', token: '386', status: '完成', statusBadge: 'v-badge-success' },
   { time: '07-20 14:32', trigger: '手动', triggerBadge: 'v-badge-info', input: '定向巡检：订单库 customers 表', output: '空值率 12%，一致性评分 88.2', duration: '2.1s', token: '298', status: '完成', statusBadge: 'v-badge-success' },
@@ -274,32 +296,20 @@ export default function AgentsDetailPage() {
           <div className="ad-section-title"><ScrollText style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> 运行日志</div>
           <Button theme="light" type="secondary" style={{ fontSize: 12 }}><Download style={{ width: 14, height: 14 }} /> 导出</Button>
         </div>
-        <table className="v-table">
-          <thead>
-            <tr>
-              <th className="ad-cell-nowrap">时间</th>
-              <th className="ad-cell-nowrap">触发方式</th>
-              <th>输入摘要</th>
-              <th>输出摘要</th>
-              <th className="ad-cell-nowrap">耗时</th>
-              <th className="ad-cell-nowrap">Token</th>
-              <th className="ad-cell-nowrap">状态</th>
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_LOGS.map((log, i) => (
-              <tr key={i}>
-                <td className="ad-mono ad-cell-nowrap">{log.time}</td>
-                <td><span className={`v-badge ${log.triggerBadge}`}>{log.trigger}</span></td>
-                <td>{log.input}</td>
-                <td>{log.output}</td>
-                <td className="ad-mono ad-cell-nowrap">{log.duration}</td>
-                <td className="ad-mono ad-cell-nowrap">{log.token}</td>
-                <td><span className={`v-badge ${log.statusBadge}`}>{log.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table
+          rowKey="key"
+          dataSource={MOCK_LOGS.map((l, i) => ({ ...l, key: i }))}
+          pagination={false}
+          columns={[
+            { title: '时间', dataIndex: 'time', render: (v: string) => <span className="ad-mono ad-cell-nowrap">{v}</span> },
+            { title: '触发方式', dataIndex: 'trigger', render: (v: string, r: LogRow) => <Tag color={(LOG_BADGE_COLOR[r.triggerBadge] ?? 'grey') as TagColor}>{v}</Tag> },
+            { title: '输入摘要', dataIndex: 'input' },
+            { title: '输出摘要', dataIndex: 'output' },
+            { title: '耗时', dataIndex: 'duration', render: (v: string) => <span className="ad-mono ad-cell-nowrap">{v}</span> },
+            { title: 'Token', dataIndex: 'token', render: (v: string) => <span className="ad-mono ad-cell-nowrap">{v}</span> },
+            { title: '状态', dataIndex: 'status', render: (v: string, r: LogRow) => <Tag color={(LOG_BADGE_COLOR[r.statusBadge] ?? 'grey') as TagColor}>{v}</Tag> },
+          ]}
+        />
       </Card>
 
       <FormDrawer open={drawerOpen} title="编辑数字员工" onCancel={() => setDrawerOpen(false)} onOk={() => setDrawerOpen(false)}>

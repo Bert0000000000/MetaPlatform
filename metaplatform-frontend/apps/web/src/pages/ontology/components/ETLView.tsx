@@ -5,9 +5,9 @@ import {
 } from 'lucide-react';
 import {
   listETLTasks, runETLTask, stopETLTask, createETLTask,
-  ETLTask, ETLMode, ETLPriority, ETLTriggerType, BigDataSource, ETL_MODE_META,
+  ETLTask, ETLMode, ETLPriority, ETLStatus, ETLTriggerType, BigDataSource, ETL_MODE_META,
 } from '../../../api/ontology-bigdata';
-import { Toast, Card, Tag } from '@douyinfe/semi-ui';
+import { Toast, Card, Tag, Table } from '@douyinfe/semi-ui';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 import { formatDuration, formatNumber, formatTimestamp } from './common';
 
@@ -94,81 +94,89 @@ export default function ETLView() {
         </div>
       ) : (
         <Card>
-          <table className="v-table">
-            <thead>
-              <tr>
-                <th>任务名</th>
-                <th>模式</th>
-                <th>优先级</th>
-                <th>源</th>
-                <th>目标</th>
-                <th>状态</th>
-                <th>耗时</th>
-                <th>总处理</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((t) => {
-                const sm = STATUS_META[t.status] || STATUS_META.READY;
-                const SmIcon = sm.icon;
-                const mm = ETL_MODE_META[t.mode] || { label: t.mode, color: '#666', icon: '⚙️' };
-                const pm = PRIORITY_META[t.priority] || PRIORITY_META.NORMAL;
-                return (
-                  <tr key={t.taskId}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: 32,
-                          height: 22,
-                          padding: '0 6px',
-                          borderRadius: 4,
-                          background: mm.color + '20',
-                          color: mm.color,
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: 10,
-                          fontWeight: 600,
-                          letterSpacing: '0.02em',
-                        }}>{mm.icon}</span>
-                        <div>
-                          <div style={{ fontWeight: 500 }}>{t.name}</div>
-                          {t.description && <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{t.description}</div>}
-                        </div>
+          <Table
+            rowKey="taskId"
+            dataSource={tasks}
+            pagination={false}
+            columns={[
+              {
+                title: '任务名', dataIndex: 'name',
+                render: (_v: string, r: ETLTask) => {
+                  const mm = ETL_MODE_META[r.mode] || { label: r.mode, color: '#666', icon: '⚙️' };
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: 32,
+                        height: 22,
+                        padding: '0 6px',
+                        borderRadius: 4,
+                        background: mm.color + '20',
+                        color: mm.color,
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        letterSpacing: '0.02em',
+                      }}>{mm.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{r.name}</div>
+                        {r.description && <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{r.description}</div>}
                       </div>
-                    </td>
-                    <td><Tag style={{ background: mm.color + '20', color: mm.color }}>{mm.label}</Tag></td>
-                    <td><span style={{ color: pm.color, fontSize: 12, fontWeight: 600 }}>{pm.label}</span></td>
-                    <td style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{(t.sourceIds || []).length} 个</td>
-                    <td style={{ fontSize: 12 }}>{t.targetType}/{t.targetTable}</td>
-                    <td>
-                      <Tag style={{ background: sm.bg, color: sm.color, fontSize: 11 }}>
-                        <SmIcon style={{ width: 10, height: 10, display: 'inline', marginRight: 4 }} className={t.status === 'RUNNING' ? 'v-spin' : ''} />
-                        {sm.label}
-                      </Tag>
-                    </td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{t.lastRunDuration ? formatDuration(t.lastRunDuration) : '-'}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{formatNumber(t.totalProcessed || 0)}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {t.status === 'RUNNING' ? (
-                          <button onClick={() => handleStop(t.taskId)} disabled={actionLoading === t.taskId} title="停止" style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--destructive)' }}>
-                            {actionLoading === t.taskId ? <Loader2 className="v-spin" style={{ width: 14, height: 14 }} /> : <Square style={{ width: 14, height: 14 }} />}
-                          </button>
-                        ) : (
-                          <button onClick={() => handleRun(t.taskId)} disabled={actionLoading === t.taskId} title="运行" style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--success)' }}>
-                            {actionLoading === t.taskId ? <Loader2 className="v-spin" style={{ width: 14, height: 14 }} /> : <Play style={{ width: 14, height: 14 }} />}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  );
+                },
+              },
+              {
+                title: '模式', dataIndex: 'mode',
+                render: (v: ETLMode) => {
+                  const mm = ETL_MODE_META[v] || { label: v, color: '#666', icon: '⚙️' };
+                  return <Tag style={{ background: mm.color + '20', color: mm.color }}>{mm.label}</Tag>;
+                },
+              },
+              {
+                title: '优先级', dataIndex: 'priority',
+                render: (v: ETLPriority) => {
+                  const pm = PRIORITY_META[v] || PRIORITY_META.NORMAL;
+                  return <span style={{ color: pm.color, fontSize: 12, fontWeight: 600 }}>{pm.label}</span>;
+                },
+              },
+              { title: '源', dataIndex: 'sourceIds', render: (v: string[]) => <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{(v || []).length} 个</span> },
+              { title: '目标', dataIndex: 'targetTable', render: (_v: string, r: ETLTask) => <span style={{ fontSize: 12 }}>{r.targetType}/{r.targetTable}</span> },
+              {
+                title: '状态', dataIndex: 'status',
+                render: (v: ETLStatus) => {
+                  const sm = STATUS_META[v] || STATUS_META.READY;
+                  const SmIcon = sm.icon;
+                  return (
+                    <Tag style={{ background: sm.bg, color: sm.color, fontSize: 11 }}>
+                      <SmIcon style={{ width: 10, height: 10, display: 'inline', marginRight: 4 }} className={v === 'RUNNING' ? 'v-spin' : ''} />
+                      {sm.label}
+                    </Tag>
+                  );
+                },
+              },
+              { title: '耗时', dataIndex: 'lastRunDuration', render: (v?: number) => <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{v ? formatDuration(v) : '-'}</span> },
+              { title: '总处理', dataIndex: 'totalProcessed', render: (v?: number) => <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{formatNumber(v || 0)}</span> },
+              {
+                title: '操作', dataIndex: 'taskId',
+                render: (id: string, r: ETLTask) => (
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {r.status === 'RUNNING' ? (
+                      <button onClick={() => handleStop(id)} disabled={actionLoading === id} title="停止" style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--destructive)' }}>
+                        {actionLoading === id ? <Loader2 className="v-spin" style={{ width: 14, height: 14 }} /> : <Square style={{ width: 14, height: 14 }} />}
+                      </button>
+                    ) : (
+                      <button onClick={() => handleRun(id)} disabled={actionLoading === id} title="运行" style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--success)' }}>
+                        {actionLoading === id ? <Loader2 className="v-spin" style={{ width: 14, height: 14 }} /> : <Play style={{ width: 14, height: 14 }} />}
+                      </button>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </Card>
       )}
 

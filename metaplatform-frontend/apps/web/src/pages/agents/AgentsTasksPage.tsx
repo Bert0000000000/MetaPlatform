@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Card } from '@douyinfe/semi-ui';
+import { Card, Table, Tag } from '@douyinfe/semi-ui';
+import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, MessageSquare, FileCheck, BarChart3, FileText,
@@ -31,6 +32,13 @@ const MOCK_TASKS: TaskRow[] = [
   { id: 'T-20260722-0122', agent: '数据分析师', agentAvatar: '分', typeIcon: BarChart3, typeLabel: '分析', input: '用户行为漏斗转化率异常检测', statusBadge: 'v-badge-success', status: '成功', duration: '6.1s', token: '4,567', startTime: '13:18:30' },
   { id: 'T-20260722-0121', agent: '客服助手', agentAvatar: '客', typeIcon: MessageSquare, typeLabel: '对话', input: '多语言客户咨询（日语）产品规格查询', statusBadge: 'v-badge-error', status: '失败', duration: '2.3s', token: '891', startTime: '13:05:14' },
 ];
+
+// v-badge 类名 → Semi Tag 颜色预设（表格内徽标迁移）
+const TASK_STATUS_COLOR: Record<string, TagColor> = {
+  'v-badge-success': 'green',
+  'v-badge-warning': 'amber',
+  'v-badge-error': 'red',
+};
 
 export default function AgentsTasksPage() {
   const navigate = useNavigate();
@@ -148,59 +156,39 @@ export default function AgentsTasksPage() {
       {/* Content: Table + Detail */}
       <div className="at-content-layout">
         <div className="at-table-panel">
-          <table className="v-table" style={{ tableLayout: 'fixed' }}>
-            <colgroup>
-              <col style={{ width: 140 }} />
-              <col style={{ width: 130 }} />
-              <col style={{ width: 80 }} />
-              <col style={{ minWidth: 180 }} />
-              <col style={{ width: 80 }} />
-              <col style={{ width: 70 }} />
-              <col style={{ width: 90 }} />
-              <col style={{ width: 100 }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>任务 ID</th>
-                <th>关联数字员工</th>
-                <th>任务类型</th>
-                <th>输入摘要</th>
-                <th>状态</th>
-                <th>耗时</th>
-                <th>Token 消耗</th>
-                <th>开始时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              {MOCK_TASKS.map((task) => {
-                const TypeIcon = task.typeIcon;
-                const isSelected = task.id === selectedId;
-                return (
-                  <tr
-                    key={task.id}
-                    onClick={() => setSelectedId(task.id)}
-                    style={{ cursor: 'pointer', background: isSelected ? 'var(--muted)' : undefined }}
-                  >
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.id}</td>
-                    <td>
-                      <span className="at-agent-name">
-                        <span className="at-agent-avatar">{task.agentAvatar}</span>
-                        {task.agent}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="at-type-badge"><TypeIcon style={{ width: 14, height: 14 }} />{task.typeLabel}</span>
-                    </td>
-                    <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.input}</td>
-                    <td><span className={`v-badge ${task.statusBadge}`}>{task.status}</span></td>
-                    <td><span className="v-meta">{task.duration}</span></td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{task.token}</td>
-                    <td><span className="v-meta">{task.startTime}</span></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <Table
+            rowKey="id"
+            dataSource={MOCK_TASKS}
+            pagination={false}
+            onRow={(record) => (record ? {
+              onClick: () => setSelectedId(record.id),
+              style: { cursor: 'pointer', background: record.id === selectedId ? 'var(--muted)' : undefined },
+            } : {})}
+            columns={[
+              { title: '任务 ID', dataIndex: 'id', width: 140, render: (v: string) => <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</div> },
+              {
+                title: '关联数字员工', dataIndex: 'agent', width: 130,
+                render: (_v: string, r: TaskRow) => (
+                  <span className="at-agent-name">
+                    <span className="at-agent-avatar">{r.agentAvatar}</span>
+                    {r.agent}
+                  </span>
+                ),
+              },
+              {
+                title: '任务类型', dataIndex: 'typeLabel', width: 80,
+                render: (_v: string, r: TaskRow) => {
+                  const TypeIcon = r.typeIcon;
+                  return <span className="at-type-badge"><TypeIcon style={{ width: 14, height: 14 }} />{r.typeLabel}</span>;
+                },
+              },
+              { title: '输入摘要', dataIndex: 'input', width: 180, render: (v: string) => <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</div> },
+              { title: '状态', dataIndex: 'status', width: 80, render: (v: string, r: TaskRow) => <Tag color={(TASK_STATUS_COLOR[r.statusBadge] ?? 'grey') as TagColor}>{v}</Tag> },
+              { title: '耗时', dataIndex: 'duration', width: 70, render: (v: string) => <span className="v-meta">{v}</span> },
+              { title: 'Token 消耗', dataIndex: 'token', width: 90, render: (v: string) => <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{v}</span> },
+              { title: '开始时间', dataIndex: 'startTime', width: 100, render: (v: string) => <span className="v-meta">{v}</span> },
+            ]}
+          />
         </div>
 
         {/* Detail Panel */}

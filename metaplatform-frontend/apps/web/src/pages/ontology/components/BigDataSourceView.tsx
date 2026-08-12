@@ -1,6 +1,6 @@
 import { useApiErrorBoundary } from '@mate/shared';
 import React, { useState, useEffect } from 'react';
-import { Modal, Toast, Card, Tag } from '@douyinfe/semi-ui';
+import { Modal, Toast, Card, Tag, Table } from '@douyinfe/semi-ui';
 import {
   Database, Plus, Search, Settings2, Trash2, RefreshCw, CheckCircle2,
   XCircle, Loader2, AlertCircle, Play,
@@ -160,87 +160,91 @@ function InnerBody({ report }: { report: any }) {
         </Card>
       ) : (
         <Card>
-          <table className="v-table">
-            <thead>
-              <tr>
-                <th>名称</th>
-                <th>类型</th>
-                <th>主机:端口</th>
-                <th>状态</th>
-                <th>认证</th>
-                <th>连接池</th>
-                <th>最近测试</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sources.map((s) => {
-                const sm = STATUS_META[s.status] || STATUS_META.ACTIVE;
-                const tm = SOURCE_TYPE_META[s.sourceType] || { label: s.sourceType, color: '#666', icon: '?' };
-                const SmIcon = sm.icon;
-                return (
-                  <tr key={s.sourceId}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: 32,
-                          height: 24,
-                          padding: '0 6px',
-                          borderRadius: 4,
-                          background: tm.color + '20',
-                          color: tm.color,
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          letterSpacing: '0.02em',
-                        }}>{tm.icon}</span>
-                        <div>
-                          <div style={{ fontWeight: 500 }}>{s.name}</div>
-                          {s.description && <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.description}</div>}
-                        </div>
+          <Table
+            rowKey="sourceId"
+            dataSource={sources}
+            pagination={false}
+            columns={[
+              {
+                title: '名称', dataIndex: 'name',
+                render: (_v: string, r: BigDataSource) => {
+                  const tm = SOURCE_TYPE_META[r.sourceType] || { label: r.sourceType, color: '#666', icon: '?' };
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: 32,
+                        height: 24,
+                        padding: '0 6px',
+                        borderRadius: 4,
+                        background: tm.color + '20',
+                        color: tm.color,
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        letterSpacing: '0.02em',
+                      }}>{tm.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{r.name}</div>
+                        {r.description && <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{r.description}</div>}
                       </div>
-                    </td>
-                    <td><Tag style={{ background: tm.color + '20', color: tm.color }}>{tm.label}</Tag></td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{s.host}:{s.port}</td>
-                    <td>
-                      <Tag style={{ background: sm.bg, color: sm.color }}>
-                        <SmIcon style={{ width: 10, height: 10, display: 'inline', marginRight: 4 }} />
-                        {sm.label}
-                      </Tag>
-                    </td>
-                    <td style={{ fontSize: 12 }}>{s.authType === 'NONE' ? '无' : s.authType}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{s.poolSize}</td>
-                    <td style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.lastTestedAt ? new Date(s.lastTestedAt).toLocaleString('zh-CN') : '-'}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button
-                          onClick={() => handleTest(s.sourceId)}
-                          disabled={testing === s.sourceId}
-                          title="测试连接"
-                          style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--primary)' }}
-                        >
-                          {testing === s.sourceId ? <Loader2 className="v-spin" style={{ width: 14, height: 14 }} /> : <Play style={{ width: 14, height: 14 }} />}
-                        </button>
-                        <button title="配置" style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                          <Settings2 style={{ width: 14, height: 14 }} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s.sourceId)}
-                          title="删除"
-                          style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--destructive)' }}
-                        >
-                          <Trash2 style={{ width: 14, height: 14 }} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  );
+                },
+              },
+              {
+                title: '类型', dataIndex: 'sourceType',
+                render: (v: SourceType) => {
+                  const tm = SOURCE_TYPE_META[v] || { label: v, color: '#666', icon: '?' };
+                  return <Tag style={{ background: tm.color + '20', color: tm.color }}>{tm.label}</Tag>;
+                },
+              },
+              { title: '主机:端口', dataIndex: 'host', render: (_v: string, r: BigDataSource) => <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{r.host}:{r.port}</span> },
+              {
+                title: '状态', dataIndex: 'status',
+                render: (v: BigDataSourceStatus) => {
+                  const sm = STATUS_META[v] || STATUS_META.ACTIVE;
+                  const SmIcon = sm.icon;
+                  return (
+                    <Tag style={{ background: sm.bg, color: sm.color }}>
+                      <SmIcon style={{ width: 10, height: 10, display: 'inline', marginRight: 4 }} />
+                      {sm.label}
+                    </Tag>
+                  );
+                },
+              },
+              { title: '认证', dataIndex: 'authType', render: (v: AuthType) => <span style={{ fontSize: 12 }}>{v === 'NONE' ? '无' : v}</span> },
+              { title: '连接池', dataIndex: 'poolSize', render: (v: number) => <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{v}</span> },
+              { title: '最近测试', dataIndex: 'lastTestedAt', render: (v?: string) => <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{v ? new Date(v).toLocaleString('zh-CN') : '-'}</span> },
+              {
+                title: '操作', dataIndex: 'sourceId',
+                render: (id: string) => (
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      onClick={() => handleTest(id)}
+                      disabled={testing === id}
+                      title="测试连接"
+                      style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--primary)' }}
+                    >
+                      {testing === id ? <Loader2 className="v-spin" style={{ width: 14, height: 14 }} /> : <Play style={{ width: 14, height: 14 }} />}
+                    </button>
+                    <button title="配置" style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                      <Settings2 style={{ width: 14, height: 14 }} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(id)}
+                      title="删除"
+                      style={{ padding: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--destructive)' }}
+                    >
+                      <Trash2 style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </Card>
       )}
 
