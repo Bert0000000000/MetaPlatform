@@ -11,6 +11,7 @@ const ADMIN_TABS: Array<{ key: string; label: string; path: string }> = [
   { key: "ai-providers", label: "AI 提供方", path: "/admin/ai-providers" },
   { key: "operations", label: "运营数据", path: "/admin/operations" },
   { key: "analytics", label: "访问看板", path: "/admin/analytics" },
+  { key: "components", label: "组件展示", path: "/admin/components" },
 ];
 
 interface AdminLayoutProps {

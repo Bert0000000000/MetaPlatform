@@ -39,7 +39,7 @@ import {
   toggleFavorite,
   getHistory,
 } from '@/api/superai/conversations';
-import MarkdownRenderer from './components/MarkdownRenderer';
+import { MarkdownRenderer } from '@mate/shared';
 import KnowledgeGraph from './components/KnowledgeGraph';
 import ActionMatchCard from './components/ActionPanel';
 import EvidencePanel from './components/EvidencePanel';
@@ -496,7 +496,7 @@ function MessageRow({
           </div>
         ) : (
           <div>
-            <MarkdownRenderer content={displayContent || ''} />
+            <MarkdownRenderer content={displayContent || ''} variant="dark" />
             {graphData && graphData.nodes.length > 0 && (
               <div
                 style={{

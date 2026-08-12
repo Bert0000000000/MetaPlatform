@@ -3,6 +3,7 @@ export * from './interaction/InteractionContextProvider';
 export * from './renderers/ClaimRenderer';
 export * from './renderers/EvidenceRenderer';
 export * from './renderers/ArtifactViewer';
+export { default as MarkdownRenderer, type MarkdownPalette } from './renderers/MarkdownRenderer';
 export * from './interaction/SuperAIApi';
 export * from './icons';
 
@@ -45,6 +46,9 @@ export { default as PageHeader } from './components/PageHeader';
 export { default as ScrollbarAutoHide } from './components/ScrollbarAutoHide';
 export { default as SubTabs, type SubTabItem } from './components/SubTabs';
 export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from './components/Breadcrumb';
+export { default as PlatformButton, type PlatformButtonProps } from './components/PlatformButton';
+export { default as PlatformPagination, type PlatformPaginationProps } from './components/PlatformPagination';
+export { default as PlatformMenu2, type PlatformMenu2Item } from './components/PlatformMenu2';
 
 export { useThemeMode, getAntdTheme } from './theme';
 export * as FlowCanvas from './components/flow';
