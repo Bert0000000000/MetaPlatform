@@ -48,6 +48,7 @@ import {
 import type { MenuProps } from 'antd';
 import EmployeeCloneButton from './components/EmployeeCloneButton';
 import EmployeeCard from './components/EmployeeCard';
+import EmployeeCreateDrawer from './components/EmployeeCreateDrawer';
 
 const { Text } = Typography;
 
@@ -75,6 +76,11 @@ export default function EmployeeListPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [roleCategory, setRoleCategory] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const handleCreated = (code: string) => {
+    navigate(`/agents/${code}`);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -329,7 +335,7 @@ export default function EmployeeListPage() {
             icon={<AppstoreOutlined />}
             onClick={() => setViewMode('card')}
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agents/create')}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
             创建数字员工
           </Button>
         </Space>
@@ -386,7 +392,7 @@ export default function EmployeeListPage() {
               <Card
                 size="small"
                 hoverable
-                onClick={() => navigate('/agents/create')}
+                onClick={() => setCreateOpen(true)}
                 style={{ textAlign: 'center', padding: '20px 0' }}
               >
                 <div style={{
@@ -410,6 +416,8 @@ export default function EmployeeListPage() {
           ))}
         </Row>
       </div>
+
+      <EmployeeCreateDrawer open={createOpen} onClose={() => setCreateOpen(false)} onCreated={handleCreated} />
     </div>
   );
 }

@@ -289,10 +289,40 @@ async def dw_get_employees(
     request: Request,
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
+    keyword: str = Query(default="", description="模糊匹配 name/code/roleIdentity"),
+    status: str = Query(default="", description="ACTIVE | INACTIVE | DRAFT"),
+    roleCategory: str = Query(default="", description="角色分类（大写，如 ONTOLOGY）"),
 ) -> dict:
-    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
+    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。
+
+    支持前端筛选：keyword 模糊、status（ACTIVE/INACTIVE/DRAFT）、roleCategory。
+    """
     tenant_id = _tenant_id(request)
-    items = [_serialize_employee(emp) for emp in list_employees(tenant_id)]
+    emps = list_employees(tenant_id)
+    # 状态过滤：前端 ACTIVE → 后端 active/idle；INACTIVE → offline；DRAFT → draft
+    if status:
+        status_to_backend = {
+            "ACTIVE": ("active", "idle"),
+            "INACTIVE": ("offline",),
+            "DRAFT": ("draft",),
+        }
+        allowed = status_to_backend.get(status.upper(), ())
+        emps = [e for e in emps if e.status in allowed]
+    # 关键字：name / code / roleIdentity（role）
+    if keyword:
+        kw = keyword.lower()
+        emps = [
+            e for e in emps
+            if kw in e.name.lower() or kw in e.code.lower() or kw in (e.role or "").lower()
+        ]
+    # 角色分类：前端大写（ONTOLOGY）→ 匹配 role（kernel slug）或 role 大写
+    if roleCategory:
+        rc = roleCategory.upper()
+        emps = [
+            e for e in emps
+            if e.role.upper() == rc or (e.role in _KERNEL_ROLE_SLUGS and e.role.upper() == rc)
+        ]
+    items = [_serialize_employee(emp) for emp in emps]
     return _paginate(items, page, size)
 
 
