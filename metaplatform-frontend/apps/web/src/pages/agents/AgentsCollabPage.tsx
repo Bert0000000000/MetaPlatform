@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Tag } from '@douyinfe/semi-ui';
+import { Tag, Table } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useNavigate } from 'react-router-dom';
 import { Bot, FileCheck, Scale } from 'lucide-react';
@@ -134,45 +134,50 @@ export default function AgentsCollabPage() {
             <div className="ac-section-title">协作会话列表</div>
             <span className="v-meta">共 6 条记录</span>
           </div>
-          <table className="v-table">
-            <thead>
-              <tr>
-                <th>会话 ID</th>
-                <th>发起 Agent</th>
-                <th>参与 Agents</th>
-                <th>协作类型</th>
-                <th>状态</th>
-                <th>消息数</th>
-                <th>持续时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              {MOCK_SESSIONS.map((session) => {
-                const isSelected = session.id === selectedId;
-                return (
-                  <tr
-                    key={session.id}
-                    onClick={() => setSelectedId(session.id)}
-                    style={{ cursor: 'pointer', background: isSelected ? 'var(--muted)' : undefined }}
-                  >
-                    <td className="ac-mono" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted-foreground)' }}>{session.id}</td>
-                    <td>{session.initiator}</td>
-                    <td>
-                      <div className="ac-agent-badges">
-                        {session.participants.map((p) => (
-                          <span key={p} className="v-badge v-badge-neutral">{p}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td><Tag color={(COLOR[session.collabBadge] ?? 'grey') as TagColor}>{session.collabType}</Tag></td>
-                    <td><Tag color={(COLOR[session.statusBadge] ?? 'grey') as TagColor}>{session.status}</Tag></td>
-                    <td>{session.messages}</td>
-                    <td>{session.duration}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <Table
+            rowKey="id"
+            dataSource={MOCK_SESSIONS}
+            onRow={(session) => (session ? {
+              onClick: () => setSelectedId(session.id),
+              style: { cursor: 'pointer', background: session.id === selectedId ? 'var(--muted)' : undefined },
+            } : {})}
+            columns={[
+              {
+                title: '会话 ID',
+                dataIndex: 'id',
+                render: (v: string) => (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted-foreground)' }}>{v}</span>
+                ),
+              },
+              { title: '发起 Agent', dataIndex: 'initiator' },
+              {
+                title: '参与 Agents',
+                dataIndex: 'participants',
+                render: (list: string[]) => (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {list.map((p) => <Tag key={p} color="grey">{p}</Tag>)}
+                  </div>
+                ),
+              },
+              {
+                title: '协作类型',
+                dataIndex: 'collabType',
+                render: (v: string, r: CollabRow) => (
+                  <Tag color={(COLOR[r.collabBadge] ?? 'grey') as TagColor}>{v}</Tag>
+                ),
+              },
+              {
+                title: '状态',
+                dataIndex: 'status',
+                render: (v: string, r: CollabRow) => (
+                  <Tag color={(COLOR[r.statusBadge] ?? 'grey') as TagColor}>{v}</Tag>
+                ),
+              },
+              { title: '消息数', dataIndex: 'messages' },
+              { title: '持续时间', dataIndex: 'duration' },
+            ]}
+            pagination={false}
+          />
         </div>
 
         {/* Detail Panel */}
