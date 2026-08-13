@@ -678,19 +678,6 @@ export default function ChatPage() {
             minHeight: 44,
           }}
         >
-          <Button
-            theme="borderless"
-            size="small"
-            icon={
-              sessionPanelVisible ? (
-                <ChevronsRight style={{ width: 15, height: 15 }} />
-              ) : (
-                <ChevronsLeft style={{ width: 15, height: 15 }} />
-              )
-            }
-            title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
-            onClick={() => setSessionPanelVisible((v) => !v)}
-          />
           <span
             style={{
               fontSize: 14,
@@ -727,6 +714,19 @@ export default function ChatPage() {
               运行中
             </span>
           )}
+          <Button
+            theme="borderless"
+            size="small"
+            icon={
+              sessionPanelVisible ? (
+                <ChevronsRight style={{ width: 15, height: 15 }} />
+              ) : (
+                <ChevronsLeft style={{ width: 15, height: 15 }} />
+              )
+            }
+            title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
+            onClick={() => setSessionPanelVisible((v) => !v)}
+          />
         </div>
 
         {/* 消息流（官方 AIChatDialogue：左右布局 + reasoning + annotations） */}

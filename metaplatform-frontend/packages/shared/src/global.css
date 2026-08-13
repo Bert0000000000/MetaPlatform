@@ -242,6 +242,19 @@ a {
   border-top: 1px solid var(--border);
 }
 
+/* Sidebar header 与对话区 topbar 高度对齐（45px） */
+.semi-sidebar-container-header {
+  height: 45px;
+  padding: 0 12px 0 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border);
+}
+.semi-sidebar-container-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
 /* ===== Semi Sidebar options 布局修复：行宽统一占满 ===== */
 .semi-sidebar-options {
   display: flex;
