@@ -94,7 +94,7 @@ const SkeletonBox: React.FC<{ width?: string; height?: string; style?: React.CSS
       background: 'linear-gradient(90deg, var(--muted) 0%, var(--border) 50%, var(--muted) 100%)',
       backgroundSize: '200% 100%',
       animation: 'workbench-shimmer 1.4s ease-in-out infinite',
-      borderRadius: 4,
+      borderRadius: 'var(--radius)',
       ...style,
     }}
   />
@@ -397,7 +397,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                       </div>
                     ))
                   : recentMessages.map((m) => (
-                      <div key={m.msg_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setDetailMessage(m)}>
+                      <div key={m.msg_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--radius)', cursor: 'pointer' }} onClick={() => setDetailMessage(m)}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: m.unread ? 'var(--semi-color-danger)' : 'var(--border)' }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: m.unread ? 500 : 400 }}>{m.title}</div>
@@ -433,16 +433,16 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                           padding: '14px 8px',
                           background: 'var(--muted)',
                           border: '1px solid var(--border)',
-                          borderRadius: 4,
+                          borderRadius: 'var(--radius)',
                           cursor: 'pointer',
                           textDecoration: 'none',
                           color: 'var(--foreground)',
-                          transition: 'background 120ms ease',
+                          transition: 'transform 120ms ease, box-shadow 120ms ease, background 120ms ease',
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--card)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--muted)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.background = 'var(--card)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.background = 'var(--muted)'; }}
                       >
-                        <Icon style={{ width: 20, height: 20, color: 'var(--muted-foreground)' }} />
+                        <Icon style={{ width: 20, height: 20, color: 'var(--primary)' }} />
                         <span style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.3 }}>{q.label}</span>
                       </a>
                     );
@@ -462,24 +462,27 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {loading
               ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 4, padding: 16 }}>
+                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
                     <SkeletonBox width="60%" height="14px" style={{ marginBottom: 10 }} />
                     <SkeletonBox width="80%" height="11px" style={{ marginBottom: 8 }} />
                     <SkeletonBox width="40%" height="11px" />
                   </div>
                 ))
               : data.activeAgents.map((a, i) => (
-                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 4, padding: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: a.dot_class === 'agent-mini-dot-online' ? 'var(--success)' : 'var(--warning)' }} />
-                      <div style={{ fontSize: 13, fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
+                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16, transition: 'transform 120ms ease, box-shadow 120ms ease' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: 'var(--semi-color-primary-light-default)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600 }}>{a.name.slice(0, 1)}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: a.dot_class === 'agent-mini-dot-online' ? 'var(--success)' : 'var(--warning)' }} />
+                          <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>{a.type}</div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{a.type}</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 9999, background: a.status_bg, color: a.status_color }}>{a.status_label}</span>
                       <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{a.tasks} 任务</span>
-                    </div>
-                    <div style={{ marginTop: 8 }}>
-                      <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 9999, background: a.status_bg, color: a.status_color }}>{a.status_label}</span>
                     </div>
                   </div>
                 ))}
