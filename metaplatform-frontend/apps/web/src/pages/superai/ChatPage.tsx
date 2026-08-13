@@ -1,67 +1,62 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+/**
+ * ChatPage - SuperAI AI 对话（重构版）
+ * --------------------------------------------------
+ * 布局（Semi 官方 AI 组件方案）：
+ * ┌───────────────────────────┬──────────────┐
+ * │ 对话区（左）               │ Sidebar（右） │
+ * │  · topbar（开关+标题）     │  · 会话历史    │
+ * │  · AIChatDialogue         │  · timeline   │
+ * │  · AIChatInput(Configure) │              │
+ * └───────────────────────────┴──────────────┘
+ * 后端对接：copilot stream（LLM 流式）/ conversations（会话 CRUD + 历史）/ 多模态。
+ */
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Typography,
-  Tooltip,
-  Select,
-  Switch,
-  Upload,
-  Image,
-  Toast,
-  Input,
-  Slider,
   AIChatDialogue,
   AIChatInput,
-  Chat,
+  Sidebar,
   Button,
-  Sidebar
+  Typography,
+  Toast,
+  Input,
 } from '@douyinfe/semi-ui';
-import type { FileItem } from '@douyinfe/semi-ui/lib/es/upload';
 import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/aiChatDialogue/interface';
+import type { FileItem } from '@douyinfe/semi-ui/lib/es/upload';
 import {
+  ChevronsLeft,
+  ChevronsRight,
   RobotOutlined,
-  UserOutlined,
-  BookOutlined,
-  PlusOutlined,
   SearchOutlined,
-  StarFilled,
-  DeleteOutlined,
-  PaperClipOutlined,
-  SendOutlined,
-  CopyOutlined,
-  ReloadOutlined,
-  LikeOutlined,
-  DislikeOutlined,
-  RightOutlined,
+  PlusOutlined,
   ThunderboltOutlined,
-  MessageOutlined,
-} from '@ant-design/icons';
-import { streamChat, listMultimodalModels, multimodalUploadChat } from '@/api/superai/chat';
-import { listKnowledgeBases, search as ragSearch } from '@/api/superai/rag';
-import { semanticQuery as ontSemanticQuery } from '@/api/superai/ontology';
+} from '@mate/shared';
+import { DeleteOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
+import {
+  streamChat,
+  listMultimodalModels,
+  multimodalUploadChat,
+} from '@/api/superai/chat';
 import {
   listConversations,
-  createConversation,
-  deleteConversation,
-  toggleFavorite,
+  createConversation as apiCreateConversation,
   getHistory,
+  deleteConversation as apiDeleteConversation,
+  toggleFavorite as apiToggleFavorite,
 } from '@/api/superai/conversations';
-import { MarkdownRenderer , ChevronsLeft, ChevronsRight } from '@mate/shared';
-import KnowledgeGraph from './components/KnowledgeGraph';
-import ActionMatchCard from './components/ActionPanel';
-import EvidencePanel from './components/EvidencePanel';
 import { matchAction } from '@/api/superai/actions';
+import { semanticQuery } from '@/api/superai/ontology';
 import type {
-  ChatSession,
   ChatMessage,
-  Citation,
+  ChatSession,
+  ChatImage,
   Claim,
+  Citation,
   Evidence,
   GraphData,
-  KnowledgeBase,
-  ChatImage,
   MultimodalModel,
-  ActionResult,
 } from '@/api/superai/types';
+
+// ============ 常量 ============
 
 const UNIFIED_SYSTEM_PROMPT = `你是 Mate Platform 的智能助手 SuperAI。你会自动识别用户意图并用最合适的方式回答：
 
@@ -84,13 +79,56 @@ const WELCOME_PROMPTS = [
   '生成一个客户信息登记表单',
 ];
 
-/**
- * 空提示数组（模块级常量，引用稳定）。
- * 注意：Semi Chat 的 componentDidUpdate 会对 hints 直接读 .length，
- * hints 在「数组 ↔ undefined」之间切换会抛 "Cannot read properties of undefined"，
- * 因此这里必须始终传数组（空数组不渲染提示区）。
- */
-/** 从 AIChatInput 的富文本 JSON（Content[]）提取纯文本 */
+/** 空提示数组（模块级常量，引用稳定 —— Semi Chat 会对 hints 读 .length） */
+const EMPTY_HINTS: string[] = [];
+const MAX_CONTEXT_TURNS = 10;
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+const MAX_IMAGE_SIZE_MB = 5;
+
+// ============ 工具函数 ============
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function now(): string {
+  return new Date().toISOString();
+}
+
+function isBackendConversation(id: string): boolean {
+  return id.startsWith('conv-');
+}
+
+function createMessage(
+  role: ChatMessage['role'],
+  content: string,
+  overrides: Partial<ChatMessage> = {},
+): ChatMessage {
+  return { id: generateId(), role, content, status: 'success', createdAt: now(), ...overrides };
+}
+
+function createSession(title = '新对话'): ChatSession {
+  return { id: generateId(), title, mode: 'chat', messages: [], updatedAt: now(), favorite: false };
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('读取图片失败'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function beforeUpload(file: File): boolean {
+  const okType = ALLOWED_IMAGE_TYPES.includes(file.type);
+  if (!okType) Toast.error('仅支持 png、jpeg、webp 格式的图片');
+  const okSize = file.size / 1024 / 1024 < MAX_IMAGE_SIZE_MB;
+  if (!okSize) Toast.error('单张图片不能超过 5MB');
+  return okType && okSize;
+}
+
+/** 从 AIChatInput 富文本 JSON（Content[]）提取纯文本 */
 function extractPlainText(contents: Array<{ type: string; [key: string]: unknown }>): string {
   const parts: string[] = [];
   const walk = (node: unknown): void => {
@@ -113,160 +151,65 @@ function extractPlainText(contents: Array<{ type: string; [key: string]: unknown
   return parts.join('');
 }
 
-const EMPTY_HINTS: string[] = [];
+/** 会话时间分组：今天 / 昨天 / 7 天内 / 更早 */
+function timelineGroup(updatedAt: string): string {
+  const t = new Date(updatedAt);
+  const nowD = new Date();
+  const startOfToday = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate()).getTime();
+  const startOfMsg = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
+  const diffDays = Math.round((startOfToday - startOfMsg) / 86400000);
+  if (diffDays <= 0) return '今天';
+  if (diffDays === 1) return '昨天';
+  if (diffDays <= 7) return '7 天内';
+  return '更早';
+}
 
-const MAX_CONTEXT_TURNS = 10;
+/** 会话是否运行中（存在流式/加载中的消息） */
+function isSessionRunning(s: ChatSession): boolean {
+  return s.messages.some((m) => m.streaming || m.status === 'loading' || m.status === 'updating');
+}
 
-// ---- 结构化证据（Claims / Evidence）辅助 ----
-
-/** 从回答末尾解析 claims JSON 块，返回剥离后的正文与 claims。 */
+/** 解析回答末尾的 claims JSON 块 */
 function extractClaims(content: string): { content: string; claims: Claim[] } {
-  const claims: Claim[] = [];
-  // 优先匹配 ```json ... ``` 围栏，其次匹配末尾 JSON 对象
-  const fence = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = fence ? fence[1] : content.match(/\{\s*"claims"\s*:[\s\S]*?\}\s*$/)?.[0];
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw.trim());
-      if (Array.isArray(parsed?.claims)) {
-        for (const c of parsed.claims) {
-          if (c && typeof c.content === 'string' && c.content.trim()) {
-            const type = c.type === 'FACT' || c.type === 'RECOMMENDATION' ? c.type : 'INFERENCE';
-            const confidence = Number(c.confidence);
-            claims.push({
-              content: c.content.trim(),
-              type,
-              confidence: Number.isFinite(confidence) && confidence > 0 ? Math.min(confidence, 1) : undefined,
-            });
-          }
-        }
-      }
-    } catch {
-      /* 解析失败则忽略 claims */
-    }
-  }
-  let cleaned = content;
-  if (fence) {
-    cleaned = content.replace(fence[0], '').replace(/\n+$/, '').trim();
-  } else if (claims.length > 0) {
-    cleaned = content.replace(/\{\s*"claims"\s*:[\s\S]*?\}\s*$/, '').replace(/\n+$/, '').trim();
-  }
-  return { content: cleaned, claims };
-}
-
-/** 知识库引用（Citation）→ 文档型证据（DOCUMENT）。 */
-function citationsToEvidence(citations: Citation[]): Evidence[] {
-  return citations
-    .filter((c) => c && c.title)
-    .map((c) => ({
-      evidenceId: c.id,
-      type: 'DOCUMENT' as const,
-      ref: c.url || c.title,
-      title: c.title,
-      score: c.score,
-      fragment: c.snippet,
+  const m = content.match(/\{"claims"\s*:\s*\[[\s\S]*?\]\s*\}(?:\s|$)/);
+  if (!m) return { content, claims: [] };
+  try {
+    const parsed = JSON.parse(m[0]) as { claims?: Array<{ content: string; type: Claim['type']; confidence: number }> };
+    const claims: Claim[] = (parsed.claims ?? []).map((c) => ({
+      claimId: generateId(),
+      content: c.content,
+      type: c.type,
+      confidence: c.confidence,
     }));
+    return { content: content.replace(m[0], '').trim(), claims };
+  } catch {
+    return { content, claims: [] };
+  }
 }
 
-/** Ontology 图谱 → 本体对象证据：关系 + 对应的数据（字段）+ 数据来源（数据资产/D 层/域）。 */
+function citationsToEvidence(citations: Citation[]): Evidence[] {
+  return citations.map((c) => ({
+    evidenceId: c.id,
+    type: 'DOCUMENT' as const,
+    ref: c.title,
+    fragment: c.snippet,
+    score: c.score,
+    title: c.title,
+  }));
+}
+
 function graphToEvidence(graph: GraphData): Evidence[] {
-  const items: Evidence[] = [];
-  const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
-  for (const node of graph.nodes) {
-    if (node.type !== 'entity' || !node.data) continue;
-    const d = node.data;
-    const rels = (graph.edges ?? [])
-      .filter((e) => e.source === node.id || e.target === node.id)
-      .map((e) => {
-        const otherId = e.source === node.id ? e.target : e.source;
-        const other = nodeById.get(otherId);
-        return other ? `${other.label}（${e.label || '关联'}）` : '';
-      })
-      .filter(Boolean);
-    const fields = Array.isArray(d.fields) && d.fields.length > 0 ? d.fields.slice(0, 5).join(', ') : '';
-    const source = [d.dataSource, d.layer, d.domain].filter(Boolean).join(' · ');
-    const frag = [
-      rels.length > 0 ? `关系：${rels.join('、')}` : '',
-      fields ? `数据：${fields}` : '',
-      source ? `来源：${source}` : '',
-    ]
-      .filter(Boolean)
-      .join('；');
-    if (!frag) continue;
-    items.push({
-      type: 'ONTOLOGY_OBJECT' as const,
-      ref: node.id,
-      title: node.label,
-      fragment: frag,
-    });
-  }
-  return items;
-}
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function now(): string {
-  return new Date().toISOString();
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('读取图片失败'));
-    reader.readAsDataURL(file);
-  });
-}
-
-const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-const MAX_IMAGE_SIZE_MB = 5;
-
-function beforeUpload(file: File): boolean {
-  const isAllowedType = ALLOWED_IMAGE_TYPES.includes(file.type);
-  if (!isAllowedType) {
-    Toast.error('仅支持 png、jpeg、webp 格式的图片');
-  }
-  const isLt5M = file.size / 1024 / 1024 < MAX_IMAGE_SIZE_MB;
-  if (!isLt5M) {
-    Toast.error('单张图片不能超过 5MB');
-  }
-  return isAllowedType && isLt5M;
-}
-
-function createSession(title = '新对话'): ChatSession {
-  return {
-    id: generateId(),
-    title,
-    mode: 'chat',
-    messages: [],
-    updatedAt: now(),
-    favorite: false,
-  };
-}
-
-function createMessage(
-  role: ChatMessage['role'],
-  content: string,
-  overrides: Partial<ChatMessage> = {},
-): ChatMessage {
-  return {
-    id: generateId(),
-    role,
-    content,
-    status: 'success',
-    createdAt: now(),
-    ...overrides,
-  };
-}
-
-function isBackendConversation(id: string): boolean {
-  return id.startsWith('conv-');
+  return graph.nodes.map((n) => ({
+    evidenceId: n.id,
+    type: 'ONTOLOGY_OBJECT' as const,
+    ref: n.label,
+    fragment: `${n.type} · ${graph.edges.filter((e) => e.source === n.id || e.target === n.id).length} 条关系`,
+    title: n.label,
+  }));
 }
 
 function conversationToSession(
-  conv: import('@/api/superai/types').Conversation,
+  conv: { id: string; title: string; mode: ChatSession['mode']; favorite: boolean; createdAt: string; updatedAt?: string },
   messages: ChatMessage[] = [],
 ): ChatSession {
   return {
@@ -274,260 +217,135 @@ function conversationToSession(
     title: conv.title || '新对话',
     mode: conv.mode,
     messages,
-    updatedAt: conv.updatedAt || now(),
+    updatedAt: conv.updatedAt || conv.createdAt || now(),
     favorite: conv.favorite,
   };
 }
 
-/** Semi Chat 消息：在 Semi Message 上附加原始 ChatMessage 供定制渲染。 */
+// ============ 组件 ============
+
+const { Configure } = AIChatInput;
+
 export default function ChatPage() {
+  // --- 会话与消息状态 ---
   const [sessions, setSessions] = useState<ChatSession[]>(() => [
     {
-      id: generateId(),
-      title: 'Mate Platform 介绍',
-      mode: 'chat',
+      ...createSession('Mate Platform 介绍'),
       messages: [
         createMessage('user', '请介绍一下 Mate Platform'),
         createMessage(
           'assistant',
-          '## Mate Platform\n\nMate Platform 是基于 **Ontology 本体论引擎**的企业级决策与运营提效平台。\n\n### 核心能力\n- Ontology 本体引擎（统一语义建模与推理）\n- 低代码应用构建（融合 BPMN 审批流与 AI Agent 编排）\n- 数字员工（AI 驱动的自动化）\n- 企业级 RAG 知识库\n- MCP/A2A 协议支持\n\n> AI 能力作为 Substrate 贯穿全栈，Ontology 引擎是唯一数据真相源。',
+          '## Mate Platform\n\nMate Platform 是基于 **Ontology 本体论引擎**的企业级决策与运营提效平台。\n\n### 核心能力\n- Ontology 本体引擎（统一语义建模与推理）\n- 低代码应用构建（融合 BPMN 审批流与 AI Agent 编排）\n- 数字员工（AI 驱动的自动化）\n- 企业级 RAG 知识库\n- MCP/A2A 协议支持',
           {
-            citations: [
-              {
-                id: 'c0',
-                title: '项目总览',
-                type: 'DOC',
-                score: 98,
-                snippet: 'Mate Platform 是统一的企业级 AI 运营平台。',
-              },
-            ],
+            citations: [{ id: 'c0', title: '项目总览', type: 'DOC', score: 98, snippet: 'Mate Platform 是统一的企业级 AI 运营平台。' }],
           },
         ),
       ],
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      favorite: false,
     },
-    createSession('新对话'),
   ]);
-  const [activeId, setActiveId] = useState<string>(sessions[1].id);
-  const [loading, setLoading] = useState(false);
-  const [isMultimodal, setIsMultimodal] = useState(false);
-  const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState<string>('');
-  const [imageFiles, setImageFiles] = useState<FileItem[]>([]);
-  const [currentModel, setCurrentModel] = useState('');
-  const [availableModels, setAvailableModels] = useState<{ label: string; value: string }[]>([]);
-  // 流式草稿：assistantId → 累积中的 content（onDelta 阶段），onDone 后并入消息并清空
+  const [activeId, setActiveId] = useState<string>(() => '');
   const [streamingMap, setStreamingMap] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [sessionPanelVisible, setSessionPanelVisible] = useState(true);
+  const [currentModel, setCurrentModel] = useState('doubao-pro-32k');
+  const [temperature, setTemperature] = useState(70);
+  const [imageFiles, setImageFiles] = useState<FileItem[]>([]);
+  const [isMultimodal, setIsMultimodal] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<string | undefined>(undefined);
+  const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
+  const [availableModels, setAvailableModels] = useState<{ label: string; value: string }[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
   const loadedHistoryRef = useRef<Set<string>>(new Set());
-  const modelsLoadedRef = useRef(false);
 
+  // activeId 初始化（挂载后取第一个会话）
   useEffect(() => {
-    // 加载后端会话列表，与本地兜底会话合并
+    setActiveId((prev) => prev || sessions[0]?.id || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const activeSession = sessions.find((s) => s.id === activeId) ?? sessions[0];
+
+  // --- 后端对接：会话列表加载 ---
+  useEffect(() => {
     listConversations()
       .then((convs) => {
         if (convs.length === 0) return;
-        const backendSessions = convs.map((c) => conversationToSession(c));
         setSessions((prev) => {
-          // 保留本地未持久化的会话（id 不以 conv- 开头）
           const localOnly = prev.filter((s) => !isBackendConversation(s.id));
-          return [...backendSessions, ...localOnly];
+          const backend = convs.map((c) => conversationToSession(c));
+          return [...backend, ...localOnly];
         });
-        // 默认选中第一个后端会话（如果有）
-        if (convs.length > 0) {
-          setActiveId((prev) =>
-            prev.startsWith('conv-') ? prev : backendSessions[0].id,
-          );
-        }
+        setActiveId((prev) => (convs.some((c) => c.id === prev) ? prev : convs[0]?.id ?? prev));
       })
-      .catch((error) => {
-        /* 后端未就绪时降级到本地会话，但需告知用户 */
+      .catch(() => {
         Toast.warning('后端会话加载失败，已使用本地缓存');
-        console.warn(error);
       });
   }, []);
 
+  // --- 后端对接：历史消息加载（仅 conv-* 会话，加载一次） ---
   useEffect(() => {
-    if (isMultimodal && !modelsLoadedRef.current) {
-      modelsLoadedRef.current = true;
-      listMultimodalModels()
-        .then((models) => {
-          setMultimodalModels(models);
-          if (models.length > 0) {
-            setSelectedModelId((prev) => prev || models[0].modelId);
-          }
-        })
-        .catch(() => {
-          Toast.error('加载多模态模型失败');
-        });
-    }
-  }, [isMultimodal]);
+    if (!activeId || !isBackendConversation(activeId) || loadedHistoryRef.current.has(activeId)) return;
+    loadedHistoryRef.current.add(activeId);
+    getHistory(activeId)
+      .then((history) => {
+        const messages: ChatMessage[] = history.map((m) => ({
+          id: m.id ?? generateId(),
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content ?? '',
+          status: 'success',
+          createdAt: m.createdAt ?? now(),
+        }));
+        setSessions((prev) =>
+          prev.map((s) => (s.id === activeId ? { ...s, messages } : s)),
+        );
+      })
+      .catch(() => {
+        Toast.warning('会话历史加载失败，保留本地消息');
+      });
+  }, [activeId]);
 
-  // Load available models on mount for the chat model selector
+  // --- 模型列表（含多模态模型） ---
   useEffect(() => {
     listMultimodalModels()
       .then((models) => {
-        const opts = models
-          .filter((m) => m.enabled)
-          .map((m) => ({ label: m.displayName || m.modelCode, value: m.modelId || m.modelCode }));
-        if (opts.length > 0) {
-          setAvailableModels(opts);
-          setCurrentModel((prev) => prev || opts[0].value);
-        }
+        setMultimodalModels(models);
+        setAvailableModels(models.map((m) => ({ label: m.displayName || m.modelCode, value: m.modelId })));
       })
       .catch(() => {
-        // Fallback model list
-        setAvailableModels([
-          { label: 'Doubao Pro 32K', value: 'doubao-pro-32k' },
-          { label: 'GPT-4o', value: 'gpt-4o' },
-          { label: 'Claude 3.5 Sonnet', value: 'claude-3-5-sonnet-20241022' },
-          { label: 'DeepSeek Chat', value: 'deepseek-chat' },
-        ]);
+        setAvailableModels([{ label: 'doubao-pro-32k', value: 'doubao-pro-32k' }]);
       });
   }, []);
 
-  const loadHistoryIfNeeded = useCallback(
-    async (sessionId: string) => {
-      if (!isBackendConversation(sessionId)) return;
-      if (loadedHistoryRef.current.has(sessionId)) return;
-      loadedHistoryRef.current.add(sessionId);
-      try {
-        const messages = await getHistory(sessionId);
-        if (messages.length === 0) return;
-        const chatMessages: ChatMessage[] = messages.map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content ?? '',
-          status: 'success' as const,
-          createdAt: m.createdAt,
-        }));
-        setSessions((prev) =>
-          prev.map((s) =>
-            s.id === sessionId && s.messages.length === 0
-              ? { ...s, messages: chatMessages }
-              : s,
-          ),
-        );
-      } catch {
-        loadedHistoryRef.current.delete(sessionId);
-      }
+  const updateSession = useCallback(
+    (sessionId: string, updater: (s: ChatSession) => ChatSession) => {
+      setSessions((prev) => prev.map((s) => (s.id === sessionId ? updater(s) : s)));
     },
     [],
   );
 
-  // 挂载后 / 切换到后端会话时自动加载历史（消息已持久化，刷新不再为空）
-  useEffect(() => {
-    if (isBackendConversation(activeId)) {
-      void loadHistoryIfNeeded(activeId);
-    }
-  }, [activeId, loadHistoryIfNeeded]);
-
-  const activeSession = useMemo(
-    () => sessions.find((s) => s.id === activeId) || sessions[0],
-    [sessions, activeId],
-  );
-
-  const abortRef = useRef<AbortController | null>(null);
-
-  const updateSession = useCallback((sessionId: string, updater: (session: ChatSession) => ChatSession) => {
-    setSessions((prev) =>
-      prev.map((s) => (s.id === sessionId ? updater(s) : s)),
-    );
-  }, []);
-
   const updateMessage = useCallback(
-    (sessionId: string, messageId: string, updater: (msg: ChatMessage) => ChatMessage) => {
-      updateSession(sessionId, (session) => ({
-        ...session,
-        messages: session.messages.map((m) => (m.id === messageId ? updater(m) : m)),
-        updatedAt: now(),
-      }));
+    (sessionId: string, messageId: string, updater: (m: ChatMessage) => ChatMessage) => {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === sessionId
+            ? { ...s, messages: s.messages.map((m) => (m.id === messageId ? updater(m) : m)) }
+            : s,
+        ),
+      );
     },
-    [updateSession],
+    [],
   );
 
-  const handleNewConversation = useCallback(() => {
-    const localSession = createSession();
-    setSessions((prev) => [localSession, ...prev]);
-    setActiveId(localSession.id);
-    // 异步持久化到后端
-    createConversation({ title: '新对话', mode: 'chat' })
-      .then((conv) => {
-        setSessions((prev) =>
-          prev.map((s) => (s.id === localSession.id ? conversationToSession(conv) : s)),
-        );
-        setActiveId((prev) => (prev === localSession.id ? conv.id : prev));
-      })
-      .catch((error) => {
-        /* 后端不可用时保留本地会话，但需告知用户 */
-        Toast.warning('后端会话同步失败，保留本地会话');
-        console.warn(error);
-      });
-  }, []);
-
-  const handleSelectConversation = useCallback(
-    (key: string) => {
-      setActiveId(key);
-      loadHistoryIfNeeded(key);
-    },
-    [loadHistoryIfNeeded],
-  );
-
-  const handleDeleteConversation = useCallback((key: string) => {
-    const wasBackend = isBackendConversation(key);
-    setSessions((prev) => {
-      const filtered = prev.filter((s) => s.id !== key);
-      if (filtered.length === 0) {
-        const session = createSession();
-        return [session];
-      }
-      return filtered;
-    });
-    setActiveId((prev) => {
-      if (prev === key) {
-        const remaining = sessions.find((s) => s.id !== key);
-        return remaining?.id || createSession().id;
-      }
-      return prev;
-    });
-    loadedHistoryRef.current.delete(key);
-    if (wasBackend) {
-      deleteConversation(key).catch((error) => {
-        /* 后端删除失败，本地状态保持 */
-        Toast.error('会话同步删除失败，请手动清理本地缓存');
-        console.warn(error);
-      });
-    }
-  }, [sessions]);
-
-  const handleToggleFavorite = useCallback(
-    (id: string) => {
-      updateSession(id, (session) => ({
-        ...session,
-        favorite: !session.favorite,
-      }));
-      if (isBackendConversation(id)) {
-        toggleFavorite(id).catch((error) => {
-          // 后端失败时回滚本地状态
-          updateSession(id, (session) => ({
-            ...session,
-            favorite: !session.favorite,
-          }));
-        });
-      }
-    },
-    [updateSession],
-  );
-
+  // --- 发送消息（后端对接：copilot stream / 多模态） ---
   const handleSend = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || loading) return;
-
+      if (!trimmed || loading || !activeSession) return;
       const sessionId = activeSession.id;
-      // 仅后端会话（conv-*）可持久化消息；本地临时会话不传 conversationId。
       const conversationId = isBackendConversation(sessionId) ? sessionId : undefined;
 
+      // 多模态分支
       if (isMultimodal) {
         if (imageFiles.length === 0) {
           Toast.warning('请至少上传一张图片');
@@ -537,12 +355,10 @@ export default function ChatPage() {
           Toast.warning('请选择多模态模型');
           return;
         }
-
-        const filesToSend = imageFiles;
         let chatImages: ChatImage[];
         try {
           chatImages = await Promise.all(
-            filesToSend
+            imageFiles
               .filter((f) => f.fileInstance)
               .map(async (f) => ({
                 uid: f.uid,
@@ -554,48 +370,28 @@ export default function ChatPage() {
           Toast.error('读取图片失败，请重试');
           return;
         }
-
-        const userMessage = createMessage('user', trimmed, {
-          status: 'local',
-          images: chatImages,
-        });
-        const assistantMessage = createMessage('assistant', '', {
-          status: 'loading',
-        });
-        const assistantId = assistantMessage.id;
-
-        updateSession(sessionId, (session) => ({
-          ...session,
-          messages: [...session.messages, userMessage, assistantMessage],
+        const userMessage = createMessage('user', trimmed, { status: 'local', images: chatImages });
+        const assistantMessage = createMessage('assistant', '', { status: 'loading' });
+        updateSession(sessionId, (s) => ({
+          ...s,
+          messages: [...s.messages, userMessage, assistantMessage],
           updatedAt: now(),
+          title: s.title === '新对话' ? trimmed.slice(0, 24) || '新对话' : s.title,
         }));
-
-        if (activeSession.title === '新对话') {
-          updateSession(sessionId, (session) => ({
-            ...session,
-            title: trimmed.slice(0, 24) || '新对话',
-          }));
-        }
-
         setLoading(true);
         setImageFiles([]);
-
         try {
           const resp = await multimodalUploadChat({
             modelId: selectedModelId,
             text: trimmed,
-            images: filesToSend.map((f) => f.fileInstance as File).filter(Boolean),
+            images: imageFiles.map((f) => f.fileInstance as File).filter(Boolean),
             systemPrompt: UNIFIED_SYSTEM_PROMPT,
             conversationId,
           });
-          updateMessage(sessionId, assistantId, (msg) => ({
-            ...msg,
-            content: resp.content,
-            status: 'success',
-          }));
+          updateMessage(sessionId, assistantMessage.id, (m) => ({ ...m, content: resp.content, status: 'success' }));
         } catch (error) {
-          updateMessage(sessionId, assistantId, (msg) => ({
-            ...msg,
+          updateMessage(sessionId, assistantMessage.id, (m) => ({
+            ...m,
             content: `⚠️ ${error instanceof Error ? error.message : '多模态请求失败'}`,
             status: 'error',
           }));
@@ -605,43 +401,35 @@ export default function ChatPage() {
         return;
       }
 
+      // 普通流式分支
       const userMessage = createMessage('user', trimmed, { status: 'local' });
-      const assistantMessage = createMessage('assistant', '', {
-        status: 'updating',
-        streaming: true,
-      });
+      const assistantMessage = createMessage('assistant', '', { status: 'updating', streaming: true });
       const assistantId = assistantMessage.id;
-
-      updateSession(sessionId, (session) => ({
-        ...session,
-        messages: [...session.messages, userMessage, assistantMessage],
+      updateSession(sessionId, (s) => ({
+        ...s,
+        messages: [...s.messages, userMessage, assistantMessage],
         updatedAt: now(),
+        title: s.title === '新对话' ? trimmed.slice(0, 24) || '新对话' : s.title,
       }));
-
-      if (activeSession.title === '新对话') {
-        updateSession(sessionId, (session) => ({
-          ...session,
-          title: trimmed.slice(0, 24) || '新对话',
-        }));
-      }
-
       setLoading(true);
 
-      // 三大原理 #3：检测 Action 意图 → 消息流内联 Action 匹配卡（不占用输入框上方空间）
+      // Action 意图匹配（三大原理 #3）
       try {
         const matched = await matchAction(trimmed);
         if (matched && matched.length > 0) {
-          const actionMatchId = generateId();
-          updateSession(sessionId, (session) => ({
-            ...session,
-            messages: [...session.messages, createMessage('assistant', '', {
-              status: 'success',
-              metadata: { actionMatch: { query: trimmed, matched } },
-            })],
+          updateSession(sessionId, (s) => ({
+            ...s,
+            messages: [
+              ...s.messages,
+              createMessage('assistant', '', {
+                status: 'success',
+                metadata: { actionMatch: { query: trimmed, matched } },
+              }),
+            ],
             updatedAt: now(),
           }));
-          updateMessage(sessionId, assistantId, (msg) => ({
-            ...msg,
+          updateMessage(sessionId, assistantId, (m) => ({
+            ...m,
             status: 'success',
             streaming: false,
             content: '已匹配到可执行的 Action，请在下方面板选择并确认执行。',
@@ -651,7 +439,7 @@ export default function ChatPage() {
           return;
         }
       } catch {
-        // Action 匹配失败时继续走普通 LLM 对话
+        // 匹配失败继续普通对话
       }
 
       const controller = new AbortController();
@@ -660,42 +448,28 @@ export default function ChatPage() {
       const historyMessages = activeSession.messages
         .filter((m) => m.status === 'success')
         .slice(-MAX_CONTEXT_TURNS * 2)
-        .map<Parameters<typeof streamChat>[0][number]>((m) => ({
-          role: m.role === 'user' ? 'user' : 'assistant',
-          content: m.content ?? '',
-        }));
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content ?? '' }));
 
-      let ragContext = '';
-      let ragCitations: Citation[] = [];
-
-
-      const systemPrompt = UNIFIED_SYSTEM_PROMPT;
-
-      // 当用户输入涉及实体关系/知识图谱时，并行获取图谱数据
+      // Ontology 图谱并行获取（实体关系类问题）
       if (trimmed.match(/关系|关联|图谱|ontology|实体|依赖|拓扑/i)) {
-        ontSemanticQuery(trimmed)
+        semanticQuery(trimmed)
           .then((graphData) => {
-            updateMessage(sessionId, assistantId, (msg) => {
-              // graphData 异步到达，可能在 onDone 之后：若消息已完成，补充本体 evidence（去重）
-              const hasOntEvidence = (msg.evidence || []).some((e) => e.type === 'ONTOLOGY_OBJECT');
-              return {
-                ...msg,
-                metadata: { ...(msg.metadata || {}), graphData },
-                ...(!hasOntEvidence && msg.status === 'success'
-                  ? { evidence: [...(msg.evidence || []), ...graphToEvidence(graphData)] }
-                  : {}),
-              };
-            });
+            updateMessage(sessionId, assistantId, (m) => ({
+              ...m,
+              metadata: { ...(m.metadata || {}), graphData },
+              ...(!(m.evidence || []).some((e) => e.type === 'ONTOLOGY_OBJECT') && m.status === 'success'
+                ? { evidence: [...(m.evidence || []), ...graphToEvidence(graphData)] }
+                : {}),
+            }));
           })
-          .catch((error) => {
-            /* Graph fetch failed; assistant text response still shows. */
+          .catch((error: Error) => {
             console.warn('Graph fetch failed:', error);
           });
       }
 
       streamChat(
         [
-          { role: 'system', content: systemPrompt + (ragContext ? '\n\n请基于以下参考知识回答问题：' + ragContext : '') },
+          { role: 'system', content: UNIFIED_SYSTEM_PROMPT },
           ...historyMessages,
           { role: 'user', content: trimmed },
         ],
@@ -704,20 +478,19 @@ export default function ChatPage() {
             setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
           },
           onDone: (fullContent, citations) => {
-            const finalCitations = citations.length > 0 ? citations : ragCitations;
             const { content: cleanedContent, claims } = extractClaims(fullContent);
-            updateMessage(sessionId, assistantId, (msg) => {
-              const graph = msg.metadata?.graphData;
+            updateMessage(sessionId, assistantId, (m) => {
+              const graph = m.metadata?.graphData;
               const evidence: Evidence[] = [
-                ...citationsToEvidence(finalCitations),
+                ...citationsToEvidence(citations),
                 ...(graph ? graphToEvidence(graph) : []),
               ];
               return {
-                ...msg,
+                ...m,
                 status: 'success',
                 streaming: false,
                 content: cleanedContent,
-                citations: finalCitations,
+                citations: citations.length > 0 ? citations : undefined,
                 claims: claims.length > 0 ? claims : undefined,
                 evidence: evidence.length > 0 ? evidence : undefined,
               };
@@ -731,8 +504,8 @@ export default function ChatPage() {
             abortRef.current = null;
           },
           onError: (errMsg) => {
-            updateMessage(sessionId, assistantId, (msg) => ({
-              ...msg,
+            updateMessage(sessionId, assistantId, (m) => ({
+              ...m,
               content: `⚠️ ${errMsg}`,
               status: 'error',
               streaming: false,
@@ -742,10 +515,10 @@ export default function ChatPage() {
           },
         },
         controller.signal,
-        { model: currentModel, conversationId },
+        { model: currentModel, temperature: temperature / 100, conversationId },
       );
     },
-    [activeSession, loading, updateSession, updateMessage, isMultimodal, selectedModelId, imageFiles, currentModel],
+    [activeSession, loading, updateSession, updateMessage, isMultimodal, selectedModelId, imageFiles, currentModel, temperature],
   );
 
   const handleCancel = useCallback(() => {
@@ -753,96 +526,62 @@ export default function ChatPage() {
     setLoading(false);
   }, []);
 
-  const handleMultimodalToggle = useCallback((checked: boolean) => {
-    setIsMultimodal(checked);
-    if (!checked) {
-      setImageFiles([]);
+  // --- 会话 CRUD（后端对接） ---
+  const handleNewConversation = useCallback(async () => {
+    try {
+      const conv = await apiCreateConversation({ title: '新对话', mode: 'chat' });
+      setSessions((prev) => [conversationToSession(conv), ...prev]);
+      setActiveId(conv.id);
+    } catch {
+      const local = createSession();
+      setSessions((prev) => [local, ...prev]);
+      setActiveId(local.id);
     }
   }, []);
 
-  const contextTurns = Math.ceil(
-    activeSession.messages.filter((m) => m.status === 'success').length / 2,
+  const handleSelectConversation = useCallback((id: string) => {
+    setActiveId(id);
+  }, []);
+
+  const handleDeleteConversation = useCallback(
+    async (id: string) => {
+      setSessions((prev) => {
+        const next = prev.filter((s) => s.id !== id);
+        if (id === activeId && next.length > 0) setActiveId(next[0].id);
+        return next;
+      });
+      if (isBackendConversation(id)) {
+        try {
+          await apiDeleteConversation(id);
+        } catch {
+          Toast.error('会话同步删除失败，请手动清理本地缓存');
+        }
+      }
+    },
+    [activeId],
   );
 
-  const [temperature, setTemperature] = useState(70);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [sessionPanelVisible, setSessionPanelVisible] = useState(true);
-
-  // 注入 thinking-dot 动画与少量滚动条/操作按钮 hover 样式（颜色全部走 Semi 主题 token）
-  useEffect(() => {
-    const styleId = 'superai-thinking-dot-style';
-    if (document.getElementById(styleId)) return;
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      .thinking-dot {
-        display: inline-block;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--semi-color-fill-1);
-        animation: superai-pulse 1.4s infinite ease-in-out;
+  const handleToggleFavorite = useCallback(
+    async (id: string) => {
+      const target = sessions.find((s) => s.id === id);
+      if (!target) return;
+      const nextFavorite = !target.favorite;
+      setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, favorite: nextFavorite } : s)));
+      if (isBackendConversation(id)) {
+        try {
+          await apiToggleFavorite(id);
+        } catch {
+          Toast.warning('收藏状态同步失败');
+        }
       }
-      .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
-      .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-      @keyframes superai-pulse {
-        0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-        40% { opacity: 1; transform: scale(1); }
-      }
-      .msg-action-btn:hover {
-        color: var(--foreground) !important;
-        background: var(--muted) !important;
-      }
-      .superai-scroll::-webkit-scrollbar { width: 6px; }
-      .superai-scroll::-webkit-scrollbar-track { background: transparent; }
-      .superai-scroll::-webkit-scrollbar-thumb { background: var(--semi-color-fill-2); border-radius: 3px; }
-      .superai-scroll::-webkit-scrollbar-thumb:hover { background: var(--semi-color-fill-1); }
-      .superai-chat .semi-chat-container { padding-left: 24px; padding-right: 24px; }
-    `;
-    document.head.appendChild(style);
-  }, []);
+    },
+    [sessions],
+  );
 
-
-
-  const handleCopyMessage = useCallback((text: string) => {
-    void navigator.clipboard.writeText(text).then(() => {
-      Toast.success('已复制');
-    }).catch(() => {
-      Toast.error('复制失败');
-    });
-  }, []);
-
-  const filteredSessions = useMemo(() => {
-    if (!searchKeyword.trim()) return sessions;
-    const k = searchKeyword.toLowerCase();
-    return sessions.filter(
-      (s) =>
-        s.title.toLowerCase().includes(k) ||
-        s.messages.some((m) => (m.content ?? '').toLowerCase().includes(k)),
-    );
-  }, [sessions, searchKeyword]);
-
-/** 会话时间分组：今天 / 昨天 / 7 天内 / 更早 */
-function timelineGroup(updatedAt: string): string {
-  const t = new Date(updatedAt).getTime();
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const diff = startOfDay - new Date(new Date(t).getFullYear(), new Date(t).getMonth(), new Date(t).getDate()).getTime();
-  if (diff <= 0) return '今天';
-  if (diff === 86400000) return '昨天';
-  if (diff <= 7 * 86400000) return '7 天内';
-  return '更早';
-}
-
-/** 会话是否运行中（存在流式/加载中的消息） */
-function isSessionRunning(s: ChatSession): boolean {
-  return s.messages.some((m) => m.streaming || m.status === 'loading');
-}
-
-  // 业务消息 → Semi Chat 原生消息：status/streaming 映射到 Semi 的 loading/incomplete/complete/error
+  // --- 消息映射：官方 ContentItem 格式（reasoning / annotations / 文本） ---
   const semiMessages = useMemo<SemiMessage[]>(
     () =>
-      activeSession.messages.map((msg) => {
+      (activeSession?.messages ?? []).map((msg) => {
         const draft = msg.streaming ? streamingMap[msg.id] : undefined;
         const text = draft !== undefined ? draft : (msg.content ?? '');
         const status: SemiMessage['status'] =
@@ -852,10 +591,9 @@ function isSessionRunning(s: ChatSession): boolean {
               ? text === ''
                 ? 'in_progress'
                 : 'incomplete'
-              : msg.status === 'loading'
+              : msg.status === 'loading' || msg.status === 'updating'
                 ? 'in_progress'
                 : 'completed';
-        // 官方 ContentItem 格式：thinking → reasoning 块；evidence/citations → annotations
         const contentItems: Array<Record<string, unknown>> = [];
         if (msg.role !== 'user') {
           const thinking = msg.metadata?.thinking as string | undefined;
@@ -869,23 +607,11 @@ function isSessionRunning(s: ChatSession): boolean {
         }
         if (text) {
           const annotations: Array<{ title: string; detail?: string; url?: string }> = [];
-          const evidence = msg.evidence;
-          if (Array.isArray(evidence) && evidence.length > 0) {
-            for (const ev of evidence.slice(0, 6)) {
-              annotations.push({
-                title: (ev as { title?: string; ref?: string }).title ?? (ev as { ref?: string }).ref ?? 'evidence',
-                detail: (ev as { fragment?: string }).fragment,
-              });
-            }
+          for (const ev of (msg.evidence ?? []).slice(0, 6)) {
+            annotations.push({ title: ev.title ?? ev.ref, detail: ev.fragment });
           }
-          const citations = msg.citations;
-          if (Array.isArray(citations) && citations.length > 0) {
-            for (const c of citations.slice(0, 6)) {
-              annotations.push({
-                title: (c as { title?: string }).title ?? 'citation',
-                detail: (c as { snippet?: string }).snippet,
-              });
-            }
+          for (const c of (msg.citations ?? []).slice(0, 6)) {
+            annotations.push({ title: c.title, detail: c.snippet });
           }
           contentItems.push({
             type: 'message',
@@ -907,21 +633,30 @@ function isSessionRunning(s: ChatSession): boolean {
           createdAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
         };
       }),
-    [activeSession.messages, streamingMap],
+    [activeSession?.messages, streamingMap],
   );
 
+  const filteredSessions = useMemo(() => {
+    let result = [...sessions];
+    if (searchKeyword.trim()) {
+      const k = searchKeyword.toLowerCase();
+      result = result.filter(
+        (s) =>
+          s.title.toLowerCase().includes(k) ||
+          s.messages.some((m) => (m.content ?? '').toLowerCase().includes(k)),
+      );
+    }
+    return result;
+  }, [sessions, searchKeyword]);
+
+  if (!activeSession) {
+    return <div style={{ padding: 24 }}>加载中...</div>;
+  }
+
+  // ============ 渲染 ============
   return (
-    <div
-      style={{
-        display: 'flex',
-        flex: 1,
-        minHeight: 0,
-        alignSelf: 'stretch',
-        background: 'var(--background)',
-        width: '100%',
-      }}
-    >
-      {/* 右侧 - 聊天区（Semi Chat：消息流 + 输入区） */}
+    <div style={{ display: 'flex', flex: 1, minHeight: 0, width: '100%' }}>
+      {/* ===== 左：对话区 ===== */}
       <div
         style={{
           flex: 1,
@@ -931,7 +666,7 @@ function isSessionRunning(s: ChatSession): boolean {
           background: 'var(--background)',
         }}
       >
-        {/* chat-topbar：侧栏开关 + 对话标题 */}
+        {/* chat-topbar：侧栏开关 + 对话标题 + 运行状态 */}
         <div
           style={{
             display: 'flex',
@@ -948,26 +683,54 @@ function isSessionRunning(s: ChatSession): boolean {
             size="small"
             icon={
               sessionPanelVisible ? (
-                <ChevronsLeft style={{ width: 15, height: 15 }} />
-              ) : (
                 <ChevronsRight style={{ width: 15, height: 15 }} />
+              ) : (
+                <ChevronsLeft style={{ width: 15, height: 15 }} />
               )
             }
             title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
             onClick={() => setSessionPanelVisible((v) => !v)}
           />
-          <span style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {activeSession.title}
           </span>
           {isSessionRunning(activeSession) && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--semi-color-primary)', flexShrink: 0 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--semi-color-primary)', animation: 'pulse 1.2s ease-in-out infinite' }} />
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: 'var(--semi-color-primary)',
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: 'var(--semi-color-primary)',
+                  animation: 'pulse 1.2s ease-in-out infinite',
+                }}
+              />
               运行中
             </span>
           )}
         </div>
 
-<AIChatDialogue
+        {/* 消息流（官方 AIChatDialogue：左右布局 + reasoning + annotations） */}
+        <AIChatDialogue
           key={activeSession.id}
           className="superai-chat"
           style={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 'none', padding: '24px 0 0' }}
@@ -976,11 +739,6 @@ function isSessionRunning(s: ChatSession): boolean {
             assistant: { name: 'SuperAI', avatar: '🤖' },
           }}
           chats={semiMessages}
-          onMessageCopy={(message) => {
-            if (message?.content && typeof message.content === 'string') {
-              handleCopyMessage(message.content);
-            }
-          }}
           topSlot={
             activeSession.messages.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 24px 0' }}>
@@ -1000,6 +758,8 @@ function isSessionRunning(s: ChatSession): boolean {
             void handleSend(hint);
           }}
         />
+
+        {/* 输入框（官方 Configure：模型 / 深度思考 / 思考模式 / 附件） */}
         <AIChatInput
           placeholder="输入消息，Shift + Enter 换行..."
           sendHotKey="enter"
@@ -1011,41 +771,31 @@ function isSessionRunning(s: ChatSession): boolean {
           uploadProps={{
             action: '',
             fileList: imageFiles,
-            onChange: ({ fileList }) =>
-              setImageFiles(fileList.map((f) => ({ ...f, status: 'success' }))),
+            onChange: ({ fileList }) => setImageFiles(fileList.map((f) => ({ ...f, status: 'success' }))),
             beforeUpload: ({ file }) => beforeUpload(file.fileInstance as File),
             multiple: true,
             limit: 8,
-            accept: 'image/png,image/jpeg,image/webp',
+            accept: ALLOWED_IMAGE_TYPES.join(','),
           }}
-          renderConfigureArea={() => {
-            const { Configure } = AIChatInput;
-            return (
-              <>
-                <Configure.Select
-                  optionList={availableModels}
-                  field="model"
-                  initValue={currentModel}
-                />
-                <Configure.Button icon={<ThunderboltOutlined style={{ fontSize: 14 }} />} field="thinking">
-                  深度思考
-                </Configure.Button>
-                <Configure.RadioButton
-                  options={[
-                    { label: '极速', value: 'fast' },
-                    { label: '思考', value: 'think' },
-                    { label: '超能', value: 'super' },
-                  ]}
-                  field="thinkType"
-                  initValue="think"
-                />
-              </>
-            );
-          }}
+          renderConfigureArea={() => (
+            <>
+              <Configure.Select optionList={availableModels} field="model" initValue={currentModel} />
+              <Configure.Button icon={<ThunderboltOutlined style={{ fontSize: 14 }} />} field="thinking">
+                深度思考
+              </Configure.Button>
+              <Configure.RadioButton
+                options={[
+                  { label: '极速', value: 'fast' },
+                  { label: '思考', value: 'think' },
+                  { label: '超能', value: 'super' },
+                ]}
+                field="thinkType"
+                initValue="think"
+              />
+            </>
+          )}
           onConfigureChange={(value, changedValue) => {
-            if (changedValue.model != null) {
-              setCurrentModel(changedValue.model);
-            }
+            if (changedValue.model != null) setCurrentModel(changedValue.model);
             if (changedValue.thinkType != null) {
               setTemperature(changedValue.thinkType === 'super' ? 90 : changedValue.thinkType === 'think' ? 60 : 30);
             }
@@ -1053,204 +803,157 @@ function isSessionRunning(s: ChatSession): boolean {
         />
       </div>
 
-      {/* 中间 - 会话列表 */}
+      {/* ===== 右：会话历史 Sidebar（官方配置） ===== */}
       {sessionPanelVisible && (
-      <div
-        style={{
-          width: 240,
-          minWidth: 240,
-          background: 'var(--background)',
-          borderRight: '1px solid var(--border)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* conversation-header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: 12,
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--foreground)' }}>会话</h2>
-          <button
-            onClick={handleNewConversation}
-            style={{
-              background: 'transparent',
-              color: 'var(--foreground)',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              height: 32,
-              padding: '0 12px',
-              fontSize: 12,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <PlusOutlined style={{ fontSize: 14 }} />新建
-          </button>
-        </div>
-
-        {/* 搜索框 */}
-        <div style={{ padding: '8px 12px 4px' }}>
-          <Input
-            placeholder="搜索会话..."
-            prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
-            showClear
-            value={searchKeyword}
-            onChange={(v) => setSearchKeyword(v)}
-            size="small"
-            style={{
-              background: 'var(--muted)',
-              borderColor: 'var(--border)',
-              borderRadius: 4,
-            }}
-          />
-        </div>
-
-        {/* conversation-list（Semi Sidebar options 模式） */}
-        <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-          <Sidebar
-            visible
-            resizable
-            title="会话历史"
-            showClose
-            defaultSize={{ width: 260 }}
-            minWidth={200}
-            maxWidth={360}
-            onCancel={() => setSessionPanelVisible(false)}
-            style={{ width: '100%', border: 'none', height: '100%' }}
-            renderMainContent={() => (
-              <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-                {(() => {
-                  const groups: Array<{ label: string; items: typeof filteredSessions }> = [];
-                  for (const s of filteredSessions) {
-                    const g = timelineGroup(s.updatedAt);
-                    let group = groups.find((x) => x.label === g);
-                    if (!group) {
-                      group = { label: g, items: [] };
-                      groups.push(group);
-                    }
-                    group.items.push(s);
+        <Sidebar
+          visible
+          resizable
+          title="会话历史"
+          showClose
+          defaultSize={{ width: 260 }}
+          minWidth={200}
+          maxWidth={360}
+          onCancel={() => setSessionPanelVisible(false)}
+          style={{ width: '100%', border: 'none', height: '100%', borderLeft: '1px solid var(--border)' }}
+          renderMainContent={() => (
+            <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
+              <div style={{ padding: '8px 12px 4px' }}>
+                <Button theme="solid" type="primary" icon={<PlusOutlined />} block onClick={() => void handleNewConversation()}>
+                  新建会话
+                </Button>
+              </div>
+              <div style={{ padding: '8px 12px 4px' }}>
+                <Input
+                  placeholder="搜索会话..."
+                  prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
+                  showClear
+                  value={searchKeyword}
+                  onChange={(v) => setSearchKeyword(v)}
+                  size="small"
+                />
+              </div>
+              {(() => {
+                const groups: Array<{ label: string; items: ChatSession[] }> = [];
+                for (const s of filteredSessions) {
+                  const g = timelineGroup(s.updatedAt);
+                  let group = groups.find((x) => x.label === g);
+                  if (!group) {
+                    group = { label: g, items: [] };
+                    groups.push(group);
                   }
-                  return (
-                    <>
-                      {groups.map((g) => (
-                        <div key={g.label}>
+                  group.items.push(s);
+                }
+                return (
+                  <>
+                    {groups.map((g) => (
+                      <div key={g.label}>
+                        <div
+                          style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '8px 12px 4px', fontWeight: 600 }}
+                        >
+                          {g.label}
+                        </div>
+                        {g.items.map((s) => (
                           <div
+                            key={s.id}
+                            onClick={() => handleSelectConversation(s.id)}
                             style={{
-                              fontSize: 11,
-                              color: 'var(--muted-foreground)',
-                              padding: '8px 12px 4px',
-                              fontWeight: 600,
+                              padding: '10px 12px',
+                              borderRadius: 4,
+                              cursor: 'pointer',
+                              marginBottom: 2,
+                              background: s.id === activeId ? 'var(--muted)' : 'transparent',
+                              transition: 'background .15s',
                             }}
                           >
-                            {g.label}
-                          </div>
-                          {g.items.map((s) => (
                             <div
-                              key={s.id}
-                              onClick={() => handleSelectConversation(s.id)}
                               style={{
-                                padding: '10px 12px',
-                                borderRadius: 4,
-                                cursor: 'pointer',
-                                marginBottom: 2,
-                                background: s.id === activeId ? 'var(--muted)' : 'transparent',
-                                transition: 'background .15s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                marginBottom: 3,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                color: 'var(--foreground)',
                               }}
                             >
-                              <div
+                              {isSessionRunning(s) && (
+                                <>
+                                  <span
+                                    style={{
+                                      width: 7,
+                                      height: 7,
+                                      borderRadius: '50%',
+                                      flexShrink: 0,
+                                      background: 'var(--semi-color-primary)',
+                                      animation: 'pulse 1.2s ease-in-out infinite',
+                                    }}
+                                  />
+                                  <span style={{ fontSize: 10, color: 'var(--semi-color-primary)', flexShrink: 0 }}>
+                                    运行中
+                                  </span>
+                                </>
+                              )}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                              {new Date(s.updatedAt).toLocaleString('zh-CN', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                              <span
                                 style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 6,
-                                  fontSize: 13,
-                                  fontWeight: 500,
-                                  marginBottom: 3,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  color: 'var(--foreground)',
+                                  display: 'inline-block',
+                                  fontSize: 10,
+                                  padding: '1px 6px',
+                                  borderRadius: 4,
+                                  background: 'var(--card)',
+                                  border: '1px solid var(--border)',
+                                  color: 'var(--muted-foreground)',
                                 }}
                               >
-                                {isSessionRunning(s) && (
-                                  <>
-                                    <span
-                                      style={{
-                                        width: 7,
-                                        height: 7,
-                                        borderRadius: '50%',
-                                        flexShrink: 0,
-                                        background: 'var(--semi-color-primary)',
-                                        animation: 'pulse 1.2s ease-in-out infinite',
-                                      }}
-                                    />
-                                    <span style={{ fontSize: 10, color: 'var(--semi-color-primary)', flexShrink: 0 }}>运行中</span>
-                                  </>
-                                )}
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
-                              </div>
-                              <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                                {new Date(s.updatedAt).toLocaleString('zh-CN', {
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                                <span
-                                  style={{
-                                    display: 'inline-block',
-                                    fontSize: 10,
-                                    padding: '1px 6px',
-                                    borderRadius: 4,
-                                    background: 'var(--card)',
-                                    border: '1px solid var(--border)',
-                                    color: 'var(--muted-foreground)',
-                                  }}
-                                >
-                                  SuperAI
-                                </span>
-                                {s.favorite && (
-                                  <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />
-                                )}
-                                <Button
-                                  size="small"
-                                  theme="borderless"
-                                  icon={<DeleteOutlined style={{ fontSize: 12 }} />}
-                                  title="删除会话"
-                                  style={{ marginLeft: 'auto' }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteConversation(s.id);
-                                  }}
-                                />
-                              </div>
+                                SuperAI
+                              </span>
+                              {s.favorite && <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />}
+                              <Button
+                                size="small"
+                                theme="borderless"
+                                icon={s.favorite ? <StarFilled style={{ fontSize: 12, color: 'var(--warning)' }} /> : <StarOutlined style={{ fontSize: 12 }} />}
+                                title={s.favorite ? '取消收藏' : '收藏'}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleToggleFavorite(s.id);
+                                }}
+                              />
+                              <Button
+                                size="small"
+                                theme="borderless"
+                                icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+                                title="删除会话"
+                                style={{ marginLeft: 'auto' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleDeleteConversation(s.id);
+                                }}
+                              />
                             </div>
-                          ))}
-                        </div>
-                      ))}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          />
-
-
-        </div>
-
-
-      </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
+            </div>
+          )}
+        />
       )}
-
     </div>
   );
 }
