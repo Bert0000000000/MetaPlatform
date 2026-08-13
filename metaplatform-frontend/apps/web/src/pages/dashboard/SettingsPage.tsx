@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   Card,
-  Tabs,
+  Nav,
   Form,
   Input,
   Select,
@@ -15,7 +15,6 @@ import {
   Popconfirm,
   List,
   Divider,
-  Radio,
   Avatar,
   Descriptions,
   Empty,
@@ -35,6 +34,8 @@ import {
   DesktopOutlined,
   UserOutlined,
   IdcardOutlined,
+  CheckCircleFilled,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import {
   getApiTokens,
@@ -91,10 +92,10 @@ const DEFAULT_PAGE_OPTIONS = [
   { label: '历史交付物', value: '/deliverables' },
 ];
 
-const THEME_OPTIONS: Array<{ value: ThemeMode; label: string; icon: React.ReactNode }> = [
-  { value: 'light', label: '浅色', icon: <SunOutlined /> },
-  { value: 'dark', label: '深色', icon: <MoonOutlined /> },
-  { value: 'system', label: '跟随系统', icon: <DesktopOutlined /> },
+const THEME_OPTIONS: Array<{ value: ThemeMode; label: string; icon: ReactNode; desc: string }> = [
+  { value: 'light', label: '浅色', icon: <SunOutlined />, desc: '明亮清爽，适合白天使用' },
+  { value: 'dark', label: '深色', icon: <MoonOutlined />, desc: '护眼沉浸，适合夜间使用' },
+  { value: 'system', label: '跟随系统', icon: <DesktopOutlined />, desc: '随操作系统自动切换' },
 ];
 
 const DATA_SCOPE_LABEL: Record<string, string> = {
@@ -103,6 +104,25 @@ const DATA_SCOPE_LABEL: Record<string, string> = {
   DEPT_AND_SUB: '本部门及子部门',
   SELF: '仅本人',
   CUSTOM: '自定义',
+};
+
+/** 左侧分区导航：清晰分组，替代原先挤在一行的 7 个横向 Tab。 */
+const NAV_ITEMS = [
+  { itemKey: 'appearance', text: '外观', icon: <BgColorsOutlined /> },
+  { itemKey: 'region', text: '语言与区域', icon: <GlobalOutlined /> },
+  { itemKey: 'preferences', text: '偏好', icon: <LayoutOutlined /> },
+  { itemKey: 'profile', text: '个人资料', icon: <UserOutlined /> },
+  { itemKey: 'permissions', text: '权限', icon: <IdcardOutlined /> },
+  { itemKey: 'security', text: '安全', icon: <SafetyOutlined /> },
+];
+
+const NAV_META: Record<string, { title: string; desc: string }> = {
+  appearance: { title: '外观', desc: '自定义平台主题外观，切换即时生效并持久化。' },
+  region: { title: '语言与区域', desc: '设置界面语言、时区与日期显示格式。' },
+  preferences: { title: '偏好', desc: '配置登录后的默认首页与工作台组件排列。' },
+  profile: { title: '个人资料', desc: '查看当前账号的基本信息与所属组织。' },
+  permissions: { title: '权限', desc: '查看当前账号被授予的角色与数据权限。' },
+  security: { title: '安全', desc: '管理 API 访问令牌与已登录的活动会话。' },
 };
 
 /** 将权限按 resourceType 分组，便于按模块展示。 */
@@ -120,8 +140,133 @@ function groupPermissionsByResource(
     .map(([resourceType, items]) => ({ resourceType, items }));
 }
 
+/** 分区标题：统一的内容区头部。 */
+function SectionHeader({ title, desc }: { title: string; desc?: string }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <Title heading={4} style={{ margin: 0 }}>
+        {title}
+      </Title>
+      {desc && (
+        <Paragraph type="secondary" style={{ margin: '6px 0 0', maxWidth: 640 }}>
+          {desc}
+        </Paragraph>
+      )}
+    </div>
+  );
+}
+
+/** 主题缩略图里的迷你窗口：模拟侧边栏 + 内容块。 */
+function MiniWindow({ bg, panel, border }: { bg: string; panel: string; border: string }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 8,
+        padding: 6,
+        display: 'flex',
+        gap: 4,
+      }}
+    >
+      <div style={{ width: 18, background: panel, borderRadius: 4, opacity: 0.95 }} />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ height: 8, background: panel, borderRadius: 2, opacity: 0.95 }} />
+        <div style={{ flex: 1, background: panel, borderRadius: 3, opacity: 0.55 }} />
+      </div>
+    </div>
+  );
+}
+
+/** 主题模式的可视化缩略图。 */
+function ThemeThumbnail({ mode }: { mode: ThemeMode }) {
+  const box: React.CSSProperties = { display: 'flex', gap: 6, height: 92 };
+  if (mode === 'system') {
+    return (
+      <div style={box}>
+        <MiniWindow bg="#eef0f3" panel="#ffffff" border="#e2e5ea" />
+        <MiniWindow bg="#1c1d21" panel="#2b2c31" border="#33353a" />
+      </div>
+    );
+  }
+  const light = mode === 'light';
+  return (
+    <div style={box}>
+      <MiniWindow
+        bg={light ? '#eef0f3' : '#1c1d21'}
+        panel={light ? '#ffffff' : '#2b2c31'}
+        border={light ? '#e2e5ea' : '#33353a'}
+      />
+    </div>
+  );
+}
+
+/** 可选主题卡片：选中态高亮 + 勾选标记。 */
+function ThemeCard({
+  option,
+  active,
+  onClick,
+}: {
+  option: (typeof THEME_OPTIONS)[number];
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={active}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      style={{
+        flex: '1 1 160px',
+        maxWidth: 224,
+        cursor: 'pointer',
+        outline: 'none',
+        border: `1px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+        borderRadius: 10,
+        padding: 12,
+        background: 'var(--card)',
+        transition: 'border-color .15s, box-shadow .15s',
+        boxShadow: active ? '0 0 0 1px var(--primary)' : 'none',
+      }}
+    >
+      <ThemeThumbnail mode={option.value} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            color: active ? 'var(--primary)' : 'var(--muted-foreground)',
+          }}
+        >
+          {option.icon}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground)' }}>
+            {option.label}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>
+            {option.desc}
+          </div>
+        </div>
+        {active && (
+          <CheckCircleFilled style={{ color: 'var(--primary)', fontSize: 16 }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { settings, resolvedTheme, updateSettings, setTheme } = useSettings();
+  const [active, setActive] = useState<string>('appearance');
   const [tokens, setTokens] = useState<ApiToken[]>([]);
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -131,8 +276,8 @@ export default function SettingsPage() {
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [newTokenName, setNewTokenName] = useState('');
   const [createdToken, setCreatedToken] = useState<string | null>(null);
-  const [preferencesForm] = Form.useForm<UserSettings>();
-  const [layoutForm] = Form.useForm<UserSettings>();
+  const [regionForm] = Form.useForm<UserSettings>();
+  const [prefsForm] = Form.useForm<UserSettings>();
 
   const loadTokensAndSessions = async () => {
     const [t, sess] = await Promise.all([getApiTokens(), getActiveSessions()]);
@@ -160,8 +305,8 @@ export default function SettingsPage() {
     }
   };
 
-  // 挂载时并行加载：tokens / sessions / profile / permissions，避免空白 tab。
-  // 单个请求失败由全局 axios 拦截器统一报错，不影响其他 tab。
+  // 挂载时并行加载：tokens / sessions / profile / permissions，避免空白分区。
+  // 单个请求失败由全局 axios 拦截器统一报错，不影响其他分区。
   useEffect(() => {
     loadTokensAndSessions();
     loadProfile();
@@ -169,9 +314,9 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    preferencesForm.setValues(settings);
-    layoutForm.setValues(settings);
-  }, [settings, preferencesForm, layoutForm]);
+    regionForm.setValues(settings);
+    prefsForm.setValues(settings);
+  }, [settings, regionForm, prefsForm]);
 
   const handleSavePreferences = async (values: Partial<UserSettings>) => {
     await updateSettings(values);
@@ -249,23 +394,133 @@ export default function SettingsPage() {
   const previewDate = new Date().toISOString();
   const displayName = profile?.realName || profile?.username || '—';
   const initials = displayName.charAt(0).toUpperCase();
-
   const permissionGroups = permissions ? groupPermissionsByResource(permissions.permissions) : [];
+  const currentMeta = NAV_META[active] ?? NAV_META.appearance;
 
   return (
-    <Card>
-      <Tabs>
-        <Tabs.TabPane
-          itemKey="profile"
-          tab={
-            <span>
-              <UserOutlined /> 个人信息
-            </span>
-          }
-        >
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', width: 'auto', margin: '0 -24px' }}>
+      {/* 左侧分区导航 */}
+      <div
+        style={{
+          width: 200,
+          flexShrink: 0,
+          borderRight: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ padding: '16px 20px 8px' }}>
+          <Title heading={5} style={{ margin: 0 }}>
+            设置
+          </Title>
+        </div>
+        <Nav
+          items={NAV_ITEMS}
+          selectedKeys={[active]}
+          onClick={({ itemKey }) => setActive(String(itemKey))}
+          style={{
+            width: '100%',
+            padding: 8,
+            borderRight: 'none',
+            background: 'transparent',
+            fontSize: 13,
+          }}
+          bodyStyle={{ paddingTop: 4 }}
+        />
+      </div>
+
+      {/* 右侧内容区 */}
+      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: '28px 36px' }}>
+        <SectionHeader title={currentMeta.title} desc={currentMeta.desc} />
+
+        {active === 'appearance' && (
+          <Card style={{ maxWidth: 760 }}>
+            <div style={{ marginBottom: 16 }}>
+              <Text strong>主题模式</Text>
+              <div style={{ color: 'var(--muted-foreground)', fontSize: 13, marginTop: 4 }}>
+                选择偏好的配色主题，切换后立即应用到所有平台组件。
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              {THEME_OPTIONS.map((opt) => (
+                <ThemeCard
+                  key={opt.value}
+                  option={opt}
+                  active={settings.theme === opt.value}
+                  onClick={() => handleThemeChange(opt.value)}
+                />
+              ))}
+            </div>
+            <Divider margin={20} />
+            <Space vertical spacing={6}>
+              <Text type="secondary">
+                当前实际主题：
+                <Tag color={resolvedTheme === 'dark' ? 'indigo' : 'yellow'} style={{ marginLeft: 6 }}>
+                  {resolvedTheme === 'dark' ? '深色' : '浅色'}
+                </Tag>
+                {settings.theme === 'system' && (
+                  <span style={{ marginLeft: 6 }}>（跟随系统，OS 切换将自动响应）</span>
+                )}
+              </Text>
+              <Text type="secondary" size="small">
+                偏好同时持久化到本地与后端，下次登录自动恢复。
+              </Text>
+            </Space>
+          </Card>
+        )}
+
+        {active === 'region' && (
+          <>
+            <Form
+              form={regionForm}
+              onSubmit={handleSavePreferences}
+              style={{ maxWidth: 560 }}
+              labelPosition="left"
+            >
+              <Form.Select field="language" label="界面语言" optionList={LANGUAGE_OPTIONS} />
+              <Form.Select field="timezone" label="时区" optionList={TIMEZONE_OPTIONS} />
+              <Form.Select field="dateFormat" label="日期格式" optionList={DATE_FORMAT_OPTIONS} />
+              <Button theme="solid" type="primary" htmlType="submit">
+                保存设置
+              </Button>
+            </Form>
+            <Divider>实时预览</Divider>
+            <Space vertical style={{ maxWidth: 560, width: '100%' }}>
+              <Text type="secondary">
+                当前语言: {settings.language} · 时区: {settings.timezone}
+              </Text>
+              <Text>
+                日期示例: <Text strong>{formatDateTime(previewDate, settings)}</Text>
+              </Text>
+            </Space>
+          </>
+        )}
+
+        {active === 'preferences' && (
+          <Form form={prefsForm} onSubmit={handleSavePreferences} style={{ maxWidth: 560 }}>
+            <Form.Select
+              field="defaultPage"
+              label="默认首页"
+              extraText="登录后优先进入的页面"
+              optionList={DEFAULT_PAGE_OPTIONS}
+            />
+            <Form.Select
+              field="layout"
+              label="工作台组件排列"
+              extraText="按选择顺序展示，拖动可调整顺序（暂未实现）"
+              multiple
+              optionList={WIDGET_OPTIONS}
+            />
+            <Button theme="solid" type="primary" htmlType="submit">
+              保存偏好
+            </Button>
+          </Form>
+        )}
+
+        {active === 'profile' && (
           <Spin spinning={profileLoading}>
             {profile ? (
-              <div style={{ maxWidth: 720 }}>
+              <Card style={{ maxWidth: 720 }}>
                 <Space spacing="loose" align="center" style={{ marginBottom: 24 }}>
                   <Avatar size="extra-large" style={{ backgroundColor: 'var(--primary)' }}>
                     {initials}
@@ -323,99 +578,21 @@ export default function SettingsPage() {
                     },
                   ]}
                 />
-              </div>
+                <Divider />
+                <Button icon={<ReloadOutlined />} onClick={loadProfile}>
+                  重新加载个人信息
+                </Button>
+              </Card>
             ) : (
               <Empty description="暂无用户信息" />
             )}
-            <Divider />
-            <Button icon={<IdcardOutlined />} onClick={loadProfile}>
-              重新加载个人信息
-            </Button>
           </Spin>
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          itemKey="preferences"
-          tab={
-            <span>
-              <GlobalOutlined /> 偏好设置
-            </span>
-          }
-        >
-          <>
-            <Form
-              form={preferencesForm}
-              onSubmit={handleSavePreferences}
-              style={{ maxWidth: 560 }}
-            >
-              <Form.Select field="language" label="语言" optionList={LANGUAGE_OPTIONS} />
-              <Form.Select field="timezone" label="时区" optionList={TIMEZONE_OPTIONS} />
-              <Form.Select field="dateFormat" label="日期格式" optionList={DATE_FORMAT_OPTIONS} />
-              <Form.Select field="defaultPage" label="默认首页" optionList={DEFAULT_PAGE_OPTIONS} />
-              <Button theme="solid" type="primary" htmlType="submit">
-                保存设置
-              </Button>
-            </Form>
-            <Divider>实时预览</Divider>
-            <Space vertical style={{ maxWidth: 560, width: '100%' }}>
-              <Text type="secondary">
-                当前语言: {settings.language} · 时区: {settings.timezone}
-              </Text>
-              <Text>
-                日期示例: <Text strong>{formatDateTime(previewDate, settings)}</Text>
-              </Text>
-            </Space>
-          </>
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          itemKey="theme"
-          tab={
-            <span>
-              <BgColorsOutlined /> 主题
-            </span>
-          }
-        >
-          <div style={{ maxWidth: 480 }}>
-            <Title heading={5}>主题模式</Title>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8 }}>选择主题</div>
-              <Radio.Group
-                type="button"
-                value={settings.theme}
-                onChange={(e) => handleThemeChange(e.target.value as ThemeMode)}
-                options={THEME_OPTIONS.map((opt) => ({
-                  value: opt.value,
-                  label: (
-                    <Space spacing={4}>
-                      {opt.icon}
-                      {opt.label}
-                    </Space>
-                  ),
-                }))}
-              />
-            </div>
-            <Paragraph type="secondary">
-              当前实际主题：
-              <Tag color={resolvedTheme === 'dark' ? 'indigo' : 'yellow'}>
-                {resolvedTheme === 'dark' ? '深色' : '浅色'}
-              </Tag>
-              {settings.theme === 'system' && '（跟随系统，OS 切换将自动响应）'}
-            </Paragraph>
-            <Paragraph type="secondary">
-              主题切换会立即生效，并同步到所有平台组件；偏好同时持久化到 localStorage 与后端，下次登录自动恢复。
-            </Paragraph>
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          itemKey="permissions"
-          tab={
-            <span>
-              <SafetyOutlined /> 权限查看
-            </span>
-          }
-        >
+        )}
+
+        {active === 'permissions' && (
           <Spin spinning={permissionsLoading}>
             {permissions ? (
-              <div style={{ maxWidth: 900 }}>
+              <div>
                 <Descriptions
                   column={2}
                   size="small"
@@ -459,9 +636,7 @@ export default function SettingsPage() {
                             <div style={{ marginBottom: 8 }}>
                               <Space>
                                 <Tag color="purple">{group.resourceType}</Tag>
-                                <Text type="secondary">
-                                  {group.items.length} 项权限
-                                </Text>
+                                <Text type="secondary">{group.items.length} 项权限</Text>
                               </Space>
                             </div>
                             <Table
@@ -498,7 +673,6 @@ export default function SettingsPage() {
                                   ),
                                 },
                               ]}
-                              scroll={{ x: 'max-content' }}
                             />
                           </>
                         }
@@ -507,7 +681,7 @@ export default function SettingsPage() {
                   />
                 )}
                 <Divider />
-                <Button icon={<SafetyOutlined />} onClick={loadPermissions}>
+                <Button icon={<ReloadOutlined />} onClick={loadPermissions}>
                   重新加载权限
                 </Button>
               </div>
@@ -515,111 +689,77 @@ export default function SettingsPage() {
               <Empty description="暂无权限数据，可点击下方按钮重新加载" />
             )}
           </Spin>
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          itemKey="layout"
-          tab={
-            <span>
-              <LayoutOutlined /> 布局定制
-            </span>
-          }
-        >
-          <Form
-            form={layoutForm}
-            onSubmit={handleSavePreferences}
-            style={{ maxWidth: 560 }}
-          >
-            <Form.Select
-              field="layout"
-              label="工作台组件排列"
-              extraText="按选择顺序展示，拖动可调整顺序（暂未实现）"
-              multiple
-              optionList={WIDGET_OPTIONS}
-            />
-            <Button theme="solid" type="primary" htmlType="submit">
-              保存布局
-            </Button>
-          </Form>
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          itemKey="tokens"
-          tab={
-            <span>
-              <KeyOutlined /> API Token
-            </span>
-          }
-        >
+        )}
+
+        {active === 'security' && (
           <div>
-            <Space style={{ marginBottom: 16 }}>
-              <Button
-                theme="solid"
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setCreatedToken(null);
-                  setTokenModalOpen(true);
-                }}
-              >
-                创建 Token
-              </Button>
-            </Space>
-            <Table
-              rowKey="id"
-              columns={tokenColumns}
-              dataSource={tokens}
-              pagination={false}
-              size="small"
-              empty="暂无 Token"
-              scroll={{ x: 'max-content' }}
-            />
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane
-          itemKey="sessions"
-          tab={
-            <span>
-              <SafetyOutlined /> 会话管理
-            </span>
-          }
-        >
-          {sessions.length === 0 ? (
-            <Empty description="暂无活动会话" />
-          ) : (
-            <List
-              dataSource={sessions}
-              renderItem={(s) => (
-                <List.Item
-                  main={
-                    <div>
-                      <Text strong>{s.device}</Text>
-                      <div style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
-                        IP: {s.ip} · 位置: {s.location} · 最后活跃: {formatDateTime(
-                          s.lastActiveAt,
-                          settings,
-                        )}
-                      </div>
-                    </div>
-                  }
-                  extra={
-                    s.current ? (
-                      <Tag color="green">当前会话</Tag>
-                    ) : (
-                      <Popconfirm
-                        title="确认注销此会话？"
-                        onConfirm={() => handleRevokeSession(s.id)}
-                      >
-                        <Button theme="borderless" type="danger" size="small">
-                          注销
-                        </Button>
-                      </Popconfirm>
-                    )
-                  }
+            <Card
+              title="API Token"
+              headerExtraContent={
+                <Button
+                  theme="solid"
+                  type="primary"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setCreatedToken(null);
+                    setTokenModalOpen(true);
+                  }}
+                >
+                  创建 Token
+                </Button>
+              }
+              bodyStyle={{ paddingTop: 12 }}
+            >
+              <Table
+                rowKey="id"
+                columns={tokenColumns}
+                dataSource={tokens}
+                pagination={false}
+                size="small"
+                empty="暂无 Token"
+              />
+            </Card>
+
+            <Card title="活动会话" bodyStyle={{ paddingTop: 12 }} style={{ marginTop: 20 }}>
+              {sessions.length === 0 ? (
+                <Empty description="暂无活动会话" />
+              ) : (
+                <List
+                  dataSource={sessions}
+                  renderItem={(s) => (
+                    <List.Item
+                      main={
+                        <div>
+                          <Text strong>{s.device}</Text>
+                          <div style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
+                            IP: {s.ip} · 位置: {s.location} · 最后活跃:{' '}
+                            {formatDateTime(s.lastActiveAt, settings)}
+                          </div>
+                        </div>
+                      }
+                      extra={
+                        s.current ? (
+                          <Tag color="green">当前会话</Tag>
+                        ) : (
+                          <Popconfirm
+                            title="确认注销此会话？"
+                            onConfirm={() => handleRevokeSession(s.id)}
+                          >
+                            <Button theme="borderless" type="danger" size="small">
+                              注销
+                            </Button>
+                          </Popconfirm>
+                        )
+                      }
+                    />
+                  )}
                 />
               )}
-            />
-          )}
-        </Tabs.TabPane>
-      </Tabs>
+            </Card>
+          </div>
+        )}
+      </div>
 
       <Modal
         title="创建 API Token"
@@ -672,6 +812,6 @@ export default function SettingsPage() {
           style={{ marginTop: 8 }}
         />
       </Modal>
-    </Card>
+    </div>
   );
 }
