@@ -110,9 +110,9 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     path: '/apps',
     children: [
       { key: 'apps', label: '应用列表', path: '/apps' },
-      { key: 'market', label: '模板市场', path: '/market' },
-      { key: 'my-templates', label: '我的模板', path: '/my-templates' },
-      { key: 'ai-designer', label: 'AI 设计器', path: '/ai-designer' },
+      { key: 'market', label: '模板市场', path: '/market', hidden: true },
+      { key: 'my-templates', label: '我的模板', path: '/my-templates', hidden: true },
+      { key: 'ai-designer', label: 'AI 设计器', path: '/ai-designer', hidden: true },
     ],
   },
   {

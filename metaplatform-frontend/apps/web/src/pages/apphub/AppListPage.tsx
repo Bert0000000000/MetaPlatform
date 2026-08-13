@@ -1,4 +1,19 @@
-import { useEffect, useState } from 'react';
+/**
+ * AppListPage - 应用中心「已安装应用」列表
+ * --------------------------------------------------
+ * 布局（Semi 全宽单列表 + 筛选）：
+ * ┌──────────────────────────────────────────────┐
+ * │ Header: 「应用中心」 + 创建按钮(右上)         │
+ * │ 筛选条: 搜索 / 分组 / 状态 / 排序             │
+ * ├──────────────────────────────────────────────┤
+ * │ Card 网格（已安装应用：DESIGNING + PUBLISHED）│
+ * └──────────────────────────────────────────────┘
+ *
+ * 模板市场已迁到云市场，此页只展示已安装应用。
+ * 点击卡片进入 AppDetailPage；点击「创建应用」进入 DesignFlowPage 全屏抽屉
+ * （3 步：基本信息 / 业务对象 + 菜单 + 表单 + 流程 + 权限 / 发布配置）。
+ */
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -11,6 +26,7 @@ import {
   Toast,
   Popconfirm,
   Dropdown,
+  Input,
 } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import {
@@ -20,19 +36,24 @@ import {
   DeleteOutlined,
   MoreOutlined,
   FileTextOutlined,
+  SearchOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
-import { listApps, deleteApp, createApp, updateApp, listGroups } from '@/api/apphub/apps';
-import AppForm from './components/AppForm';
-import type { AppItem, AppCreateRequest, AppUpdateRequest, AppStatus } from '@/api/apphub/types';
-import { SearchInput } from '@mate/shared';
-
-const { Meta } = Card;
+import { listApps, deleteApp, listGroups } from '@/api/apphub/apps';
+import type { AppItem, AppStatus } from '@/api/apphub/types';
 
 const STATUS_MAP: Record<AppStatus, { label: string; color: TagColor }> = {
   DESIGNING: { label: '设计中', color: 'blue' },
   PUBLISHED: { label: '已发布', color: 'green' },
   OFFLINE: { label: '已下线', color: 'grey' },
 };
+
+const SORT_OPTIONS = [
+  { value: 'updated_desc', label: '最近更新' },
+  { value: 'updated_asc', label: '最旧更新' },
+  { value: 'name_asc', label: '名称 A → Z' },
+  { value: 'name_desc', label: '名称 Z → A' },
+];
 
 export default function AppListPage() {
   const navigate = useNavigate();
@@ -41,18 +62,18 @@ export default function AppListPage() {
   const [keyword, setKeyword] = useState('');
   const [group, setGroup] = useState<string>();
   const [status, setStatus] = useState<string>();
+  const [sort, setSort] = useState<string>('updated_desc');
   const [groups, setGroups] = useState<string[]>([]);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<AppItem | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await listApps({ keyword, group, status });
-      setApps(res.items);
-      const g = await listGroups();
-      setGroups(g);
+      // 仅展示已安装应用（已发布 + 设计中），下线的收纳隐藏
+      const res = await listApps({ keyword, group });
+      const installed = res.items.filter((a) => a.status === 'DESIGNING' || a.status === 'PUBLISHED');
+      setApps(installed);
+    } catch {
+      Toast.error('加载应用列表失败');
     } finally {
       setLoading(false);
     }
@@ -60,37 +81,35 @@ export default function AppListPage() {
 
   useEffect(() => {
     load();
-  }, [keyword, group, status]);
+    listGroups().then(setGroups).catch(() => setGroups([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleCreate = async (values: AppCreateRequest) => {
-    setSubmitting(true);
-    try {
-      await createApp(values);
-      Toast.success('应用创建成功');
-      setFormOpen(false);
-      load();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleUpdate = async (values: AppUpdateRequest) => {
-    if (!editing) return;
-    setSubmitting(true);
-    try {
-      await updateApp(editing.appId, values);
-      Toast.success('应用更新成功');
-      setEditing(null);
-      load();
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const sortedApps = useMemo(() => {
+    const arr = [...apps];
+    arr.sort((a, b) => {
+      switch (sort) {
+        case 'updated_asc':
+          return a.updatedAt.localeCompare(b.updatedAt);
+        case 'name_asc':
+          return a.name.localeCompare(b.name);
+        case 'name_desc':
+          return b.name.localeCompare(a.name);
+        default:
+          return b.updatedAt.localeCompare(a.updatedAt);
+      }
+    });
+    return arr;
+  }, [apps, sort]);
 
   const handleDelete = async (app: AppItem) => {
-    await deleteApp(app.appId);
-    Toast.success('应用已删除');
-    load();
+    try {
+      await deleteApp(app.appId);
+      Toast.success('应用已删除');
+      load();
+    } catch {
+      Toast.error('删除失败');
+    }
   };
 
   const formatTime = (v: string) => {
@@ -98,13 +117,76 @@ export default function AppListPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} 更新`;
   };
 
+  const stats = useMemo(() => {
+    const total = apps.length;
+    const published = apps.filter((a) => a.status === 'PUBLISHED').length;
+    const designing = apps.filter((a) => a.status === 'DESIGNING').length;
+    return { total, published, designing };
+  }, [apps]);
+
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }} wrap>
-        <SearchInput
-          placeholder="搜索应用名称"
-          onSearch={setKeyword}
-          width={240}
+    <div style={{ margin: '0 -24px', padding: '24px 32px 32px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <Typography.Title heading={3} style={{ margin: 0 }}>
+            应用中心
+          </Typography.Title>
+          <Typography.Text type="tertiary" style={{ fontSize: 13, marginTop: 4 }}>
+            管理已安装的应用：进入设计、查看运行状态、发布新版本
+          </Typography.Text>
+        </div>
+        <Button
+          theme="solid"
+          type="primary"
+          size="large"
+          icon={<PlusOutlined />}
+          onClick={() => navigate('/apps/design')}
+        >
+          创建应用
+        </Button>
+      </div>
+
+      {/* 统计 */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+        <Card style={{ flex: 1, padding: '14px 20px' }}>
+          <Typography.Text type="tertiary" size="small">已安装应用</Typography.Text>
+          <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>{stats.total}</div>
+        </Card>
+        <Card style={{ flex: 1, padding: '14px 20px' }}>
+          <Typography.Text type="tertiary" size="small">已发布</Typography.Text>
+          <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4, color: 'var(--semi-color-success)' }}>
+            {stats.published}
+          </div>
+        </Card>
+        <Card style={{ flex: 1, padding: '14px 20px' }}>
+          <Typography.Text type="tertiary" size="small">设计中</Typography.Text>
+          <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4, color: 'var(--semi-color-primary)' }}>
+            {stats.designing}
+          </div>
+        </Card>
+      </div>
+
+      {/* 筛选 */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 20,
+          padding: '12px 16px',
+          background: 'var(--card)',
+          borderRadius: 6,
+          border: '1px solid var(--border)',
+        }}
+      >
+        <FilterOutlined style={{ color: 'var(--muted-foreground)' }} />
+        <Input
+          placeholder="搜索应用名称或编码"
+          showClear
+          value={keyword}
+          onChange={(v) => setKeyword(v)}
+          style={{ width: 240 }}
         />
         <Select
           placeholder="应用分组"
@@ -128,146 +210,165 @@ export default function AppListPage() {
         >
           <Select.Option value="DESIGNING">设计中</Select.Option>
           <Select.Option value="PUBLISHED">已发布</Select.Option>
-          <Select.Option value="OFFLINE">已下线</Select.Option>
+        </Select>
+        <Select
+          value={sort}
+          onChange={(v) => setSort(v as string)}
+          style={{ width: 140 }}
+        >
+          {SORT_OPTIONS.map((o) => (
+            <Select.Option key={o.value} value={o.value}>
+              {o.label}
+            </Select.Option>
+          ))}
         </Select>
         <Button
-          theme="solid"
-          type="primary"
-          icon={<PlusOutlined />}
+          theme="borderless"
           onClick={() => {
-            setEditing(null);
-            setFormOpen(true);
+            setKeyword('');
+            setGroup(undefined);
+            setStatus(undefined);
           }}
         >
-          创建应用
+          重置
         </Button>
-      </Space>
+      </div>
 
-      {apps.length === 0 && !loading ? (
-        <Empty description="还没有应用，点击创建第一个应用吧">
-          <Button
-            theme="solid"
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            创建应用
-          </Button>
+      {/* 应用列表 */}
+      {loading && sortedApps.length === 0 ? (
+        <Empty description="正在加载应用..." />
+      ) : sortedApps.length === 0 ? (
+        <Empty
+          description="暂无已安装应用"
+          style={{ padding: '48px 0' }}
+        >
+          <Space spacing={12} style={{ marginTop: 16 }}>
+            <Button
+              theme="solid"
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/apps/design')}
+            >
+              从零创建
+            </Button>
+            <Button
+              icon={<SearchOutlined />}
+              onClick={() => navigate('/marketplace')}
+            >
+              前往云市场安装
+            </Button>
+          </Space>
         </Empty>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-          {apps.map((app) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          {sortedApps.map((app) => (
             <Card
               key={app.appId}
               shadows="hover"
-              loading={loading}
-              actions={[
-                <span key="modules">{app.moduleCount} 个模块</span>,
-                <span key="updated">{formatTime(app.updatedAt)}</span>,
-              ]}
-            >
-              <div style={{ cursor: 'pointer' }} onClick={() => navigate(`/apps/${app.appId}`)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Meta
-                    avatar={
-                      <div
-                        style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 8,
-                          background: 'var(--semi-color-primary-light-default)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 24,
-                        }}
-                      >
-                        {app.icon === 'FileTextOutlined' ? (
-                          <FileTextOutlined />
-                        ) : (
-                          <AppstoreOutlined />
-                        )}
-                      </div>
-                    }
-                    title={
-                      <Space>
-                        <Typography.Text strong>{app.name}</Typography.Text>
-                      </Space>
-                    }
-                    description={
-                      <div>
-                        <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-                          {app.code}
-                        </Typography.Text>
-                        <div>
-                          <Typography.Text type="tertiary" ellipsis style={{ maxWidth: 200 }}>
-                            {app.description || '-'}
-                          </Typography.Text>
-                        </div>
-                      </div>
-                    }
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                    <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
-                    <span onClick={(e) => e.stopPropagation()}>
-                      <Dropdown
-                        position="bottomRight"
-                        render={
-                          <Dropdown.Menu>
-                            <Dropdown.Item
-                              icon={<EditOutlined />}
-                              onClick={() => {
-                                setEditing(app);
-                                setFormOpen(true);
-                              }}
-                            >
-                              编辑
-                            </Dropdown.Item>
-                            <Dropdown.Item>
-                              <Popconfirm
-                                title="确认删除"
-                                content={`确定删除应用「${app.name}」吗？`}
-                                onConfirm={() => handleDelete(app)}
-                              >
-                                <span>
-                                  <DeleteOutlined /> 删除应用
-                                </span>
-                              </Popconfirm>
-                            </Dropdown.Item>
-                          </Dropdown.Menu>
-                        }
-                      >
-                        <Button theme="borderless" icon={<MoreOutlined />} />
-                      </Dropdown>
-                    </span>
+              className="app-list-card"
+              title={
+                <Space>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 6,
+                      background: 'var(--semi-color-primary-light-default)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {app.icon === 'FileTextOutlined' ? (
+                      <FileTextOutlined style={{ color: 'var(--semi-color-primary)' }} />
+                    ) : (
+                      <AppstoreOutlined style={{ color: 'var(--semi-color-primary)' }} />
+                    )}
                   </div>
+                  <div>
+                    <Typography.Text strong>{app.name}</Typography.Text>
+                    <div>
+                      <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                        {app.code}
+                      </Typography.Text>
+                    </div>
+                  </div>
+                </Space>
+              }
+              headerExtraContent={
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Dropdown
+                    position="bottomRight"
+                    render={
+                      <Dropdown.Menu>
+                        <Dropdown.Item
+                          icon={<EditOutlined />}
+                          onClick={() => navigate(`/apps/${app.appId}`)}
+                        >
+                          查看详情
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          icon={<EditOutlined />}
+                          onClick={() => navigate('/apps/design?from=' + app.appId)}
+                        >
+                          重新设计
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                        <Dropdown.Item>
+                          <Popconfirm
+                            title="卸载应用"
+                            content={`确定卸载「${app.name}」吗？卸载后可在云市场重新安装。`}
+                            onConfirm={() => handleDelete(app)}
+                          >
+                            <span style={{ color: 'var(--semi-color-danger)' }}>
+                              <DeleteOutlined /> 卸载
+                            </span>
+                          </Popconfirm>
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    }
+                  >
+                    <Button
+                      theme="borderless"
+                      icon={<MoreOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </Dropdown>
+                </div>
+              }
+            >
+              <div
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(`/apps/${app.appId}`)}
+              >
+                <Typography.Text type="tertiary" ellipsis style={{ maxWidth: 260, fontSize: 13 }}>
+                  {app.description || '暂无描述'}
+                </Typography.Text>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: '1px solid var(--border)',
+                  }}
+                >
+                  <Space size={12}>
+                    <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
+                    <Typography.Text type="tertiary" size="small">
+                      {String(app.moduleCount)} 模块
+                    </Typography.Text>
+                  </Space>
+                  <Typography.Text type="tertiary" size="small">
+                    {formatTime(app.updatedAt)}
+                  </Typography.Text>
                 </div>
               </div>
             </Card>
           ))}
         </div>
       )}
-
-      <AppForm
-        open={formOpen}
-        title={editing ? '编辑应用' : '创建应用'}
-        initial={editing}
-        groups={groups}
-        onOk={(values) => {
-          if (editing) {
-            return handleUpdate(values as AppUpdateRequest);
-          }
-          return handleCreate(values as AppCreateRequest);
-        }}
-        onCancel={() => {
-          setFormOpen(false);
-          setEditing(null);
-        }}
-        confirmLoading={submitting}
-      />
     </div>
   );
 }
