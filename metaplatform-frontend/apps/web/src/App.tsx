@@ -225,7 +225,8 @@ function AppRoutes() {
           <Route path="superai/tasks" element={<SuperaiTaskOrchestrationPage />} />
           <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
           {/* 閺嬭埖鐎稉顓炵妇(Phase 4: from apps/arch) */}
-          <Route path="arch" element={<Navigate to="/arch/capabilities" replace />} />
+          <Route path="arch" element={<Navigate to="/arch/business" replace />} />
+          <Route path="arch/business" element={<ArchLayout><ArchBusinessArchPage /></ArchLayout>} />
           <Route path="arch/capabilities" element={<ArchLayout><ArchCapabilityManagementPage /></ArchLayout>} />
           <Route path="arch/applications" element={<ArchLayout><ArchApplicationManagementPage /></ArchLayout>} />
           <Route path="arch/value-streams" element={<ArchLayout><ArchValueStreamPage /></ArchLayout>} />

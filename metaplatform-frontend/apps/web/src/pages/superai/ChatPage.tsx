@@ -22,15 +22,20 @@ import {
 } from '@douyinfe/semi-ui';
 import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/aiChatDialogue/interface';
 import type { FileItem } from '@douyinfe/semi-ui/lib/es/upload';
+import type {
+  Reference,
+  Suggestion,
+  Skill,
+} from '@douyinfe/semi-ui/lib/es/aiChatInput/interface';
 import {
   ChevronsLeft,
   ChevronsRight,
   RobotOutlined,
-  SearchOutlined,
   PlusOutlined,
   ThunderboltOutlined,
 } from '@mate/shared';
 import { DeleteOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
+import { IconSearch, IconTemplateStroked } from '@douyinfe/semi-icons';
 import {
   streamChat,
   listMultimodalModels,
@@ -226,6 +231,87 @@ function conversationToSession(
 
 const { Configure } = AIChatInput;
 
+// ============ 技能 / 模板 / 建议 常量 ============
+
+const SKILLS: Skill[] = [
+  { icon: <IconTemplateStroked />, value: 'writing', label: '帮我写作', hasTemplate: true },
+  { icon: <IconSearch />, value: 'research', label: '联网搜索' },
+];
+
+const SUGGESTION_SEEDS = ['天气如何', '空气质量', '工作进程', '日程安排'];
+
+const WRITING_TEMPLATES: Array<{ title: string; desc: string; content: string }> = [
+  {
+    title: '总结汇报',
+    desc: '凝练你的工作成效',
+    content:
+      '我的职业是<input-slot placeholder="[请输入职业]"></input-slot>，帮我写一份关于<input-slot placeholder="[输入目的]"></input-slot>的总结汇报',
+  },
+  {
+    title: '话术',
+    desc: '满足不同场景表达需求',
+    content:
+      '我是一名<select-slot value="打工人" options=\'["打工人","学生"]\'></select-slot>，帮我写一段面向<input-slot placeholder="[输入对象]">陌生同事</input-slot>的话术内容',
+  },
+  {
+    title: '宣传文案',
+    desc: '撰写各平台的推广文案',
+    content:
+      '帮我写一篇面向<input-slot placeholder="[输入目标人群]"></input-slot>职场人士，关于<input-slot placeholder="[输入产品]"></input-slot>的宣传文案，需要直击痛点，吸引用户点击。',
+  },
+];
+
+/** 写作模板面板：点击模板将内容插入输入框 */
+function TemplatePanel({ onTemplateClick }: { onTemplateClick: (content: string) => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 4 }}>
+      {WRITING_TEMPLATES.map((item) => (
+        <div
+          key={item.title}
+          onClick={() => onTemplateClick(item.content)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 12px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
+            transition: 'border-color .15s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--semi-color-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'var(--border)';
+          }}
+        >
+          <span
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: 'var(--semi-color-primary)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              flexShrink: 0,
+            }}
+          >
+            <IconTemplateStroked />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>{item.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{item.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ChatPage() {
   // --- 会话与消息状态 ---
   const [sessions, setSessions] = useState<ChatSession[]>(() => [
@@ -257,6 +343,13 @@ export default function ChatPage() {
   const [availableModels, setAvailableModels] = useState<{ label: string; value: string }[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const loadedHistoryRef = useRef<Set<string>>(new Set());
+  const aiInputRef = useRef<any>(null);
+  const [references, setReferences] = useState<Reference[]>([
+    { id: 'ref-1', type: 'text', content: 'Ontology 本体引擎是企业级语义建模与推理引擎。' },
+    { id: 'ref-2', type: 'docx', name: 'Ontology 架构文档.docx' },
+    { id: 'ref-3', type: 'xlsx', name: '销售数据.xlsx' },
+  ]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // activeId 初始化（挂载后取第一个会话）
   useEffect(() => {
@@ -526,6 +619,55 @@ export default function ChatPage() {
     setLoading(false);
   }, []);
 
+  // --- 引用 / 建议 / 技能 / 模板 ---
+  const handleReferenceDelete = useCallback((item: Reference) => {
+    setReferences((prev) => prev.filter((r) => r.id !== item.id));
+  }, []);
+
+  const handleReferenceClick = useCallback((item: Reference) => {
+    if (item.url) {
+      window.open(item.url, '_blank', 'noopener');
+    } else if (typeof item.content === 'string') {
+      Toast.info(item.content);
+    } else if (item.name) {
+      Toast.info(item.name);
+    }
+  }, []);
+
+  const handleContentChange = useCallback((contents: Array<{ type: string; [key: string]: unknown }>) => {
+    const text = extractPlainText(contents);
+    if (text.includes('\n')) {
+      setSuggestions([]);
+      return;
+    }
+    if (text.length === 0) {
+      setSuggestions([]);
+    } else if (text.length < 4) {
+      setSuggestions(SUGGESTION_SEEDS.map((seed) => `${text}，${seed}`));
+    } else {
+      setSuggestions([]);
+    }
+  }, []);
+
+  const handleSuggestClick = useCallback(
+    (suggestion: Suggestion) => {
+      const s = suggestion as unknown as string | string[] | { content?: string };
+      const text = typeof s === 'string' ? s : Array.isArray(s) ? s.join('') : (s.content ?? '');
+      if (text) void handleSend(text);
+    },
+    [handleSend],
+  );
+
+  const handleTemplateClick = useCallback((content: string) => {
+    aiInputRef.current?.setContentWhileSaveTool?.(content);
+    aiInputRef.current?.focusEditor?.();
+  }, []);
+
+  const renderTemplate = useCallback(
+    (skill: Skill) => (skill.value === 'writing' ? <TemplatePanel onTemplateClick={handleTemplateClick} /> : null),
+    [handleTemplateClick],
+  );
+
   // --- 会话 CRUD（后端对接） ---
   const handleNewConversation = useCallback(async () => {
     try {
@@ -761,8 +903,19 @@ export default function ChatPage() {
 
         {/* 输入框（官方 Configure：模型 / 深度思考 / 思考模式 / 附件） */}
         <AIChatInput
+          ref={aiInputRef}
           placeholder="输入消息，Shift + Enter 换行..."
           sendHotKey="enter"
+          round={false}
+          references={references}
+          onReferenceDelete={handleReferenceDelete}
+          onReferenceClick={handleReferenceClick}
+          suggestions={suggestions as unknown as Suggestion[]}
+          onContentChange={handleContentChange}
+          onSuggestClick={handleSuggestClick}
+          skills={SKILLS}
+          skillHotKey="/"
+          renderTemplate={renderTemplate}
           generating={loading}
           onStopGenerate={handleCancel}
           onMessageSend={(content) => {
@@ -815,23 +968,24 @@ export default function ChatPage() {
           maxWidth={360}
           onCancel={() => setSessionPanelVisible(false)}
           style={{ width: '100%', border: 'none', height: '100%', borderLeft: '1px solid var(--border)' }}
+          options={[{ key: 'toolbar', icon: null, name: null }]}
+          renderOptionItem={() => (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Button theme="solid" type="primary" icon={<PlusOutlined />} block onClick={() => void handleNewConversation()}>
+                新建会话
+              </Button>
+              <Input
+                placeholder="搜索会话..."
+                prefix={<IconSearch />}
+                showClear
+                value={searchKeyword}
+                onChange={(v) => setSearchKeyword(v)}
+                style={{ width: '100%' }}
+              />
+            </div>
+          )}
           renderMainContent={() => (
             <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-              <div style={{ padding: '8px 12px 4px' }}>
-                <Button theme="solid" type="primary" icon={<PlusOutlined />} block onClick={() => void handleNewConversation()}>
-                  新建会话
-                </Button>
-              </div>
-              <div style={{ padding: '8px 12px 4px' }}>
-                <Input
-                  placeholder="搜索会话..."
-                  prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
-                  showClear
-                  value={searchKeyword}
-                  onChange={(v) => setSearchKeyword(v)}
-                  size="small"
-                />
-              </div>
               {(() => {
                 const groups: Array<{ label: string; items: ChatSession[] }> = [];
                 for (const s of filteredSessions) {

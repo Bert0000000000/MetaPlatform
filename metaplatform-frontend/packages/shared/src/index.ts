@@ -46,6 +46,7 @@ export { default as StateContainer } from './components/StateContainer';
 export { default as PageHeader } from './components/PageHeader';
 export { default as ScrollbarAutoHide } from './components/ScrollbarAutoHide';
 export { default as SubTabs, type SubTabItem } from './components/SubTabs';
+export { default as ModuleTabsLayout, type ModuleTab, type ModuleTabsLayoutProps } from './components/ModuleTabsLayout';
 export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from './components/Breadcrumb';
 export { default as PlatformButton, type PlatformButtonProps } from './components/PlatformButton';
 export { default as PlatformPagination, type PlatformPaginationProps } from './components/PlatformPagination';
