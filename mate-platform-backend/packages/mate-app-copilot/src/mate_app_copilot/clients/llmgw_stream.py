@@ -157,6 +157,63 @@ class LlmgwStreamClient:
         except httpx.HTTPError as exc:
             raise LlmgwStreamError(f"llmgw stream transport error: {exc}") from exc
 
+    async def chat_with_tools(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        model: str,
+        tools: list[dict[str, Any]],
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        provider: str = "openai",
+        base_url: str | None = None,
+        api_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Function-calling decision turn: ``POST /api/v1/llmgw/chat/real``.
+
+        ``/chat/real`` carries the tenant-configured provider
+        (base_url + api_key, e.g. MiniMax) and, since TD-6, forwards
+        ``tools`` to OpenAI-compatible backends. Returns the parsed body::
+
+            {"content": str, "model": str, "finish_reason": str | None,
+             "usage": {...}, "provider": str, "fallback": bool,
+             "tool_calls": [{"id", "type", "function": {"name", "arguments"}}]}
+
+        Raises `LlmgwStreamError` on any transport / decode failure.
+        """
+        body: dict[str, Any] = {
+            "provider": provider,
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "tools": tools,
+            "tenant_id": self._tenant_id,
+        }
+        if base_url:
+            body["base_url"] = base_url
+        if api_key:
+            body["api_key"] = api_key
+        if max_tokens is not None:
+            body["max_tokens"] = max_tokens
+        url = f"{self._base_url}/api/v1/llmgw/chat/real"
+        try:
+            headers = self._headers_for()
+            async with httpx.AsyncClient(timeout=self._timeout) as http:
+                resp = await http.post(
+                    url,
+                    json=body,
+                    headers=headers,
+                    auth=None if self._user_token else self._auth_for(),
+                )
+        except httpx.HTTPError as exc:
+            raise LlmgwStreamError(f"llmgw chat(tools) transport error: {exc}") from exc
+        if resp.status_code != 200:
+            raise LlmgwStreamError(f"llmgw chat(tools) returned {resp.status_code}: {resp.text[:200]}")
+        try:
+            return resp.json()
+        except (ValueError, json.JSONDecodeError) as exc:
+            raise LlmgwStreamError(f"llmgw chat(tools) body is not JSON: {exc}") from exc
+
     async def chat_completion(
         self,
         *,

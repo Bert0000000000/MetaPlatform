@@ -26,9 +26,16 @@ class A2AMessagesClient:
         timeout: float = 30.0,
         auth: Any = None,  # token provider: BearerAuth | ServiceIdentity (.token())
         tenant_id: str = "",
+        transport: Any = None,  # httpx transport (e.g. ASGITransport for in-process E2E)
     ) -> None:
         self.base_url = (base_url or self.DEFAULT_URL).rstrip("/")
-        self._client = httpx.AsyncClient(timeout=timeout)
+        # `transport` lets tests route the call at an in-process ASGI app so
+        # the orchestrator → A2A-center leg can be exercised end-to-end
+        # without a network socket. Default (None) keeps the real socket.
+        client_kwargs: dict[str, Any] = {"timeout": timeout}
+        if transport is not None:
+            client_kwargs["transport"] = transport
+        self._client = httpx.AsyncClient(**client_kwargs)
         if auth is not None and tenant_id:
             self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
         self._auth = auth
