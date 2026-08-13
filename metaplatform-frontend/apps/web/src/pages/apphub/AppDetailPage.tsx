@@ -24,6 +24,7 @@ import {
   DashboardOutlined,
   LayoutOutlined,
   AppstoreOutlined,
+  PlayCircleOutlined,
   SendOutlined,
   CloudUploadOutlined,
   ShareAltOutlined,
@@ -59,8 +60,9 @@ const MODULE_TYPE_ICONS: Record<string, React.ReactNode> = {
   PAGE: <LayoutOutlined />,
 };
 
-export default function AppDetailPage() {
-  const { appId } = useParams<{ appId: string }>();
+export default function AppDetailPage({ appId: appIdProp }: { appId?: string }) {
+  const { appId: routeAppId } = useParams<{ appId: string }>();
+  const appId = appIdProp || routeAppId;
   const navigate = useNavigate();
   const [app, setApp] = useState<AppItem | null>(null);
   const [modules, setModules] = useState<ModuleItem[]>([]);
@@ -280,6 +282,9 @@ export default function AppDetailPage() {
         }
         headerExtraContent={
           <Space>
+            <Button theme="solid" type="primary" icon={<PlayCircleOutlined />} onClick={() => navigate(`/s/${app.code}`)}>
+              打开应用
+            </Button>
             <Button icon={<EditOutlined />} onClick={() => setAppFormOpen(true)}>
               编辑
             </Button>

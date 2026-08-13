@@ -66,7 +66,7 @@ export default function ApphubShellPage() {
         return <div data-app-module-fallback />;
       }
       // 默认进应用详情
-      return <AppDetailPage />;
+      return <AppDetailPage appId={appId || undefined} />;
     }
     if (activeTab === 'list' && !appId) return <AppListPage />;
     // 模板市场
