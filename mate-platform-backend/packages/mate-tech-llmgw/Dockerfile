@@ -15,9 +15,12 @@ COPY packages/mate-common/ /tmp/build/packages/mate-common/
 COPY packages/mate-platform/ /tmp/build/packages/mate-platform/
 COPY packages/mate-clients/ /tmp/build/packages/mate-clients/
 
-# Install llmgw-specific runtime deps (LLM SDKs + redis + pybreaker)
+# Install llmgw-specific runtime deps (LLM SDKs + redis + pybreaker).
+# opentelemetry-api/sdk: mate_platform.observability (journey/tracing) requires
+# them, but the base image (mate-api-gateway) no longer carries them.
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install --no-cache-dir \
+        opentelemetry-api opentelemetry-sdk \
         langchain langchain-core langchain-openai langchain-anthropic \
         openai anthropic \
         redis pybreaker sse-starlette \

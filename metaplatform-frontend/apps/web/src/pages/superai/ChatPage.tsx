@@ -39,6 +39,7 @@ import { DeleteOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
 import { IconSearch, IconTemplateStroked, IconUser, IconUserCircle } from '@douyinfe/semi-icons';
 import {
   streamChat,
+  streamAgentChat,
   listMultimodalModels,
   multimodalUploadChat,
 } from '@/api/superai/chat';
@@ -332,6 +333,8 @@ export default function ChatPage() {
   ]);
   const [activeId, setActiveId] = useState<string>(() => '');
   const [streamingMap, setStreamingMap] = useState<Record<string, string>>({});
+  const [agentMode, setAgentMode] = useState(false);
+  const [agentSteps, setAgentSteps] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [sessionPanelVisible, setSessionPanelVisible] = useState(true);
@@ -561,6 +564,110 @@ export default function ChatPage() {
           });
       }
 
+      if (agentMode) {
+        streamAgentChat(
+          [
+            { role: 'system', content: UNIFIED_SYSTEM_PROMPT },
+            ...historyMessages,
+            { role: 'user', content: trimmed },
+          ],
+          {
+            onReasoning: (text) => {
+              updateMessage(sessionId, assistantId, (m) => ({
+                ...m,
+                metadata: {
+                  ...(m.metadata || {}),
+                  thinking: ((m.metadata?.thinking as string | undefined) ?? '') + text,
+                },
+              }));
+            },
+            onToolCall: (call) => {
+              const target = (call.args.target_rid as string) ?? call.tool;
+              const message = (call.args.message as string) || '';
+              setAgentSteps((prev) => ({
+                ...prev,
+                [assistantId]: [
+                  ...(prev[assistantId] || []),
+                  {
+                    type: 'agent',
+                    status: 'in_progress',
+                    summary: `调度 ${target} 数字员工`,
+                    actions: [
+                      { status: 'in_progress', summary: message || '委派任务' },
+                    ],
+                  },
+                ],
+              }));
+            },
+            onToolResult: (res) => {
+              setAgentSteps((prev) => {
+                const steps = [...(prev[assistantId] || [])];
+                const last = steps[steps.length - 1];
+                if (last) {
+                  const role = (res.result.role as string) ?? '数字员工';
+                  const a2aTask =
+                    (res.result.result as { id?: string } | undefined)?.id ??
+                    (res.result.task_id as string) ??
+                    '';
+                  last.status = res.status === 'error' ? 'failed' : 'completed';
+                  last.summary = `已调度 ${role}`;
+                  last.actions = [
+                    {
+                      status: res.status === 'error' ? 'failed' : 'completed',
+                      summary: a2aTask ? `A2A 任务 ${a2aTask} 已提交` : '委派已提交',
+                      description: res.status === 'error' ? JSON.stringify(res.result) : undefined,
+                    },
+                  ];
+                }
+                return { ...prev, [assistantId]: steps };
+              });
+            },
+            onDelta: (delta) => {
+              setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
+            },
+            onDone: (fullContent, citations) => {
+              const { content: cleanedContent, claims } = extractClaims(fullContent);
+              updateMessage(sessionId, assistantId, (m) => {
+                const graph = m.metadata?.graphData;
+                const evidence: Evidence[] = [
+                  ...citationsToEvidence(citations),
+                  ...(graph ? graphToEvidence(graph) : []),
+                ];
+                return {
+                  ...m,
+                  status: 'success',
+                  streaming: false,
+                  content: cleanedContent,
+                  citations: citations.length > 0 ? citations : undefined,
+                  claims: claims.length > 0 ? claims : undefined,
+                  evidence: evidence.length > 0 ? evidence : undefined,
+                };
+              });
+              setStreamingMap((m) => {
+                const next = { ...m };
+                delete next[assistantId];
+                return next;
+              });
+              setLoading(false);
+              abortRef.current = null;
+            },
+            onError: (errMsg) => {
+              updateMessage(sessionId, assistantId, (m) => ({
+                ...m,
+                content: `[警告] ${errMsg}`,
+                status: 'error',
+                streaming: false,
+              }));
+              setLoading(false);
+              abortRef.current = null;
+            },
+          },
+          controller.signal,
+          { model: currentModel, temperature: temperature / 100 },
+        );
+        return;
+      }
+
       streamChat(
         [
           { role: 'system', content: UNIFIED_SYSTEM_PROMPT },
@@ -612,7 +719,7 @@ export default function ChatPage() {
         { model: currentModel, temperature: temperature / 100, conversationId },
       );
     },
-    [activeSession, loading, updateSession, updateMessage, isMultimodal, selectedModelId, imageFiles, currentModel, temperature],
+    [activeSession, loading, updateSession, updateMessage, isMultimodal, selectedModelId, imageFiles, currentModel, temperature, agentMode],
   );
 
   const handleCancel = useCallback(() => {
@@ -747,6 +854,10 @@ export default function ChatPage() {
               summary: [{ type: 'summary_text', text: thinking }],
             });
           }
+          const steps = agentSteps[msg.id];
+          if (steps && steps.length > 0) {
+            contentItems.push({ type: 'steps', steps });
+          }
         }
         if (text) {
           const annotations: Array<{ title: string; detail?: string; url?: string }> = [];
@@ -776,7 +887,7 @@ export default function ChatPage() {
           createdAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
         };
       }),
-    [activeSession?.messages, streamingMap],
+    [activeSession?.messages, streamingMap, agentSteps],
   );
 
   const filteredSessions = useMemo(() => {
@@ -888,6 +999,57 @@ export default function ChatPage() {
               </Avatar>
             ),
           }}
+          renderDialogueContentItem={{
+            steps: (item: any) => {
+              const steps: any[] = item.steps ?? [];
+              if (steps.length === 0) return null;
+              return (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    margin: '8px 0',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    background: 'var(--semi-color-fill-0)',
+                  }}
+                >
+                  {steps.map((s: any, i: number) => {
+                    const failed = s.status === 'failed';
+                    const done = s.status === 'completed';
+                    const dotColor = failed ? 'var(--semi-color-danger)' : done ? 'var(--semi-color-success)' : 'var(--semi-color-primary)';
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13 }}>
+                        <span
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            background: dotColor,
+                            marginTop: 5,
+                            display: 'inline-block',
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>{s.summary}</div>
+                          {(s.actions ?? []).map((a: any, j: number) => (
+                            <div key={j} style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>
+                              {a.summary}
+                              {a.description ? (
+                                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{a.description}</div>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            },
+          }}
           chats={semiMessages}
           topSlot={
             activeSession.messages.length === 0 ? (
@@ -941,6 +1103,14 @@ export default function ChatPage() {
           renderConfigureArea={() => (
             <>
               <Configure.Select optionList={availableModels} field="model" initValue={currentModel} />
+              <Button
+                size="small"
+                type={agentMode ? 'primary' : 'tertiary'}
+                icon={<RobotOutlined style={{ fontSize: 14 }} />}
+                onClick={() => setAgentMode((v) => !v)}
+              >
+                {agentMode ? 'Agent 调度中' : 'Agent 调度'}
+              </Button>
               <Configure.Button icon={<ThunderboltOutlined style={{ fontSize: 14 }} />} field="thinking">
                 深度思考
               </Configure.Button>

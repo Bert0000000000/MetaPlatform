@@ -90,6 +90,23 @@ class RealOpenAIProvider:
             )
         return self._client
 
+    @staticmethod
+    def _serialize_message(m: ChatMessage) -> dict[str, Any]:
+        """Serialize one ChatMessage to the OpenAI-compatible wire shape.
+
+        Preserves the function-calling fields (``tool_call_id`` for ``tool``
+        messages, ``tool_calls`` for assistant messages) that the generic
+        ``role``+``content`` serialization used to drop.
+        """
+        msg: dict[str, Any] = {"role": m.role, "content": m.content}
+        if m.name:
+            msg["name"] = m.name
+        if m.tool_call_id:
+            msg["tool_call_id"] = m.tool_call_id
+        if m.tool_calls:
+            msg["tool_calls"] = m.tool_calls
+        return msg
+
     async def chat(
         self,
         messages: list[ChatMessage],
@@ -112,10 +129,7 @@ class RealOpenAIProvider:
 
         payload: dict[str, Any] = {
             "model": self.model,
-            "messages": [
-                {"role": m.role, "content": m.content}
-                for m in messages
-            ],
+            "messages": [self._serialize_message(m) for m in messages],
             "temperature": temperature,
         }
         if max_tokens:

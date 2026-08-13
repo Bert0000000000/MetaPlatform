@@ -27,10 +27,13 @@ export default function A2ACollaborationPage() {
 
   useEffect(() => {
     setLoading(true);
-    listExternalAgents().then((r) => {
-      setAgents(r);
-      setLoading(false);
-    });
+    listExternalAgents()
+      .then((r) => setAgents(Array.isArray(r) ? r : []))
+      .catch(() => {
+        setAgents([]);
+        Toast.error('加载外部 Agent 失败，请稍后重试');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const handleDelegate = async () => {
@@ -90,7 +93,7 @@ export default function A2ACollaborationPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           A2A 外部协作
         </Typography.Title>

@@ -72,10 +72,12 @@ export async function matchEmployees(intent: string): Promise<MatchedEmployee[]>
   return post<MatchedEmployee[]>('/scheduling/employees/match', { intent });
 }
 export async function generatePlan(intentId: string): Promise<ExecutionPlan> {
-  return post<ExecutionPlan>('/scheduling/plan/generate', { intentId });
+  // backend PlanGenerateRequest expects snake_case `intent_id`
+  return post<ExecutionPlan>('/scheduling/plan/generate', { intent_id: intentId });
 }
 export async function startExecution(planId: string): Promise<ScheduleExecution> {
-  return post<ScheduleExecution>('/scheduling/execution/start', { planId });
+  // backend ExecutionStartRequest expects snake_case `plan_id`
+  return post<ScheduleExecution>('/scheduling/execution/start', { plan_id: planId });
 }
 export async function aggregateResults(executionId: string): Promise<string> {
   return get<string>(`/scheduling/execution/${executionId}/report`);

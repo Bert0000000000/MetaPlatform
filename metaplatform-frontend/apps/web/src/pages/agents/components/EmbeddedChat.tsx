@@ -384,7 +384,6 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
             sendHotKey="enter"
             round
             generating={loading}
-            disabled={!conversationId}
             onStopGenerate={handleCancel}
             onMessageSend={({ inputContents }) => {
               void handleSend(extractPlainText(inputContents));

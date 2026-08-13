@@ -39,8 +39,10 @@ from mate_tech_db.base import get_session
 
 from ..a2a.client import get_default_client as get_default_a2a_client
 from ..a2a.models import DelegationRequest
+from ..agent_loop import run_agent_loop
 from ..clients import AsyncCopilotClient
 from ..clients.llmgw_stream import LlmgwStreamClient, LlmgwStreamError
+from ..clients.orchestrator_client import OrchestratorClient, OrchestratorClientError
 from ..llm import stub_provider
 from ..repositories import (
     AssetRecord,
@@ -1590,3 +1592,118 @@ async def search(
         )
     results.sort(key=lambda r: r["score"], reverse=True)
     return {"results": results[:10]}
+
+
+# ---------------------------------------------------------------------------
+# Agent loop (FC-driven SuperAI scheduling, real-time event stream)
+# ---------------------------------------------------------------------------
+def _agent_event(data: dict[str, Any]) -> str:
+    """Serialize one agent-loop event dict to an SSE ``data:`` line."""
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@router.post("/chat/agent/stream")
+async def chat_agent_stream(
+    request: Request,
+    body: dict = Body(...),
+) -> StreamingResponse:
+    """SuperAI agent loop: LLM decides → orchestrator dispatch → feed back.
+
+    Streams OpenAI-style SSE with extra typed events so the frontend can
+    render the scheduling process in real time:
+
+      {"type": "reasoning", "text": ...}            — LLM 思考
+      {"type": "tool_call",  callId, tool, args}    — 正在调度数字员工
+      {"type": "tool_result", callId, status, result} — 调度结果
+      {"choices": [{delta: {content}}]}             — 最终回答正文
+      data: [DONE]
+    """
+    tid = _tid(request)
+    messages = body.get("messages", [])
+    model = body.get("model", "doubao-pro-32k")
+
+    llmgw_host = os.getenv("MATE_LLMGW_HOST", "mate-tech-llmgw")
+    llmgw_port = int(os.getenv("MATE_LLMGW_PORT", "8008"))
+    user_token = str(getattr(request.state.ctx, "authorization", "") or "")
+    if not user_token:
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer "):
+            user_token = auth_header[7:].strip()
+
+    bearer = BearerAuth(
+        token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
+        client_id="metaplatform-backend",
+        client_secret="stub",  # noqa: S106
+        scope="platform.read platform.write",
+    )
+    llmgw_client = LlmgwStreamClient(
+        host=llmgw_host,
+        port=llmgw_port,
+        auth=bearer,
+        tenant_id=tid,
+        user_token=user_token or None,
+    )
+    orchestrator_client = OrchestratorClient(auth=bearer)
+
+    # 后台 AI Provider 配置（如 MiniMax）——FC 决策走真实 OpenAI 兼容端点。
+    provider_cfg: dict[str, str] = {}
+    try:
+        provider_cfg = await _get_client(request).get_provider_config(
+            tid, "custom", user_token or None
+        )
+    except Exception:  # noqa: BLE001
+        provider_cfg = {}
+    llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
+    llm_base_url = provider_cfg.get("base_url") or None
+    llm_api_key = provider_cfg.get("api_key") or None
+    if provider_cfg.get("default_model"):
+        model = provider_cfg["default_model"]
+
+    async def event_stream():
+        try:
+            roles = await orchestrator_client.list_roles(
+                tenant_id=tid,
+                fallback_token=user_token or None,
+            )
+        except OrchestratorClientError as exc:
+            yield _agent_event({"type": "reasoning", "text": f"无法获取数字员工列表：{exc}"})
+            roles = []
+
+        try:
+            async for event in run_agent_loop(
+                llmgw_client=llmgw_client,
+                orchestrator_client=orchestrator_client,
+                messages=messages,
+                model=model,
+                roles=roles,
+                tenant_id=tid,
+                fallback_token=user_token or None,
+                llm_provider=llm_provider,
+                llm_base_url=llm_base_url,
+                llm_api_key=llm_api_key,
+            ):
+                etype = event.get("type")
+                if etype == "final":
+                    content = str(event.get("content") or "")
+                    # Chunk the final answer so the frontend sees streaming deltas.
+                    for i in range(0, len(content), 32):
+                        chunk = content[i:i + 32]
+                        yield _agent_event({
+                            "choices": [{"delta": {"content": chunk}, "index": 0}],
+                            "model": model,
+                        })
+                else:
+                    yield _agent_event(event)
+        except LlmgwStreamError as exc:
+            yield _agent_event({
+                "choices": [{"delta": {"content": f"LLM 决策失败：{exc}"}, "index": 0}],
+                "model": model,
+            })
+        except OrchestratorClientError as exc:
+            yield _agent_event({
+                "choices": [{"delta": {"content": f"调度失败：{exc}"}, "index": 0}],
+                "model": model,
+            })
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
