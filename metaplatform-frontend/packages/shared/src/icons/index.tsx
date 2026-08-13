@@ -10,10 +10,13 @@
 type IconProps = React.SVGProps<SVGSVGElement> & { size?: number };
 
 const make = (path: React.ReactNode, viewBox = "0 0 24 24"): React.FC<IconProps> => {
-  const C: React.FC<IconProps> = ({ size = 16, ...rest }) => (
+  const C: React.FC<IconProps> = ({ size = 16, ...rest }) => {
+    // Semi Nav 会 cloneElement 注入 size="large" 字符串，守卫为数字
+    const px = typeof size === "number" ? size : 16;
+    return (
     <svg
-      width={size}
-      height={size}
+      width={px}
+      height={px}
       viewBox={viewBox}
       fill="none"
       stroke="currentColor"
@@ -25,7 +28,8 @@ const make = (path: React.ReactNode, viewBox = "0 0 24 24"): React.FC<IconProps>
     >
       {path}
     </svg>
-  );
+    );
+  };
   C.displayName = "Icon";
   return C;
 };

@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
+  Chat,
   Empty,
   Layout,
   Space,
-  Spin,
   Switch,
   Tabs,
   Tag,
@@ -15,6 +15,7 @@ import {
   Tooltip,
   Typography,
 } from '@douyinfe/semi-ui';
+import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/chat/interface';
 import {
   AppstoreAddOutlined,
   ArrowLeftOutlined,
@@ -25,7 +26,6 @@ import {
   RobotOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
-import { Bubble, Conversations, Sender } from '@ant-design/x';
 import { chatCompletions } from '@/api/apphub/llm';
 import { addCreatedTemplate, type TemplateCategory } from './data/templates';
 import type {
@@ -532,26 +532,30 @@ export default function AIDesignerPage() {
     [sessions, activeKey],
   );
 
-  const conversationItems = useMemo(
-    () =>
-      sessions.map((s) => ({
-        key: s.key,
-        label: s.label,
-      })),
-    [sessions],
-  );
-
-  const bubbleItems = useMemo(() => {
-    if (!currentSession) return [];
-    return currentSession.messages
-      .filter((m) => m.role !== 'system')
-      .map((m, idx) => ({
-        key: `${currentSession.key}-${idx}`,
-        role: m.role === 'user' ? ('user' as const) : ('ai' as const),
-        placement: m.role === 'user' ? ('end' as const) : ('start' as const),
-        content: m.content,
-      }));
-  }, [currentSession]);
+  // 业务消息 → Semi Chat 消息（system 消息不展示）；请求进行中追加 loading 占位气泡
+  const displayChats = useMemo<SemiMessage[]>(() => {
+    const base: SemiMessage[] = currentSession
+      ? currentSession.messages
+          .filter((m) => m.role !== 'system')
+          .map((m, idx) => ({
+            id: `${currentSession.key}-${idx}`,
+            role: m.role,
+            content: m.content,
+            status: 'complete',
+          }))
+      : [];
+    return loading
+      ? [
+          ...base,
+          {
+            id: `${currentSession?.key ?? 'pending'}-pending`,
+            role: 'assistant',
+            content: '',
+            status: 'loading',
+          },
+        ]
+      : base;
+  }, [currentSession, loading]);
 
   const currentArtifacts = useMemo(
     () => currentSession?.artifacts || [],
@@ -757,16 +761,46 @@ export default function AIDesignerPage() {
         <Sider
           style={{ width: 240, background: 'transparent', marginRight: 16 }}
         >
-          <Conversations
-            items={conversationItems}
-            activeKey={activeKey}
-            onActiveChange={handleActiveChange}
-            creation={{
-              label: '新建对话',
-              onClick: handleCreateSession,
-            }}
-            style={{ height: '100%' }}
-          />
+          {/* 会话列表（替代旧 antd Conversations）：新建 + 列表项 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
+            <Button
+              type="primary"
+              icon={<AppstoreAddOutlined />}
+              block
+              onClick={handleCreateSession}
+            >
+              新建对话
+            </Button>
+            <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+              {sessions.map((s) => (
+                <div
+                  key={s.key}
+                  onClick={() => handleActiveChange(s.key)}
+                  title={s.label}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    marginBottom: 2,
+                    background: s.key === activeKey ? 'var(--muted)' : 'transparent',
+                    color: 'var(--foreground)',
+                    fontSize: 13,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    transition: 'background .15s',
+                  }}
+                >
+                  {s.label}
+                </div>
+              ))}
+              {sessions.length === 0 && (
+                <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', textAlign: 'center', padding: '16px 0' }}>
+                  暂无对话
+                </Typography.Text>
+              )}
+            </div>
+          </div>
         </Sider>
 
         <Content style={{ display: 'flex', gap: 16, minWidth: 0 }}>
@@ -775,33 +809,30 @@ export default function AIDesignerPage() {
             style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
           >
             {currentSession ? (
-              <>
-                <Bubble.List
-                  style={{ flex: 1, overflow: 'auto' }}
-                  autoScroll
-                  items={bubbleItems}
-                  role={{
-                    user: { placement: 'end', variant: 'shadow' },
-                    ai: { placement: 'start', avatar: <RobotOutlined /> },
-                  }}
-                />
-                {loading && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <RobotOutlined />
-                    <Spin size="small" />
-                  </div>
-                )}
-                <Sender
-                  placeholder={
-                    mode === 'full'
-                      ? '描述业务场景，例如：创建一个员工请假应用，包含请假表单、部门经理审批流程和审批状态看板'
-                      : '描述业务需求，例如：创建一个请假申请单，包含申请人、请假类型、起止时间、事由字段，并绑定审批流程'
-                  }
-                  loading={loading}
-                  onSubmit={handleSend}
-                  style={{ marginTop: 16 }}
-                />
-              </>
+              <Chat
+                key={currentSession.key}
+                style={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 'none', paddingTop: 0, paddingBottom: 0 }}
+                align="leftRight"
+                mode="bubble"
+                chats={displayChats}
+                roleConfig={{
+                  assistant: { avatar: <RobotOutlined /> },
+                }}
+                chatBoxRenderConfig={{
+                  // 与原 Bubble.List 一致：用户侧不显示头像
+                  renderChatBoxAvatar: ({ message, defaultAvatar }) =>
+                    message && message.role === 'user' ? null : defaultAvatar,
+                }}
+                onMessageSend={(content) => {
+                  void handleSend(content);
+                }}
+                placeholder={
+                  mode === 'full'
+                    ? '描述业务场景，例如：创建一个员工请假应用，包含请假表单、部门经理审批流程和审批状态看板'
+                    : '描述业务需求，例如：创建一个请假申请单，包含申请人、请假类型、起止时间、事由字段，并绑定审批流程'
+                }
+                sendHotKey="enter"
+              />
             ) : (
               <Empty description="请选择或新建对话" style={{ margin: 'auto' }} />
             )}

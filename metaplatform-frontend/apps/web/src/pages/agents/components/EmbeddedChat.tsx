@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
-import { Bubble, Sender } from '@ant-design/x';
-import { Typography, Space, Tag } from '@douyinfe/semi-ui';
+import { Typography, Space, Tag, Chat } from '@douyinfe/semi-ui';
+import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/chat/interface';
 import { RobotOutlined, UserOutlined } from '@ant-design/icons';
 import { getToken } from '@mate/shared';
 import type { Employee } from '@/api/dw/types';
@@ -37,7 +37,6 @@ interface EmbeddedChatProps {
 
 export default function EmbeddedChat({ employee, heightMode = 'fixed' }: EmbeddedChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -64,7 +63,6 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setLoading(true);
-      setInput('');
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -215,20 +213,23 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
     setLoading(false);
   }, []);
 
-  const bubbleItems = useMemo(
+  // 业务消息 → Semi Chat 消息：streaming 映射到 loading/incomplete，error 单独映射
+  const semiMessages = useMemo<SemiMessage[]>(
     () =>
-      messages.map((msg) => {
-        const isUser = msg.role === 'user';
-        return {
-          key: msg.id,
-          role: isUser ? ('user' as const) : ('ai' as const),
-          status: msg.status,
-          placement: isUser ? ('end' as const) : ('start' as const),
-          streaming: msg.streaming,
-          loading: msg.status === 'loading',
-          content: <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>,
-        };
-      }),
+      messages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        createAt: Date.parse(msg.createdAt),
+        status:
+          msg.status === 'error'
+            ? 'error'
+            : msg.streaming
+              ? msg.content === ''
+                ? 'loading'
+                : 'incomplete'
+              : 'complete',
+      })),
     [messages],
   );
 
@@ -248,33 +249,42 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
         </Space>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, background: 'var(--semi-color-bg-1)', padding: 12, borderRadius: 8, overflow: 'auto' }}>
-        {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: 60, color: 'var(--muted-foreground)' }}>
-            <RobotOutlined style={{ fontSize: 40, marginBottom: 12 }} />
-            <div>开始与 {employee.name} 对话</div>
-          </div>
-        ) : (
-          <Bubble.List
-            items={bubbleItems}
-            autoScroll
-            role={{
-              ai: { placement: 'start', avatar: <RobotOutlined /> },
-              user: { placement: 'end', avatar: <UserOutlined /> },
-            }}
-          />
-        )}
-      </div>
-
-      <div style={{ marginTop: 8 }}>
-        <Sender
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSend}
-          loading={loading}
-          onCancel={handleCancel}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          background: 'var(--semi-color-bg-1)',
+          padding: 12,
+          borderRadius: 8,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Chat
+          style={{ width: '100%', height: '100%', maxWidth: 'none', paddingTop: 0, paddingBottom: 0 }}
+          align="leftRight"
+          mode="bubble"
+          chats={semiMessages}
+          roleConfig={{
+            user: { avatar: <UserOutlined /> },
+            assistant: { avatar: <RobotOutlined /> },
+          }}
+          onMessageSend={(content) => {
+            void handleSend(content);
+          }}
+          showStopGenerate
+          onStopGenerator={handleCancel}
           placeholder={`向 ${employee.name} 发送消息...`}
-          autoSize={{ minRows: 1, maxRows: 4 }}
+          sendHotKey="enter"
+          topSlot={
+            messages.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 16px 8px', color: 'var(--muted-foreground)' }}>
+                <RobotOutlined style={{ fontSize: 40, marginBottom: 12 }} />
+                <div>开始与 {employee.name} 对话</div>
+              </div>
+            ) : undefined
+          }
         />
       </div>
     </div>
