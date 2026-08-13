@@ -481,6 +481,7 @@ export default function SettingsPage() {
               form={regionForm}
               onSubmit={handleSavePreferences}
               labelPosition="left"
+              labelWidth={120}
               style={{ maxWidth: 480 }}
             >
               <Form.Select field="language" label="界面语言" optionList={LANGUAGE_OPTIONS} />
@@ -513,6 +514,7 @@ export default function SettingsPage() {
               form={prefsForm}
               onSubmit={handleSavePreferences}
               labelPosition="left"
+              labelWidth={120}
               style={{ maxWidth: 480 }}
             >
               <Form.Select
