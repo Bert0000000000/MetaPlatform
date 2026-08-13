@@ -10,9 +10,11 @@ import {
   Plug,
   GitBranch,
   RefreshCw,
+  CheckCircle,
+  Clock,
 } from 'lucide-react';
 import { Toast, Button, Card, Typography, SideSheet, Tag } from '@douyinfe/semi-ui';
-import { FormDrawer, Field, PageRoot, TextInput, TextArea, Select } from '@mate/shared';
+import { FormDrawer, Field, PageRoot, TextInput, TextArea, Select, useAuth } from '@mate/shared';
 import { getDashboardSummary, getMessages, getDeliverablesSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent, type MessageItem, type DeliverableItem } from '@/api/dashboard/workbench';
 import { IconPaperclip } from '@douyinfe/semi-icons';
 
@@ -75,6 +77,14 @@ const QUICK_LINK_ICONS: Record<string, React.ComponentType<{ style?: React.CSSPr
   GitBranch: GitBranch,
 };
 
+// 统计卡片图标映射（与 DashboardStat.icon 字段对齐）
+const STAT_ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
+  boxes: Boxes,
+  bot: Bot,
+  'check-circle': CheckCircle,
+  clock: Clock,
+};
+
 // 简单的骨架屏组件（性能：避免 layout shift）
 const SkeletonBox: React.FC<{ width?: string; height?: string; style?: React.CSSProperties }> = ({ width = '100%', height = '14px', style }) => (
   <div
@@ -92,6 +102,7 @@ const SkeletonBox: React.FC<{ width?: string; height?: string; style?: React.CSS
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [deliverablesOpen, setDeliverablesOpen] = useState(false);
     const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
@@ -180,27 +191,35 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
     if (tasksPage > tasksPageTotal) setTasksPage(tasksPageTotal);
   }, [tasksPage, tasksPageTotal]);
 
-  // 渲染统计卡片（数据驱动；带 hover 微动效）
-  const renderStat = (s: DashboardStat) => (
-    <div
-      key={s.label}
-      className="v-stat-card"
-      style={{ cursor: 'pointer', transition: 'transform 120ms ease, box-shadow 120ms ease' }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
-    >
-      <span className="v-stat-label">{s.label}</span>
-      <span className="v-stat-value" style={s.trend_up === false ? { color: 'var(--warning)' } : undefined}>
-        {s.value}
-      </span>
-      <span className="v-stat-change">
-        {s.trend_label ? `${s.trend_label} ` : ''}
-        {s.trend_value && (
-          <span className={s.trend_up ? 'up' : 'down'}>{s.trend_value}</span>
-        )}
-      </span>
-    </div>
-  );
+  // 渲染统计卡片（数据驱动；带图标 + hover 微动效）
+  const renderStat = (s: DashboardStat) => {
+    const Icon = STAT_ICONS[s.icon] ?? Boxes;
+    return (
+      <div
+        key={s.label}
+        className="v-stat-card"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 14, cursor: 'pointer', transition: 'transform 120ms ease, box-shadow 120ms ease' }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--semi-color-primary-light-default)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon style={{ width: 20, height: 20 }} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span className="v-stat-label">{s.label}</span>
+          <span className="v-stat-value" style={s.trend_up === false ? { color: 'var(--warning)' } : undefined}>
+            {s.value}
+          </span>
+          <span className="v-stat-change">
+            {s.trend_label ? `${s.trend_label} ` : ''}
+            {s.trend_value && (
+              <span className={s.trend_up ? 'up' : 'down'}>{s.trend_value}</span>
+            )}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <PageRoot>
@@ -208,7 +227,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* 欢迎卡 */}
         <div style={{
-          background: 'var(--card)',
+          background: 'linear-gradient(135deg, var(--semi-color-primary-light-default) 0%, var(--card) 55%)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius)',
           padding: 24,
@@ -218,7 +237,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           justifyContent: 'space-between',
         }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>Welcome back, Admin</div>
+            <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>欢迎回来，{user?.realName ?? user?.username ?? '管理员'}</div>
             <div style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
               {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
             </div>
