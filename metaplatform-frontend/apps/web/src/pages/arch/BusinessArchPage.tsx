@@ -117,7 +117,7 @@ function buildKeyboardLayout(
     const pos = overrides[id] ?? { x, y };
     nodes.push({
       id,
-      type: 'capability',
+      type: `capability-l${c.level}`,
       data: { level: c.level, name: c.name, code: c.code ?? '' },
       meta: { position: pos },
     });
@@ -431,13 +431,9 @@ function NodeDrawer({
 
 // ============ KeyboardCanvas：flowgram 无限画布渲染能力节点 ============
 const capabilityNodeRegistries: WorkflowNodeRegistry[] = [
-  {
-    type: 'capability',
-    meta: {
-      defaultExpanded: true,
-      size: { width: 200, height: 60 },
-    },
-  },
+  { type: 'capability-l1', meta: { defaultExpanded: true, size: { width: 1280, height: 40 } } },
+  { type: 'capability-l2', meta: { defaultExpanded: true, size: { width: 240, height: 56 } } },
+  { type: 'capability-l3', meta: { defaultExpanded: true, size: { width: 160, height: 32 } } },
 ];
 
 function CapabilityNode() {
@@ -567,16 +563,16 @@ function KeyboardCanvas({ capabilities, levelFilter, onNodeClick }: { capabiliti
     }
   };
 
+  // 通过 key 强制重新挂载编辑器：capabilities 加载完成 / level 切换都触发 mount
+  const capabilitiesKey = (capabilities ?? []).length > 0 ? 'ready' : 'empty';
+
   return (
     <div style={{ width: '100%', height: '100%' }} onClick={handleContainerClick}>
       <FreeLayoutEditorProvider
-        key={`canvas-${levelFilter}-${visibleCount}`}
+        key={`canvas-${capabilitiesKey}-${levelFilter}`}
         initialData={workflow}
         nodeRegistries={capabilityNodeRegistries}
         materials={{ renderDefaultNode: CapabilityNode }}
-        onAllLayersRendered={(ctx) => {
-          requestAnimationFrame(() => ctx.tools.fitView(false));
-        }}
         readonly
       >
         <EditorRenderer style={{ width: '100%', height: '100%' }} />

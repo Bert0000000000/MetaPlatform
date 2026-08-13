@@ -514,3 +514,24 @@ select.v-input:focus {
 .semi-aiChatInput-footer-configure-radio-button .semi-radio-addon-buttonRadio-checked:hover {
   background: var(--semi-color-primary-hover);
 }
+
+/* ===== Flowgram 键盘图节点尺寸（FlowGram 1.0.12 外层固定 220x80，需更高 specificity 覆盖） ===== */
+.gedit-playground .gedit-flow-activity-node[data-node-id] {
+  background: transparent !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+.gedit-playground .gedit-flow-activity-node[data-node-id] > div[data-level="1"] {
+  width: 1280px !important;
+  height: 40px !important;
+}
+.gedit-playground .gedit-flow-activity-node[data-node-id] > div[data-level="2"] {
+  width: 240px !important;
+  height: 56px !important;
+}
+.gedit-playground .gedit-flow-activity-node[data-node-id] > div[data-level="3"] {
+  width: 160px !important;
+  height: 32px !important;
+}

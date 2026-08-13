@@ -243,7 +243,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </Layout.Sider>
 
-      <Layout style={{ height: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column' }}>
+      <Layout style={{ height: '100vh', flex: 1, minWidth: 0, background: 'var(--background)', display: 'flex', flexDirection: 'column' }}>
         {/* Header：面包屑 + 用户区（官方侧边栏布局模板） */}
         <Layout.Header
           style={{
