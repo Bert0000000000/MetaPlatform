@@ -434,12 +434,20 @@ export default function SettingsPage() {
         <SectionHeader title={currentMeta.title} desc={currentMeta.desc} />
 
         {active === 'appearance' && (
-          <Card style={{ maxWidth: 760 }}>
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>主题模式</Text>
-              <div style={{ color: 'var(--muted-foreground)', fontSize: 13, marginTop: 4 }}>
-                选择偏好的配色主题，切换后立即应用到所有平台组件。
-              </div>
+          <Card
+            style={{ maxWidth: 760, width: '100%' }}
+            title="主题模式"
+            headerExtraContent={
+              <Text type="secondary" size="small">
+                当前：
+                <Tag color={resolvedTheme === 'dark' ? 'indigo' : 'yellow'} style={{ marginLeft: 4 }}>
+                  {resolvedTheme === 'dark' ? '深色' : '浅色'}
+                </Tag>
+              </Text>
+            }
+          >
+            <div style={{ color: 'var(--muted-foreground)', fontSize: 13, marginBottom: 16 }}>
+              选择偏好的配色主题，切换后立即应用到所有平台组件。
             </div>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               {THEME_OPTIONS.map((opt) => (
@@ -452,40 +460,35 @@ export default function SettingsPage() {
               ))}
             </div>
             <Divider margin={20} />
-            <Space vertical spacing={6}>
-              <Text type="secondary">
-                当前实际主题：
-                <Tag color={resolvedTheme === 'dark' ? 'indigo' : 'yellow'} style={{ marginLeft: 6 }}>
-                  {resolvedTheme === 'dark' ? '深色' : '浅色'}
-                </Tag>
-                {settings.theme === 'system' && (
-                  <span style={{ marginLeft: 6 }}>（跟随系统，OS 切换将自动响应）</span>
-                )}
-              </Text>
-              <Text type="secondary" size="small">
-                偏好同时持久化到本地与后端，下次登录自动恢复。
-              </Text>
-            </Space>
+            <Text type="secondary" size="small">
+              偏好同时持久化到本地与后端，下次登录自动恢复
+              {settings.theme === 'system' ? '（跟随系统，OS 切换将自动响应）' : ''}。
+            </Text>
           </Card>
         )}
 
         {active === 'region' && (
-          <>
+          <Card
+            style={{ maxWidth: 720, width: '100%' }}
+            title="语言与区域"
+            headerExtraContent={
+              <Button theme="solid" type="primary" htmlType="submit" onClick={() => regionForm.submitForm()}>
+                保存设置
+              </Button>
+            }
+          >
             <Form
               form={regionForm}
               onSubmit={handleSavePreferences}
-              style={{ maxWidth: 560 }}
               labelPosition="left"
+              style={{ maxWidth: 480 }}
             >
               <Form.Select field="language" label="界面语言" optionList={LANGUAGE_OPTIONS} />
               <Form.Select field="timezone" label="时区" optionList={TIMEZONE_OPTIONS} />
               <Form.Select field="dateFormat" label="日期格式" optionList={DATE_FORMAT_OPTIONS} />
-              <Button theme="solid" type="primary" htmlType="submit">
-                保存设置
-              </Button>
             </Form>
-            <Divider>实时预览</Divider>
-            <Space vertical style={{ maxWidth: 560, width: '100%' }}>
+            <Divider margin={20} />
+            <Space vertical spacing={6} style={{ width: '100%' }}>
               <Text type="secondary">
                 当前语言: {settings.language} · 时区: {settings.timezone}
               </Text>
@@ -493,34 +496,54 @@ export default function SettingsPage() {
                 日期示例: <Text strong>{formatDateTime(previewDate, settings)}</Text>
               </Text>
             </Space>
-          </>
+          </Card>
         )}
 
         {active === 'preferences' && (
-          <Form form={prefsForm} onSubmit={handleSavePreferences} style={{ maxWidth: 560 }}>
-            <Form.Select
-              field="defaultPage"
-              label="默认首页"
-              extraText="登录后优先进入的页面"
-              optionList={DEFAULT_PAGE_OPTIONS}
-            />
-            <Form.Select
-              field="layout"
-              label="工作台组件排列"
-              extraText="按选择顺序展示，拖动可调整顺序（暂未实现）"
-              multiple
-              optionList={WIDGET_OPTIONS}
-            />
-            <Button theme="solid" type="primary" htmlType="submit">
-              保存偏好
-            </Button>
-          </Form>
+          <Card
+            style={{ maxWidth: 720, width: '100%' }}
+            title="使用偏好"
+            headerExtraContent={
+              <Button theme="solid" type="primary" onClick={() => prefsForm.submitForm()}>
+                保存偏好
+              </Button>
+            }
+          >
+            <Form
+              form={prefsForm}
+              onSubmit={handleSavePreferences}
+              labelPosition="left"
+              style={{ maxWidth: 480 }}
+            >
+              <Form.Select
+                field="defaultPage"
+                label="默认首页"
+                extraText="登录后优先进入的页面"
+                optionList={DEFAULT_PAGE_OPTIONS}
+              />
+              <Form.Select
+                field="layout"
+                label="工作台组件排列"
+                extraText="按选择顺序展示，拖动可调整顺序（暂未实现）"
+                multiple
+                optionList={WIDGET_OPTIONS}
+              />
+            </Form>
+          </Card>
         )}
 
         {active === 'profile' && (
           <Spin spinning={profileLoading}>
             {profile ? (
-              <Card style={{ maxWidth: 720 }}>
+              <Card
+                style={{ maxWidth: 720, width: '100%' }}
+                title="账号信息"
+                headerExtraContent={
+                  <Button icon={<ReloadOutlined />} onClick={loadProfile} size="small">
+                    重新加载
+                  </Button>
+                }
+              >
                 <Space spacing="loose" align="center" style={{ marginBottom: 24 }}>
                   <Avatar size="extra-large" style={{ backgroundColor: 'var(--primary)' }}>
                     {initials}
@@ -577,11 +600,8 @@ export default function SettingsPage() {
                         ),
                     },
                   ]}
+                  style={{ width: '100%' }}
                 />
-                <Divider />
-                <Button icon={<ReloadOutlined />} onClick={loadProfile}>
-                  重新加载个人信息
-                </Button>
               </Card>
             ) : (
               <Empty description="暂无用户信息" />
@@ -592,11 +612,19 @@ export default function SettingsPage() {
         {active === 'permissions' && (
           <Spin spinning={permissionsLoading}>
             {permissions ? (
-              <div>
+              <Card
+                style={{ width: '100%' }}
+                title="权限与角色"
+                headerExtraContent={
+                  <Button icon={<ReloadOutlined />} onClick={loadPermissions} size="small">
+                    重新加载
+                  </Button>
+                }
+              >
                 <Descriptions
                   column={2}
                   size="small"
-                  style={{ marginBottom: 16 }}
+                  style={{ marginBottom: 16, width: '100%' }}
                   data={[
                     { key: '用户 ID', value: permissions.userId },
                     { key: '租户', value: permissions.tenantId },
@@ -627,66 +655,58 @@ export default function SettingsPage() {
                 {permissionGroups.length === 0 ? (
                   <Empty description="当前用户未关联任何权限" />
                 ) : (
-                  <List
-                    dataSource={permissionGroups}
-                    renderItem={(group) => (
-                      <List.Item
-                        main={
-                          <>
-                            <div style={{ marginBottom: 8 }}>
-                              <Space>
-                                <Tag color="purple">{group.resourceType}</Tag>
-                                <Text type="secondary">{group.items.length} 项权限</Text>
-                              </Space>
-                            </div>
-                            <Table
-                              rowKey="permissionId"
-                              size="small"
-                              pagination={false}
-                              dataSource={group.items}
-                              columns={[
-                                {
-                                  title: '权限编码',
-                                  dataIndex: 'permissionCode',
-                                  key: 'permissionCode',
-                                  render: (v: string) => <Text code>{v}</Text>,
-                                },
-                                { title: '名称', dataIndex: 'permissionName', key: 'permissionName' },
-                                {
-                                  title: '操作',
-                                  dataIndex: 'actions',
-                                  key: 'actions',
-                                  render: (actions: string[]) => (
-                                    <Space wrap>
-                                      {actions.map((a) => (
-                                        <Tag key={a}>{a}</Tag>
-                                      ))}
-                                    </Space>
-                                  ),
-                                },
-                                {
-                                  title: '效果',
-                                  dataIndex: 'effect',
-                                  key: 'effect',
-                                  render: (effect: string) => (
-                                    <Tag color={effect === 'DENY' ? 'red' : 'green'}>{effect}</Tag>
-                                  ),
-                                },
-                              ]}
-                            />
-                          </>
-                        }
-                      />
-                    )}
-                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
+                    {permissionGroups.map((group) => (
+                      <div key={group.resourceType}>
+                        <div style={{ marginBottom: 8 }}>
+                          <Space>
+                            <Tag color="purple">{group.resourceType}</Tag>
+                            <Text type="secondary">{group.items.length} 项权限</Text>
+                          </Space>
+                        </div>
+                        <Table
+                          rowKey="permissionId"
+                          size="small"
+                          pagination={false}
+                          style={{ width: '100%' }}
+                          dataSource={group.items}
+                          columns={[
+                            {
+                              title: '权限编码',
+                              dataIndex: 'permissionCode',
+                              key: 'permissionCode',
+                              render: (v: string) => <Text code>{v}</Text>,
+                            },
+                            { title: '名称', dataIndex: 'permissionName', key: 'permissionName' },
+                            {
+                              title: '操作',
+                              dataIndex: 'actions',
+                              key: 'actions',
+                              render: (actions: string[]) => (
+                                <Space wrap>
+                                  {actions.map((a) => (
+                                    <Tag key={a}>{a}</Tag>
+                                  ))}
+                                </Space>
+                              ),
+                            },
+                            {
+                              title: '效果',
+                              dataIndex: 'effect',
+                              key: 'effect',
+                              render: (effect: string) => (
+                                <Tag color={effect === 'DENY' ? 'red' : 'green'}>{effect}</Tag>
+                              ),
+                            },
+                          ]}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 )}
-                <Divider />
-                <Button icon={<ReloadOutlined />} onClick={loadPermissions}>
-                  重新加载权限
-                </Button>
-              </div>
+              </Card>
             ) : (
-              <Empty description="暂无权限数据，可点击下方按钮重新加载" />
+              <Empty description="暂无权限数据" />
             )}
           </Spin>
         )}
