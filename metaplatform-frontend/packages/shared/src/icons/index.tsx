@@ -214,6 +214,12 @@ export const ChevronsRight = make(
     <polyline points="6 17 11 12 6 7" />
   </>
 );
+export const MessageCircle = make(
+  <>
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+  </>,
+);
+
 export const Search = make(
   <>
     <circle cx="11" cy="11" r="7" />

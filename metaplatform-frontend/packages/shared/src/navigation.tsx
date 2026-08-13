@@ -40,35 +40,7 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     label: '工作台',
     icon: <LayoutDashboard style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/dashboard',
-    children: [
-      {
-        key: 'workspace',
-        label: '工作台',
-        children: [
-          { key: 'dashboard', label: '工作台', path: '/dashboard' },
-        ],
-      },
-      {
-        key: 'personal',
-        label: '我的',
-        children: [
-          { key: 'my-apps', label: '我的应用', path: '/dashboard/my-apps' },
-          { key: 'my-agents', label: '我的数字员工', path: '/dashboard/my-agents' },
-          { key: 'messages', label: '消息', path: '/dashboard/messages' },
-          { key: 'portal', label: '门户', path: '/dashboard/portal' },
-          { key: 'notifications', label: '消息中心', path: '/dashboard/notifications' },
-          { key: 'deliverables', label: '交付材料', path: '/dashboard/deliverables' },
-        ],
-      },
-      {
-        key: 'ops',
-        label: '运营',
-        children: [
-          { key: 'aiops', label: '智能运维', path: '/dashboard/aiops' },
-          { key: 'settings', label: '设置', path: '/dashboard/settings' },
-        ],
-      },
-    ],
+    children: [],
   },
   {
     key: 'superai',

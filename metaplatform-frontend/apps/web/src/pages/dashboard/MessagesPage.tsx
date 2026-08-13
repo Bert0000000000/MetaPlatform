@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { Button, Card } from '@douyinfe/semi-ui';
+import { Button, Card, SideSheet, Tag, Typography, Toast, Radio, Space } from '@douyinfe/semi-ui';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Paperclip, CheckCheck, Check, Reply, Forward, Archive, Trash2,
@@ -90,6 +90,7 @@ export default function MessagesPage() {
   
   // 数据状态
   const [messages, setMessages] = useState<MessageItem[]>(FALLBACK_MESSAGES);
+  const [detailMessage, setDetailMessage] = useState<MessageItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<'api' | 'fallback'>('fallback');
 
@@ -212,7 +213,7 @@ export default function MessagesPage() {
                         const prioKey = PRIORITY_API_MAP[msg.priority] ?? msg.priority as 'low' | 'mid' | 'high';
                         const prio = priorityMap[prioKey];
                         return (
-                          <div key={msg.msg_id} style={{
+                          <div key={msg.msg_id} onClick={() => setDetailMessage(msg)} style={{
                             display: 'flex', alignItems: 'flex-start', gap: 12,
                             borderBottom: '1px solid var(--border)', cursor: 'pointer', position: 'relative',
                             padding: '14px 0',
@@ -347,6 +348,43 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
+
+      <SideSheet
+        visible={detailMessage != null}
+        onCancel={() => setDetailMessage(null)}
+        title="消息详情"
+        width={480}
+      >
+        {detailMessage && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: avatarBgMap[detailMessage.avatar_class], color: avatarColorMap[detailMessage.avatar_class],
+                fontSize: 14, fontWeight: 600, flexShrink: 0,
+              }}>
+                {(() => { const Icon = getMsgIcon(detailMessage.icon); return <Icon style={{ width: 20, height: 20 }} />; })()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{detailMessage.sender}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>{detailMessage.time}</div>
+              </div>
+              <Tag color={detailMessage.unread ? 'red' : 'grey'}>{detailMessage.unread ? '未读' : '已读'}</Tag>
+            </div>
+            <div>
+              <Typography.Title heading={5} style={{ marginBottom: 8 }}>{detailMessage.title}</Typography.Title>
+              <Typography.Paragraph style={{ color: 'var(--muted-foreground)' }}>
+                {detailMessage.summary}
+              </Typography.Paragraph>
+            </div>
+            {detailMessage.attachments > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                📎 {detailMessage.attachments} 个附件
+              </div>
+            )}
+          </div>
+        )}
+      </SideSheet>
     </div>
   );
 }

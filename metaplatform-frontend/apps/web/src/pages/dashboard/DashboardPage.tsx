@@ -11,9 +11,9 @@ import {
   GitBranch,
   RefreshCw,
 } from 'lucide-react';
-import { Toast, Button, Card } from '@douyinfe/semi-ui';
+import { Toast, Button, Card, Typography } from '@douyinfe/semi-ui';
 import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
-import { getDashboardSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent } from '@/api/dashboard/workbench';
+import { getDashboardSummary, getMessages, getDeliverablesSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent, type MessageItem, type DeliverableItem } from '@/api/dashboard/workbench';
 
 // 子标签页
 
@@ -92,6 +92,31 @@ const SkeletonBox: React.FC<{ width?: string; height?: string; style?: React.CSS
 export default function DashboardPage() {
   const navigate = useNavigate();
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [deliverablesOpen, setDeliverablesOpen] = useState(false);
+    const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
+    const [recentMessages, setRecentMessages] = useState<MessageItem[]>([]);
+
+  // 交付材料 + 最近消息（懒加载：打开抽屉/渲染时拉取）
+  useEffect(() => {
+    let cancelled = false;
+    getMessages()
+      .then((items) => {
+        if (!cancelled) setRecentMessages(items.slice(0, 5));
+      })
+      .catch(() => {
+        // 静默：后端不可达时展示空列表
+      });
+    getDeliverablesSummary()
+      .then((summary) => {
+        if (!cancelled) setDeliverables(summary.deliverables ?? []);
+      })
+      .catch(() => {
+        // 静默
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [tasksDrawerOpen, setTasksDrawerOpen] = useState(false);
   const [tasksPage, setTasksPage] = useState(1);
   const tasksPageSize = 5;
@@ -200,8 +225,8 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
             <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
               <Plus style={{ width: 16, height: 16 }} />创建应用
             </Button>
-            <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <FileBarChart style={{ width: 16, height: 16 }} />查看报告
+            <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDeliverablesOpen(true)}>
+              <FileBarChart style={{ width: 16, height: 16 }} />交付材料
             </Button>
             <Button theme="solid" type="primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => navigate('/dashboard/my-agents')}>
@@ -331,10 +356,16 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           <div style={{ flex: 2, display: 'flex' }}>
             <Card style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>系统状态</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>最近消息</div>
+                <span
+                  style={{ fontSize: 12, color: 'var(--muted-foreground)', cursor: 'pointer' }}
+                  onClick={() => navigate('/dashboard/messages')}
+                >
+                  查看全部
+                </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 20 }}>
-                {loading
+                {recentMessages.length === 0
                   ? Array.from({ length: 3 }).map((_, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px' }}>
                         <SkeletonBox width="8px" height="8px" style={{ borderRadius: '50%' }} />
@@ -344,18 +375,17 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                         </div>
                       </div>
                     ))
-                  : data.systemHealth.map((h, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 4 }}>
-                        <div className={h.dot_class} style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: h.dot_class === 'health-dot-ok' ? 'var(--success)' : 'var(--warning)' }} />
+                  : recentMessages.map((m) => (
+                      <div key={m.msg_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 4, cursor: 'pointer' }} onClick={() => navigate('/dashboard/messages')}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: m.unread ? 'var(--semi-color-danger)' : 'var(--border)' }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500 }}>{h.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>{h.detail}</div>
+                          <div style={{ fontSize: 13, fontWeight: m.unread ? 500 : 400 }}>{m.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.summary}</div>
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{h.status}</div>
+                        <div style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>{m.time}</div>
                       </div>
                     ))}
               </div>
-
               <div style={{ marginTop: 'auto' }}>
                 <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>快捷入口</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -405,8 +435,8 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
         {/* 底部：活跃数字员工 */}
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>活跃数字员工</div>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', cursor: 'pointer' }}>管理</span>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>我的数字员工</div>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', cursor: 'pointer' }} onClick={() => navigate('/dashboard/my-agents')}>管理</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {loading
@@ -435,6 +465,27 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           </div>
         </Card>
       </div>
+
+      {/* 交付材料抽屉 */}
+      <FormDrawer open={deliverablesOpen} title="交付运营材料" onCancel={() => setDeliverablesOpen(false)} footer={null}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {deliverables.length === 0 ? (
+            <Typography.Text type="tertiary" style={{ fontSize: 13 }}>暂无交付材料</Typography.Text>
+          ) : (
+            deliverables.map((d, i) => (
+              <Card key={i} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{d.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>{d.type_label} · {d.project} · {d.format} · {d.size} · {d.date}</div>
+                  </div>
+                  <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 9999, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>{d.gen_name}</span>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+      </FormDrawer>
 
       {/* 创建应用抽屉 */}
       <FormDrawer open={drawerOpen} title="创建应用" onCancel={() => setDrawerOpen(false)} onOk={() => setDrawerOpen(false)}>

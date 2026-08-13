@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react';
-import { Nav, Layout } from '@douyinfe/semi-ui';
+import { useState, useEffect, type ReactNode } from 'react';
+import { Nav, Layout, Dropdown, Badge, Toast } from '@douyinfe/semi-ui';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { User, LogOut, ChevronsLeft, ChevronsRight } from './icons';
+import { User, LogOut, ChevronsLeft, ChevronsRight, Settings, MessageCircle } from './icons';
 import { useAuth } from './auth/AuthProvider';
+import { createApiClient, apiPath } from './api';
 import MateLogo from './components/MateLogo';
 import { MODULE_MENU, flattenMenu } from './navigation';
 
@@ -35,6 +36,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const width = collapsed ? SIDEBAR_W_COLLAPSED : SIDEBAR_W;
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const client = createApiClient({ baseURL: apiPath('dashboard', '') });
+    client
+      .get<Array<{ read?: boolean }>>('/messages')
+      .then((res) => {
+        if (!cancelled) {
+          setUnreadCount(res.data.filter((m) => !m.read).length);
+        }
+      })
+      .catch(() => {
+        // 后端不可达时静默（无红点）
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleLogout = () => {
     logout();
     window.location.href = '/login';
@@ -48,6 +68,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
     .sort((a, b) => b.path.length - a.path.length)[0];
   const selectedKey = matched ? childItemKey(matched.moduleKey, matched.key) : undefined;
   const currentModuleKey = matched?.moduleKey;
+  // 纯一级模块（无二级菜单，如工作台）：matched 为空时回落到模块自身
+  const moduleFallback = !matched
+    ? MODULE_MENU.find(
+        (m) => pathname === m.path || pathname.startsWith(m.path + '/'),
+      )
+    : undefined;
 
   // 三级 Nav 结构：模块 → 分组（SubNav）→ 页面项
   const navItems = MODULE_MENU.map((m) => ({
@@ -217,7 +243,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {(() => {
               const moduleLabel = currentModuleKey
                 ? (MODULE_MENU.find((m) => m.key === currentModuleKey)?.label ?? '')
-                : 'Mate Platform';
+                : moduleFallback?.label ?? 'Mate Platform';
               const groupLabel = matched?.groupKey
                 ? (MODULE_MENU.find((m) => m.key === currentModuleKey)?.children.find(
                     (g) => g.key === matched.groupKey,
@@ -253,56 +279,71 @@ export default function AppLayout({ children }: AppLayoutProps) {
             })()}
           </div>
 
-          {/* 用户信息 + 退出 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          {/* 用户头像（红点提醒）+ Dropdown 菜单：消息 / 主题 / 语言 / 退出 */}
+          <Dropdown
+            trigger="click"
+            position="bottomRight"
+            render={
+              <Dropdown.Menu>
+                <Dropdown.Item onClick={() => navigate('/dashboard/messages')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <MessageCircle style={{ width: 14, height: 14, strokeWidth: 1.5 }} />
+                    消息中心
+                    {unreadCount > 0 && (
+                      <Badge count={unreadCount} style={{ transform: 'scale(0.8)' }} />
+                    )}
+                  </div>
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => navigate('/dashboard/settings')}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <Settings style={{ width: 14, height: 14, strokeWidth: 1.5 }} />
+                    主题与语言设置
+                  </div>
+                </Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item onClick={handleLogout}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <LogOut style={{ width: 14, height: 14, strokeWidth: 1.5 }} />
+                    退出登录
+                  </div>
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            }
+          >
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                color: 'var(--sidebar-foreground)',
-                fontSize: 13,
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: 6,
               }}
               title={user?.realName ?? user?.username ?? '当前用户'}
             >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'var(--muted)',
-                  flexShrink: 0,
-                }}
-              >
-                <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
-              </div>
-              <span>{user?.realName ?? user?.username ?? '当前用户'}</span>
+              <Badge dot={unreadCount > 0}>
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'var(--muted)',
+                    flexShrink: 0,
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
+                </div>
+              </Badge>
+              <span style={{ fontSize: 13, color: 'var(--foreground)' }}>
+                {user?.realName ?? user?.username ?? '当前用户'}
+              </span>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              title="退出登录"
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                color: 'var(--muted-foreground)',
-                cursor: 'pointer',
-                padding: '4px 10px',
-                borderRadius: 6,
-                fontSize: 12,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.15s',
-              }}
-            >
-              <LogOut style={{ width: 14, height: 14, strokeWidth: 1.5 }} />
-              退出登录
-            </button>
-          </div>
+          </Dropdown>
+
         </Layout.Header>
 
         <Layout.Content
