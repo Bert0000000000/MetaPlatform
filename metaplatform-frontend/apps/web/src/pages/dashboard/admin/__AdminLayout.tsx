@@ -1,101 +1,40 @@
-import { Fragment, useMemo, type ReactNode } from "react";
-import { Breadcrumb, PageRoot, type BreadcrumbItem } from "@mate/shared";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { type ReactNode } from "react";
+import { PageRoot, ModuleTabsLayout, type ModuleTab } from "@mate/shared";
 
-const ADMIN_TABS: Array<{ key: string; label: string; path: string }> = [
+/** 后台管理 11 个 tab（侧边栏只保留一级「后台管理」，二级移到内容区） */
+const ADMIN_TABS: ModuleTab[] = [
+  { key: "overview", label: "总览", path: "/admin" },
   { key: "users", label: "用户管理", path: "/admin/users" },
   { key: "permissions", label: "权限管理", path: "/admin/permissions" },
   { key: "orgs", label: "组织管理", path: "/admin/orgs" },
   { key: "logs", label: "日志管理", path: "/admin/logs" },
   { key: "configs", label: "系统配置", path: "/admin/configs" },
-  { key: "ai-providers", label: "AI 提供方", path: "/admin/ai-providers" },
-  { key: "operations", label: "运营数据", path: "/admin/operations" },
-  { key: "analytics", label: "访问看板", path: "/admin/analytics" },
-  { key: "components", label: "组件展示", path: "/admin/components" },
-  { key: "flowgram", label: "流程编排 Demo", path: "/admin/flowgram" },
+  { key: "ai-providers", label: "AI 供应商", path: "/admin/ai-providers" },
+  { key: "operations", label: "运维", path: "/admin/operations" },
+  { key: "analytics", label: "分析", path: "/admin/analytics" },
+  { key: "components", label: "组件", path: "/admin/components" },
+  { key: "flowgram", label: "Flowgram", path: "/admin/flowgram" },
 ];
 
 interface AdminLayoutProps {
-  title: string;
+  /** 兼容旧调用；ModuleTabsLayout 的 tab 已标示页面，不再单独渲染大标题 */
+  title?: string;
+  /** 页面级操作按钮（新建/刷新等），渲染在内容区顶部右侧 */
   extra?: ReactNode;
   children: ReactNode;
 }
 
-export function AdminLayout({ title, extra, children }: AdminLayoutProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const breadcrumb: BreadcrumbItem[] = useMemo(() => {
-    const items: BreadcrumbItem[] = [{ label: "后台管理", href: "/admin" }];
-    const match = ADMIN_TABS.find(
-      (t) => location.pathname === t.path || location.pathname.startsWith(t.path + "/"),
-    );
-    if (match) {
-      items.push({ label: match.label });
-    }
-    return items;
-  }, [location.pathname]);
-
+export function AdminLayout({ extra, children }: AdminLayoutProps) {
   return (
     <PageRoot>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-        <div>
-          <Breadcrumb items={breadcrumb} />
-          <h1 style={{ fontSize: 22, fontWeight: 600, margin: "8px 0 4px" }}>{title}</h1>
-        </div>
-        {extra && <div style={{ display: "flex", gap: 8 }}>{extra}</div>}
-      </div>
-
-      {/* Tab 栏 */}
-      <div
-        style={{
-          display: "flex",
-          gap: 4,
-          marginBottom: 20,
-          borderBottom: "1px solid var(--border)",
-          paddingBottom: 12,
-        }}
-      >
-        {ADMIN_TABS.map((tab) => {
-          const isActive =
-            location.pathname === tab.path || location.pathname.startsWith(tab.path + "/");
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => navigate(tab.path)}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 6,
-                fontSize: 13,
-                cursor: "pointer",
-                color: isActive ? "var(--foreground)" : "var(--muted-foreground)",
-                background: isActive ? "var(--muted)" : "transparent",
-                border: "none",
-                fontFamily: "var(--font-sans)",
-                transition: "background 0.15s, color 0.15s",
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-        <div style={{ marginLeft: "auto" }}>
-          <Link
-            to="/dashboard"
-            style={{
-              fontSize: 12,
-              color: "var(--muted-foreground)",
-              textDecoration: "none",
-              padding: "6px 8px",
-            }}
-          >
-            ← 返回工作台
-          </Link>
-        </div>
-      </div>
-
-      <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>{children}</div>
+      <ModuleTabsLayout tabs={ADMIN_TABS}>
+        {extra && (
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
+            {extra}
+          </div>
+        )}
+        {children}
+      </ModuleTabsLayout>
     </PageRoot>
   );
 }
@@ -135,14 +74,7 @@ export function StatCard({ label, value, color = "default" }: StatCardProps) {
 
 export function StatGrid({ children }: { children: ReactNode }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: 12,
-        marginBottom: 20,
-      }}
-    >
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
       {children}
     </div>
   );

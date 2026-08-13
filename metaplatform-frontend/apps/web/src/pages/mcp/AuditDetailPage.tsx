@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  Banner,
   Button,
   Card,
   Descriptions,
@@ -27,15 +28,25 @@ export default function AuditDetailPage() {
   const navigate = useNavigate();
   const [log, setLog] = useState<AuditLogDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
-      getAuditLogDetail(id).then((l) => {
-        setLog(l);
-        setLoading(false);
-      });
+      getAuditLogDetail(id)
+        .then((l) => {
+          setLog(l);
+          setLoading(false);
+        })
+        .catch((e) => {
+          setError(e instanceof Error ? e.message : '加载失败');
+          setLoading(false);
+        });
     }
   }, [id]);
+
+  if (error) {
+    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+  }
 
   if (loading || !log) {
     return (

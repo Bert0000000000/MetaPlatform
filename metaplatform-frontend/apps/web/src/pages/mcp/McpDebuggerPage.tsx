@@ -464,7 +464,7 @@ export default function DebuggerPage() {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           <ThunderboltOutlined /> MCP 调试器
         </Typography.Title>

@@ -141,7 +141,7 @@ export default function ToolListPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           工具注册中心
         </Typography.Title>

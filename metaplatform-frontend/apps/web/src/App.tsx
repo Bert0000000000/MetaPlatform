@@ -10,6 +10,8 @@ import {
 } from '@mate/shared';
 import LoginPage from './pages/LoginPage';
 import ArchLayout from './pages/arch/ArchLayout';
+import KnowledgeLayout from './pages/knowledge/KnowledgeLayout';
+import AgentsLayout from './pages/agents/AgentsLayout';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -263,10 +265,10 @@ function AppRoutes() {
           <Route path="ontology/object-types/:rid" element={<Navigate to="/ontology" replace />} />
 
           {/* 閻儴鐦戞惔?*/}
-          <Route path="knowledge" element={<KnowledgeBasePage />} />
-          <Route path="knowledge/docs" element={<KnowledgeDocsPage />} />
-          <Route path="knowledge/test" element={<KnowledgeTestPage />} />
-          <Route path="knowledge/config" element={<KnowledgeConfigPage />} />
+          <Route path="knowledge" element={<KnowledgeLayout><KnowledgeBasePage /></KnowledgeLayout>} />
+          <Route path="knowledge/docs" element={<KnowledgeLayout><KnowledgeDocsPage /></KnowledgeLayout>} />
+          <Route path="knowledge/test" element={<KnowledgeLayout><KnowledgeTestPage /></KnowledgeLayout>} />
+          <Route path="knowledge/config" element={<KnowledgeLayout><KnowledgeConfigPage /></KnowledgeLayout>} />
 
           {/* MCP 娑擃厼绺?/ 三 HUB 布局：SKILL / MCP / A2A */}
           <Route path="mcp" element={<McpCenterLayout />}>
@@ -307,17 +309,19 @@ function AppRoutes() {
             <Route path="collaborations" element={<McpExternalPage />} />
           </Route>
           {/* 閺佹澘鐡ч崨妯轰紣 */}
-          <Route path="agents" element={<EmployeeListPage />} />
-          <Route path="agents/create" element={<EmployeeCreatePage />} />
-          <Route path="agents/:employeeId" element={<EmployeeDetailPage />} />
-          <Route path="agents/tasks" element={<TaskListPage />} />
-          <Route path="agents/tasks/:taskId" element={<TaskDetailPage />} />
-          <Route path="agents/collab" element={<CollaborationListPage />} />
-          <Route path="agents/collab/create" element={<CollaborationCreatePage />} />
-          <Route path="agents/collab/:id" element={<CollaborationMonitorPage />} />
-          <Route path="agents/evaluation" element={<EvaluationPage />} />
-          <Route path="agents/:employeeId/capabilities" element={<CapabilityConfigPage />} />
-          <Route path="agents/external" element={<ExternalAgentsPage />} />          {/* 鍚庡彴绠＄悊锛氱粺涓€浣跨敤 dashboard/admin 椤甸潰锛岄伩鍏嶉噸澶嶈矾鐢卞拰鏈畾涔夌粍浠?*/}
+          <Route path="agents" element={<AgentsLayout />}>
+            <Route index element={<EmployeeListPage />} />
+            <Route path="create" element={<EmployeeCreatePage />} />
+            <Route path=":employeeId" element={<EmployeeDetailPage />} />
+            <Route path="tasks" element={<TaskListPage />} />
+            <Route path="tasks/:taskId" element={<TaskDetailPage />} />
+            <Route path="collab" element={<CollaborationListPage />} />
+            <Route path="collab/create" element={<CollaborationCreatePage />} />
+            <Route path="collab/:id" element={<CollaborationMonitorPage />} />
+            <Route path="evaluation" element={<EvaluationPage />} />
+            <Route path=":employeeId/capabilities" element={<CapabilityConfigPage />} />
+            <Route path="external" element={<ExternalAgentsPage />} />
+          </Route>          {/* 鍚庡彴绠＄悊锛氱粺涓€浣跨敤 dashboard/admin 椤甸潰锛岄伩鍏嶉噸澶嶈矾鐢卞拰鏈畾涔夌粍浠?*/}
 
           {/* DW API consumption routes (GOVERN-08) */}
           <Route path="dw/employees" element={<DwEmployeesPage />} />

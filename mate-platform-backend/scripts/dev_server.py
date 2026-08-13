@@ -12,8 +12,15 @@ All /api/v1/* routes from 6 app packages are served on one port.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import sys
+
+# Windows dev only: psycopg async (the IAM/PG driver) is incompatible with the
+# default ProactorEventLoop; force SelectorEventLoop so dev server DB calls
+# work. No-op on Linux (prod). Must run before any async DB code.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("dev_server")
@@ -105,11 +112,15 @@ def build_app() -> FastAPI:
     try:
         from mate_tech_iam.api import (
             auth as auth_api,
+            configs as configs_api,
             dashboard as dashboard_api,
+            models as models_api,
         )
         app.include_router(auth_api.router)
         app.include_router(dashboard_api.router)
-        logger.info("Mounted IAM auth + dashboard routers")
+        app.include_router(configs_api.router)
+        app.include_router(models_api.router)
+        logger.info("Mounted IAM auth + dashboard + configs + ai-models routers")
 
         # Initialize IAM database + seed data on startup
         @app.on_event("startup")
@@ -194,6 +205,51 @@ def build_app() -> FastAPI:
 
     logger.info("SuperAI mock endpoints (ontology/context + agent/runs) mounted")
 
+    # mate-app-kb + mate-tech-rag: these are full FastAPI apps whose routes
+    # use absolute /api/v1/* paths, so they can't be mounted under a prefix
+    # (the mount would strip the prefix and break the absolute routes). We
+    # steal their routes onto the host so the single host auth middleware
+    # governs both services on one port — which is what the vite proxy
+    # (all /api/v1/* → :8100) and the frontend KB module expect.
+    try:
+        sys.path.insert(0, _base + r"\mate-app-kb\src")
+        sys.path.insert(0, _base + r"\mate-tech-rag\src")
+        from mate_app_kb.api.app import create_app as _create_kb_app
+        from mate_tech_rag.api.app import create_app as _create_rag_app
+        _kb = _create_kb_app()
+        _rag = _create_rag_app()
+        app.routes.extend(_kb.routes)
+        app.routes.extend(_rag.routes)
+        # KB/RAG handlers read request.app.state.outbox_writer; give the host one.
+        from mate_platform.messaging.outbox import InMemoryOutboxWriter
+        if not hasattr(app.state, "outbox_writer"):
+            app.state.outbox_writer = InMemoryOutboxWriter()
+        logger.info("Mounted kb (%d routes) + rag (%d routes)", len(_kb.routes), len(_rag.routes))
+    except Exception as e:
+        logger.warning("Failed to mount kb/rag: %s", e)
+
+    # In-process IAM config reader: the unified dev server runs llmgw + IAM in
+    # the same process, so llmgw's embedding resolution reads the shared IAM
+    # SystemConfig store directly (no Keycloak service-identity round-trip,
+    # which dev has no Keycloak for). Production llmgw (separate service) uses
+    # the HTTP + service-identity path in resolve_effective_embedding instead.
+    async def _read_iam_configs(tenant_id: str) -> list[dict]:
+        from sqlalchemy import select
+        from mate_tech_iam.db import AsyncSessionMaker
+        from mate_tech_iam.domain.system_config import SystemConfig
+
+        async with AsyncSessionMaker() as session:
+            rows = await session.execute(
+                select(SystemConfig).where(SystemConfig.tenant_id == tenant_id)
+            )
+            return [
+                {"key": r.key, "value": r.value}
+                for r in rows.scalars().all()
+            ]
+
+    app.state.iam_config_reader = _read_iam_configs
+    logger.info("Injected in-process IAM config reader for llmgw embedding resolution")
+
     return app
 
 
@@ -205,4 +261,15 @@ if __name__ == "__main__":
 
     app = build_app()
     logger.info("Starting dev server on %s:%d", args.host, args.port)
-    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+    if sys.platform == "win32":
+        # Run uvicorn on an explicit SelectorEventLoop: psycopg async (the IAM/PG
+        # driver) is incompatible with Windows' default ProactorEventLoop. uvicorn.run
+        # via asyncio.run() does not honour the policy on some setups, so drive the
+        # server manually. No-op behaviour difference on the dev workload.
+        config = uvicorn.Config(app, host=args.host, port=args.port, loop="asyncio")
+        server = uvicorn.Server(config)
+        loop = asyncio.SelectorEventLoop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(server.serve())
+    else:
+        uvicorn.run(app, host=args.host, port=args.port, log_level="info")

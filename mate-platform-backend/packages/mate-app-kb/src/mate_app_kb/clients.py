@@ -61,10 +61,13 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
-    def search(self, query: str, top_k: int = 5, mode: str = "AUTO") -> dict[str, Any]:
+    def search(self, query: str, top_k: int = 5, mode: str = "AUTO", rerank_strategy: str | None = None) -> dict[str, Any]:
+        body: dict[str, Any] = {"query": query, "top_k": top_k, "mode": mode}
+        if rerank_strategy:
+            body["rerank_strategy"] = rerank_strategy
         r = self._client.post(
             f"{self._base_url}/api/v1/rag/search",
-            json={"query": query, "top_k": top_k, "mode": mode},
+            json=body,
         )
         r.raise_for_status()
         return r.json()

@@ -49,6 +49,32 @@ class KbSearchLog:
     created_at: str = ""
 
 
+@dataclass(frozen=True)
+class KbRetrievalConfig:
+    """Tenant-scoped global retrieval configuration (knowledge/config page).
+
+    Persisted as the default retrieval behaviour for the tenant. The fields
+    the in-memory RAG backend can actually honour at search time are
+    ``mode`` / ``rerank_strategy`` / ``top_k``; the chunking + weight fields
+    are stored so the UI round-trips and take effect once the full
+    (RAG_MODE=hybrid|graph|full) stack is wired.
+    """
+
+    tenant_id: str
+    mode: str = "AUTO"
+    rerank_strategy: str = "identity"
+    top_k: int = 10
+    similarity_threshold: float = 0.0
+    chunk_strategy: str = "recursive"
+    chunk_size: int = 512
+    chunk_overlap: int = 64
+    vector_weight: float = 0.7
+    keyword_weight: float = 0.3
+    reranker_enabled: bool = True
+    show_citations: bool = True
+    updated_at: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Seed builders
 # ---------------------------------------------------------------------------
@@ -108,6 +134,7 @@ def _seed_search_logs(tenant_id: str) -> dict[str, KbSearchLog]:
 _COLLECTIONS: dict[str, dict[str, KbCollection]] = {}
 _DOCUMENTS: dict[str, dict[str, KbDocument]] = {}
 _SEARCH_LOGS: dict[str, dict[str, KbSearchLog]] = {}
+_RETRIEVAL_CONFIGS: dict[str, KbRetrievalConfig] = {}
 
 
 def _ensure_tenant(tenant_id: str) -> None:
@@ -217,7 +244,26 @@ def delete_search_log(tenant_id: str, lid: str) -> bool:
     return True
 
 
+def get_retrieval_config(tenant_id: str) -> KbRetrievalConfig:
+    """Return the tenant's retrieval config, creating the default on first access."""
+    if not tenant_id:
+        return KbRetrievalConfig(tenant_id="")
+    cfg = _RETRIEVAL_CONFIGS.get(tenant_id)
+    if cfg is None:
+        cfg = KbRetrievalConfig(tenant_id=tenant_id)
+        _RETRIEVAL_CONFIGS[tenant_id] = cfg
+    return cfg
+
+
+def put_retrieval_config(tenant_id: str, cfg: KbRetrievalConfig) -> KbRetrievalConfig:
+    if not tenant_id:
+        return cfg
+    _RETRIEVAL_CONFIGS[tenant_id] = cfg
+    return cfg
+
+
 def reset_store() -> None:
     _COLLECTIONS.clear()
     _DOCUMENTS.clear()
     _SEARCH_LOGS.clear()
+    _RETRIEVAL_CONFIGS.clear()

@@ -84,6 +84,15 @@ members = [
     "packages/*",
     "services/*",
 ]
+# services/agent + services/rag are GOVERN-07 historical placeholders
+# (README-only, code lives in packages/mate-tech-{agent,rag}). They match the
+# `services/*` glob but have no pyproject.toml, which would make uv reject the
+# whole workspace and block every `uv run`/test invocation. Exclude them until
+# they are removed outright.
+exclude = [
+    "services/agent",
+    "services/rag",
+]
 
 [build-system]
 requires = ["hatchling"]

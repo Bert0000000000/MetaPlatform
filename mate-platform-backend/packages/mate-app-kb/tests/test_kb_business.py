@@ -81,7 +81,7 @@ def client(outbox):
     in_memory_repo.reset_store()
 
     fake_rag = RAGClient()
-    fake_rag.search = lambda query, top_k=5, mode="AUTO": {
+    fake_rag.search = lambda query, top_k=5, mode="AUTO", rerank_strategy=None: {
         "query": query,
         "mode": mode,
         "total": 2,
@@ -128,7 +128,7 @@ def client_tenant_b(outbox):
     in_memory_repo.reset_store()
 
     fake_rag = RAGClient()
-    fake_rag.search = lambda query, top_k=5, mode="AUTO": {
+    fake_rag.search = lambda query, top_k=5, mode="AUTO", rerank_strategy=None: {
         "query": query, "mode": mode, "total": 0, "hits": [],
     }
     fake_rag.stats = lambda: {"total_chunks": 0, "embedder_dim": 0}
@@ -426,7 +426,7 @@ def test_search_scoring_dedup_and_sort(client) -> None:
     in_memory_repo.reset_store()
     fake_rag = RAGClient()
     # Two hits for the same document_id (dedup keeps highest score).
-    fake_rag.search = lambda query, top_k=5, mode="AUTO": {
+    fake_rag.search = lambda query, top_k=5, mode="AUTO", rerank_strategy=None: {
         "query": query, "mode": mode, "total": 3,
         "hits": [
             {"document_id": "doc-x", "score": 0.5, "content": "alpha"},

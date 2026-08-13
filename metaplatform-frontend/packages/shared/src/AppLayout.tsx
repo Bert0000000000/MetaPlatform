@@ -66,8 +66,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const matched = flat
     .filter((it) => pathname === it.path || pathname.startsWith(it.path + '/'))
     .sort((a, b) => b.path.length - a.path.length)[0];
-  const selectedKey = matched ? childItemKey(matched.moduleKey, matched.key) : undefined;
   const currentModuleKey = matched?.moduleKey;
+  // 单条 placeholder 模块（无可见二级菜单：工作台 / SuperAI / 架构中心 / 应用中心 / 本体引擎）
+  // navItems 以模块自身 key 作为 itemKey，选中键须与之对齐，否则这些一级入口永远不显示选中态
+  const matchedModule = matched
+    ? MODULE_MENU.find((m) => m.key === matched.moduleKey)
+    : undefined;
+  const isPlaceholderModule =
+    !!matchedModule && matchedModule.children.filter((c) => !c.hidden).length <= 1;
+  const selectedKey = matched
+    ? isPlaceholderModule
+      ? matched.moduleKey
+      : childItemKey(matched.moduleKey, matched.key)
+    : undefined;
   // 纯一级模块（无二级菜单，如工作台）：matched 为空时回落到模块自身
   const moduleFallback = !matched
     ? MODULE_MENU.find(
@@ -123,7 +134,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           width,
           height: '100vh',
           background: 'var(--sidebar)',
-          borderRight: '1px solid var(--sidebar-border)',
           transition: 'width 0.2s ease',
         }}
       >
@@ -265,7 +275,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 16,
-            background: 'var(--background)',
+            background: 'var(--card)',
             borderBottom: '1px solid var(--border)',
           }}
         >
@@ -364,6 +374,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             }
           >
             <div
+              className="v-header-user"
               style={{
                 display: 'flex',
                 alignItems: 'center',

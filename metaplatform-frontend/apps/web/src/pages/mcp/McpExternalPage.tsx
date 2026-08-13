@@ -148,7 +148,7 @@ export default function ExternalIntegrationPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           外部应用集成
         </Typography.Title>

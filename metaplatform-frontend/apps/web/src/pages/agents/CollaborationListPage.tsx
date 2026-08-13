@@ -111,7 +111,7 @@ export default function CollaborationListPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           多员工协作
         </Typography.Title>

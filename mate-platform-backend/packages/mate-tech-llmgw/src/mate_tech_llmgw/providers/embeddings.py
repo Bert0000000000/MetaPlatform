@@ -312,3 +312,107 @@ def get_embedding_provider(name: str) -> EmbeddingProvider:
 def reset_embedding_providers() -> None:
     """测试辅助: 清除 embedding provider 缓存."""
     _embedding_providers.clear()
+    _configured_provider_cache.clear()
+
+
+# ---------------------------------------------------------------------------
+# Admin-configured provider (后台 AI Provider 页 → ai.embedding.default_provider)
+# ---------------------------------------------------------------------------
+_configured_provider_cache: dict[tuple[str, str, str], OpenAIEmbeddingProvider] = {}
+
+
+async def _fetch_iam_configs(request, tenant_id: str) -> dict[str, str]:
+    """Read the tenant's IAM SystemConfig key→value map.
+
+    Two paths:
+    1. In-process reader (dev server injects ``app.state.iam_config_reader``),
+       so the unified dev server reads the shared IAM store directly without
+       needing Keycloak service-identity round-trips.
+    2. HTTP + service identity (production, service-to-service) — mirrors
+       ``mate_app_copilot.clients.base.get_provider_config``.
+    """
+    app_state = getattr(getattr(request, "app", None), "state", None)
+    reader = getattr(app_state, "iam_config_reader", None)
+    if reader is not None:
+        try:
+            items = await reader(tenant_id or "default")
+            return {str(it.get("key", "")): str(it.get("value") or "") for it in items}
+        except Exception as e:  # noqa: BLE001
+            logger.warning("llmgw.embedding.resolve_config.inprocess_failed", error=str(e))
+            return {}
+
+    iam_url = os.environ.get("IAM_URL", "http://localhost:8100").rstrip("/")
+    url = f"{iam_url}/api/v1/admin/configs?pageSize=200"
+    headers = {"X-Tenant-Id": tenant_id or "default"}
+    auth_obj = getattr(app_state, "service_identity", None)
+    try:
+        import httpx
+        from mate_clients.security import OutgoingAuthMiddleware
+
+        if auth_obj is not None:
+            client = httpx.AsyncClient(
+                auth=OutgoingAuthMiddleware(auth_obj, tenant_id=tenant_id or "default"),
+                timeout=10.0,
+            )
+        else:
+            client = httpx.AsyncClient(timeout=10.0)
+        async with client as c:
+            resp = await c.get(url, headers=headers)
+        resp.raise_for_status()
+        body = resp.json()
+        data = body.get("data", body)
+        items = data.get("items", []) if isinstance(data, dict) else []
+        return {str(it.get("key", "")): str(it.get("value") or "") for it in items}
+    except Exception as e:  # noqa: BLE001 — any failure → fallback path
+        logger.warning("llmgw.embedding.resolve_config.failed", error=str(e))
+        return {}
+
+
+async def resolve_effective_embedding(request, tenant_id: str) -> dict[str, str]:
+    """Resolve the tenant's effective embedding provider config from IAM.
+
+    Reads ``ai.embedding.default_provider`` from the IAM admin config store,
+    then that provider's ``base_url`` / ``api_key`` / ``embedding_model``.
+    Returns ``{}`` when embedding is disabled, unconfigured, or unreadable —
+    the caller then falls back to the request/env provider path.
+    """
+    cfg = await _fetch_iam_configs(request, tenant_id)
+    pid = cfg.get("ai.embedding.default_provider", "")
+    if not pid or pid == "disabled":
+        return {}
+    prefix = f"ai.provider.{pid}."
+    base_url = cfg.get(f"{prefix}base_url", "")
+    if not base_url:
+        return {}
+    return {
+        "provider": pid,
+        "base_url": base_url,
+        "api_key": cfg.get(f"{prefix}api_key", ""),
+        "model": cfg.get(f"{prefix}embedding_model", "") or cfg.get(f"{prefix}default_model", ""),
+    }
+
+
+def build_configured_embedding_provider(
+    *, base_url: str, api_key: str, model: str
+) -> OpenAIEmbeddingProvider:
+    """Build (cached) OpenAIEmbeddingProvider from admin-resolved config.
+
+    Cached by (base_url, api_key-prefix, model) so the underlying httpx client
+    is reused across the many per-chunk /embeddings calls in one ingest.
+    """
+    cache_key = (base_url, api_key[:4] if api_key else "", model or _DEFAULT_MODEL)
+    cached = _configured_provider_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    provider = OpenAIEmbeddingProvider(
+        api_key=api_key or None,
+        base_url=base_url,
+        model=model or _DEFAULT_MODEL,
+    )
+    _configured_provider_cache[cache_key] = provider
+    logger.info(
+        "llmgw.embedding.provider.configured",
+        base_url=base_url,
+        model=model or _DEFAULT_MODEL,
+    )
+    return provider

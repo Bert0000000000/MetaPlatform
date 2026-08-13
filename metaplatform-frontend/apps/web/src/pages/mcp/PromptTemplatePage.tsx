@@ -144,7 +144,7 @@ export default function PromptTemplatePage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           Prompt 模板
         </Typography.Title>

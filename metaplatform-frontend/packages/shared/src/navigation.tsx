@@ -141,10 +141,10 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     icon: <BookOpen style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/knowledge',
     children: [
-      { key: 'kb-list', label: '知识库列表', path: '/knowledge' },
-      { key: 'kb-docs', label: '文档管理', path: '/knowledge/docs' },
-      { key: 'kb-test', label: '检索测试', path: '/knowledge/test' },
-      { key: 'kb-config', label: '检索配置', path: '/knowledge/config' },
+      { key: 'kb-list', label: '知识库列表', path: '/knowledge', hidden: true },
+      { key: 'kb-docs', label: '文档管理', path: '/knowledge/docs', hidden: true },
+      { key: 'kb-test', label: '检索测试', path: '/knowledge/test', hidden: true },
+      { key: 'kb-config', label: '检索配置', path: '/knowledge/config', hidden: true },
     ],
   },
   {
@@ -153,51 +153,21 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     icon: <Plug style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/mcp/skill-hub',
     children: [
-      {
-        key: 'hub',
-        label: 'HUB',
-        children: [
-          { key: 'skill-hub', label: 'Skill Hub', path: '/mcp/skill-hub' },
-        ],
-      },
-      {
-        key: 'protocol',
-        label: 'MCP 协议',
-        children: [
-          { key: 'overview', label: 'MCP 总览', path: '/mcp/overview' },
-          { key: 'tools', label: '工具', path: '/mcp/tools' },
-          { key: 'resources', label: '资源', path: '/mcp/resources' },
-          { key: 'prompts', label: '提示词', path: '/mcp/prompts' },
-          { key: 'debugger', label: '调试器', path: '/mcp/debugger' },
-          { key: 'ide-config', label: 'IDE 配置', path: '/mcp/ide-config' },
-        ],
-      },
-      {
-        key: 'service-mgmt',
-        label: '服务管理',
-        children: [
-          { key: 'servers', label: '服务端', path: '/mcp/servers' },
-          { key: 'clients', label: '客户端', path: '/mcp/clients' },
-          { key: 'permissions', label: '权限', path: '/mcp/permissions' },
-          { key: 'policies', label: '策略', path: '/mcp/policies' },
-        ],
-      },
-      {
-        key: 'observability',
-        label: '可观测',
-        children: [
-          { key: 'audit', label: '审计', path: '/mcp/audit' },
-          { key: 'connection-monitor', label: '连接监控', path: '/mcp/connection-monitor' },
-        ],
-      },
-      {
-        key: 'a2a-registry',
-        label: 'A2A 注册中心',
-        children: [
-          { key: 'internal-agents', label: '内部 Agent', path: '/mcp/internal-agents' },
-          { key: 'external-agents', label: '外部 Agent', path: '/mcp/external-agents' },
-        ],
-      },
+      { key: 'skill-hub', label: 'Skill Hub', path: '/mcp/skill-hub', hidden: true },
+      { key: 'overview', label: 'MCP 总览', path: '/mcp/overview', hidden: true },
+      { key: 'tools', label: '工具', path: '/mcp/tools', hidden: true },
+      { key: 'resources', label: '资源', path: '/mcp/resources', hidden: true },
+      { key: 'prompts', label: '提示词', path: '/mcp/prompts', hidden: true },
+      { key: 'debugger', label: '调试器', path: '/mcp/debugger', hidden: true },
+      { key: 'ide-config', label: 'IDE 配置', path: '/mcp/ide-config', hidden: true },
+      { key: 'servers', label: '服务端', path: '/mcp/servers', hidden: true },
+      { key: 'clients', label: '客户端', path: '/mcp/clients', hidden: true },
+      { key: 'permissions', label: '权限', path: '/mcp/permissions', hidden: true },
+      { key: 'policies', label: '策略', path: '/mcp/policies', hidden: true },
+      { key: 'audit', label: '审计', path: '/mcp/audit', hidden: true },
+      { key: 'connection-monitor', label: '连接监控', path: '/mcp/connection-monitor', hidden: true },
+      { key: 'internal-agents', label: '内部 Agent', path: '/mcp/internal-agents', hidden: true },
+      { key: 'external-agents', label: '外部 Agent', path: '/mcp/external-agents', hidden: true },
     ],
   },
   {
@@ -207,10 +177,10 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     path: '/agents',
     // 数字员工端菜单扁平化：只保留一级页面项，进入员工页后用 Tab 切内部/外部
     children: [
-      { key: 'employees', label: '员工', path: '/agents' },
-      { key: 'tasks', label: '任务', path: '/agents/tasks' },
-      { key: 'collab', label: '协作', path: '/agents/collab' },
-      { key: 'evaluation', label: '评估', path: '/agents/evaluation' },
+      { key: 'employees', label: '员工', path: '/agents', hidden: true },
+      { key: 'tasks', label: '任务', path: '/agents/tasks', hidden: true },
+      { key: 'collab', label: '协作', path: '/agents/collab', hidden: true },
+      { key: 'evaluation', label: '评估', path: '/agents/evaluation', hidden: true },
       { key: 'external', label: '外部 Agent', path: '/agents/external', hidden: true },
     ],
   },
@@ -220,35 +190,17 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     icon: <Settings style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/admin',
     children: [
-      {
-        key: 'iam',
-        label: '身份与组织',
-        children: [
-          { key: 'overview', label: '总览', path: '/admin' },
-          { key: 'users', label: '用户', path: '/admin/users' },
-          { key: 'permissions', label: '权限', path: '/admin/permissions' },
-          { key: 'orgs', label: '组织', path: '/admin/orgs' },
-        ],
-      },
-      {
-        key: 'operations',
-        label: '运维',
-        children: [
-          { key: 'logs', label: '日志', path: '/admin/logs' },
-          { key: 'configs', label: '配置', path: '/admin/configs' },
-          { key: 'ai-providers', label: 'AI 供应商', path: '/admin/ai-providers' },
-          { key: 'ops', label: '运维', path: '/admin/operations' },
-          { key: 'analytics', label: '分析', path: '/admin/analytics' },
-        ],
-      },
-      {
-        key: 'dev',
-        label: '开发',
-        children: [
-          { key: 'components', label: '组件', path: '/admin/components' },
-          { key: 'flowgram', label: 'Flowgram', path: '/admin/flowgram' },
-        ],
-      },
+      { key: 'overview', label: '总览', path: '/admin', hidden: true },
+      { key: 'users', label: '用户管理', path: '/admin/users', hidden: true },
+      { key: 'permissions', label: '权限管理', path: '/admin/permissions', hidden: true },
+      { key: 'orgs', label: '组织管理', path: '/admin/orgs', hidden: true },
+      { key: 'logs', label: '日志管理', path: '/admin/logs', hidden: true },
+      { key: 'configs', label: '系统配置', path: '/admin/configs', hidden: true },
+      { key: 'ai-providers', label: 'AI 供应商', path: '/admin/ai-providers', hidden: true },
+      { key: 'operations', label: '运维', path: '/admin/operations', hidden: true },
+      { key: 'analytics', label: '分析', path: '/admin/analytics', hidden: true },
+      { key: 'components', label: '组件', path: '/admin/components', hidden: true },
+      { key: 'flowgram', label: 'Flowgram', path: '/admin/flowgram', hidden: true },
     ],
   },
 ];

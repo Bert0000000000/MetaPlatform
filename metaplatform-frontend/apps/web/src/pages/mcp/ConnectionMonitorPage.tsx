@@ -137,7 +137,7 @@ export default function ConnectionMonitorPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           连接状态监控
         </Typography.Title>

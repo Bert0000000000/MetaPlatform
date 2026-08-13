@@ -1,20 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-  Plus,
-  FileBarChart,
-  Bot,
-  Sparkles,
-  Boxes,
-  Database,
-  Plug,
-  GitBranch,
-  RefreshCw,
-} from 'lucide-react';
+  IconPlus,
+  IconFile,
+  IconUserGroup,
+  IconUserAdd,
+  IconRefresh,
+  IconAppCenter,
+  IconTickCircle,
+  IconClock,
+  IconBolt,
+  IconGridSquare,
+  IconLayers,
+  IconLink,
+  IconTerminal,
+  IconBranch,
+  IconPaperclip,
+} from '@douyinfe/semi-icons';
 import { Toast, Button, Card, Typography, SideSheet, Tag } from '@douyinfe/semi-ui';
-import { FormDrawer, Field, PageRoot, TextInput, TextArea, Select } from '@mate/shared';
+import { FormDrawer, Field, PageRoot, TextInput, TextArea, Select, useAuth } from '@mate/shared';
 import { getDashboardSummary, getMessages, getDeliverablesSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent, type MessageItem, type DeliverableItem } from '@/api/dashboard/workbench';
-import { IconPaperclip } from '@douyinfe/semi-icons';
 
 // 子标签页
 
@@ -65,14 +70,34 @@ function formatRelativeTime(d: Date): string {
   return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
 
-// 快捷入口（图标映射，icon label 与 API quickLinks 一致）
+// 快捷入口图标映射：key 兼容后端 antd 图标名 + 前端 FALLBACK 旧名，value 用 Semi 图标
 const QUICK_LINK_ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
-  SuperAI: Sparkles,
-  Boxes: Boxes,
-  Database: Database,
-  Plug: Plug,
-  Bot: Bot,
-  GitBranch: GitBranch,
+  // 后端返回的 antd 图标名
+  Robot: IconBolt,
+  AppstoreOutlined: IconGridSquare,
+  ApartmentOutlined: IconLayers,
+  ApiOutlined: IconLink,
+  TeamOutlined: IconUserGroup,
+  ClusterOutlined: IconBranch,
+  // FALLBACK 旧名（后端不可达时）
+  Sparkles: IconBolt,
+  Boxes: IconGridSquare,
+  Database: IconLayers,
+  Plug: IconLink,
+  Bot: IconTerminal,
+  GitBranch: IconBranch,
+};
+
+// 统计卡图标：后端 stats 无 icon 字段，按 label 兜底
+const STAT_ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
+  boxes: IconAppCenter,
+  bot: IconUserGroup,
+  'check-circle': IconTickCircle,
+  clock: IconClock,
+  '活跃应用': IconAppCenter,
+  '数字员工在线': IconUserGroup,
+  '今日任务': IconTickCircle,
+  '待处理审批': IconClock,
 };
 
 // 简单的骨架屏组件（性能：避免 layout shift）
@@ -84,7 +109,7 @@ const SkeletonBox: React.FC<{ width?: string; height?: string; style?: React.CSS
       background: 'linear-gradient(90deg, var(--muted) 0%, var(--border) 50%, var(--muted) 100%)',
       backgroundSize: '200% 100%',
       animation: 'workbench-shimmer 1.4s ease-in-out infinite',
-      borderRadius: 4,
+      borderRadius: 'var(--radius)',
       ...style,
     }}
   />
@@ -92,6 +117,7 @@ const SkeletonBox: React.FC<{ width?: string; height?: string; style?: React.CSS
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [deliverablesOpen, setDeliverablesOpen] = useState(false);
     const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
@@ -180,27 +206,35 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
     if (tasksPage > tasksPageTotal) setTasksPage(tasksPageTotal);
   }, [tasksPage, tasksPageTotal]);
 
-  // 渲染统计卡片（数据驱动；带 hover 微动效）
-  const renderStat = (s: DashboardStat) => (
-    <div
-      key={s.label}
-      className="v-stat-card"
-      style={{ cursor: 'pointer', transition: 'transform 120ms ease, box-shadow 120ms ease' }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
-    >
-      <span className="v-stat-label">{s.label}</span>
-      <span className="v-stat-value" style={s.trend_up === false ? { color: 'var(--warning)' } : undefined}>
-        {s.value}
-      </span>
-      <span className="v-stat-change">
-        {s.trend_label ? `${s.trend_label} ` : ''}
-        {s.trend_value && (
-          <span className={s.trend_up ? 'up' : 'down'}>{s.trend_value}</span>
-        )}
-      </span>
-    </div>
-  );
+  // 渲染统计卡片（数据驱动；带图标 + hover 微动效）
+  const renderStat = (s: DashboardStat) => {
+    const Icon = STAT_ICONS[s.icon] ?? STAT_ICONS[s.label] ?? IconAppCenter;
+    return (
+      <div
+        key={s.label}
+        className="v-stat-card"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 14, cursor: 'pointer', transition: 'transform 120ms ease, box-shadow 120ms ease' }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--semi-color-primary-light-default)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon size="large" />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span className="v-stat-label">{s.label}</span>
+          <span className="v-stat-value" style={s.trend_up === false ? { color: 'var(--warning)' } : undefined}>
+            {s.value}
+          </span>
+          <span className="v-stat-change">
+            {s.trend_label ? `${s.trend_label} ` : ''}
+            {s.trend_value && (
+              <span className={s.trend_up ? 'up' : 'down'}>{s.trend_value}</span>
+            )}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <PageRoot>
@@ -208,7 +242,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* 欢迎卡 */}
         <div style={{
-          background: 'var(--card)',
+          background: 'linear-gradient(135deg, var(--semi-color-primary-light-default) 0%, var(--card) 55%)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius)',
           padding: 24,
@@ -218,21 +252,21 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           justifyContent: 'space-between',
         }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>Welcome back, Admin</div>
+            <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>欢迎回来，{user?.realName ?? user?.username ?? '管理员'}</div>
             <div style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
               {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
-              <Plus style={{ width: 16, height: 16 }} />创建应用
+              <IconPlus style={{ width: 16, height: 16 }} />创建应用
             </Button>
             <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDeliverablesOpen(true)}>
-              <FileBarChart style={{ width: 16, height: 16 }} />交付材料
+              <IconFile style={{ width: 16, height: 16 }} />交付材料
             </Button>
             <Button theme="solid" type="primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => navigate('/dashboard/my-agents')}>
-              <Bot style={{ width: 16, height: 16 }} />管理数字员工
+              <IconUserAdd style={{ width: 16, height: 16 }} />管理数字员工
             </Button>
           </div>
         </div>
@@ -272,7 +306,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                     disabled={refreshing}
                     style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     title="刷新数据">
-                    <RefreshCw style={{ width: 12, height: 12, animation: refreshing ? 'workbench-spin 0.8s linear infinite' : 'none' }} />
+                    <IconRefresh size="small" spin={refreshing} />
                     刷新
                   </Button>
                   <Button theme="light" type="secondary" onClick={() => { setTasksPage(1); setTasksDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</Button>
@@ -378,7 +412,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                       </div>
                     ))
                   : recentMessages.map((m) => (
-                      <div key={m.msg_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setDetailMessage(m)}>
+                      <div key={m.msg_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 'var(--radius)', cursor: 'pointer' }} onClick={() => setDetailMessage(m)}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: m.unread ? 'var(--semi-color-danger)' : 'var(--border)' }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: m.unread ? 500 : 400 }}>{m.title}</div>
@@ -402,7 +436,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                         { id: 'arch', label: '架构中心', icon: 'GitBranch' },
                       ]
                   ).map((q, i) => {
-                    const Icon = QUICK_LINK_ICONS[q.icon] ?? Boxes;
+                    const Icon = QUICK_LINK_ICONS[q.icon] ?? IconGridSquare;
                     return (
                       <a
                         key={i}
@@ -414,16 +448,16 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                           padding: '14px 8px',
                           background: 'var(--muted)',
                           border: '1px solid var(--border)',
-                          borderRadius: 4,
+                          borderRadius: 'var(--radius)',
                           cursor: 'pointer',
                           textDecoration: 'none',
                           color: 'var(--foreground)',
-                          transition: 'background 120ms ease',
+                          transition: 'transform 120ms ease, box-shadow 120ms ease, background 120ms ease',
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--card)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--muted)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.background = 'var(--card)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.background = 'var(--muted)'; }}
                       >
-                        <Icon style={{ width: 20, height: 20, color: 'var(--muted-foreground)' }} />
+                        <Icon size="large" style={{ color: 'var(--primary)' }} />
                         <span style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.3 }}>{q.label}</span>
                       </a>
                     );
@@ -443,24 +477,27 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {loading
               ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 4, padding: 16 }}>
+                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
                     <SkeletonBox width="60%" height="14px" style={{ marginBottom: 10 }} />
                     <SkeletonBox width="80%" height="11px" style={{ marginBottom: 8 }} />
                     <SkeletonBox width="40%" height="11px" />
                   </div>
                 ))
               : data.activeAgents.map((a, i) => (
-                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 4, padding: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: a.dot_class === 'agent-mini-dot-online' ? 'var(--success)' : 'var(--warning)' }} />
-                      <div style={{ fontSize: 13, fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
+                  <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16, transition: 'transform 120ms ease, box-shadow 120ms ease' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: 'var(--semi-color-primary-light-default)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600 }}>{a.name.slice(0, 1)}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: a.dot_class === 'agent-mini-dot-online' ? 'var(--success)' : 'var(--warning)' }} />
+                          <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>{a.type}</div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{a.type}</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 9999, background: a.status_bg, color: a.status_color }}>{a.status_label}</span>
                       <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{a.tasks} 任务</span>
-                    </div>
-                    <div style={{ marginTop: 8 }}>
-                      <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 9999, background: a.status_bg, color: a.status_color }}>{a.status_label}</span>
                     </div>
                   </div>
                 ))}

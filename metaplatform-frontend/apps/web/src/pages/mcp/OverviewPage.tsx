@@ -17,6 +17,7 @@ import {
   Table,
   Tag,
   Typography,
+  Banner,
 } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
@@ -365,13 +366,18 @@ function TopToolsCard({ tools }: { tools: OverviewTopTool[] }) {
 export default function OverviewPage() {
   const [data, setData] = useState<OverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     getOverview()
       .then((res) => {
         if (!cancelled) setData(res);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : '加载失败');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -380,6 +386,10 @@ export default function OverviewPage() {
       cancelled = true;
     };
   }, []);
+
+  if (error) {
+    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+  }
 
   if (loading || !data) {
     return (

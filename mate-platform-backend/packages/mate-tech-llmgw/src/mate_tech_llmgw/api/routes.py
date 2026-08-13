@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from ..stream.sse import make_streaming_response
@@ -188,6 +188,9 @@ class EmbeddingRequest(BaseModel):
         description="embedding provider: openai | doubao | local (默认按 model 推断)",
     )
     tenant_id: str = Field(default="default", description="租户 ID")
+    # 显式覆盖（优先于后台配置）；缺省时由后台 AI Provider 配置解析。
+    base_url: str | None = Field(default=None, description="OpenAI 兼容 base URL 覆盖")
+    api_key: str | None = Field(default=None, description="API Key 覆盖")
 
 
 class EmbeddingResponse(BaseModel):
@@ -209,29 +212,54 @@ def _infer_embedding_provider(model: str, explicit: str) -> str:
     return "openai"
 
 
-async def _run_embeddings(req: EmbeddingRequest) -> EmbeddingResponse:
+async def _run_embeddings(req: EmbeddingRequest, request: Request | None = None) -> EmbeddingResponse:
     """共享 embedding 执行逻辑 (canonical + legacy 复用，保证 body 一致).
 
-    通过 ``get_embedding_provider`` 路由到真实 provider；无 API key /
-    网络失败时 provider 自动回退到确定性 hash 向量，调用方永远拿到回复。
+    Provider 解析优先级：请求显式 base_url/api_key > 后台 AI Provider 配置
+    (ai.embedding.default_provider) > 按 model 推断的 provider (env key)。
+    无 key / 网络失败时 provider 自动回退到确定性 hash 向量，调用方永远拿到回复。
     """
-    from ..providers.embeddings import get_embedding_provider
+    from ..providers.embeddings import (
+        build_configured_embedding_provider,
+        get_embedding_provider,
+        resolve_effective_embedding,
+    )
 
-    provider_name = _infer_embedding_provider(req.model, req.provider)
-    provider = get_embedding_provider(provider_name)
+    # 1) 后台配置解析（仅在请求未显式带 base_url/api_key 时）。
+    resolved: dict[str, str] = {}
+    if request is not None and not req.base_url:
+        try:
+            resolved = await resolve_effective_embedding(request, req.tenant_id)
+        except Exception:  # noqa: BLE001
+            resolved = {}
+
+    if resolved or req.base_url:
+        # 显式请求值覆盖后台解析值；后台配置的 model 是单一事实源，优先于
+        # 调用方(如 mate-tech-rag)发送的默认 model。
+        base_url = req.base_url or resolved.get("base_url")
+        api_key = req.api_key or resolved.get("api_key", "")
+        model = resolved.get("model") or req.model
+        provider = build_configured_embedding_provider(
+            base_url=base_url or "", api_key=api_key or "", model=model or "",
+        )
+        effective_model = model or req.model
+    else:
+        provider_name = _infer_embedding_provider(req.model, req.provider)
+        provider = get_embedding_provider(provider_name)
+        effective_model = req.model
 
     data: list[dict[str, Any]] = []
     total_tokens = 0
     for i, text in enumerate(req.input):
         result = await provider.embed(
-            text, model=req.model, tenant_id=req.tenant_id
+            text, model=effective_model, tenant_id=req.tenant_id
         )
         data.append({"index": i, "embedding": result.embedding})
         total_tokens += result.usage.get("prompt_tokens", 0)
 
     dimensions = len(data[0]["embedding"]) if data else 0
     return EmbeddingResponse(
-        model=req.model,
+        model=effective_model,
         dimensions=dimensions,
         data=data,
         usage={"prompt_tokens": total_tokens},
@@ -239,13 +267,14 @@ async def _run_embeddings(req: EmbeddingRequest) -> EmbeddingResponse:
 
 
 @router.post("/embeddings", response_model=EmbeddingResponse)
-async def embeddings_endpoint(req: EmbeddingRequest) -> EmbeddingResponse:
+async def embeddings_endpoint(req: EmbeddingRequest, request: Request) -> EmbeddingResponse:
     """/embeddings 端点 — 路由到真实 embedding provider (openai/doubao/local).
 
-    provider 按 ``req.provider`` 选择，缺省时按 ``req.model`` 推断。
-    无 API key / 网络失败时自动回退到确定性 hash 向量。
+    provider 按 ``req.provider`` 选择，缺省时按 ``req.model`` 推断；当请求未
+    显式带 base_url/api_key 时，优先用后台 AI Provider 配置
+    (ai.embedding.default_provider)。无 API key / 网络失败时自动回退到确定性 hash 向量。
     """
-    return await _run_embeddings(req)
+    return await _run_embeddings(req, request)
 
 
 # ---------------------------------------------------------------------------
@@ -277,6 +306,9 @@ class RealChatRequest(BaseModel):
     api_key: str | None = Field(
         default=None, description="第三方 API Key（如用户后台配置的 MiniMax key）"
     )
+    tools: list[dict[str, Any]] | None = Field(
+        default=None, description="function-calling tools, forwarded to OpenAI-compatible providers"
+    )
 
 
 class RealChatResponseAPI(BaseModel):
@@ -288,6 +320,7 @@ class RealChatResponseAPI(BaseModel):
     usage: dict[str, int] = {}
     provider: str = ""
     fallback: bool = False
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)
 
 
 @router.post("/chat/real", response_model=RealChatResponseAPI)
@@ -331,6 +364,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 temperature=req.temperature,
                 max_tokens=req.max_tokens,
                 tenant_id=req.tenant_id,
+                tools=req.tools,
             )
         finally:
             await provider.aclose()
@@ -351,6 +385,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
             usage=resp.usage,
             provider=req.provider,
             fallback=is_fallback,
+            tool_calls=resp.tool_calls,
         )
 
 
@@ -565,9 +600,9 @@ async def legacy_chat_stream(req: ChatRequest, response: Response):
     response_model=EmbeddingResponse,
     deprecated=True,
 )
-async def legacy_embeddings(req: EmbeddingRequest, response: Response) -> EmbeddingResponse:
+async def legacy_embeddings(req: EmbeddingRequest, response: Response, request: Request) -> EmbeddingResponse:
     response.headers.update(_deprecation_header())
-    return await _run_embeddings(req)
+    return await _run_embeddings(req, request)
 
 
 # ---------------------------------------------------------------------------

@@ -13,6 +13,8 @@ import re
 from dataclasses import dataclass
 from typing import Protocol
 
+from mate_tech_rag.tokenize import tokenize_for_match
+
 
 class Chunker(Protocol):
     def chunk(self, text: str, *, chunk_size: int = 512, overlap: int = 64) -> list[str]: ...
@@ -209,8 +211,8 @@ class SemanticChunker:
 
     @staticmethod
     def _tokenize(text: str) -> set[str]:
-        """Bag-of-words tokenization (lowercased words, len >= 1)."""
-        return {w.lower() for w in re.findall(r"\w+", text)}
+        """Bag-of-words tokenization, CJK-aware (see ``tokenize_for_match``)."""
+        return tokenize_for_match(text)
 
     def _jaccard(self, a: str, b: str) -> float:
         sa = self._tokenize(a)
