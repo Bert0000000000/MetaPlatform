@@ -1,51 +1,105 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Banner, Card, Space, Spin, Tag, Typography } from '@douyinfe/semi-ui';
+import { Banner, Spin } from '@douyinfe/semi-ui';
 import { getAppRuntime } from '@/api/apphub/runtime';
-import type { AppRuntime } from '@/api/apphub/types';
+import { resolveShortlink } from '@/api/apphub/shortlink';
+import { getApp } from '@/api/apphub/apps';
+import type { AppRuntime, FormConfig, RenderNode } from '@/api/apphub/types';
+import type { PageDesignerConfig } from '@/api/apphub/pages';
+import AppRuntimeLayout from './AppRuntimeLayout';
+import RuntimeForm from './RuntimeForm';
+import RuntimePageCmp from './RuntimePage';
+import RuntimePlaceholder from './RuntimePlaceholder';
+import { DEMO_RENDER_TREE } from './demoData';
+import { flattenLeaves } from './treeUtils';
 
-const { Title, Text } = Typography;
-
+/**
+ * 应用运行时入口（/s/:code）：全屏独立应用壳。
+ * code 解析：先尝试 resolveShortlink（短链 → app_id），失败则把 code 当 app code（兼容 /s/kb 直连）。
+ * 后端 render_tree 为空时启用内置 demo 数据兜底，保证应用壳可演示与验证。
+ */
 export default function AppRuntimePage() {
   const { code } = useParams<{ code: string }>();
   const [runtime, setRuntime] = useState<AppRuntime | null>(null);
+  const [appName, setAppName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedKey, setSelectedKey] = useState('');
 
   useEffect(() => {
-    // 短链模式:先 resolve code → appId,再加载 runtime
-    // 简化:如果 code 是 appId 直接用
-    const appId = code || '';
-    setLoading(true);
-    getAppRuntime(appId)
-      .then(setRuntime)
-      .catch((e) => setError(e.message || '加载失败'))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let appCode = code || '';
+        // 短链优先解析；非短链则回退 code 当 app code
+        try {
+          const resolved = await resolveShortlink(code || '');
+          if (resolved?.app_id) appCode = resolved.app_id;
+        } catch {
+          /* 不是短链，按 app code 处理 */
+        }
+
+        const rt = await getAppRuntime(appCode);
+        if (cancelled) return;
+        setRuntime(rt);
+        setSelectedKey('');
+
+        // AppRuntime 无 name 字段，额外取 getApp 补应用名（失败则用 app_id 兜底）
+        getApp(appCode)
+          .then((a) => {
+            if (!cancelled) setAppName(a?.name || '');
+          })
+          .catch(() => {});
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : '加载失败');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [code]);
 
-  if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+  const useDemo = !runtime?.render_tree?.length;
+  const tree: RenderNode[] = useDemo ? DEMO_RENDER_TREE : runtime!.render_tree;
+  const leaves = useMemo(() => flattenLeaves(tree), [tree]);
+  const current = leaves.find((n) => n.key === selectedKey) || leaves[0];
+
+  const renderContent = (node: RenderNode) => {
+    switch (node.node_type) {
+      case 'form':
+        return <RuntimeForm config={node.config as unknown as FormConfig} />;
+      case 'page':
+        return <RuntimePageCmp config={node.config as unknown as PageDesignerConfig} />;
+      case 'board':
+        return (node.config as { widgets?: unknown[] })?.widgets?.length ? (
+          <RuntimePageCmp config={node.config as unknown as PageDesignerConfig} />
+        ) : (
+          <RuntimePlaceholder nodeType={node.node_type} title={node.title} />
+        );
+      case 'flow':
+      default:
+        return <RuntimePlaceholder nodeType={node.node_type} title={node.title} />;
+    }
+  };
+
+  if (loading) return <Spin size="large" style={{ display: 'block', margin: '120px auto' }} />;
   if (error) return <Banner type="danger" description={error} style={{ margin: 24 }} />;
-  if (!runtime) return null;
+  if (!current) return <Banner type="info" description="该应用暂无可用页面" style={{ margin: 24 }} />;
 
   return (
-    <div style={{ padding: 24 }}>
-      <Card>
-        <Space vertical spacing="loose" style={{ width: '100%' }}>
-          <div>
-            <Title heading={3}>{runtime.app_id}</Title>
-            <Tag color="blue">v{runtime.version}</Tag>
-            <Text type="tertiary">{runtime.modules.length} 个模块</Text>
-          </div>
-          {runtime.render_tree.map((node, i) => (
-            <Card key={i} title={node.title}>
-              <Tag>{node.node_type}</Tag>
-              {node.children.length > 0 && (
-                <Text type="tertiary">{node.children.length} 个子节点</Text>
-              )}
-            </Card>
-          ))}
-        </Space>
-      </Card>
-    </div>
+    <AppRuntimeLayout
+      appName={appName || runtime?.app_id || '应用'}
+      version={runtime?.version}
+      tree={tree}
+      selectedKey={current.key}
+      onSelect={setSelectedKey}
+      isDemo={useDemo}
+    >
+      {renderContent(current.node)}
+    </AppRuntimeLayout>
   );
 }
