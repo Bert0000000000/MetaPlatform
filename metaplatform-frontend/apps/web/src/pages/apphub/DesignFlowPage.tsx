@@ -18,6 +18,8 @@ import {
   Empty,
   Form,
   Input,
+  Radio,
+  RadioGroup,
   Select,
   Space,
   Steps,
@@ -127,6 +129,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
 
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [sheetWidth, setSheetWidth] = useState<'1/3' | '2/3' | 'full'>('2/3');
 
   const [basicForm] = Form.useForm();
   const [businessObjects, setBusinessObjects] = useState<BusinessObject[]>([]);
@@ -221,7 +224,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           ]}
           placeholder="如：app-customer-mgmt"
         />
-        <Form.Radio field="type" label="应用类型" options={APP_TYPES.map((opt) => ({ value: opt.value, label: opt.label }))} />
+        <Form.Radio field="type" label="应用类型">{APP_TYPES.map((opt) => <Radio key={opt.value} value={opt.value}>{opt.label}</Radio>)}</Form.Radio>
         <Form.Select field="icon" label="应用图标" optionList={ICON_OPTIONS} />
         <Form.TextArea
           field="description"
@@ -229,7 +232,7 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
           placeholder="简要描述该应用的核心功能"
           rows={3}
         />
-        <Form.Radio field="visibility" label="可见范围" options={VISIBLE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))} />
+        <Form.Radio field="visibility" label="可见范围">{VISIBLE_OPTIONS.map((opt) => <Radio key={opt.value} value={opt.value}>{opt.label}</Radio>)}</Form.Radio>
       </Form>
     </Card>
   );
@@ -580,15 +583,31 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
     <SideSheet
       visible={visible}
       onCancel={onClose}
-      width="large"
+      width={
+        sheetWidth === '1/3' ? '33%'
+          : sheetWidth === '2/3' ? '66%'
+          : '100%'
+      }
       placement="right"
       keepDOM={false}
       title={
-        <Space spacing={12}>
-          <Typography.Title heading={4} style={{ margin: 0 }}>
-            {targetId ? '重新设计应用' : '创建应用'}
-          </Typography.Title>
-          <Tag color="blue">步骤 {currentStep}/3</Tag>
+        <Space spacing={12} style={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Space spacing={12}>
+            <Typography.Title heading={4} style={{ margin: 0 }}>
+              {targetId ? '重新设计应用' : '创建应用'}
+            </Typography.Title>
+            <Tag color="blue">步骤 {currentStep}/3</Tag>
+          </Space>
+          <RadioGroup
+            type="button"
+            buttonSize="small"
+            value={sheetWidth}
+            onChange={(e) => setSheetWidth(e.target.value as '1/3' | '2/3' | 'full')}
+          >
+            <Radio.Button value="1/3">1/3</Radio.Button>
+            <Radio.Button value="2/3">2/3</Radio.Button>
+            <Radio.Button value="full">满屏</Radio.Button>
+          </RadioGroup>
         </Space>
       }
       headerStyle={{ borderBottom: '1px solid var(--border)' }}
