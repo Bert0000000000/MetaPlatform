@@ -13,12 +13,15 @@ Selection via EMBEDDER_PROVIDER env:
 from __future__ import annotations
 
 import hashlib
+import logging
 import math
 import os
 import re
 from typing import Protocol
 
 import httpx
+
+_log = logging.getLogger(__name__)
 
 
 class Embedder(Protocol):
@@ -157,17 +160,88 @@ class HashEmbedder:
 
 
 # ============================================================
+# LlmgwEmbedder: route through mate-tech-llmgw gateway (doubao / openai)
+# ============================================================
+class LlmgwEmbedder:
+    """Embedder that delegates to the mate-tech-llmgw gateway.
+
+    POST {LLMGW_URL}/api/v1/llmgw/embeddings with provider="doubao"
+    (火山方舟 ARK, OpenAI-compatible). The gateway owns the ARK_API_KEY,
+    routing, deterministic hash fallback, cost/lineage -- so this class
+    stays a thin HTTP client. ``dim`` defaults to the configured model's
+    dimension (overridable via LLMGW_EMBED_DIM) and self-corrects on the
+    first real response.
+    """
+
+    DEFAULT_MODEL = "doubao-embedding-text-240715"
+    DEFAULT_DIM = 2048  # doubao-embedding-text-240715
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        model: str | None = None,
+        provider: str = "doubao",
+        timeout: float = 30.0,
+    ) -> None:
+        self._base_url = (
+            base_url or os.environ.get("LLMGW_URL", "http://localhost:8100")
+        ).rstrip("/")
+        self._model = model or os.environ.get("LLMGW_EMBED_MODEL", self.DEFAULT_MODEL)
+        self._provider = provider
+        self._client = httpx.Client(timeout=timeout)
+        self._url = f"{self._base_url}/api/v1/llmgw/embeddings"
+        configured = int(os.environ.get("LLMGW_EMBED_DIM", "0") or "0")
+        self._dim = configured or self.DEFAULT_DIM
+
+    @property
+    def dim(self) -> int:
+        return self._dim
+
+    @property
+    def model(self) -> str:
+        return self._model
+
+    def embed(self, text: str) -> list[float]:
+        if not text.strip():
+            return [0.0] * self._dim
+        resp = self._client.post(
+            self._url,
+            json={
+                "input": [text],
+                "model": self._model,
+                "provider": self._provider,
+                "tenant_id": "default",
+            },
+        )
+        resp.raise_for_status()
+        body = resp.json()
+        vec = [float(x) for x in body["data"][0]["embedding"]]
+        # Self-correct dim if the live model disagrees with the configured default.
+        if len(vec) != self._dim:
+            _log.warning(
+                "LlmgwEmbedder dim override: configured %d, live %d", self._dim, len(vec)
+            )
+            self._dim = len(vec)
+        return vec
+
+    def close(self) -> None:
+        self._client.close()
+
+
+# ============================================================
 # Factory
 # ============================================================
 def create_embedder(provider: str | None = None) -> Embedder:
     """Create embedder by provider name.
 
     Args:
-        provider: "openai" | "local" | "hash" | None (use EMBEDDER_PROVIDER env, default "local")
+        provider: "openai" | "llmgw" | "local" | "hash" | None (use EMBEDDER_PROVIDER env, default "local")
     """
     name = (provider or os.environ.get("EMBEDDER_PROVIDER", "local")).lower()
     if name == "openai":
         return OpenAIEmbedder()
+    if name == "llmgw":
+        return LlmgwEmbedder()
     if name == "local":
         return LocalTinyEmbedder()
     if name == "hash":
