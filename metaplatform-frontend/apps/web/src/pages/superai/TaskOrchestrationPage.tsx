@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Card, Form, Input, Button, Space, Tag, Typography, Steps, Toast } from '@douyinfe/semi-ui';
 import { ThunderboltOutlined } from '@ant-design/icons';
-import { detectIntent, generatePlan } from '@/api/superai/schedule';
-import type { ScheduleIntent, ExecutionPlan } from '@/api/superai/schedule';
+import { detectIntent, generatePlan, startExecution } from '@/api/superai/schedule';
+import type { ScheduleIntent, ExecutionPlan, ScheduleExecution } from '@/api/superai/schedule';
 
 export default function TaskOrchestrationPage() {
   const [form] = Form.useForm();
   const [step, setStep] = useState(0);
   const [intent, setIntent] = useState<ScheduleIntent | null>(null);
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
+  const [execution, setExecution] = useState<ScheduleExecution | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleDetectIntent = async () => {
@@ -34,6 +35,18 @@ export default function TaskOrchestrationPage() {
       const p = await generatePlan(intent.intentId);
       setPlan(p);
       setStep(2);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExecute = async () => {
+    if (!plan) return;
+    setLoading(true);
+    try {
+      const e = await startExecution(plan.planId);
+      setExecution(e);
+      setStep(3);
     } finally {
       setLoading(false);
     }
@@ -123,7 +136,36 @@ export default function TaskOrchestrationPage() {
             总预计耗时：{plan.totalEstimatedDuration}s
             {plan.parallelGroups && plan.parallelGroups.length > 0 && '（部分步骤可并行）'}
           </Typography.Paragraph>
-          <Button theme="solid" type="primary">开始执行</Button>
+          <Button theme="solid" type="primary" onClick={handleExecute} loading={loading}>
+            开始执行
+          </Button>
+        </Card>
+      )}
+
+      {execution && (
+        <Card title="4. 执行结果（SuperAI → 数字员工）" style={{ marginTop: 16 }}>
+          <Space vertical align="start" style={{ width: '100%' }}>
+            <Space>
+              <Typography.Text strong>整体状态：</Typography.Text>
+              <Tag color={execution.status === 'completed' ? 'green' : 'orange'}>
+                {execution.status}
+              </Tag>
+            </Space>
+            {(execution.results || []).map((r) => (
+              <Card key={r.resultId} style={{ width: '100%', background: 'var(--semi-color-fill-0)' }}>
+                <Space>
+                  <Tag color="purple">{r.stepId}</Tag>
+                  <Tag color={r.status === 'completed' ? 'green' : 'red'}>{r.status}</Tag>
+                </Space>
+                <Typography.Paragraph
+                  type="secondary"
+                  style={{ marginTop: 8, fontFamily: 'monospace', fontSize: 12, whiteSpace: 'pre-wrap', marginBottom: 0 }}
+                >
+                  {r.output || '—'}
+                </Typography.Paragraph>
+              </Card>
+            ))}
+          </Space>
         </Card>
       )}
     </div>
