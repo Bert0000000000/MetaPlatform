@@ -7,6 +7,7 @@
  * 创建于 2026-07-25，v1.4 R1.5 Sprint 1。
  */
 import React from 'react';
+import { Button } from '@douyinfe/semi-ui';
 
 interface Props {
   fallback?: React.ReactNode;
@@ -58,13 +59,14 @@ export class FlowgramErrorBoundary extends React.Component<Props, State> {
             FlowGram.AI 编辑器内部初始化错误（{this.state.error?.message ?? '未知错误'}）。
             请检查 Free-layout / Fixed-layout 依赖与 InversifyJS DI 绑定是否一致。
           </div>
-          <button
-            className="v-btn"
+          <Button
+            theme="light"
+            type="secondary"
             style={{ marginTop: 8 }}
             onClick={() => this.setState({ hasError: false, error: null })}
           >
             重试
-          </button>
+          </Button>
         </div>
       );
     }

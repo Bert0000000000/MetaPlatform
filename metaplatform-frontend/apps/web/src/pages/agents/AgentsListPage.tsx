@@ -24,14 +24,14 @@ interface AgentRow {
 }
 
 const MOCK_AGENT_ROWS: AgentRow[] = [
-  { id: 'a1', name: '客服助手', icon: Headphones, type: '对话型', typeBadge: 'v-badge v-badge-info', status: '在线', statusBadge: 'v-badge v-badge-success', tasks: 234, successRate: '98.7%', lastActive: '2 分钟前' },
-  { id: 'a2', name: '合同审核员', icon: FileCheck, type: '审核型', typeBadge: 'v-badge v-badge-purple', status: '在线', statusBadge: 'v-badge v-badge-success', tasks: 89, successRate: '95.5%', lastActive: '15 分钟前' },
-  { id: 'a3', name: '数据分析师', icon: BarChart3, type: '分析型', typeBadge: 'v-badge v-badge-cyan', status: '暂停', statusBadge: 'v-badge v-badge-warning', tasks: 156, successRate: '92.3%', lastActive: '2 小时前' },
-  { id: 'a4', name: '营销文案', icon: PenTool, type: '生成型', typeBadge: 'v-badge v-badge-orange', status: '在线', statusBadge: 'v-badge v-badge-success', tasks: 312, successRate: '99.1%', lastActive: '刚刚' },
-  { id: 'a5', name: '知识库管理员', icon: BookOpen, type: '管理型', typeBadge: 'v-badge v-badge-neutral', status: '在线', statusBadge: 'v-badge v-badge-success', tasks: 78, successRate: '100%', lastActive: '30 分钟前' },
-  { id: 'a6', name: '安全巡检员', icon: ShieldCheck, type: '审核型', typeBadge: 'v-badge v-badge-purple', status: '错误', statusBadge: 'v-badge v-badge-error', tasks: 45, successRate: '88.9%', lastActive: '1 小时前' },
-  { id: 'a7', name: '代码审查员', icon: Code, type: '审核型', typeBadge: 'v-badge v-badge-purple', status: '在线', statusBadge: 'v-badge v-badge-success', tasks: 198, successRate: '96.4%', lastActive: '5 分钟前' },
-  { id: 'a8', name: '市场趋势分析师', icon: TrendingUp, type: '分析型', typeBadge: 'v-badge v-badge-cyan', status: '暂停', statusBadge: 'v-badge v-badge-warning', tasks: 67, successRate: '94.1%', lastActive: '昨天' },
+  { id: 'a1', name: '客服助手', icon: Headphones, type: '对话型', typeBadge: 'info', status: '在线', statusBadge: 'success', tasks: 234, successRate: '98.7%', lastActive: '2 分钟前' },
+  { id: 'a2', name: '合同审核员', icon: FileCheck, type: '审核型', typeBadge: 'purple', status: '在线', statusBadge: 'success', tasks: 89, successRate: '95.5%', lastActive: '15 分钟前' },
+  { id: 'a3', name: '数据分析师', icon: BarChart3, type: '分析型', typeBadge: 'cyan', status: '暂停', statusBadge: 'warning', tasks: 156, successRate: '92.3%', lastActive: '2 小时前' },
+  { id: 'a4', name: '营销文案', icon: PenTool, type: '生成型', typeBadge: 'orange', status: '在线', statusBadge: 'success', tasks: 312, successRate: '99.1%', lastActive: '刚刚' },
+  { id: 'a5', name: '知识库管理员', icon: BookOpen, type: '管理型', typeBadge: 'neutral', status: '在线', statusBadge: 'success', tasks: 78, successRate: '100%', lastActive: '30 分钟前' },
+  { id: 'a6', name: '安全巡检员', icon: ShieldCheck, type: '审核型', typeBadge: 'purple', status: '错误', statusBadge: 'error', tasks: 45, successRate: '88.9%', lastActive: '1 小时前' },
+  { id: 'a7', name: '代码审查员', icon: Code, type: '审核型', typeBadge: 'purple', status: '在线', statusBadge: 'success', tasks: 198, successRate: '96.4%', lastActive: '5 分钟前' },
+  { id: 'a8', name: '市场趋势分析师', icon: TrendingUp, type: '分析型', typeBadge: 'cyan', status: '暂停', statusBadge: 'warning', tasks: 67, successRate: '94.1%', lastActive: '昨天' },
 ];
 
 // MOCK: 快速创建模板
@@ -44,14 +44,14 @@ const MOCK_TEMPLATES = [
 
 // v-badge 类名 → Semi Tag 颜色预设（表格内徽标迁移）
 const AGENT_BADGE_COLOR: Record<string, TagColor> = {
-  'v-badge-info': 'blue',
-  'v-badge-success': 'green',
-  'v-badge-warning': 'amber',
-  'v-badge-error': 'red',
-  'v-badge-purple': 'purple',
-  'v-badge-cyan': 'cyan',
-  'v-badge-orange': 'orange',
-  'v-badge-neutral': 'grey',
+  'info': 'blue',
+  'success': 'green',
+  'warning': 'amber',
+  'error': 'red',
+  'purple': 'purple',
+  'cyan': 'cyan',
+  'orange': 'orange',
+  'neutral': 'grey',
 };
 const badgeColorOf = (cls: string) =>
   (AGENT_BADGE_COLOR[cls.split(' ').pop() || ''] ?? 'grey') as TagColor;

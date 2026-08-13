@@ -9,6 +9,7 @@
  * 通过 props 让上层注入品牌信息（标题/副标题/标签），默认 fallback 合理。
  */
 import { useEffect, useState, type ReactNode } from "react";
+import { Button } from '@douyinfe/semi-ui';
 import { useNavigate } from "react-router-dom";
 import { Loader2, Sparkles } from "lucide-react";
 import { useAuth, type AuthUser } from "../auth/AuthProvider";
@@ -430,14 +431,16 @@ export default function SharedLoginPage(props: SharedLoginPageProps) {
                 {error}
               </div>
             )}
-            <button
-              className="v-btn-primary"
-              style={{ width: "100%", justifyContent: "center", height: 42 }}
+            <Button
+              theme="solid"
+              type="primary"
+              block
+              loading={loading}
+              style={{ height: 42 }}
               onClick={handleLogin}
-              disabled={loading}
             >
               {loading ? "登录中…" : "登录"}
-            </button>
+            </Button>
           </div>
 
           <p

@@ -1,12 +1,14 @@
+import { Card } from '@douyinfe/semi-ui';
+
 interface CardSkeletonProps {
   rows?: number;
 }
 
 export default function CardSkeleton({ rows = 3 }: CardSkeletonProps) {
   return (
-    <div
-      className="v-card"
-      style={{ padding: 20, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}
+    <Card
+      style={{ marginBottom: 16 }}
+      bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 12 }}
     >
       {Array.from({ length: rows }, (_, i) => (
         <div
@@ -20,6 +22,6 @@ export default function CardSkeleton({ rows = 3 }: CardSkeletonProps) {
           }}
         />
       ))}
-    </div>
+    </Card>
   );
 }
