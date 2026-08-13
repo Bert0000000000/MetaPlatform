@@ -40,7 +40,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     window.location.href = '/login';
   };
 
-  // 当前路径 → 匹配的二级菜单项（最长前缀）
+  // 当前路径 → 匹配的页面菜单项（最长前缀）
   const flat = flattenMenu();
   const pathname = location.pathname;
   const matched = flat
@@ -49,14 +49,29 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const selectedKey = matched ? childItemKey(matched.moduleKey, matched.key) : undefined;
   const currentModuleKey = matched?.moduleKey;
 
+  // 三级 Nav 结构：模块 → 分组（SubNav）→ 页面项
   const navItems = MODULE_MENU.map((m) => ({
     itemKey: m.key,
     text: m.label,
     icon: m.icon,
-    items: m.children.map((c) => ({
-      itemKey: childItemKey(m.key, c.key),
-      text: c.label,
-    })),
+    items: m.children.map((group) => {
+      if (group.children?.length) {
+        return {
+          itemKey: `${m.key}__${group.key}`,
+          text: group.label,
+          items: group.children
+            .filter((c) => c.path)
+            .map((c) => ({
+              itemKey: childItemKey(m.key, c.key),
+              text: c.label,
+            })),
+        };
+      }
+      return {
+        itemKey: childItemKey(m.key, group.key),
+        text: group.label,
+      };
+    }),
   }));
 
   return (
@@ -115,7 +130,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <Nav
             items={navItems}
             selectedKeys={selectedKey ? [selectedKey] : []}
-            openKeys={currentModuleKey ? [currentModuleKey] : []}
+            openKeys={
+              currentModuleKey
+                ? matched?.groupKey
+                  ? [currentModuleKey, `${currentModuleKey}__${matched.groupKey}`]
+                  : [currentModuleKey]
+                : []
+            }
             isCollapsed={collapsed}
             onClick={({ itemKey }) => {
               const target = flat.find((it) => childItemKey(it.moduleKey, it.key) === itemKey);
@@ -189,24 +210,42 @@ export default function AppLayout({ children }: AppLayoutProps) {
             borderBottom: '1px solid var(--border)',
           }}
         >
-          {/* 面包屑：模块 / 页面（同名时只显示一次） */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, minWidth: 0 }}>
+          {/* 页面标题：模块 / 分组 > 页面（最后一层为标题样式，同名层级去重） */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, fontSize: 13, minWidth: 0 }}>
             {(() => {
               const moduleLabel = currentModuleKey
                 ? (MODULE_MENU.find((m) => m.key === currentModuleKey)?.label ?? '')
                 : 'Mate Platform';
-              const showPage = matched && matched.label !== moduleLabel;
+              const groupLabel = matched?.groupKey
+                ? (MODULE_MENU.find((m) => m.key === currentModuleKey)?.children.find(
+                    (g) => g.key === matched.groupKey,
+                  )?.label ?? '')
+                : '';
+              const crumbs: string[] = [];
+              if (moduleLabel) crumbs.push(moduleLabel);
+              if (groupLabel && groupLabel !== moduleLabel) crumbs.push(groupLabel);
+              if (matched && matched.label !== moduleLabel && matched.label !== groupLabel) {
+                crumbs.push(matched.label);
+              }
               return (
                 <>
-                  <span style={{ color: 'var(--muted-foreground)' }}>{moduleLabel}</span>
-                  {showPage && (
-                    <>
-                      <span style={{ color: 'var(--muted-foreground)' }}>/</span>
-                      <span style={{ color: 'var(--foreground)', fontWeight: 500 }}>
-                        {matched.label}
+                  {crumbs.map((crumb, i) => {
+                    const isLast = i === crumbs.length - 1;
+                    return (
+                      <span key={i} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+                        {i > 0 && <span style={{ color: 'var(--muted-foreground)' }}>/</span>}
+                        <span
+                          style={
+                            isLast
+                              ? { color: 'var(--foreground)', fontWeight: 600, fontSize: 16 }
+                              : { color: 'var(--muted-foreground)' }
+                          }
+                        >
+                          {crumb}
+                        </span>
                       </span>
-                    </>
-                  )}
+                    );
+                  })}
                 </>
               );
             })()}

@@ -310,7 +310,7 @@ export default function AiOpsPage() {
 
   return (
     <>
-      <PageHeader title="智能运维" subtitle="异常自动检测、根因分析与自愈" />
+      <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 16 }}>异常自动检测、根因分析与自愈</div>
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
           <Tabs.TabPane tab="异常事件" itemKey="events">

@@ -94,16 +94,15 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <PageHeader
-        title="消息中心"
-        subtitle={`共 ${items.length} 条 · 未读 ${items.filter((n: NotificationItem) => !n.read).length} 条`}
-        extra={
-          <Space>
-            <Button onClick={handleMarkAll}>全部已读</Button>
-            <Button onClick={openSettings}>通知设置</Button>
-          </Space>
-        }
-      />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+        <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+          {`共 ${items.length} 条 · 未读 ${items.filter((n: NotificationItem) => !n.read).length} 条`}
+        </span>
+        <Space>
+          <Button onClick={handleMarkAll}>全部已读</Button>
+          <Button onClick={openSettings}>通知设置</Button>
+        </Space>
+      </div>
       <Card>
         <Radio.Group
           type="button"
