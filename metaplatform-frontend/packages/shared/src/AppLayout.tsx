@@ -171,82 +171,105 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </>
             )}
           </button>
-
-          <div
-            style={{
-              height: 36,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              gap: 8,
-              padding: '0 8px',
-              borderRadius: 6,
-              color: 'var(--sidebar-foreground)',
-              fontSize: 13,
-            }}
-            title={user?.realName ?? user?.username ?? '当前用户'}
-          >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'var(--muted)',
-                flexShrink: 0,
-              }}
-            >
-              <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
-            </div>
-            {!collapsed && (
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flex: 1,
-                  minWidth: 0,
-                }}
-              >
-                {user?.realName ?? user?.username ?? '当前用户'}
-              </span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            className="v-sidebar-item"
-            onClick={handleLogout}
-            title="退出登录"
-            style={{
-              width: '100%',
-              height: 36,
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              textAlign: 'left',
-              marginBottom: 0,
-              padding: '0 8px',
-              gap: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-            }}
-          >
-            <LogOut style={{ width: 16, height: 16, strokeWidth: 1.5 }} />
-            {!collapsed && <span>退出登录</span>}
-          </button>
         </div>
       </Layout.Sider>
 
-      <Layout style={{ height: '100vh', background: 'var(--background)' }}>
+      <Layout style={{ height: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column' }}>
+        {/* Header：面包屑 + 用户区（官方侧边栏布局模板） */}
+        <Layout.Header
+          style={{
+            height: 56,
+            flexShrink: 0,
+            padding: '0 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            background: 'var(--background)',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          {/* 面包屑：模块 / 页面（同名时只显示一次） */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, minWidth: 0 }}>
+            {(() => {
+              const moduleLabel = currentModuleKey
+                ? (MODULE_MENU.find((m) => m.key === currentModuleKey)?.label ?? '')
+                : 'Mate Platform';
+              const showPage = matched && matched.label !== moduleLabel;
+              return (
+                <>
+                  <span style={{ color: 'var(--muted-foreground)' }}>{moduleLabel}</span>
+                  {showPage && (
+                    <>
+                      <span style={{ color: 'var(--muted-foreground)' }}>/</span>
+                      <span style={{ color: 'var(--foreground)', fontWeight: 500 }}>
+                        {matched.label}
+                      </span>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
+          {/* 用户信息 + 退出 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                color: 'var(--sidebar-foreground)',
+                fontSize: 13,
+              }}
+              title={user?.realName ?? user?.username ?? '当前用户'}
+            >
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'var(--muted)',
+                  flexShrink: 0,
+                }}
+              >
+                <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
+              </div>
+              <span>{user?.realName ?? user?.username ?? '当前用户'}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="退出登录"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                color: 'var(--muted-foreground)',
+                cursor: 'pointer',
+                padding: '4px 10px',
+                borderRadius: 6,
+                fontSize: 12,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s',
+              }}
+            >
+              <LogOut style={{ width: 14, height: 14, strokeWidth: 1.5 }} />
+              退出登录
+            </button>
+          </div>
+        </Layout.Header>
+
         <Layout.Content
           className="v-content"
           style={{
             padding: '0 24px',
-            height: '100vh',
+            flex: 1,
+            minHeight: 0,
             overflow: 'auto',
             background: 'var(--background)',
             display: 'flex',
