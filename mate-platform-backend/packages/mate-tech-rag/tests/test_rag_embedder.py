@@ -77,7 +77,7 @@ class TestLlmgwEmbedder:
         assert captured["body"]["model"] == "doubao-embedding-text-240715"
         assert captured["body"]["provider"] == "doubao"
         assert captured["body"]["input"] == ["订单审批流程"]
-        assert captured["body"]["tenant_id"] == "default"
+        assert captured["body"]["tenant_id"] == "tenant-default"
         # Response parsing.
         assert len(vec) == 2048
         assert vec[0] == pytest.approx(0.1)

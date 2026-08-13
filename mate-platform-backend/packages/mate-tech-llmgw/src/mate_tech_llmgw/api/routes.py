@@ -234,12 +234,11 @@ async def _run_embeddings(req: EmbeddingRequest, request: Request | None = None)
             resolved = {}
 
     if resolved or req.base_url:
-        # 显式请求值覆盖后台解析值。
+        # 显式请求值覆盖后台解析值；后台配置的 model 是单一事实源，优先于
+        # 调用方(如 mate-tech-rag)发送的默认 model。
         base_url = req.base_url or resolved.get("base_url")
         api_key = req.api_key or resolved.get("api_key", "")
-        model = req.model if req.model != "text-embedding-3-small" else resolved.get("model", req.model)
-        if not model:
-            model = req.model
+        model = resolved.get("model") or req.model
         provider = build_configured_embedding_provider(
             base_url=base_url or "", api_key=api_key or "", model=model or "",
         )
@@ -307,6 +306,9 @@ class RealChatRequest(BaseModel):
     api_key: str | None = Field(
         default=None, description="第三方 API Key（如用户后台配置的 MiniMax key）"
     )
+    tools: list[dict[str, Any]] | None = Field(
+        default=None, description="function-calling tools, forwarded to OpenAI-compatible providers"
+    )
 
 
 class RealChatResponseAPI(BaseModel):
@@ -318,6 +320,7 @@ class RealChatResponseAPI(BaseModel):
     usage: dict[str, int] = {}
     provider: str = ""
     fallback: bool = False
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)
 
 
 @router.post("/chat/real", response_model=RealChatResponseAPI)
@@ -361,6 +364,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 temperature=req.temperature,
                 max_tokens=req.max_tokens,
                 tenant_id=req.tenant_id,
+                tools=req.tools,
             )
         finally:
             await provider.aclose()
@@ -381,6 +385,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
             usage=resp.usage,
             provider=req.provider,
             fallback=is_fallback,
+            tool_calls=resp.tool_calls,
         )
 
 

@@ -8,6 +8,7 @@ filtering so tenant A cannot retrieve tenant B's indexed chunks.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import uuid
@@ -248,7 +249,10 @@ def create_app() -> FastAPI:
         require_tenant(request.state.ctx)
         tenant_id = str(request.state.ctx.tenant_id)
         try:
-            result = ingest(req, tenant_id=tenant_id)
+            # Offload the sync ingest (which does blocking embed calls to the
+            # in-process llmgw /embeddings) to a worker thread so the async
+            # event loop is not blocked → otherwise deadlock/timeout.
+            result = await asyncio.to_thread(ingest, req, tenant_id=tenant_id)
             # Hook 3 of 5: emit document-ingested event.
             _emit(
                 request, "rag.document.ingested", req.document_id,
@@ -279,7 +283,7 @@ def create_app() -> FastAPI:
             attributes={"rag.top_k": req.top_k, "rag.mode": req.mode},
         ):
             try:
-                result = retrieve(req)
+                result = await asyncio.to_thread(retrieve, req)
                 # Tenant-scoped hit filtering: only return hits from documents
                 # owned by this tenant (ADR-0014 cross-tenant isolation).
                 owned = tenant_document_ids(tenant_id)

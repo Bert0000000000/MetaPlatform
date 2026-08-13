@@ -321,22 +321,30 @@ def reset_embedding_providers() -> None:
 _configured_provider_cache: dict[tuple[str, str, str], OpenAIEmbeddingProvider] = {}
 
 
-async def resolve_effective_embedding(request, tenant_id: str) -> dict[str, str]:
-    """Resolve the tenant's effective embedding provider config from IAM.
+async def _fetch_iam_configs(request, tenant_id: str) -> dict[str, str]:
+    """Read the tenant's IAM SystemConfig key→value map.
 
-    Reads ``ai.embedding.default_provider`` from the IAM admin config store,
-    then that provider's ``base_url`` / ``api_key`` / ``embedding_model``.
-    Mirrors ``mate_app_copilot.clients.base.get_provider_config`` (service
-    identity → ``/api/v1/admin/configs``). Returns ``{}`` when embedding is
-    disabled, unconfigured, or unreadable — the caller then falls back to the
-    request/env provider path.
+    Two paths:
+    1. In-process reader (dev server injects ``app.state.iam_config_reader``),
+       so the unified dev server reads the shared IAM store directly without
+       needing Keycloak service-identity round-trips.
+    2. HTTP + service identity (production, service-to-service) — mirrors
+       ``mate_app_copilot.clients.base.get_provider_config``.
     """
+    app_state = getattr(getattr(request, "app", None), "state", None)
+    reader = getattr(app_state, "iam_config_reader", None)
+    if reader is not None:
+        try:
+            items = await reader(tenant_id or "default")
+            return {str(it.get("key", "")): str(it.get("value") or "") for it in items}
+        except Exception as e:  # noqa: BLE001
+            logger.warning("llmgw.embedding.resolve_config.inprocess_failed", error=str(e))
+            return {}
+
     iam_url = os.environ.get("IAM_URL", "http://localhost:8100").rstrip("/")
     url = f"{iam_url}/api/v1/admin/configs?pageSize=200"
     headers = {"X-Tenant-Id": tenant_id or "default"}
-    auth_obj = getattr(getattr(request, "app", None), "state", None)
-    auth_obj = getattr(auth_obj, "service_identity", None)
-
+    auth_obj = getattr(app_state, "service_identity", None)
     try:
         import httpx
         from mate_clients.security import OutgoingAuthMiddleware
@@ -354,11 +362,21 @@ async def resolve_effective_embedding(request, tenant_id: str) -> dict[str, str]
         body = resp.json()
         data = body.get("data", body)
         items = data.get("items", []) if isinstance(data, dict) else []
+        return {str(it.get("key", "")): str(it.get("value") or "") for it in items}
     except Exception as e:  # noqa: BLE001 — any failure → fallback path
         logger.warning("llmgw.embedding.resolve_config.failed", error=str(e))
         return {}
 
-    cfg: dict[str, str] = {str(it.get("key", "")): str(it.get("value") or "") for it in items}
+
+async def resolve_effective_embedding(request, tenant_id: str) -> dict[str, str]:
+    """Resolve the tenant's effective embedding provider config from IAM.
+
+    Reads ``ai.embedding.default_provider`` from the IAM admin config store,
+    then that provider's ``base_url`` / ``api_key`` / ``embedding_model``.
+    Returns ``{}`` when embedding is disabled, unconfigured, or unreadable —
+    the caller then falls back to the request/env provider path.
+    """
+    cfg = await _fetch_iam_configs(request, tenant_id)
     pid = cfg.get("ai.embedding.default_provider", "")
     if not pid or pid == "disabled":
         return {}

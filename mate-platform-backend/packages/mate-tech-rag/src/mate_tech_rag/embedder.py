@@ -17,11 +17,18 @@ import logging
 import math
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import Protocol
 
 import httpx
 
 _log = logging.getLogger(__name__)
+
+# LlmgwEmbedder runs its HTTP call in a worker thread: its embed() is called
+# synchronously from async RAG handlers, and a sync httpx call to the in-process
+# llmgw /embeddings endpoint would deadlock the event loop (the async endpoint
+# needs the loop to respond, but the loop is blocked waiting on the response).
+_executor = ThreadPoolExecutor(max_workers=8)
 
 
 class Embedder(Protocol):
@@ -188,6 +195,7 @@ class LlmgwEmbedder:
         ).rstrip("/")
         self._model = model or os.environ.get("LLMGW_EMBED_MODEL", self.DEFAULT_MODEL)
         self._provider = provider
+        self._tenant_id = os.environ.get("LLMGW_TENANT_ID", "tenant-default")
         self._client = httpx.Client(timeout=timeout)
         self._url = f"{self._base_url}/api/v1/llmgw/embeddings"
         configured = int(os.environ.get("LLMGW_EMBED_DIM", "0") or "0")
@@ -204,13 +212,18 @@ class LlmgwEmbedder:
     def embed(self, text: str) -> list[float]:
         if not text.strip():
             return [0.0] * self._dim
+        # Offload the blocking HTTP call to a worker thread so the async
+        # handler's event loop is not blocked (see module docstring).
+        return _executor.submit(self._embed_blocking, text).result()
+
+    def _embed_blocking(self, text: str) -> list[float]:
         resp = self._client.post(
             self._url,
             json={
                 "input": [text],
                 "model": self._model,
                 "provider": self._provider,
-                "tenant_id": "default",
+                "tenant_id": self._tenant_id,
             },
         )
         resp.raise_for_status()
