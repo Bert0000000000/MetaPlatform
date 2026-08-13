@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Nav } from '@douyinfe/semi-ui';
+import { Nav, Layout } from '@douyinfe/semi-ui';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { User, LogOut, ChevronsLeft, ChevronsRight } from './icons';
 import { useAuth } from './auth/AuthProvider';
@@ -19,6 +19,15 @@ function childItemKey(moduleKey: string, childKey: string) {
   return `${moduleKey}__${childKey}`;
 }
 
+/**
+ * 平台框架布局：Semi Layout 官方「侧边栏布局」模板
+ * ┌────────┬──────────────────────┐
+ * │ Sider  │ Content              │
+ * │ Logo   │  页面路由（Outlet）   │
+ * │ Nav    │                      │
+ * │ footer │                      │
+ * └────────┴──────────────────────┘
+ */
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -51,17 +60,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }));
 
   return (
-    <div className="v-app-layout" style={{ height: '100vh', background: 'var(--background)' }}>
-      <aside
+    <Layout hasSider className="v-app-layout" style={{ height: '100vh', background: 'var(--background)' }}>
+      <Layout.Sider
         className="v-sider"
         style={{
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          height: '100vh',
           width,
-          zIndex: 10,
+          height: '100vh',
           background: 'var(--sidebar)',
           borderRight: '1px solid var(--sidebar-border)',
           display: 'flex',
@@ -235,18 +239,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {!collapsed && <span>退出登录</span>}
           </button>
         </div>
-      </aside>
+      </Layout.Sider>
 
-      <div
-        className="v-main-layout"
-        style={{
-          marginLeft: width,
-          height: '100vh',
-          background: 'var(--background)',
-          transition: 'margin-left 0.2s ease',
-        }}
-      >
-        <div
+      <Layout style={{ height: '100vh', background: 'var(--background)' }}>
+        <Layout.Content
           className="v-content"
           style={{
             padding: '0 24px',
@@ -258,8 +254,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           }}
         >
           {children ?? <Outlet />}
-        </div>
-      </div>
-    </div>
+        </Layout.Content>
+      </Layout>
+    </Layout>
   );
 }
