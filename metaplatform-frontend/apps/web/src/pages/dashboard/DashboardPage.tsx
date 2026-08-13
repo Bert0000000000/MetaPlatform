@@ -71,7 +71,7 @@ function formatRelativeTime(d: Date): string {
 }
 
 // 快捷入口图标映射：key 兼容后端 antd 图标名 + 前端 FALLBACK 旧名，value 用 Semi 图标
-const QUICK_LINK_ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
+const QUICK_LINK_ICONS: Record<string, React.ComponentType<any>> = {
   // 后端返回的 antd 图标名
   Robot: IconBolt,
   AppstoreOutlined: IconGridSquare,
@@ -89,7 +89,7 @@ const QUICK_LINK_ICONS: Record<string, React.ComponentType<{ style?: React.CSSPr
 };
 
 // 统计卡图标：后端 stats 无 icon 字段，按 label 兜底
-const STAT_ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
+const STAT_ICONS: Record<string, React.ComponentType<any>> = {
   boxes: IconAppCenter,
   bot: IconUserGroup,
   'check-circle': IconTickCircle,

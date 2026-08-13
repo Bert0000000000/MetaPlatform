@@ -604,9 +604,9 @@ export default function AppDesignSheet({ visible, onClose, onCreated, editingId 
             value={sheetWidth}
             onChange={(e) => setSheetWidth(e.target.value as '1/3' | '2/3' | 'full')}
           >
-            <Radio.Button value="1/3">1/3</Radio.Button>
-            <Radio.Button value="2/3">2/3</Radio.Button>
-            <Radio.Button value="full">满屏</Radio.Button>
+            <Radio value="1/3">1/3</Radio>
+            <Radio value="2/3">2/3</Radio>
+            <Radio value="full">满屏</Radio>
           </RadioGroup>
         </Space>
       }

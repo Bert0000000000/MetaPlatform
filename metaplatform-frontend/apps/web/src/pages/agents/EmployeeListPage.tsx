@@ -52,6 +52,7 @@ import EmployeeCreateDrawer from './components/EmployeeCreateDrawer';
 import {
   PageRoot,
   PlatformSegmented,
+  type PlatformSegmentedOption,
   PlatformPagination,
   SearchInput,
 } from '@mate/shared';
@@ -491,12 +492,11 @@ export default function EmployeeListPage() {
             <Row gutter={[16, 16]}>
               {QUICK_TEMPLATES.map((tpl) => (
                 <Col key={tpl.title} xs={12} sm={12} md={6} lg={6}>
-                  <Card
-                    shadows="hover"
-                    bodyStyle={{ padding: 20, textAlign: 'center' }}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setCreateOpen(true)}
-                  >
+                  <div onClick={() => setCreateOpen(true)} style={{ cursor: 'pointer' }}>
+                    <Card
+                      shadows="hover"
+                      bodyStyle={{ padding: 20, textAlign: 'center' }}
+                    >
                     <div
                       style={{
                         width: 40,
@@ -514,7 +514,8 @@ export default function EmployeeListPage() {
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{tpl.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>{tpl.desc}</div>
-                  </Card>
+                    </Card>
+                  </div>
                 </Col>
               ))}
             </Row>
