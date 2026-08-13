@@ -58,37 +58,20 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     key: 'superai',
     label: 'SuperAI',
     icon: <Sparkles style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
-    path: '/superai',
+    path: '/superai/chat',
+    // 纯一级菜单，直接进入对话窗口；其余页面仅用于面包屑匹配（hidden）
     children: [
-      {
-        key: 'conversation',
-        label: '对话',
-        children: [
-          { key: 'overview', label: '概览', path: '/superai' },
-          { key: 'chat', label: 'AI 对话', path: '/superai/chat' },
-          { key: 'a2a', label: 'A2A 协作', path: '/superai/a2a' },
-          { key: 'copilot', label: 'Copilot', path: '/superai/copilot' },
-        ],
-      },
-      {
-        key: 'orchestration',
-        label: '编排',
-        children: [
-          { key: 'execution', label: '执行计划', path: '/superai/execution' },
-          { key: 'schedule', label: '调度中心', path: '/superai/schedule' },
-          { key: 'tasks', label: '任务编排', path: '/superai/tasks' },
-          { key: 'templates', label: '任务模板', path: '/superai/templates' },
-        ],
-      },
-      {
-        key: 'analysis',
-        label: '分析',
-        children: [
-          { key: 'cost', label: '成本优化', path: '/superai/cost' },
-          { key: 'data', label: '数据分析', path: '/superai/data' },
-          { key: 'employee-match', label: '员工匹配', path: '/superai/employee-match' },
-        ],
-      },
+      { key: 'chat', label: 'AI 对话', path: '/superai/chat', hidden: true },
+      { key: 'overview', label: '概览', path: '/superai', hidden: true },
+      { key: 'a2a', label: 'A2A 协作', path: '/superai/a2a', hidden: true },
+      { key: 'copilot', label: 'Copilot', path: '/superai/copilot', hidden: true },
+      { key: 'execution', label: '执行计划', path: '/superai/execution', hidden: true },
+      { key: 'schedule', label: '调度中心', path: '/superai/schedule', hidden: true },
+      { key: 'tasks', label: '任务编排', path: '/superai/tasks', hidden: true },
+      { key: 'templates', label: '任务模板', path: '/superai/templates', hidden: true },
+      { key: 'cost', label: '成本优化', path: '/superai/cost', hidden: true },
+      { key: 'data', label: '数据分析', path: '/superai/data', hidden: true },
+      { key: 'employee-match', label: '员工匹配', path: '/superai/employee-match', hidden: true },
     ],
   },
   {

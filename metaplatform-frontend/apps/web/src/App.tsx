@@ -16,7 +16,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 // 閹虫帒濮炴潪钘夋倗濡€虫健妞ょ敻娼?
 
 const SuperaiOverviewPage = lazy(() => import('./pages/superai/ChatPage'));
-const SuperaiChatPage = lazy(() => import('./pages/superai/SuperAIChatPage'));
+const SuperaiChatPage = lazy(() => import('./pages/superai/ChatPage'));
 const SuperaiA2ACollaborationPage = lazy(() => import('./pages/superai/A2ACollaborationPage'));
 const SuperaiAgentCopilotPage = lazy(() => import('./pages/superai/AgentCopilotPage'));
 const SuperaiCostOptimizationPage = lazy(() => import('./pages/superai/CostOptimizationPage'));
@@ -205,7 +205,7 @@ function AppRoutes() {
           <Route path="admin/components" element={<DashboardAdminComponentDemoPage />} />
           <Route path="admin/flowgram" element={<DashboardAdminFlowgramDemoPage />} />
           {/* SuperAI 鐎电鐦芥稉顓炵妇(Phase 4.5: from apps/superai) */}
-          <Route path="superai" element={<SuperaiOverviewPage />} />
+          <Route path="superai" element={<Navigate to="/superai/chat" replace />} />
           <Route path="superai/chat" element={<SuperaiChatPage />} />
           <Route path="superai/a2a" element={<SuperaiA2ACollaborationPage />} />
           <Route path="superai/copilot" element={<SuperaiAgentCopilotPage />} />

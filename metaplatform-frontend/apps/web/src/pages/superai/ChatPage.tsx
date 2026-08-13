@@ -311,8 +311,6 @@ export default function ChatPage() {
   ]);
   const [activeId, setActiveId] = useState<string>(sessions[1].id);
   const [loading, setLoading] = useState(false);
-  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
-  const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
   const [isMultimodal, setIsMultimodal] = useState(false);
   const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
@@ -325,7 +323,6 @@ export default function ChatPage() {
   const modelsLoadedRef = useRef(false);
 
   useEffect(() => {
-    listKnowledgeBases().then(setKnowledgeBases).catch((error) => { Toast.warning('知识库加载失败，已使用本地默认列表'); console.warn(error); });
     // 加载后端会话列表，与本地兜底会话合并
     listConversations()
       .then((convs) => {
@@ -670,24 +667,7 @@ export default function ChatPage() {
 
       let ragContext = '';
       let ragCitations: Citation[] = [];
-      if (selectedKbIds.length > 0) {
-        try {
-          const ragResults = await ragSearch(trimmed, selectedKbIds);
-          if (ragResults.length > 0) {
-            ragContext = '\n\n参考知识：\n' + ragResults.map((r) => `[${r.title}] ${r.content}`).join('\n');
-            ragCitations = ragResults.map((r) => ({
-              id: r.id,
-              title: r.title,
-              type: r.type,
-              score: r.score,
-              snippet: r.snippet,
-              url: r.source,
-            }));
-          }
-        } catch {
-          // RAG 搜索失败，继续无上下文对话
-        }
-      }
+
 
       const systemPrompt = UNIFIED_SYSTEM_PROMPT;
 
@@ -765,7 +745,7 @@ export default function ChatPage() {
         { model: currentModel, conversationId },
       );
     },
-    [activeSession, loading, updateSession, updateMessage, selectedKbIds, isMultimodal, selectedModelId, imageFiles, currentModel],
+    [activeSession, loading, updateSession, updateMessage, isMultimodal, selectedModelId, imageFiles, currentModel],
   );
 
   const handleCancel = useCallback(() => {
@@ -841,28 +821,89 @@ export default function ChatPage() {
     );
   }, [sessions, searchKeyword]);
 
+/** 会话时间分组：今天 / 昨天 / 7 天内 / 更早 */
+function timelineGroup(updatedAt: string): string {
+  const t = new Date(updatedAt).getTime();
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const diff = startOfDay - new Date(new Date(t).getFullYear(), new Date(t).getMonth(), new Date(t).getDate()).getTime();
+  if (diff <= 0) return '今天';
+  if (diff === 86400000) return '昨天';
+  if (diff <= 7 * 86400000) return '7 天内';
+  return '更早';
+}
+
+/** 会话是否运行中（存在流式/加载中的消息） */
+function isSessionRunning(s: ChatSession): boolean {
+  return s.messages.some((m) => m.streaming || m.status === 'loading');
+}
+
   // 业务消息 → Semi Chat 原生消息：status/streaming 映射到 Semi 的 loading/incomplete/complete/error
   const semiMessages = useMemo<SemiMessage[]>(
     () =>
       activeSession.messages.map((msg) => {
         const draft = msg.streaming ? streamingMap[msg.id] : undefined;
-        const content = draft !== undefined ? draft : (msg.content ?? '');
+        const text = draft !== undefined ? draft : (msg.content ?? '');
         const status: SemiMessage['status'] =
           msg.status === 'error'
-            ? 'error'
+            ? 'failed'
             : msg.streaming
-              ? content === ''
-                ? 'loading'
+              ? text === ''
+                ? 'in_progress'
                 : 'incomplete'
               : msg.status === 'loading'
-                ? 'loading'
-                : 'complete';
+                ? 'in_progress'
+                : 'completed';
+        // 官方 ContentItem 格式：thinking → reasoning 块；evidence/citations → annotations
+        const contentItems: Array<Record<string, unknown>> = [];
+        if (msg.role !== 'user') {
+          const thinking = msg.metadata?.thinking as string | undefined;
+          if (thinking) {
+            contentItems.push({
+              type: 'reasoning',
+              status: 'completed',
+              summary: [{ type: 'summary_text', text: thinking }],
+            });
+          }
+        }
+        if (text) {
+          const annotations: Array<{ title: string; detail?: string; url?: string }> = [];
+          const evidence = msg.evidence;
+          if (Array.isArray(evidence) && evidence.length > 0) {
+            for (const ev of evidence.slice(0, 6)) {
+              annotations.push({
+                title: (ev as { title?: string; ref?: string }).title ?? (ev as { ref?: string }).ref ?? 'evidence',
+                detail: (ev as { fragment?: string }).fragment,
+              });
+            }
+          }
+          const citations = msg.citations;
+          if (Array.isArray(citations) && citations.length > 0) {
+            for (const c of citations.slice(0, 6)) {
+              annotations.push({
+                title: (c as { title?: string }).title ?? 'citation',
+                detail: (c as { snippet?: string }).snippet,
+              });
+            }
+          }
+          contentItems.push({
+            type: 'message',
+            content: [
+              {
+                type: msg.role === 'user' ? 'input_text' : 'output_text',
+                text,
+                ...(annotations.length > 0 ? { annotations } : {}),
+              },
+            ],
+            status: status === 'failed' ? 'failed' : status === 'incomplete' ? 'incomplete' : 'completed',
+          });
+        }
         return {
           id: msg.id,
           role: msg.role === 'user' ? 'user' : 'assistant',
-          content,
+          content: contentItems,
           status,
-          createAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
+          createdAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
         };
       }),
     [activeSession.messages, streamingMap],
@@ -944,15 +985,50 @@ export default function ChatPage() {
             visible
             style={{ width: '100%', border: 'none', height: '100%' }}
             activeKey={activeId}
-            options={filteredSessions.map((s) => ({
-              key: s.id,
-              name: s.title,
-              icon: <MessageOutlined style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />,
-            }))}
+            options={(() => {
+              const groups: Array<{ label: string; items: typeof filteredSessions }> = [];
+              for (const s of filteredSessions) {
+                const g = timelineGroup(s.updatedAt);
+                let group = groups.find((x) => x.label === g);
+                if (!group) {
+                  group = { label: g, items: [] };
+                  groups.push(group);
+                }
+                group.items.push(s);
+              }
+              const opts: Array<{ key: string; name: string; icon: React.ReactNode }> = [];
+              for (const g of groups) {
+                opts.push({ key: `group__${g.label}`, name: g.label, icon: <span /> });
+                for (const s of g.items) {
+                  opts.push({
+                    key: s.id,
+                    name: s.title,
+                    icon: <MessageOutlined style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />,
+                  });
+                }
+              }
+              return opts;
+            })()}
             onActiveOptionChange={(_e, activeKey) => {
               if (typeof activeKey === 'string') handleSelectConversation(activeKey);
             }}
             renderOptionItem={(option, onChange) => {
+              if (option.key.startsWith('group__')) {
+                return (
+                  <div
+                    key={option.key}
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--muted-foreground)',
+                      padding: '8px 12px 4px',
+                      fontWeight: 600,
+                      cursor: 'default',
+                    }}
+                  >
+                    {option.name}
+                  </div>
+                );
+              }
               const s = sessions.find((x) => x.id === option.key);
               if (!s) return null;
               return (
@@ -970,6 +1046,9 @@ export default function ChatPage() {
                 >
                   <div
                     style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
                       fontSize: 13,
                       fontWeight: 500,
                       marginBottom: 3,
@@ -979,7 +1058,22 @@ export default function ChatPage() {
                       color: 'var(--foreground)',
                     }}
                   >
-                    {s.title}
+                    {isSessionRunning(s) && (
+                      <>
+                        <span
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: '50%',
+                            flexShrink: 0,
+                            background: 'var(--semi-color-primary)',
+                            animation: 'pulse 1.2s ease-in-out infinite',
+                          }}
+                        />
+                        <span style={{ fontSize: 10, color: 'var(--semi-color-primary)', flexShrink: 0 }}>运行中</span>
+                      </>
+                    )}
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
                     {new Date(s.updatedAt).toLocaleString('zh-CN', {
@@ -1024,22 +1118,7 @@ export default function ChatPage() {
           />
         </div>
 
-        {/* conversation-footer - 知识库选择 */}
-        <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
-          <Select
-            multiple
-            placeholder="选择知识库"
-            value={selectedKbIds}
-            onChange={(vals) => setSelectedKbIds((vals as string[]) ?? [])}
-            style={{ width: '100%' }}
-            optionList={knowledgeBases.map((kb) => ({
-              label: `${kb.name} (${kb.documentCount}篇)`,
-              value: kb.id,
-            }))}
-            maxTagCount={1}
-            size="small"
-          />
-        </div>
+
       </div>
 
       {/* 右侧 - 聊天区（Semi Chat：消息流 + 输入区） */}
@@ -1052,51 +1131,6 @@ export default function ChatPage() {
           background: 'var(--background)',
         }}
       >
-        {/* chat-topbar */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 24px',
-            borderBottom: '1px solid var(--border)',
-            minHeight: 48,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Tooltip content={`上下文 ${contextTurns}/${MAX_CONTEXT_TURNS} 轮`}>
-              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--foreground)' }}>
-                {activeSession.title}
-              </span>
-            </Tooltip>
-            {activeSession.favorite && (
-              <StarFilled style={{ fontSize: 12, color: 'var(--warning)' }} />
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Temperature</span>
-            <Slider
-              min={0}
-              max={100}
-              value={temperature}
-              onChange={(v) => setTemperature(v as number)}
-              style={{ width: 100, margin: 0 }}
-              tooltipVisible={false}
-            />
-            <span
-              style={{
-                fontFamily: "'Geist Mono', ui-monospace, monospace",
-                fontSize: 12,
-                minWidth: 28,
-                textAlign: 'right',
-                color: 'var(--foreground)',
-              }}
-            >
-              {(temperature / 100).toFixed(1)}
-            </span>
-          </div>
-        </div>
-
 <AIChatDialogue
           key={activeSession.id}
           className="superai-chat"
@@ -1131,86 +1165,55 @@ export default function ChatPage() {
           }}
         />
         <AIChatInput
-          placeholder={
-            isMultimodal
-              ? '输入文字描述，与图片一起发送，Shift + Enter 换行...'
-              : '输入消息，Shift + Enter 换行...'
-          }
+          placeholder="输入消息，Shift + Enter 换行..."
           sendHotKey="enter"
           generating={loading}
           onStopGenerate={handleCancel}
           onMessageSend={(content) => {
             void handleSend(extractPlainText(content.inputContents ?? []));
           }}
-          uploadProps={
-            isMultimodal
-              ? {
-                  // 本地 base64 读取，不真实上传（beforeUpload 返回 false 拦截）
-                  action: '',
-                  fileList: imageFiles,
-                  onChange: ({ fileList }) =>
-                    setImageFiles(fileList.map((f) => ({ ...f, status: 'success' }))),
-                  beforeUpload: ({ file }) => beforeUpload(file.fileInstance as File),
-                  multiple: true,
-                  limit: 8,
-                  listType: 'picture',
-                  accept: 'image/png,image/jpeg,image/webp',
-                }
-              : undefined
-          }
-          renderTopSlot={({ handleUploadFileDelete }) => (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <Switch
-                checked={isMultimodal}
-                onChange={handleMultimodalToggle}
-                checkedText="多模态"
-                uncheckedText="文本"
-                size="small"
-              />
-              {isMultimodal ? (
-                <>
-                  <Select
-                    size="small"
-                    placeholder="选择多模态模型"
-                    value={selectedModelId}
-                    onChange={(v) => setSelectedModelId(v as string)}
-                    optionList={multimodalModels.map((m) => ({
-                      label: m.displayName || m.modelCode,
-                      value: m.modelId,
-                    }))}
-                    style={{ width: 180 }}
-                  />
-                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                    最多 8 张 · 单张 ≤5MB
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>模型</span>
-                  <Select
-                    size="small"
-                    value={currentModel}
-                    onChange={(v) => setCurrentModel(v as string)}
-                    optionList={availableModels}
-                    style={{ width: 160 }}
-                    dropdownMatchSelectWidth={false}
-                  />
-                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>温度</span>
-                  <Slider
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={temperature}
-                    onChange={(v) => setTemperature(Array.isArray(v) ? v[0] : v ?? 50)}
-                    style={{ width: 120 }}
-                  />
-                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                    {(temperature / 100).toFixed(1)}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+          uploadProps={{
+            action: '',
+            fileList: imageFiles,
+            onChange: ({ fileList }) =>
+              setImageFiles(fileList.map((f) => ({ ...f, status: 'success' }))),
+            beforeUpload: ({ file }) => beforeUpload(file.fileInstance as File),
+            multiple: true,
+            limit: 8,
+            accept: 'image/png,image/jpeg,image/webp',
+          }}
+          renderConfigureArea={() => {
+            const { Configure } = AIChatInput;
+            return (
+              <>
+                <Configure.Select
+                  optionList={availableModels}
+                  field="model"
+                  initValue={currentModel}
+                />
+                <Configure.Button icon={<ThunderboltOutlined style={{ fontSize: 14 }} />} field="thinking">
+                  深度思考
+                </Configure.Button>
+                <Configure.RadioButton
+                  options={[
+                    { label: '极速', value: 'fast' },
+                    { label: '思考', value: 'think' },
+                    { label: '超能', value: 'super' },
+                  ]}
+                  field="thinkType"
+                  initValue="think"
+                />
+              </>
+            );
+          }}
+          onConfigureChange={(value, changedValue) => {
+            if (changedValue.model != null) {
+              setCurrentModel(changedValue.model);
+            }
+            if (changedValue.thinkType != null) {
+              setTemperature(changedValue.thinkType === 'super' ? 90 : changedValue.thinkType === 'think' ? 60 : 30);
+            }
+          }}
         />
       </div>
     </div>
