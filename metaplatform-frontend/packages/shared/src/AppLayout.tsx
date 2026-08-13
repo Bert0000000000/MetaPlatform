@@ -168,6 +168,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 : []
             }
             isCollapsed={collapsed}
+            limitIndent={false}
             onClick={({ itemKey }) => {
               const target = flat.find((it) => childItemKey(it.moduleKey, it.key) === itemKey);
               if (target) {
