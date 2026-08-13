@@ -921,214 +921,6 @@ function isSessionRunning(s: ChatSession): boolean {
         width: '100%',
       }}
     >
-      {/* 中间 - 会话列表 */}
-      {sessionPanelVisible && (
-      <div
-        style={{
-          width: 240,
-          minWidth: 240,
-          background: 'var(--background)',
-          borderRight: '1px solid var(--border)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* conversation-header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: 12,
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--foreground)' }}>会话</h2>
-          <button
-            onClick={handleNewConversation}
-            style={{
-              background: 'transparent',
-              color: 'var(--foreground)',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              height: 32,
-              padding: '0 12px',
-              fontSize: 12,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <PlusOutlined style={{ fontSize: 14 }} />新建
-          </button>
-        </div>
-
-        {/* 搜索框 */}
-        <div style={{ padding: '8px 12px 4px' }}>
-          <Input
-            placeholder="搜索会话..."
-            prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
-            showClear
-            value={searchKeyword}
-            onChange={(v) => setSearchKeyword(v)}
-            size="small"
-            style={{
-              background: 'var(--muted)',
-              borderColor: 'var(--border)',
-              borderRadius: 4,
-            }}
-          />
-        </div>
-
-        {/* conversation-list（Semi Sidebar options 模式） */}
-        <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-          <Sidebar
-            visible
-            resizable
-            defaultSize={{ width: 240 }}
-            minWidth={180}
-            maxWidth={360}
-            onCancel={() => setSessionPanelVisible(false)}
-            style={{ width: '100%', border: 'none', height: '100%' }}
-            activeKey={activeId}
-            options={(() => {
-              const groups: Array<{ label: string; items: typeof filteredSessions }> = [];
-              for (const s of filteredSessions) {
-                const g = timelineGroup(s.updatedAt);
-                let group = groups.find((x) => x.label === g);
-                if (!group) {
-                  group = { label: g, items: [] };
-                  groups.push(group);
-                }
-                group.items.push(s);
-              }
-              const opts: Array<{ key: string; name: string; icon: React.ReactNode }> = [];
-              for (const g of groups) {
-                opts.push({ key: `group__${g.label}`, name: g.label, icon: <span /> });
-                for (const s of g.items) {
-                  opts.push({
-                    key: s.id,
-                    name: s.title,
-                    icon: <MessageOutlined style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />,
-                  });
-                }
-              }
-              return opts;
-            })()}
-            onActiveOptionChange={(_e, activeKey) => {
-              if (typeof activeKey === 'string') handleSelectConversation(activeKey);
-            }}
-            renderOptionItem={(option, onChange) => {
-              if (option.key.startsWith('group__')) {
-                return (
-                  <div
-                    key={option.key}
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--muted-foreground)',
-                      padding: '8px 12px 4px',
-                      fontWeight: 600,
-                      cursor: 'default',
-                    }}
-                  >
-                    {option.name}
-                  </div>
-                );
-              }
-              const s = sessions.find((x) => x.id === option.key);
-              if (!s) return null;
-              return (
-                <div
-                  key={option.key}
-                  onClick={(e) => onChange(e, option.key)}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    marginBottom: 2,
-                    background: s.id === activeId ? 'var(--muted)' : 'transparent',
-                    transition: 'background .15s',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontSize: 13,
-                      fontWeight: 500,
-                      marginBottom: 3,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      color: 'var(--foreground)',
-                    }}
-                  >
-                    {isSessionRunning(s) && (
-                      <>
-                        <span
-                          style={{
-                            width: 7,
-                            height: 7,
-                            borderRadius: '50%',
-                            flexShrink: 0,
-                            background: 'var(--semi-color-primary)',
-                            animation: 'pulse 1.2s ease-in-out infinite',
-                          }}
-                        />
-                        <span style={{ fontSize: 10, color: 'var(--semi-color-primary)', flexShrink: 0 }}>运行中</span>
-                      </>
-                    )}
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                    {new Date(s.updatedAt).toLocaleString('zh-CN', {
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        fontSize: 10,
-                        padding: '1px 6px',
-                        borderRadius: 4,
-                        background: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--muted-foreground)',
-                      }}
-                    >
-                      SuperAI
-                    </span>
-                    {s.favorite && (
-                      <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />
-                    )}
-                    <Button
-                      size="small"
-                      theme="borderless"
-                      icon={<DeleteOutlined style={{ fontSize: 12 }} />}
-                      title="删除会话"
-                      style={{ marginLeft: 'auto' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteConversation(s.id);
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            }}
-          />
-        </div>
-
-
-      </div>
-      )}
-
       {/* 右侧 - 聊天区（Semi Chat：消息流 + 输入区） */}
       <div
         style={{
@@ -1260,6 +1052,205 @@ function isSessionRunning(s: ChatSession): boolean {
           }}
         />
       </div>
+
+      {/* 中间 - 会话列表 */}
+      {sessionPanelVisible && (
+      <div
+        style={{
+          width: 240,
+          minWidth: 240,
+          background: 'var(--background)',
+          borderRight: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* conversation-header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: 12,
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--foreground)' }}>会话</h2>
+          <button
+            onClick={handleNewConversation}
+            style={{
+              background: 'transparent',
+              color: 'var(--foreground)',
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              height: 32,
+              padding: '0 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <PlusOutlined style={{ fontSize: 14 }} />新建
+          </button>
+        </div>
+
+        {/* 搜索框 */}
+        <div style={{ padding: '8px 12px 4px' }}>
+          <Input
+            placeholder="搜索会话..."
+            prefix={<SearchOutlined style={{ color: 'var(--muted-foreground)' }} />}
+            showClear
+            value={searchKeyword}
+            onChange={(v) => setSearchKeyword(v)}
+            size="small"
+            style={{
+              background: 'var(--muted)',
+              borderColor: 'var(--border)',
+              borderRadius: 4,
+            }}
+          />
+        </div>
+
+        {/* conversation-list（Semi Sidebar options 模式） */}
+        <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
+          <Sidebar
+            visible
+            resizable
+            title="会话历史"
+            showClose
+            defaultSize={{ width: 260 }}
+            minWidth={200}
+            maxWidth={360}
+            onCancel={() => setSessionPanelVisible(false)}
+            style={{ width: '100%', border: 'none', height: '100%' }}
+            renderMainContent={() => (
+              <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
+                {(() => {
+                  const groups: Array<{ label: string; items: typeof filteredSessions }> = [];
+                  for (const s of filteredSessions) {
+                    const g = timelineGroup(s.updatedAt);
+                    let group = groups.find((x) => x.label === g);
+                    if (!group) {
+                      group = { label: g, items: [] };
+                      groups.push(group);
+                    }
+                    group.items.push(s);
+                  }
+                  return (
+                    <>
+                      {groups.map((g) => (
+                        <div key={g.label}>
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--muted-foreground)',
+                              padding: '8px 12px 4px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {g.label}
+                          </div>
+                          {g.items.map((s) => (
+                            <div
+                              key={s.id}
+                              onClick={() => handleSelectConversation(s.id)}
+                              style={{
+                                padding: '10px 12px',
+                                borderRadius: 4,
+                                cursor: 'pointer',
+                                marginBottom: 2,
+                                background: s.id === activeId ? 'var(--muted)' : 'transparent',
+                                transition: 'background .15s',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  marginBottom: 3,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  color: 'var(--foreground)',
+                                }}
+                              >
+                                {isSessionRunning(s) && (
+                                  <>
+                                    <span
+                                      style={{
+                                        width: 7,
+                                        height: 7,
+                                        borderRadius: '50%',
+                                        flexShrink: 0,
+                                        background: 'var(--semi-color-primary)',
+                                        animation: 'pulse 1.2s ease-in-out infinite',
+                                      }}
+                                    />
+                                    <span style={{ fontSize: 10, color: 'var(--semi-color-primary)', flexShrink: 0 }}>运行中</span>
+                                  </>
+                                )}
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
+                              </div>
+                              <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                                {new Date(s.updatedAt).toLocaleString('zh-CN', {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    fontSize: 10,
+                                    padding: '1px 6px',
+                                    borderRadius: 4,
+                                    background: 'var(--card)',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--muted-foreground)',
+                                  }}
+                                >
+                                  SuperAI
+                                </span>
+                                {s.favorite && (
+                                  <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />
+                                )}
+                                <Button
+                                  size="small"
+                                  theme="borderless"
+                                  icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+                                  title="删除会话"
+                                  style={{ marginLeft: 'auto' }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteConversation(s.id);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          />
+
+
+        </div>
+
+
+      </div>
+      )}
+
     </div>
   );
 }
