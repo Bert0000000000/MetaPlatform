@@ -251,11 +251,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     (g) => g.key === matched.groupKey,
                   )?.label ?? '')
                 : '';
-              const crumbs: string[] = [];
-              if (moduleLabel) crumbs.push(moduleLabel);
-              if (groupLabel && groupLabel !== moduleLabel) crumbs.push(groupLabel);
+              const crumbs: Array<{ label: string; path?: string }> = [];
+              const modulePath = MODULE_MENU.find((m) => m.key === currentModuleKey)?.path;
+              if (moduleLabel) crumbs.push({ label: moduleLabel, path: modulePath });
+              if (groupLabel && groupLabel !== moduleLabel) {
+                // 分组点击导航到该分组第一个页面项
+                const groupFirstPath = MODULE_MENU.find((m) => m.key === currentModuleKey)
+                  ?.children.find((g) => g.key === matched?.groupKey)
+                  ?.children?.find((c) => c.path)?.path;
+                crumbs.push({ label: groupLabel, path: groupFirstPath });
+              }
               if (matched && matched.label !== moduleLabel && matched.label !== groupLabel) {
-                crumbs.push(matched.label);
+                crumbs.push({ label: matched.label, path: matched.path });
               }
               return (
                 <>
@@ -264,15 +271,30 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     return (
                       <span key={i} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
                         {i > 0 && <span style={{ color: 'var(--muted-foreground)' }}>/</span>}
-                        <span
-                          style={
-                            isLast
-                              ? { color: 'var(--foreground)', fontWeight: 600, fontSize: 16 }
-                              : { color: 'var(--muted-foreground)' }
-                          }
-                        >
-                          {crumb}
-                        </span>
+                        {!isLast && crumb.path ? (
+                          <span
+                            style={{
+                              color: 'var(--muted-foreground)',
+                              cursor: 'pointer',
+                              transition: 'color .15s',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--foreground)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted-foreground)'; }}
+                            onClick={() => navigate(crumb.path as string)}
+                          >
+                            {crumb.label}
+                          </span>
+                        ) : (
+                          <span
+                            style={
+                              isLast
+                                ? { color: 'var(--foreground)', fontWeight: 600, fontSize: 16 }
+                                : { color: 'var(--muted-foreground)' }
+                            }
+                          >
+                            {crumb.label}
+                          </span>
+                        )}
                       </span>
                     );
                   })}
