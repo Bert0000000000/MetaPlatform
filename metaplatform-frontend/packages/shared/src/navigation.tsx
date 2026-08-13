@@ -207,10 +207,10 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     path: '/agents',
     // 数字员工端菜单扁平化：只保留一级页面项，进入员工页后用 Tab 切内部/外部
     children: [
-      { key: 'employees', label: '员工', path: '/agents' },
-      { key: 'tasks', label: '任务', path: '/agents/tasks' },
-      { key: 'collab', label: '协作', path: '/agents/collab' },
-      { key: 'evaluation', label: '评估', path: '/agents/evaluation' },
+      { key: 'employees', label: '员工', path: '/agents', hidden: true },
+      { key: 'tasks', label: '任务', path: '/agents/tasks', hidden: true },
+      { key: 'collab', label: '协作', path: '/agents/collab', hidden: true },
+      { key: 'evaluation', label: '评估', path: '/agents/evaluation', hidden: true },
       { key: 'external', label: '外部 Agent', path: '/agents/external', hidden: true },
     ],
   },
