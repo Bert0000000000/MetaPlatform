@@ -59,6 +59,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
         return {
           itemKey: `${m.key}__${group.key}`,
           text: group.label,
+          // 分组 SubNav 带缩进标记，让三级页面项与分组标题层级分明
+          indent: true,
           items: group.children
             .filter((c) => c.path)
             .map((c) => ({

@@ -242,6 +242,17 @@ a {
   border-top: 1px solid var(--border);
 }
 
+/* ===== Semi Nav 多级菜单层级优化 ===== */
+/* 三级页面项（分组 SubNav 内的普通项）加深缩进，与分组标题层级分明 */
+.semi-navigation-sub .semi-navigation-sub .semi-navigation-item-normal {
+  padding-left: 32px !important;
+}
+/* 分组标题（嵌套 SubNav 的标题）用小字灰色，与一级模块标题区分 */
+.semi-navigation-sub-wrap .semi-navigation-sub-wrap > .semi-navigation-sub-title {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
 /* ===== Sidebar item ===== */
 .v-sidebar-item {
   height: 40px;
