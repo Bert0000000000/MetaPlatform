@@ -1611,17 +1611,11 @@ export default function OntologyActionPage() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
-      {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Action 编排</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>定义和编排业务动作</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      {/* Toolbar（Shell 已统一全局 AI 助手；此处只保留 tab-specific 操作） */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 24, marginBottom: 16 }}>
           <Button theme="light" type="secondary" ><TestTube style={{ width: 16, height: 16 }} />测试运行</Button>
-          <Button theme="solid" type="primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建 Action</Button>
+          <Button theme="solid" type="primary" onClick={() => setDrawerOpen(true)} style={{ marginLeft: 8 }}><Plus style={{ width: 16, height: 16 }} />新建 Action</Button>
         </div>
-      </div>
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>

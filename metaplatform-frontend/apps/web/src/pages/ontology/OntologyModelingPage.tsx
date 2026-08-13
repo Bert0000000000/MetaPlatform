@@ -263,7 +263,6 @@ export default function OntologyModelingPage() {
   };
 
   return (
-    <AIAssistantWorkspace assistant={assistant}>
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <style>{`
         .om-tree-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--muted-foreground);margin-bottom:2px}
@@ -297,16 +296,9 @@ export default function OntologyModelingPage() {
       `}</style>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
-      {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>概念模型</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>管理 Ontology 中的 ObjectType（业务概念）</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
-          <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建概念</Button>
-        </div>
+      {/* Toolbar（Shell 已统一全局 AI 助手；此处只保留 tab-specific 操作） */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建概念</Button>
       </div>
 
       {/* Stats（真实数据） */}
@@ -653,6 +645,5 @@ export default function OntologyModelingPage() {
       </FormDrawer>
       </div>
     </div>
-    </AIAssistantWorkspace>
   );
 }

@@ -52,17 +52,15 @@ const ApphubTemplateSubmitPage = lazy(() => import('./pages/apphub/TemplateSubmi
 const ApphubAIDesignerPage = lazy(() => import('./pages/apphub/AIDesignerPage'));
 const ApphubRuntimePage = lazy(() => import('./pages/apphub/runtime/AppRuntimePage'));
 
-const OntologyModelingPage = lazy(() => import('./pages/ontology/OntologyModelingPage'));
-const OntologyDatacenterPage = lazy(() => import('./pages/ontology/OntologyDatacenterPage'));
-const OntologyActionPage = lazy(() => import('./pages/ontology/OntologyActionPage'));
-const OntologyGraphPage = lazy(() => import('./pages/ontology/OntologyGraphPage'));
-const RelationshipTypeListPage = lazy(() => import('./pages/ontology/relationship-types/RelationshipTypeListPage'));
-const ActionTypeListPage = lazy(() => import('./pages/ontology/actions/ActionTypeListPage'));
-
 const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const DashboardMyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
 const DashboardMyAgentsPage = lazy(() => import('./pages/dashboard/MyAgentsPage'));
 const DashboardMessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'));
+
+// 本体引擎单页：所有子内容作为 tab 在 OntologyShellPage 内切换
+const OntologyShellPage = lazy(() => import('./pages/ontology/OntologyShellPage'));
+
+// 本体引擎原单页入口已下线，重定向到默认子路由
 const DashboardPortalPage = lazy(() => import('./pages/dashboard/PortalPage'));
 const DashboardNotificationsPage = lazy(() => import('./pages/dashboard/NotificationsPage'));
 const DashboardAiOpsPage = lazy(() => import('./pages/dashboard/AiOpsPage'));
@@ -264,17 +262,16 @@ function AppRoutes() {
           <Route path="my-templates/submit" element={<ApphubTemplateSubmitPage />} />
           <Route path="ai-designer" element={<ApphubAIDesignerPage />} />
 
-          {/* 閺堫兛缍嬪鏇熸惛 */}
-          <Route path="ontology" element={<OntologyModelingPage />} />
-          <Route path="ontology/datacenter" element={<OntologyDatacenterPage />} />
-          <Route path="ontology/action" element={<OntologyActionPage />} />
-          <Route path="ontology/graph" element={<OntologyGraphPage />} />
-          {/* GOVERN-12-04 A 路径：模型编辑器拆分路由（概念模型已并入 /ontology 单页） */}
-          {/* 旧 object-types 路由重定向到合并后的单页 */}
+          {/* 本体引擎原单页入口已下线，重定向到默认 tab */}
+          <Route path="ontology" element={<OntologyShellPage />} />
+          {/* 旧子路由重定向到合并页（带 tab 参数保留用户上下文） */}
+          <Route path="ontology/datacenter" element={<Navigate to="/ontology?tab=datacenter" replace />} />
+          <Route path="ontology/action" element={<Navigate to="/ontology?tab=action" replace />} />
+          <Route path="ontology/graph" element={<Navigate to="/ontology?tab=graph" replace />} />
+          <Route path="ontology/relationship-types" element={<Navigate to="/ontology?tab=relationship-types" replace />} />
+          <Route path="ontology/actions" element={<Navigate to="/ontology?tab=action-types" replace />} />
           <Route path="ontology/object-types" element={<Navigate to="/ontology" replace />} />
           <Route path="ontology/object-types/:rid" element={<Navigate to="/ontology" replace />} />
-          <Route path="ontology/relationship-types" element={<RelationshipTypeListPage />} />
-          <Route path="ontology/actions" element={<ActionTypeListPage />} />
 
           {/* 閻儴鐦戞惔?*/}
           <Route path="knowledge" element={<KnowledgeBasePage />} />

@@ -259,18 +259,12 @@ export default function OntologyGraphPage() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
-      {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>知识图谱</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>基于本体引擎的可视化知识关系网络，支持多数据源实体关系探索</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      {/* Toolbar（Shell 已统一全局 AI 助手；此处只保留 tab-specific 操作） */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 24, marginBottom: 16 }}>
           <Button theme="light" type="secondary" ><Upload style={{ width: 16, height: 16 }} />导入</Button>
-          <Button theme="light" type="secondary" ><Download style={{ width: 16, height: 16 }} />导出</Button>
-          <Button theme="light" type="secondary" ><Settings2 style={{ width: 16, height: 16 }} />配置</Button>
+          <Button theme="light" type="secondary" style={{ marginLeft: 8 }}><Download style={{ width: 16, height: 16 }} />导出</Button>
+          <Button theme="light" type="secondary" style={{ marginLeft: 8 }}><Settings2 style={{ width: 16, height: 16 }} />配置</Button>
         </div>
-      </div>
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>

@@ -10,7 +10,7 @@ import {
   Pause, Server, Calendar, BarChart3, Maximize2,
 } from 'lucide-react';
 import LineageFullView from './components/LineageFullView';
-import { AIAssistantTrigger, AIAssistantWorkspace, ErrorBoundary, usePageAssistant } from '@mate/shared';
+import { ErrorBoundary, usePageAssistant } from '@mate/shared';
 import BigDataSourceView from './components/BigDataSourceView';
 import CDCView from './components/CDCView';
 import ETLView from './components/ETLView';
@@ -64,8 +64,8 @@ const PRODUCT_STATUS: Record<string, { label: string; type: string }> = {
   suspended: { label: '已停用', type: 'error' },
 };
 
-export default function OntologyDatacenterPage() {
-    const [activeSubTab, setActiveSubTab] = useState('bigdata');
+export default function OntologyDatacenterPage({ initialSubTab }: { initialSubTab?: string } = {}) {
+    const [activeSubTab, setActiveSubTab] = useState(initialSubTab && DATACENTER_SUBTABS.some((t) => t.id === initialSubTab) ? initialSubTab : 'bigdata');
   const [reloadKey, setReloadKey] = useState(0);
   const assistant = usePageAssistant({
     employeeId: 'ontology-data-steward',
@@ -99,22 +99,14 @@ export default function OntologyDatacenterPage() {
   };
 
   return (
-    <AIAssistantWorkspace assistant={assistant}>
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
-          {/* Page Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 16 }}>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>数据中心</h1>
-              <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>数据源管理、数据加工、数据质量与血缘</div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setReloadKey((k) => k + 1)} style={{ padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <RefreshCw style={{ width: 12, height: 12 }} />刷新
-              </button>
-              <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
-            </div>
+          {/* Toolbar（Shell 已统一全局 AI 助手；此处只保留 tab-specific 操作） */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <button onClick={() => setReloadKey((k) => k + 1)} style={{ padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <RefreshCw style={{ width: 12, height: 12 }} />刷新
+            </button>
           </div>
 
           {/* SubTab 导航 */}
@@ -152,8 +144,7 @@ export default function OntologyDatacenterPage() {
           {/* SubTab 内容 */}
           {renderSubTabContent()}
         </div>
-      </div>
-    </AIAssistantWorkspace>
+    </div>
   );
 }
 

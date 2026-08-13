@@ -39,14 +39,8 @@ export default function RelationshipTypeListPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ marginTop: 24, marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>关系模型</h1>
-          <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>
-            管理 Ontology 中的 LinkType（概念间关系）
-          </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 24, marginBottom: 16 }}>
           <div style={{ flex: 1, maxWidth: 320, position: 'relative' }}>
             <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'var(--muted-foreground)' }} />
             <input

@@ -120,25 +120,9 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     label: '本体引擎',
     icon: <Database style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/ontology',
+    // 子内容在 OntologyShellPage 内用 SubTabs 切换；左导航只显示单条目。
     children: [
-      {
-        key: 'modeling',
-        label: '建模',
-        children: [
-          { key: 'concept', label: '概念建模', path: '/ontology' },
-          { key: 'relationship-types', label: '关系类型', path: '/ontology/relationship-types' },
-          { key: 'action-types', label: '动作类型', path: '/ontology/actions' },
-        ],
-      },
-      {
-        key: 'data-center',
-        label: '数据',
-        children: [
-          { key: 'datacenter', label: '数据中心', path: '/ontology/datacenter' },
-          { key: 'action', label: '动作', path: '/ontology/action' },
-          { key: 'graph', label: '关系图谱', path: '/ontology/graph' },
-        ],
-      },
+      { key: 'ontology-home', label: '本体引擎', path: '/ontology' },
     ],
   },
   {
