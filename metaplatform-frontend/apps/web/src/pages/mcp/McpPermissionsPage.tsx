@@ -190,7 +190,7 @@ export default function PermissionMatrixPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           权限矩阵
         </Typography.Title>

@@ -132,7 +132,7 @@ export default function IdeConfigPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           IDE 配置模板
         </Typography.Title>

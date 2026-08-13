@@ -737,7 +737,7 @@ export default function AuditStatisticsPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           <BarChartOutlined /> 调用审计统计
         </Typography.Title>

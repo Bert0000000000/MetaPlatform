@@ -169,7 +169,7 @@ export default function ServerListPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           MCP Server 管理
         </Typography.Title>

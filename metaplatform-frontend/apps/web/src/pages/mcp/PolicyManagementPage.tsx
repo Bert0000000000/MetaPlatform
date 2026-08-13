@@ -246,7 +246,7 @@ export default function PolicyManagementPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           ABAC 权限策略
         </Typography.Title>

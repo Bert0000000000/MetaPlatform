@@ -84,7 +84,7 @@ export default function MarketplacePage() {
 
   return (
     <div>
-      <div className="mcphub-page-header" style={{ marginBottom: 16 }}>
+      <div className="v-page-header" style={{ marginBottom: 16 }}>
       </div>
 
       <Space vertical style={{ marginBottom: 16 }}>

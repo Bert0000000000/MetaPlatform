@@ -198,7 +198,7 @@ export default function TrustManagementPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           信任管理
         </Typography.Title>

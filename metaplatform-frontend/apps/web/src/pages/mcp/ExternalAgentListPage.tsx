@@ -293,7 +293,7 @@ export default function ExternalAgentListPage() {
 
   return (
     <div>
-      <div className="mcphub-page-header">
+      <div className="v-page-header">
         <Typography.Title heading={4} style={{ margin: 0 }}>
           外部 Agent 目录
         </Typography.Title>
