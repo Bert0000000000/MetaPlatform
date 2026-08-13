@@ -235,7 +235,12 @@ export interface UserProfile {
   email: string;
   realName?: string;
   tenantId: string;
-  roles: string[];
+  roles: Array<{
+    roleId: string;
+    roleCode: string;
+    roleName: string;
+    dataScope?: string;
+  }>;
   departments: Array<{
     departmentId: string;
     departmentCode?: string;

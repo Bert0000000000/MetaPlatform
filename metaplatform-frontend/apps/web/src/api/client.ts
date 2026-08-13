@@ -137,20 +137,37 @@ async function tryRefreshToken(): Promise<boolean> {
 
 export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   const response = await apiClient.get(url, { params });
-  return response.data.data as T;
+  // 兼容两种后端响应：{ data: T } 包装或直接 T
+  const payload = response.data as { data?: T } | T;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: T }).data !== undefined) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
 }
 
 export async function post<T>(url: string, body?: unknown): Promise<T> {
   const response = await apiClient.post(url, body);
-  return response.data.data as T;
+  const payload = response.data as { data?: T } | T;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: T }).data !== undefined) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
 }
 
 export async function put<T>(url: string, body?: unknown): Promise<T> {
   const response = await apiClient.put(url, body);
-  return response.data.data as T;
+  const payload = response.data as { data?: T } | T;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: T }).data !== undefined) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
 }
 
 export async function del<T>(url: string): Promise<T> {
   const response = await apiClient.delete(url);
-  return response.data.data as T;
+  const payload = response.data as { data?: T } | T;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: T }).data !== undefined) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
 }

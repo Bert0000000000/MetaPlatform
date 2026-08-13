@@ -547,8 +547,8 @@ export default function SettingsPage() {
                         profile.roles.length > 0 ? (
                           <Space wrap>
                             {profile.roles.map((r) => (
-                              <Tag color="blue" key={r}>
-                                {r}
+                              <Tag color="blue" key={r.roleId}>
+                                {r.roleName}
                               </Tag>
                             ))}
                           </Space>
