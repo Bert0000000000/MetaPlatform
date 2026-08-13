@@ -32,7 +32,7 @@ export default function AgentCopilotPage() {
       pageUrl="/agent-copilot"
       initialSubject={subject}
     >
-      <div style={{ padding: 16, height: '100vh', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: 16, flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12, margin: '0 -24px' }}>
         <Space>
           <Title heading={4} style={{ margin: 0 }}>Object Copilot</Title>
           {subject && (
