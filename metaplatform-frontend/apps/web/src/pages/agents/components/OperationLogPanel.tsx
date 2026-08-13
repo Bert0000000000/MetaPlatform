@@ -1,14 +1,33 @@
-import { useEffect, useState } from 'react';
-import { Button, Card, Empty, Spin, Table, Tag } from '@douyinfe/semi-ui';
-import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Card, Empty, Spin, Timeline, Typography } from '@douyinfe/semi-ui';
 import { ReloadOutlined } from '@ant-design/icons';
 import { getEmployeeOperationLogs } from '@/api/dw/employees';
 import type { EmployeeOperationLog } from '@/api/dw/types';
 
-type SemiColumns<T> = ColumnProps<T & Record<string, any>>[];
+const { Text } = Typography;
 
 interface OperationLogPanelProps {
   employeeId: string;
+}
+
+function formatTime(v: string): string {
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return v;
+  const pad = (n: number) => `${n}`.padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function actionLabel(action: string): string {
+  const map: Record<string, string> = {
+    CREATE: '创建',
+    UPDATE: '更新',
+    DELETE: '删除',
+    CLONE: '克隆',
+    ACTIVATE: '启用',
+    DEACTIVATE: '停用',
+    CONFIG_UPDATE: '配置变更',
+  };
+  return map[action] || action;
 }
 
 export default function OperationLogPanel({ employeeId }: OperationLogPanelProps) {
@@ -31,49 +50,38 @@ export default function OperationLogPanel({ employeeId }: OperationLogPanelProps
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId]);
 
-  const columns: SemiColumns<EmployeeOperationLog> = [
-    { title: '操作人', dataIndex: 'actor', width: 100 },
-    { title: '动作', dataIndex: 'action', width: 100 },
-    { title: '资源', dataIndex: 'resource', width: 120 },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      width: 80,
-      render: (v: string) => (
-        <Tag color={v === 'success' ? 'green' : 'red'}>{v === 'success' ? '成功' : '失败'}</Tag>
-      ),
-    },
-    { title: 'IP', dataIndex: 'ip', width: 120 },
-    {
-      title: '时间',
-      dataIndex: 'timestamp',
-      render: (v: string) => new Date(v).toLocaleString('zh-CN'),
-    },
-  ];
+  const dataSource = useMemo(
+    () =>
+      logs.map((log) => ({
+        time: formatTime(log.timestamp),
+        type: (log.status === 'success' ? 'success' : 'error') as 'success' | 'error',
+        extra: log.actor,
+        content: (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Text strong style={{ fontSize: 13 }}>{actionLabel(log.action)}</Text>
+            {log.resource && (
+              <Text type="tertiary" style={{ fontSize: 12 }}>· {log.resource}</Text>
+            )}
+            {log.ip && (
+              <Text type="tertiary" style={{ fontSize: 11, fontFamily: 'monospace' }}>
+                · {log.ip}
+              </Text>
+            )}
+          </div>
+        ),
+      })),
+    [logs],
+  );
 
   if (loading) {
     return (
       <Card title="操作日志">
-        <div style={{ textAlign: 'center', padding: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
           <Spin />
         </div>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card
-        title="操作日志"
-        headerExtraContent={
-          <Button icon={<ReloadOutlined />} onClick={load} size="small">
-            重试
-          </Button>
-        }
-      >
-        <Empty description={`加载失败：${error.message}`} />
       </Card>
     );
   }
@@ -81,17 +89,17 @@ export default function OperationLogPanel({ employeeId }: OperationLogPanelProps
   return (
     <Card
       title="操作日志"
-      headerExtraContent={<Button icon={<ReloadOutlined />} onClick={load} size="small">刷新</Button>}
+      headerExtraContent={
+        <Button icon={<ReloadOutlined />} onClick={load} size="small">刷新</Button>
+      }
+      bodyStyle={{ padding: error ? 16 : '8px 16px 0' }}
     >
-      {logs.length === 0 ? (
+      {error ? (
+        <Empty description={`加载失败：${error.message}`} />
+      ) : logs.length === 0 ? (
         <Empty description="暂无操作日志" />
       ) : (
-        <Table
-          rowKey="id"
-          dataSource={logs}
-          columns={columns}
-          pagination={{ pageSize: 10 }}
-          size="small" scroll={{ x: 'max-content' }} />
+        <Timeline dataSource={dataSource} />
       )}
     </Card>
   );

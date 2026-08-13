@@ -15,6 +15,7 @@ import {
   AIChatDialogue,
   AIChatInput,
   Sidebar,
+  Avatar,
   Button,
   Typography,
   Toast,
@@ -35,7 +36,7 @@ import {
   ThunderboltOutlined,
 } from '@mate/shared';
 import { DeleteOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
-import { IconSearch, IconTemplateStroked } from '@douyinfe/semi-icons';
+import { IconSearch, IconTemplateStroked, IconUser, IconUserCircle } from '@douyinfe/semi-icons';
 import {
   streamChat,
   listMultimodalModels,
@@ -485,7 +486,7 @@ export default function ChatPage() {
         } catch (error) {
           updateMessage(sessionId, assistantMessage.id, (m) => ({
             ...m,
-            content: `⚠️ ${error instanceof Error ? error.message : '多模态请求失败'}`,
+            content: `[警告] ${error instanceof Error ? error.message : '多模态请求失败'}`,
             status: 'error',
           }));
         } finally {
@@ -599,7 +600,7 @@ export default function ChatPage() {
           onError: (errMsg) => {
             updateMessage(sessionId, assistantId, (m) => ({
               ...m,
-              content: `⚠️ ${errMsg}`,
+              content: `[警告] ${errMsg}`,
               status: 'error',
               streaming: false,
             }));
@@ -877,8 +878,15 @@ export default function ChatPage() {
           className="superai-chat"
           style={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 'none', padding: '24px 0 0' }}
           roleConfig={{
-            user: { name: 'Admin', avatar: '👤' },
-            assistant: { name: 'SuperAI', avatar: '🤖' },
+            user: { name: 'Admin' },
+            assistant: { name: 'SuperAI' },
+          }}
+          dialogueRenderConfig={{
+            renderDialogueAvatar: ({ message }) => (
+              <Avatar size="extra-small" style={{ background: message?.role === 'user' ? 'var(--semi-color-primary)' : 'var(--semi-color-secondary)' }}>
+                {message?.role === 'user' ? <IconUser size="extra-small" /> : <IconUserCircle size="extra-small" />}
+              </Avatar>
+            ),
           }}
           chats={semiMessages}
           topSlot={

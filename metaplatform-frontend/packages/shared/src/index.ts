@@ -50,7 +50,9 @@ export { default as ModuleTabsLayout, type ModuleTab, type ModuleTabsLayoutProps
 export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from './components/Breadcrumb';
 export { default as PlatformButton, type PlatformButtonProps } from './components/PlatformButton';
 export { default as PlatformPagination, type PlatformPaginationProps } from './components/PlatformPagination';
+export { default as PlatformSegmented, type PlatformSegmentedOption } from './components/PlatformSegmented';
 export { default as PlatformMenu2, type PlatformMenu2Item } from './components/PlatformMenu2';
+export { default as PageShell } from './components/PageShell';
 export { COMPONENT_MANIFEST, type ComponentManifest, type ComponentCategory, type ComponentPropManifest } from './components/componentManifest';
 export { buildPlatformComponentsSkillMd, PLATFORM_COMPONENTS_SKILL } from './components/buildPlatformComponentsSkill';
 

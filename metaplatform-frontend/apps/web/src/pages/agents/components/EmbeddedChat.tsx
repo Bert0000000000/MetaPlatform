@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
-import { Typography, Space, Tag, Chat } from '@douyinfe/semi-ui';
+import { Chat } from '@douyinfe/semi-ui';
 import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/chat/interface';
-import { RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { Bot, User } from 'lucide-react';
 import { getToken } from '@mate/shared';
 import type { Employee } from '@/api/dw/types';
 
@@ -240,53 +240,37 @@ export default function EmbeddedChat({ employee, heightMode = 'fixed' }: Embedde
         flexDirection: 'column',
         height: heightMode === 'fill' ? '100%' : 500,
         minHeight: heightMode === 'fill' ? 0 : undefined,
+        background: 'var(--semi-color-bg-1)',
+        borderRadius: 8,
+        padding: 8,
+        overflow: 'hidden',
       }}
     >
-      <div style={{ marginBottom: 8 }}>
-        <Space>
-          <Typography.Text strong>与 {employee.name} 对话</Typography.Text>
-          <Tag color="blue">{employee.roleIdentity}</Tag>
-        </Space>
-      </div>
-
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          background: 'var(--semi-color-bg-1)',
-          padding: 12,
-          borderRadius: 8,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
+      <Chat
+        style={{ width: '100%', height: '100%', maxWidth: 'none', paddingTop: 0, paddingBottom: 0 }}
+        align="leftRight"
+        mode="bubble"
+        chats={semiMessages}
+        roleConfig={{
+          user: { avatar: <User size={16} /> },
+          assistant: { avatar: <Bot size={16} /> },
         }}
-      >
-        <Chat
-          style={{ width: '100%', height: '100%', maxWidth: 'none', paddingTop: 0, paddingBottom: 0 }}
-          align="leftRight"
-          mode="bubble"
-          chats={semiMessages}
-          roleConfig={{
-            user: { avatar: <UserOutlined /> },
-            assistant: { avatar: <RobotOutlined /> },
-          }}
-          onMessageSend={(content) => {
-            void handleSend(content);
-          }}
-          showStopGenerate
-          onStopGenerator={handleCancel}
-          placeholder={`向 ${employee.name} 发送消息...`}
-          sendHotKey="enter"
-          topSlot={
-            messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 16px 8px', color: 'var(--muted-foreground)' }}>
-                <RobotOutlined style={{ fontSize: 40, marginBottom: 12 }} />
-                <div>开始与 {employee.name} 对话</div>
-              </div>
-            ) : undefined
-          }
-        />
-      </div>
+        onMessageSend={(content) => {
+          void handleSend(content);
+        }}
+        showStopGenerate
+        onStopGenerator={handleCancel}
+        placeholder={`向 ${employee.name} 发送消息…`}
+        sendHotKey="enter"
+        topSlot={
+          messages.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 16px 8px', color: 'var(--muted-foreground)' }}>
+              <Bot size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
+              <div style={{ fontSize: 13 }}>开始与 {employee.name} 对话</div>
+            </div>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

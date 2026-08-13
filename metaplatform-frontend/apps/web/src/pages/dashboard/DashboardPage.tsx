@@ -14,6 +14,7 @@ import {
 import { Toast, Button, Card, Typography, SideSheet, Tag } from '@douyinfe/semi-ui';
 import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 import { getDashboardSummary, getMessages, getDeliverablesSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent, type MessageItem, type DeliverableItem } from '@/api/dashboard/workbench';
+import { IconPaperclip } from '@douyinfe/semi-icons';
 
 // 子标签页
 
@@ -496,8 +497,8 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
               </Typography.Paragraph>
             </div>
             {detailMessage.attachments > 0 && (
-              <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                📎 {detailMessage.attachments} 个附件
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconPaperclip size="small" /> {detailMessage.attachments} 个附件
               </div>
             )}
           </div>
@@ -546,11 +547,11 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
         </Field>
         <Field label="图标">
           <Select defaultValue="app">
-            <option value="app">📦 应用图标</option>
-            <option value="chart">📊 图表图标</option>
-            <option value="bot">🤖 机器人图标</option>
-            <option value="db">🗄️ 数据库图标</option>
-            <option value="doc">📄 文档图标</option>
+            <option value="app">应用图标</option>
+            <option value="chart">图表图标</option>
+            <option value="bot">机器人图标</option>
+            <option value="db">数据库图标</option>
+            <option value="doc">文档图标</option>
           </Select>
         </Field>
         <Field label="可见范围">

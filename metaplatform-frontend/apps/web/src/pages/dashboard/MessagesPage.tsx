@@ -8,6 +8,7 @@ import {
   GitMerge, Zap, Sparkles, type LucideIcon,
 } from 'lucide-react';
 import { getMessages, type MessageItem } from '@/api/dashboard/workbench';
+import { IconPaperclip } from '@douyinfe/semi-icons';
 
 
 const MSG_ICON_MAP: Record<string, LucideIcon> = {
@@ -378,8 +379,8 @@ export default function MessagesPage() {
               </Typography.Paragraph>
             </div>
             {detailMessage.attachments > 0 && (
-              <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                📎 {detailMessage.attachments} 个附件
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconPaperclip size="small" /> {detailMessage.attachments} 个附件
               </div>
             )}
           </div>

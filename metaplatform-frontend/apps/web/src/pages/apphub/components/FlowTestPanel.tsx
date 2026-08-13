@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons';
 import type { FlowTestResult, FlowTestStep } from '@/api/apphub/types';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { IconTick, IconClose, IconAlertTriangle } from '@douyinfe/semi-icons';
 
 interface FlowTestPanelProps {
   result: FlowTestResult;
@@ -63,10 +64,10 @@ export default function FlowTestPanel({ result }: FlowTestPanelProps) {
             type={finalStatusType}
             title={
               result.finalStatus === 'approved'
-                ? '流程测试通过 ✅'
+                ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconTick /> 流程测试通过</span>
                 : result.finalStatus === 'rejected'
-                  ? '流程测试被拒绝 ❌'
-                  : '流程测试异常 ⚠️'
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconClose /> 流程测试被拒绝</span>
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconAlertTriangle /> 流程测试异常</span>
             }
             description={`共 ${result.steps.length} 步，耗时 ${result.duration}ms`}
             icon={null}

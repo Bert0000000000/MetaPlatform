@@ -113,11 +113,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
           height: '100vh',
           background: 'var(--sidebar)',
           borderRight: '1px solid var(--sidebar-border)',
-          display: 'flex',
-          flexDirection: 'column',
           transition: 'width 0.2s ease',
         }}
       >
+        {/* Semi Layout.Sider 内部用 .semi-layout-sider-children 包装 children（height:100%），
+            把它改成 flex column 才能让「菜单区 flex:1 + 按钮置底」生效 */}
+        <style>{`
+          .v-sider > .semi-layout-sider-children {
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100% !important;
+          }
+        `}</style>
         {/* Logo */}
         <div
           className="v-sidebar-logo"
@@ -155,74 +162,84 @@ export default function AppLayout({ children }: AppLayoutProps) {
           )}
         </div>
 
-        {/* Semi Nav：一级 + 二级菜单 */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
-          <Nav
-            items={navItems}
-            selectedKeys={selectedKey ? [selectedKey] : []}
-            openKeys={
-              currentModuleKey
-                ? matched?.groupKey
-                  ? [currentModuleKey, `${currentModuleKey}__${matched.groupKey}`]
-                  : [currentModuleKey]
-                : []
-            }
-            isCollapsed={collapsed}
-            limitIndent={false}
-            onClick={({ itemKey }) => {
-              const target = flat.find((it) => childItemKey(it.moduleKey, it.key) === itemKey);
-              if (target) {
-                navigate(target.path);
-                return;
-              }
-              // 一级模块项：导航到模块默认路由
-              const module = MODULE_MENU.find((m) => m.key === itemKey);
-              if (module) navigate(module.path);
-            }}
-            style={{ borderRight: 'none', background: 'transparent', fontSize: 13 }}
-            bodyStyle={{ paddingTop: 0 }}
-          />
-        </div>
-
-        {/* footer：折叠 + 用户 + 退出 */}
+        {/* 一级菜单区域：菜单项 + 置底的「收起」按钮（同一区域内，用分隔线与菜单项隔开） */}
         <div
-          className="v-sider-footer"
+          className="v-sider-menu-area"
           style={{
-            padding: collapsed ? '16px 0 0' : '16px 12px 0',
-            borderTop: '1px solid var(--sidebar-border)',
-            marginTop: 'auto',
+            flex: 1,
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 8,
-            flexShrink: 0,
+            overflow: 'hidden',
           }}
         >
-          <button
-            type="button"
-            onClick={() => setCollapsed((c) => !c)}
-            title={collapsed ? '展开菜单' : '收起菜单'}
+          {/* Semi Nav：一级 + 二级菜单（可滚动） */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
+            <Nav
+              items={navItems}
+              selectedKeys={selectedKey ? [selectedKey] : []}
+              openKeys={
+                currentModuleKey
+                  ? matched?.groupKey
+                    ? [currentModuleKey, `${currentModuleKey}__${matched.groupKey}`]
+                    : [currentModuleKey]
+                  : []
+              }
+              isCollapsed={collapsed}
+              limitIndent={false}
+              onClick={({ itemKey }) => {
+                const target = flat.find((it) => childItemKey(it.moduleKey, it.key) === itemKey);
+                if (target) {
+                  navigate(target.path);
+                  return;
+                }
+                // 一级模块项：导航到模块默认路由
+                const module = MODULE_MENU.find((m) => m.key === itemKey);
+                if (module) navigate(module.path);
+              }}
+              style={{ borderRight: 'none', background: 'transparent', fontSize: 13 }}
+              bodyStyle={{ paddingTop: 0 }}
+            />
+          </div>
+
+          {/* 分隔线 + 置底的「收起」按钮：与菜单项同属一个区域，但通过分隔线视觉隔离 */}
+          <div
             style={{
+              flexShrink: 0,
+              padding: collapsed ? '10px 8px' : '10px 12px 12px',
+              borderTop: '1px solid var(--sidebar-border)',
               background: 'transparent',
-              border: '1px solid var(--border)',
-              color: 'var(--muted-foreground)',
-              cursor: 'pointer',
-              padding: collapsed ? '6px' : '6px 10px',
-              borderRadius: 6,
-              fontSize: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 4,
-              transition: 'all 0.15s',
             }}
           >
-            {collapsed ? <ChevronsRight size={14} /> : (
-              <>
-                <ChevronsLeft size={14} />
-                <span>收起</span>
-              </>
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              title={collapsed ? '展开菜单' : '收起菜单'}
+              className="v-sider-collapse-btn"
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                color: 'var(--muted-foreground)',
+                cursor: 'pointer',
+                padding: collapsed ? '8px' : '8px 12px',
+                borderRadius: 6,
+                fontSize: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.15s',
+              }}
+            >
+              {collapsed ? <ChevronsRight size={14} /> : (
+                <>
+                  <ChevronsLeft size={14} />
+                  <span>收起</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </Layout.Sider>
 
@@ -374,7 +391,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <Layout.Content
           className="v-content"
           style={{
-            padding: '0 24px',
+            padding: '24px 24px 32px',
             flex: 1,
             minHeight: 0,
             overflow: 'auto',

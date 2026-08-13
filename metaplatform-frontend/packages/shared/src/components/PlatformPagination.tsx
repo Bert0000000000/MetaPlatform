@@ -6,6 +6,6 @@ import { Pagination } from '@douyinfe/semi-ui';
  */
 export type PlatformPaginationProps = React.ComponentProps<typeof Pagination>;
 
-export default function PlatformPagination({ showSizeChanger = true, ...rest }: PlatformPaginationProps) {
-  return <Pagination showSizeChanger={showSizeChanger} showTotal {...rest} />;
+export default function PlatformPagination({ showSizeChanger = true, size = 'small', ...rest }: PlatformPaginationProps) {
+  return <Pagination showSizeChanger={showSizeChanger} showTotal size={size} {...rest} />;
 }

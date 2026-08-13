@@ -223,24 +223,13 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     label: '数字员工',
     icon: <Bot style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/agents',
+    // 数字员工端菜单扁平化：只保留一级页面项，进入员工页后用 Tab 切内部/外部
     children: [
-      {
-        key: 'employees',
-        label: '员工',
-        children: [
-          { key: 'list', label: '数字员工', path: '/agents' },
-          { key: 'external', label: '外部 Agent', path: '/agents/external' },
-        ],
-      },
-      {
-        key: 'work',
-        label: '工作',
-        children: [
-          { key: 'tasks', label: '任务', path: '/agents/tasks' },
-          { key: 'collab', label: '协作', path: '/agents/collab' },
-          { key: 'evaluation', label: '评估', path: '/agents/evaluation' },
-        ],
-      },
+      { key: 'employees', label: '员工', path: '/agents' },
+      { key: 'tasks', label: '任务', path: '/agents/tasks' },
+      { key: 'collab', label: '协作', path: '/agents/collab' },
+      { key: 'evaluation', label: '评估', path: '/agents/evaluation' },
+      { key: 'external', label: '外部 Agent', path: '/agents/external', hidden: true },
     ],
   },
   {

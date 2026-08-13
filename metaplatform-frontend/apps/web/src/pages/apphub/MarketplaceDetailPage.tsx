@@ -15,6 +15,7 @@ import {
   Toast,
 } from '@douyinfe/semi-ui';
 import { ArrowLeftOutlined, DownloadOutlined, UserOutlined } from '@ant-design/icons';
+import { IconTick } from '@douyinfe/semi-icons';
 import {
   addTemplateComment,
   getTemplate,
@@ -140,7 +141,9 @@ export default function MarketplaceDetailPage() {
         {lastInstall?.success && lastInstall.installId && (
           <div style={{ marginTop: 12, fontSize: 12 }}>
             <Typography.Text type="success">
-              ✓ 已安装到本体引擎（Install ID: {lastInstall.installId}）
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <IconTick size="small" /> 已安装到本体引擎（Install ID: {lastInstall.installId}）
+              </span>
             </Typography.Text>
             <div style={{ marginTop: 4 }}>
               <Typography.Text type="tertiary">

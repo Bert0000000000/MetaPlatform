@@ -4,30 +4,38 @@ import type { ReactNode } from 'react';
 interface PageHeaderProps {
   title: ReactNode;
   subtitle?: ReactNode;
+  description?: ReactNode;
   extra?: ReactNode;
 }
 
-export default function PageHeader({ title, subtitle, extra }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, description, extra }: PageHeaderProps) {
   return (
     <div
       style={{
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 24,
+        marginBottom: 16,
+        gap: 16,
+        minHeight: 40,
       }}
     >
-      <Space vertical spacing="tight">
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          {title}
-        </Typography.Title>
-        {subtitle && (
-          <Typography.Text type="tertiary" style={{ fontSize: 13 }}>
-            {subtitle}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 28 }}>
+          {typeof title === 'string' ? (
+            <Typography.Title heading={5} style={{ margin: 0 }}>{title}</Typography.Title>
+          ) : (
+            title
+          )}
+          {subtitle}
+        </div>
+        {description && (
+          <Typography.Text type="tertiary" style={{ fontSize: 12, display: 'block', marginTop: 2 }}>
+            {description}
           </Typography.Text>
         )}
-      </Space>
-      {extra}
+      </div>
+      {extra && <div style={{ flexShrink: 0 }}>{extra}</div>}
     </div>
   );
 }

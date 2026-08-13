@@ -1,19 +1,27 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Badge, Button, Dropdown, Typography, Space, Empty, Tabs, Popconfirm, Tooltip } from '@douyinfe/semi-ui';
 import { BellOutlined, CheckOutlined, ClearOutlined } from '@ant-design/icons';
 import { getNotifications, markAsRead, markAllAsRead, getUnreadCount } from '@/api/dashboard/notifications';
 import { useWebSocket, type WsMessage } from '../hooks/useWebSocket';
 import type { NotificationItem, NotificationType, NotificationCategory } from '@/api/dashboard/types';
 import { categorizeNotification } from '@/api/dashboard/types';
+import {
+  IconList,
+  IconTick,
+  IconSetting,
+  IconComment,
+  IconAlertTriangle,
+} from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
 
-const TYPE_ICON: Record<NotificationType, string> = {
-  approval: '📋',
-  task: '✅',
-  system: '⚙️',
-  mention: '💬',
-  alert: '⚠️',
+const TYPE_ICON: Record<NotificationType, ReactNode> = {
+  approval: <IconList size="small" />,
+  task: <IconTick size="small" />,
+  system: <IconSetting size="small" />,
+  mention: <IconComment size="small" />,
+  alert: <IconAlertTriangle size="small" />,
 };
 
 const CATEGORY_LABELS: Record<NotificationCategory, string> = {

@@ -14,6 +14,7 @@
  * （3 步：基本信息 / 业务对象 + 菜单 + 表单 + 流程 + 权限 / 发布配置）。
  */
 import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -40,6 +41,7 @@ import {
   FilterOutlined,
 } from '@ant-design/icons';
 import { listApps, deleteApp, listGroups } from '@/api/apphub/apps';
+import AppDesignSheet from './DesignFlowPage';
 import type { AppItem, AppStatus } from '@/api/apphub/types';
 
 const STATUS_MAP: Record<AppStatus, { label: string; color: TagColor }> = {
@@ -60,6 +62,9 @@ export default function AppListPage() {
   const [apps, setApps] = useState<AppItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const designOpen = searchParams.get('design') === '1';
+  const designFromId = searchParams.get('from') ?? undefined;
   const [group, setGroup] = useState<string>();
   const [status, setStatus] = useState<string>();
   const [sort, setSort] = useState<string>('updated_desc');
@@ -125,7 +130,19 @@ export default function AppListPage() {
   }, [apps]);
 
   return (
-    <div style={{ margin: '0 -24px', padding: '24px 32px 32px' }}>
+    <>
+      <AppDesignSheet
+        visible={designOpen}
+        onClose={() => {
+          const next = new URLSearchParams(searchParams);
+          next.delete('design');
+          next.delete('from');
+          setSearchParams(next);
+        }}
+        onCreated={(appId) => navigate(`/apps/${appId}`)}
+        editingId={designFromId}
+      />
+      <div style={{ margin: '0 -24px', padding: '24px 32px 32px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
@@ -141,7 +158,7 @@ export default function AppListPage() {
           type="primary"
           size="large"
           icon={<PlusOutlined />}
-          onClick={() => navigate('/apps/design')}
+          onClick={() => setSearchParams({ design: '1' })}
         >
           创建应用
         </Button>
@@ -247,7 +264,7 @@ export default function AppListPage() {
               theme="solid"
               type="primary"
               icon={<PlusOutlined />}
-              onClick={() => navigate('/apps/design')}
+              onClick={() => setSearchParams({ design: '1' })}
             >
               从零创建
             </Button>
@@ -309,7 +326,7 @@ export default function AppListPage() {
                         </Dropdown.Item>
                         <Dropdown.Item
                           icon={<EditOutlined />}
-                          onClick={() => navigate('/apps/design?from=' + app.appId)}
+                          onClick={() => setSearchParams({ design: '1', from: app.appId })}
                         >
                           重新设计
                         </Dropdown.Item>
@@ -354,7 +371,7 @@ export default function AppListPage() {
                     borderTop: '1px solid var(--border)',
                   }}
                 >
-                  <Space size={12}>
+                  <Space spacing={12}>
                     <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
                     <Typography.Text type="tertiary" size="small">
                       {String(app.moduleCount)} 模块
@@ -370,5 +387,19 @@ export default function AppListPage() {
         </div>
       )}
     </div>
+
+      <AppDesignSheet
+        visible={designOpen}
+        onClose={() => {
+          const next = new URLSearchParams(searchParams);
+          next.delete('design');
+          next.delete('from');
+          setSearchParams(next);
+        }}
+        onCreated={(appId) => navigate(`/apps/${appId}`)}
+        editingId={designFromId}
+      />
+
+    </>
   );
 }

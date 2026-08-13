@@ -7,6 +7,7 @@ import {
   WarningOutlined,
   CloudUploadOutlined,
 } from '@ant-design/icons';
+import { IconTick, IconClose } from '@douyinfe/semi-icons';
 import type { FlowValidationResult } from '@/api/apphub/types';
 
 interface PublishValidationProps {
@@ -54,7 +55,7 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
         <Col span={8}>
           <StatTile
             title="通过"
-            value={result.valid ? '✓' : '✗'}
+            value={result.valid ? <IconTick style={{ color: 'var(--success)' }} /> : <IconClose style={{ color: 'var(--destructive)' }} />}
             color={result.valid ? 'var(--success)' : 'var(--destructive)'}
           />
         </Col>

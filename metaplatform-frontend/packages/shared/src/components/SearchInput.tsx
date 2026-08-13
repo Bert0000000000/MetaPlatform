@@ -8,6 +8,7 @@ interface SearchInputProps {
   width?: number | string;
   debounce?: number;
   defaultValue?: string;
+  size?: 'small' | 'default' | 'large';
 }
 
 export default function SearchInput({
@@ -16,6 +17,7 @@ export default function SearchInput({
   width = 240,
   debounce = 300,
   defaultValue = '',
+  size = 'default',
 }: SearchInputProps) {
   const [value, setValue] = useState(defaultValue);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,10 +35,12 @@ export default function SearchInput({
 
   return (
     <Input
-      prefix={<Search size={16} strokeWidth={1.5} style={{ color: 'var(--muted-foreground)' }} />}
+      prefix={<Search size={16} strokeWidth={1.5} />}
       placeholder={placeholder}
       value={value}
-      style={{ width }}
+      style={{ width, borderRadius: 6, paddingLeft: 8 }}
+      size={size}
+      showClear
       onChange={(value: string) => {
         setValue(value);
         triggerSearch(value);

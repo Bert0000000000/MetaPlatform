@@ -1,5 +1,6 @@
 import { Banner, Typography } from '@douyinfe/semi-ui';
 import type { AppVersion } from '@/api/apphub/versions';
+import { IconAlertTriangle } from '@douyinfe/semi-icons';
 
 interface RollbackConfirmProps {
   current: AppVersion;
@@ -20,8 +21,8 @@ export default function RollbackConfirm({ current, target }: RollbackConfirmProp
         <div>
           <div>当前线上版本：<strong>v{current.version}</strong></div>
           <div>回滚目标版本：<strong>v{target.version}</strong></div>
-          <div style={{ marginTop: 8, color: 'var(--warning)' }}>
-            ⚠ 回滚后将立即覆盖线上版本，旧版本数据将归档保存。
+          <div style={{ marginTop: 8, color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IconAlertTriangle size="small" /> 回滚后将立即覆盖线上版本，旧版本数据将归档保存。
           </div>
         </div>
       }

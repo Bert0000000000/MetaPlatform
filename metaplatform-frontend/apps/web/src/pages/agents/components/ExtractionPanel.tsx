@@ -25,6 +25,7 @@ import {
   SafetyOutlined,
   CloudUploadOutlined,
 } from '@ant-design/icons';
+import { IconTick, IconClose } from '@douyinfe/semi-icons';
 import {
   extractFromDocument,
   getExtractionsByEmployee,
@@ -300,7 +301,15 @@ export default function ExtractionPanel({ employeeId, documentId }: ExtractionPa
             )}
             {record.status === 'committed' && record.commitResult && (
               <Tag color={record.commitResult.success ? 'green' : 'red'}>
-                {record.commitResult.success ? '✓ 已写入' : '✗ 失败'}
+                {record.commitResult.success ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconTick size="small" /> 已写入
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconClose size="small" /> 失败
+                  </span>
+                )}
               </Tag>
             )}
           </Space>

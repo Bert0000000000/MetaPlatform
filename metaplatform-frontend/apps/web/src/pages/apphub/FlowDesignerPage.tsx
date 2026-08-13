@@ -31,10 +31,11 @@ import PublishValidation from './components/PublishValidation';
 import AIProcessGenerate from './components/AIProcessGenerate';
 import type { ModuleItem, FlowConfig, FlowNode, FlowEdge, FlowNodeType, FlowValidationResult, FlowTestResult, FormFieldBinding, ProcessGenResult } from '@/api/apphub/types';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
+import { IconTick } from '@douyinfe/semi-icons';
 
-const NODE_DEFS: { type: FlowNodeType; label: string; icon: string; color: string; tagColor: TagColor; width: number; height: number }[] = [
+const NODE_DEFS: { type: FlowNodeType; label: string; icon: ReactNode; color: string; tagColor: TagColor; width: number; height: number }[] = [
   { type: 'start', label: '开始', icon: '▶', color: '#52c41a', tagColor: 'green', width: 100, height: 60 },
-  { type: 'approval', label: '审批', icon: '✓', color: '#1677ff', tagColor: 'blue', width: 140, height: 70 },
+  { type: 'approval', label: '审批', icon: <IconTick size="small" />, color: '#1677ff', tagColor: 'blue', width: 140, height: 70 },
   { type: 'condition', label: '条件', icon: '◇', color: '#faad14', tagColor: 'orange', width: 120, height: 80 },
   { type: 'end', label: '结束', icon: '■', color: '#f5222d', tagColor: 'red', width: 100, height: 60 },
 ];
@@ -412,7 +413,7 @@ export default function FlowDesignerPage() {
           fill={def.color}
           style={{ pointerEvents: 'none', userSelect: 'none' }}
         >
-          {def.icon}
+          {typeof def.icon === 'string' ? def.icon : null}
         </text>
         {isSelected && (
           <g>

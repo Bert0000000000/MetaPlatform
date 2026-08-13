@@ -1,8 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { Input, Spin, Typography, Empty } from '@douyinfe/semi-ui';
 import { SearchOutlined } from '@ant-design/icons';
 import { globalSearch } from '@/api/dashboard/search';
 import type { SearchResult, SearchCategory } from '@/api/dashboard/types';
+import {
+  IconLive,
+  IconBookOpenStroked,
+  IconLink,
+  IconList,
+} from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
 
@@ -13,11 +20,11 @@ const CATEGORY_LABEL: Record<SearchCategory, string> = {
   task: '任务',
 };
 
-const CATEGORY_ICON: Record<SearchCategory, string> = {
-  app: '📱',
-  knowledge: '📚',
-  ontology: '🔗',
-  task: '📋',
+const CATEGORY_ICON: Record<SearchCategory, ReactNode> = {
+  app: <IconLive size="small" />,
+  knowledge: <IconBookOpenStroked size="small" />,
+  ontology: <IconLink size="small" />,
+  task: <IconList size="small" />,
 };
 
 export default function GlobalSearch() {

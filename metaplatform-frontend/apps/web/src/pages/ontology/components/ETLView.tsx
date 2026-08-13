@@ -10,6 +10,7 @@ import {
 import { Toast, Card, Tag, Table } from '@douyinfe/semi-ui';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 import { formatDuration, formatNumber, formatTimestamp } from './common';
+import { IconSetting } from '@douyinfe/semi-icons';
 
 const STATUS_META = {
   SUCCESS:   { label: '成功',   color: '#10b981', bg: 'rgba(16,185,129,0.12)',  icon: CheckCircle2 },
@@ -102,7 +103,7 @@ export default function ETLView() {
               {
                 title: '任务名', dataIndex: 'name',
                 render: (_v: string, r: ETLTask) => {
-                  const mm = ETL_MODE_META[r.mode] || { label: r.mode, color: '#666', icon: '⚙️' };
+                  const mm = ETL_MODE_META[r.mode] || { label: r.mode, color: '#666', icon: <IconSetting size="small" /> };
                   return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{
@@ -131,7 +132,7 @@ export default function ETLView() {
               {
                 title: '模式', dataIndex: 'mode',
                 render: (v: ETLMode) => {
-                  const mm = ETL_MODE_META[v] || { label: v, color: '#666', icon: '⚙️' };
+                  const mm = ETL_MODE_META[v] || { label: v, color: '#666', icon: <IconSetting size="small" /> };
                   return <Tag style={{ background: mm.color + '20', color: mm.color }}>{mm.label}</Tag>;
                 },
               },

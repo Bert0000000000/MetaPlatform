@@ -285,11 +285,11 @@ export default function MyAppsPage() {
         </Field>
         <Field label="图标">
           <Select defaultValue="app">
-            <option value="app">📦 应用图标</option>
-            <option value="chart">📊 图表图标</option>
-            <option value="bot">🤖 机器人图标</option>
-            <option value="db">🗄️ 数据库图标</option>
-            <option value="doc">📄 文档图标</option>
+            <option value="app">应用图标</option>
+            <option value="chart">图表图标</option>
+            <option value="bot">机器人图标</option>
+            <option value="db">数据库图标</option>
+            <option value="doc">文档图标</option>
           </Select>
         </Field>
         <Field label="可见范围">

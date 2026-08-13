@@ -13,6 +13,7 @@ import {
 } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import { PlusOutlined, CopyOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
+import { IconAlertTriangle } from '@douyinfe/semi-icons';
 import { createApiKey, deleteApiKey, listApiKeys } from '@/api/mcphub/integrations';
 import type { ApiKey } from '@/api/mcphub/types';
 
@@ -119,8 +120,8 @@ export default function ApiKeyGenerator() {
             border: '1px solid var(--semi-color-warning-border)',
           }}
         >
-          <Typography.Paragraph style={{ marginBottom: 8 }}>
-            ⚠️ 请立即复制保存，新生成的 Key 只会完整显示一次：
+          <Typography.Paragraph style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IconAlertTriangle size="small" /> 请立即复制保存，新生成的 Key 只会完整显示一次：
           </Typography.Paragraph>
           <Space>
             <Typography.Text code copyable={{ content: revealed.key }}>

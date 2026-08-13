@@ -2,6 +2,7 @@ import { Card, Empty, Space, Tag, Timeline, Typography } from '@douyinfe/semi-ui
 import type { ReactNode } from 'react';
 import ReplayPlayer from './ReplayPlayer';
 import type { ConversationRecord } from '@/api/dw/evaluations';
+import { IconUser, IconUserCircle, IconWrench } from '@douyinfe/semi-icons';
 
 interface ReplayPanelConversationProps {
   conversation: ConversationRecord;
@@ -16,9 +17,9 @@ interface ReplayPanelTraceProps {
 type ReplayPanelProps = ReplayPanelConversationProps | ReplayPanelTraceProps;
 
 const ICON: Record<string, ReactNode> = {
-  user: '👤',
-  assistant: '🤖',
-  tool: '🛠',
+  user: <IconUser size="small" />,
+  assistant: <IconUserCircle size="small" />,
+  tool: <IconWrench size="small" />,
 };
 
 function isConversationProps(props: ReplayPanelProps): props is ReplayPanelConversationProps {
