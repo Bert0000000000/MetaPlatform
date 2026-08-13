@@ -220,35 +220,17 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     icon: <Settings style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/admin',
     children: [
-      {
-        key: 'iam',
-        label: '身份与组织',
-        children: [
-          { key: 'overview', label: '总览', path: '/admin' },
-          { key: 'users', label: '用户', path: '/admin/users' },
-          { key: 'permissions', label: '权限', path: '/admin/permissions' },
-          { key: 'orgs', label: '组织', path: '/admin/orgs' },
-        ],
-      },
-      {
-        key: 'operations',
-        label: '运维',
-        children: [
-          { key: 'logs', label: '日志', path: '/admin/logs' },
-          { key: 'configs', label: '配置', path: '/admin/configs' },
-          { key: 'ai-providers', label: 'AI 供应商', path: '/admin/ai-providers' },
-          { key: 'ops', label: '运维', path: '/admin/operations' },
-          { key: 'analytics', label: '分析', path: '/admin/analytics' },
-        ],
-      },
-      {
-        key: 'dev',
-        label: '开发',
-        children: [
-          { key: 'components', label: '组件', path: '/admin/components' },
-          { key: 'flowgram', label: 'Flowgram', path: '/admin/flowgram' },
-        ],
-      },
+      { key: 'overview', label: '总览', path: '/admin', hidden: true },
+      { key: 'users', label: '用户管理', path: '/admin/users', hidden: true },
+      { key: 'permissions', label: '权限管理', path: '/admin/permissions', hidden: true },
+      { key: 'orgs', label: '组织管理', path: '/admin/orgs', hidden: true },
+      { key: 'logs', label: '日志管理', path: '/admin/logs', hidden: true },
+      { key: 'configs', label: '系统配置', path: '/admin/configs', hidden: true },
+      { key: 'ai-providers', label: 'AI 供应商', path: '/admin/ai-providers', hidden: true },
+      { key: 'operations', label: '运维', path: '/admin/operations', hidden: true },
+      { key: 'analytics', label: '分析', path: '/admin/analytics', hidden: true },
+      { key: 'components', label: '组件', path: '/admin/components', hidden: true },
+      { key: 'flowgram', label: 'Flowgram', path: '/admin/flowgram', hidden: true },
     ],
   },
 ];
