@@ -45,7 +45,7 @@ import {
   toggleFavorite,
   getHistory,
 } from '@/api/superai/conversations';
-import { MarkdownRenderer } from '@mate/shared';
+import { MarkdownRenderer , ChevronsLeft, ChevronsRight } from '@mate/shared';
 import KnowledgeGraph from './components/KnowledgeGraph';
 import ActionMatchCard from './components/ActionPanel';
 import EvidencePanel from './components/EvidencePanel';
@@ -304,7 +304,7 @@ export default function ChatPage() {
           },
         ),
       ],
-      updatedAt: now(),
+      updatedAt: new Date(Date.now() - 86400000).toISOString(),
       favorite: false,
     },
     createSession('新对话'),
@@ -766,6 +766,7 @@ export default function ChatPage() {
 
   const [temperature, setTemperature] = useState(70);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [sessionPanelVisible, setSessionPanelVisible] = useState(true);
 
   // 注入 thinking-dot 动画与少量滚动条/操作按钮 hover 样式（颜色全部走 Semi 主题 token）
   useEffect(() => {
@@ -921,6 +922,7 @@ function isSessionRunning(s: ChatSession): boolean {
       }}
     >
       {/* 中间 - 会话列表 */}
+      {sessionPanelVisible && (
       <div
         style={{
           width: 240,
@@ -983,6 +985,11 @@ function isSessionRunning(s: ChatSession): boolean {
         <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
           <Sidebar
             visible
+            resizable
+            defaultSize={{ width: 240 }}
+            minWidth={180}
+            maxWidth={360}
+            onCancel={() => setSessionPanelVisible(false)}
             style={{ width: '100%', border: 'none', height: '100%' }}
             activeKey={activeId}
             options={(() => {
@@ -1120,6 +1127,7 @@ function isSessionRunning(s: ChatSession): boolean {
 
 
       </div>
+      )}
 
       {/* 右侧 - 聊天区（Semi Chat：消息流 + 输入区） */}
       <div
@@ -1131,6 +1139,42 @@ function isSessionRunning(s: ChatSession): boolean {
           background: 'var(--background)',
         }}
       >
+        {/* chat-topbar：侧栏开关 + 对话标题 */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 20px',
+            borderBottom: '1px solid var(--border)',
+            flexShrink: 0,
+            minHeight: 44,
+          }}
+        >
+          <Button
+            theme="borderless"
+            size="small"
+            icon={
+              sessionPanelVisible ? (
+                <ChevronsLeft style={{ width: 15, height: 15 }} />
+              ) : (
+                <ChevronsRight style={{ width: 15, height: 15 }} />
+              )
+            }
+            title={sessionPanelVisible ? '收起会话侧栏' : '展开会话侧栏'}
+            onClick={() => setSessionPanelVisible((v) => !v)}
+          />
+          <span style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {activeSession.title}
+          </span>
+          {isSessionRunning(activeSession) && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--semi-color-primary)', flexShrink: 0 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--semi-color-primary)', animation: 'pulse 1.2s ease-in-out infinite' }} />
+              运行中
+            </span>
+          )}
+        </div>
+
 <AIChatDialogue
           key={activeSession.id}
           className="superai-chat"
