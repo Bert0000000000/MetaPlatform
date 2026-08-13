@@ -10,6 +10,7 @@ import {
 } from '@mate/shared';
 import LoginPage from './pages/LoginPage';
 import ArchLayout from './pages/arch/ArchLayout';
+import KnowledgeLayout from './pages/knowledge/KnowledgeLayout';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -263,10 +264,10 @@ function AppRoutes() {
           <Route path="ontology/object-types/:rid" element={<Navigate to="/ontology" replace />} />
 
           {/* 閻儴鐦戞惔?*/}
-          <Route path="knowledge" element={<KnowledgeBasePage />} />
-          <Route path="knowledge/docs" element={<KnowledgeDocsPage />} />
-          <Route path="knowledge/test" element={<KnowledgeTestPage />} />
-          <Route path="knowledge/config" element={<KnowledgeConfigPage />} />
+          <Route path="knowledge" element={<KnowledgeLayout><KnowledgeBasePage /></KnowledgeLayout>} />
+          <Route path="knowledge/docs" element={<KnowledgeLayout><KnowledgeDocsPage /></KnowledgeLayout>} />
+          <Route path="knowledge/test" element={<KnowledgeLayout><KnowledgeTestPage /></KnowledgeLayout>} />
+          <Route path="knowledge/config" element={<KnowledgeLayout><KnowledgeConfigPage /></KnowledgeLayout>} />
 
           {/* MCP 娑擃厼绺?/ 三 HUB 布局：SKILL / MCP / A2A */}
           <Route path="mcp" element={<McpCenterLayout />}>

@@ -141,10 +141,10 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     icon: <BookOpen style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/knowledge',
     children: [
-      { key: 'kb-list', label: '知识库列表', path: '/knowledge' },
-      { key: 'kb-docs', label: '文档管理', path: '/knowledge/docs' },
-      { key: 'kb-test', label: '检索测试', path: '/knowledge/test' },
-      { key: 'kb-config', label: '检索配置', path: '/knowledge/config' },
+      { key: 'kb-list', label: '知识库列表', path: '/knowledge', hidden: true },
+      { key: 'kb-docs', label: '文档管理', path: '/knowledge/docs', hidden: true },
+      { key: 'kb-test', label: '检索测试', path: '/knowledge/test', hidden: true },
+      { key: 'kb-config', label: '检索配置', path: '/knowledge/config', hidden: true },
     ],
   },
   {
