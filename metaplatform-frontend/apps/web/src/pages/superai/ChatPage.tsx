@@ -9,10 +9,14 @@ import {
   Toast,
   Input,
   Slider,
+  AIChatDialogue,
+  AIChatInput,
   Chat,
+  Button,
+  Sidebar
 } from '@douyinfe/semi-ui';
 import type { FileItem } from '@douyinfe/semi-ui/lib/es/upload';
-import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/chat/interface';
+import type { Message as SemiMessage } from '@douyinfe/semi-ui/lib/es/aiChatDialogue/interface';
 import {
   RobotOutlined,
   UserOutlined,
@@ -29,6 +33,7 @@ import {
   DislikeOutlined,
   RightOutlined,
   ThunderboltOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { streamChat, listMultimodalModels, multimodalUploadChat } from '@/api/superai/chat';
 import { listKnowledgeBases, search as ragSearch } from '@/api/superai/rag';
@@ -85,6 +90,29 @@ const WELCOME_PROMPTS = [
  * hints 在「数组 ↔ undefined」之间切换会抛 "Cannot read properties of undefined"，
  * 因此这里必须始终传数组（空数组不渲染提示区）。
  */
+/** 从 AIChatInput 的富文本 JSON（Content[]）提取纯文本 */
+function extractPlainText(contents: Array<{ type: string; [key: string]: unknown }>): string {
+  const parts: string[] = [];
+  const walk = (node: unknown): void => {
+    if (node == null) return;
+    if (typeof node === 'string') {
+      parts.push(node);
+      return;
+    }
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (typeof node === 'object') {
+      const obj = node as Record<string, unknown>;
+      if (typeof obj.text === 'string') parts.push(obj.text);
+      if (obj.content != null) walk(obj.content);
+    }
+  };
+  walk(contents);
+  return parts.join('');
+}
+
 const EMPTY_HINTS: string[] = [];
 
 const MAX_CONTEXT_TURNS = 10;
@@ -251,291 +279,7 @@ function conversationToSession(
   };
 }
 
-function CitationList({ citations }: { citations?: Citation[] }) {
-  if (!citations || citations.length === 0) return null;
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-      <Typography.Text style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-        📚 参考来源：
-      </Typography.Text>
-      {citations.map((c) => (
-        <Tooltip key={c.id} content={c.snippet} position="topLeft">
-          <span
-            style={{
-              display: 'inline-block',
-              cursor: 'pointer',
-              maxWidth: 200,
-              background: 'var(--muted)',
-              border: '1px solid var(--border)',
-              color: 'var(--muted-foreground)',
-              borderRadius: 4,
-              padding: '2px 8px',
-              fontSize: 11,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {c.title} ({c.score}%)
-          </span>
-        </Tooltip>
-      ))}
-    </div>
-  );
-}
-
-/** 思考过程折叠组件 */
-function ThinkingSection({ content, duration }: { content?: string; duration?: string }) {
-  const [expanded, setExpanded] = useState(false);
-  if (!content) return null;
-  return (
-    <div>
-      <div
-        onClick={() => setExpanded((v) => !v)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: 12,
-          color: 'var(--muted-foreground)',
-          cursor: 'pointer',
-          padding: '8px 0 4px',
-          userSelect: 'none',
-        }}
-      >
-        <RightOutlined
-            style={{
-            fontSize: 14,
-            transition: 'transform 0.2s',
-            transform: expanded ? 'rotate(90deg)' : 'none',
-          }}
-        />
-        <span>思考过程</span>
-        <span style={{ marginLeft: 'auto' }}>{duration}</span>
-      </div>
-      {expanded && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--muted-foreground)',
-            lineHeight: 1.6,
-            padding: '8px 0 12px',
-            borderBottom: '1px solid var(--border)',
-            marginBottom: 12,
-          }}
-        >
-          {content}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** 消息操作按钮 */
-function MessageActions({ onCopy, onRegenerate }: { onCopy: () => void; onRegenerate?: () => void }) {
-  const btnStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--muted-foreground)',
-    fontSize: 12,
-    padding: '4px 8px',
-    borderRadius: 4,
-    cursor: 'pointer',
-    fontFamily: "inherit",
-  };
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8 }}>
-      <button style={btnStyle} onClick={onCopy} className="msg-action-btn">
-        <CopyOutlined style={{ fontSize: 14 }} />复制
-      </button>
-      {onRegenerate && (
-        <button style={btnStyle} onClick={onRegenerate} className="msg-action-btn">
-          <ReloadOutlined style={{ fontSize: 14 }} />重新生成
-        </button>
-      )}
-      <button style={btnStyle} className="msg-action-btn">
-        <LikeOutlined style={{ fontSize: 14 }} />
-      </button>
-      <button style={btnStyle} className="msg-action-btn">
-        <DislikeOutlined style={{ fontSize: 14 }} />
-      </button>
-    </div>
-  );
-}
-
-/** Action 执行结果卡（kernel 落库回显：applied_at / side_effects / action_rid） */
-function ActionResultCard({ result }: { result: ActionResult }) {
-  const output = (result.output ?? {}) as Record<string, unknown>;
-  const fields: Array<[string, string]> = [
-    ['Action', result.actionName || result.actionId],
-    ['状态', result.success ? '成功' : '失败'],
-    ['消息', result.message],
-  ];
-  const kernelFields = Object.entries(output)
-    .filter(([k]) => ['applied_at', 'side_effects_emitted', 'action_rid', 'audit_id'].includes(k))
-    .map(([k, v]) => [k, Array.isArray(v) ? (v as string[]).join(', ') : String(v)] as [string, string]);
-  return (
-    <div style={{ marginTop: 8, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 4, padding: 12, fontSize: 12 }}>
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 }}>
-        <ThunderboltOutlined style={{ fontSize: 12, color: result.success ? 'var(--success)' : 'var(--destructive)' }} />
-        <Typography.Text style={{ fontSize: 12, color: 'var(--foreground)' }}>执行结果</Typography.Text>
-      </div>
-      {[...fields, ...kernelFields].map(([k, v]) => (
-        <div key={k} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
-          <Typography.Text style={{ fontSize: 11, color: 'var(--muted-foreground)', minWidth: 120, display: 'inline-block' }}>{k}</Typography.Text>
-          <Typography.Text style={{ fontSize: 11, color: 'var(--foreground)', wordBreak: 'break-all' }}>{v}</Typography.Text>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
- * 单条消息内容渲染（作为 Semi Chat 的 chatBox 定制内容）。
- * 头像/昵称/时间由 Semi Chat 的 chatBox（avatar/title）负责，这里只渲染气泡内部。
- */
-function MessageContentBody({
-  msg,
-  onCopy,
-  onActionResult,
-  streamingContent,
-}: {
-  msg: ChatMessage;
-  onCopy: (text: string) => void;
-  onActionResult?: (result: ActionResult) => void;
-  streamingContent?: string;
-}) {
-  const isUser = msg.role === 'user';
-  const [graphCollapsed, setGraphCollapsed] = useState(false);
-  const graphData = !isUser ? msg.metadata?.graphData : undefined;
-  const thinkingContent = !isUser ? msg.metadata?.thinking : undefined;
-  const thinkingDuration = !isUser ? msg.metadata?.thinkingDuration : undefined;
-  const actionResult = !isUser ? msg.metadata?.actionResult : undefined;
-  const actionMatch = !isUser ? msg.metadata?.actionMatch : undefined;
-  // 流式期间用草稿 content（避免 onDelta 增量追加与 onDone 最终值竞争）
-  const displayContent = msg.streaming && streamingContent != null ? streamingContent : msg.content;
-
-  return (
-    <div
-      style={{
-        maxWidth: 680,
-        padding: '14px 18px',
-        borderRadius: 4,
-        fontSize: 14,
-        lineHeight: 1.7,
-        background: isUser ? 'var(--muted)' : 'var(--card)',
-        color: 'var(--foreground)',
-        border: isUser ? 'none' : '1px solid var(--border)',
-      }}
-    >
-      {/* 思考中状态 */}
-      {(msg.streaming || msg.status === 'loading') && !streamingContent && (msg.content ?? '') === '' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0 4px' }}>
-          <div style={{ display: 'inline-flex', gap: 3 }}>
-            <span className="thinking-dot" />
-            <span className="thinking-dot" />
-            <span className="thinking-dot" />
-          </div>
-          <span>正在思考...</span>
-        </div>
-      )}
-
-      {/* 思考过程（仅 AI） */}
-      {!isUser && thinkingContent && (
-        <ThinkingSection content={thinkingContent} duration={thinkingDuration} />
-      )}
-
-      {/* 内容 */}
-      {isUser ? (
-        <div>
-          <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
-          {msg.images && msg.images.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-              {msg.images.map((img, idx) => (
-                <Image
-                  key={idx}
-                  src={img.base64 || img.url}
-                  alt="用户上传图片"
-                  style={{ maxHeight: 120, borderRadius: 4, cursor: 'pointer' }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          <MarkdownRenderer content={displayContent || ''} variant="dark" />
-          {graphData && graphData.nodes.length > 0 && (
-            <div
-              style={{
-                marginTop: 12,
-                background: 'var(--muted)',
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                padding: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 4,
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: graphCollapsed ? 0 : 8,
-                }}
-              >
-                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <BookOutlined style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
-                  <Typography.Text style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                    知识图谱 · {graphData.nodes.length} 节点 / {graphData.edges.length} 关系
-                  </Typography.Text>
-                </div>
-                <button
-                  onClick={() => setGraphCollapsed((v) => !v)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--muted-foreground)',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    padding: '2px 6px',
-                    fontFamily: 'inherit',
-                  }}
-                  title={graphCollapsed ? '展开图谱' : '收缩图谱'}
-                >
-                  {graphCollapsed ? '展开 ▾' : '收缩 ▴'}
-                </button>
-              </div>
-              {!graphCollapsed && <KnowledgeGraph data={graphData} height={300} width={620} />}
-            </div>
-          )}
-          <CitationList citations={msg.citations} />
-          <EvidencePanel claims={msg.claims} evidence={msg.evidence} />
-          {actionMatch && (
-            <ActionMatchCard
-              query={actionMatch.query}
-              onResult={(result) => onActionResult?.(result)}
-            />
-          )}
-          {actionResult && <ActionResultCard result={actionResult} />}
-          {!msg.streaming && msg.content && (
-            <MessageActions onCopy={() => onCopy(msg.content ?? '')} />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** Semi Chat 消息：在 Semi Message 上附加原始 ChatMessage 供定制渲染。 */
-type ChatPageSemiMessage = SemiMessage & {
-  original: ChatMessage;
-  streamingContent?: string;
-};
-
 export default function ChatPage() {
   const [sessions, setSessions] = useState<ChatSession[]>(() => [
     {
@@ -566,7 +310,6 @@ export default function ChatPage() {
     createSession('新对话'),
   ]);
   const [activeId, setActiveId] = useState<string>(sessions[1].id);
-  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
@@ -710,7 +453,6 @@ export default function ChatPage() {
     const localSession = createSession();
     setSessions((prev) => [localSession, ...prev]);
     setActiveId(localSession.id);
-    setInput('');
     // 异步持久化到后端
     createConversation({ title: '新对话', mode: 'chat' })
       .then((conv) => {
@@ -729,7 +471,6 @@ export default function ChatPage() {
   const handleSelectConversation = useCallback(
     (key: string) => {
       setActiveId(key);
-      setInput('');
       loadHistoryIfNeeded(key);
     },
     [loadHistoryIfNeeded],
@@ -840,7 +581,6 @@ export default function ChatPage() {
         }
 
         setLoading(true);
-        setInput('');
         setImageFiles([]);
 
         try {
@@ -889,7 +629,6 @@ export default function ChatPage() {
       }
 
       setLoading(true);
-      setInput('');
 
       // 三大原理 #3：检测 Action 意图 → 消息流内联 Action 匹配卡（不占用输入框上方空间）
       try {
@@ -1047,7 +786,6 @@ export default function ChatPage() {
 
   const [temperature, setTemperature] = useState(70);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 注入 thinking-dot 动画与少量滚动条/操作按钮 hover 样式（颜色全部走 Semi 主题 token）
   useEffect(() => {
@@ -1083,28 +821,10 @@ export default function ChatPage() {
     document.head.appendChild(style);
   }, []);
 
-  // textarea 自适应高度
-  const handleTextareaInput = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const target = e.target;
-    target.style.height = 'auto';
-    target.style.height = `${Math.min(target.scrollHeight, 160)}px`;
-    setInput(target.value);
-  }, []);
 
-  const handleTextareaKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (input.trim() && !loading) {
-          handleSend(input);
-        }
-      }
-    },
-    [input, loading, handleSend],
-  );
 
   const handleCopyMessage = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+    void navigator.clipboard.writeText(text).then(() => {
       Toast.success('已复制');
     }).catch(() => {
       Toast.error('复制失败');
@@ -1121,8 +841,8 @@ export default function ChatPage() {
     );
   }, [sessions, searchKeyword]);
 
-  // 业务消息 → Semi Chat 消息：status/streaming 映射到 Semi 的 loading/incomplete/complete/error
-  const semiMessages = useMemo<ChatPageSemiMessage[]>(
+  // 业务消息 → Semi Chat 原生消息：status/streaming 映射到 Semi 的 loading/incomplete/complete/error
+  const semiMessages = useMemo<SemiMessage[]>(
     () =>
       activeSession.messages.map((msg) => {
         const draft = msg.streaming ? streamingMap[msg.id] : undefined;
@@ -1143,8 +863,6 @@ export default function ChatPage() {
           content,
           status,
           createAt: msg.createdAt ? Date.parse(msg.createdAt) : Date.now(),
-          original: msg,
-          streamingContent: draft,
         };
       }),
     [activeSession.messages, streamingMap],
@@ -1220,85 +938,90 @@ export default function ChatPage() {
           />
         </div>
 
-        {/* conversation-list */}
+        {/* conversation-list（Semi Sidebar options 模式） */}
         <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-          {filteredSessions.map((s) => (
-            <div
-              key={s.id}
-              onClick={() => handleSelectConversation(s.id)}
-              style={{
-                padding: '10px 12px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                marginBottom: 2,
-                background: s.id === activeId ? 'var(--muted)' : 'transparent',
-                transition: 'background .15s',
-              }}
-              onMouseEnter={(e) => {
-                if (s.id !== activeId) e.currentTarget.style.background = 'var(--card)';
-              }}
-              onMouseLeave={(e) => {
-                if (s.id !== activeId) e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  marginBottom: 3,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  color: 'var(--foreground)',
-                }}
-              >
-                {s.title}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                {new Date(s.updatedAt).toLocaleString('zh-CN', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                <span
+          <Sidebar
+            visible
+            style={{ width: '100%', border: 'none', height: '100%' }}
+            activeKey={activeId}
+            options={filteredSessions.map((s) => ({
+              key: s.id,
+              name: s.title,
+              icon: <MessageOutlined style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />,
+            }))}
+            onActiveOptionChange={(_e, activeKey) => {
+              if (typeof activeKey === 'string') handleSelectConversation(activeKey);
+            }}
+            renderOptionItem={(option, onChange) => {
+              const s = sessions.find((x) => x.id === option.key);
+              if (!s) return null;
+              return (
+                <div
+                  key={option.key}
+                  onClick={(e) => onChange(e, option.key)}
                   style={{
-                    display: 'inline-block',
-                    fontSize: 10,
-                    padding: '1px 6px',
+                    padding: '10px 12px',
                     borderRadius: 4,
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--muted-foreground)',
-                  }}
-                >
-                  SuperAI
-                </span>
-                {s.favorite && (
-                  <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteConversation(s.id);
-                  }}
-                  style={{
-                    marginLeft: 'auto',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--muted-foreground)',
                     cursor: 'pointer',
-                    padding: 2,
+                    marginBottom: 2,
+                    background: s.id === activeId ? 'var(--muted)' : 'transparent',
+                    transition: 'background .15s',
                   }}
-                  title="删除"
                 >
-                  <DeleteOutlined style={{ fontSize: 12 }} />
-                </button>
-              </div>
-            </div>
-          ))}
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      marginBottom: 3,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      color: 'var(--foreground)',
+                    }}
+                  >
+                    {s.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                    {new Date(s.updatedAt).toLocaleString('zh-CN', {
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: 10,
+                        padding: '1px 6px',
+                        borderRadius: 4,
+                        background: 'var(--card)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--muted-foreground)',
+                      }}
+                    >
+                      SuperAI
+                    </span>
+                    {s.favorite && (
+                      <StarFilled style={{ fontSize: 10, color: 'var(--warning)' }} />
+                    )}
+                    <Button
+                      size="small"
+                      theme="borderless"
+                      icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+                      title="删除会话"
+                      style={{ marginLeft: 'auto' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteConversation(s.id);
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            }}
+          />
         </div>
 
         {/* conversation-footer - 知识库选择 */}
@@ -1374,58 +1097,19 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <Chat
+<AIChatDialogue
           key={activeSession.id}
           className="superai-chat"
-          align="leftRight"
-          mode="noBubble"
           style={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 'none', padding: '24px 0 0' }}
           roleConfig={{
-            user: { name: 'Admin', avatar: <UserOutlined style={{ fontSize: 14 }} /> },
-            assistant: { name: 'SuperAI', avatar: <RobotOutlined style={{ fontSize: 14 }} /> },
+            user: { name: 'Admin', avatar: '👤' },
+            assistant: { name: 'SuperAI', avatar: '🤖' },
           }}
           chats={semiMessages}
-          chatBoxRenderConfig={{
-            renderChatBoxTitle: ({ message, defaultTitle }) => {
-              const original = (message as ChatPageSemiMessage | undefined)?.original;
-              const time = original?.createdAt
-                ? new Date(original.createdAt).toLocaleTimeString('zh-CN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '';
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)' }}>
-                    {defaultTitle}
-                  </span>
-                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{time}</span>
-                </div>
-              );
-            },
-            renderChatBoxContent: ({ message }) => {
-              const semiMsg = message as ChatPageSemiMessage | undefined;
-              if (!semiMsg) return null;
-              return (
-                <MessageContentBody
-                  msg={semiMsg.original}
-                  onCopy={handleCopyMessage}
-                  streamingContent={semiMsg.streamingContent}
-                  onActionResult={(result) => {
-                    updateSession(activeSession.id, (session) => ({
-                      ...session,
-                      messages: [...session.messages, createMessage('assistant', '', {
-                        status: 'success',
-                        metadata: { actionResult: result },
-                      })],
-                      updatedAt: now(),
-                    }));
-                  }}
-                />
-              );
-            },
-            // 复制/点赞/点踩按钮已内置于消息气泡（MessageContentBody），关闭 Semi 默认 action 条
-            renderChatBoxAction: () => null,
+          onMessageCopy={(message) => {
+            if (message?.content && typeof message.content === 'string') {
+              handleCopyMessage(message.content);
+            }
           }}
           topSlot={
             activeSession.messages.length === 0 ? (
@@ -1442,199 +1126,89 @@ export default function ChatPage() {
           }
           hints={activeSession.messages.length === 0 ? WELCOME_PROMPTS : EMPTY_HINTS}
           hintStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginLeft: 0 }}
-          renderHintBox={({ content, index, onHintClick }) => (
-            <button
-              key={index}
-              onClick={onHintClick}
-              style={{
-                background: 'var(--muted)',
-                border: '1px solid var(--border)',
-                color: 'var(--muted-foreground)',
-                borderRadius: 4,
-                padding: '6px 12px',
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              {content}
-            </button>
-          )}
           onHintClick={(hint) => {
             void handleSend(hint);
           }}
-          renderInputArea={() => (
-            /* input-bar：多模态开关 / 模型选择 / 图片上传 / 输入框 / 发送按钮（保持原交互） */
-            <div
-              style={{
-                background: 'var(--card)',
-                borderTop: '1px solid var(--border)',
-                padding: '16px 24px',
-                display: 'flex',
-                alignItems: 'flex-end',
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: 'var(--muted)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--foreground)')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-              >
-                {isMultimodal && (
-                  <div style={{ padding: '8px 12px 0', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <Switch
-                      checked={isMultimodal}
-                      onChange={handleMultimodalToggle}
-                      checkedText="多模态"
-                      uncheckedText="文本"
-                      size="small"
-                    />
-                    <Select
-                      placeholder="选择多模态模型"
-                      value={selectedModelId}
-                      onChange={(v) => setSelectedModelId(v as string)}
-                      optionList={multimodalModels.map((m) => ({
-                        label: m.displayName || m.modelCode,
-                        value: m.modelId,
-                      }))}
-                      style={{ width: 180 }}
-                      size="small"
-                    />
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                      最多 8 张 · 单张 ≤5MB
-                    </span>
-                  </div>
-                )}
-                {isMultimodal && imageFiles.length > 0 && (
-                  <div style={{ padding: '8px 12px 0' }}>
-                    <Upload
-                      fileList={imageFiles}
-                      onChange={({ fileList }) =>
-                        setImageFiles(fileList.map((f) => ({ ...f, status: 'success' })))
-                      }
-                      beforeUpload={({ file }) => beforeUpload(file.fileInstance as File)}
-                      multiple
-                      limit={8}
-                      listType="picture"
-                      accept="image/png,image/jpeg,image/webp"
-                    >
-                      {imageFiles.length < 8 && (
-                        <div>
-                          <PaperClipOutlined />
-                          <div style={{ marginTop: 8, fontSize: 12 }}>上传图片</div>
-                        </div>
-                      )}
-                    </Upload>
-                  </div>
-                )}
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={handleTextareaInput}
-                  onKeyDown={handleTextareaKeyDown}
-                  placeholder={
-                    isMultimodal
-                      ? '输入文字描述，与图片一起发送，Shift + Enter 换行...'
-                      : '输入消息，Shift + Enter 换行...'
-                  }
-                  style={{
-                    width: '100%',
-                    minHeight: 40,
-                    maxHeight: 160,
-                    resize: 'none',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--foreground)',
-                    fontSize: 14,
-                    fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
-                    padding: '10px 14px',
-                    outline: 'none',
-                    lineHeight: 1.5,
-                  }}
-                />
-                {/* 工具栏：附件按钮 + 模型指示器（在输入区域内部） */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '4px 8px 6px 8px',
-                  }}
-                >
-                  <Tooltip content={isMultimodal ? '关闭多模态' : '开启多模态（图片上传）'}>
-                    <button
-                      onClick={() => handleMultimodalToggle(!isMultimodal)}
-                      style={{
-                        background: 'transparent',
-                        color: isMultimodal ? 'var(--foreground)' : 'var(--muted-foreground)',
-                        border: 'none',
-                        borderRadius: 4,
-                        height: 28,
-                        width: 28,
-                        padding: 0,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'var(--foreground)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = isMultimodal ? 'var(--foreground)' : 'var(--muted-foreground)';
-                      }}
-                    >
-                      <PaperClipOutlined style={{ fontSize: 14 }} />
-                    </button>
-                  </Tooltip>
+        />
+        <AIChatInput
+          placeholder={
+            isMultimodal
+              ? '输入文字描述，与图片一起发送，Shift + Enter 换行...'
+              : '输入消息，Shift + Enter 换行...'
+          }
+          sendHotKey="enter"
+          generating={loading}
+          onStopGenerate={handleCancel}
+          onMessageSend={(content) => {
+            void handleSend(extractPlainText(content.inputContents ?? []));
+          }}
+          uploadProps={
+            isMultimodal
+              ? {
+                  // 本地 base64 读取，不真实上传（beforeUpload 返回 false 拦截）
+                  action: '',
+                  fileList: imageFiles,
+                  onChange: ({ fileList }) =>
+                    setImageFiles(fileList.map((f) => ({ ...f, status: 'success' }))),
+                  beforeUpload: ({ file }) => beforeUpload(file.fileInstance as File),
+                  multiple: true,
+                  limit: 8,
+                  listType: 'picture',
+                  accept: 'image/png,image/jpeg,image/webp',
+                }
+              : undefined
+          }
+          renderTopSlot={({ handleUploadFileDelete }) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <Switch
+                checked={isMultimodal}
+                onChange={handleMultimodalToggle}
+                checkedText="多模态"
+                uncheckedText="文本"
+                size="small"
+              />
+              {isMultimodal ? (
+                <>
+                  <Select
+                    size="small"
+                    placeholder="选择多模态模型"
+                    value={selectedModelId}
+                    onChange={(v) => setSelectedModelId(v as string)}
+                    optionList={multimodalModels.map((m) => ({
+                      label: m.displayName || m.modelCode,
+                      value: m.modelId,
+                    }))}
+                    style={{ width: 180 }}
+                  />
+                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                    最多 8 张 · 单张 ≤5MB
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>模型</span>
                   <Select
                     size="small"
                     value={currentModel}
                     onChange={(v) => setCurrentModel(v as string)}
                     optionList={availableModels}
-                    style={{ width: 160, fontSize: 11 }}
+                    style={{ width: 160 }}
                     dropdownMatchSelectWidth={false}
                   />
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  if (loading) {
-                    handleCancel();
-                  } else if (input.trim()) {
-                    handleSend(input);
-                  }
-                }}
-                disabled={!loading && !input.trim()}
-                style={{
-                  background: loading ? 'var(--muted)' : 'var(--foreground)',
-                  color: loading ? 'var(--muted-foreground)' : 'var(--background)',
-                  border: 'none',
-                  borderRadius: 4,
-                  height: 40,
-                  width: 40,
-                  padding: 0,
-                  fontSize: 14,
-                  cursor: (!loading && !input.trim()) ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  opacity: (!loading && !input.trim()) ? 0.5 : 1,
-                }}
-              >
-                {loading ? '■' : <SendOutlined style={{ fontSize: 16 }} />}
-              </button>
+                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>温度</span>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={temperature}
+                    onChange={(v) => setTemperature(Array.isArray(v) ? v[0] : v ?? 50)}
+                    style={{ width: 120 }}
+                  />
+                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                    {(temperature / 100).toFixed(1)}
+                  </span>
+                </>
+              )}
             </div>
           )}
         />
