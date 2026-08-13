@@ -202,7 +202,9 @@ def create_app() -> FastAPI:
             pg_store = get_pg_store()
             success = 0
             for chunk_text in chunks:
-                vec = embedder.embed(chunk_text)
+                # Offload the blocking embed (sync httpx → in-process llmgw) to
+                # a worker thread to avoid deadlocking the event loop.
+                vec = await asyncio.to_thread(embedder.embed, chunk_text)
                 chunk_id = hybrid.add(doc_id, chunk_text, vec, {"filename": file.filename or ""})
                 graph.insert(chunk_text, doc_id, {"filename": file.filename or ""})
                 lightrag.insert(chunk_text, doc_id, {"filename": file.filename or ""})
