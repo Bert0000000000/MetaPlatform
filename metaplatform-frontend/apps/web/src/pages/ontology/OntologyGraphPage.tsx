@@ -351,8 +351,8 @@ export default function OntologyGraphPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
-            <Button theme="light" type="secondary" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 8px', justifyContent: 'center' }}>重置</Button>
-            <Button theme="light" type="secondary" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 8px', justifyContent: 'center', background: 'var(--foreground)', color: 'var(--background)', borderColor: 'var(--foreground)' }}>应用</Button>
+            <Button theme="light" type="secondary" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 24px', justifyContent: 'center' }}>重置</Button>
+            <Button theme="light" type="secondary" style={{ flex: 1, height: 28, fontSize: 11, padding: '0 24px', justifyContent: 'center', background: 'var(--foreground)', color: 'var(--background)', borderColor: 'var(--foreground)' }}>应用</Button>
           </div>
         </div>
 

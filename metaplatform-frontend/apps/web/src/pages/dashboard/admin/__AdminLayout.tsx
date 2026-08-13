@@ -1,5 +1,5 @@
 import { Fragment, useMemo, type ReactNode } from "react";
-import { Breadcrumb, type BreadcrumbItem } from "@mate/shared";
+import { Breadcrumb, PageRoot, type BreadcrumbItem } from "@mate/shared";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const ADMIN_TABS: Array<{ key: string; label: string; path: string }> = [
@@ -37,7 +37,7 @@ export function AdminLayout({ title, extra, children }: AdminLayoutProps) {
   }, [location.pathname]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+    <PageRoot>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
         <div>
           <Breadcrumb items={breadcrumb} />
@@ -96,7 +96,7 @@ export function AdminLayout({ title, extra, children }: AdminLayoutProps) {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>{children}</div>
-    </div>
+    </PageRoot>
   );
 }
 

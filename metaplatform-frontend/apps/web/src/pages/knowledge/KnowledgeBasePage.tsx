@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { Card, Table, Button, Space, Tag, Modal, Form, Toast } from '@douyinfe/semi-ui';
 import { Plus, RefreshCw, Database } from 'lucide-react';
-import { useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
+import { PageRoot, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
 import { listKb, createKb, type KbEntity } from '@/api/kb';
 
 
@@ -45,7 +45,7 @@ export default function KnowledgeBasePage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <PageRoot>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
         <Card
           style={{ marginTop: 16 }}
@@ -109,6 +109,6 @@ export default function KnowledgeBasePage() {
           </Form>
         </Modal>
       </div>
-    </div>
+    </PageRoot>
   );
 }

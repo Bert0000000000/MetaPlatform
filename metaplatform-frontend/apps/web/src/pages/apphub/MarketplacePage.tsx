@@ -85,9 +85,6 @@ export default function MarketplacePage() {
   return (
     <div>
       <div className="mcphub-page-header" style={{ marginBottom: 16 }}>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          <AppstoreOutlined /> 应用市场
-        </Typography.Title>
       </div>
 
       <Space vertical style={{ marginBottom: 16 }}>

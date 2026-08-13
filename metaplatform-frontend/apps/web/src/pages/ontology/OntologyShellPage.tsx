@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch } from 'lucide-react';
-import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, usePageAssistant } from '@mate/shared';
+import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus } from 'lucide-react';
+import { Button } from '@douyinfe/semi-ui';
+import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
 import OntologyModelingPage from './OntologyModelingPage';
 import OntologyDatacenterPage from './OntologyDatacenterPage';
 import OntologyActionPage from './OntologyActionPage';
@@ -41,13 +42,16 @@ export default function OntologyShellPage() {
 
   const assistant = usePageAssistant({
     employeeId: 'ontology-shell',
-    employeeName: '本体建模数字员工',
+    employeeName: '本体 AI',
     employeeDescription: '统一调度本体引擎各模块的数字员工',
     moduleLabel: 'Ontology 引擎',
-    welcomeMessage: '你好，我是本体引擎的统一数字员工。可以协助你管理概念/数据/动作/图谱各模块。',
+    welcomeMessage: '你好，我是本体 AI。可以协助你管理概念/数据/动作/图谱各模块。',
     suggestions: ['当前本体有多少概念', 'CDC 同步状态如何', '近期新增了哪些 Action'],
     createReply: (content) => `我会在「${TABS.find((t) => t.key === activeTab)?.label ?? activeTab}」模块内为你解答：「${content}」。`,
   });
+
+  // 概念模型 tab 的「新建概念」drawer 开关：状态提到 Shell，按钮渲染在 sticky 行右侧
+  const [createOpen, setCreateOpen] = useState(false);
 
   const subTabs = useMemo(
     () => TABS.map((t) => ({ label: t.label, path: t.path, activePath: activeTab === t.key ? '/ontology' : `${location.pathname}?tab=${t.key}` })),
@@ -68,26 +72,55 @@ export default function OntologyShellPage() {
     setSearchParams(next, { replace: false });
   };
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      {/* 一级 Tab 栏 */}
-      <SubTabs items={subTabs} activePath={activeTab === 'concept' ? '/ontology' : `?tab=${activeTab}`} />
-      <AIAssistantWorkspace assistant={assistant}>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
-
-          {activeTab === 'concept' && <OntologyModelingPage />}
-          {activeTab === 'datacenter' && <OntologyDatacenterPage initialSubTab={subTab} />}
-          {activeTab === 'action' && <OntologyActionPage />}
-          {activeTab === 'graph' && <OntologyGraphPage />}
-          {activeTab === 'relationship-types' && <RelationshipTypeListPage />}
-          {activeTab === 'action-types' && <ActionTypeListPage />}
-        </div>
-      </AIAssistantWorkspace>
-
-      {/* 全局 AI 助手按钮（fixed bottom-right via trigger） */}
-      <div style={{ position: 'fixed', right: 24, bottom: 24, zIndex: 50 }}>
-        <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
+  const stickyHeader = (
+    <div
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        height: 64,
+        padding: '0 24px',
+        background: 'var(--background)',
+        borderBottom: '1px solid var(--border)',
+        flexShrink: 0,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+        <SubTabs
+          items={subTabs}
+          activePath={activeTab === 'concept' ? '/ontology' : `?tab=${activeTab}`}
+          embedded
+        />
       </div>
+      {activeTab === 'concept' && (
+        <Button
+          theme="solid"
+          type="primary"
+          onClick={() => setCreateOpen(true)}
+          style={{ flexShrink: 0 }}
+        >
+          <Plus style={{ width: 16, height: 16 }} />新建概念
+        </Button>
+      )}
+      <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
     </div>
+  );
+
+  return (
+    <PageRoot header={stickyHeader}>
+      <AIAssistantWorkspace assistant={assistant}>
+        {activeTab === 'concept' && (
+          <OntologyModelingPage createOpen={createOpen} setCreateOpen={setCreateOpen} />
+        )}
+        {activeTab === 'datacenter' && <OntologyDatacenterPage initialSubTab={subTab} />}
+        {activeTab === 'action' && <OntologyActionPage />}
+        {activeTab === 'graph' && <OntologyGraphPage />}
+        {activeTab === 'relationship-types' && <RelationshipTypeListPage />}
+        {activeTab === 'action-types' && <ActionTypeListPage />}
+      </AIAssistantWorkspace>
+    </PageRoot>
   );
 }

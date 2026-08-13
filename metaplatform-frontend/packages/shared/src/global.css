@@ -37,8 +37,6 @@ body {
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
 
-  --mate-page-padding-x: 24px;
-  --mate-page-padding-y: 24px;
   --mate-content-padding: 24px;
 }
 
@@ -422,8 +420,6 @@ a {
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   :root {
-    --mate-page-padding-x: 12px;
-    --mate-page-padding-y: 12px;
     --mate-content-padding: 16px;
   }
 

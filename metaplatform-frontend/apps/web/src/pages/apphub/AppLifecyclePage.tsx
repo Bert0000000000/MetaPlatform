@@ -89,9 +89,6 @@ export default function AppLifecyclePage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
           返回
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          应用生命周期 - {app.name}
-        </Typography.Title>
         <Tag color={STATUS_MAP[app.status].color}>{STATUS_MAP[app.status].label}</Tag>
       </Space>
 

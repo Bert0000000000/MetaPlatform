@@ -109,9 +109,6 @@ export default function VersionManagementPage() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/apps/${appId}`)}>
           返回应用
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          版本管理 - {app.name}
-        </Typography.Title>
       </Space>
 
       <Space style={{ marginBottom: 16 }}>

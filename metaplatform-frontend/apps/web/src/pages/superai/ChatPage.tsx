@@ -798,7 +798,7 @@ export default function ChatPage() {
 
   // ============ 渲染 ============
   return (
-    <div style={{ display: 'flex', flex: 1, minHeight: 0, width: 'auto', margin: '0 -24px' }}>
+    <div style={{ display: 'flex', flex: 1, minHeight: 0, width: 'auto' }}>
       {/* ===== 左：对话区 ===== */}
       <div
         style={{

@@ -35,21 +35,8 @@ const SuperaiSchedulePlanCardPage = lazy(() => import('./pages/superai/ScheduleP
 const SuperaiTaskOrchestrationPage = lazy(() => import('./pages/superai/TaskOrchestrationPage'));
 const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
 
-const ApphubAppListPage = lazy(() => import('./pages/apphub/AppListPage'));
-const ApphubAppDetailPage = lazy(() => import('./pages/apphub/AppDetailPage'));
-const ApphubAppLifecyclePage = lazy(() => import('./pages/apphub/AppLifecyclePage'));
-const ApphubVersionManagementPage = lazy(() => import('./pages/apphub/VersionManagementPage'));
-const ApphubReleaseRecordPage = lazy(() => import('./pages/apphub/ReleaseRecordPage'));
-const ApphubFormDesignerPage = lazy(() => import('./pages/apphub/FormDesignerPage'));
-const ApphubFlowDesignerPage = lazy(() => import('./pages/apphub/FlowDesignerPage'));
-const ApphubPageDesignerPage = lazy(() => import('./pages/apphub/PageDesignerPage'));
-const ApphubMarketplacePage = lazy(() => import('./pages/apphub/MarketplacePage'));
-const ApphubMarketplaceDetailPage = lazy(() => import('./pages/apphub/MarketplaceDetailPage'));
-const ApphubMarketPage = lazy(() => import('./pages/apphub/MarketPage'));
-const ApphubTemplateDetailPage = lazy(() => import('./pages/apphub/TemplateDetailPage'));
-const ApphubMyTemplatesPage = lazy(() => import('./pages/apphub/MyTemplatesPage'));
-const ApphubTemplateSubmitPage = lazy(() => import('./pages/apphub/TemplateSubmitPage'));
-const ApphubAIDesignerPage = lazy(() => import('./pages/apphub/AIDesignerPage'));
+// 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换
+const ApphubShellPage = lazy(() => import('./pages/apphub/ApphubShellPage'));
 const ApphubRuntimePage = lazy(() => import('./pages/apphub/runtime/AppRuntimePage'));
 
 const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
@@ -246,21 +233,23 @@ function AppRoutes() {
           <Route path="arch/tech-debt" element={<ArchLayout><ArchTechDebtPage /></ArchLayout>} />
           <Route path="arch/ontology-mapping" element={<ArchLayout><ArchOntologyMappingPage /></ArchLayout>} />
 
-          <Route path="apps" element={<ApphubAppListPage />} />
-          <Route path="apps/:appId" element={<ApphubAppDetailPage />} />
-          <Route path="apps/:appId/lifecycle" element={<ApphubAppLifecyclePage />} />
-          <Route path="apps/:appId/versions" element={<ApphubVersionManagementPage />} />
-          <Route path="apps/:appId/versions/:versionId" element={<ApphubReleaseRecordPage />} />
-          <Route path="apps/:appId/modules/:moduleId/form-designer" element={<ApphubFormDesignerPage />} />
-          <Route path="apps/:appId/modules/:moduleId/flow-designer" element={<ApphubFlowDesignerPage />} />
-          <Route path="pages/:pageId" element={<ApphubPageDesignerPage />} />
-          <Route path="marketplace" element={<ApphubMarketplacePage />} />
-          <Route path="marketplace/:templateId" element={<ApphubMarketplaceDetailPage />} />
-          <Route path="market" element={<ApphubMarketPage />} />
-          <Route path="market/:templateId" element={<ApphubTemplateDetailPage />} />
-          <Route path="my-templates" element={<ApphubMyTemplatesPage />} />
-          <Route path="my-templates/submit" element={<ApphubTemplateSubmitPage />} />
-          <Route path="ai-designer" element={<ApphubAIDesignerPage />} />
+          {/* 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换 */}
+          <Route path="apps" element={<ApphubShellPage />} />
+          {/* 旧子路由重定向到合并页（带 tab + app/tid 参数保留用户上下文） */}
+          <Route path="apps/:appId" element={<Navigate to="/apps?app=:appId" replace />} />
+          <Route path="apps/:appId/lifecycle" element={<Navigate to="/apps?app=:appId&tab=lifecycle" replace />} />
+          <Route path="apps/:appId/versions" element={<Navigate to="/apps?app=:appId&tab=versions" replace />} />
+          <Route path="apps/:appId/versions/:versionId" element={<Navigate to="/apps?app=:appId&tab=versions&vid=:versionId" replace />} />
+          <Route path="apps/:appId/modules/:moduleId/form-designer" element={<Navigate to="/apps?app=:appId&module=:moduleId&tab=form-designer" replace />} />
+          <Route path="apps/:appId/modules/:moduleId/flow-designer" element={<Navigate to="/apps?app=:appId&module=:moduleId&tab=flow-designer" replace />} />
+          <Route path="pages/:pageId" element={<Navigate to="/apps?app=:pageId&tab=page" replace />} />
+          <Route path="marketplace" element={<Navigate to="/apps?tab=market&mp=1" replace />} />
+          <Route path="marketplace/:templateId" element={<Navigate to="/apps?tab=market&mp=1&tid=:templateId" replace />} />
+          <Route path="market" element={<Navigate to="/apps?tab=market" replace />} />
+          <Route path="market/:templateId" element={<Navigate to="/apps?tab=market&tid=:templateId" replace />} />
+          <Route path="my-templates" element={<Navigate to="/apps?tab=my-templates" replace />} />
+          <Route path="my-templates/submit" element={<Navigate to="/apps?tab=my-templates&submit=1" replace />} />
+          <Route path="ai-designer" element={<Navigate to="/apps?tab=ai-designer" replace />} />
 
           {/* 本体引擎原单页入口已下线，重定向到默认 tab */}
           <Route path="ontology" element={<OntologyShellPage />} />

@@ -108,7 +108,7 @@ export default function SuperAIPage() {
         .sa-btn-send:hover { opacity: 0.9; }
         .sa-btn-send svg { width: 16px; height: 16px; }
       `}</style>
-      <div className="sa-layout" style={{ flex: 1, minHeight: 0, margin: '0 -24px' }}>
+      <div className="sa-layout" style={{ flex: 1, minHeight: 0 }}>
         {/* Conversation Panel */}
         <div className="sa-conv-panel">
           <div className="sa-conv-header">

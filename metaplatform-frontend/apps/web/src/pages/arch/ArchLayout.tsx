@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ModuleTabsLayout, type ModuleTab } from '@mate/shared';
+import { ModuleTabsLayout, PageRoot, type ModuleTab } from '@mate/shared';
 
 /**
  * 架构中心 6 个 tab 子页面（单级菜单，顶部 Tab 导航）。
@@ -45,5 +45,9 @@ export const ARCH_TABS: ModuleTab[] = [
 
 /** 架构中心布局：全局 ModuleTabsLayout + 6 个 tab，内容为具体页面 */
 export default function ArchLayout({ children }: { children: ReactNode }) {
-  return <ModuleTabsLayout tabs={ARCH_TABS}>{children}</ModuleTabsLayout>;
+  return (
+    <PageRoot>
+      <ModuleTabsLayout tabs={ARCH_TABS}>{children}</ModuleTabsLayout>
+    </PageRoot>
+  );
 }

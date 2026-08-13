@@ -50,7 +50,7 @@ import EmployeeCard from './components/EmployeeCard';
 import ExternalAgentsPanel from './components/ExternalAgentsPanel';
 import EmployeeCreateDrawer from './components/EmployeeCreateDrawer';
 import {
-  PageShell,
+  PageRoot,
   PlatformSegmented,
   PlatformPagination,
   SearchInput,
@@ -370,7 +370,7 @@ export default function EmployeeListPage() {
   );
 
   return (
-    <PageShell>
+    <PageRoot>
       {/* 顶部标题行 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Space align="center" spacing={8}>
@@ -527,6 +527,6 @@ export default function EmployeeListPage() {
         onClose={() => setCreateOpen(false)}
         onCreated={handleCreated}
       />
-    </PageShell>
+    </PageRoot>
   );
 }

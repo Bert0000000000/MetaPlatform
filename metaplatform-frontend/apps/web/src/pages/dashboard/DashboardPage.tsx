@@ -12,7 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Toast, Button, Card, Typography, SideSheet, Tag } from '@douyinfe/semi-ui';
-import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
+import { FormDrawer, Field, PageRoot, TextInput, TextArea, Select } from '@mate/shared';
 import { getDashboardSummary, getMessages, getDeliverablesSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent, type MessageItem, type DeliverableItem } from '@/api/dashboard/workbench';
 import { IconPaperclip } from '@douyinfe/semi-icons';
 
@@ -203,7 +203,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <PageRoot>
 
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* 欢迎卡 */}
@@ -606,6 +606,6 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           </div>
         </FormDrawer>
       )}
-    </div>
+    </PageRoot>
   );
 }

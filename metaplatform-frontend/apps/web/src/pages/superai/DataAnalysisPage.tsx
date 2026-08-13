@@ -38,6 +38,7 @@ import type {
   QueryExecuteResult,
   QueryHistoryItem,
 } from '@/api/superai/types';
+import { PageRoot } from '@mate/shared';
 
 const { Text } = Typography;
 
@@ -211,7 +212,8 @@ export default function DataAnalysisPage() {
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', gap: 16 }}>
+    <PageRoot>
+      <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0 }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Card>
           <Space vertical spacing="medium" style={{ width: '100%' }}>
@@ -384,6 +386,7 @@ export default function DataAnalysisPage() {
         </Spin>
       </Card>
     </div>
+    </PageRoot>
   );
 }
 

@@ -40,6 +40,7 @@ import type {
 } from '@/api/apphub/types/ai-designer';
 import type { FormField, FlowNode } from '@/api/apphub/types';
 import type { DashboardWidget } from '@/api/apphub/pages';
+import { PageRoot } from '@mate/shared';
 
 const { Sider, Content } = Layout;
 const SESSIONS_KEY = 'metaplatform:ai-designer:sessions';
@@ -701,13 +702,7 @@ export default function AIDesignerPage() {
   };
 
   return (
-    <div
-      style={{
-        height: 'calc(100vh - 120px)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <PageRoot>
       <div
         style={{
           display: 'flex',
@@ -720,9 +715,9 @@ export default function AIDesignerPage() {
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/apps')}>
             返回
           </Button>
-          <Typography.Title heading={4} style={{ margin: 0 }}>
+          <Typography.Text strong style={{ fontSize: 16 }}>
             <RobotOutlined /> AI 设计器
-          </Typography.Title>
+          </Typography.Text>
         </Space>
 
         <Space>
@@ -888,6 +883,6 @@ export default function AIDesignerPage() {
           </Card>
         </Content>
       </Layout>
-    </div>
+    </PageRoot>
   );
 }

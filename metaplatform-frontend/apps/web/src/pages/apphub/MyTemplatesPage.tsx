@@ -75,19 +75,6 @@ export default function MyTemplatesPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          <Icons.AppstoreOutlined /> 我的模板
-        </Typography.Title>
-        <Space>
-          <Button icon={<Icons.AppstoreOutlined />} onClick={() => navigate('/market')}>
-            浏览应用市场
-          </Button>
-          <Button theme="solid" type="primary" icon={<Icons.PlusOutlined />} onClick={() => navigate('/my-templates/submit')}>
-            投稿新模板
-          </Button>
-        </Space>
-      </div>
 
       <Card loading={loading}>
         {templates.length === 0 ? (

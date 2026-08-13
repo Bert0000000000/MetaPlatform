@@ -56,6 +56,7 @@ import type {
 } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatDateTime } from '@/utils/datetime';
+import { PageRoot } from '@mate/shared';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -398,7 +399,7 @@ export default function SettingsPage() {
   const currentMeta = NAV_META[active] ?? NAV_META.appearance;
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', width: 'auto', margin: '0 -24px' }}>
+    <PageRoot>
       {/* 左侧分区导航 */}
       <div
         style={{
@@ -834,6 +835,6 @@ export default function SettingsPage() {
           style={{ marginTop: 8 }}
         />
       </Modal>
-    </div>
+    </PageRoot>
   );
 }

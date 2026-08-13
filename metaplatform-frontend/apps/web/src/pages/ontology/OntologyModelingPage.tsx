@@ -5,7 +5,7 @@ import {
   Hexagon, Search, Plus, Columns3,
   Link as LinkIcon, ArrowRight, Zap, GitBranch,
 } from 'lucide-react';
-import { AIAssistantTrigger, AIAssistantWorkspace, FormDrawer, Field, TextInput, usePageAssistant } from '@mate/shared';
+import { FormDrawer, Field, TextInput } from '@mate/shared';
 import {
   listObjectTypes, listActionTypes, listLinkTypes,
   createObjectType, appendObjectTypeProperty,
@@ -49,7 +49,13 @@ function conceptStatus(ot: KernelObjectType, linkTypes: KernelLinkType[], action
   return 'disconnected';
 }
 
-export default function OntologyModelingPage() {
+export default function OntologyModelingPage({
+  createOpen,
+  setCreateOpen,
+}: {
+  createOpen: boolean;
+  setCreateOpen: (v: boolean) => void;
+}) {
     const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
   const [linkTypes, setLinkTypes] = useState<KernelLinkType[]>([]);
@@ -66,8 +72,7 @@ export default function OntologyModelingPage() {
   const [propTitle, setPropTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // 新建概念抽屉
-  const [createOpen, setCreateOpen] = useState(false);
+  // 新建概念抽屉（开关由 Shell 拥有，按钮在 sticky Tab 行右侧）
   const [createName, setCreateName] = useState('');
   const [createSlug, setCreateSlug] = useState('');
   const [createDomain, setCreateDomain] = useState('crm');
@@ -155,34 +160,6 @@ export default function OntologyModelingPage() {
     if (!selectedConceptDetail) return [];
     return linkTypes.filter((lt) => lt.src === selectedConceptDetail.rid || lt.dst === selectedConceptDetail.rid);
   }, [linkTypes, selectedConceptDetail]);
-
-  const assistant = usePageAssistant({
-    employeeId: 'ontology-modeler',
-    employeeName: '本体建模数字员工',
-    employeeDescription: '协助设计概念、属性、关系并检查本体模型一致性。',
-    moduleLabel: 'Ontology 建模',
-    welcomeMessage: '你好，我是本体建模数字员工。可以协助你把业务语义整理为清晰的本体模型。',
-    suggestions: ['当前本体有多少概念', '有哪些 Action 可以执行', '设计新的业务概念'],
-    createReply: (content) => {
-      // 基于真实 kernel 数据生成摘要回复（非 mock）
-      const lines: string[] = [];
-      lines.push(`当前租户下共有 **${objectTypes.length}** 个概念（ObjectType）、**${actionTypes.length}** 个 Action（ActionType）、**${linkTypes.length}** 条关系（LinkType）。`);
-      if (domains.length > 0) {
-        lines.push(`一级本体（按领域分组）：${domains.map((d) => `${d.label}(${d.items.length})`).join('、')}。`);
-      }
-      if (objectTypes.length > 0) {
-        const sample = objectTypes.slice(0, 5).map((ot) => ot.display_name).join('、');
-        lines.push(`当前概念示例：${sample}。`);
-      }
-      if (actionTypes.length > 0) {
-        lines.push(`可用 Action：${actionTypes.map((at) => at.rid.split('.').pop()).join('、')}。`);
-      }
-      if (/搜索|查找|查询/.test(content)) {
-        lines.push(`搜索「${content.replace(/搜索|查找|查询/g, '').trim() || '全部'}」后，可在上方概念表格中查看匹配结果。`);
-      }
-      return lines.join('\n');
-    },
-  });
 
   // 点击概念 → 选中并滚动到详情面板
   const handleSelectConcept = (rid: string) => {
@@ -295,11 +272,6 @@ export default function OntologyModelingPage() {
         .om-stat-label{font-size:12px;color:var(--muted-foreground);margin-top:6px}
       `}</style>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
-
-      {/* Toolbar（Shell 已统一全局 AI 助手；此处只保留 tab-specific 操作） */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button theme="solid" type="primary" onClick={() => setCreateOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建概念</Button>
-      </div>
 
       {/* Stats（真实数据） */}
       <div className="om-stats-row">

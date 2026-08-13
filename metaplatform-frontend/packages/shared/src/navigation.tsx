@@ -108,11 +108,9 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     label: '应用中心',
     icon: <Boxes style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/apps',
+    // 子内容在 ApphubShellPage 内用 SubTabs 切换；左导航只显示单条目。
     children: [
-      { key: 'apps', label: '应用列表', path: '/apps' },
-      { key: 'market', label: '模板市场', path: '/market', hidden: true },
-      { key: 'my-templates', label: '我的模板', path: '/my-templates', hidden: true },
-      { key: 'ai-designer', label: 'AI 设计器', path: '/ai-designer', hidden: true },
+      { key: 'apps-home', label: '应用中心', path: '/apps' },
     ],
   },
   {

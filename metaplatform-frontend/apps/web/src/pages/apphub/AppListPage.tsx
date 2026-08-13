@@ -42,6 +42,7 @@ import {
 } from '@ant-design/icons';
 import { listApps, deleteApp, listGroups } from '@/api/apphub/apps';
 import AppDesignSheet from './DesignFlowPage';
+import { PageRoot } from '@mate/shared';
 import type { AppItem, AppStatus } from '@/api/apphub/types';
 
 const STATUS_MAP: Record<AppStatus, { label: string; color: TagColor }> = {
@@ -142,9 +143,10 @@ export default function AppListPage() {
         onCreated={(appId) => navigate(`/apps/${appId}`)}
         editingId={designFromId}
       />
-      <div style={{ margin: '0 -24px', padding: '24px 32px 32px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <PageRoot>
+        <div style={{ padding: '24px 32px 32px' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <Typography.Title heading={3} style={{ margin: 0 }}>
             应用中心
@@ -387,8 +389,9 @@ export default function AppListPage() {
         </div>
       )}
     </div>
+    </PageRoot>
 
-      <AppDesignSheet
+    <AppDesignSheet
         visible={designOpen}
         onClose={() => {
           const next = new URLSearchParams(searchParams);

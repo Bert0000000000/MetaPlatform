@@ -195,11 +195,6 @@ export default function TemplateDetailPage() {
         <Button icon={<Icons.ArrowLeftOutlined />} onClick={() => navigate('/market')}>
           返回市场
         </Button>
-        <Typography.Title heading={4} style={{ margin: 0 }}>
-          {template.name}
-        </Typography.Title>
-        <Tag color={CATEGORY_TAG_COLOR[template.category]}>{CATEGORY_LABEL[template.category]}</Tag>
-        {template.isOfficial && <Tag>官方模板</Tag>}
       </Space>
 
       <Row gutter={16}>

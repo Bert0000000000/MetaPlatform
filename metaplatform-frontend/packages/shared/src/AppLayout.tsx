@@ -76,33 +76,44 @@ export default function AppLayout({ children }: AppLayoutProps) {
     : undefined;
 
   // 三级 Nav 结构：模块 → 分组（SubNav）→ 页面项
-  const navItems = MODULE_MENU.map((m) => ({
-    itemKey: m.key,
-    text: m.label,
-    icon: m.icon,
-    items: m.children
-      .filter((group) => !group.hidden)
-      .map((group) => {
-        if (group.children?.length) {
+  // 单条 placeholder（无子项的模块，如本体/应用中心 tab 化后）不展开为子菜单
+  const navItems = MODULE_MENU.map((m) => {
+    const realChildren = m.children.filter((c) => !c.hidden);
+    if (realChildren.length <= 1) {
+      // 单条 placeholder：不展开（不显示子菜单），只保留模块主项
+      return {
+        itemKey: m.key,
+        text: m.label,
+        icon: m.icon,
+      };
+    }
+    return {
+      itemKey: m.key,
+      text: m.label,
+      icon: m.icon,
+      items: realChildren
+        .map((group) => {
+          if (group.children?.length) {
+            return {
+              itemKey: `${m.key}__${group.key}`,
+              text: group.label,
+              // 分组 SubNav 带缩进标记，让三级页面项与分组标题层级分明
+              indent: true,
+              items: group.children
+                .filter((c) => c.path && !c.hidden)
+                .map((c) => ({
+                  itemKey: childItemKey(m.key, c.key),
+                  text: c.label,
+                })),
+            };
+          }
           return {
-            itemKey: `${m.key}__${group.key}`,
+            itemKey: childItemKey(m.key, group.key),
             text: group.label,
-            // 分组 SubNav 带缩进标记，让三级页面项与分组标题层级分明
-            indent: true,
-            items: group.children
-              .filter((c) => c.path && !c.hidden)
-              .map((c) => ({
-                itemKey: childItemKey(m.key, c.key),
-                text: c.label,
-              })),
           };
-        }
-        return {
-          itemKey: childItemKey(m.key, group.key),
-          text: group.label,
-        };
-      }),
-  }));
+        }),
+    };
+  });
 
   return (
     <Layout hasSider className="v-app-layout" style={{ height: '100vh', background: 'var(--background)' }}>
@@ -391,7 +402,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <Layout.Content
           className="v-content"
           style={{
-            padding: '24px 24px 32px',
+            padding: 'var(--mate-content-padding)',
             flex: 1,
             minHeight: 0,
             overflow: 'auto',

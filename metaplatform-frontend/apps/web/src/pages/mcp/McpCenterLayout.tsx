@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Tabs } from '@douyinfe/semi-ui';
-import { ApiOutlined, AppstoreOutlined, TeamOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, ApiOutlined, TeamOutlined } from '@ant-design/icons';
+import { PageRoot, SubTabs } from '@mate/shared';
 
 /**
  * MCP 服务中心三 HUB 布局：SKILL HUB / MCP HUB / A2A 注册中心。
@@ -54,29 +54,39 @@ export default function McpCenterLayout() {
   const navigate = useNavigate();
   const active = groupForPath(location.pathname);
 
-  const onTabChange = (key: string) => {
-    const group = GROUPS.find((g) => g.key === key);
-    if (group && group.path !== location.pathname) {
-      navigate(group.path);
-    }
-  };
+  const subTabs = GROUPS.map((g) => ({
+    key: g.key,
+    label: g.label,
+    icon: g.icon,
+    path: g.path,
+    activePath: g.path,
+  }));
+
+  const stickyHeader = (
+    <div
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        height: 64,
+        padding: '0 24px',
+        background: 'var(--background)',
+        borderBottom: '1px solid var(--border)',
+        flexShrink: 0,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+        <SubTabs items={subTabs} activePath={subTabs.find((t) => t.key === active)?.path ?? '/mcp/skill-hub'} embedded />
+      </div>
+    </div>
+  );
 
   return (
-    <div className="mcp-center-layout">
-      <Tabs
-        activeKey={active}
-        onChange={onTabChange}
-        tabList={GROUPS.map((g) => ({
-          itemKey: g.key,
-          tab: (
-            <span>
-              {g.icon} {g.label}
-            </span>
-          ),
-        }))}
-        style={{ marginBottom: 16 }}
-      />
+    <PageRoot header={stickyHeader}>
       <Outlet />
-    </div>
+    </PageRoot>
   );
 }
