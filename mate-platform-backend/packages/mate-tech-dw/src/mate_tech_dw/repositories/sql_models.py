@@ -185,3 +185,29 @@ class DwTraceORM(Base):
     status: Mapped[str] = mapped_column(String(32), default="ok")
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class DwEmployeeConversationORM(Base):
+    __tablename__ = "dw_employee_conversations"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    employee_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(256), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class DwEmployeeMessageORM(Base):
+    __tablename__ = "dw_employee_messages"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    conversation_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(16), default="user")
+    content: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(32), default="completed")
+    model: Mapped[str] = mapped_column(String(128), default="")
+    sequence: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[str] = mapped_column(String(64), default="")

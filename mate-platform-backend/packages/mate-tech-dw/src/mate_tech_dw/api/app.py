@@ -50,6 +50,8 @@ from ..repositories import (
     DwCollaboration,
     DwDocument,
     DwEmployee,
+    DwEmployeeConversation,
+    DwEmployeeMessage,
     DwEmployeeTask,
     DwEvaluation,
     DwLearningFeedback,
@@ -61,11 +63,14 @@ from ..repositories import (
     create_employee,
     delete_employee,
     get_employee,
+    get_employee_conversation,
     get_employee_task,
     list_auth_logins,
     list_collaborations,
     list_commits,
     list_documents,
+    list_employee_conversations,
+    list_employee_messages,
     list_employees,
     list_employee_tasks,
     list_evaluations,
@@ -76,6 +81,9 @@ from ..repositories import (
     list_models,
     list_tools,
     list_traces,
+    next_employee_message_sequence,
+    put_employee_conversation,
+    put_employee_message,
     update_employee,
     update_employee_task,
 )
@@ -1381,3 +1389,162 @@ async def dw_post_extract_knowledge(body: dict) -> dict:
          "syncedToKb": False, "createdAt": "2026-07-30T12:30:00Z", "updatedAt": "2026-07-30T12:30:00Z"}
     ]
     return _ok({"knowledge": knowledge})
+
+
+# ---------------------------------------------------------------------------
+# 数字员工端对话历史持久化（FR-DW-CHAT-001..004）
+# ---------------------------------------------------------------------------
+# 关键约束：
+#   - tenant + user + employee 三维隔离（前台 / 后端两层校验）
+#   - conversation_id 即 Kernel SessionSandbox.session_id，dispatch 透传
+#   - message.sequence 在 conversation 内严格递增
+# ---------------------------------------------------------------------------
+class CreateConversationBody(BaseModel):
+    title: str = Field(default="", description="可选标题（首次创建时由前端用首条 user 消息摘要）")
+
+
+class AppendMessageBody(BaseModel):
+    role: str = Field(min_length=1, description="user | assistant")
+    content: str = Field(min_length=0, default="")
+    status: str = Field(default="completed")
+    model: str = Field(default="")
+    createdAt: str = Field(default="")
+
+
+def _user_id(request: Request) -> str:
+    """Return verified user_id for the current request (post-auth)."""
+    ctx = request.state.ctx
+    user_id = str(getattr(ctx, "user_id", "") or "")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="missing user context")
+    return user_id
+
+
+def _serialize_conversation(c: DwEmployeeConversation) -> dict:
+    return {
+        "conversationId": c.id,
+        "tenantId": c.tenant_id,
+        "userId": c.user_id,
+        "employeeId": c.employee_id,
+        "title": c.title,
+        "createdAt": c.created_at,
+        "updatedAt": c.updated_at,
+    }
+
+
+def _serialize_message(m: DwEmployeeMessage) -> dict:
+    return {
+        "messageId": m.id,
+        "conversationId": m.conversation_id,
+        "role": m.role,
+        "content": m.content,
+        "status": m.status,
+        "model": m.model,
+        "sequence": m.sequence,
+        "createdAt": m.created_at,
+    }
+
+
+@router.get("/employees/{employee_id}/conversations")
+async def dw_list_employee_conversations(
+    request: Request,
+    employee_id: str,
+) -> dict:
+    """FR-DW-CHAT-001：列出当前 user 在该 employee 下的所有对话（按 updatedAt 倒序）。"""
+    tid = _tenant_id(request)
+    uid = _user_id(request)
+    convs = list_employee_conversations(tid, uid, employee_id)
+    return _ok({
+        "items": [_serialize_conversation(c) for c in convs],
+        "total": len(convs),
+    })
+
+
+@router.post("/employees/{employee_id}/conversations", status_code=201)
+async def dw_create_employee_conversation(
+    request: Request,
+    employee_id: str,
+    body: CreateConversationBody,
+) -> dict:
+    """FR-DW-CHAT-002：创建一条新 conversation，id 直接作为 session_id。"""
+    tid = _tenant_id(request)
+    uid = _user_id(request)
+    now = _now_iso()
+    conv = DwEmployeeConversation(
+        id=f"dwe-conv-{uuid.uuid4().hex[:24]}",
+        tenant_id=tid, user_id=uid, employee_id=employee_id,
+        title=body.title or "", created_at=now, updated_at=now,
+    )
+    put_employee_conversation(tid, conv)
+    return _ok(_serialize_conversation(conv))
+
+
+@router.get("/employees/{employee_id}/conversations/{conversation_id}/messages")
+async def dw_list_employee_conversation_messages(
+    request: Request,
+    employee_id: str,
+    conversation_id: str,
+) -> dict:
+    """FR-DW-CHAT-003：加载对话历史消息（按 sequence 升序）。"""
+    tid = _tenant_id(request)
+    uid = _user_id(request)
+    # 跨 user/employee 隔离：先校验 conversation 归属
+    conv = get_employee_conversation(tid, conversation_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    if conv.user_id != uid or conv.employee_id != employee_id:
+        raise HTTPException(status_code=403, detail="cross-user/employee access denied")
+    msgs = list_employee_messages(tid, conversation_id)
+    return _ok({
+        "items": [_serialize_message(m) for m in msgs],
+        "total": len(msgs),
+    })
+
+
+@router.post(
+    "/employees/{employee_id}/conversations/{conversation_id}/messages",
+    status_code=201,
+)
+async def dw_append_employee_message(
+    request: Request,
+    employee_id: str,
+    conversation_id: str,
+    body: AppendMessageBody,
+) -> dict:
+    """FR-DW-CHAT-004：追加一条消息（user 提问 或 assistant 完整回复）。
+
+    sequence 由服务端按 conversation 严格递增分配；前端不需要传。
+    """
+    tid = _tenant_id(request)
+    uid = _user_id(request)
+    conv = get_employee_conversation(tid, conversation_id)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    if conv.user_id != uid or conv.employee_id != employee_id:
+        raise HTTPException(status_code=403, detail="cross-user/employee access denied")
+    if body.role not in ("user", "assistant"):
+        raise HTTPException(status_code=422, detail="role must be user|assistant")
+    now = body.createdAt or _now_iso()
+    sequence = next_employee_message_sequence(tid, conversation_id)
+    msg = DwEmployeeMessage(
+        id=f"dwe-msg-{uuid.uuid4().hex[:24]}",
+        tenant_id=tid, conversation_id=conversation_id,
+        role=body.role, content=body.content, status=body.status,
+        model=body.model, sequence=sequence, created_at=now,
+    )
+    put_employee_message(tid, msg)
+    # 触达会话 updated_at（put_employee_message 也会更新，这里冗余写一次保证）
+    put_employee_conversation(
+        tid,
+        DwEmployeeConversation(
+            id=conv.id, tenant_id=conv.tenant_id, user_id=conv.user_id,
+            employee_id=conv.employee_id, title=conv.title,
+            created_at=conv.created_at, updated_at=now,
+        ),
+    )
+    return _ok(_serialize_message(msg))
+
+
+def _now_iso() -> str:
+    import time as _t
+    return _t.strftime("%Y-%m-%dT%H:%M:%S", _t.gmtime()) + "Z"

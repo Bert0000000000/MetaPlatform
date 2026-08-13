@@ -26,6 +26,8 @@ from .in_memory import (
     DwModel,
     DwTool,
     DwTrace,
+    DwEmployeeConversation,
+    DwEmployeeMessage,
     list_auth_logins,
     list_collaborations,
     list_commits,
@@ -51,6 +53,12 @@ from .in_memory import (
     create_employee,
     update_employee,
     delete_employee,
+    list_employee_conversations,
+    get_employee_conversation,
+    put_employee_conversation,
+    list_employee_messages,
+    put_employee_message,
+    next_employee_message_sequence,
 )
 
 __all__ = [
@@ -58,6 +66,7 @@ __all__ = [
     "DwEmployee", "DwEmployeeTask", "DwEvaluation", "DwExtract",
     "DwKnowledgeBase", "DwLearningExtract", "DwLearningFeedback",
     "DwModel", "DwTool", "DwTrace",
+    "DwEmployeeConversation", "DwEmployeeMessage",
     "list_auth_logins", "list_collaborations", "list_commits",
     "list_documents", "append_document", "list_employees",
     "get_employee", "list_employee_tasks",
@@ -68,5 +77,8 @@ __all__ = [
     "list_models", "list_tools", "list_traces",
     "append_collaboration",
     "create_employee", "update_employee", "delete_employee",
+    "list_employee_conversations", "get_employee_conversation",
+    "put_employee_conversation", "list_employee_messages",
+    "put_employee_message", "next_employee_message_sequence",
     "sql_store",
 ]

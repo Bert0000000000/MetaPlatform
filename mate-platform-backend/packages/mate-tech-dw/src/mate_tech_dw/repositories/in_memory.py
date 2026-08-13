@@ -199,6 +199,34 @@ class DwTrace:
 
 
 # ---------------------------------------------------------------------------
+# 会话（数字员工端）—— 每用户 × 每员工独立 conversation，持久化聊天历史。
+# 与 kernel SessionSandbox 配合：conv_id 即 session_id，下游 dispatch 时透传。
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class DwEmployeeConversation:
+    id: str
+    tenant_id: str
+    user_id: str
+    employee_id: str
+    title: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+
+
+@dataclass(frozen=True)
+class DwEmployeeMessage:
+    id: str
+    tenant_id: str
+    conversation_id: str
+    role: str  # 'user' / 'assistant'
+    content: str
+    status: str = "completed"  # 'local' / 'in_progress' / 'incomplete' / 'completed' / 'failed'
+    model: str = ""
+    sequence: int = 0
+    created_at: str = ""
+
+
+# ---------------------------------------------------------------------------
 # Seed builders
 # ---------------------------------------------------------------------------
 def _tenant_alias(tenant_id: str) -> str:
@@ -507,6 +535,8 @@ _LEARNING_FEEDBACK: dict[str, dict[str, DwLearningFeedback]] = {}
 _MODELS: dict[str, dict[str, DwModel]] = {}
 _TOOLS: dict[str, dict[str, DwTool]] = {}
 _TRACES: dict[str, dict[str, DwTrace]] = {}
+_EMPLOYEE_CONVERSATIONS: dict[str, dict[str, DwEmployeeConversation]] = {}
+_EMPLOYEE_MESSAGES: dict[str, dict[str, DwEmployeeMessage]] = {}
 
 
 def _ensure_tenant(tenant_id: str) -> None:
@@ -782,6 +812,97 @@ def list_traces(tenant_id: str) -> list[DwTrace]:
 
 
 # ---------------------------------------------------------------------------
+# 数字员工端会话 / 消息（持久化用户与单个数字员工的对话历史）
+# 关键约束：
+#  1. tenant + user + employee 三维隔离（无 cross-tenant / cross-user）
+#  2. conversation_id 即 Kernel SessionSandbox.session_id，dispatch 透传
+#  3. 消息按 sequence 严格递增（避免分页乱序）
+# ---------------------------------------------------------------------------
+def _ensure_conv_buckets(tenant_id: str) -> None:
+    _EMPLOYEE_CONVERSATIONS.setdefault(tenant_id, {})
+    _EMPLOYEE_MESSAGES.setdefault(tenant_id, {})
+
+
+def list_employee_conversations(
+    tenant_id: str, user_id: str, employee_id: str,
+) -> list[DwEmployeeConversation]:
+    if not tenant_id or not user_id or not employee_id:
+        return []
+    _ensure_tenant(tenant_id)
+    _ensure_conv_buckets(tenant_id)
+    out = [
+        c for c in _EMPLOYEE_CONVERSATIONS[tenant_id].values()
+        if c.user_id == user_id and c.employee_id == employee_id
+    ]
+    return sorted(out, key=lambda c: c.updated_at, reverse=True)
+
+
+def get_employee_conversation(
+    tenant_id: str, conversation_id: str,
+) -> DwEmployeeConversation | None:
+    if not tenant_id or not conversation_id:
+        return None
+    _ensure_tenant(tenant_id)
+    _ensure_conv_buckets(tenant_id)
+    c = _EMPLOYEE_CONVERSATIONS[tenant_id].get(conversation_id)
+    if c is None:
+        return None
+    return c
+
+
+def put_employee_conversation(
+    tenant_id: str, entity: DwEmployeeConversation,
+) -> DwEmployeeConversation:
+    if not tenant_id:
+        return entity
+    _ensure_tenant(tenant_id)
+    _ensure_conv_buckets(tenant_id)
+    _EMPLOYEE_CONVERSATIONS[tenant_id][entity.id] = entity
+    return entity
+
+
+def list_employee_messages(
+    tenant_id: str, conversation_id: str,
+) -> list[DwEmployeeMessage]:
+    if not tenant_id or not conversation_id:
+        return []
+    _ensure_tenant(tenant_id)
+    _ensure_conv_buckets(tenant_id)
+    msgs = [
+        m for m in _EMPLOYEE_MESSAGES[tenant_id].values()
+        if m.conversation_id == conversation_id
+    ]
+    return sorted(msgs, key=lambda m: m.sequence)
+
+
+def put_employee_message(
+    tenant_id: str, entity: DwEmployeeMessage,
+) -> DwEmployeeMessage:
+    if not tenant_id:
+        return entity
+    _ensure_tenant(tenant_id)
+    _ensure_conv_buckets(tenant_id)
+    _EMPLOYEE_MESSAGES[tenant_id][entity.id] = entity
+    # 触达会话 updated_at（直接读实体，调用方传新 updated_at 即可）
+    conv = _EMPLOYEE_CONVERSATIONS[tenant_id].get(entity.conversation_id)
+    if conv is not None:
+        _EMPLOYEE_CONVERSATIONS[tenant_id][entity.conversation_id] = DwEmployeeConversation(
+            id=conv.id, tenant_id=conv.tenant_id, user_id=conv.user_id,
+            employee_id=conv.employee_id, title=conv.title,
+            created_at=conv.created_at, updated_at=entity.created_at,
+        )
+    return entity
+
+
+def next_employee_message_sequence(
+    tenant_id: str, conversation_id: str,
+) -> int:
+    """返回 conversation 内下一条消息 sequence（已存在 + 1）。"""
+    msgs = list_employee_messages(tenant_id, conversation_id)
+    return (max((m.sequence for m in msgs), default=0) + 1)
+
+
+# ---------------------------------------------------------------------------
 # Test helpers — DO NOT call from production code paths
 # ---------------------------------------------------------------------------
 def reset_store() -> None:
@@ -800,6 +921,8 @@ def reset_store() -> None:
     _MODELS.clear()
     _TOOLS.clear()
     _TRACES.clear()
+    _EMPLOYEE_CONVERSATIONS.clear()
+    _EMPLOYEE_MESSAGES.clear()
 
 
 __all__ = [
@@ -807,6 +930,7 @@ __all__ = [
     "DwEmployee", "DwEmployeeTask", "DwEvaluation", "DwExtract",
     "DwKnowledgeBase", "DwLearningExtract", "DwLearningFeedback",
     "DwModel", "DwTool", "DwTrace",
+    "DwEmployeeConversation", "DwEmployeeMessage",
     "list_auth_logins", "list_collaborations", "list_commits",
     "list_documents", "append_document", "list_employees",
     "list_employee_tasks", "list_evaluations", "list_extracts",
@@ -814,4 +938,7 @@ __all__ = [
     "list_learning_feedback", "list_models", "list_tools",
     "list_traces", "reset_store",
     "create_employee", "update_employee", "delete_employee",
+    "list_employee_conversations", "get_employee_conversation",
+    "put_employee_conversation", "list_employee_messages",
+    "put_employee_message", "next_employee_message_sequence",
 ]

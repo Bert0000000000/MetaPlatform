@@ -27,6 +27,8 @@ from .in_memory import (
     DwModel,
     DwTool,
     DwTrace,
+    DwEmployeeConversation,
+    DwEmployeeMessage,
 )
 
 
@@ -894,6 +896,128 @@ def put_trace(tenant_id: str, entity: DwTrace) -> DwTrace:
             status=entity.status,
             duration_ms=entity.duration_ms,
             started_at=entity.started_at,
+        ))
+    s.commit()
+    return entity
+
+
+# ---------------------------------------------------------------------------
+# ORM <-> dataclass for conversation / message
+# ---------------------------------------------------------------------------
+def _orm_to_employee_conversation(row: models.DwEmployeeConversationORM) -> DwEmployeeConversation:
+    return DwEmployeeConversation(
+        id=row.id, tenant_id=row.tenant_id,
+        user_id=row.user_id or "", employee_id=row.employee_id or "",
+        title=row.title or "",
+        created_at=row.created_at or "", updated_at=row.updated_at or "",
+    )
+
+
+def _orm_to_employee_message(row: models.DwEmployeeMessageORM) -> DwEmployeeMessage:
+    return DwEmployeeMessage(
+        id=row.id, tenant_id=row.tenant_id,
+        conversation_id=row.conversation_id or "",
+        role=row.role or "user",
+        content=row.content or "",
+        status=row.status or "completed",
+        model=row.model or "",
+        sequence=row.sequence,
+        created_at=row.created_at or "",
+    )
+
+
+def list_employee_conversations(
+    tenant_id: str, user_id: str, employee_id: str,
+) -> list[DwEmployeeConversation]:
+    if not tenant_id or not user_id or not employee_id:
+        return []
+    s = _session()
+    rows = s.execute(
+        select(models.DwEmployeeConversationORM)
+        .where(
+            models.DwEmployeeConversationORM.tenant_id == tenant_id,
+            models.DwEmployeeConversationORM.user_id == user_id,
+            models.DwEmployeeConversationORM.employee_id == employee_id,
+        )
+        .order_by(models.DwEmployeeConversationORM.updated_at.desc())
+    ).scalars().all()
+    return [_orm_to_employee_conversation(r) for r in rows]
+
+
+def get_employee_conversation(
+    tenant_id: str, conversation_id: str,
+) -> DwEmployeeConversation | None:
+    if not tenant_id or not conversation_id:
+        return None
+    s = _session()
+    row = s.get(models.DwEmployeeConversationORM, conversation_id)
+    if row is None or row.tenant_id != tenant_id:
+        return None
+    return _orm_to_employee_conversation(row)
+
+
+def put_employee_conversation(
+    tenant_id: str, entity: DwEmployeeConversation,
+) -> DwEmployeeConversation:
+    if not tenant_id:
+        return entity
+    s = _session()
+    existing = s.get(models.DwEmployeeConversationORM, entity.id)
+    if existing and existing.tenant_id == tenant_id:
+        existing.user_id = entity.user_id
+        existing.employee_id = entity.employee_id
+        existing.title = entity.title
+        existing.created_at = entity.created_at
+        existing.updated_at = entity.updated_at
+    else:
+        s.add(models.DwEmployeeConversationORM(
+            id=entity.id, tenant_id=tenant_id,
+            user_id=entity.user_id, employee_id=entity.employee_id,
+            title=entity.title,
+            created_at=entity.created_at, updated_at=entity.updated_at,
+        ))
+    s.commit()
+    return entity
+
+
+def list_employee_messages(
+    tenant_id: str, conversation_id: str,
+) -> list[DwEmployeeMessage]:
+    if not tenant_id or not conversation_id:
+        return []
+    s = _session()
+    rows = s.execute(
+        select(models.DwEmployeeMessageORM)
+        .where(
+            models.DwEmployeeMessageORM.tenant_id == tenant_id,
+            models.DwEmployeeMessageORM.conversation_id == conversation_id,
+        )
+        .order_by(models.DwEmployeeMessageORM.sequence)
+    ).scalars().all()
+    return [_orm_to_employee_message(r) for r in rows]
+
+
+def put_employee_message(
+    tenant_id: str, entity: DwEmployeeMessage,
+) -> DwEmployeeMessage:
+    if not tenant_id:
+        return entity
+    s = _session()
+    existing = s.get(models.DwEmployeeMessageORM, entity.id)
+    if existing and existing.tenant_id == tenant_id:
+        existing.role = entity.role
+        existing.content = entity.content
+        existing.status = entity.status
+        existing.model = entity.model
+        existing.sequence = entity.sequence
+        existing.created_at = entity.created_at
+    else:
+        s.add(models.DwEmployeeMessageORM(
+            id=entity.id, tenant_id=tenant_id,
+            conversation_id=entity.conversation_id,
+            role=entity.role, content=entity.content,
+            status=entity.status, model=entity.model,
+            sequence=entity.sequence, created_at=entity.created_at,
         ))
     s.commit()
     return entity
