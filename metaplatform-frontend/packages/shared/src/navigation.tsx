@@ -153,51 +153,21 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     icon: <Plug style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/mcp/skill-hub',
     children: [
-      {
-        key: 'hub',
-        label: 'HUB',
-        children: [
-          { key: 'skill-hub', label: 'Skill Hub', path: '/mcp/skill-hub' },
-        ],
-      },
-      {
-        key: 'protocol',
-        label: 'MCP 协议',
-        children: [
-          { key: 'overview', label: 'MCP 总览', path: '/mcp/overview' },
-          { key: 'tools', label: '工具', path: '/mcp/tools' },
-          { key: 'resources', label: '资源', path: '/mcp/resources' },
-          { key: 'prompts', label: '提示词', path: '/mcp/prompts' },
-          { key: 'debugger', label: '调试器', path: '/mcp/debugger' },
-          { key: 'ide-config', label: 'IDE 配置', path: '/mcp/ide-config' },
-        ],
-      },
-      {
-        key: 'service-mgmt',
-        label: '服务管理',
-        children: [
-          { key: 'servers', label: '服务端', path: '/mcp/servers' },
-          { key: 'clients', label: '客户端', path: '/mcp/clients' },
-          { key: 'permissions', label: '权限', path: '/mcp/permissions' },
-          { key: 'policies', label: '策略', path: '/mcp/policies' },
-        ],
-      },
-      {
-        key: 'observability',
-        label: '可观测',
-        children: [
-          { key: 'audit', label: '审计', path: '/mcp/audit' },
-          { key: 'connection-monitor', label: '连接监控', path: '/mcp/connection-monitor' },
-        ],
-      },
-      {
-        key: 'a2a-registry',
-        label: 'A2A 注册中心',
-        children: [
-          { key: 'internal-agents', label: '内部 Agent', path: '/mcp/internal-agents' },
-          { key: 'external-agents', label: '外部 Agent', path: '/mcp/external-agents' },
-        ],
-      },
+      { key: 'skill-hub', label: 'Skill Hub', path: '/mcp/skill-hub', hidden: true },
+      { key: 'overview', label: 'MCP 总览', path: '/mcp/overview', hidden: true },
+      { key: 'tools', label: '工具', path: '/mcp/tools', hidden: true },
+      { key: 'resources', label: '资源', path: '/mcp/resources', hidden: true },
+      { key: 'prompts', label: '提示词', path: '/mcp/prompts', hidden: true },
+      { key: 'debugger', label: '调试器', path: '/mcp/debugger', hidden: true },
+      { key: 'ide-config', label: 'IDE 配置', path: '/mcp/ide-config', hidden: true },
+      { key: 'servers', label: '服务端', path: '/mcp/servers', hidden: true },
+      { key: 'clients', label: '客户端', path: '/mcp/clients', hidden: true },
+      { key: 'permissions', label: '权限', path: '/mcp/permissions', hidden: true },
+      { key: 'policies', label: '策略', path: '/mcp/policies', hidden: true },
+      { key: 'audit', label: '审计', path: '/mcp/audit', hidden: true },
+      { key: 'connection-monitor', label: '连接监控', path: '/mcp/connection-monitor', hidden: true },
+      { key: 'internal-agents', label: '内部 Agent', path: '/mcp/internal-agents', hidden: true },
+      { key: 'external-agents', label: '外部 Agent', path: '/mcp/external-agents', hidden: true },
     ],
   },
   {
