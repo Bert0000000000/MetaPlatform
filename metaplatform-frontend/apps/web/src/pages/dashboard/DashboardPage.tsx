@@ -1,22 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-  Plus,
-  FileBarChart,
-  Bot,
-  Sparkles,
-  Boxes,
-  Database,
-  Plug,
-  GitBranch,
-  RefreshCw,
-  CheckCircle,
-  Clock,
-} from 'lucide-react';
+  IconPlus,
+  IconFile,
+  IconUserGroup,
+  IconUserAdd,
+  IconRefresh,
+  IconAppCenter,
+  IconTickCircle,
+  IconClock,
+  IconBolt,
+  IconGridSquare,
+  IconLayers,
+  IconLink,
+  IconTerminal,
+  IconBranch,
+  IconPaperclip,
+} from '@douyinfe/semi-icons';
 import { Toast, Button, Card, Typography, SideSheet, Tag } from '@douyinfe/semi-ui';
 import { FormDrawer, Field, PageRoot, TextInput, TextArea, Select, useAuth } from '@mate/shared';
 import { getDashboardSummary, getMessages, getDeliverablesSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent, type MessageItem, type DeliverableItem } from '@/api/dashboard/workbench';
-import { IconPaperclip } from '@douyinfe/semi-icons';
 
 // 子标签页
 
@@ -67,22 +70,34 @@ function formatRelativeTime(d: Date): string {
   return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
 
-// 快捷入口（图标映射，icon label 与 API quickLinks 一致）
+// 快捷入口图标映射：key 兼容后端 antd 图标名 + 前端 FALLBACK 旧名，value 用 Semi 图标
 const QUICK_LINK_ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
-  SuperAI: Sparkles,
-  Boxes: Boxes,
-  Database: Database,
-  Plug: Plug,
-  Bot: Bot,
-  GitBranch: GitBranch,
+  // 后端返回的 antd 图标名
+  Robot: IconBolt,
+  AppstoreOutlined: IconGridSquare,
+  ApartmentOutlined: IconLayers,
+  ApiOutlined: IconLink,
+  TeamOutlined: IconUserGroup,
+  ClusterOutlined: IconBranch,
+  // FALLBACK 旧名（后端不可达时）
+  Sparkles: IconBolt,
+  Boxes: IconGridSquare,
+  Database: IconLayers,
+  Plug: IconLink,
+  Bot: IconTerminal,
+  GitBranch: IconBranch,
 };
 
-// 统计卡片图标映射（与 DashboardStat.icon 字段对齐）
+// 统计卡图标：后端 stats 无 icon 字段，按 label 兜底
 const STAT_ICONS: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
-  boxes: Boxes,
-  bot: Bot,
-  'check-circle': CheckCircle,
-  clock: Clock,
+  boxes: IconAppCenter,
+  bot: IconUserGroup,
+  'check-circle': IconTickCircle,
+  clock: IconClock,
+  '活跃应用': IconAppCenter,
+  '数字员工在线': IconUserGroup,
+  '今日任务': IconTickCircle,
+  '待处理审批': IconClock,
 };
 
 // 简单的骨架屏组件（性能：避免 layout shift）
@@ -193,7 +208,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
 
   // 渲染统计卡片（数据驱动；带图标 + hover 微动效）
   const renderStat = (s: DashboardStat) => {
-    const Icon = STAT_ICONS[s.icon] ?? Boxes;
+    const Icon = STAT_ICONS[s.icon] ?? STAT_ICONS[s.label] ?? IconAppCenter;
     return (
       <div
         key={s.label}
@@ -244,14 +259,14 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
-              <Plus style={{ width: 16, height: 16 }} />创建应用
+              <IconPlus style={{ width: 16, height: 16 }} />创建应用
             </Button>
             <Button theme="light" type="secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDeliverablesOpen(true)}>
-              <FileBarChart style={{ width: 16, height: 16 }} />交付材料
+              <IconFile style={{ width: 16, height: 16 }} />交付材料
             </Button>
             <Button theme="solid" type="primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => navigate('/dashboard/my-agents')}>
-              <Bot style={{ width: 16, height: 16 }} />管理数字员工
+              <IconUserAdd style={{ width: 16, height: 16 }} />管理数字员工
             </Button>
           </div>
         </div>
@@ -291,7 +306,9 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                     disabled={refreshing}
                     style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     title="刷新数据">
-                    <RefreshCw style={{ width: 12, height: 12, animation: refreshing ? 'workbench-spin 0.8s linear infinite' : 'none' }} />
+                    <IconRefresh
+                      style={{ width: 12, height: 12, animation: refreshing ? 'workbench-spin 0.8s linear infinite' : 'none' }}
+                    />
                     刷新
                   </Button>
                   <Button theme="light" type="secondary" onClick={() => { setTasksPage(1); setTasksDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</Button>
@@ -421,7 +438,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                         { id: 'arch', label: '架构中心', icon: 'GitBranch' },
                       ]
                   ).map((q, i) => {
-                    const Icon = QUICK_LINK_ICONS[q.icon] ?? Boxes;
+                    const Icon = QUICK_LINK_ICONS[q.icon] ?? IconGridSquare;
                     return (
                       <a
                         key={i}
