@@ -27,6 +27,8 @@ class SearchRequest(BaseModel):
     query: Annotated[str, Field(min_length=1, max_length=4096)]
     top_k: Annotated[int, Field(ge=1, le=100, default=10)]
     mode: Annotated[Literal["AUTO", "FACTUAL", "ENTITY", "THEMATIC"], Field(default="AUTO")]
+    # When omitted, the tenant's saved retrieval-config rerank_strategy is used.
+    rerank_strategy: Annotated[Literal["identity", "keyword", "length"] | None, Field(default=None)]
 
 
 class SearchResponse(BaseModel):
@@ -123,3 +125,44 @@ class DocumentTransitionRequest(BaseModel):
     status: Annotated[Literal["indexing", "indexed", "failed", "archived"], Field()]
     error: Annotated[str | None, Field(default=None, max_length=2048)]
     chunk_count: Annotated[int | None, Field(default=None, ge=0)]
+
+
+# ---------------------------------------------------------------------------
+# Retrieval configuration (knowledge/config page)
+# ---------------------------------------------------------------------------
+_RetrievalMode = Literal["AUTO", "FACTUAL", "ENTITY", "THEMATIC"]
+_RerankStrategy = Literal["identity", "keyword", "length"]
+_ChunkStrategy = Literal["recursive", "markdown", "semantic", "sliding"]
+
+
+class RetrievalConfigUpdate(BaseModel):
+    """PUT body for the tenant's global retrieval config."""
+    model_config = ConfigDict(extra="forbid")
+    mode: Annotated[_RetrievalMode, Field(default="AUTO")]
+    rerank_strategy: Annotated[_RerankStrategy, Field(default="identity")]
+    top_k: Annotated[int, Field(default=10, ge=1, le=100)]
+    similarity_threshold: Annotated[float, Field(default=0.0, ge=0.0, le=1.0)]
+    chunk_strategy: Annotated[_ChunkStrategy, Field(default="recursive")]
+    chunk_size: Annotated[int, Field(default=512, ge=64, le=2048)]
+    chunk_overlap: Annotated[int, Field(default=64, ge=0, le=512)]
+    vector_weight: Annotated[float, Field(default=0.7, ge=0.0, le=1.0)]
+    keyword_weight: Annotated[float, Field(default=0.3, ge=0.0, le=1.0)]
+    reranker_enabled: Annotated[bool, Field(default=True)]
+    show_citations: Annotated[bool, Field(default=True)]
+
+
+class RetrievalConfigResponse(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+    tenant_id: Annotated[str, Field()]
+    mode: Annotated[str, Field()]
+    rerank_strategy: Annotated[str, Field()]
+    top_k: Annotated[int, Field()]
+    similarity_threshold: Annotated[float, Field()]
+    chunk_strategy: Annotated[str, Field()]
+    chunk_size: Annotated[int, Field()]
+    chunk_overlap: Annotated[int, Field()]
+    vector_weight: Annotated[float, Field()]
+    keyword_weight: Annotated[float, Field()]
+    reranker_enabled: Annotated[bool, Field()]
+    show_citations: Annotated[bool, Field()]
+    updated_at: Annotated[str, Field()]

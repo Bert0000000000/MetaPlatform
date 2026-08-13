@@ -47,7 +47,7 @@ def client():
     from mate_app_kb.clients import AgentClient, RAGClient
 
     fake_rag = RAGClient()
-    fake_rag.search = lambda query, top_k=5, mode="AUTO": {
+    fake_rag.search = lambda query, top_k=5, mode="AUTO", rerank_strategy=None: {
         "query": query,
         "mode": mode,
         "total": 1,

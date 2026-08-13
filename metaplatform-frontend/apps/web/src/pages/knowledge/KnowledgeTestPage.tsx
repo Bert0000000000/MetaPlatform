@@ -5,19 +5,35 @@
  * Phase 1: 從 apps/kb 的 SearchTestPage 迁入,真实走 /api/v1/rag/search。
  *          保留 4-tab 导航壳。
  */
-import { useState } from 'react';
-import { Card, Input, Button, Select, Space, Empty, Tag, Typography, Toast } from '@douyinfe/semi-ui';
+import { useState, useEffect } from 'react';
+import { Card, Input, Button, Select, Space, Empty, Tag, Typography, Toast, InputNumber } from '@douyinfe/semi-ui';
 import { Search, FileText, Zap } from 'lucide-react';
 import { useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
-import { listKb, search, type KbEntity, type Evidence } from '@/api/kb';
+import { listKb, search, getRetrievalConfig, type KbEntity, type Evidence } from '@/api/kb';
 
 
 const DEFAULT_TENANT = 'tenant-default';
+
+const MODE_OPTIONS = [
+  { value: 'AUTO', label: 'AUTO · 自动路由' },
+  { value: 'FACTUAL', label: 'FACTUAL · 向量+关键词' },
+  { value: 'ENTITY', label: 'ENTITY · 实体图谱' },
+  { value: 'THEMATIC', label: 'THEMATIC · 主题图谱' },
+];
+
+const RERANK_OPTIONS = [
+  { value: 'identity', label: 'identity · 不重排' },
+  { value: 'keyword', label: 'keyword · 关键词精排' },
+  { value: 'length', label: 'length · 长度归一' },
+];
 
 export default function KnowledgeTestPage() {
   const { report } = useApiErrorBoundary();
   const [query, setQuery] = useState('');
   const [kbId, setKbId] = useState<string | undefined>(undefined);
+  const [mode, setMode] = useState<string>('AUTO');
+  const [rerankStrategy, setRerankStrategy] = useState<string>('identity');
+  const [topK, setTopK] = useState<number>(10);
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const run = useLoadingState();
 
@@ -28,6 +44,14 @@ export default function KnowledgeTestPage() {
     { initialData: [] },
   );
 
+  // Load the tenant's saved retrieval config as the default controls so the
+  // config page and the test page stay in sync.
+  useEffect(() => {
+    getRetrievalConfig()
+      .then((cfg) => { setMode(cfg.mode); setRerankStrategy(cfg.rerankStrategy); setTopK(cfg.topK); })
+      .catch(() => { /* keep defaults if config endpoint unavailable */ });
+  }, []);
+
   const onSearch = async () => {
     const q = query.trim();
     if (!q) {
@@ -36,7 +60,7 @@ export default function KnowledgeTestPage() {
     }
     try {
       const resp = await run.wrap(
-        search({ tenantId: DEFAULT_TENANT, kbId, query: q }),
+        search({ tenantId: DEFAULT_TENANT, kbId, query: q, mode: mode as 'AUTO' | 'FACTUAL' | 'ENTITY' | 'THEMATIC', rerankStrategy: rerankStrategy as 'identity' | 'keyword' | 'length', topK }),
       );
       setEvidences(resp);
       Toast.success(`命中 ${resp.length} 条`);
@@ -79,6 +103,37 @@ export default function KnowledgeTestPage() {
             <Button theme="solid" type="primary" onClick={onSearch} loading={run.loading}>
               检索
             </Button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>检索模式</span>
+              <Select
+                style={{ width: 200 }}
+                value={mode}
+                onChange={(value) => setMode(value as string)}
+                optionList={MODE_OPTIONS}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Reranker</span>
+              <Select
+                style={{ width: 180 }}
+                value={rerankStrategy}
+                onChange={(value) => setRerankStrategy(value as string)}
+                optionList={RERANK_OPTIONS}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Top-K</span>
+              <InputNumber
+                min={1}
+                max={100}
+                value={topK}
+                onChange={(v) => setTopK(typeof v === 'number' ? v : 10)}
+                style={{ width: 90 }}
+              />
+            </div>
           </div>
         </Card>
 

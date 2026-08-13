@@ -37,6 +37,8 @@ from mate_app_kb.api.schemas import (
     DocumentResponse,
     DocumentTransitionRequest,
     HealthResponse,
+    RetrievalConfigResponse,
+    RetrievalConfigUpdate,
     SearchLogResponse,
     SearchRequest,
     SearchResponse,
@@ -47,16 +49,19 @@ from mate_app_kb.clients import AgentClient, RAGClient
 from mate_app_kb.repositories.in_memory import (
     KbCollection,
     KbDocument,
+    KbRetrievalConfig,
     KbSearchLog,
     delete_collection,
     delete_document,
     get_collection,
     get_document,
+    get_retrieval_config,
     list_collections,
     list_documents,
     list_search_logs,
     put_collection,
     put_document,
+    put_retrieval_config,
     put_search_log,
 )
 from mate_platform.auth import install_auth
@@ -303,8 +308,14 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         # Hook 2: tenant guard.
         tid = _tid(request)
         start = time.perf_counter()
+        # Apply the tenant's saved retrieval config as defaults: an explicit
+        # rerank_strategy on the request wins, otherwise the configured one.
+        cfg = get_retrieval_config(tid)
+        rerank = req.rerank_strategy or cfg.rerank_strategy
         try:
-            data = _rag(request).search(req.query, top_k=req.top_k, mode=req.mode)
+            data = _rag(request).search(
+                req.query, top_k=req.top_k, mode=req.mode, rerank_strategy=rerank,
+            )
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
         latency_ms = int((time.perf_counter() - start) * 1000)
@@ -427,6 +438,48 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             {"collection_id": cid}, tid,
         )
         return {"deleted": cid}
+
+    # ------------------------------------------------------------------
+    # Retrieval configuration (knowledge/config page)
+    # ------------------------------------------------------------------
+    @app.get("/api/v1/kb/retrieval-config", response_model=RetrievalConfigResponse)
+    async def get_retrieval_cfg(  # pyright: ignore[reportUnusedFunction]
+        request: Request,
+    ) -> RetrievalConfigResponse:
+        tid = _tid(request)
+        cfg = get_retrieval_config(tid)
+        return RetrievalConfigResponse(**asdict(cfg))
+
+    @app.put("/api/v1/kb/retrieval-config", response_model=RetrievalConfigResponse)
+    async def put_retrieval_cfg(  # pyright: ignore[reportUnusedFunction]
+        request: Request, req: RetrievalConfigUpdate,
+    ) -> RetrievalConfigResponse:
+        tid = _tid(request)
+        existing = get_retrieval_config(tid)
+        cfg = KbRetrievalConfig(
+            tenant_id=tid,
+            mode=req.mode,
+            rerank_strategy=req.rerank_strategy,
+            top_k=req.top_k,
+            similarity_threshold=req.similarity_threshold,
+            chunk_strategy=req.chunk_strategy,
+            chunk_size=req.chunk_size,
+            chunk_overlap=req.chunk_overlap,
+            vector_weight=req.vector_weight,
+            keyword_weight=req.keyword_weight,
+            reranker_enabled=req.reranker_enabled,
+            show_citations=req.show_citations,
+            updated_at=_now_iso(),
+        )
+        put_retrieval_config(tid, cfg)
+        _emit(
+            request, "kb.retrieval-config.updated", tid,
+            {"rerank_strategy": cfg.rerank_strategy, "mode": cfg.mode,
+             "top_k": cfg.top_k, "chunk_strategy": cfg.chunk_strategy},
+            tid,
+        )
+        _ = existing  # retained for clarity: we replace the prior config
+        return RetrievalConfigResponse(**asdict(cfg))
 
     # ------------------------------------------------------------------
     # BUSINESS-SLICES deep: Document management + lifecycle

@@ -194,6 +194,29 @@ def build_app() -> FastAPI:
 
     logger.info("SuperAI mock endpoints (ontology/context + agent/runs) mounted")
 
+    # mate-app-kb + mate-tech-rag: these are full FastAPI apps whose routes
+    # use absolute /api/v1/* paths, so they can't be mounted under a prefix
+    # (the mount would strip the prefix and break the absolute routes). We
+    # steal their routes onto the host so the single host auth middleware
+    # governs both services on one port — which is what the vite proxy
+    # (all /api/v1/* → :8100) and the frontend KB module expect.
+    try:
+        sys.path.insert(0, _base + r"\mate-app-kb\src")
+        sys.path.insert(0, _base + r"\mate-tech-rag\src")
+        from mate_app_kb.api.app import create_app as _create_kb_app
+        from mate_tech_rag.api.app import create_app as _create_rag_app
+        _kb = _create_kb_app()
+        _rag = _create_rag_app()
+        app.routes.extend(_kb.routes)
+        app.routes.extend(_rag.routes)
+        # KB/RAG handlers read request.app.state.outbox_writer; give the host one.
+        from mate_platform.messaging.outbox import InMemoryOutboxWriter
+        if not hasattr(app.state, "outbox_writer"):
+            app.state.outbox_writer = InMemoryOutboxWriter()
+        logger.info("Mounted kb (%d routes) + rag (%d routes)", len(_kb.routes), len(_rag.routes))
+    except Exception as e:
+        logger.warning("Failed to mount kb/rag: %s", e)
+
     return app
 
 
