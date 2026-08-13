@@ -242,6 +242,16 @@ a {
   border-top: 1px solid var(--border);
 }
 
+/* ===== Semi Sidebar options 布局修复：行宽统一占满 ===== */
+.semi-sidebar-options {
+  display: flex;
+  flex-direction: column;
+}
+.semi-sidebar-options > div {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* ===== Semi Nav 多级菜单层级优化 ===== */
 /* 分组标题（嵌套 SubNav 的标题）用小字灰色，与一级模块标题区分 */
 .semi-navigation-sub-wrap .semi-navigation-sub-wrap > .semi-navigation-sub-title {
