@@ -218,7 +218,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
         onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
       >
         <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--semi-color-primary-light-default)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon style={{ width: 20, height: 20 }} />
+          <Icon size="large" />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span className="v-stat-label">{s.label}</span>
@@ -306,9 +306,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                     disabled={refreshing}
                     style={{ height: 28, padding: '0 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     title="刷新数据">
-                    <IconRefresh
-                      style={{ width: 12, height: 12, animation: refreshing ? 'workbench-spin 0.8s linear infinite' : 'none' }}
-                    />
+                    <IconRefresh size="small" spin={refreshing} />
                     刷新
                   </Button>
                   <Button theme="light" type="secondary" onClick={() => { setTasksPage(1); setTasksDrawerOpen(true); }} style={{ height: 28, padding: '0 10px', fontSize: 12 }}>查看全部</Button>
@@ -459,7 +457,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.background = 'var(--card)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.background = 'var(--muted)'; }}
                       >
-                        <Icon style={{ width: 20, height: 20, color: 'var(--primary)' }} />
+                        <Icon size="large" style={{ color: 'var(--primary)' }} />
                         <span style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.3 }}>{q.label}</span>
                       </a>
                     );
