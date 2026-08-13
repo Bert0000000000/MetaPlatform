@@ -12,6 +12,7 @@ import {
   Table,
   Tooltip,
   Toast,
+  Banner,
 } from '@douyinfe/semi-ui';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
@@ -48,6 +49,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<McpClient | null>(null);
   const [tools, setTools] = useState<McpDiscoveredTool[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [testing, setTesting] = useState(false);
   const [schemaTool, setSchemaTool] = useState<McpDiscoveredTool | null>(null);
@@ -55,10 +57,13 @@ export default function ClientDetailPage() {
   const load = async () => {
     if (!id) return;
     setLoading(true);
+    setError(null);
     try {
       const [c, t] = await Promise.all([getClient(id), listClientTools(id)]);
       setClient(c);
       setTools(t);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '加载失败');
     } finally {
       setLoading(false);
     }
@@ -150,6 +155,10 @@ export default function ClientDetailPage() {
       ),
     },
   ];
+
+  if (error) {
+    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+  }
 
   if (loading || !client) {
     return (

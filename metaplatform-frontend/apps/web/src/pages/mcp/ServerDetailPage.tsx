@@ -13,6 +13,7 @@ import {
   Toast,
   Typography,
   Popconfirm,
+  Banner,
 } from '@douyinfe/semi-ui';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import type { ColumnProps } from '@douyinfe/semi-ui/lib/es/table';
@@ -70,12 +71,14 @@ export default function ServerDetailPage() {
   const [tools, setTools] = useState<McpTool[]>([]);
   const [status, setStatus] = useState<McpServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
     if (!id) return;
     setLoading(true);
+    setError(null);
     try {
       const [s, t, st] = await Promise.all([
         getServer(id),
@@ -85,6 +88,8 @@ export default function ServerDetailPage() {
       setServer(s);
       setTools(t.items);
       setStatus(st);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '加载失败');
     } finally {
       setLoading(false);
     }
@@ -93,6 +98,10 @@ export default function ServerDetailPage() {
   useEffect(() => {
     load();
   }, [id]);
+
+  if (error) {
+    return <Banner type="danger" description={error} style={{ margin: 24 }} />;
+  }
 
   if (loading || !server) {
     return (
