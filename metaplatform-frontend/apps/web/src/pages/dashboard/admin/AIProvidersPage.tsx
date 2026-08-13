@@ -137,6 +137,7 @@ export default function AIProvidersPage() {
   const [items, setItems] = useState<AdminSystemConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [defaultActive, setDefaultActive] = useState<string>("openai");
+  const [defaultEmbedding, setDefaultEmbedding] = useState<string>("disabled");
   const [customProviderIds, setCustomProviderIds] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newProviderName, setNewProviderName] = useState("");
@@ -174,6 +175,8 @@ export default function AIProvidersPage() {
       setItems(aiItems);
       const active = aiItems.find((c) => c.key === "ai.provider.default_active");
       if (active && typeof active.value === "string") setDefaultActive(active.value);
+      const emb = aiItems.find((c) => c.key === "ai.embedding.default_provider");
+      if (emb && typeof emb.value === "string") setDefaultEmbedding(emb.value);
       // 发现自定义 provider：从 config key 前缀 ai.provider.custom_* 提取
       const customs = new Set<string>();
       for (const c of aiItems) {
@@ -221,6 +224,7 @@ export default function AIProvidersPage() {
         { key: `ai.provider.${instanceId}.base_url`, value: "", value_type: "string", label: `${name} Base URL` },
         { key: `ai.provider.${instanceId}.api_key`, value: "", value_type: "string", label: `${name} API Key`, is_sensitive: true },
         { key: `ai.provider.${instanceId}.default_model`, value: "", value_type: "string", label: `${name} 默认模型` },
+        { key: `ai.provider.${instanceId}.embedding_model`, value: "", value_type: "string", label: `${name} Embedding 模型` },
         { key: `ai.provider.${instanceId}.label`, value: name, value_type: "string", label: `${name} 显示名` },
       ]);
       Toast.success(`已添加 ${name}`);
@@ -352,7 +356,7 @@ export default function AIProvidersPage() {
   const handleSave = async (provider: ProviderId) => {
     setSaving((s) => ({ ...s, [provider]: true }));
     try {
-      const suffixes = ["enabled", "base_url", "api_key", "default_model", "api_version"];
+      const suffixes = ["enabled", "base_url", "api_key", "default_model", "embedding_model", "api_version"];
       for (const s of suffixes) {
         const cfg = pickByKey(provider, s);
         if (!cfg) continue;
@@ -403,6 +407,25 @@ export default function AIProvidersPage() {
     } catch {
       /* ignore */
     }
+  };
+
+  const handleDefaultEmbeddingChange = async (val: string) => {
+    setDefaultEmbedding(val);
+    const key = "ai.embedding.default_provider";
+    try {
+      await updateConfig(key, val, "切换默认 Embedding Provider");
+    } catch {
+      // Key not created yet (not seeded) → create it (idempotent), value set on create.
+      try {
+        await batchCreateConfigs([
+          { key, value: val, value_type: "string", label: "默认 Embedding Provider" },
+        ]);
+      } catch {
+        /* ignore */
+      }
+    }
+    Toast.success(val === "disabled" ? "Embedding 已禁用（回退本地）" : "默认 Embedding Provider 已切换");
+    load();
   };
 
   // 简易"连接测试"：通过后端代理（LLMGW POST /api/v1/llmgw/providers/test，
@@ -465,6 +488,7 @@ export default function AIProvidersPage() {
     const baseUrl = pickByKey(id, "base_url");
     const apiKey = pickByKey(id, "api_key");
     const defaultModel = pickByKey(id, "default_model");
+    const embeddingModel = pickByKey(id, "embedding_model");
     const apiVersion = id === "azure" ? pickByKey(id, "api_version") : undefined;
     const isEnabled = enabled?.value === true || enabled?.value === "true";
     // testStates 只初始化了 4 个内置 key；动态添加的自定义 provider 不在其中，
@@ -526,6 +550,17 @@ export default function AIProvidersPage() {
             <Input
               data-cfg-key={defaultModel?.key}
               defaultValue={renderValue(defaultModel, id, meta.defaultModelExample)}
+              placeholder={meta.defaultModelExample}
+              disabled={!isEnabled}
+            />
+          </div>
+          <div>
+            <FieldLabel hint="该 provider 上的 embedding 模型名（如 doubao-embedding-text-240715、text-embedding-3-small）">
+              Embedding 模型
+            </FieldLabel>
+            <Input
+              data-cfg-key={embeddingModel?.key}
+              defaultValue={renderValue(embeddingModel, id, meta.defaultModelExample)}
               placeholder={meta.defaultModelExample}
               disabled={!isEnabled}
             />
@@ -678,6 +713,22 @@ export default function AIProvidersPage() {
                   ...BUILTIN_PROVIDERS.map((id) => ({ value: id, label: `${PROVIDER_META[id as keyof typeof PROVIDER_META].name}（内置）` })),
                   ...customProviderIds.map((id) => ({ value: id, label: getProviderMeta(id).name })),
                   { value: "disabled", label: "禁用（临时下线）" },
+                ]}
+              />
+            </span>
+            <span>
+              默认 Embedding Provider：
+              <Select
+                size="small"
+                value={defaultEmbedding}
+                onChange={(v) => handleDefaultEmbeddingChange(v as string)}
+                style={{ marginLeft: 8, minWidth: 200 }}
+                optionList={[
+                  ...[...BUILTIN_PROVIDERS, ...customProviderIds].map((id) => ({
+                    value: id,
+                    label: getProviderMeta(id).name,
+                  })),
+                  { value: "disabled", label: "禁用（回退本地 hash）" },
                 ]}
               />
             </span>
