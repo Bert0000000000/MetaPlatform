@@ -840,6 +840,24 @@ async def chat_completions_stream(
     max_tokens = body.get("maxTokens", body.get("max_tokens", 2048))
     conv_id = body.get("conversationId", "")
 
+    # 注入 session 上下文：让 LLM 在执行 ActionType / 工具时知道当前 session_id
+    # （与 Kernel SessionSandbox.session_id 对齐），下游 dispatch 可透传。
+    session_id = body.get("sessionId", "") or conv_id
+    if session_id and messages and messages[0].get("role") == "system":
+        # 在现有 system prompt 后追加 session 元数据（不污染用户原 prompt）
+        marker = (
+            "\n\n[Session Context]\n"
+            f"- session_id: {session_id}\n"
+            f"- tenant_id: {tid}\n"
+            f"- user_id: {uid}\n"
+            f"- app_id: {body.get('appId', '')}\n"
+            "在执行任何 Action / Tool 调用时，将 session_id 作为 audit / 沙箱关联键。"
+        )
+        messages = [
+            { **messages[0], "content": messages[0].get("content", "") + marker },
+            *messages[1:],
+        ]
+
     # Save user message if we have a conversation
     if conv_id:
         session = get_session()
