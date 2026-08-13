@@ -36,6 +36,7 @@ const SuperaiTaskOrchestrationPage = lazy(() => import('./pages/superai/TaskOrch
 const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
 
 const ApphubAppListPage = lazy(() => import('./pages/apphub/AppListPage'));
+const ApphubDesignFlowPage = lazy(() => import('./pages/apphub/DesignFlowPage'));
 const ApphubAppDetailPage = lazy(() => import('./pages/apphub/AppDetailPage'));
 const ApphubAppLifecyclePage = lazy(() => import('./pages/apphub/AppLifecyclePage'));
 const ApphubVersionManagementPage = lazy(() => import('./pages/apphub/VersionManagementPage'));
@@ -248,8 +249,8 @@ function AppRoutes() {
           <Route path="arch/tech-debt" element={<ArchLayout><ArchTechDebtPage /></ArchLayout>} />
           <Route path="arch/ontology-mapping" element={<ArchLayout><ArchOntologyMappingPage /></ArchLayout>} />
 
-          {/* 閹煎瓨姊婚弫銈嗙▔椤撶偟濡?Phase 2: from apps/apphub) */}
           <Route path="apps" element={<ApphubAppListPage />} />
+          <Route path="apps/design" element={<ApphubDesignFlowPage />} />
           <Route path="apps/:appId" element={<ApphubAppDetailPage />} />
           <Route path="apps/:appId/lifecycle" element={<ApphubAppLifecyclePage />} />
           <Route path="apps/:appId/versions" element={<ApphubVersionManagementPage />} />
