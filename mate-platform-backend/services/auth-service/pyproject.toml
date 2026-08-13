@@ -40,3 +40,4 @@ packages = ["src/mate_auth_service"]
 
 [tool.uv.sources]
 mate-common = { workspace = true }
+mate-tech-iam = { workspace = true }

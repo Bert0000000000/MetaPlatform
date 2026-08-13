@@ -179,6 +179,20 @@ class TestSemanticChunker:
         # Sentence-ending punctuation is consumed by the splitter; content preserved.
         assert "Only one sentence here" in chunks[0]
 
+    def test_semantic_chunker_chinese_similarity(self):
+        """Chinese sentences sharing a term score higher Jaccard than unrelated ones.
+
+        Under naive ``\\w+`` tokenization the whole CJK run is one token, so
+        Jaccard between distinct Chinese sentences is always 0. With CJK
+        bigrams, same-topic sentences have meaningful overlap.
+        """
+        chunker = SemanticChunker()
+        sim_related = chunker._jaccard("订单审批流程开始", "订单审批流程结束")
+        sim_unrelated = chunker._jaccard("订单审批流程开始", "天气预报有大雨")
+        assert sim_related > 0.3, sim_related
+        assert sim_unrelated < 0.1, sim_unrelated
+        assert sim_related > sim_unrelated
+
 
 # ---------------------------------------------------------------------------
 # SlidingWindowChunker

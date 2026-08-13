@@ -13,6 +13,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from mate_tech_rag.tokenize import tokenize_for_match
+
 
 @dataclass
 class RerankCandidate:
@@ -38,14 +40,20 @@ class IdentityReranker:
 
 
 class KeywordReranker:
-    """关键词匹配加分:query 中的关键词在 chunk text 中出现则加分。"""
+    """关键词匹配加分:query 中的关键词在 chunk text 中出现则加分。
+
+    Tokenization is CJK-aware (see ``mate_tech_rag.tokenize``): Chinese runs
+    are matched via character bigrams, so this reranker actually boosts
+    Chinese chunks that share terms with the query instead of degrading to a
+    constant scale (which is what naive whitespace splitting produces).
+    """
 
     def rerank(
         self, query: str, candidates: list[RerankCandidate], top_k: int = 10
     ) -> list[RerankCandidate]:
-        query_terms = set(query.lower().split())
+        query_terms = tokenize_for_match(query)
         for c in candidates:
-            text_terms = set(c.text.lower().split())
+            text_terms = tokenize_for_match(c.text)
             overlap = len(query_terms & text_terms)
             c.score = c.score * 0.7 + (overlap / max(len(query_terms), 1)) * 0.3
         return sorted(candidates, key=lambda c: c.score, reverse=True)[:top_k]

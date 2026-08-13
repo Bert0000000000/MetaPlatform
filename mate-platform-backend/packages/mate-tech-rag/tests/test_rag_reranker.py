@@ -177,6 +177,34 @@ class TestKeywordReranker:
         # Original higher score still ranks first
         assert result[0].chunk_id == "a"
 
+    def test_keyword_reranker_chinese_boosts_shared_term(self) -> None:
+        """Chinese chunk sharing a term with the query ranks first.
+
+        With CJK bigram tokenization, the matching chunk overlaps the query on
+        订单/审批/流程 and gets boosted; an unrelated chunk does not. Under the
+        old whitespace split this was a no-op (Chinese has no spaces).
+        """
+        query = "订单审批流程"
+        candidates = [
+            RerankCandidate(
+                chunk_id="match",
+                text="本系统的订单审批流程包含三个步骤",
+                score=0.5,
+            ),
+            RerankCandidate(
+                chunk_id="nomatch",
+                text="今天天气真好适合户外运动",
+                score=0.5,
+            ),
+        ]
+        original = {c.chunk_id: c.score for c in candidates}
+        result = KeywordReranker().rerank(query, candidates, top_k=10)
+        match_score = next(c.score for c in result if c.chunk_id == "match")
+        nomatch_score = next(c.score for c in result if c.chunk_id == "nomatch")
+        assert match_score > original["match"], (match_score, original["match"])
+        assert nomatch_score < original["nomatch"], (nomatch_score, original["nomatch"])
+        assert result[0].chunk_id == "match", result
+
 
 class TestLengthReranker:
     def test_length_reranker_penalizes_short(self) -> None:
