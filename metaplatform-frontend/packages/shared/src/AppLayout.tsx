@@ -80,26 +80,28 @@ export default function AppLayout({ children }: AppLayoutProps) {
     itemKey: m.key,
     text: m.label,
     icon: m.icon,
-    items: m.children.map((group) => {
-      if (group.children?.length) {
+    items: m.children
+      .filter((group) => !group.hidden)
+      .map((group) => {
+        if (group.children?.length) {
+          return {
+            itemKey: `${m.key}__${group.key}`,
+            text: group.label,
+            // 分组 SubNav 带缩进标记，让三级页面项与分组标题层级分明
+            indent: true,
+            items: group.children
+              .filter((c) => c.path && !c.hidden)
+              .map((c) => ({
+                itemKey: childItemKey(m.key, c.key),
+                text: c.label,
+              })),
+          };
+        }
         return {
-          itemKey: `${m.key}__${group.key}`,
+          itemKey: childItemKey(m.key, group.key),
           text: group.label,
-          // 分组 SubNav 带缩进标记，让三级页面项与分组标题层级分明
-          indent: true,
-          items: group.children
-            .filter((c) => c.path)
-            .map((c) => ({
-              itemKey: childItemKey(m.key, c.key),
-              text: c.label,
-            })),
         };
-      }
-      return {
-        itemKey: childItemKey(m.key, group.key),
-        text: group.label,
-      };
-    }),
+      }),
   }));
 
   return (

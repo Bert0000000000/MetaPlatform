@@ -11,7 +11,7 @@ import {
   GitBranch,
   RefreshCw,
 } from 'lucide-react';
-import { Toast, Button, Card, Typography } from '@douyinfe/semi-ui';
+import { Toast, Button, Card, Typography, SideSheet, Tag } from '@douyinfe/semi-ui';
 import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 import { getDashboardSummary, getMessages, getDeliverablesSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent, type MessageItem, type DeliverableItem } from '@/api/dashboard/workbench';
 
@@ -95,6 +95,7 @@ export default function DashboardPage() {
     const [deliverablesOpen, setDeliverablesOpen] = useState(false);
     const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
     const [recentMessages, setRecentMessages] = useState<MessageItem[]>([]);
+  const [detailMessage, setDetailMessage] = useState<MessageItem | null>(null);
 
   // 交付材料 + 最近消息（懒加载：打开抽屉/渲染时拉取）
   useEffect(() => {
@@ -376,7 +377,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
                       </div>
                     ))
                   : recentMessages.map((m) => (
-                      <div key={m.msg_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 4, cursor: 'pointer' }} onClick={() => navigate('/dashboard/messages')}>
+                      <div key={m.msg_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setDetailMessage(m)}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: m.unread ? 'var(--semi-color-danger)' : 'var(--border)' }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: m.unread ? 500 : 400 }}>{m.title}</div>
@@ -465,6 +466,43 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
           </div>
         </Card>
       </div>
+
+      {/* 消息详情抽屉（工作台最近消息点击） */}
+      <SideSheet
+        visible={detailMessage != null}
+        onCancel={() => setDetailMessage(null)}
+        title="消息详情"
+        width={480}
+      >
+        {detailMessage && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 14, fontWeight: 600, flexShrink: 0,
+              }}>
+                {detailMessage.sender.slice(0, 1)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{detailMessage.sender}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>{detailMessage.time}</div>
+              </div>
+              <Tag color={detailMessage.unread ? 'red' : 'grey'}>{detailMessage.unread ? '未读' : '已读'}</Tag>
+            </div>
+            <div>
+              <Typography.Title heading={5} style={{ marginBottom: 8 }}>{detailMessage.title}</Typography.Title>
+              <Typography.Paragraph style={{ color: 'var(--muted-foreground)' }}>
+                {detailMessage.summary}
+              </Typography.Paragraph>
+            </div>
+            {detailMessage.attachments > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                📎 {detailMessage.attachments} 个附件
+              </div>
+            )}
+          </div>
+        )}
+      </SideSheet>
 
       {/* 交付材料抽屉 */}
       <FormDrawer open={deliverablesOpen} title="交付运营材料" onCancel={() => setDeliverablesOpen(false)} footer={null}>

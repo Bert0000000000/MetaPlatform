@@ -12,12 +12,13 @@ import {
   Store,
 } from './icons';
 
-/** 菜单项：有 path 即页面入口；有 children 即分组（Semi Nav SubNav） */
+/** 菜单项：有 path 即页面入口；有 children 即分组（Semi Nav SubNav）；hidden 只用于面包屑不渲染菜单 */
 export interface SubMenuItem {
   key: string;
   label: string;
   path?: string;
   children?: SubMenuItem[];
+  hidden?: boolean;
 }
 
 export interface ModuleMenuItem {
@@ -40,7 +41,18 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     label: '工作台',
     icon: <LayoutDashboard style={{ width: 18, height: 18, strokeWidth: 1.5 }} />,
     path: '/dashboard',
-    children: [],
+    // 工作台为纯一级菜单，子页面仅用于 Header 面包屑匹配（hidden 不渲染进菜单）
+    children: [
+      { key: 'dashboard', label: '工作台', path: '/dashboard', hidden: true },
+      { key: 'my-apps', label: '我的应用', path: '/dashboard/my-apps', hidden: true },
+      { key: 'my-agents', label: '我的数字员工', path: '/dashboard/my-agents', hidden: true },
+      { key: 'messages', label: '消息中心', path: '/dashboard/messages', hidden: true },
+      { key: 'portal', label: '门户', path: '/dashboard/portal', hidden: true },
+      { key: 'notifications', label: '通知', path: '/dashboard/notifications', hidden: true },
+      { key: 'deliverables', label: '交付材料', path: '/dashboard/deliverables', hidden: true },
+      { key: 'aiops', label: '智能运维', path: '/dashboard/aiops', hidden: true },
+      { key: 'settings', label: '设置', path: '/dashboard/settings', hidden: true },
+    ],
   },
   {
     key: 'superai',
