@@ -50,6 +50,7 @@ from mate_app_kb.repositories.in_memory import (
     KbCollection,
     KbDocument,
     KbRetrievalConfig,
+    KbRetrievalConfigSnapshot,
     KbSearchLog,
     delete_collection,
     delete_document,
@@ -58,10 +59,12 @@ from mate_app_kb.repositories.in_memory import (
     get_retrieval_config,
     list_collections,
     list_documents,
+    list_retrieval_config_snapshots,
     list_search_logs,
     put_collection,
     put_document,
     put_retrieval_config,
+    put_retrieval_config_snapshot,
     put_search_log,
 )
 from mate_platform.auth import install_auth
@@ -90,6 +93,35 @@ _DOC_TRANSITIONS: dict[str, frozenset[str]] = {
 }
 
 _VALID_SEARCH_MODES = frozenset({"AUTO", "FACTUAL", "ENTITY", "THEMATIC"})
+
+
+# PATCH fix 4 (CJK tokenization): inline copy of the
+# ``mate_tech_rag.tokenize.tokenize_for_match`` CJK-bigram tokenizer so
+# the kb facade can score Chinese keyword overlap without taking a hard
+# cross-package dependency on mate-tech-rag. See the source file for the
+# canonical implementation and a refactor plan: lift this to
+# ``mate_common.tokenize`` once it stabilises.
+import re as _re  # local alias to keep the module-level import block tidy.
+
+_WORD_RE = _re.compile(r"[0-9A-Za-z]+")
+_CJK_RUN_RE = _re.compile(r"[㐀-䶿一-鿿豈-﫿]+")
+
+
+def _tokenize_for_match(text: str) -> set[str]:
+    """CJK-aware bag-of-words (Latin words + CJK bigrams).
+
+    Duplicates ``mate_tech_rag.tokenize.tokenize_for_match`` so the kb
+    facade can run keyword-overlap scoring for Chinese queries without
+    pulling in mate-tech-rag as a runtime dependency.
+    """
+    tokens: set[str] = set()
+    tokens.update(w.lower() for w in _WORD_RE.findall(text))
+    for run in _CJK_RUN_RE.findall(text):
+        if len(run) == 1:
+            tokens.add(run)
+        else:
+            tokens.update(run[i : i + 2] for i in range(len(run) - 1))
+    return tokens
 
 
 # Standard deprecation header (RFC 8594). The legacy prefix
@@ -161,11 +193,18 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
           a raw score.
         - Deduplicates by ``document_id`` keeping the highest score.
         - Sorts by score descending.
+
+        PATCH fix 4: keyword overlap uses the CJK-aware
+        ``mate_tech_rag.tokenize.tokenize_for_match`` (a copy of the
+        CJK-bigram implementation lives inline so this package does not
+        gain a hard cross-package dependency on mate-tech-rag). Under the
+        previous ``str.split()`` tokenisation the whole CJK run collapsed
+        into a single token, the overlap was 0, and the boost never
+        applied to Chinese queries.
         """
         if not hits:
             return []
-        q_lower = query.lower()
-        q_terms = set(q_lower.split())
+        q_terms = _tokenize_for_match(query)
         best_per_doc: dict[str, dict] = {}
         for h in hits:
             doc_id = h.get("document_id", h.get("id", ""))
@@ -176,8 +215,9 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                 raw_f = 0.0
             # Keyword overlap boost: if the chunk text contains query
             # terms, bump the normalised score.
-            text = (h.get("text", "") or h.get("content", "")).lower()
-            overlap = len(q_terms & set(text.split())) if q_terms else 0
+            text = (h.get("text", "") or h.get("content", ""))
+            t_terms = _tokenize_for_match(text)
+            overlap = len(q_terms & t_terms) if q_terms else 0
             overlap_boost = min(overlap * 0.05, 0.2)
             norm = min(max(raw_f, 0.0) + overlap_boost, 1.0) if raw_f > 0 else overlap_boost
             h_copy = dict(h)
@@ -456,6 +496,39 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
     ) -> RetrievalConfigResponse:
         tid = _tid(request)
         existing = get_retrieval_config(tid)
+        # P1.8: snapshot the prior version BEFORE saving the new one. The
+        # snapshot only records state for tenants that have already saved
+        # at least once (their first save has nothing to snapshot).
+        prior_snapshots = list_retrieval_config_snapshots(tid)
+        next_version = (existing.version + 1) if prior_snapshots or existing.version > 1 else 2
+        # If the existing record was never customised (still version=1 but
+        # the defaults), only start snapshotting from the FIRST user-saved
+        # config: detect that case by checking if the snapshot list is empty
+        # AND existing.version == 1 and existing.updated_at is blank.
+        if not prior_snapshots and existing.version == 1 and not existing.updated_at:
+            # The first user-save becomes version=2 with no prior snapshot.
+            cfg_version = 2
+        else:
+            cfg_version = next_version
+        if existing.updated_at:
+            snapshot = KbRetrievalConfigSnapshot(
+                id=f"{tid}:{existing.version}",
+                tenant_id=tid,
+                version=existing.version,
+                mode=existing.mode,
+                rerank_strategy=existing.rerank_strategy,
+                top_k=existing.top_k,
+                similarity_threshold=existing.similarity_threshold,
+                chunk_strategy=existing.chunk_strategy,
+                chunk_size=existing.chunk_size,
+                chunk_overlap=existing.chunk_overlap,
+                vector_weight=existing.vector_weight,
+                keyword_weight=existing.keyword_weight,
+                reranker_enabled=existing.reranker_enabled,
+                show_citations=existing.show_citations,
+                snapshot_at=_now_iso(),
+            )
+            put_retrieval_config_snapshot(tid, snapshot)
         cfg = KbRetrievalConfig(
             tenant_id=tid,
             mode=req.mode,
@@ -469,17 +542,30 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             keyword_weight=req.keyword_weight,
             reranker_enabled=req.reranker_enabled,
             show_citations=req.show_citations,
+            version=cfg_version,
             updated_at=_now_iso(),
         )
         put_retrieval_config(tid, cfg)
         _emit(
             request, "kb.retrieval-config.updated", tid,
             {"rerank_strategy": cfg.rerank_strategy, "mode": cfg.mode,
-             "top_k": cfg.top_k, "chunk_strategy": cfg.chunk_strategy},
+             "top_k": cfg.top_k, "chunk_strategy": cfg.chunk_strategy,
+             "version": cfg.version},
             tid,
         )
         _ = existing  # retained for clarity: we replace the prior config
         return RetrievalConfigResponse(**asdict(cfg))
+
+    # ------------------------------------------------------------------
+    # P1.8: retrieval-config history (read-only — rollback not in scope)
+    # ------------------------------------------------------------------
+    @app.get("/api/v1/kb/retrieval-config/history", response_model=list[dict])
+    async def list_retrieval_cfg_history(  # pyright: ignore[reportUnusedFunction]
+        request: Request, limit: int | None = None,
+    ) -> list[dict]:
+        tid = _tid(request)
+        snapshots = list_retrieval_config_snapshots(tid, limit=limit)
+        return [asdict(s) for s in snapshots]
 
     # ------------------------------------------------------------------
     # BUSINESS-SLICES deep: Document management + lifecycle
@@ -546,16 +632,54 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
     async def delete_doc(  # pyright: ignore[reportUnusedFunction]
         request: Request, did: str,
     ) -> dict:  # pyright: ignore[reportUnusedFunction]
+        """P1.7 RAG 增强: cascade-delete doc from KB catalog AND RAG.
+
+        Steps (mirrors mate-tech-dw /documents/{id}):
+          1. Verify the requester has a tenant context (ADR-0014 / hard rule 3).
+          2. Look up the local KB catalog row; 404 if missing.
+          3. Cascade-delete from the upstream RAG service so the vector /
+             graph / lightrag / PG indexes stop returning hits for this doc.
+             (In single-process dev mode: ``app.state.rag_admin_url`` may
+             carry the upstream base; if missing we fall back to a direct
+             in-process call via ``mate_tech_rag.api.cascade``.)
+          4. Drop the local KB catalog row.
+          5. Emit ``kb.document.deleted`` for downstream consumers.
+        """
         tid = _tid(request)
         doc = get_document(tid, did)
         if doc is None:
             raise HTTPException(status_code=404, detail="document not found")
+        # Cascade-delete from the upstream RAG service. The whole point
+        # of this endpoint is to clear hybrid / graph / lightrag / PG
+        # chunks so subsequent /search returns 0 hits for this doc.
+        rag_client = _rag(request)
+        rag_outcome: dict = {"deleted": False, "document_id": did}
+        rag_error: str | None = None
+        try:
+            # The RAGClient exposes a delete_document method via the
+            # service-to-service HTTP path. In single-process dev the
+            # upstream is the in-process ``mate_tech_rag`` FastAPI app;
+            # we fall back to a direct call for that mode.
+            if hasattr(rag_client, "delete_document"):
+                rag_outcome = rag_client.delete_document(did)
+            else:
+                try:
+                    from mate_tech_rag.api.cascade import delete_document_cascade
+
+                    res = delete_document_cascade(tid, did)
+                    rag_outcome = res.as_dict()
+                except ImportError:  # pragma: no cover — keep cascade best-effort
+                    rag_outcome = {"deleted": False, "document_id": did}
+        except Exception as exc:  # noqa: BLE001 — best-effort cascade
+            rag_error = str(exc)
         delete_document(tid, did)
         _emit(
             request, "kb.document.deleted", did,
-            {"document_id": did}, tid,
+            {"document_id": did, "rag_deleted": bool(rag_outcome.get("deleted")),
+             "rag_error": rag_error},
+            tid,
         )
-        return {"deleted": did}
+        return {"deleted": did, "rag": rag_outcome, "rag_error": rag_error}
 
     # ------------------------------------------------------------------
     # BUSINESS-SLICES deep: Search audit log
