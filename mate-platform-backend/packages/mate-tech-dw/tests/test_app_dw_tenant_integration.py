@@ -144,12 +144,8 @@ def test_upload_isolation(fresh_app: TestClient) -> None:
     r_upload = fresh_app.post(
         "/api/v1/dw/documents/upload",
         headers={"Authorization": f"Bearer {token_acme}"},
-        json={
-            "name": "acme-confidential.pdf",
-            "kind": "pdf",
-            "size_bytes": 9999,
-            "kb_id": "dw-kb-1",
-        },
+        files={"file": ("acme-confidential.pdf", b"%PDF-1.4", "application/pdf")},
+        data={"employee_id": "dw-kb-1"},
     )
     assert r_upload.status_code == 200, r_upload.text
     uploaded_id = r_upload.json()["data"]["id"]

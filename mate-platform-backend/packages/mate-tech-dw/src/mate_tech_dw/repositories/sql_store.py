@@ -99,6 +99,8 @@ def _orm_to_document(row: models.DwDocumentORM) -> DwDocument:
         uploaded_by=row.uploaded_by or "",
         uploaded_at=row.uploaded_at or "",
         kb_id=row.kb_id or "",
+        document_id=row.document_id or "",
+        chunk_count=row.chunk_count or 0,
     )
 
 
@@ -659,6 +661,8 @@ def put_document(tenant_id: str, entity: DwDocument) -> DwDocument:
         existing.uploaded_by = entity.uploaded_by
         existing.uploaded_at = entity.uploaded_at
         existing.kb_id = entity.kb_id
+        existing.document_id = entity.document_id
+        existing.chunk_count = entity.chunk_count
     else:
         s.add(models.DwDocumentORM(
             id=entity.id, tenant_id=tenant_id,
@@ -666,6 +670,7 @@ def put_document(tenant_id: str, entity: DwDocument) -> DwDocument:
             size_bytes=entity.size_bytes,
             uploaded_by=entity.uploaded_by,
             uploaded_at=entity.uploaded_at, kb_id=entity.kb_id,
+            document_id=entity.document_id, chunk_count=entity.chunk_count,
         ))
     s.commit()
     return entity

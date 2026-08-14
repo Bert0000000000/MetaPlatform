@@ -70,15 +70,12 @@ def test_list_documents(client, auth_headers_acme) -> None:
 
 def test_upload_document(client, auth_headers_acme) -> None:
     """POST /documents/upload must persist and return the new doc."""
+    content = b"%PDF-1.4 fake pdf bytes"
     r = client.post(
         "/api/v1/dw/documents/upload",
         headers=auth_headers_acme,
-        json={
-            "name": "测试文档.pdf",
-            "kind": "pdf",
-            "size_bytes": 1024,
-            "kb_id": "dw-kb-1",
-        },
+        files={"file": ("测试文档.pdf", content, "application/pdf")},
+        data={"employee_id": "dw-kb-1"},
     )
     assert r.status_code == 200, r.text
     body = r.json()
@@ -86,16 +83,52 @@ def test_upload_document(client, auth_headers_acme) -> None:
     doc = body["data"]
     assert doc["name"] == "测试文档.pdf"
     assert doc["kind"] == "pdf"
-    assert doc["size_bytes"] == 1024
+    assert doc["size_bytes"] == len(content)
     assert doc["kb_id"] == "dw-kb-1"
     assert doc["tenant_id"] == "tenant-acme"
     assert doc["id"].startswith("dw-doc-")
+    # 新增：RAG 入库回填字段（无 RAG 服务时降级为 0 / 空，但仍存在）
+    assert doc["document_id"] == doc["id"]
+    assert "chunk_count" in doc
 
     # Verify it now shows up in GET /documents
     r2 = client.get("/api/v1/dw/documents", headers=auth_headers_acme)
     assert r2.status_code == 200, r2.text
     ids = {item["id"] for item in _data(r2)["items"]}
     assert doc["id"] in ids
+
+
+def test_upload_ingests_to_rag(client, auth_headers_acme, monkeypatch) -> None:
+    """Upload must call RAGClient.upload and record the returned chunk_count."""
+    from mate_tech_dw import clients as dw_clients
+
+    captured: dict = {}
+
+    def fake_upload(self, file_content, filename, document_id, content_type="text/plain"):
+        captured["document_id"] = document_id
+        captured["filename"] = filename
+        captured["size"] = len(file_content)
+        captured["content_type"] = content_type
+        return {"document_id": document_id, "chunk_count": 7, "indexed_in": ["hybrid", "graph", "lightrag"]}
+
+    monkeypatch.setattr(dw_clients.RAGClient, "upload", fake_upload)
+
+    content = b"# HR manual\n\n## attendance\n\nlate arrival counts as absence\n\n## hiring\n\nprobation is three months\n"
+    r = client.post(
+        "/api/v1/dw/documents/upload",
+        headers=auth_headers_acme,
+        files={"file": ("hr.md", content, "text/markdown")},
+        data={"employee_id": "dw-kb-1"},
+    )
+    assert r.status_code == 200, r.text
+    doc = r.json()["data"]
+    # RAG ingest result is recorded on the document.
+    assert doc["chunk_count"] == 7
+    assert doc["document_id"] == captured["document_id"]
+    assert captured["filename"] == "hr.md"
+    assert captured["size"] == len(content)
+    assert captured["content_type"] == "text/markdown"
+    assert doc["kb_id"] == "dw-kb-1"
 
 
 def test_list_employees(client, auth_headers_acme) -> None:
@@ -245,6 +278,7 @@ def test_all_15_endpoints_respond(client, auth_headers_acme) -> None:
         else:
             r = client.post(
                 path, headers=auth_headers_acme,
-                json={"name": "smoke.pdf", "kind": "pdf", "size_bytes": 1, "kb_id": "dw-kb-1"},
+                files={"file": ("smoke.pdf", b"%PDF-1.4", "application/pdf")},
+                data={"employee_id": "dw-kb-1"},
             )
         assert r.status_code == 200, f"{method} {path} -> {r.status_code}: {r.text}"

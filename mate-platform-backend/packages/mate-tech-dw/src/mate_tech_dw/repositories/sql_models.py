@@ -62,6 +62,8 @@ class DwDocumentORM(Base):
     uploaded_by: Mapped[str] = mapped_column(String(64), default="")
     uploaded_at: Mapped[str] = mapped_column(String(64), default="")
     kb_id: Mapped[str] = mapped_column(String(64), default="")
+    document_id: Mapped[str] = mapped_column(String(64), default="")
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class DwEmployeeORM(Base):

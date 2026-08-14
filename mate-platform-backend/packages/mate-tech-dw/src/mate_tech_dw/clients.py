@@ -1,25 +1,93 @@
-"""mate_tech_dw.clients — outbound client for cross-service aggregation.
+"""mate_tech_dw.clients — outbound clients for cross-service aggregation.
 
-The dw domain is a read-only aggregator over mate-app-kb /
-mate-tech-rag / mate-tech-agent. P2-W3 ships an in-memory stub
-repository; real cross-service calls land in P2-W5 (TD-6) using
-`mate_clients.security.BearerAuth` + `OutgoingAuthMiddleware`
-(ADR-0014 step 4). The client shape is locked here to avoid a
-contract churn when that lands.
+The dw domain aggregates over mate-app-kb / mate-tech-rag / mate-tech-agent.
+This module adds the real RAG write-path client (document upload → RAG ingest),
+mirroring ``mate_app_kb.clients.RAGClient`` (httpx + service-identity bearer +
+tenant header). The read-only aggregation methods (list_kb_documents /
+list_agent_traces) remain reserved for a later batch.
 """
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
+from typing import Any
+
+import httpx
+
+from mate_clients.security import BearerAuth, OutgoingAuthMiddleware
+
+
+class RAGClient:
+    """HTTP client for mate-tech-rag /api/v1/rag/* (document upload → ingest).
+
+    Injects bearer token + X-Tenant-Id via OutgoingAuthMiddleware so the
+    outbound upload is tenant-scoped (ADR-0014 step 4 / hard rule 3).
+    """
+
+    DEFAULT_URL = "http://localhost:8001"
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        timeout: float = 60.0,
+        *,
+        auth: BearerAuth | None = None,
+        tenant_id: str = "",
+        static_token: str | None = None,
+    ) -> None:
+        self._base_url = (base_url or os.environ.get("RAG_URL", self.DEFAULT_URL)).rstrip("/")
+        self._client = httpx.Client(timeout=timeout)
+        if tenant_id:
+            self._client.headers["X-Tenant-Id"] = tenant_id
+        # Dev fast path: a pre-minted HS256 token (INSECURE_SKIP_SIGNATURE) skips
+        # the Keycloak client_credentials round-trip that needs a live Keycloak.
+        if static_token:
+            self._client.headers["Authorization"] = f"Bearer {static_token}"
+        elif auth is not None and tenant_id:
+            self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
+        self._auth = auth
+        self._tenant_id = tenant_id
+        self._static_token = static_token
+
+    def set_tenant(self, tenant_id: str) -> None:
+        self._tenant_id = tenant_id
+        if tenant_id:
+            self._client.headers["X-Tenant-Id"] = tenant_id
+        if self._auth is not None and tenant_id and not self._static_token:
+            self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
+
+    def upload(
+        self,
+        file_content: bytes,
+        filename: str,
+        document_id: str,
+        content_type: str = "text/plain",
+    ) -> dict[str, Any]:
+        """POST /api/v1/rag/upload (multipart) → real chunk + embed + 3-index ingest.
+
+        Returns the RAG UploadResponse dict: {document_id, filename, size_bytes,
+        chunk_count, indexed_in}.
+        """
+        files = {"file": (filename, file_content, content_type)}
+        r = self._client.post(
+            f"{self._base_url}/api/v1/rag/upload",
+            files=files,
+            params={"document_id": document_id},
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def close(self) -> None:
+        self._client.close()
 
 
 @dataclass(frozen=True)
 class AsyncDwClient:
-    """Reserved outbound client for dw aggregation.
+    """Reserved outbound client for dw read-only aggregation.
 
-    P2-W3: no methods are implemented yet. P2-W5 adds
-    `list_kb_documents` / `list_agent_traces` / `list_models`
-    style calls that proxy to the underlying services once
-    they are backed by persistent stores.
+    The upload write-path is covered by RAGClient above; the remaining
+    read-only proxy calls (list_kb_documents / list_agent_traces / list_models)
+    land in a later batch.
     """
 
     base_url: str

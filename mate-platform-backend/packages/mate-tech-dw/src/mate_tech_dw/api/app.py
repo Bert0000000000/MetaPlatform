@@ -28,14 +28,18 @@ The router is mounted by `mate_tech_dw.main.create_app()` after
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 import time
 import uuid
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 from typing import Annotated
+
+_log = logging.getLogger(__name__)
 
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -46,6 +50,7 @@ from mate_platform.tenancy.guards import require_tenant
 from mate_kernel.agent.orchestrator import AgentRole
 from mate_kernel.agent.prompts import SYSTEM_PROMPTS
 
+from ..clients import RAGClient
 from ..repositories import (
     DwCollaboration,
     DwDocument,
@@ -244,42 +249,79 @@ async def dw_get_documents(
 
 
 # ---------------------------------------------------------------------------
-# 5. POST /documents/upload (stub — accepts ApiResponse schema)
+# 5. POST /documents/upload — real multipart upload → mate-tech-rag ingest
 # ---------------------------------------------------------------------------
-class DocumentUploadRequest(BaseModel):
-    """Body schema for POST /documents/upload.
+_KIND_BY_EXT = {
+    "pdf": "pdf", "doc": "docx", "docx": "docx",
+    "md": "md", "markdown": "md", "txt": "txt", "html": "html",
+}
 
-    Matches the OpenAPI `ApiResponse` schema (all fields optional
-    except code/message/data). The dw stub ignores the body content
-    and returns a synthesized document record so the contract test
-    can verify the endpoint exists.
-    """
-    name: str | None = None
-    kind: str | None = "pdf"
-    size_bytes: int | None = 0
-    kb_id: str | None = None
+
+def _ext_kind(filename: str) -> str:
+    ext = (filename or "").rsplit(".", 1)[-1].lower() if "." in (filename or "") else ""
+    return _KIND_BY_EXT.get(ext, "other")
+
+
+def _rag_client(request: Request, tenant_id: str) -> RAGClient:
+    """Build a RAGClient bound to the request's service identity (prod) or a
+    pre-minted dev token (dev server, INSECURE_SKIP_SIGNATURE)."""
+    app_state = request.app.state
+    return RAGClient(
+        auth=getattr(app_state, "service_identity", None),
+        tenant_id=tenant_id,
+        static_token=getattr(app_state, "dev_token", None),
+    )
 
 
 @router.post("/documents/upload")
 async def dw_post_documents_upload(
     request: Request,
-    body: DocumentUploadRequest,
+    file: UploadFile = File(...),
+    employee_id: str = Form(default=""),
 ) -> dict:
-    """NOTE: 当前使用 in-memory store。真实跨服务聚合需对接 mate-app-kb / mate-tech-rag / mate-tech-agent(TD-6)。"""
+    """Upload a document and ingest it into the RAG knowledge base.
+
+    The file is parsed + embedded + indexed by mate-tech-rag (real doubao
+    embedding in dev via the gateway). RAG failure degrades gracefully: the
+    metadata still lands with chunk_count=0 rather than failing the upload.
+    """
     tenant_id = _tenant_id(request)
-    # Extract uploader from ctx (sub) — fall back to "anonymous"
     ctx = getattr(request.state, "ctx", None)
     raw_user = getattr(ctx, "user_id", None) if ctx else None
     uploader = str(raw_user) if raw_user else "anonymous"
+
+    raw = await file.read()
+    filename = file.filename or "untitled"
+    document_id = f"dw-doc-{uuid.uuid4().hex[:8]}"
+    kb_id = employee_id or "dw-kb-default"
+
+    chunk_count = 0
+    try:
+        rag = _rag_client(request, tenant_id)
+        try:
+            # Offload the blocking httpx upload (sync → in-process rag /upload)
+            # to a worker thread to avoid deadlocking the event loop.
+            data = await asyncio.to_thread(
+                rag.upload, raw, filename, document_id,
+                file.content_type or "text/plain",
+            )
+            chunk_count = int(data.get("chunk_count", 0) or 0)
+        finally:
+            rag.close()
+    except Exception as exc:  # noqa: BLE001 — degrade, don't fail the upload
+        _log.warning("dw.documents.upload.rag_failed doc=%s error=%s", document_id, exc)
+
     doc = DwDocument(
-        id=f"dw-doc-{uuid.uuid4().hex[:8]}",
+        id=document_id,
         tenant_id=tenant_id,
-        name=body.name or "untitled",
-        kind=body.kind or "pdf",
-        size_bytes=body.size_bytes or 0,
+        name=filename,
+        kind=_ext_kind(filename),
+        size_bytes=len(raw),
         uploaded_by=uploader,
         uploaded_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        kb_id=body.kb_id or "dw-kb-default",
+        kb_id=kb_id,
+        document_id=document_id,
+        chunk_count=chunk_count,
     )
     append_document(tenant_id, doc)
     return {

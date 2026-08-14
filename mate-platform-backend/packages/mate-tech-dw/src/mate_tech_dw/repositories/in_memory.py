@@ -73,6 +73,8 @@ class DwDocument:
     uploaded_by: str
     uploaded_at: str
     kb_id: str
+    document_id: str = ""  # mate-tech-rag 入库的 doc id（upload 后回填）
+    chunk_count: int = 0  # RAG 入库切片数
 
 
 @dataclass(frozen=True)

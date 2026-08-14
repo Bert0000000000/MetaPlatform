@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 import sys
 
 # Windows dev only: psycopg async (the IAM/PG driver) is incompatible with the
@@ -253,6 +254,41 @@ def build_app() -> FastAPI:
     return app
 
 
+def _make_dev_token() -> str:
+    """Mint an HS256 service token for dev cross-service calls.
+
+    The unified dev server has no Keycloak, so service_identity cannot do the
+    client_credentials round-trip. This token (signed with SERVICE_CLIENT_SECRET)
+    is accepted by the verifier because INSECURE_SKIP_SIGNATURE=1 skips signature
+    checks. It carries PLATFORM_SUPER_ADMIN + tenant-default so DW→rag uploads pass
+    require_tenant.
+    """
+    import time as _t
+
+    import jwt as _jwt
+
+    now = int(_t.time())
+    secret = os.environ.get("SERVICE_CLIENT_SECRET", "test-secret")
+    return _jwt.encode(
+        {
+            "sub": "admin",
+            "iss": "http://localhost:8080/realms/metaplatform",
+            "aud": "metaplatform-backend",
+            "azp": "metaplatform-backend",
+            "preferred_username": "admin",
+            "realm_access": {"roles": ["PLATFORM_SUPER_ADMIN"]},
+            "roles": ["PLATFORM_SUPER_ADMIN"],
+            "scope": "platform.read platform.write",
+            "tenant_id": "tenant-default",
+            "attributes": {"tenant_id": ["tenant-default"]},
+            "iat": now,
+            "exp": now + 86_400,  # 24h — dev server lifetime
+        },
+        secret,
+        algorithm="HS256",
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8100)
@@ -260,6 +296,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     app = build_app()
+    # Dev cross-service loopback: DW (and mate-app-kb) RAGClient call back into
+    # this process's rag routes instead of a separate localhost:8001 service.
+    os.environ["RAG_URL"] = f"http://localhost:{args.port}"
+    app.state.dev_token = _make_dev_token()
+    logger.info("Dev RAG_URL=%s + service dev_token set", os.environ["RAG_URL"])
     logger.info("Starting dev server on %s:%d", args.host, args.port)
     if sys.platform == "win32":
         # Run uvicorn on an explicit SelectorEventLoop: psycopg async (the IAM/PG
