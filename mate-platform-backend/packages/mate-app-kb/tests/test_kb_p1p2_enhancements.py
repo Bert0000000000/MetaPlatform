@@ -118,7 +118,9 @@ class TestKbRetrievalConfigHistory:
 
         hist = client.get("/api/v1/kb/retrieval-config/history")
         assert hist.status_code == 200, hist.text
-        history = hist.json()
+        history_body = hist.json()
+        # Standard ApiResponse wrapper: {code, message, data: {items, total}}
+        history = history_body["data"]["items"]
         # 1st PUT (the user's first save) becomes version 2 and has no
         # prior snapshot; 2nd PUT snapshots version 2; 3rd PUT snapshots
         # version 3 → 2 snapshots total.

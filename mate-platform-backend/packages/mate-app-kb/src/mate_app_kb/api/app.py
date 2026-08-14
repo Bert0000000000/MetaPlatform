@@ -559,13 +559,16 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
     # ------------------------------------------------------------------
     # P1.8: retrieval-config history (read-only — rollback not in scope)
     # ------------------------------------------------------------------
-    @app.get("/api/v1/kb/retrieval-config/history", response_model=list[dict])
+    @app.get("/api/v1/kb/retrieval-config/history", response_model=dict)
     async def list_retrieval_cfg_history(  # pyright: ignore[reportUnusedFunction]
         request: Request, limit: int | None = None,
-    ) -> list[dict]:
+    ) -> dict:
         tid = _tid(request)
         snapshots = list_retrieval_config_snapshots(tid, limit=limit)
-        return [asdict(s) for s in snapshots]
+        # Wrap in the standard ApiResponse shape so the frontend
+        # getRetrievalConfigHistory() (which reads data.items) works
+        # uniformly with /api/v1/admin/configs and /api/v1/kb/collections.
+        return {"code": 0, "message": "ok", "data": {"items": [asdict(s) for s in snapshots], "total": len(snapshots)}}
 
     # ------------------------------------------------------------------
     # BUSINESS-SLICES deep: Document management + lifecycle

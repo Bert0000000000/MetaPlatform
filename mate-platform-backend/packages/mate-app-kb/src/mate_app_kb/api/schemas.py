@@ -28,7 +28,7 @@ class SearchRequest(BaseModel):
     top_k: Annotated[int, Field(ge=1, le=100, default=10)]
     mode: Annotated[Literal["AUTO", "FACTUAL", "ENTITY", "THEMATIC"], Field(default="AUTO")]
     # When omitted, the tenant's saved retrieval-config rerank_strategy is used.
-    rerank_strategy: Annotated[Literal["identity", "keyword", "length"] | None, Field(default=None)]
+    rerank_strategy: Annotated[Literal["identity", "keyword", "length", "heuristic_cross"] | None, Field(default=None)]
 
 
 class SearchResponse(BaseModel):
@@ -131,7 +131,8 @@ class DocumentTransitionRequest(BaseModel):
 # Retrieval configuration (knowledge/config page)
 # ---------------------------------------------------------------------------
 _RetrievalMode = Literal["AUTO", "FACTUAL", "ENTITY", "THEMATIC"]
-_RerankStrategy = Literal["identity", "keyword", "length"]
+# P2.9: heuristic_cross added (zero-dep CJK-friendly cross-encoder reranker).
+_RerankStrategy = Literal["identity", "keyword", "length", "heuristic_cross"]
 _ChunkStrategy = Literal["recursive", "markdown", "semantic", "sliding"]
 
 
