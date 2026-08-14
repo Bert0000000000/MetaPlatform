@@ -32,6 +32,7 @@ for sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-rag"):
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter  # noqa: E402
 from mate_tech_rag.reranker import (  # noqa: E402
+    HeuristicCrossEncoderReranker,
     IdentityReranker,
     KeywordReranker,
     LengthReranker,
@@ -253,6 +254,29 @@ class TestCreateReranker:
         # Empty string also falls back
         assert isinstance(create_reranker(""), IdentityReranker)
 
+    def test_create_reranker_heuristic_cross(self) -> None:
+        """heuristic_cross + cross_encoder both return HeuristicCrossEncoderReranker.
+
+        cross_encoder is intentionally aliased to heuristic_cross — we never
+        silently load a model the env did not opt into.
+        """
+        assert isinstance(create_reranker("heuristic_cross"), HeuristicCrossEncoderReranker)
+        assert isinstance(create_reranker("cross_encoder"), HeuristicCrossEncoderReranker)
+
+    def test_create_reranker_real_cross_falls_back_without_env(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """real_cross_encoder without ST_CROSS_ENCODER_MODEL falls back to heuristic.
+
+        Without sentence-transformers installed AND without opt-in env, the
+        factory must still return a usable (heuristic) reranker.
+        """
+        monkeypatch.delenv("ST_CROSS_ENCODER_MODEL", raising=False)
+        # sentence-transformers may or may not be installed; either way the
+        # graceful fallback path must be hit.
+        result = create_reranker("real_cross_encoder")
+        assert isinstance(result, HeuristicCrossEncoderReranker)
+
 
 # ---------------------------------------------------------------------------
 # metadata_filter unit tests (3)
@@ -425,3 +449,146 @@ class TestSearchEndpointRerank:
         assert r.status_code == 200, r.text
         body = r.json()
         assert body["total"] >= 1, body
+
+
+# ---------------------------------------------------------------------------
+# P2.9: HeuristicCrossEncoderReranker (zero-dep "fake cross-encoder")
+# ---------------------------------------------------------------------------
+class TestHeuristicCrossEncoderReranker:
+    def test_heuristic_cross_ranks_matching_chunk_first(self) -> None:
+        """Chunk whose text shares query terms must rank above an unrelated one.
+
+        Both start at the same original score, but the heuristic should boost
+        the matching chunk via base_sim + pos_factor + length_factor + idf_factor.
+        """
+        query = "machine learning algorithms"
+        candidates = [
+            RerankCandidate(
+                chunk_id="correct",
+                text=(
+                    "machine learning algorithms are powerful tools used in many "
+                    "domains to build predictive models from data."
+                ),
+                score=0.5,
+            ),
+            RerankCandidate(
+                chunk_id="wrong",
+                text="cooking pasta recipes from italy are popular worldwide",
+                score=0.5,
+            ),
+        ]
+        result = HeuristicCrossEncoderReranker().rerank(query, candidates, top_k=10)
+        scores = {c.chunk_id: c.score for c in result}
+        assert scores["correct"] > scores["wrong"], scores
+        assert result[0].chunk_id == "correct", result
+
+    def test_heuristic_cross_chinese_token_overlap(self) -> None:
+        """Chinese chunk sharing tokens with the query ranks first (CJK bigram)."""
+        query = "订单审批流程"
+        candidates = [
+            RerankCandidate(
+                chunk_id="match",
+                text="本系统的订单审批流程包含三个步骤:提交、审核、归档。",
+                score=0.5,
+            ),
+            RerankCandidate(
+                chunk_id="nomatch",
+                text="今天天气真好适合户外运动跑步爬山。",
+                score=0.5,
+            ),
+        ]
+        result = HeuristicCrossEncoderReranker().rerank(query, candidates, top_k=10)
+        scores = {c.chunk_id: c.score for c in result}
+        assert scores["match"] > scores["nomatch"], scores
+        assert result[0].chunk_id == "match", result
+
+    def test_heuristic_cross_positional_bias(self) -> None:
+        """Query term appearing earlier in the chunk should rank above the same term late."""
+        query = "alpha beta gamma"
+        early_text = "alpha beta gamma is a useful introduction to the topic " + (
+            "filler " * 30
+        )
+        late_text = ("filler " * 30) + "alpha beta gamma is buried at the tail"
+        candidates = [
+            RerankCandidate(chunk_id="early", text=early_text, score=0.5),
+            RerankCandidate(chunk_id="late", text=late_text, score=0.5),
+        ]
+        result = HeuristicCrossEncoderReranker().rerank(query, candidates, top_k=10)
+        scores = {c.chunk_id: c.score for c in result}
+        assert scores["early"] > scores["late"], scores
+
+    def test_heuristic_cross_no_overlap_keeps_low_score(self) -> None:
+        """Zero token overlap → score collapses (no false positives)."""
+        query = "machine learning"
+        candidates = [
+            RerankCandidate(
+                chunk_id="no_overlap",
+                text="a totally unrelated cooking recipe about pasta sauce",
+                score=1.0,
+            ),
+        ]
+        result = HeuristicCrossEncoderReranker().rerank(query, candidates, top_k=10)
+        assert result[0].score < 1.0, result[0].score
+        assert result[0].score > 0.0, result[0].score
+
+    def test_heuristic_cross_empty_candidates(self) -> None:
+        """Empty input → empty output (no crash)."""
+        result = HeuristicCrossEncoderReranker().rerank(
+            "anything", [], top_k=10,
+        )
+        assert result == []
+
+    def test_heuristic_cross_empty_query(self) -> None:
+        """Empty query → no rerank, just truncate to top_k."""
+        candidates = [
+            RerankCandidate(chunk_id="a", text="alpha", score=0.3),
+            RerankCandidate(chunk_id="b", text="beta", score=0.9),
+            RerankCandidate(chunk_id="c", text="gamma", score=0.6),
+        ]
+        result = HeuristicCrossEncoderReranker().rerank("", candidates, top_k=2)
+        assert len(result) == 2
+        assert result[0].chunk_id == "b"
+        assert result[1].chunk_id == "c"
+
+    def test_heuristic_cross_top_k_truncation(self) -> None:
+        """top_k truncates the final ranking (regardless of pre-rerank order)."""
+        query = "matching term"
+        candidates = [
+            RerankCandidate(chunk_id=str(i), text=f"matching term {i}", score=0.1)
+            for i in range(5)
+        ]
+        result = HeuristicCrossEncoderReranker().rerank(query, candidates, top_k=3)
+        assert len(result) == 3
+
+    def test_create_reranker_heuristic_differs_from_identity(self) -> None:
+        """HeuristicCrossEncoder must produce a DIFFERENT top-1 than IdentityReranker
+        when one chunk overlaps query and the other does not (same original score).
+
+        This is the contract test that backs the task's claim:
+        "cross_encoder 重排 vs identity 重排:同一 query,top-1 score 应不同
+        (heuristic 应该把 token 重叠度最高的排前)".
+        """
+        query = "machine learning"
+        # Wrong chunk has higher original score; correct chunk only matches by token overlap.
+        candidates = [
+            RerankCandidate(
+                chunk_id="wrong_high_score",
+                text="cooking pasta recipes",
+                score=0.9,
+            ),
+            RerankCandidate(
+                chunk_id="correct_low_score",
+                text="machine learning is a branch of AI",
+                score=0.4,
+            ),
+        ]
+        identity_top = IdentityReranker().rerank(query, candidates, top_k=1)[0]
+        heuristic_top = HeuristicCrossEncoderReranker().rerank(query, candidates, top_k=1)[0]
+        # Identity sorts purely by original score → wrong_high_score wins.
+        assert identity_top.chunk_id == "wrong_high_score", identity_top
+        # Heuristic should detect the token overlap and flip the ranking.
+        assert heuristic_top.chunk_id == "correct_low_score", heuristic_top
+        # Top-1 scores must therefore differ (the two rerankers disagree).
+        assert identity_top.score != heuristic_top.score, (
+            identity_top.score, heuristic_top.score,
+        )

@@ -66,10 +66,12 @@ from ..repositories import (
     append_evaluation,
     append_learning_feedback,
     create_employee,
+    delete_document,
     delete_employee,
     get_employee,
     get_employee_conversation,
     get_employee_task,
+    get_learning_feedback,
     list_auth_logins,
     list_collaborations,
     list_commits,
@@ -91,6 +93,7 @@ from ..repositories import (
     put_employee_message,
     update_employee,
     update_employee_task,
+    update_learning_feedback,
 )
 
 router = APIRouter(prefix="/api/v1/dw", tags=["dw"])
@@ -972,6 +975,93 @@ async def submit_learning_feedback(
 
 
 # ---------------------------------------------------------------------------
+# P2.10: Promote a learning feedback snippet into the RAG knowledge base.
+# ---------------------------------------------------------------------------
+# Frontend `LearningPage.tsx` wires a "提升至知识库" button that calls this
+# endpoint. The endpoint reads the feedback record's `comment`/`scenario`,
+# re-ingests it as a single chunk into ``mate-tech-rag`` via the existing
+# ``RAGClient.ingest`` JSON path, and writes back the resulting
+# ``document_id`` into the feedback's ``promoted_document_id`` so the same
+# record cannot be promoted twice without explicit override.
+#
+# Tenant-scoped: the RAG write carries ``X-Tenant-Id`` (ADR-0014 step 4),
+# so cross-tenant feedback cannot leak into another tenant's KB.
+@router.post("/learning/feedback/{feedback_id}/promote", status_code=201)
+async def promote_learning_feedback_to_kb(
+    request: Request, feedback_id: str,
+) -> dict:
+    """Promote a learning feedback snippet into the RAG knowledge base.
+
+    RAG failures degrade gracefully (returns 502 with detail) — the feedback
+    record itself is not deleted, so the operator can retry. The endpoint
+    returns the new ``promoted_document_id`` + chunk_count so the caller can
+    immediately verify via ``GET /api/v1/rag/search``.
+    """
+    tid = _tenant_id(request)
+    feedback = get_learning_feedback(tid, feedback_id)
+    if feedback is None:
+        raise HTTPException(status_code=404, detail="feedback not found")
+
+    # Build a single-chunk payload from the feedback comment + scenario.
+    # Empty `comment` is allowed but rare — we still allow the snippet to
+    # go through (the scenario is the minimum useful signal).
+    snippet = (feedback.comment or "").strip() or f"[scenario] {feedback.scenario}"
+    document_id = f"dw-fb-{feedback.tenant_id}-{feedback.id}"
+    metadata = {
+        "source": "learning_feedback",
+        "feedback_id": feedback.id,
+        "employee_id": feedback.employee_id,
+        "scenario": feedback.scenario,
+        "rating": str(feedback.rating),
+    }
+
+    try:
+        rag = _rag_client(request, tid)
+        try:
+            data = await asyncio.to_thread(
+                rag.ingest, document_id, [snippet], metadata,
+            )
+            chunk_count = int(data.get("chunk_count", 0) or 0)
+        finally:
+            rag.close()
+    except Exception as exc:  # noqa: BLE001 — keep the feedback intact on RAG failure
+        _log.warning(
+            "dw.learning.promote.rag_failed feedback=%s error=%s",
+            feedback_id, exc,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail=f"rag ingest failed: {exc}",
+        ) from exc
+
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    updated = update_learning_feedback(
+        tid, feedback_id,
+        promoted_document_id=document_id,
+        promoted_at=now,
+    )
+    _emit(
+        request, "dw.feedback.promoted", feedback_id,
+        {
+            "feedback_id": feedback_id,
+            "employee_id": feedback.employee_id,
+            "scenario": feedback.scenario,
+            "promoted_document_id": document_id,
+            "chunk_count": chunk_count,
+        },
+        tid,
+    )
+    return _ok({
+        "feedback_id": feedback_id,
+        "promoted_document_id": document_id,
+        "promoted_at": now,
+        "chunk_count": chunk_count,
+        "snippet": snippet,
+        "feedback": asdict(updated) if updated else None,
+    })
+
+
+# ---------------------------------------------------------------------------
 # BUSINESS-SLICES deep: Collaboration session management
 # ---------------------------------------------------------------------------
 class CollaborationCreateRequest(BaseModel):
@@ -1297,11 +1387,65 @@ async def dw_get_employee_logs(request: Request, employee_id: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# 16. /v1/dw/documents/{id} — DELETE single document
+# 16. /v1/dw/documents/{id} — DELETE single document (cascade → RAG)
 # ---------------------------------------------------------------------------
 @router.delete("/documents/{doc_id}")
-async def dw_delete_document(doc_id: str) -> dict:
-    return _ok({"deleted": True, "id": doc_id})
+async def dw_delete_document(request: Request, doc_id: str) -> dict:
+    """Delete a single knowledge-base document.
+
+    Steps (P1.7 RAG 增强):
+      1. Verify the requester has a tenant context (ADR-0014 / hard rule 3).
+      2. Look up the local catalog row; 404 if missing.
+      3. Cascade-delete from the upstream RAG service so the vector /
+         graph / lightrag / PG indexes stop returning hits for this doc.
+      4. Drop the local catalog row.
+      5. Emit ``dw.document.deleted`` for downstream consumers.
+
+    The RAG call is best-effort: if the upstream is unreachable we still
+    remove the local row and report a partial-success payload so the
+    caller can decide whether to retry the cascade.
+    """
+    tid = _tenant_id(request)
+    existing = [d for d in list_documents(tid) if d.id == doc_id]
+    if not existing:
+        raise HTTPException(status_code=404, detail="document not found")
+
+    cascade: dict = {"deleted": False, "document_id": doc_id}
+    rag_error: str | None = None
+    try:
+        rag = _rag_client(request, tid)
+        try:
+            cascade = rag.delete_document(doc_id)
+        finally:
+            rag.close()
+    except Exception as exc:  # noqa: BLE001 — best-effort cascade
+        _log.warning("dw.documents.delete.rag_failed doc=%s error=%s", doc_id, exc)
+        rag_error = str(exc)
+
+    deleted = delete_document(tid, doc_id)
+    if not deleted and not cascade.get("deleted"):
+        raise HTTPException(
+            status_code=404,
+            detail="document not found in catalog and RAG",
+        )
+
+    _emit(
+        request, "dw.document.deleted", doc_id,
+        {
+            "document_id": doc_id,
+            "rag_deleted": bool(cascade.get("deleted")),
+            "rag_error": rag_error,
+        },
+        tid,
+    )
+    payload: dict = {
+        "deleted": True,
+        "id": doc_id,
+        "rag": cascade,
+    }
+    if rag_error:
+        payload["rag_error"] = rag_error
+    return _ok(payload)
 
 
 # ---------------------------------------------------------------------------

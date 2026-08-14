@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin } from '@douyinfe/semi-ui';
+import { List, Tag, Empty, Spin, Button, Toast } from '@douyinfe/semi-ui';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { listKnowledge } from '@/api/dw/learning';
+import { promoteFeedback } from '@/api/dw/learning';
 import type { LearnedKnowledge } from '@/api/dw/types';
 
 export default function LearningPage() {
   const [items, setItems] = useState<LearnedKnowledge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [promoting, setPromoting] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -25,6 +27,22 @@ export default function LearningPage() {
       mounted = false;
     };
   }, []);
+
+  const handlePromote = async (feedbackId: string) => {
+    if (!feedbackId) {
+      Toast.error('该条目未关联 feedback id,无法提升');
+      return;
+    }
+    setPromoting(feedbackId);
+    try {
+      const res = await promoteFeedback(feedbackId);
+      Toast.success(`已提升至知识库 (${res.promotedDocumentId ?? res.promoted_document_id})`);
+    } catch (err) {
+      Toast.error('提升失败,请稍后重试');
+    } finally {
+      setPromoting(null);
+    }
+  };
 
   if (loading) {
     return <Spin tip="加载中" />;
@@ -45,6 +63,16 @@ export default function LearningPage() {
               置信度 {item.confidence}
             </div>
           </div>
+          <Button
+            size="small"
+            type="secondary"
+            theme="light"
+            loading={promoting === (item.sourceFeedbackIds?.[0] ?? item.knowledgeId)}
+            disabled={item.syncedToKb}
+            onClick={() => handlePromote(item.sourceFeedbackIds?.[0] ?? item.knowledgeId)}
+          >
+            提升至知识库
+          </Button>
         </List.Item>
       )}
     >

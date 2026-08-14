@@ -77,6 +77,46 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
+    def ingest(
+        self,
+        document_id: str,
+        chunks: list[str],
+        metadata: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """POST /api/v1/rag/ingest (JSON) → real chunk + embed + 3-index ingest.
+
+        Used by P2.10 to re-ingest a learning-feedback snippet (no file)
+        directly into the RAG knowledge base. Returns the RAG IngestResponse
+        dict: {document_id, chunk_count, total_chunks}.
+        """
+        payload: dict[str, Any] = {"document_id": document_id, "chunks": list(chunks)}
+        if metadata:
+            payload["metadata"] = dict(metadata)
+        r = self._client.post(
+            f"{self._base_url}/api/v1/rag/ingest",
+            json=payload,
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def delete_document(self, document_id: str) -> dict[str, Any]:
+        """DELETE /api/v1/rag/documents/{document_id} → cascade-delete in the
+        upstream RAG service (vector + graph + lightrag + PG + lifecycle).
+
+        Returns the RAG DeleteDocumentResponse dict: {deleted, document_id,
+        chunks_removed, ...}. Returns an empty dict with deleted=False when
+        the doc is unknown so callers can treat it as "not found" without a
+        hard error.
+        """
+        r = self._client.delete(
+            f"{self._base_url}/api/v1/rag/documents/{document_id}",
+        )
+        r.raise_for_status()
+        try:
+            return r.json()
+        except Exception:  # noqa: BLE001 — best-effort
+            return {"deleted": False, "document_id": document_id}
+
     def close(self) -> None:
         self._client.close()
 

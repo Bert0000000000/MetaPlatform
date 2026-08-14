@@ -385,6 +385,212 @@ def test_feedback_emits_outbox(client, auth_headers_acme, outbox) -> None:
 
 
 # ---------------------------------------------------------------------------
+# P2.10: Promote a learning feedback snippet into the RAG knowledge base.
+# ---------------------------------------------------------------------------
+class _StubRAGClient:
+    """In-memory stub of RAGClient used by the promote endpoint tests.
+
+    The dw service talks to ``mate-tech-rag`` over HTTP via RAGClient; for
+    unit tests we monkey-patch the module-level ``_rag_client`` factory to
+    return this stub instead, so the endpoint stays exercised end-to-end
+    without standing up a real rag service.
+    """
+
+    def __init__(self, *, fail: bool = False) -> None:
+        self.calls: list[dict] = []
+        self._fail = fail
+
+    def ingest(
+        self, document_id: str, chunks: list[str],
+        metadata: dict | None = None,
+    ) -> dict:
+        if self._fail:
+            raise RuntimeError("simulated rag outage")
+        self.calls.append({
+            "document_id": document_id,
+            "chunks": list(chunks),
+            "metadata": dict(metadata or {}),
+        })
+        return {"document_id": document_id, "chunk_count": len(chunks), "total_chunks": len(chunks)}
+
+    def close(self) -> None:
+        pass
+
+
+@pytest.fixture
+def stub_rag(monkeypatch: pytest.MonkeyPatch):
+    """Inject a stub RAG client into the dw api module.
+
+    Tests that need access to the captured calls should use the return value:
+        stub = stub_rag
+        r = client.post(.../promote, ...)
+        assert stub.calls[-1]["chunks"][0] == "..."
+    """
+    stub = _StubRAGClient()
+    import mate_tech_dw.api.app as _app_mod
+    monkeypatch.setattr(_app_mod, "_rag_client", lambda _request, _tenant: stub)
+    return stub
+
+
+def _create_feedback(client, headers, **overrides) -> str:
+    """Helper: POST /learning/feedback and return its id."""
+    body = {
+        "employee_id": ACME_E1, "scenario": "cs-refund",
+        "rating": 5, "comment": "处理非常准确,客户很满意",
+    }
+    body.update(overrides)
+    r = client.post(
+        "/api/v1/dw/learning/feedback", json=body, headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+def test_promote_feedback_to_kb_returns_201(client, auth_headers_acme, stub_rag) -> None:
+    """POST /learning/feedback/{id}/promote ingests comment → rag + backfills id."""
+    fid = _create_feedback(client, auth_headers_acme)
+    r = client.post(
+        f"/api/v1/dw/learning/feedback/{fid}/promote", headers=auth_headers_acme,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()["data"]
+    assert body["feedback_id"] == fid
+    assert body["promoted_document_id"].startswith("dw-fb-tenant-acme-")
+    assert body["chunk_count"] == 1
+    assert body["snippet"] == "处理非常准确,客户很满意"
+    # RAG client received the snippet + scenario/feedback metadata.
+    assert len(stub_rag.calls) == 1
+    call = stub_rag.calls[0]
+    assert call["chunks"] == ["处理非常准确,客户很满意"]
+    assert call["metadata"]["source"] == "learning_feedback"
+    assert call["metadata"]["feedback_id"] == fid
+    assert call["metadata"]["scenario"] == "cs-refund"
+
+
+def test_promote_feedback_unknown_returns_404(client, auth_headers_acme, stub_rag) -> None:
+    """Promote unknown feedback id → 404."""
+    r = client.post(
+        "/api/v1/dw/learning/feedback/nonexistent-id/promote",
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 404, r.text
+    assert stub_rag.calls == []  # no RAG call made on failure
+
+
+def test_promote_feedback_rag_failure_returns_502(
+    client, auth_headers_acme, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RAG outage → 502; feedback record itself stays intact (no partial update)."""
+    fid = _create_feedback(client, auth_headers_acme)
+    failing = _StubRAGClient(fail=True)
+    import mate_tech_dw.api.app as _app_mod
+    monkeypatch.setattr(_app_mod, "_rag_client", lambda _request, _tenant: failing)
+    r = client.post(
+        f"/api/v1/dw/learning/feedback/{fid}/promote", headers=auth_headers_acme,
+    )
+    assert r.status_code == 502, r.text
+    assert "rag ingest failed" in r.json()["detail"]
+
+
+def test_promote_feedback_backfills_promoted_fields(
+    client, auth_headers_acme, stub_rag,
+) -> None:
+    """After promote: GET /learning/feedback returns the feedback with promoted_* filled."""
+    fid = _create_feedback(client, auth_headers_acme)
+    client.post(
+        f"/api/v1/dw/learning/feedback/{fid}/promote",
+        headers=auth_headers_acme,
+    )
+    r = client.get(
+        "/api/v1/dw/learning/feedback", headers=auth_headers_acme,
+    )
+    assert r.status_code == 200, r.text
+    items = r.json()["data"]["items"]
+    target = next((it for it in items if it["id"] == fid), None)
+    assert target is not None, items
+    assert target["promoted_document_id"].startswith("dw-fb-tenant-acme-")
+    assert target["promoted_at"], target
+
+
+def test_promote_feedback_emits_outbox(
+    client, auth_headers_acme, outbox, stub_rag,
+) -> None:
+    """POST /learning/feedback/{id}/promote emits dw.feedback.promoted."""
+    fid = _create_feedback(client, auth_headers_acme)
+    client.post(
+        f"/api/v1/dw/learning/feedback/{fid}/promote",
+        headers=auth_headers_acme,
+    )
+    events = [rec.event for rec in outbox.all_records()]
+    promoted = [e for e in events if e.type == "dw.feedback.promoted"]
+    assert len(promoted) >= 1
+    assert promoted[0].payload["feedback_id"] == fid
+    assert promoted[0].payload["chunk_count"] == 1
+
+
+def test_promote_feedback_uses_scenario_when_comment_empty(
+    client, auth_headers_acme, stub_rag,
+) -> None:
+    """Empty comment → fallback to '[scenario] <scenario>' snippet (no crash)."""
+    fid = _create_feedback(client, auth_headers_acme, comment="")
+    r = client.post(
+        f"/api/v1/dw/learning/feedback/{fid}/promote",
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()["data"]
+    assert body["snippet"] == "[scenario] cs-refund"
+    assert stub_rag.calls[0]["chunks"] == ["[scenario] cs-refund"]
+
+
+def test_promote_feedback_tenant_isolation(
+    client, auth_headers_acme, auth_headers_globex, stub_rag,
+) -> None:
+    """Tenant B cannot promote tenant A's feedback (404, no RAG call)."""
+    fid = _create_feedback(client, auth_headers_acme)
+    r = client.post(
+        f"/api/v1/dw/learning/feedback/{fid}/promote",
+        headers=auth_headers_globex,
+    )
+    assert r.status_code == 404, r.text
+    assert stub_rag.calls == []
+
+
+def test_update_learning_feedback_repo_unit() -> None:
+    """Repo-level update_learning_feedback rebuilds the frozen dataclass correctly."""
+    from mate_tech_dw.repositories import in_memory as repo
+    from mate_tech_dw.repositories.in_memory import (
+        DwLearningFeedback, append_learning_feedback, get_learning_feedback,
+        update_learning_feedback,
+    )
+    repo.reset_store()
+    fb = DwLearningFeedback(
+        id="fb-unit-1", tenant_id="tenant-x", employee_id="e-1",
+        scenario="sc-1", rating=4, comment="hello",
+        feedback_at="2026-07-30T19:00:00Z",
+    )
+    append_learning_feedback("tenant-x", fb)
+    assert get_learning_feedback("tenant-x", "fb-unit-1") == fb
+    updated = update_learning_feedback(
+        "tenant-x", "fb-unit-1",
+        promoted_document_id="rag-doc-abc", promoted_at="2026-08-10T12:00:00Z",
+    )
+    assert updated is not None
+    assert updated.promoted_document_id == "rag-doc-abc"
+    assert updated.promoted_at == "2026-08-10T12:00:00Z"
+    # Other fields preserved (frozen dataclass rebuild).
+    assert updated.id == fb.id
+    assert updated.comment == "hello"
+    assert updated.rating == 4
+    # Unknown field is silently ignored.
+    update_learning_feedback("tenant-x", "fb-unit-1", unknown_field="x")
+    final = get_learning_feedback("tenant-x", "fb-unit-1")
+    assert final.promoted_document_id == "rag-doc-abc"
+    # Missing id → None.
+    assert update_learning_feedback("tenant-x", "missing", promoted_at="t") is None
+
+
+# ---------------------------------------------------------------------------
 # Collaboration session management
 # ---------------------------------------------------------------------------
 def test_collaboration_success(client, auth_headers_acme) -> None:

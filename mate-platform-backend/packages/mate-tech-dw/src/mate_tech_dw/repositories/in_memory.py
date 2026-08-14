@@ -164,6 +164,8 @@ class DwLearningFeedback:
     rating: int  # 1-5
     comment: str
     feedback_at: str
+    promoted_document_id: str = ""  # promote to RAG KB 后写入的 rag document_id
+    promoted_at: str = ""  # promote 时间戳(ISO8601 UTC)
 
 
 @dataclass(frozen=True)
@@ -615,6 +617,24 @@ def append_document(tenant_id: str, doc: DwDocument) -> DwDocument:
     return doc
 
 
+def delete_document(tenant_id: str, doc_id: str) -> bool:
+    """Delete a single document row. Used by DELETE /api/v1/dw/documents/{id}.
+
+    Returns True if the row was removed, False if it was not present.
+    The RAG fan-out (chunk + graph + lifecycle removal) is the API layer's
+    responsibility — callers invoke the upstream /api/v1/rag/documents
+    endpoint before/after this to keep RAG indexes in lock-step with
+    the DW catalog.
+    """
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    if doc_id not in _DOCUMENTS.get(tenant_id, {}):
+        return False
+    del _DOCUMENTS[tenant_id][doc_id]
+    return True
+
+
 def get_employee(tenant_id: str, employee_id: str) -> DwEmployee | None:
     """Return a single employee by id, or None."""
     if not tenant_id:
@@ -730,6 +750,48 @@ def append_learning_feedback(
     _ensure_tenant(tenant_id)
     _LEARNING_FEEDBACK[tenant_id][feedback.id] = feedback
     return feedback
+
+
+def get_learning_feedback(
+    tenant_id: str, feedback_id: str,
+) -> DwLearningFeedback | None:
+    """Return a single learning-feedback record by id, or None."""
+    if not tenant_id or not feedback_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _LEARNING_FEEDBACK[tenant_id].get(feedback_id)
+
+
+def update_learning_feedback(
+    tenant_id: str, feedback_id: str, **kwargs,
+) -> DwLearningFeedback | None:
+    """Update a learning feedback record. Returns updated or None if missing.
+
+    Recognized kwargs (frozen dataclass → rebuild):
+      - ``promoted_document_id`` (str): RAG document_id this feedback was
+        promoted into (P2.10: feedback → KB re-ingest).
+      - ``promoted_at`` (str): ISO8601 UTC timestamp of the promote action.
+    Unknown kwargs are ignored (the field must exist on DwLearningFeedback).
+    """
+    if not tenant_id or not feedback_id:
+        return None
+    _ensure_tenant(tenant_id)
+    fb = _LEARNING_FEEDBACK[tenant_id].get(feedback_id)
+    if fb is None:
+        return None
+    data = {
+        "id": fb.id, "tenant_id": fb.tenant_id, "employee_id": fb.employee_id,
+        "scenario": fb.scenario, "rating": fb.rating, "comment": fb.comment,
+        "feedback_at": fb.feedback_at,
+        "promoted_document_id": fb.promoted_document_id,
+        "promoted_at": fb.promoted_at,
+    }
+    for key, value in kwargs.items():
+        if key in data:
+            data[key] = value
+    updated = DwLearningFeedback(**data)
+    _LEARNING_FEEDBACK[tenant_id][feedback_id] = updated
+    return updated
 
 
 def append_collaboration(
@@ -943,4 +1005,5 @@ __all__ = [
     "list_employee_conversations", "get_employee_conversation",
     "put_employee_conversation", "list_employee_messages",
     "put_employee_message", "next_employee_message_sequence",
+    "get_learning_feedback", "update_learning_feedback",
 ]

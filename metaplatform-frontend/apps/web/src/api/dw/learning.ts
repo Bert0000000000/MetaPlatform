@@ -30,6 +30,21 @@ export async function updateFeedbackTags(feedbackId: string, tags: string[]): Pr
   return put<FeedbackRecord>(`/dw/learning/feedback/${feedbackId}/tags`, { tags });
 }
 
+export async function promoteFeedback(feedbackId: string): Promise<{
+  feedbackId: string;
+  promotedDocumentId?: string;
+  promoted_document_id?: string;
+  promotedAt?: string;
+  promoted_at?: string;
+  chunkCount?: number;
+  chunk_count?: number;
+  snippet?: string;
+}> {
+  // P2.10: re-ingest the feedback snippet into mate-tech-rag.
+  // Response supports both camelCase (frontend) and snake_case (backend) keys.
+  return post(`/dw/learning/feedback/${feedbackId}/promote`, {});
+}
+
 export async function extractKnowledge(employeeId: string): Promise<{
   knowledge: LearnedKnowledge[];
 }> {
