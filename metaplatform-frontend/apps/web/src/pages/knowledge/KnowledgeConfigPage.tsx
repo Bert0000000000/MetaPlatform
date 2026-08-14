@@ -7,15 +7,18 @@
  * 真实读写后端 GET/PUT /api/v1/kb/retrieval-config（租户级全局检索配置）。
  * 选项与后端 mate-app-kb RetrievalConfig 对齐：mode / rerank_strategy /
  * chunk_strategy 等均为后端真实支持的枚举值。
+ * P1.8: 顶部 v{N} 版本徽章 + GET /retrieval-config/history 只读折叠面板。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Card, Switch, InputNumber, Select, Slider, Toast, Spin, Button } from '@douyinfe/semi-ui';
-import { Settings, Save, RefreshCw } from 'lucide-react';
+import { Card, Switch, InputNumber, Select, Slider, Toast, Spin, Button, Tag, Collapse, Empty } from '@douyinfe/semi-ui';
+import { Settings, Save, RefreshCw, History } from 'lucide-react';
 import { useApiErrorBoundary } from '@mate/shared';
 import {
   getRetrievalConfig,
+  getRetrievalConfigHistory,
   putRetrievalConfig,
   type RetrievalConfig,
+  type RetrievalConfigSnapshot,
   type RetrievalConfigUpdate,
   type RetrievalMode,
   type RerankStrategy,
@@ -43,6 +46,9 @@ const MODE_OPTIONS: Array<{ value: RetrievalMode; label: string }> = [
   { value: 'THEMATIC', label: 'THEMATIC · 主题图谱' },
 ];
 const RERANK_OPTIONS: Array<{ value: RerankStrategy; label: string }> = [
+  // heuristic_cross — 启发式重排(关键词重叠 + 位置衰减 + 长度归一 + IDF),
+  // 零外部依赖、中文友好,作为中文场景的首选推荐置顶。
+  { value: 'heuristic_cross', label: 'heuristic_cross · 启发式(中文友好,推荐)' },
   { value: 'identity', label: 'identity · 不重排' },
   { value: 'keyword', label: 'keyword · 关键词精排（中文可用）' },
   { value: 'length', label: 'length · 长度归一' },
@@ -78,6 +84,11 @@ export default function KnowledgeConfigPage() {
   const [config, setConfig] = useState<RetrievalConfigUpdate | null>(null);
   // 服务端基线快照：用于「待保存」脏检查。保存成功后同步为最新值。
   const [originalConfig, setOriginalConfig] = useState<RetrievalConfigUpdate | null>(null);
+  // P1.8: 当前 version(后端单调递增) + 历史快照(只读,不能回滚)。
+  // History 默认拿最近 5 条(后端 FIFO 上限 10)。
+  const [version, setVersion] = useState<number>(1);
+  const [history, setHistory] = useState<RetrievalConfigSnapshot[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -88,13 +99,26 @@ export default function KnowledgeConfigPage() {
         const next = toUpdate(cfg);
         setConfig(next);
         setOriginalConfig(next);
+        setVersion(cfg.version);
       })
       .catch((e: Error) => {
         report(e);
         if (!alive) return;
         setConfig(DEFAULT_CONFIG);
         setOriginalConfig(DEFAULT_CONFIG);
+        setVersion(1);
       });
+
+    // P1.8: history 拉取失败不阻塞主表单(空数组即可),但要提示。
+    getRetrievalConfigHistory()
+      .then((snaps) => { if (alive) { setHistory(snaps); setHistoryLoaded(true); } })
+      .catch((e: Error) => {
+        if (!alive) return;
+        setHistory([]);
+        setHistoryLoaded(true);
+        console.warn('[KnowledgeConfig] history load failed', e);
+      });
+
     return () => { alive = false; };
   }, [report]);
 
@@ -113,9 +137,14 @@ export default function KnowledgeConfigPage() {
     if (!config) return;
     setSaving(true);
     try {
-      await putRetrievalConfig(config);
+      const saved = await putRetrievalConfig(config);
       setOriginalConfig(config); // 保存成功 → 基线前移，「待保存」消失
-      Toast.success('检索配置已保存');
+      setVersion(saved.version); // P1.8: 同步最新 version,新版历史里的上一版就是这次保存前的版本
+      // 保存后立刻拉一次历史:新快照是「前一个版本」,要在面板里立刻可见。
+      getRetrievalConfigHistory()
+        .then((snaps) => setHistory(snaps))
+        .catch(() => { /* history 拉取失败不影响主流程 */ });
+      Toast.success(`检索配置已保存(版本 v${saved.version})`);
     } catch (e) {
       report(e instanceof Error ? e : new Error(String(e)));
     } finally {
@@ -140,6 +169,8 @@ export default function KnowledgeConfigPage() {
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
               检索配置
+              {/* P1.8: 当前 config 的单调递增 version。配置从未保存过时为 v1,首次保存后变 v2。 */}
+              <Tag color="blue" shape="circle" style={{ marginLeft: 4 }}>v{version}</Tag>
               {dirty && (
                 <span style={{
                   fontSize: 12, fontWeight: 500, color: 'var(--destructive, #f5222d)',
@@ -160,6 +191,38 @@ export default function KnowledgeConfigPage() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* P1.8: 配置历史只读折叠面板 — 仅展示最近 5 条,不支持回滚(后端未实现)。 */}
+          <Card style={{ padding: 18 }}>
+            <Collapse
+              keepDOM={false}
+              defaultActiveKey={history.length > 0 ? ['history'] : []}
+            >
+              <Collapse.Panel
+                itemKey="history"
+                header={
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <History size={14} style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>配置历史</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                      最近 {Math.min(history.length, 5)} 条 · 只读 · 不支持回滚
+                    </span>
+                  </span>
+                }
+              >
+                {!historyLoaded ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Spin /></div>
+                ) : history.length === 0 ? (
+                  <Empty
+                    description="尚无历史快照;每次点击「保存配置」时,保存前的旧版本会被记录下来"
+                    style={{ padding: '12px 0' }}
+                  />
+                ) : (
+                  <HistoryList snapshots={history.slice(0, 5)} />
+                )}
+              </Collapse.Panel>
+            </Collapse>
+          </Card>
+
           {/* 检索策略 */}
           <Card style={{ padding: 18 }}>
             <GroupHeader title="检索策略" desc="召回模式与混合权重（权重在 RAG_MODE=hybrid/full 下生效）" />
@@ -248,8 +311,42 @@ function GroupHeader({ title, desc }: { title: string; desc: string }) {
   );
 }
 
+/** P1.8 历史列表:每条 = v{N} · snapshot_at · rerank_strategy/top_k/vector·keyword。
+ *  只读展示,刻意不渲染 form-input,防止误以为可以回滚。 */
+function HistoryList({ snapshots }: { snapshots: RetrievalConfigSnapshot[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {snapshots.map((s, idx) => (
+        <div
+          key={s.id}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '90px 200px 1fr',
+            gap: 12,
+            alignItems: 'center',
+            padding: '10px 4px',
+            borderBottom: idx === snapshots.length - 1 ? 'none' : '1px solid var(--border)',
+            fontSize: 13,
+          }}
+        >
+          <div>
+            <Tag color="blue" shape="circle" size="small">v{s.version}</Tag>
+          </div>
+          <div style={{ color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>
+            {s.snapshotAt || '—'}
+          </div>
+          <div style={{ fontFamily: 'var(--semi-font-mono, monospace)', fontSize: 12 }}>
+            {s.rerankStrategy}/{s.topK} · vector {Number(s.vectorWeight).toFixed(2)} · kw {Number(s.keywordWeight).toFixed(2)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function toUpdate(cfg: RetrievalConfig): RetrievalConfigUpdate {
-  const { tenantId: _t, updatedAt: _u, ...rest } = cfg;
+  // version/tenantId/updatedAt 都是服务端管理字段,剥离以便用 Omit<…,…,…,…> 推导的类型。
+  const { tenantId: _t, version: _v, updatedAt: _u, ...rest } = cfg;
   return rest;
 }
 

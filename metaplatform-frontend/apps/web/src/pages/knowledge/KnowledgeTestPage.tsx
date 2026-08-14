@@ -4,12 +4,16 @@
  * 路由: /knowledge/test
  * Phase 1: 從 apps/kb 的 SearchTestPage 迁入,真实走 /api/v1/rag/search。
  *          保留 4-tab 导航壳。
+ *
+ * v3.0 接 P0.3: 顶部 KB 选择会作为 `kb_id` 传给 /api/v1/rag/search,
+ *              后端 mate-tech-rag 据此走 retrieve 路径做 KB 限定过滤。
+ * v3.0 接 P2.9: Reranker 选项加上 heuristic_cross(中文友好、零外部依赖)。
  */
 import { useState, useEffect } from 'react';
 import { Card, Input, Button, Select, Space, Empty, Tag, Typography, Toast, InputNumber } from '@douyinfe/semi-ui';
-import { Search, FileText, Zap } from 'lucide-react';
+import { Search, FileText, Zap, Filter } from 'lucide-react';
 import { useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
-import { listKb, search, getRetrievalConfig, type KbEntity, type Evidence } from '@/api/kb';
+import { listKb, search, getRetrievalConfig, type KbEntity, type Evidence, type RerankStrategy } from '@/api/kb';
 
 
 const DEFAULT_TENANT = 'tenant-default';
@@ -21,7 +25,8 @@ const MODE_OPTIONS = [
   { value: 'THEMATIC', label: 'THEMATIC · 主题图谱' },
 ];
 
-const RERANK_OPTIONS = [
+const RERANK_OPTIONS: Array<{ value: RerankStrategy; label: string }> = [
+  { value: 'heuristic_cross', label: 'heuristic_cross · 启发式(中文友好,推荐)' },
   { value: 'identity', label: 'identity · 不重排' },
   { value: 'keyword', label: 'keyword · 关键词精排' },
   { value: 'length', label: 'length · 长度归一' },
@@ -60,7 +65,14 @@ export default function KnowledgeTestPage() {
     }
     try {
       const resp = await run.wrap(
-        search({ tenantId: DEFAULT_TENANT, kbId, query: q, mode: mode as 'AUTO' | 'FACTUAL' | 'ENTITY' | 'THEMATIC', rerankStrategy: rerankStrategy as 'identity' | 'keyword' | 'length', topK }),
+        search({
+          tenantId: DEFAULT_TENANT,
+          kbId,
+          query: q,
+          mode: mode as 'AUTO' | 'FACTUAL' | 'ENTITY' | 'THEMATIC',
+          rerankStrategy: rerankStrategy as RerankStrategy,
+          topK,
+        }),
       );
       setEvidences(resp);
       Toast.success(`命中 ${resp.length} 条`);
@@ -69,6 +81,12 @@ export default function KnowledgeTestPage() {
       report(err);
     }
   };
+
+  // KB 过滤提示:让用户能直观看到「这次检索到底有没有限定 KB」。
+  const selectedKb = (kbs ?? []).find((kb) => kb.id === kbId);
+  const filterHint = kbId && selectedKb
+    ? `当前查询限定 KB: ${selectedKb.displayName} · kb_id=${kbId}`
+    : '全量搜索（不限定 KB，将跨所有可见知识库检索）';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -103,6 +121,19 @@ export default function KnowledgeTestPage() {
             <Button theme="solid" type="primary" onClick={onSearch} loading={run.loading}>
               检索
             </Button>
+          </div>
+
+          {/* v3.0 P0.3: KB 过滤提示。用户能直接看到「这次检索走的是 KB 限定还是全量」,
+              且会把实际发给后端的 kb_id（如果有）也打出来。 */}
+          <div
+            data-testid="kb-filter-hint"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              marginTop: 10, fontSize: 12, color: 'var(--muted-foreground)',
+            }}
+          >
+            <Filter size={12} />
+            <span style={{ fontFamily: 'var(--semi-font-mono, monospace)' }}>{filterHint}</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>

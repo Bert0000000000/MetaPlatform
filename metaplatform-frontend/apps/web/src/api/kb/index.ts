@@ -92,8 +92,14 @@ export interface SearchPayload {
   query: string;
   /** Retrieval strategy: AUTO | FACTUAL | ENTITY | THEMATIC (backend default AUTO). */
   mode?: 'AUTO' | 'FACTUAL' | 'ENTITY' | 'THEMATIC';
-  /** Second-pass reranker: identity | keyword | length (backend default identity). */
-  rerankStrategy?: 'identity' | 'keyword' | 'length';
+  /** Second-pass reranker:
+   *  - ``identity``         : no-op (backend default)
+   *  - ``keyword``          : keyword overlap boost
+   *  - ``length``           : length-normalised scoring
+   *  - ``heuristic_cross``  : heuristic cross-encoder (keyword overlap +
+   *    positional decay + length normalisation + IDF; zero-dep, CJK-friendly)
+   */
+  rerankStrategy?: 'identity' | 'keyword' | 'length' | 'heuristic_cross';
   /** Number of hits to return (backend default 10). */
   topK?: number;
 }
@@ -177,11 +183,41 @@ export async function triggerProcess(documentId: string, rawContent: string) {
 // Retrieval configuration (knowledge/config page) — GET/PUT /retrieval-config
 // ---------------------------------------------------------------------------
 export type RetrievalMode = 'AUTO' | 'FACTUAL' | 'ENTITY' | 'THEMATIC';
-export type RerankStrategy = 'identity' | 'keyword' | 'length';
+/** Recognised rerank strategies. ``heuristic_cross`` is CJK-friendly (zero
+ *  external deps); the other three map to the lightweight in-process
+ *  rerankers shipped by mate-tech-rag. */
+export type RerankStrategy = 'identity' | 'keyword' | 'length' | 'heuristic_cross';
 export type ChunkStrategy = 'recursive' | 'markdown' | 'semantic' | 'sliding';
+
+const VALID_RERANK_STRATEGIES: readonly RerankStrategy[] = [
+  'identity', 'keyword', 'length', 'heuristic_cross',
+] as const;
+
+/** P1.8: prior-version snapshot of a tenant's retrieval config. Returned by
+ *  GET /api/v1/kb/retrieval-config/history (newest last, FIFO-capped at 10). */
+export interface RetrievalConfigSnapshot {
+  id: string;
+  tenantId: string;
+  version: number;
+  mode: RetrievalMode;
+  rerankStrategy: RerankStrategy;
+  topK: number;
+  similarityThreshold: number;
+  chunkStrategy: ChunkStrategy;
+  chunkSize: number;
+  chunkOverlap: number;
+  vectorWeight: number;
+  keywordWeight: number;
+  rerankerEnabled: boolean;
+  showCitations: boolean;
+  snapshotAt: string;
+}
 
 export interface RetrievalConfig {
   tenantId: string;
+  /** P1.8: monotonically increasing version, +1 per PUT save. v1 is the seeded
+   *  default; the first user save bumps to v2. */
+  version: number;
   mode: RetrievalMode;
   rerankStrategy: RerankStrategy;
   topK: number;
@@ -196,21 +232,39 @@ export interface RetrievalConfig {
   updatedAt: string;
 }
 
-/** Editable subset (no tenant_id / updated_at server-managed fields). */
-export type RetrievalConfigUpdate = Omit<RetrievalConfig, 'tenantId' | 'updatedAt'>;
+/** Editable subset (no tenant_id / version / updated_at — server-managed). */
+export type RetrievalConfigUpdate = Omit<RetrievalConfig, 'tenantId' | 'version' | 'updatedAt'>;
 
 interface RetrievalConfigRaw {
-  tenant_id: string; mode: string; rerank_strategy: string; top_k: number;
+  tenant_id: string; version: number;
+  mode: string; rerank_strategy: string; top_k: number;
   similarity_threshold: number; chunk_strategy: string; chunk_size: number;
   chunk_overlap: number; vector_weight: number; keyword_weight: number;
   reranker_enabled: boolean; show_citations: boolean; updated_at: string;
 }
 
+interface RetrievalConfigSnapshotRaw {
+  id: string; tenant_id: string; version: number;
+  mode: string; rerank_strategy: string; top_k: number;
+  similarity_threshold: number; chunk_strategy: string; chunk_size: number;
+  chunk_overlap: number; vector_weight: number; keyword_weight: number;
+  reranker_enabled: boolean; show_citations: boolean; snapshot_at: string;
+}
+
 function mapConfig(raw: RetrievalConfigRaw): RetrievalConfig {
+  // Defensive fallback: if the backend ever ships a strategy the frontend
+  // doesn't know about (e.g. real_cross_encoder behind a feature flag), drop
+  // back to ``identity`` rather than letting an unknown string reach the UI.
+  const incomingStrategy = raw.rerank_strategy as RerankStrategy;
+  const rerankStrategy: RerankStrategy =
+    (VALID_RERANK_STRATEGIES as readonly string[]).includes(incomingStrategy)
+      ? incomingStrategy
+      : 'identity';
   return {
     tenantId: raw.tenant_id,
+    version: raw.version,
     mode: raw.mode as RetrievalMode,
-    rerankStrategy: raw.rerank_strategy as RerankStrategy,
+    rerankStrategy,
     topK: raw.top_k,
     similarityThreshold: raw.similarity_threshold,
     chunkStrategy: raw.chunk_strategy as ChunkStrategy,
@@ -221,6 +275,31 @@ function mapConfig(raw: RetrievalConfigRaw): RetrievalConfig {
     rerankerEnabled: raw.reranker_enabled,
     showCitations: raw.show_citations,
     updatedAt: raw.updated_at,
+  };
+}
+
+function mapSnapshot(raw: RetrievalConfigSnapshotRaw): RetrievalConfigSnapshot {
+  const incomingStrategy = raw.rerank_strategy as RerankStrategy;
+  const rerankStrategy: RerankStrategy =
+    (VALID_RERANK_STRATEGIES as readonly string[]).includes(incomingStrategy)
+      ? incomingStrategy
+      : 'identity';
+  return {
+    id: raw.id,
+    tenantId: raw.tenant_id,
+    version: raw.version,
+    mode: raw.mode as RetrievalMode,
+    rerankStrategy,
+    topK: raw.top_k,
+    similarityThreshold: raw.similarity_threshold,
+    chunkStrategy: raw.chunk_strategy as ChunkStrategy,
+    chunkSize: raw.chunk_size,
+    chunkOverlap: raw.chunk_overlap,
+    vectorWeight: raw.vector_weight,
+    keywordWeight: raw.keyword_weight,
+    rerankerEnabled: raw.reranker_enabled,
+    showCitations: raw.show_citations,
+    snapshotAt: raw.snapshot_at,
   };
 }
 
@@ -250,4 +329,11 @@ export async function getRetrievalConfig(): Promise<RetrievalConfig> {
 export async function putRetrievalConfig(cfg: RetrievalConfigUpdate): Promise<RetrievalConfig> {
   const resp = await kbClient.put<RetrievalConfigRaw>('/retrieval-config', toUpdatePayload(cfg));
   return mapConfig(resp.data);
+}
+
+/** P1.8: 讀取租戶的檢索配置歷史快照(只讀,不支持回滾)。
+ *  後端: GET /api/v1/kb/retrieval-config/history → KbRetrievalConfigSnapshot 列表,newest last。 */
+export async function getRetrievalConfigHistory(): Promise<RetrievalConfigSnapshot[]> {
+  const resp = await kbClient.get<RetrievalConfigSnapshotRaw[]>('/retrieval-config/history');
+  return (resp.data ?? []).map(mapSnapshot);
 }
