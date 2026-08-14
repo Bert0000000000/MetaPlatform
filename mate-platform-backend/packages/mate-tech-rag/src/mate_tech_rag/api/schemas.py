@@ -52,6 +52,12 @@ class IngestRequest(BaseModel):
     document_id: Annotated[str, Field(min_length=1, max_length=64, description="document id")]
     chunks: Annotated[list[str], Field(min_length=1, max_length=1000, description="chunk list")]
     metadata: Annotated[dict[str, str], Field(default_factory=dict, description="doc-level metadata")]
+    # Per-request ragflow / llmgw override (P0 — tenant-scoped embedding endpoint).
+    # When set, the ingest handler temporarily overrides the upstream
+    # ragflow client's base_url / api_key for this single call only.
+    base_url: Annotated[str | None, Field(default=None, description="per-call ragflow / llmgw base_url override")] = None
+    api_key: Annotated[str | None, Field(default=None, description="per-call ragflow / llmgw api_key override")] = None
+    tenant_id: Annotated[str, Field(default="default", description="tenant passthrough (for downstream provider routing)")]
 
 
 class IngestResponse(BaseModel):
@@ -75,6 +81,12 @@ class ParseRequest(BaseModel):
     document_id: Annotated[str, Field(min_length=1, max_length=64, description="document id")]
     content: Annotated[str, Field(min_length=1, max_length=1_000_000, description="raw text content")]
     metadata: Annotated[dict[str, str], Field(default_factory=dict, description="doc-level metadata")]
+    # Per-request ragflow override (P0 — tenant-scoped parsing endpoint).
+    # When set, the parse handler temporarily overrides the upstream
+    # ragflow client's base_url / api_key for this single call only.
+    base_url: Annotated[str | None, Field(default=None, description="per-call ragflow base_url override")] = None
+    api_key: Annotated[str | None, Field(default=None, description="per-call ragflow api_key override")] = None
+    tenant_id: Annotated[str, Field(default="default", description="tenant passthrough")]
 
 
 class ParseResponse(BaseModel):

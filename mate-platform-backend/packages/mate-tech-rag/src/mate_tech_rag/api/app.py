@@ -16,8 +16,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import threading
 import time
 import uuid
+from contextlib import contextmanager, nullcontext
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
@@ -114,6 +116,64 @@ def _emit(
     )
 
 
+# ------------------------------------------------------------------
+# P0 — per-request ragflow override context manager (tenant-scoped embedding)
+#
+# ``IngestRequest`` / ``ParseRequest`` accept ``base_url`` / ``api_key``
+# so a tenant can point the rag service at their own ragflow endpoint for
+# one call. When the ragflow singleton exposes ``override()``, wrap the
+# handler body with it; otherwise fall back to a no-op (in-memory client).
+# ------------------------------------------------------------------
+def _ragflow_override_cm(
+    base_url: str | None, api_key: str | None,
+):
+    if not (base_url or api_key):
+        return nullcontext()
+    ragflow = get_ragflow()
+    override = getattr(ragflow, "override", None)
+    if override is None:
+        return nullcontext()
+    return override(base_url=base_url, api_key=api_key)
+
+
+# ------------------------------------------------------------------
+# P0 — kb_id-aware document registry (employee-scoped KB isolation)
+#
+# Track which documents belong to which kb_id so the dw upload pipeline
+# can enforce per-employee KB separation. This is a simple in-memory map
+# (kb_id -> set[document_id]) ready for future kb_id-based retrieval
+# filters.
+# ------------------------------------------------------------------
+_kb_documents: dict[str, set[str]] = {}
+_kb_lock = threading.Lock()
+
+
+def register_kb_document(kb_id: str, document_id: str) -> None:
+    with _kb_lock:
+        _kb_documents.setdefault(kb_id, set()).add(document_id)
+
+
+def unregister_kb_document(kb_id: str, document_id: str) -> None:
+    with _kb_lock:
+        ids = _kb_documents.get(kb_id)
+        if ids is None:
+            return
+        ids.discard(document_id)
+        if not ids:
+            _kb_documents.pop(kb_id, None)
+
+
+def list_kb_documents(kb_id: str) -> list[str]:
+    with _kb_lock:
+        return sorted(_kb_documents.get(kb_id, set()))
+
+
+def reset_kb_documents() -> None:
+    """Clear the in-memory kb registry (used by tests)."""
+    with _kb_lock:
+        _kb_documents.clear()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="mate-tech-rag",
@@ -182,28 +242,30 @@ def create_app() -> FastAPI:
         _require_ctx(request)
         require_tenant(request.state.ctx)
         tenant_id = str(request.state.ctx.tenant_id)
-        try:
-            result = parse_document(req)
-            # Register the parsed document in the tenant registry.
-            register_document(
-                tenant_id, req.document_id, source="parse",
-            )
-            mark_indexed(tenant_id, req.document_id, result.chunk_count)
-            # Hook 3 of 5: emit document-parsed event.
-            _emit(
-                request, "rag.document.parsed", req.document_id,
-                {"document_id": req.document_id, "chunks": result.chunk_count},
-                tenant_id,
-            )
-            return result
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        with _ragflow_override_cm(req.base_url, req.api_key):
+            try:
+                result = parse_document(req)
+                # Register the parsed document in the tenant registry.
+                register_document(
+                    tenant_id, req.document_id, source="parse",
+                )
+                mark_indexed(tenant_id, req.document_id, result.chunk_count)
+                # Hook 3 of 5: emit document-parsed event.
+                _emit(
+                    request, "rag.document.parsed", req.document_id,
+                    {"document_id": req.document_id, "chunks": result.chunk_count},
+                    tenant_id,
+                )
+                return result
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/upload", response_model=UploadResponse)
     async def upload_endpoint(  # pyright: ignore[reportUnusedFunction]
         request: Request,
         file: UploadFile = File(..., description="text/markdown file to ingest"),
         document_id: str | None = None,
+        kb_id: str | None = None,
     ) -> UploadResponse:
         # Hook 2 of 5: tenant guard.
         _require_ctx(request)
@@ -226,27 +288,36 @@ def create_app() -> FastAPI:
             graph = get_graph()
             lightrag = get_lightrag()
 
-            chunks = ragflow.parse_bytes(raw, doc_id, filename=file.filename or "")
+            # Per-chunk metadata: kb_id is the employee-scoped KB id forwarded
+            # by the dw upload pipeline. Storing it in the chunk metadata
+            # enables future kb_id-filtered retrieval.
+            meta = {"filename": file.filename or ""}
+            if kb_id:
+                meta["kb_id"] = kb_id
+
+            chunks = ragflow.parse_bytes(raw, doc_id, filename=file.filename or "", metadata=meta)
             pg_store = get_pg_store()
             success = 0
             for chunk_text in chunks:
                 # Offload the blocking embed (sync httpx → in-process llmgw) to
                 # a worker thread to avoid deadlocking the event loop.
                 vec = await asyncio.to_thread(embedder.embed, chunk_text)
-                chunk_id = hybrid.add(doc_id, chunk_text, vec, {"filename": file.filename or ""})
-                graph.insert(chunk_text, doc_id, {"filename": file.filename or ""})
-                lightrag.insert(chunk_text, doc_id, {"filename": file.filename or ""})
+                chunk_id = hybrid.add(doc_id, chunk_text, vec, meta)
+                graph.insert(chunk_text, doc_id, meta)
+                lightrag.insert(chunk_text, doc_id, meta)
                 # Write to PG for BM25 search (idempotent upsert by chunk_id).
                 if pg_store is not None:
                     try:
                         pg_store.save_chunk(
                             chunk_id, doc_id, chunk_text,
-                            {"filename": file.filename or "", "tenant_id": tenant_id},
+                            {**meta, "tenant_id": tenant_id},
                         )
                     except Exception:
                         pass
                 success += 1
             mark_indexed(tenant_id, doc_id, success)
+            if kb_id:
+                register_kb_document(kb_id, doc_id)
             # Hook 3 of 5: emit document-uploaded event.
             _emit(
                 request, "rag.document.uploaded", doc_id,
@@ -255,6 +326,7 @@ def create_app() -> FastAPI:
                     "filename": file.filename or "",
                     "size_bytes": len(raw),
                     "chunks": success,
+                    "kb_id": kb_id or "",
                 },
                 tenant_id,
             )
@@ -284,38 +356,39 @@ def create_app() -> FastAPI:
         require_tenant(request.state.ctx)
         tenant_id = str(request.state.ctx.tenant_id)
         start = time.perf_counter()
-        try:
-            # Offload the sync ingest (which does blocking embed calls to the
-            # in-process llmgw /embeddings) to a worker thread so the async
-            # event loop is not blocked → otherwise deadlock/timeout.
-            result = await asyncio.to_thread(ingest, req, tenant_id=tenant_id)
-            # Hook 3 of 5: emit document-ingested event.
-            _emit(
-                request, "rag.document.ingested", req.document_id,
-                {
-                    "document_id": req.document_id,
-                    "chunks": result.chunk_count,
-                    "total": result.total_chunks,
-                },
-                tenant_id,
-            )
-            latency_ms = int((time.perf_counter() - start) * 1000)
-            _observe("ingest", latency_ms)
-            return IngestResponse(
-                document_id=result.document_id,
-                chunk_count=result.chunk_count,
-                total_chunks=result.total_chunks,
-                latency_ms=latency_ms,
-            )
-        except ValueError as exc:
-            latency_ms = int((time.perf_counter() - start) * 1000)
-            _observe("ingest", latency_ms)
-            # Chunk validation failure -> 400 (not 500).
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        except Exception as exc:
-            latency_ms = int((time.perf_counter() - start) * 1000)
-            _observe("ingest", latency_ms)
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        with _ragflow_override_cm(req.base_url, req.api_key):
+            try:
+                # Offload the sync ingest (which does blocking embed calls to the
+                # in-process llmgw /embeddings) to a worker thread so the async
+                # event loop is not blocked → otherwise deadlock/timeout.
+                result = await asyncio.to_thread(ingest, req, tenant_id=tenant_id)
+                # Hook 3 of 5: emit document-ingested event.
+                _emit(
+                    request, "rag.document.ingested", req.document_id,
+                    {
+                        "document_id": req.document_id,
+                        "chunks": result.chunk_count,
+                        "total": result.total_chunks,
+                    },
+                    tenant_id,
+                )
+                latency_ms = int((time.perf_counter() - start) * 1000)
+                _observe("ingest", latency_ms)
+                return IngestResponse(
+                    document_id=result.document_id,
+                    chunk_count=result.chunk_count,
+                    total_chunks=result.total_chunks,
+                    latency_ms=latency_ms,
+                )
+            except ValueError as exc:
+                latency_ms = int((time.perf_counter() - start) * 1000)
+                _observe("ingest", latency_ms)
+                # Chunk validation failure -> 400 (not 500).
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            except Exception as exc:
+                latency_ms = int((time.perf_counter() - start) * 1000)
+                _observe("ingest", latency_ms)
+                raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/search", response_model=RetrievalResponse)
     async def search(request: Request, req: RetrievalRequest) -> RetrievalResponse:  # pyright: ignore[reportUnusedFunction]

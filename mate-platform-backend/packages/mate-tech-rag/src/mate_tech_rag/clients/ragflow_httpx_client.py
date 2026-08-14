@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import contextmanager
+from typing import Iterator
 from typing import Protocol
 
 import httpx
@@ -101,3 +103,32 @@ class HttpxRAGFlowClient:
 
     def close(self):
         self._client.close()
+
+    # ------------------------------------------------------------------
+    # P0: per-request override context manager (tenant-scoped parsing)
+    #
+    # ``IngestRequest`` / ``ParseRequest`` now accept ``base_url`` and
+    # ``api_key`` fields. The handler wraps any ragflow call in this
+    # context manager so the underlying singleton is temporarily rebound
+    # to the caller-supplied endpoint / key, then restored on exit. No
+    # persistent state mutation, no per-tenant cache: the override is
+    # scoped to a single ``with`` block.
+    # ------------------------------------------------------------------
+    @contextmanager
+    def override(
+        self,
+        *,
+        base_url: str | None = None,
+        api_key: str | None = None,
+    ) -> Iterator["HttpxRAGFlowClient"]:
+        saved_url = self._base_url
+        saved_key = self._api_key
+        if base_url:
+            self._base_url = base_url.rstrip("/")
+        if api_key:
+            self._api_key = api_key
+        try:
+            yield self
+        finally:
+            self._base_url = saved_url
+            self._api_key = saved_key

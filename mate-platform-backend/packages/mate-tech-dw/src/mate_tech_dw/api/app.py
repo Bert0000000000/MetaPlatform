@@ -287,7 +287,20 @@ async def dw_post_documents_upload(
     The file is parsed + embedded + indexed by mate-tech-rag (real doubao
     embedding in dev via the gateway). RAG failure degrades gracefully: the
     metadata still lands with chunk_count=0 rather than failing the upload.
+
+    P0 — employee-scoped KB isolation: ``employee_id`` is required and is
+    used directly as the kb_id forwarded to the RAG service. The previous
+    ``dw-kb-default`` fallback was removed because it silently mixed every
+    employee's uploads into a single shared KB, breaking per-employee
+    knowledge isolation. Frontend callers must always supply the active
+    employee id (see ``apps/web/src/api/dw/documents.ts::uploadDocument``).
     """
+    employee_id = (employee_id or "").strip()
+    if not employee_id:
+        raise HTTPException(
+            status_code=400,
+            detail="employee_id is required for KB isolation (no default fallback)",
+        )
     tenant_id = _tenant_id(request)
     ctx = getattr(request.state, "ctx", None)
     raw_user = getattr(ctx, "user_id", None) if ctx else None
@@ -296,7 +309,7 @@ async def dw_post_documents_upload(
     raw = await file.read()
     filename = file.filename or "untitled"
     document_id = f"dw-doc-{uuid.uuid4().hex[:8]}"
-    kb_id = employee_id or "dw-kb-default"
+    kb_id = employee_id
 
     chunk_count = 0
     try:
@@ -307,6 +320,7 @@ async def dw_post_documents_upload(
             data = await asyncio.to_thread(
                 rag.upload, raw, filename, document_id,
                 file.content_type or "text/plain",
+                kb_id=kb_id,
             )
             chunk_count = int(data.get("chunk_count", 0) or 0)
         finally:

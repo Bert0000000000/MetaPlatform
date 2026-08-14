@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { List, Tag, Empty, Spin, Button, Toast } from '@douyinfe/semi-ui';
+import { List, Tag, Empty, Spin, Button, Toast, Tooltip } from '@douyinfe/semi-ui';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { listKnowledge } from '@/api/dw/learning';
 import { promoteFeedback } from '@/api/dw/learning';
@@ -28,7 +28,7 @@ export default function LearningPage() {
     };
   }, []);
 
-  const handlePromote = async (feedbackId: string) => {
+  const handlePromote = async (feedbackId: string | undefined) => {
     if (!feedbackId) {
       Toast.error('该条目未关联 feedback id,无法提升');
       return;
@@ -53,28 +53,49 @@ export default function LearningPage() {
       header={<h2>学习沉淀</h2>}
       dataSource={items}
       emptyContent={<Empty description="暂无学习沉淀" />}
-      renderItem={(item) => (
-        <List.Item>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 600 }}>{item.title}</div>
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
-              <Tag>{item.knowledgeType}</Tag>
-              <Tag>{item.syncedToKb ? '已同步' : '未同步'}</Tag>
-              置信度 {item.confidence}
-            </div>
-          </div>
+      renderItem={(item) => {
+        // Resolve the source feedback id once per row. Previously the code
+        // fell back to `item.knowledgeId` when `sourceFeedbackIds` was empty,
+        // which caused the promote call to land on a non-existent feedback
+        // id and the backend returned 404. Disable the button + show a
+        // Tooltip instead so the user understands why promote is unavailable.
+        const feedbackId = item.sourceFeedbackIds?.[0];
+        const noFeedback = !feedbackId;
+        const button = (
           <Button
             size="small"
             type="secondary"
             theme="light"
-            loading={promoting === (item.sourceFeedbackIds?.[0] ?? item.knowledgeId)}
-            disabled={item.syncedToKb}
-            onClick={() => handlePromote(item.sourceFeedbackIds?.[0] ?? item.knowledgeId)}
+            loading={promoting === feedbackId}
+            disabled={item.syncedToKb || noFeedback}
+            onClick={() => handlePromote(feedbackId)}
           >
             提升至知识库
           </Button>
-        </List.Item>
-      )}
+        );
+        return (
+          <List.Item>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600 }}>{item.title}</div>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4, color: 'var(--muted-foreground)', fontSize: 13 }}>
+                <Tag>{item.knowledgeType}</Tag>
+                <Tag>{item.syncedToKb ? '已同步' : '未同步'}</Tag>
+                置信度 {item.confidence}
+                {noFeedback && (
+                  <Tag color="orange">无可用 feedback id</Tag>
+                )}
+              </div>
+            </div>
+            {noFeedback ? (
+              <Tooltip content="该条目没有关联的 sourceFeedbackIds，无法调用 promote 接口">
+                <span>{button}</span>
+              </Tooltip>
+            ) : (
+              button
+            )}
+          </List.Item>
+        );
+      }}
     >
       <Row gutter={16}>
         <Col span={8}>

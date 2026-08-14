@@ -104,11 +104,12 @@ def test_upload_ingests_to_rag(client, auth_headers_acme, monkeypatch) -> None:
 
     captured: dict = {}
 
-    def fake_upload(self, file_content, filename, document_id, content_type="text/plain"):
+    def fake_upload(self, file_content, filename, document_id, content_type="text/plain", *, kb_id=None):
         captured["document_id"] = document_id
         captured["filename"] = filename
         captured["size"] = len(file_content)
         captured["content_type"] = content_type
+        captured["kb_id"] = kb_id
         return {"document_id": document_id, "chunk_count": 7, "indexed_in": ["hybrid", "graph", "lightrag"]}
 
     monkeypatch.setattr(dw_clients.RAGClient, "upload", fake_upload)
@@ -127,6 +128,9 @@ def test_upload_ingests_to_rag(client, auth_headers_acme, monkeypatch) -> None:
     assert doc["document_id"] == captured["document_id"]
     assert captured["filename"] == "hr.md"
     assert captured["size"] == len(content)
+    # kb_id (= employee_id) is forwarded to the rag client for isolation.
+    assert captured["kb_id"] == "dw-kb-1"
+    assert doc["kb_id"] == "dw-kb-1"
     assert captured["content_type"] == "text/markdown"
     assert doc["kb_id"] == "dw-kb-1"
 

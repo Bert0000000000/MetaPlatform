@@ -62,17 +62,25 @@ class RAGClient:
         filename: str,
         document_id: str,
         content_type: str = "text/plain",
+        *,
+        kb_id: str | None = None,
     ) -> dict[str, Any]:
         """POST /api/v1/rag/upload (multipart) → real chunk + embed + 3-index ingest.
 
-        Returns the RAG UploadResponse dict: {document_id, filename, size_bytes,
-        chunk_count, indexed_in}.
+        When ``kb_id`` is provided it is forwarded as a query param so the
+        upstream rag service can register the document under that kb (per-
+        employee KB isolation). Returns the RAG UploadResponse dict:
+        {document_id, filename, size_bytes, chunk_count, indexed_in,
+        latency_ms}.
         """
         files = {"file": (filename, file_content, content_type)}
+        params: dict[str, Any] = {"document_id": document_id}
+        if kb_id:
+            params["kb_id"] = kb_id
         r = self._client.post(
             f"{self._base_url}/api/v1/rag/upload",
             files=files,
-            params={"document_id": document_id},
+            params=params,
         )
         r.raise_for_status()
         return r.json()
