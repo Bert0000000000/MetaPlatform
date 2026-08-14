@@ -122,6 +122,20 @@ def document_count(tenant_id: str) -> int:
         return len(_REGISTRY.get(tenant_id, {}))
 
 
+def unregister_document(tenant_id: str, document_id: str) -> bool:
+    """Remove the lifecycle record entirely.
+
+    Used by the cascade-delete path so that subsequent searches return
+    zero hits even if stale chunks linger in any underlying store.
+    """
+    with _lock:
+        store = _REGISTRY.get(tenant_id, {})
+        if document_id not in store:
+            return False
+        del store[document_id]
+        return True
+
+
 def reset_registry() -> None:
     """Drop all records. Used by tests to keep cases isolated."""
     with _lock:

@@ -19,6 +19,7 @@ class GraphRAGClient(Protocol):
     def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
     def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
     def count(self) -> int: ...
+    def delete_by_document(self, document_id: str) -> int: ...
 
 
 class InMemoryGraphRAGClient:
@@ -75,3 +76,20 @@ class InMemoryGraphRAGClient:
     def count(self) -> int:
         with self._lock:
             return len(self._entities)
+
+    def delete_by_document(self, document_id: str) -> int:
+        """Drop all entity->(chunk_id, document_id, snippet) tuples that came from ``document_id``.
+
+        Returns the total # of (entity, chunk) tuples removed.
+        """
+        removed = 0
+        with self._lock:
+            for ent in list(self._entities.keys()):
+                members = self._entities[ent]
+                survivors = {m for m in members if m[1] != document_id}
+                removed += len(members) - len(survivors)
+                if survivors:
+                    self._entities[ent] = survivors
+                else:
+                    del self._entities[ent]
+        return removed

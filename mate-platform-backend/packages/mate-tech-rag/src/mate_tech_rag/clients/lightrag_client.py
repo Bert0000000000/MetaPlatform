@@ -19,6 +19,7 @@ class LightRAGClient(Protocol):
     def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
     def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
     def count(self) -> int: ...
+    def delete_by_document(self, document_id: str) -> int: ...
 
 
 class InMemoryLightRAGClient:
@@ -80,3 +81,11 @@ class InMemoryLightRAGClient:
     def count(self) -> int:
         with self._lock:
             return len(self._chunks)
+
+    def delete_by_document(self, document_id: str) -> int:
+        """Drop all chunks belonging to ``document_id``. Returns the count removed."""
+        with self._lock:
+            to_drop = [cid for cid, c in self._chunks.items() if c[1] == document_id]
+            for cid in to_drop:
+                self._chunks.pop(cid, None)
+            return len(to_drop)

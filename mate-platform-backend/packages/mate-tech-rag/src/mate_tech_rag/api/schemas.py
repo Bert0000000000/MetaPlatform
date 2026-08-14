@@ -60,6 +60,7 @@ class IngestResponse(BaseModel):
     document_id: Annotated[str, Field(description="document id")]
     chunk_count: Annotated[int, Field(ge=0, description="successfully ingested chunk count")]
     total_chunks: Annotated[int, Field(ge=0, description="requested chunk count")]
+    latency_ms: Annotated[int, Field(default=0, ge=0, description="ingest latency in ms")]
 
 
 class StatsResponse(BaseModel):
@@ -92,6 +93,7 @@ class UploadResponse(BaseModel):
     size_bytes: Annotated[int, Field(ge=0, description="upload size in bytes")]
     chunk_count: Annotated[int, Field(ge=0, description="number of chunks produced")]
     indexed_in: Annotated[list[str], Field(description="index names chunks were fanned out to")]
+    latency_ms: Annotated[int, Field(default=0, ge=0, description="upload latency in ms")]
 
 class EmbedderInfo(BaseModel):
     """Embedder info for diagnostics."""
@@ -124,3 +126,35 @@ class PgStatsResponse(BaseModel):
     available: Annotated[bool, Field(description="whether PG is reachable")]
     chunks_count: Annotated[int, Field(ge=0, description="kb_chunks row count")]
     dsn_host: Annotated[str, Field(default="", description="DSN host (sanitized)")]
+
+
+class DeleteDocumentResponse(BaseModel):
+    """P1.7 cascade-delete response: report fan-out result."""
+    model_config = ConfigDict(strict=True, frozen=True)
+    deleted: Annotated[bool, Field(description="True if any partial work was performed")]
+    document_id: Annotated[str, Field(description="deleted document id")]
+    chunks_removed: Annotated[int, Field(default=0, ge=0, description="hybrid (vector) chunks removed")]
+    graph_tuples_removed: Annotated[int, Field(default=0, ge=0, description="graph (entity) tuples removed")]
+    lightrag_chunks_removed: Annotated[int, Field(default=0, ge=0, description="lightrag chunks removed")]
+    pg_chunks_removed: Annotated[int, Field(default=0, ge=0, description="PG BM25 chunks removed")]
+    catalog_removed: Annotated[bool, Field(default=False, description="RagDocument catalog row removed")]
+    registry_removed: Annotated[bool, Field(default=False, description="lifecycle record removed")]
+
+
+class MetricsBucket(BaseModel):
+    """P2.11 SLO metric bucket: count / sum_ms / avg_ms / last_latency_ms / p95_recent."""
+    model_config = ConfigDict(strict=True, frozen=True)
+    count: Annotated[int, Field(ge=0, description="total calls accumulated")]
+    sum_ms: Annotated[float, Field(ge=0.0, description="total latency accumulated (ms)")]
+    avg_ms: Annotated[float, Field(ge=0.0, description="average latency (ms)")]
+    last_latency_ms: Annotated[float, Field(ge=0.0, description="last call's latency (ms)")]
+    p95_recent: Annotated[float, Field(ge=0.0, description="p95 over recent window")]
+
+
+class MetricsResponse(BaseModel):
+    """P2.11 SLO metrics: per-endpoint latency buckets."""
+    model_config = ConfigDict(strict=True, frozen=True)
+    ingest: MetricsBucket
+    search: MetricsBucket
+    upload: MetricsBucket
+    window_size: Annotated[int, Field(ge=1, description="sliding-window size used for p95_recent")]

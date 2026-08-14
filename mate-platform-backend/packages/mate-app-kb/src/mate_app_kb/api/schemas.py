@@ -154,6 +154,7 @@ class RetrievalConfigUpdate(BaseModel):
 class RetrievalConfigResponse(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
     tenant_id: Annotated[str, Field()]
+    version: Annotated[int, Field(ge=1, default=1, description="monotonic version, +1 per save")]
     mode: Annotated[str, Field()]
     rerank_strategy: Annotated[str, Field()]
     top_k: Annotated[int, Field()]

@@ -82,6 +82,24 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
+    def delete_document(self, document_id: str) -> dict[str, Any]:
+        """DELETE /api/v1/rag/documents/{document_id} — P1.7 cascade-delete.
+
+        Returns the RAG DeleteDocumentResponse dict: {deleted, document_id,
+        chunks_removed, graph_tuples_removed, lightrag_chunks_removed,
+        pg_chunks_removed, catalog_removed, registry_removed}. Falls back to
+        a no-op ``{deleted: False, document_id: <id>}`` if the upstream
+        returns an unexpected shape (so callers can stay best-effort).
+        """
+        r = self._client.delete(
+            f"{self._base_url}/api/v1/rag/documents/{document_id}",
+        )
+        r.raise_for_status()
+        try:
+            return r.json()
+        except Exception:  # noqa: BLE001 — best-effort
+            return {"deleted": False, "document_id": document_id}
+
     def close(self) -> None:
         self._client.close()
 

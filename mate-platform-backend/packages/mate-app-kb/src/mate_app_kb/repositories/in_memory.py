@@ -72,7 +72,37 @@ class KbRetrievalConfig:
     keyword_weight: float = 0.3
     reranker_enabled: bool = True
     show_citations: bool = True
+    # P1.8: monotonically increasing version (1 for the first user save).
+    version: int = 1
     updated_at: str = ""
+
+
+@dataclass(frozen=True)
+class KbRetrievalConfigSnapshot:
+    """P1.8 — prior-version snapshot of a tenant's retrieval config.
+
+    Captured automatically when PUT /api/v1/kb/retrieval-config replaces
+    the live config with a new version. Used by
+    ``GET /api/v1/kb/retrieval-config/history`` so the UI can show a
+    "version history" expander (read-only; rollback is intentionally out
+    of scope for this batch).
+    """
+    # Composite key: tenant_id + version. ``id`` is ``{tenant}:{version}``.
+    id: str
+    tenant_id: str
+    version: int
+    mode: str = "AUTO"
+    rerank_strategy: str = "identity"
+    top_k: int = 10
+    similarity_threshold: float = 0.0
+    chunk_strategy: str = "recursive"
+    chunk_size: int = 512
+    chunk_overlap: int = 64
+    vector_weight: float = 0.7
+    keyword_weight: float = 0.3
+    reranker_enabled: bool = True
+    show_citations: bool = True
+    snapshot_at: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -135,6 +165,10 @@ _COLLECTIONS: dict[str, dict[str, KbCollection]] = {}
 _DOCUMENTS: dict[str, dict[str, KbDocument]] = {}
 _SEARCH_LOGS: dict[str, dict[str, KbSearchLog]] = {}
 _RETRIEVAL_CONFIGS: dict[str, KbRetrievalConfig] = {}
+# P1.8: snapshot list per tenant (newest at the tail). Capped at 10 to keep
+# memory bounded — older snapshots are dropped FIFO.
+_RETRIEVAL_CONFIG_SNAPSHOTS: dict[str, list[KbRetrievalConfigSnapshot]] = {}
+_SNAPSHOT_LIMIT = 10
 
 
 def _ensure_tenant(tenant_id: str) -> None:
@@ -262,8 +296,48 @@ def put_retrieval_config(tenant_id: str, cfg: KbRetrievalConfig) -> KbRetrievalC
     return cfg
 
 
+# ---------------------------------------------------------------------------
+# P1.8: snapshot support for the retrieval-config history feature
+# ---------------------------------------------------------------------------
+def put_retrieval_config_snapshot(
+    tenant_id: str, snapshot: KbRetrievalConfigSnapshot,
+) -> KbRetrievalConfigSnapshot:
+    """Append a snapshot of the prior config to the tenant's history.
+
+    Caller is responsible for calling this BEFORE ``put_retrieval_config``
+    so the snapshot represents the "previous" version. The list is
+    FIFO-capped at ``_SNAPSHOT_LIMIT`` (10) entries.
+    """
+    if not tenant_id:
+        return snapshot
+    history = _RETRIEVAL_CONFIG_SNAPSHOTS.setdefault(tenant_id, [])
+    history.append(snapshot)
+    if len(history) > _SNAPSHOT_LIMIT:
+        # FIFO trim — keep the most recent N snapshots.
+        del history[: len(history) - _SNAPSHOT_LIMIT]
+    return snapshot
+
+
+def list_retrieval_config_snapshots(
+    tenant_id: str, limit: int | None = None,
+) -> list[KbRetrievalConfigSnapshot]:
+    """Return the tenant's snapshot history, newest last.
+
+    ``limit`` caps the number of records returned (default: all snapshots
+    stored for the tenant — which is already capped at
+    ``_SNAPSHOT_LIMIT``).
+    """
+    if not tenant_id:
+        return []
+    history = list(_RETRIEVAL_CONFIG_SNAPSHOTS.get(tenant_id, []))
+    if limit is not None:
+        return history[-max(1, int(limit)) :]
+    return history
+
+
 def reset_store() -> None:
     _COLLECTIONS.clear()
     _DOCUMENTS.clear()
     _SEARCH_LOGS.clear()
     _RETRIEVAL_CONFIGS.clear()
+    _RETRIEVAL_CONFIG_SNAPSHOTS.clear()

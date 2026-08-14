@@ -16,6 +16,7 @@ class HybridClient(Protocol):
     def search(self, query: str, query_vector: list[float], top_k: int = 10) -> list[ChunkHit]: ...
     def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str: ...
     def count(self) -> int: ...
+    def delete_by_document(self, document_id: str) -> int: ...
 
 
 class InMemoryHybridClient:
@@ -40,3 +41,7 @@ class InMemoryHybridClient:
 
     def count(self) -> int:
         return self._store.count()
+
+    def delete_by_document(self, document_id: str) -> int:
+        """Drop chunks belonging to ``document_id`` from the in-memory store."""
+        return self._store.delete_by_document(document_id)

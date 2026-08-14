@@ -27,6 +27,7 @@ class VectorStore(Protocol):
     def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str: ...
     def search(self, query_vector: list[float], top_k: int = 10) -> list[tuple[StoredChunk, float]]: ...
     def count(self) -> int: ...
+    def delete_by_document(self, document_id: str) -> int: ...
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -71,6 +72,14 @@ class InMemoryVectorStore:
     def count(self) -> int:
         with self._lock:
             return len(self._chunks)
+
+    def delete_by_document(self, document_id: str) -> int:
+        """Drop all chunks belonging to ``document_id``. Returns the count removed."""
+        with self._lock:
+            to_drop = [cid for cid, c in self._chunks.items() if c.document_id == document_id]
+            for cid in to_drop:
+                self._chunks.pop(cid, None)
+            return len(to_drop)
 
     def to_hits(self, results: list[tuple[StoredChunk, float]]) -> list[ChunkHit]:
         return [

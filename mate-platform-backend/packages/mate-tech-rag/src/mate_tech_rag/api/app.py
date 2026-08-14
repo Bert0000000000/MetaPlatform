@@ -5,12 +5,18 @@ events: rag.document.ingested / rag.document.uploaded / rag.search.executed),
 tenant-scoped document registry with lifecycle (INGESTING -> INDEXED |
 FAILED), chunk-content validation, and tenant-scoped search hit
 filtering so tenant A cannot retrieve tenant B's indexed chunks.
+
+P1.7 RAG 增强 add-ons:
+  * DELETE /api/v1/rag/documents/{doc_id} (cascade fan-out)
+  * GET   /api/v1/rag/metrics (P2.11 SLO basic metrics)
+  * per-endpoint latency tracking (ingest / search / upload)
 """
 from __future__ import annotations
 
 import asyncio
 import logging
 import os
+import time
 import uuid
 from typing import Any
 
@@ -25,12 +31,15 @@ from mate_platform.observability import journey_span
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 from mate_tech_rag import __version__
+from mate_tech_rag.api.cascade import delete_document_cascade
 from mate_tech_rag.api.document_registry import (
     mark_indexed,
     register_document,
     tenant_document_ids,
+    unregister_document,
 )
 from mate_tech_rag.api.ingest import ingest
+from mate_tech_rag.api.metrics import LatencyBucket, make_default_buckets
 from mate_tech_rag.api.parse import parse_document
 from mate_tech_rag.api.retrieval import (
     create_clients as init_real_clients,
@@ -46,11 +55,14 @@ from mate_tech_rag.api.retrieval import (
 )
 from mate_tech_rag.api.schemas import (
     ChunkHit,
+    DeleteDocumentResponse,
     EmbedderInfo,
     HealthResponse,
     IndexStatus,
     IngestRequest,
     IngestResponse,
+    MetricsBucket,
+    MetricsResponse,
     ParseRequest,
     ParseResponse,
     PgStatsResponse,
@@ -114,6 +126,21 @@ def create_app() -> FastAPI:
     # Default outbox writer (no-op until a test attaches one).
     if not hasattr(app.state, "outbox_writer"):
         app.state.outbox_writer = InMemoryOutboxWriter()
+    # P2.11: default SLO metrics buckets on app.state.
+    if not hasattr(app.state, "metrics"):
+        app.state.metrics = make_default_buckets()
+        app.state.metrics_window_size = 32
+    elif not hasattr(app.state, "metrics_window_size"):
+        app.state.metrics_window_size = 32
+
+    def _observe(metric_name: str, latency_ms: float) -> None:
+        """Record latency for an endpoint bucket (best-effort)."""
+        try:
+            bucket = app.state.metrics.get(metric_name)
+            if bucket is not None:
+                bucket.observe(latency_ms)
+        except Exception:  # noqa: BLE001 — never let metrics break a request
+            pass
 
     def _require_ctx(request: Request):
         # Defence in depth: install_auth populates ctx or returns 401.
@@ -182,6 +209,7 @@ def create_app() -> FastAPI:
         _require_ctx(request)
         require_tenant(request.state.ctx)
         tenant_id = str(request.state.ctx.tenant_id)
+        start = time.perf_counter()
         try:
             raw = await file.read()
             if not raw:
@@ -230,16 +258,21 @@ def create_app() -> FastAPI:
                 },
                 tenant_id,
             )
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            _observe("upload", latency_ms)
             return UploadResponse(
                 document_id=doc_id,
                 filename=file.filename or "",
                 size_bytes=len(raw),
                 chunk_count=success,
                 indexed_in=["hybrid", "graph", "lightrag"] if success else [],
+                latency_ms=latency_ms,
             )
         except HTTPException:
             raise
         except Exception as exc:
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            _observe("upload", latency_ms)
             if 'doc_id' in locals():
                 from mate_tech_rag.api.document_registry import mark_failed
                 mark_failed(tenant_id, doc_id, str(exc))
@@ -250,6 +283,7 @@ def create_app() -> FastAPI:
         _require_ctx(request)
         require_tenant(request.state.ctx)
         tenant_id = str(request.state.ctx.tenant_id)
+        start = time.perf_counter()
         try:
             # Offload the sync ingest (which does blocking embed calls to the
             # in-process llmgw /embeddings) to a worker thread so the async
@@ -265,11 +299,22 @@ def create_app() -> FastAPI:
                 },
                 tenant_id,
             )
-            return result
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            _observe("ingest", latency_ms)
+            return IngestResponse(
+                document_id=result.document_id,
+                chunk_count=result.chunk_count,
+                total_chunks=result.total_chunks,
+                latency_ms=latency_ms,
+            )
         except ValueError as exc:
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            _observe("ingest", latency_ms)
             # Chunk validation failure -> 400 (not 500).
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            _observe("ingest", latency_ms)
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/search", response_model=RetrievalResponse)
@@ -278,6 +323,7 @@ def create_app() -> FastAPI:
         require_tenant(request.state.ctx)
         tenant_id = str(request.state.ctx.tenant_id)
         user_id = str(getattr(request.state.ctx, "user_id", "anonymous"))
+        start = time.perf_counter()
         with journey_span(
             "rag.retrieve",
             tenant_id=tenant_id,
@@ -342,8 +388,13 @@ def create_app() -> FastAPI:
                     },
                     tenant_id,
                 )
+                # P2.11: observe search latency. Use the upstream strategy's
+                # latency_ms so the runbook's TTFT number stays honest.
+                _observe("search", float(result.latency_ms))
                 return filtered_resp
             except Exception as exc:
+                latency_ms = int((time.perf_counter() - start) * 1000)
+                _observe("search", float(latency_ms))
                 raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.get("/api/v1/rag/stats", response_model=StatsResponse)
@@ -372,6 +423,69 @@ def create_app() -> FastAPI:
             available=store.is_available(),
             chunks_count=store.count(),
             dsn_host=host,
+        )
+
+    # ------------------------------------------------------------------
+    # P1.7 RAG 增强: cascade-delete a document across all RAG surfaces
+    # ------------------------------------------------------------------
+    @app.delete("/api/v1/rag/documents/{doc_id}", response_model=DeleteDocumentResponse)
+    async def delete_document_endpoint(  # pyright: ignore[reportUnusedFunction]
+        request: Request, doc_id: str,
+    ) -> DeleteDocumentResponse:
+        """Drop ``doc_id`` from every RAG surface: hybrid vector store,
+        graph entity table, lightrag bucket, optional PG BM25, the in-memory
+        catalog, and the tenant-scoped lifecycle registry. After the call
+        succeeds, ``POST /api/v1/rag/search`` for the same tenant returns
+        0 hits for this document.
+        """
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
+        tenant_id = str(request.state.ctx.tenant_id)
+        try:
+            result = delete_document_cascade(tenant_id, doc_id)
+            _emit(
+                request, "rag.document.deleted", doc_id,
+                {
+                    "document_id": doc_id,
+                    "deleted": result.deleted,
+                    "chunks_removed": result.chunks_removed,
+                    "graph_tuples_removed": result.graph_tuples_removed,
+                    "lightrag_chunks_removed": result.lightrag_chunks_removed,
+                    "pg_chunks_removed": result.pg_chunks_removed,
+                },
+                tenant_id,
+            )
+            return DeleteDocumentResponse(
+                deleted=result.deleted,
+                document_id=result.document_id,
+                chunks_removed=result.chunks_removed,
+                graph_tuples_removed=result.graph_tuples_removed,
+                lightrag_chunks_removed=result.lightrag_chunks_removed,
+                pg_chunks_removed=result.pg_chunks_removed,
+                catalog_removed=result.catalog_removed,
+                registry_removed=result.registry_removed,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    # ------------------------------------------------------------------
+    # P2.11 SLO basic metrics: lightweight per-endpoint latency buckets
+    # ------------------------------------------------------------------
+    @app.get("/api/v1/rag/metrics", response_model=MetricsResponse)
+    async def metrics_endpoint(request: Request) -> MetricsResponse:  # pyright: ignore[reportUnusedFunction]
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
+        buckets = app.state.metrics
+
+        def _bucket(name: str) -> MetricsBucket:
+            data = buckets[name].snapshot()
+            return MetricsBucket(**data)
+
+        return MetricsResponse(
+            ingest=_bucket("ingest"),
+            search=_bucket("search"),
+            upload=_bucket("upload"),
+            window_size=int(getattr(app.state, "metrics_window_size", 32)),
         )
 
     return app
