@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import os
 
-from mate_tech_rag.api.schemas import RetrievalRequest, RetrievalResponse
+from mate_tech_rag.api.schemas import ChunkHit, RetrievalRequest, RetrievalResponse
 from mate_tech_rag.clients.graphrag_client import GraphRAGClient, InMemoryGraphRAGClient
 from mate_tech_rag.clients.hybrid_client import HybridClient, InMemoryHybridClient
 from mate_tech_rag.clients.lightrag_client import InMemoryLightRAGClient, LightRAGClient
@@ -18,6 +18,7 @@ from mate_tech_rag.embedder import Embedder, create_embedder
 from mate_tech_rag.router import RetrievalMode, detect_mode
 from mate_tech_rag.storage.pg_store import PGStore
 from mate_tech_rag.strategies.base import GraphStrategy, HybridStrategy, ThematicStrategy
+from mate_tech_rag.tokenize import tokenize_for_match
 
 _log = logging.getLogger(__name__)
 
@@ -80,11 +81,21 @@ def set_dependencies(
 
 
 def create_clients():
-    """Initialize real clients based on RAG_MODE env (memory|hybrid|graph|full).
+    """Initialize real clients based on RAG_MODE env (memory|hybrid|hybrid_v2|graph|full).
 
     When PG_DSN is set, initializes PGClient + PGStore for BM25 full-text
     search, and upgrades the hybrid client to HybridV2Client (vector +
     BM25 score fusion) when Milvus is also active.
+
+    RAG_MODE values:
+      - memory    (default): pure in-memory; no external services.
+      - hybrid           : try Milvus + (when PG_DSN) PG BM25; degrade to
+                           InMemoryHybridClient on init failure.
+      - hybrid_v2        : **force** InMemoryHybridV2Client (dev / scoring
+                           verification path). Exercises the fusion math
+                           without standing up Milvus / PG.
+      - graph            : try Neo4j.
+      - full             : try Milvus + Neo4j + LightRAG + RAGFlow.
     """
     global _hybrid, _graph, _lightrag, _ragflow, _hybrid_real, _graph_real, _pg_client, _pg_store
     mode = os.environ.get("RAG_MODE", "memory").lower()
@@ -103,6 +114,17 @@ def create_clients():
             _log.warning("PG BM25 init failed: %s", exc)
             _pg_client = None
             _pg_store = None
+
+    # Forced in-memory HybridV2 path (P1.6 dev/test escape hatch).
+    if mode == "hybrid_v2":
+        try:
+            from mate_tech_rag.clients.hybrid_v2_client import InMemoryHybridV2Client
+
+            _hybrid = InMemoryHybridV2Client()
+            _log.info("HybridV2 in-memory ACTIVE (RAG_MODE=hybrid_v2)")
+        except Exception as exc:
+            _log.warning("InMemoryHybridV2 init failed, using InMemoryHybrid: %s", exc)
+        return
 
     if mode in ("hybrid", "full"):
         try:
@@ -211,6 +233,120 @@ def retrieve(req: RetrievalRequest) -> RetrievalResponse:
         query=req.query,
         hits=result.hits,
         total=len(result.hits),
+        latency_ms=result.latency_ms,
+        mode=mode.value,
+    )
+
+
+def retrieve_with_config(
+    req: RetrievalRequest,
+    *,
+    similarity_threshold: float | None = None,
+    vector_weight: float | None = None,
+    keyword_weight: float | None = None,
+    kb_doc_ids: set[str] | None = None,
+) -> RetrievalResponse:
+    """Retrieve with optional tenant-config overrides applied.
+
+    PATCH fix 2 + 3: The ``KbRetrievalConfig`` (mate-app-kb) and the IAM
+    SystemConfig admin page both store ``similarity_threshold`` /
+    ``vector_weight`` / ``keyword_weight``. Before this change these were
+    stored but the retrieval pipeline ignored them — they were "config
+    that's saved but doesn't take effect". This function now applies
+    them so the admin UI controls actually drive the search behaviour.
+
+    Parameters
+    ----------
+    req : RetrievalRequest
+        The base request (query, top_k, kb_id, ...).
+    similarity_threshold : float | None
+        When > 0, hits with ``score < threshold`` are dropped. Applied
+        AFTER weighted-score fusion so the threshold is compared against
+        the final, user-visible score.
+    vector_weight / keyword_weight : float | None
+        Both must be supplied for weighted fusion to apply. The two
+        weights are normalised to sum to 1.0 and combined with the
+        vector score and a CJK-aware keyword-overlap ratio (see
+        ``tokenize_for_match``).
+    kb_doc_ids : set[str] | None
+        When supplied together with ``req.kb_id``, only hits whose
+        ``document_id`` is in this set are kept. An empty set means "no
+        document belongs to this kb" — every hit is dropped so the
+        caller never sees leakage from a different kb.
+    """
+    mode = _resolve_mode(req.mode)
+    if mode == RetrievalMode.AUTO:
+        mode = detect_mode(req.query)
+    if mode == RetrievalMode.FACTUAL:
+        strat = HybridStrategy(get_hybrid(), get_embedder())
+    elif mode == RetrievalMode.ENTITY:
+        strat = GraphStrategy(get_graph())
+    elif mode == RetrievalMode.THEMATIC:
+        strat = ThematicStrategy(get_lightrag())
+    else:
+        strat = HybridStrategy(get_hybrid(), get_embedder())
+    result = strat.search(req.query, req.top_k)
+
+    hits = result.hits
+
+    # PATCH fix 3 (kb_id filter): when the request carries a kb_id and
+    # the caller supplied an explicit allow-list of document_ids, keep
+    # only hits whose document_id is in the set. The set is computed by
+    # the endpoint via ``mate_app_kb.repositories.list_documents`` (single
+    # process) or via the service-to-service HTTP call in production;
+    # when no allow-list is supplied the filter is skipped so the
+    # rag-only API contract is preserved.
+    if req.kb_id and kb_doc_ids is not None:
+        if kb_doc_ids:
+            hits = [h for h in hits if h.document_id in kb_doc_ids]
+        else:
+            # An empty allow-list with a non-empty kb_id means no document
+            # in this kb — return zero hits to avoid leaking from other kbs.
+            hits = []
+
+    # PATCH fix 2 (vector_weight / keyword_weight): weighted score fusion
+    # over the hybrid vector score and the CJK-aware keyword overlap.
+    # When the caller (mate-app-kb KbRetrievalConfig) supplies both weights
+    # we recombine; otherwise we keep the upstream score unchanged.
+    if vector_weight is not None and keyword_weight is not None:
+        vw = float(vector_weight)
+        kw = float(keyword_weight)
+        total_w = vw + kw
+        if total_w <= 0:
+            vw, kw = 0.5, 0.5
+            total_w = 1.0
+        else:
+            vw, kw = vw / total_w, kw / total_w
+        query_terms = tokenize_for_match(req.query)
+        if query_terms:
+            new_hits: list[ChunkHit] = []
+            for h in hits:
+                text_terms = tokenize_for_match(h.text)
+                overlap_ratio = (
+                    len(query_terms & text_terms) / max(len(query_terms), 1)
+                )
+                vector_score = float(h.score)
+                fused_score = max(
+                    0.0, min(1.0, vw * vector_score + kw * overlap_ratio),
+                )
+                # Pydantic v2: ChunkHit is frozen; replace via model_copy.
+                new_hits.append(h.model_copy(update={"score": fused_score}))
+            hits = new_hits
+
+    # PATCH fix 2 (similarity_threshold): drop hits below the configured
+    # threshold AFTER any weighted-score recompute (so the threshold is
+    # compared against the final, post-fusion score, matching what the
+    # admin UI shows).
+    if similarity_threshold is not None and similarity_threshold > 0:
+        hits = [h for h in hits if h.score >= float(similarity_threshold)]
+
+    # Re-truncate to top_k after filtering so the caller still sees <= top_k.
+    hits = hits[: max(0, req.top_k)]
+
+    return RetrievalResponse(
+        query=req.query,
+        hits=hits,
+        total=len(hits),
         latency_ms=result.latency_ms,
         mode=mode.value,
     )
