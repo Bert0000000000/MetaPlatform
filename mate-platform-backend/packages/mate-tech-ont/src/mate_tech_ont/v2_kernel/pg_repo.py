@@ -13,13 +13,15 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import replace as _dc_replace
 from datetime import UTC, datetime
 from typing import Any
 
-from mate_kernel.objectset.compiler import FilterCompiler
+from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler
 from mate_kernel.objectset.sql_compiler import SQLCompiler
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.identity import ClassRef, Version
@@ -164,6 +166,63 @@ DDL: tuple[str, ...] = (
 
 def _props_to_dict(p: tuple[tuple[ClassRef, object], ...]) -> dict[str, Any]:
     return {k.rid: v for k, v in p}
+
+
+# ─────────────────── ObjectSet SQL 支持（RUNTIME-PG-03 修复） ───────────────────
+
+# JSONB 键 / ORDER BY 键的白名单：Property rid 形如
+# ``ont.<tenant>.prop.<slug>.<version>``，字符集由 ClassRef 校验约束。
+_SAFE_JSON_KEY = re.compile(r"^[A-Za-z0-9_.:\-]+$")
+
+# Property.type_id → 数值排序白名单（其余按 text 字典序排）。
+_NUMERIC_TYPE_IDS = frozenset(
+    {"integer", "int", "long", "number", "decimal", "float", "double"}
+)
+
+
+class _RepoSQLCompiler(SQLCompiler):
+    """RUNTIME-PG-03: 修上游 ``SQLCompiler._render`` truthy 分支的占位符 bug。
+
+    上游 truthy 渲染把 col_expr（含 ``%s``）输出两次（IS NOT NULL + != ''），
+    但 ``_column_expr`` 的参数只 extend 一次 → psycopg2 ``IndexError: list
+    index out of range``。本子类把参数补齐成两份；自定义列映射（无占位符）
+    时 extra 为空，行为不变。上游修复落地后本子类可删。
+    """
+
+    def _render(self, cf: CompiledFilter, params: list[Any]) -> str:
+        if cf.kind == "truthy":
+            col_expr, extra = self._column_expr(cf.field_name or "")
+            params.extend(extra)
+            params.extend(extra)
+            return f"({col_expr}) IS NOT NULL AND ({col_expr}) != ''"
+        return super()._render(cf, params)
+
+
+def _rewrite_filter_fields(
+    cf: CompiledFilter, slug_to_rid: dict[str, str]
+) -> CompiledFilter:
+    """把 CompiledFilter 里的简写 slug 字段名归一化为完整 Property rid。
+
+    InMemory 执行器（``individual_to_row``）用 rid 第 4 段作 row key，因此
+    DSL 支持 ``amount > 10`` 这类简写；PG 的 JSONB 键存的是完整 rid
+    （``_props_to_dict``），不归一化则 ``props ->> 'amount'`` 永远 NULL、
+    过滤结果恒空。仅在 slug_to_rid 命中时替换，未命中原样保留。
+    """
+
+    field = cf.field_name
+    new_field = slug_to_rid.get(field, field) if field is not None else None
+    new_children = tuple(
+        _rewrite_filter_fields(c, slug_to_rid) for c in cf.children
+    )
+    if new_field == field and new_children == cf.children:
+        return cf
+    return _dc_replace(cf, field_name=new_field, children=new_children)
+
+
+def _prop_slug(rid: str) -> str:
+    """rid 第 4 段作 slug（与 kernel ``individual_to_row`` 同一规则）。"""
+    parts = rid.split(".")
+    return parts[3] if len(parts) >= 5 else parts[-1]
 
 
 def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
@@ -1058,18 +1117,46 @@ class PgOntologyRepository(OntologyRepository):
         self._ensure_schema()
         compiler = FilterCompiler()
         compiled = compiler.compile(os_.filter_expr)
-        sqlc = SQLCompiler()
+
+        # RUNTIME-PG-03: DSL 字段名归一化 —— 简写 slug → 完整 Property rid
+        # （JSONB 键为完整 rid；InMemory 路径的 individual_to_row 同样支持
+        # slug）。取 class 的 ObjectType.properties 建 slug→rid / rid→type
+        # 映射；ObjectType 缺失时跳过归一化，保留裸字段行为。
+        slug_to_rid: dict[str, str] = {}
+        rid_type: dict[str, str] = {}
+        try:
+            ot = self.get_object_type(os_.class_rid)
+        except KeyError:
+            ot = None
+        if ot is not None:
+            for p in ot.properties:
+                slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
+                rid_type[p.rid.rid] = p.type_id
+        if slug_to_rid:
+            compiled = _rewrite_filter_fields(compiled, slug_to_rid)
+
+        sqlc = _RepoSQLCompiler()
         where_sql, params = sqlc.compile_where(compiled)
 
-        # sort
+        # sort —— 键同样做 slug→rid 归一化，cast 按 Property.type_id 分支
+        # （数值类型 ::numeric，其余 ::text；旧版一律 ::numeric 会让任何
+        # 字符串字段排序直接 DataError）。键经 _SAFE_JSON_KEY 白名单校验
+        # 后嵌入（无引号/分号字符面），防注入。
         order_by = ""
         if os_.sort:
-            sort_field = os_.sort[0]
-            reverse = sort_field.startswith("-")
-            field_name = sort_field.lstrip("-")
-            col = f"(props ->> '{field_name}')"
-            order_by = f" ORDER BY {col}::numeric DESC" if reverse else f" ORDER BY {col}::numeric ASC"
-            # 简化：MVP 全当 numeric 排；后续按 type_id 分支
+            raw = os_.sort[0]
+            reverse = raw.startswith("-")
+            field_name = raw[1:] if raw.startswith("-") else raw
+            key = slug_to_rid.get(field_name, field_name)
+            if not _SAFE_JSON_KEY.match(key):
+                raise ValueError(f"unsafe sort field {field_name!r}")
+            cast = (
+                "::numeric"
+                if rid_type.get(key) in _NUMERIC_TYPE_IDS
+                else "::text"
+            )
+            direction = "DESC" if reverse else "ASC"
+            order_by = f" ORDER BY (props ->> '{key}'){cast} {direction}"
 
         # where_sql comes from SQLCompiler (not user input); order_by is a
         # controlled sort spec. Safe to compose via f-string.
