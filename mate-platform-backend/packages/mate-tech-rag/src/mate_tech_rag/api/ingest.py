@@ -71,13 +71,14 @@ def ingest(req: IngestRequest, tenant_id: str = "") -> IngestResponse:
             chunk_id = hybrid.add(req.document_id, chunk_text, vec, req.metadata)
             graph.insert(chunk_text, req.document_id, req.metadata)
             lightrag.insert(chunk_text, req.document_id, req.metadata)
-            # Write to PG for BM25 search (idempotent upsert by chunk_id;
+            # Persist to PG (chunks + embedding + tenant, idempotent by chunk_id;
             # HybridV2Client.add already writes to PG — this is a no-op then).
             if pg_store is not None:
                 try:
                     pg_store.save_chunk(
                         chunk_id, req.document_id, chunk_text,
                         {**req.metadata, "tenant_id": tenant_id},
+                        embedding=vec, tenant_id=tenant_id or "default",
                     )
                 except Exception:
                     pass

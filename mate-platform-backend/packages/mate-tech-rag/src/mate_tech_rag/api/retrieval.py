@@ -115,6 +115,22 @@ def create_clients():
             _pg_client = None
             _pg_store = None
 
+    # Persistent PG path: everything (chunks + embeddings + registry) lives
+    # in kb_chunks and survives restarts. No Milvus needed.
+    if mode == "pg":
+        if _pg_client is not None and _pg_client.is_available():
+            from mate_tech_rag.clients.pg_hybrid_client import PgHybridClient
+
+            _hybrid = PgHybridClient(pg=_pg_client)
+            _log.info("PG persistent hybrid ACTIVE (RAG_MODE=pg)")
+            _rebuild_registry_from_pg(_pg_client)
+        else:
+            raise RuntimeError(
+                "RAG_MODE=pg requires a reachable PG_DSN "
+                f"(got: {os.environ.get('PG_DSN', '<unset>')})"
+            )
+        return
+
     # Forced in-memory HybridV2 path (P1.6 dev/test escape hatch).
     if mode == "hybrid_v2":
         try:
@@ -166,6 +182,25 @@ def create_clients():
 def reload_embedder(provider: str | None = None) -> None:
     global _embedder
     _embedder = create_embedder(provider)
+
+
+def _rebuild_registry_from_pg(pg) -> int:
+    """Restore the tenant document registry from persistent kb_chunks.
+
+    Without this, a restart under RAG_MODE=pg wipes the in-memory registry and
+    the search handler's tenant-scoped filter (``tenant_document_ids``)
+    silently drops every hit.
+    """
+    from mate_tech_rag.api.document_registry import restore_document
+
+    docs = pg.list_documents()
+    for d in docs:
+        restore_document(
+            d["tenant_id"], d["document_id"],
+            filename=d.get("filename", ""), chunk_count=d.get("chunk_count", 0),
+        )
+    _log.info("registry restored from PG: %s documents", len(docs))
+    return len(docs)
 
 
 def fake_chunk(text: str):

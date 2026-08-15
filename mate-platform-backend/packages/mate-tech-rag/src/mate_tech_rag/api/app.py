@@ -81,6 +81,8 @@ _log = logging.getLogger(__name__)
 
 def _backend_label(client: object) -> str:
     name = type(client).__name__
+    if "PgHybrid" in name:
+        return "pg-persistent"
     if "Milvus" in name:
         return "milvus"
     if "Neo4j" in name:
@@ -305,12 +307,13 @@ def create_app() -> FastAPI:
                 chunk_id = hybrid.add(doc_id, chunk_text, vec, meta)
                 graph.insert(chunk_text, doc_id, meta)
                 lightrag.insert(chunk_text, doc_id, meta)
-                # Write to PG for BM25 search (idempotent upsert by chunk_id).
+                # Persist to PG (chunks + embedding + tenant, idempotent by chunk_id).
                 if pg_store is not None:
                     try:
                         pg_store.save_chunk(
                             chunk_id, doc_id, chunk_text,
                             {**meta, "tenant_id": tenant_id},
+                            embedding=vec, tenant_id=tenant_id,
                         )
                     except Exception:
                         pass

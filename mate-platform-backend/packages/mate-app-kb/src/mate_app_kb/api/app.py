@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from dataclasses import asdict
@@ -47,26 +48,30 @@ from mate_app_kb.api.schemas import (
     UploadResponse,
 )
 from mate_app_kb.clients import AgentClient, RAGClient
+# CRUD storage surface is KB_STORE-selectable (memory|sql); retrieval-config
+# helpers + entity dataclasses stay on the in-memory module either way.
+from mate_app_kb.repositories import (
+    delete_collection,
+    delete_document,
+    get_collection,
+    get_document,
+    list_collections,
+    list_documents,
+    list_search_logs,
+    put_collection,
+    put_document,
+    put_search_log,
+)
 from mate_app_kb.repositories.in_memory import (
     KbCollection,
     KbDocument,
     KbRetrievalConfig,
     KbRetrievalConfigSnapshot,
     KbSearchLog,
-    delete_collection,
-    delete_document,
-    get_collection,
-    get_document,
     get_retrieval_config,
-    list_collections,
-    list_documents,
-    list_retrieval_config_snapshots,
-    list_search_logs,
-    put_collection,
-    put_document,
     put_retrieval_config,
     put_retrieval_config_snapshot,
-    put_search_log,
+    list_retrieval_config_snapshots,
 )
 from mate_platform.auth import install_auth
 from mate_platform.messaging.events import Event
@@ -136,6 +141,20 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         version=__version__,
         description="Mate Platform business aggregation service (RAG + Agent facade)",
     )
+    # KB_STORE=sql: ensure ORM tables exist + seed the default tenant once
+    # (put_* upserts make re-seeding idempotent). Engine comes from
+    # MATE_DB_URL / DATABASE_URL (PG in real environments, sqlite dev default).
+    if os.environ.get("KB_STORE", "memory").lower() == "sql":
+        try:
+            from mate_tech_db.base import create_all as _db_create_all
+
+            _db_create_all()
+            from mate_app_kb.repositories import seed_from_inmemory
+
+            seed_from_inmemory("tenant-default")
+            _log.info("KB_STORE=sql: tables ensured + tenant-default seeded")
+        except Exception as exc:
+            _log.warning("KB_STORE=sql init failed (falling back at repo layer): %s", exc)
     # Hook 1 of 3: install the auth middleware (SEC-IAM-01).
     # After this call, every incoming request has request.state.ctx
     # populated with a verified RequestContext (or a 401/403 response

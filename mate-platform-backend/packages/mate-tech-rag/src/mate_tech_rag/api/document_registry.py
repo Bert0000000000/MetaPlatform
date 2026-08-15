@@ -140,3 +140,31 @@ def reset_registry() -> None:
     """Drop all records. Used by tests to keep cases isolated."""
     with _lock:
         _REGISTRY.clear()
+
+
+def restore_document(
+    tenant_id: str,
+    document_id: str,
+    *,
+    filename: str = "",
+    chunk_count: int = 0,
+) -> None:
+    """Re-register a previously ingested document as INDEXED.
+
+    Used at startup under RAG_MODE=pg to rebuild the tenant-scoped registry
+    from the persistent kb_chunks store, so tenant hit-filtering survives
+    restarts instead of silently dropping every document.
+    """
+    with _lock:
+        store = _REGISTRY.setdefault(tenant_id, {})
+        now = _now()
+        store[document_id] = DocumentRecord(
+            tenant_id=tenant_id,
+            document_id=document_id,
+            status="INDEXED",
+            chunk_count=chunk_count,
+            filename=filename,
+            source="pg-restore",
+            created_at=now,
+            updated_at=now,
+        )

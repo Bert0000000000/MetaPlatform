@@ -18,8 +18,20 @@ class PGStore:
     def __init__(self, pg: PGClient | None = None) -> None:
         self._pg = pg or PGClient()
 
-    def save_chunk(self, chunk_id: str, document_id: str, text: str, metadata: dict[str, Any] | None = None) -> bool:
-        return self._pg.upsert_chunk(chunk_id, document_id, text, metadata)
+    def save_chunk(
+        self,
+        chunk_id: str,
+        document_id: str,
+        text: str,
+        metadata: dict[str, Any] | None = None,
+        *,
+        embedding: list[float] | None = None,
+        tenant_id: str = "default",
+    ) -> bool:
+        return self._pg.upsert_chunk(
+            chunk_id, document_id, text, metadata,
+            embedding=embedding, tenant_id=tenant_id,
+        )
 
     def save_chunks_bulk(self, chunks: list[dict[str, Any]]) -> int:
         saved = 0

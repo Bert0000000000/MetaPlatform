@@ -321,6 +321,18 @@ if __name__ == "__main__":
     parser.add_argument("--host", default="0.0.0.0")
     args = parser.parse_args()
 
+    # Persistent-storage defaults (真实环境持久化): RAG chunks + embeddings
+    # live in PG kb_chunks (RAG_MODE=pg), KB collections/documents live in PG
+    # via the SQLAlchemy store (KB_STORE=sql + MATE_DB_URL). setdefault so an
+    # explicit env always wins. The shared docker PG is mate-postgres
+    # (meta/meta @ 127.0.0.1:5432/metaplatform).
+    os.environ.setdefault("PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform")
+    os.environ.setdefault("RAG_MODE", "pg")
+    os.environ.setdefault("KB_STORE", "sql")
+    os.environ.setdefault(
+        "MATE_DB_URL", "postgresql+psycopg://meta:meta@127.0.0.1:5432/metaplatform"
+    )
+
     app = build_app()
     # Dev cross-service loopback: DW (and mate-app-kb) RAGClient call back into
     # this process's rag routes instead of a separate localhost:8001 service.

@@ -76,9 +76,17 @@ class FakePGStore:
 
     def save_chunk(
         self, chunk_id: str, document_id: str, text: str, metadata: dict[str, Any] | None = None,
+        *, embedding: list[float] | None = None, tenant_id: str = "default",
     ) -> bool:
         self._chunks.append(
-            {"chunk_id": chunk_id, "document_id": document_id, "text": text, "metadata": metadata or {}},
+            {
+                "chunk_id": chunk_id,
+                "document_id": document_id,
+                "text": text,
+                "metadata": metadata or {},
+                "embedding": embedding,
+                "tenant_id": tenant_id,
+            },
         )
         return True
 
