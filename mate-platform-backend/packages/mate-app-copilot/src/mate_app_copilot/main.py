@@ -24,7 +24,7 @@ def create_app() -> FastAPI:
         from mate_tech_db.base import init_engine, Base
         from mate_app_copilot.repositories.sql_models import ConversationORM, MessageORM  # noqa: F401
         import os
-        dsn = os.getenv("MATE_DB_URL") or os.getenv("PG_DSN", "postgresql://meta:meta@postgres:5432/metaplatform")
+        dsn = os.getenv("MATE_DB_URL") or os.getenv("DATABASE_URL") or "postgresql://meta:meta@postgres:5432/metaplatform"
         init_engine(dsn)
         Base.metadata.create_all(bind=init_engine(dsn))
         import logging
