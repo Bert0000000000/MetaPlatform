@@ -34,7 +34,7 @@ def test_case1_cross_tenant_conversation_read_blocked(
         headers=auth_headers_acme,
     )
     assert create.status_code in (200, 201), create.text
-    conv_id = create.json()["id"]
+    conv_id = create.json()["data"]["id"]
 
     # 用 acme 头读取应正常
     ok = client.get(
@@ -57,7 +57,7 @@ def test_case2_cross_tenant_nl2sql_injection_rejected(
     """
     inj = "SELECT * FROM tenant_globex_secrets; DROP TABLE tenant_acme_users;--"
     resp = client.post(
-        "/api/v1/copilot/sql",
+        "/api/v1/copilot/queries/execute",
         json={"query": inj, "dialect": "postgres"},
         headers=auth_headers_acme,
     )
@@ -83,7 +83,7 @@ def test_case3_system_prompt_injection_does_not_exfiltrate(
     """
     canary = "MATE_SYSTEM_PROMPT_CANARY_DO_NOT_LEAK"
     resp = client.post(
-        "/api/v1/copilot/chat",
+        "/api/v1/copilot/chat/completions/stream",
         json={
             "messages": [
                 {
@@ -113,7 +113,7 @@ def test_case4_rapid_chat_triggers_quota_429(
     last_status = 0
     for i in range(120):  # RPM 上限 100，至少触发 1 次
         r = client.post(
-            "/api/v1/copilot/chat",
+            "/api/v1/copilot/chat/completions/stream",
             json={"messages": [{"role": "user", "content": f"hi {i}"}]},
             headers=auth_headers_acme,
         )
@@ -143,7 +143,7 @@ def test_case5_nl2sql_destructive_statements_rejected(
 ) -> None:
     """写操作 SQL 必须被前置校验拦截."""
     resp = client.post(
-        "/api/v1/copilot/sql",
+        "/api/v1/copilot/queries/execute",
         json={"query": payload, "dialect": "postgres"},
         headers=auth_headers_acme,
     )
@@ -184,7 +184,7 @@ def test_case7_oversized_payload_rejected_before_llm(
     """>1MB 单条 message 在 guard 前应当被 413 拒绝，不应进 LLM 计费."""
     big = "A" * (1_500_000)
     resp = client.post(
-        "/api/v1/copilot/chat",
+        "/api/v1/copilot/chat/completions/stream",
         json={"messages": [{"role": "user", "content": big}]},
         headers=auth_headers_acme,
     )

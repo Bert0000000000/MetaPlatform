@@ -27,6 +27,12 @@ for _sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-llmgw"):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# Host shell may export ANTHROPIC_BASE_URL pointing at a local proxy
+# (e.g. http://127.0.0.1:15721/claude-desktop). respx only intercepts its
+# mocked routes, so the real httpx call would otherwise hit that proxy and
+# fail with "not mocked". Strip it for this test module.
+os.environ.pop("ANTHROPIC_BASE_URL", None)
+
 os.environ.setdefault("LEGACY_LOGIN_COMPAT", "true")
 os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")

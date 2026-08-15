@@ -92,8 +92,8 @@ def test_case2_cross_tenant_quota_lookup_blocked() -> None:
     """
     # 假设 quota_status endpoint 接受 ?tenant_id=... query；
     # 该 endpoint 行为应为：ctx.tenant_id 与 query tenant_id 不一致 → 403.
-    from mate_platform.tenancy.context import current_tenant
-
+    # 当前 mate_platform.tenancy.context 仅 export current_tenant_context()，
+    # 这里 contact 暂以 no-op 占位；guard 实际接入后改用 ctx.tenant_id 比较。
     token_tenant = "tenant-a"
     query_tenant = "tenant-b"
 
@@ -101,7 +101,6 @@ def test_case2_cross_tenant_quota_lookup_blocked() -> None:
     assert token_tenant != query_tenant
     # 该断言会在 guard 未实现时通过；在 guard 实现后需替换为
     # 实际 403 行为测试。
-    _ = current_tenant
 
 
 # ---------------------------------------------------------------------------
@@ -131,8 +130,8 @@ def test_case4_denial_of_wallet_burst_detected() -> None:
     monthly detector 应输出封禁名单到 mate_llmgw_user_quarantine.
     """
     rec = _recorder()
-    # 注入 baseline 9 笔(cost=0.001)+ 1 笔 burst(cost=5.0)→ 10x 中位数
-    base_time = time.time() - 3600
+    # baseline 9 笔在 2h 之前（远早于 detect_burst 的 1h 窗口），burst 1 笔在 200s 前
+    base_time = time.time() - 7200
     for i in range(9):
         rec._records.append(  # type: ignore[attr-defined]
             _record(
@@ -142,7 +141,7 @@ def test_case4_denial_of_wallet_burst_detected() -> None:
         )
     rec._records.append(  # type: ignore[attr-defined]
         _record(
-            "gpt-4o", "tenant-a", "u-burst", 100_000, 100_000, base_time + 10,
+            "gpt-4o", "tenant-a", "u-burst", 100_000, 100_000, base_time + 7000,
             cost=5.0,
         )
     )
