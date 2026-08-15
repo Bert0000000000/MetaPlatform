@@ -56,6 +56,14 @@ CREATE DATABASE metaplatform_iam
          LC_CTYPE 'en_US.UTF-8'
          TEMPLATE template0;
 
+-- 编排器（Digital-Employee Role Registry / Plan / Dispatcher state）
+-- W3-role-registry-persist: 持久化 POST /api/v1/orchestrator/roles 注册的角色
+CREATE DATABASE metaplatform_orchestrator
+    WITH ENCODING 'UTF8'
+         LC_COLLATE 'en_US.UTF-8'
+         LC_CTYPE 'en_US.UTF-8'
+         TEMPLATE template0;
+
 -- 授权语句：让 meta 用户可以访问这些库
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_kb TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_obs TO meta;
@@ -64,3 +72,4 @@ GRANT ALL PRIVILEGES ON DATABASE metaplatform_agent TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_action TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_wfe TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_iam TO meta;
+GRANT ALL PRIVILEGES ON DATABASE metaplatform_orchestrator TO meta;
