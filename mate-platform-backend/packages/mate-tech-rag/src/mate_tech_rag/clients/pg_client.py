@@ -97,6 +97,30 @@ class PGClient:
             "ALTER TABLE kb_chunks ADD COLUMN IF NOT EXISTS embedding JSONB",
             "ALTER TABLE kb_chunks ADD COLUMN IF NOT EXISTS text_tokens TEXT NOT NULL DEFAULT ''",
         ]
+        # v3 (production scale): pgvector column + HNSW index. Only when the
+        # `vector` extension is available (pgvector image). Falls back to the
+        # JSONB python-cosine path otherwise — same interface either way.
+        # HNSW caps at 2000 dims; doubao-embedding-vision is 2048 → use
+        # halfvec (f16, HNSW-able up to 4000 dims) above 2000, vector below.
+        self._has_pgvector = False
+        self._vec_dim = int(os.environ.get("PG_VECTOR_DIM", "2048"))
+        self._vec_type = "halfvec" if self._vec_dim > 2000 else "vector"
+        self._vec_ops = "halfvec_cosine_ops" if self._vec_type == "halfvec" else "vector_cosine_ops"
+        self._pgvector_sql = [
+            "CREATE EXTENSION IF NOT EXISTS vector",
+            # IF NOT EXISTS can't detect a wrong column TYPE (e.g. a leftover
+            # `vector` column when we now want `halfvec`) — normalize first.
+            f"""DO $$ BEGIN
+                IF EXISTS (SELECT 1 FROM information_schema.columns
+                           WHERE table_name='kb_chunks' AND column_name='embedding_vec'
+                                 AND udt_name <> '{self._vec_type}') THEN
+                    ALTER TABLE kb_chunks DROP COLUMN embedding_vec;
+                END IF;
+            END $$""",
+            f"ALTER TABLE kb_chunks ADD COLUMN IF NOT EXISTS embedding_vec {self._vec_type}({self._vec_dim})",
+            "CREATE INDEX IF NOT EXISTS kb_chunks_vec_idx ON kb_chunks "
+            f"USING hnsw (embedding_vec {self._vec_ops})",
+        ]
         self._connect()
 
     def _connect(self) -> None:
@@ -119,6 +143,35 @@ class PGClient:
                         with contextlib.suppress(Exception):
                             cur.execute(stmt)
                 conn.commit()
+            # pgvector upgrade (optional, best-effort): enables HNSW-indexed
+            # cosine search at production scale. Each statement commits on its
+            # own so one failing step (e.g. index build) doesn't roll back the
+            # column added before it.
+            try:
+                with self._pool.connection() as conn:
+                    with conn.cursor() as cur:
+                        for stmt in self._pgvector_sql:
+                            try:
+                                cur.execute(stmt)
+                                conn.commit()
+                            except Exception as stmt_exc:
+                                conn.rollback()
+                                _log.warning(
+                                    "pgvector step failed (continuing): %s | %s",
+                                    stmt[:60], stmt_exc,
+                                )
+                                raise
+                self._has_pgvector = True
+                _log.info(
+                    "pgvector ACTIVE (dim=%d, %s, HNSW %s)",
+                    self._vec_dim, self._vec_type, self._vec_ops,
+                )
+            except Exception as exc:
+                self._has_pgvector = False
+                _log.info(
+                    "pgvector unavailable — vector search falls back to JSONB "
+                    "python cosine (dev scale): %s", exc,
+                )
             self._available = True
             _log.info("PGClient connected: %s", self._dsn.split("@")[-1])
         except Exception as exc:
@@ -145,17 +198,22 @@ class PGClient:
         if tenant_id and tenant_id != "default":
             meta.setdefault("tenant_id", tenant_id)
         emb_json = json.dumps(embedding) if embedding else None
+        # pgvector column (str '[a,b,...]' literal → ::vector cast in SQL);
+        # NULL when the extension is off or the dimension doesn't match.
+        vec_str = None
+        if embedding and self._has_pgvector and len(embedding) == self._vec_dim:
+            vec_str = "[" + ",".join(repr(float(x)) for x in embedding) + "]"
         tokens = _cjk_tokens(text)
         try:
             with self._pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        """
+                        f"""
                         INSERT INTO kb_chunks (chunk_id, document_id, text, metadata, ts_vector,
-                                               tenant_id, embedding, text_tokens)
+                                               tenant_id, embedding, embedding_vec, text_tokens)
                         VALUES (%s, %s, %s, %s::jsonb,
                                 to_tsvector('simple', %s),
-                                %s, %s::jsonb, %s)
+                                %s, %s::jsonb, %s::{self._vec_type}, %s)
                         ON CONFLICT (chunk_id) DO UPDATE
                         SET document_id = EXCLUDED.document_id,
                             text = EXCLUDED.text,
@@ -163,9 +221,10 @@ class PGClient:
                             ts_vector = EXCLUDED.ts_vector,
                             tenant_id = EXCLUDED.tenant_id,
                             embedding = COALESCE(EXCLUDED.embedding, kb_chunks.embedding),
+                            embedding_vec = COALESCE(EXCLUDED.embedding_vec, kb_chunks.embedding_vec),
                             text_tokens = EXCLUDED.text_tokens
                         """,
-                        (chunk_id, document_id, text, _json_dump(meta), tokens, tenant_id, emb_json, tokens),
+                        (chunk_id, document_id, text, _json_dump(meta), tokens, tenant_id, emb_json, vec_str, tokens),
                     )
                 conn.commit()
             return True
@@ -234,13 +293,46 @@ class PGClient:
         *,
         tenant_id: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Cosine over persisted embeddings (PG-only persistent vector path).
+        """Cosine over persisted embeddings.
 
-        Fetches embeddings for the tenant and ranks in Python — appropriate at
-        dev scale (~10k chunks); production scale wants pgvector or Milvus.
+        pgvector path (production): HNSW-indexed `<=>` cosine-distance ORDER BY
+        in SQL. JSONB fallback (dev / no extension): fetch embeddings and rank
+        with python cosine (~10k chunks).
         """
         if not self._available or self._pool is None or not query_embedding:
             return []
+        if self._has_pgvector and len(query_embedding) == self._vec_dim:
+            vec_str = "[" + ",".join(repr(float(x)) for x in query_embedding) + "]"
+            sql = f"""
+                SELECT chunk_id, document_id, text, metadata,
+                       1 - (embedding_vec <=> %s::{self._vec_type}) AS score
+                FROM kb_chunks
+                WHERE embedding_vec IS NOT NULL
+            """
+            params: list[Any] = [vec_str]
+            if tenant_id:
+                sql += " AND tenant_id = %s"
+                params.append(tenant_id)
+            sql += f" ORDER BY embedding_vec <=> %s::{self._vec_type} LIMIT %s"
+            params.extend([vec_str, max(1, top_k)])
+            try:
+                with self._pool.connection() as conn, conn.cursor() as cur:
+                    cur.execute(sql, tuple(params))
+                    rows = cur.fetchall()
+                return [
+                    {
+                        "chunk_id": r[0],
+                        "document_id": r[1],
+                        "text": r[2],
+                        "metadata": r[3] or {},
+                        "score": float(r[4] or 0.0),
+                    }
+                    for r in rows
+                ]
+            except Exception as exc:
+                _log.warning("PG vector_search (pgvector) failed: %s", exc)
+                return []
+        # JSONB python-cosine fallback
         sql = "SELECT chunk_id, document_id, text, metadata, embedding FROM kb_chunks WHERE embedding IS NOT NULL"
         params: list[Any] = []
         if tenant_id:

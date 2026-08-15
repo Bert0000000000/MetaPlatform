@@ -51,7 +51,10 @@ services:
 
   postgres:
     <<: [*restart, *logging]
-    image: postgres:16-alpine
+    # pgvector official image (PostgreSQL 16 + vector extension): production-
+    # scale cosine search for RAG embeddings (HNSW index). Drop-in for
+    # postgres:16-alpine — same data dir layout, pgdata volume carries over.
+    image: pgvector/pgvector:pg16
     container_name: mate-postgres
     environment:
       <<: *pg-creds

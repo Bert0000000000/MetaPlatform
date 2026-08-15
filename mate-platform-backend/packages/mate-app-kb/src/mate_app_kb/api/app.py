@@ -48,18 +48,22 @@ from mate_app_kb.api.schemas import (
     UploadResponse,
 )
 from mate_app_kb.clients import AgentClient, RAGClient
-# CRUD storage surface is KB_STORE-selectable (memory|sql); retrieval-config
-# helpers + entity dataclasses stay on the in-memory module either way.
+# CRUD + retrieval-config helpers are KB_STORE-selectable (memory|sql);
+# entity dataclasses stay on the in-memory module either way (shared shapes).
 from mate_app_kb.repositories import (
     delete_collection,
     delete_document,
     get_collection,
     get_document,
+    get_retrieval_config,
     list_collections,
     list_documents,
+    list_retrieval_config_snapshots,
     list_search_logs,
     put_collection,
     put_document,
+    put_retrieval_config,
+    put_retrieval_config_snapshot,
     put_search_log,
 )
 from mate_app_kb.repositories.in_memory import (
@@ -68,10 +72,6 @@ from mate_app_kb.repositories.in_memory import (
     KbRetrievalConfig,
     KbRetrievalConfigSnapshot,
     KbSearchLog,
-    get_retrieval_config,
-    put_retrieval_config,
-    put_retrieval_config_snapshot,
-    list_retrieval_config_snapshots,
 )
 from mate_platform.auth import install_auth
 from mate_platform.messaging.events import Event

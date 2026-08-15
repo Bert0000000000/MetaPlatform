@@ -243,15 +243,32 @@ def build_app() -> FastAPI:
         logger.info("Mounted ont (%d routes)", len(_ont.routes))
         # Route-steal copies routes but does NOT propagate startup hooks. The
         # v2_kernel router reads app.state.kernel_repo at request time, so
-        # initialise it now (memory backend, optional demo seed).
-        os.environ.setdefault("KERNEL_BACKEND", "memory")
-        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
-        app.state.kernel_repo = InMemoryOntologyRepository()
+        # initialise it now — same KERNEL_BACKEND selection as main.py's
+        # on_startup (pg → PgOntologyRepository, persistent), optional demo
+        # seed (idempotent upserts, safe on every boot).
+        _kb_backend = os.environ.get("KERNEL_BACKEND", "memory").lower()
+        if _kb_backend == "pg":
+            from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
+
+            app.state.kernel_repo = PgOntologyRepository(
+                dsn=os.environ.get(
+                    "KERNEL_PG_DSN",
+                    "postgresql://meta:meta@127.0.0.1:5432/metaplatform",
+                )
+            )
+        else:
+            from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+
+            app.state.kernel_repo = InMemoryOntologyRepository()
         if os.getenv("ONT_SEED_DEMO", "0") == "1":
-            from mate_tech_ont.v2_kernel.seed import seed_demo
+            from mate_tech_ont.v2_kernel.seed import (
+                seed_demo,
+                seed_hr_it_finance_orchestrator,
+            )
+
             seed_demo(app.state.kernel_repo)
-        # stdlib logger with structlog active — pass kwargs via `extra`.
-        logger.info("kernel_repo.initialized", extra={"backend": "memory"})
+            seed_hr_it_finance_orchestrator(app.state.kernel_repo)
+        logger.info("kernel_repo.initialized", extra={"backend": _kb_backend})
     except Exception as e:
         logger.warning("Failed to mount ont: %s", e)
 
@@ -323,15 +340,20 @@ if __name__ == "__main__":
 
     # Persistent-storage defaults (真实环境持久化): RAG chunks + embeddings
     # live in PG kb_chunks (RAG_MODE=pg), KB collections/documents live in PG
-    # via the SQLAlchemy store (KB_STORE=sql + MATE_DB_URL). setdefault so an
-    # explicit env always wins. The shared docker PG is mate-postgres
+    # via the SQLAlchemy store (KB_STORE=sql + MATE_DB_URL), DW entities live
+    # in PG (DW_STORE=sql), and the ontology kernel repo persists through
+    # PgOntologyRepository (KERNEL_BACKEND=pg). setdefault so an explicit env
+    # always wins. The shared docker PG is mate-postgres
     # (meta/meta @ 127.0.0.1:5432/metaplatform).
-    os.environ.setdefault("PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform")
+    _PG_SYNC = "postgresql://meta:meta@127.0.0.1:5432/metaplatform"
+    _PG_ALCHEMY = "postgresql+psycopg://meta:meta@127.0.0.1:5432/metaplatform"
+    os.environ.setdefault("PG_DSN", _PG_SYNC)
     os.environ.setdefault("RAG_MODE", "pg")
     os.environ.setdefault("KB_STORE", "sql")
-    os.environ.setdefault(
-        "MATE_DB_URL", "postgresql+psycopg://meta:meta@127.0.0.1:5432/metaplatform"
-    )
+    os.environ.setdefault("DW_STORE", "sql")
+    os.environ.setdefault("MATE_DB_URL", _PG_ALCHEMY)
+    os.environ.setdefault("KERNEL_BACKEND", "pg")
+    os.environ.setdefault("KERNEL_PG_DSN", _PG_SYNC)
 
     app = build_app()
     # Dev cross-service loopback: DW (and mate-app-kb) RAGClient call back into
