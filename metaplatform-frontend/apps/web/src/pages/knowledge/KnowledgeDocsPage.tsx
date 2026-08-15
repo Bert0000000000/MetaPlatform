@@ -1,13 +1,16 @@
 /**
  * Knowledge document management.
  * Uses the TECH-KB API instead of the retired static mock table.
+ *
+ * 文档上传走 KB 域自己的 /api/v1/kb/upload —— 它同时写 KB 文档表(本页数据源)
+ * 和真实 RAG 入库(豆包 embedding),所以上传后立即可见、可被检索。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Input, Select, Space, Table, Tag, Typography } from '@douyinfe/semi-ui';
+import { Button, Card, Empty, Input, Select, Space, Table, Tag, Toast, Typography, Upload } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import { FileText, RefreshCw, Search } from 'lucide-react';
+import { FileText, RefreshCw, Search, Upload as UploadIcon } from 'lucide-react';
 import { useAsync, useApiErrorBoundary } from '@mate/shared';
-import { listDocuments, listKb, type KbDocument, type KbEntity } from '@/api/kb';
+import { listDocuments, listKb, uploadDocumentToKb, type KbDocument, type KbEntity } from '@/api/kb';
 
 
 const STATUS_LABELS: Record<string, { label: string; color: TagColor }> = {
@@ -31,6 +34,7 @@ export default function KnowledgeDocsPage() {
   const { report } = useApiErrorBoundary();
   const [kbId, setKbId] = useState<string>();
   const [keyword, setKeyword] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const {
     data: kbs = [],
@@ -48,6 +52,36 @@ export default function KnowledgeDocsPage() {
     [kbId],
     { initialData: [] },
   );
+
+  const handleUpload = async (file: File) => {
+    if (!kbId) {
+      Toast.warning('请先选择知识库');
+      return;
+    }
+    setUploading(true);
+    try {
+      const result = await uploadDocumentToKb(kbId, file);
+      Toast.success(`「${result.filename}」已入库（${result.chunkCount} 个切片，已建立索引）`);
+      await reload();
+    } catch (e) {
+      report(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadProps = {
+    // Semi Upload 需填 action;uploadTrigger="custom" 时不发请求,
+    // 由 onFileChange 拿原始 File 后走 uploadDocumentToKb 手动上传。
+    action: '',
+    uploadTrigger: 'custom' as const,
+    multiple: true,
+    accept: '.pdf,.doc,.docx,.txt,.md',
+    showUploadList: false,
+    onFileChange: (files: File[]) => {
+      files.forEach((f) => handleUpload(f));
+    },
+  };
 
   const kbNameById = useMemo(
     () => new Map(kbs.map((kb) => [kb.id, kb.displayName])),
@@ -110,9 +144,23 @@ export default function KnowledgeDocsPage() {
           style={{ marginTop: 16 }}
           title="文档管理"
           headerExtraContent={
-            <Button icon={<RefreshCw size={14} />} onClick={reload} loading={loadingDocuments} disabled={!kbId}>
-              刷新
-            </Button>
+            <Space>
+              <Upload {...uploadProps}>
+                <Button
+                  icon={<UploadIcon size={14} />}
+                  theme="solid"
+                  type="primary"
+                  loading={uploading}
+                  disabled={!kbId}
+                  title={kbId ? '上传文档到当前知识库' : '请先选择知识库'}
+                >
+                  上传文档
+                </Button>
+              </Upload>
+              <Button icon={<RefreshCw size={14} />} onClick={reload} loading={loadingDocuments} disabled={!kbId}>
+                刷新
+              </Button>
+            </Space>
           }
         >
           <Space wrap spacing={12} style={{ marginBottom: 16 }}>
@@ -137,7 +185,7 @@ export default function KnowledgeDocsPage() {
           </Space>
 
           {!kbId ? (
-            <Empty description="请先选择知识库" />
+            <Empty description="请先在上方选择知识库，即可查看文档并上传新文档" />
           ) : (
             <Table
               rowKey="id"

@@ -173,6 +173,39 @@ export async function uploadDocument(payload: Partial<KbDocument>): Promise<KbDo
   return resp.data;
 }
 
+/** 上傳文檔到指定知識庫 — POST /api/v1/kb/upload (multipart)。
+ *
+ * 走 KB 域自己的 upload 端點(而非 RAG/DW 的):它會同時寫 KB 文檔表
+ * (KbDocument,文檔管理頁的數據源)+ 真實 RAG 入庫(豆包 embedding)。
+ * collection_id 爲後端 query param。 */
+export interface KbUploadResult {
+  documentId: string;
+  filename: string;
+  sizeBytes: number;
+  chunkCount: number;
+  indexedIn: string[];
+}
+
+export async function uploadDocumentToKb(kbId: string, file: File): Promise<KbUploadResult> {
+  const form = new FormData();
+  form.append('file', file);
+  const resp = await kbClient.post<never>('/upload', form, {
+    params: { collection_id: kbId },
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  const raw = resp.data as unknown as {
+    document_id: string; filename: string; size_bytes: number;
+    chunk_count: number; indexed_in: string[];
+  };
+  return {
+    documentId: raw.document_id,
+    filename: raw.filename,
+    sizeBytes: raw.size_bytes,
+    chunkCount: raw.chunk_count,
+    indexedIn: raw.indexed_in ?? [],
+  };
+}
+
 /** 觸發文檔處理流水線(切片 / 索引) */
 export async function triggerProcess(documentId: string, rawContent: string) {
   const resp = await kbClient.post<unknown>(`/documents/${documentId}/process`, { rawContent });

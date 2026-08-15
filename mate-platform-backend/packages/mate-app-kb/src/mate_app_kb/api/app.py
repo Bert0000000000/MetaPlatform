@@ -19,6 +19,7 @@ Path alignment (P0 close-out, 2026-07-30):
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -232,9 +233,15 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         if rag is None:
             # Lazily construct with auth + tenant; we re-use the
             # middleware-installed auth config via the app state.
+            # NOTE: read from request.app.state, NOT the closure `app.state` —
+            # under the unified dev server's route-steal mount, request.app is
+            # the HOST app (which carries dev_token); the closure app is this
+            # package's own instance and never sees host state. Dev fast path:
+            # service_identity absent (no Keycloak) → fall back to dev_token.
             c = RAGClient(
-                auth=app.state.service_identity,
+                auth=getattr(request.app.state, "service_identity", None),
                 tenant_id=ctx.tenant_id,
+                static_token=getattr(request.app.state, "dev_token", None),
             )
             return c
         # Reuse injected client; rebind its tenant to the request.
@@ -301,7 +308,10 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                 tid,
             )
             try:
-                data = _rag(request).upload(
+                # Offload sync httpx (→ in-process rag async endpoints) to a
+                # worker thread to avoid deadlocking the event loop.
+                data = await asyncio.to_thread(
+                    _rag(request).upload,
                     raw, file.filename or "unknown", doc_id, file.content_type or "text/plain"
                 )
             except Exception:
@@ -353,7 +363,8 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         cfg = get_retrieval_config(tid)
         rerank = req.rerank_strategy or cfg.rerank_strategy
         try:
-            data = _rag(request).search(
+            data = await asyncio.to_thread(
+                _rag(request).search,
                 req.query, top_k=req.top_k, mode=req.mode, rerank_strategy=rerank,
             )
         except Exception as exc:
@@ -419,7 +430,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         ctx = _require_ctx(request)
         require_tenant(ctx)
         try:
-            data = _rag(request).stats()
+            data = await asyncio.to_thread(_rag(request).stats)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
         return StatsResponse(
@@ -799,7 +810,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         ctx = _require_ctx(request)
         require_tenant(ctx)
         try:
-            data = _rag(request).stats()
+            data = await asyncio.to_thread(_rag(request).stats)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
         body = StatsResponse(

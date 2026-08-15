@@ -28,15 +28,21 @@ class RAGClient:
 
     DEFAULT_URL = "http://localhost:8001"
 
-    def __init__(self, base_url: str | None = None, timeout: float = 60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
+    def __init__(self, base_url: str | None = None, timeout: float = 60.0, *, auth: BearerAuth | None = None, tenant_id: str = "", static_token: str | None = None):
         self._base_url = (base_url or os.environ.get("RAG_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
-        # OutgoingAuthMiddleware injects Bearer + X-Tenant-Id on each call.
-        if auth is not None and tenant_id:
+        if tenant_id:
+            self._client.headers["X-Tenant-Id"] = tenant_id
+        # Dev fast path: a pre-minted HS256 token (INSECURE_SKIP_SIGNATURE) skips
+        # the Keycloak client_credentials round-trip dev has no Keycloak for.
+        if static_token:
+            self._client.headers["Authorization"] = f"Bearer {static_token}"
+        elif auth is not None and tenant_id:
             self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
         # Keep auth/tenant on self for callers that need to switch tenants.
         self._auth = auth
         self._tenant_id = tenant_id
+        self._static_token = static_token
 
     def set_tenant(self, tenant_id: str) -> None:
         self._tenant_id = tenant_id
