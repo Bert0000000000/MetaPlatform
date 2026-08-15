@@ -31,6 +31,10 @@ _pg_client: PGClient | None = None
 _pg_store: PGStore | None = None
 _hybrid_real: HybridClient | None = None
 _graph_real: GraphRAGClient | None = None
+# True only when create_clients() wired the persistent PG backend
+# (RAG_MODE=pg). Consumers (app kb registry, metrics persistence, cascade
+# delete) branch on this flag; memory mode never touches PG.
+_pg_mode: bool = False
 
 
 def get_embedder() -> Embedder:
@@ -57,6 +61,11 @@ def get_pg_store():
 
 def get_pg_client():
     return _pg_client
+
+
+def is_pg_mode() -> bool:
+    """True when create_clients() wired the persistent PG backend."""
+    return _pg_mode
 
 
 def set_dependencies(
@@ -89,6 +98,9 @@ def create_clients():
 
     RAG_MODE values:
       - memory    (default): pure in-memory; no external services.
+      - pg               : everything persists to PG (kb_chunks hybrid +
+                           rag_graph_edges ENTITY + rag_lightrag_chunks
+                           THEMATIC + rag_kb_documents + rag_metrics).
       - hybrid           : try Milvus + (when PG_DSN) PG BM25; degrade to
                            InMemoryHybridClient on init failure.
       - hybrid_v2        : **force** InMemoryHybridV2Client (dev / scoring
@@ -97,8 +109,9 @@ def create_clients():
       - graph            : try Neo4j.
       - full             : try Milvus + Neo4j + LightRAG + RAGFlow.
     """
-    global _hybrid, _graph, _lightrag, _ragflow, _hybrid_real, _graph_real, _pg_client, _pg_store
+    global _hybrid, _graph, _lightrag, _ragflow, _hybrid_real, _graph_real, _pg_client, _pg_store, _pg_mode
     mode = os.environ.get("RAG_MODE", "memory").lower()
+    _pg_mode = False
 
     # Initialize PG BM25 store if PG_DSN is configured.
     pg_dsn = os.environ.get("PG_DSN")
@@ -120,9 +133,19 @@ def create_clients():
     if mode == "pg":
         if _pg_client is not None and _pg_client.is_available():
             from mate_tech_rag.clients.pg_hybrid_client import PgHybridClient
+            from mate_tech_rag.storage.pg_ext_store import PgGraphRAGClient, PgLightRAGClient
 
             _hybrid = PgHybridClient(pg=_pg_client)
-            _log.info("PG persistent hybrid ACTIVE (RAG_MODE=pg)")
+            _graph = PgGraphRAGClient(dsn=pg_dsn)
+            _lightrag = PgLightRAGClient(dsn=pg_dsn)
+            if not (_graph.is_available() and _lightrag.is_available()):
+                raise RuntimeError(
+                    "RAG_MODE=pg requires a reachable PG_DSN for the "
+                    "graph/lightrag stores "
+                    f"(got: {os.environ.get('PG_DSN', '<unset>')})"
+                )
+            _pg_mode = True
+            _log.info("PG persistent hybrid/graph/lightrag ACTIVE (RAG_MODE=pg)")
             _rebuild_registry_from_pg(_pg_client)
         else:
             raise RuntimeError(

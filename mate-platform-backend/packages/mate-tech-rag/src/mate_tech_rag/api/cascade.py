@@ -65,6 +65,7 @@ def delete_document_cascade(tenant_id: str, document_id: str) -> CascadeDeleteRe
     result = CascadeDeleteResult(deleted=False, document_id=document_id)
     if not document_id:
         return result
+    kb_membership_removed = False
 
     # 1. Drop chunks from the 3 content stores (best-effort).
     try:
@@ -95,6 +96,20 @@ def delete_document_cascade(tenant_id: str, document_id: str) -> CascadeDeleteRe
                 result.pg_chunks_removed = int(removed or 0)
             except Exception as exc:  # noqa: BLE001 — best-effort
                 _log.debug("PG cascade delete skipped: %s", exc)
+
+        # Persistent kb membership rows (RAG_MODE=pg only) so a re-uploaded
+        # document under the same kb_id doesn't keep a stale mapping.
+        try:
+            from mate_tech_rag.api.retrieval import is_pg_mode
+
+            if is_pg_mode():
+                from mate_tech_rag.storage.pg_ext_store import get_kb_document_store
+
+                kb_store = get_kb_document_store()
+                if kb_store.is_available():
+                    kb_membership_removed = kb_store.delete_by_document(document_id) > 0
+        except Exception as exc:  # noqa: BLE001 — best-effort
+            _log.debug("cascade: kb_documents delete skipped: %s", exc)
     except Exception as exc:  # noqa: BLE001 — best-effort; index may be uninitialized
         _log.debug("cascade: store iteration failed: %s", exc)
 
@@ -121,5 +136,6 @@ def delete_document_cascade(tenant_id: str, document_id: str) -> CascadeDeleteRe
         or result.graph_tuples_removed > 0
         or result.lightrag_chunks_removed > 0
         or result.pg_chunks_removed > 0
+        or kb_membership_removed
     )
     return result

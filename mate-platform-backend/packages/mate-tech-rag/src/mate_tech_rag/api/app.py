@@ -53,6 +53,7 @@ from mate_tech_rag.api.retrieval import (
     get_lightrag,
     get_pg_store,
     get_ragflow,
+    is_pg_mode,
     retrieve,
 )
 from mate_tech_rag.api.schemas import (
@@ -75,6 +76,7 @@ from mate_tech_rag.api.schemas import (
     UploadResponse,
 )
 from mate_tech_rag.reranker import RerankCandidate, create_reranker
+from mate_tech_rag.storage.pg_ext_store import get_kb_document_store, get_metrics_store
 
 _log = logging.getLogger(__name__)
 
@@ -142,20 +144,51 @@ def _ragflow_override_cm(
 # P0 — kb_id-aware document registry (employee-scoped KB isolation)
 #
 # Track which documents belong to which kb_id so the dw upload pipeline
-# can enforce per-employee KB separation. This is a simple in-memory map
-# (kb_id -> set[document_id]) ready for future kb_id-based retrieval
-# filters.
+# can enforce per-employee KB separation. In memory mode this is the
+# simple in-memory map (kb_id -> set[document_id]) ready for future
+# kb_id-based retrieval filters; under RAG_MODE=pg the same surface is
+# backed by the rag_kb_documents table (survives restarts, see
+# storage/pg_ext_store.py).
 # ------------------------------------------------------------------
 _kb_documents: dict[str, set[str]] = {}
 _kb_lock = threading.Lock()
 
 
-def register_kb_document(kb_id: str, document_id: str) -> None:
+def _kb_pg_store():
+    """Return the PG kb store when running in pg mode (None → memory path)."""
+    if not is_pg_mode():
+        return None
+    try:
+        store = get_kb_document_store()
+        if store.is_available():
+            return store
+    except Exception as exc:  # noqa: BLE001 — never break a request over this
+        _log.warning("kb pg store unavailable: %s", exc)
+    return None
+
+
+def register_kb_document(kb_id: str, document_id: str, tenant_id: str = "default") -> None:
+    store = _kb_pg_store()
+    if store is not None:
+        try:
+            store.register(kb_id, document_id, tenant_id)
+            return
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("register_kb_document PG failed: %s", exc)
+            return
     with _kb_lock:
         _kb_documents.setdefault(kb_id, set()).add(document_id)
 
 
 def unregister_kb_document(kb_id: str, document_id: str) -> None:
+    store = _kb_pg_store()
+    if store is not None:
+        try:
+            store.unregister(kb_id, document_id)
+            return
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("unregister_kb_document PG failed: %s", exc)
+            return
     with _kb_lock:
         ids = _kb_documents.get(kb_id)
         if ids is None:
@@ -166,12 +199,26 @@ def unregister_kb_document(kb_id: str, document_id: str) -> None:
 
 
 def list_kb_documents(kb_id: str) -> list[str]:
+    store = _kb_pg_store()
+    if store is not None:
+        try:
+            return store.list_documents(kb_id)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("list_kb_documents PG failed: %s", exc)
+            return []
     with _kb_lock:
         return sorted(_kb_documents.get(kb_id, set()))
 
 
 def reset_kb_documents() -> None:
-    """Clear the in-memory kb registry (used by tests)."""
+    """Clear the kb registry (used by tests). In pg mode also wipes the
+    rag_kb_documents table."""
+    store = _kb_pg_store()
+    if store is not None:
+        try:
+            store.clear()
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("reset_kb_documents PG failed: %s", exc)
     with _kb_lock:
         _kb_documents.clear()
 
@@ -188,9 +235,20 @@ def create_app() -> FastAPI:
     # Default outbox writer (no-op until a test attaches one).
     if not hasattr(app.state, "outbox_writer"):
         app.state.outbox_writer = InMemoryOutboxWriter()
-    # P2.11: default SLO metrics buckets on app.state.
+    # P2.11: default SLO metrics buckets on app.state. Under RAG_MODE=pg a
+    # PgMetricsStore sink is attached so every flush_every observations the
+    # bucket deltas are persisted to rag_metrics (accumulating upsert).
     if not hasattr(app.state, "metrics"):
-        app.state.metrics = make_default_buckets()
+        pg_sink = None
+        if is_pg_mode():
+            try:
+                metrics_store = get_metrics_store()
+                if metrics_store.is_available():
+                    pg_sink = metrics_store
+            except Exception as exc:  # noqa: BLE001
+                _log.warning("PG metrics sink unavailable: %s", exc)
+                pg_sink = None
+        app.state.metrics = make_default_buckets(pg_sink=pg_sink)
         app.state.metrics_window_size = 32
     elif not hasattr(app.state, "metrics_window_size"):
         app.state.metrics_window_size = 32
@@ -320,7 +378,7 @@ def create_app() -> FastAPI:
                 success += 1
             mark_indexed(tenant_id, doc_id, success)
             if kb_id:
-                register_kb_document(kb_id, doc_id)
+                register_kb_document(kb_id, doc_id, tenant_id=tenant_id)
             # Hook 3 of 5: emit document-uploaded event.
             _emit(
                 request, "rag.document.uploaded", doc_id,
@@ -553,8 +611,21 @@ def create_app() -> FastAPI:
         require_tenant(request.state.ctx)
         buckets = app.state.metrics
 
+        # RAG_MODE=pg: merge the persisted rag_metrics totals into the
+        # snapshot (PG rows + the local unflushed remainder) so counters
+        # survive restarts. Best-effort — memory-only snapshot on failure.
+        pg_metrics: dict[str, dict[str, Any]] = {}
+        if is_pg_mode():
+            try:
+                metrics_store = get_metrics_store()
+                if metrics_store.is_available():
+                    pg_metrics = await asyncio.to_thread(metrics_store.load_all)
+            except Exception as exc:  # noqa: BLE001
+                _log.warning("PG metrics load failed: %s", exc)
+                pg_metrics = {}
+
         def _bucket(name: str) -> MetricsBucket:
-            data = buckets[name].snapshot()
+            data = buckets[name].snapshot_merged(pg_metrics.get(name))
             return MetricsBucket(**data)
 
         return MetricsResponse(
