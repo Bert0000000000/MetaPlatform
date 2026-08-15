@@ -229,6 +229,32 @@ def build_app() -> FastAPI:
     except Exception as e:
         logger.warning("Failed to mount kb/rag: %s", e)
 
+    # mate-tech-ont (本体引擎) — same route-steal pattern. Provides /api/v1/ont/*
+    # endpoints (v1 + v2_kernel router) consumed by the frontend's ontology
+    # pages (Modeling/Datacenter/Action/Graph). create_app() factored out of
+    # main.py specifically so this dev-server mount doesn't trigger the
+    # import-time KEYCLOAK auth + Neo4j connect.
+    try:
+        sys.path.insert(0, _base + r"\mate-tech-ont\src")
+        sys.path.insert(0, _base + r"\mate-kernel\src")
+        from mate_tech_ont.main import create_app as _create_ont_app
+        _ont = _create_ont_app()
+        app.routes.extend(_ont.routes)
+        logger.info("Mounted ont (%d routes)", len(_ont.routes))
+        # Route-steal copies routes but does NOT propagate startup hooks. The
+        # v2_kernel router reads app.state.kernel_repo at request time, so
+        # initialise it now (memory backend, optional demo seed).
+        os.environ.setdefault("KERNEL_BACKEND", "memory")
+        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+        app.state.kernel_repo = InMemoryOntologyRepository()
+        if os.getenv("ONT_SEED_DEMO", "0") == "1":
+            from mate_tech_ont.v2_kernel.seed import seed_demo
+            seed_demo(app.state.kernel_repo)
+        # stdlib logger with structlog active — pass kwargs via `extra`.
+        logger.info("kernel_repo.initialized", extra={"backend": "memory"})
+    except Exception as e:
+        logger.warning("Failed to mount ont: %s", e)
+
     # In-process IAM config reader: the unified dev server runs llmgw + IAM in
     # the same process, so llmgw's embedding resolution reads the shared IAM
     # SystemConfig store directly (no Keycloak service-identity round-trip,
