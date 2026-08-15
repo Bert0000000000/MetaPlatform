@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
         fastapi 'uvicorn[standard]' pydantic pydantic-settings \
         httpx structlog redis 'pyjwt[crypto]' tenacity sse-starlette \
-        mcp pybreaker opentelemetry-api opentelemetry-sdk \
+        'mcp<2.0' pybreaker opentelemetry-api opentelemetry-sdk \
         opentelemetry-exporter-otlp-proto-grpc sqlalchemy sqlmodel
 
 # Install mate-common (workspace dependency)
