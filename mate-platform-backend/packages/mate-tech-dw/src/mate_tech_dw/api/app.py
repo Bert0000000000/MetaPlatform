@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from dataclasses import asdict
@@ -95,6 +96,24 @@ from ..repositories import (
     update_employee_task,
     update_learning_feedback,
 )
+
+# DW_STORE=sql: ensure ORM tables exist + seed the default tenant once
+# (put_* upserts make re-seeding idempotent). Mirrors mate-app-kb's
+# create_app bootstrap — the dw app factory (mate_tech_dw.main.create_app)
+# and scripts/dev_server.py both mount this router module, so the guard
+# runs on first import instead of inside a factory. Engine comes from
+# MATE_DB_URL / DATABASE_URL (PG in real environments, sqlite dev default).
+if os.environ.get("DW_STORE", "memory").lower() == "sql":
+    try:
+        from mate_tech_db.base import create_all as _db_create_all
+
+        _db_create_all()
+        from ..repositories import seed_from_inmemory
+
+        seed_from_inmemory("tenant-default")
+        _log.info("DW_STORE=sql: tables ensured + tenant-default seeded")
+    except Exception as exc:  # noqa: BLE001 — degrade to empty store, never crash import
+        _log.warning("DW_STORE=sql init failed (falling back at repo layer): %s", exc)
 
 router = APIRouter(prefix="/api/v1/dw", tags=["dw"])
 

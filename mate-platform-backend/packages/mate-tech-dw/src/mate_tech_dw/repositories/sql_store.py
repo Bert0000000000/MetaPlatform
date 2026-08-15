@@ -1,12 +1,17 @@
 """SQL-backed repository for the digital workforce domain (P3-W3 TD-5).
 
-Provides read + write for all 14 dw entities. The single tuple field
-(``DwEmployee.kb_ids``) is serialised as newline-separated TEXT on
-write and re-hydrated to a tuple on read.
+Provides read + write for all 14 dw entities plus the employee
+conversation / message pair. Function names + signatures mirror
+``in_memory`` one-to-one so the factory in ``repositories/__init__.py``
+can swap backends with zero API-layer changes (DW_STORE=memory|sql).
+
+The tuple fields (``DwEmployee.kb_ids`` / ``.tools`` / ``.action_rids``)
+are serialised as newline-separated TEXT on write and re-hydrated to a
+tuple on read.
 """
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from mate_tech_db.base import get_session
@@ -18,6 +23,8 @@ from .in_memory import (
     DwCommit,
     DwDocument,
     DwEmployee,
+    DwEmployeeConversation,
+    DwEmployeeMessage,
     DwEmployeeTask,
     DwEvaluation,
     DwExtract,
@@ -27,8 +34,6 @@ from .in_memory import (
     DwModel,
     DwTool,
     DwTrace,
-    DwEmployeeConversation,
-    DwEmployeeMessage,
 )
 
 
@@ -114,6 +119,16 @@ def _orm_to_employee(row: models.DwEmployeeORM) -> DwEmployee:
         status=row.status or "active",
         model_id=row.model_id or "",
         kb_ids=_split_lines(row.kb_ids or ""),
+        is_builtin=bool(row.is_builtin),
+        system_prompt=row.system_prompt or "",
+        tools=_split_lines(row.tools or ""),
+        action_rids=_split_lines(row.action_rids or ""),
+        temperature=float(row.temperature if row.temperature is not None else 0.7),
+        max_tokens=int(row.max_tokens if row.max_tokens is not None else 4096),
+        top_p=float(row.top_p if row.top_p is not None else 0.9),
+        retrieval_method=row.retrieval_method or "hybrid",
+        top_k=int(row.top_k if row.top_k is not None else 5),
+        rerank=bool(row.rerank),
     )
 
 
@@ -187,6 +202,8 @@ def _orm_to_learning_feedback(row: models.DwLearningFeedbackORM) -> DwLearningFe
         rating=row.rating,
         comment=row.comment or "",
         feedback_at=row.feedback_at or "",
+        promoted_document_id=row.promoted_document_id or "",
+        promoted_at=row.promoted_at or "",
     )
 
 
@@ -681,6 +698,8 @@ def put_employee(tenant_id: str, entity: DwEmployee) -> DwEmployee:
         return entity
     s = _session()
     kb_ids_str = _join_lines(entity.kb_ids)
+    tools_str = _join_lines(entity.tools)
+    action_rids_str = _join_lines(entity.action_rids)
     existing = s.get(models.DwEmployeeORM, entity.id)
     if existing:
         existing.name = entity.name
@@ -689,12 +708,28 @@ def put_employee(tenant_id: str, entity: DwEmployee) -> DwEmployee:
         existing.status = entity.status
         existing.model_id = entity.model_id
         existing.kb_ids = kb_ids_str
+        existing.is_builtin = entity.is_builtin
+        existing.system_prompt = entity.system_prompt
+        existing.tools = tools_str
+        existing.action_rids = action_rids_str
+        existing.temperature = entity.temperature
+        existing.max_tokens = entity.max_tokens
+        existing.top_p = entity.top_p
+        existing.retrieval_method = entity.retrieval_method
+        existing.top_k = entity.top_k
+        existing.rerank = entity.rerank
     else:
         s.add(models.DwEmployeeORM(
             id=entity.id, tenant_id=tenant_id,
             name=entity.name, code=entity.code,
             role=entity.role, status=entity.status,
             model_id=entity.model_id, kb_ids=kb_ids_str,
+            is_builtin=entity.is_builtin,
+            system_prompt=entity.system_prompt,
+            tools=tools_str, action_rids=action_rids_str,
+            temperature=entity.temperature, max_tokens=entity.max_tokens,
+            top_p=entity.top_p, retrieval_method=entity.retrieval_method,
+            top_k=entity.top_k, rerank=entity.rerank,
         ))
     s.commit()
     return entity
@@ -825,12 +860,16 @@ def put_learning_feedback(tenant_id: str, entity: DwLearningFeedback) -> DwLearn
         existing.rating = entity.rating
         existing.comment = entity.comment
         existing.feedback_at = entity.feedback_at
+        existing.promoted_document_id = entity.promoted_document_id
+        existing.promoted_at = entity.promoted_at
     else:
         s.add(models.DwLearningFeedbackORM(
             id=entity.id, tenant_id=tenant_id,
             employee_id=entity.employee_id,
             scenario=entity.scenario, rating=entity.rating,
             comment=entity.comment, feedback_at=entity.feedback_at,
+            promoted_document_id=entity.promoted_document_id,
+            promoted_at=entity.promoted_at,
         ))
     s.commit()
     return entity
@@ -904,6 +943,204 @@ def put_trace(tenant_id: str, entity: DwTrace) -> DwTrace:
         ))
     s.commit()
     return entity
+
+
+# ---------------------------------------------------------------------------
+# Write API — in_memory-compatible surface (append_* / create_* / update_*
+# / delete_*). Signatures + semantics mirror in_memory.py one-to-one so
+# repositories/__init__.py can swap backends on DW_STORE with zero
+# API-layer changes. update_* over frozen dataclasses = field patch on the
+# stored row (upsert-equivalent), unknown kwargs ignored.
+# ---------------------------------------------------------------------------
+def append_document(tenant_id: str, doc: DwDocument) -> DwDocument:
+    """Persist a new document. Used by POST /documents/upload."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    return put_document(tenant_id, doc)
+
+
+def delete_document(tenant_id: str, doc_id: str) -> bool:
+    """Delete a single document row (tenant-scoped).
+
+    Returns True if the row was removed, False if it was not present.
+    The RAG fan-out stays the API layer's responsibility — same contract
+    as in_memory.delete_document.
+    """
+    if not tenant_id:
+        return False
+    s = _session()
+    result = s.execute(
+        delete(models.DwDocumentORM).where(
+            models.DwDocumentORM.tenant_id == tenant_id,
+            models.DwDocumentORM.id == doc_id,
+        )
+    )
+    s.commit()
+    return bool(result.rowcount)
+
+
+def create_employee(tenant_id: str, employee: DwEmployee) -> DwEmployee:
+    """Create a new employee record (upsert on primary key)."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    return put_employee(tenant_id, employee)
+
+
+# DwEmployee dataclass field -> ORM column. Tuple fields are joined into
+# their newline-separated TEXT columns before being written.
+_EMPLOYEE_UPDATE_FIELDS: dict[str, str] = {
+    "name": "name", "code": "code", "role": "role", "status": "status",
+    "model_id": "model_id", "kb_ids": "kb_ids", "is_builtin": "is_builtin",
+    "system_prompt": "system_prompt", "tools": "tools",
+    "action_rids": "action_rids", "temperature": "temperature",
+    "max_tokens": "max_tokens", "top_p": "top_p",
+    "retrieval_method": "retrieval_method", "top_k": "top_k",
+    "rerank": "rerank",
+}
+_EMPLOYEE_TUPLE_FIELDS: frozenset[str] = frozenset(
+    {"kb_ids", "tools", "action_rids"}
+)
+
+
+def update_employee(tenant_id: str, employee_id: str, **kwargs) -> DwEmployee | None:
+    """Patch an employee's fields. Returns the updated employee or None.
+
+    Mirrors in_memory.update_employee: only the passed fields change,
+    everything else keeps its stored value (frozen dataclass → row patch).
+    """
+    if not tenant_id:
+        return None
+    s = _session()
+    row = s.execute(
+        select(models.DwEmployeeORM).where(
+            models.DwEmployeeORM.tenant_id == tenant_id,
+            models.DwEmployeeORM.id == employee_id,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    for key, value in kwargs.items():
+        column = _EMPLOYEE_UPDATE_FIELDS.get(key)
+        if column is None:
+            continue  # unknown key — ignore (the API layer never passes one)
+        stored = _join_lines(tuple(value or ())) if key in _EMPLOYEE_TUPLE_FIELDS else value
+        setattr(row, column, stored)
+    s.commit()
+    return _orm_to_employee(row)
+
+
+def delete_employee(tenant_id: str, employee_id: str) -> bool:
+    """Delete an employee. Returns True if deleted, False if not found."""
+    if not tenant_id:
+        return False
+    s = _session()
+    result = s.execute(
+        delete(models.DwEmployeeORM).where(
+            models.DwEmployeeORM.tenant_id == tenant_id,
+            models.DwEmployeeORM.id == employee_id,
+        )
+    )
+    s.commit()
+    return bool(result.rowcount)
+
+
+def append_employee_task(
+    tenant_id: str, task: DwEmployeeTask,
+) -> DwEmployeeTask:
+    """Persist a new employee task. Used by POST /employees/{id}/tasks."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    return put_employee_task(tenant_id, task)
+
+
+def update_employee_task(
+    tenant_id: str, task_id: str, *, status: str, finished_at: str | None = None,
+    duration_ms: int | None = None,
+) -> DwEmployeeTask | None:
+    """Patch a task's status. Returns the updated task or None.
+
+    ``None`` kwargs keep the stored value (same contract as
+    in_memory.update_employee_task).
+    """
+    if not tenant_id:
+        return None
+    s = _session()
+    row = s.execute(
+        select(models.DwEmployeeTaskORM).where(
+            models.DwEmployeeTaskORM.tenant_id == tenant_id,
+            models.DwEmployeeTaskORM.id == task_id,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    row.status = status
+    if finished_at is not None:
+        row.finished_at = finished_at
+    if duration_ms is not None:
+        row.duration_ms = duration_ms
+    s.commit()
+    return _orm_to_employee_task(row)
+
+
+def append_evaluation(
+    tenant_id: str, evaluation: DwEvaluation,
+) -> DwEvaluation:
+    """Persist a new evaluation. Used by POST /employees/{id}/evaluations."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    return put_evaluation(tenant_id, evaluation)
+
+
+def append_learning_feedback(
+    tenant_id: str, feedback: DwLearningFeedback,
+) -> DwLearningFeedback:
+    """Persist learning feedback. Used by POST /learning/feedback."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    return put_learning_feedback(tenant_id, feedback)
+
+
+_FEEDBACK_UPDATE_FIELDS: frozenset[str] = frozenset({
+    "employee_id", "scenario", "rating", "comment", "feedback_at",
+    "promoted_document_id", "promoted_at",
+})
+
+
+def update_learning_feedback(
+    tenant_id: str, feedback_id: str, **kwargs,
+) -> DwLearningFeedback | None:
+    """Patch a learning-feedback record. Returns updated or None if missing.
+
+    Recognized kwargs (frozen dataclass → row patch), notably
+    ``promoted_document_id`` / ``promoted_at`` for the P2.10 promote
+    write-back. Unknown kwargs are ignored — same contract as
+    in_memory.update_learning_feedback.
+    """
+    if not tenant_id or not feedback_id:
+        return None
+    s = _session()
+    row = s.execute(
+        select(models.DwLearningFeedbackORM).where(
+            models.DwLearningFeedbackORM.tenant_id == tenant_id,
+            models.DwLearningFeedbackORM.id == feedback_id,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return None
+    for key, value in kwargs.items():
+        if key in _FEEDBACK_UPDATE_FIELDS:
+            setattr(row, key, value)
+    s.commit()
+    return _orm_to_learning_feedback(row)
+
+
+def append_collaboration(
+    tenant_id: str, collab: DwCollaboration,
+) -> DwCollaboration:
+    """Persist a collaboration session. Used by POST /collaborations."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    return put_collaboration(tenant_id, collab)
 
 
 # ---------------------------------------------------------------------------
@@ -1024,8 +1261,35 @@ def put_employee_message(
             status=entity.status, model=entity.model,
             sequence=entity.sequence, created_at=entity.created_at,
         ))
+    # 触达会话 updated_at（与 in_memory 语义一致：同事务回写，调用方
+    # 传新 updated_at 即可；api 层的冗余 put_employee_conversation 仍兼容）。
+    conv = s.get(models.DwEmployeeConversationORM, entity.conversation_id)
+    if conv is not None and conv.tenant_id == tenant_id:
+        conv.updated_at = entity.created_at
     s.commit()
     return entity
+
+
+def next_employee_message_sequence(
+    tenant_id: str, conversation_id: str,
+) -> int:
+    """返回 conversation 内下一条消息 sequence（已存在 + 1）。
+
+    原子性：COALESCE(MAX(sequence),0)+1 作为一条聚合 SQL 在数据库端
+    单语句完成（语句级原子），不依赖先读后写的两跳；PG 上同 conversation
+    的并发取号由行锁 + 该语句的聚合语义保证不回退。空 conversation /
+    空 tenant 返回 1（与 in_memory 一致）。
+    """
+    s = _session()
+    value = s.execute(
+        select(
+            func.coalesce(func.max(models.DwEmployeeMessageORM.sequence), 0) + 1
+        ).where(
+            models.DwEmployeeMessageORM.tenant_id == tenant_id,
+            models.DwEmployeeMessageORM.conversation_id == conversation_id,
+        )
+    ).scalar_one()
+    return int(value)
 
 
 # ---------------------------------------------------------------------------

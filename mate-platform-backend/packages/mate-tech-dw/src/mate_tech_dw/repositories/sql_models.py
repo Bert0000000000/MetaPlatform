@@ -2,11 +2,12 @@
 
 These models mirror the frozen dataclasses in in_memory.py. The
 factory in repositories/__init__.py selects between in-memory and
-SQL backends based on MATE_DB_URL env var.
+SQL backends based on the DW_STORE env var (sql → MATE_DB_URL).
 
-Table names are prefixed with ``dw_``. The single tuple field
-(``DwEmployee.kb_ids``) is stored as newline-separated TEXT and
-re-hydrated by the ``_orm_to_*`` helpers in sql_store.py.
+Table names are prefixed with ``dw_``. The tuple fields
+(``DwEmployee.kb_ids`` / ``.tools`` / ``.action_rids``) are stored as
+newline-separated TEXT and re-hydrated by the ``_orm_to_*`` helpers
+in sql_store.py.
 """
 from __future__ import annotations
 
@@ -77,6 +78,16 @@ class DwEmployeeORM(Base):
     status: Mapped[str] = mapped_column(String(32), default="active")
     model_id: Mapped[str] = mapped_column(String(64), default="")
     kb_ids: Mapped[str] = mapped_column(Text, default="")  # newline-separated
+    is_builtin: Mapped[bool] = mapped_column(Boolean, default=False)
+    system_prompt: Mapped[str] = mapped_column(Text, default="")
+    tools: Mapped[str] = mapped_column(Text, default="")  # newline-separated
+    action_rids: Mapped[str] = mapped_column(Text, default="")  # newline-separated
+    temperature: Mapped[float] = mapped_column(Float, default=0.7)
+    max_tokens: Mapped[int] = mapped_column(Integer, default=4096)
+    top_p: Mapped[float] = mapped_column(Float, default=0.9)
+    retrieval_method: Mapped[str] = mapped_column(String(32), default="hybrid")
+    top_k: Mapped[int] = mapped_column(Integer, default=5)
+    rerank: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class DwEmployeeTaskORM(Base):
@@ -150,6 +161,8 @@ class DwLearningFeedbackORM(Base):
     rating: Mapped[int] = mapped_column(Integer, default=0)
     comment: Mapped[str] = mapped_column(Text, default="")
     feedback_at: Mapped[str] = mapped_column(String(64), default="")
+    promoted_document_id: Mapped[str] = mapped_column(String(64), default="")
+    promoted_at: Mapped[str] = mapped_column(String(64), default="")
 
 
 class DwModelORM(Base):
