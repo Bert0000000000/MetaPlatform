@@ -1,9 +1,9 @@
 """mate_tech_orchestrator.workers.a2a — A2A-center worker adapter.
 
 Dispatches a task step to the A2A service center by sending a W3C A2A
-message (``POST /api/v1/a2a/messages``) via the ACL ``A2AMessagesClient``.
-The ``ref`` is the target agent id; it is carried in a data part so the
-A2A center's ``/messages`` handler opens a delegation task to it.
+message and running it synchronously via ``POST /api/v1/a2a/execute``
+(returns the real worker outcome) — not the legacy fire-and-forget
+``/messages`` path which leaves the task in ``submitted`` forever.
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ class A2AWorker:
                 {"kind": "data", "data": {"target_agent_id": ref, **arguments}},
             ],
         }
-        task = await self._client.post_message(envelope=envelope)
+        task = await self._client.execute(envelope=envelope)
         task["target_agent_id"] = ref
         return task
 

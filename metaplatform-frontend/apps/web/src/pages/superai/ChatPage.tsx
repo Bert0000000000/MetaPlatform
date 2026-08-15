@@ -589,6 +589,7 @@ export default function ChatPage() {
                 [assistantId]: [
                   ...(prev[assistantId] || []),
                   {
+                    callId: call.callId,
                     type: 'agent',
                     status: 'in_progress',
                     summary: `调度 ${target} 数字员工`,
@@ -602,23 +603,36 @@ export default function ChatPage() {
             onToolResult: (res) => {
               setAgentSteps((prev) => {
                 const steps = [...(prev[assistantId] || [])];
-                const last = steps[steps.length - 1];
-                if (last) {
-                  const role = (res.result.role as string) ?? '数字员工';
-                  const a2aTask =
-                    (res.result.result as { id?: string } | undefined)?.id ??
-                    (res.result.task_id as string) ??
-                    '';
-                  last.status = res.status === 'error' ? 'failed' : 'completed';
-                  last.summary = `已调度 ${role}`;
-                  last.actions = [
+                const idx = steps.findIndex((st) => st.callId === res.callId);
+                if (idx < 0) return prev;
+                const inner = (res.result?.result as Record<string, unknown> | undefined) ?? {};
+                const role = (res.result?.role as string) ?? '数字员工';
+                const workerKind = (res.result?.worker_kind as string) ?? '';
+                const outcomeStatus =
+                  (res.result?.polled_state as string) ??
+                  (inner.status as string) ??
+                  (res.result?.status as string) ??
+                  'completed';
+                const a2aTask = (inner.task_id as string) ?? (res.result?.task_id as string) ?? '';
+                const done = res.status !== 'error' && outcomeStatus === 'completed';
+                const summary = a2aTask
+                  ? `${workerKind ? `${workerKind} 任务` : '任务'} ${a2aTask} · ${outcomeStatus}`
+                  : done
+                    ? '调度完成'
+                    : '委派已提交';
+                const step = {
+                  ...steps[idx],
+                  status: res.status === 'error' ? 'failed' : done ? 'completed' : 'in_progress',
+                  summary: res.status === 'error' ? `调度 ${role} 失败` : `已调度 ${role}`,
+                  actions: [
                     {
-                      status: res.status === 'error' ? 'failed' : 'completed',
-                      summary: a2aTask ? `A2A 任务 ${a2aTask} 已提交` : '委派已提交',
+                      status: res.status === 'error' ? 'failed' : done ? 'completed' : 'in_progress',
+                      summary,
                       description: res.status === 'error' ? JSON.stringify(res.result) : undefined,
                     },
-                  ];
-                }
+                  ],
+                };
+                steps[idx] = step;
                 return { ...prev, [assistantId]: steps };
               });
             },
@@ -663,7 +677,7 @@ export default function ChatPage() {
             },
           },
           controller.signal,
-          { model: currentModel, temperature: temperature / 100 },
+          { model: currentModel, temperature: temperature / 100, conversationId },
         );
         return;
       }

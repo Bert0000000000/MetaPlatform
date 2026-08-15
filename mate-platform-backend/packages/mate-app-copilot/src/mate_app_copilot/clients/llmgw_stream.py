@@ -157,6 +157,70 @@ class LlmgwStreamClient:
         except httpx.HTTPError as exc:
             raise LlmgwStreamError(f"llmgw stream transport error: {exc}") from exc
 
+    async def stream_chat_real_tools(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        model: str,
+        tools: list[dict[str, Any]],
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        provider: str = "openai",
+        base_url: str | None = None,
+        api_key: str | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Streaming function-calling decision turn: ``/chat/real/stream``.
+
+        Yields parsed event dicts:
+          {"type": "token", "content", "reasoning_content", "tool_calls"}
+          {"type": "done", "content", "reasoning_content", "tool_calls",
+           "finish_reason", "usage"}
+        """
+        body: dict[str, Any] = {
+            "provider": provider,
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "tools": tools,
+            "tenant_id": self._tenant_id,
+        }
+        if base_url:
+            body["base_url"] = base_url
+        if api_key:
+            body["api_key"] = api_key
+        if max_tokens is not None:
+            body["max_tokens"] = max_tokens
+        url = f"{self._base_url}/api/v1/llmgw/chat/real/stream"
+        try:
+            headers = self._headers_for()
+            async with (
+                httpx.AsyncClient(timeout=self._timeout) as http,
+                http.stream(
+                    "POST",
+                    url,
+                    json=body,
+                    headers=headers,
+                    auth=None if self._user_token else self._auth_for(),
+                ) as resp,
+            ):
+                if resp.status_code != 200:
+                    raise LlmgwStreamError(
+                        f"llmgw stream(tools) returned {resp.status_code}"
+                    )
+                async for line in resp.aiter_lines():
+                    if not line:
+                        continue
+                    if line.startswith("data: "):
+                        line = line[6:]
+                    if not line or line == "[DONE]":
+                        continue
+                    try:
+                        yield json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+        except httpx.HTTPError as exc:
+            raise LlmgwStreamError(f"llmgw stream(tools) transport error: {exc}") from exc
+
     async def chat_with_tools(
         self,
         *,

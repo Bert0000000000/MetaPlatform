@@ -43,6 +43,7 @@ from ..scheduler.role_registry import (
     binding_to_dict,
     get_role_registry,
 )
+from ..workers.a2a import get_a2a_worker
 from .schemas import (
     DispatchRequest,
     PlanStatus,
@@ -167,6 +168,21 @@ async def dispatch(request: Request, body: DispatchRequest) -> dict[str, Any]:
         tid,
     )
     return result
+
+
+# --- Dispatch task status (poll surface for the copilot agent loop) ---------
+@router.get("/tasks/{task_id}")
+async def task_status(task_id: str, request: Request) -> dict[str, Any]:
+    """Read the outcome of a previously dispatched A2A task.
+
+    Wraps ``A2AWorker.get_task`` so the copilot agent loop can poll a
+    genuinely-async delegation without opening a second outbound client.
+    """
+    tid = _tid(request)
+    try:
+        return await get_a2a_worker().get_task(tenant_id=tid, task_id=task_id)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"task read failed: {e}") from e
 
 
 # --- Plans ------------------------------------------------------------------

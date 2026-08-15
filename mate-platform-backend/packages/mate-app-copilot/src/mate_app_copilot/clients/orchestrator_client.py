@@ -120,3 +120,31 @@ class OrchestratorClient:
                 f"orchestrator dispatch returned {resp.status_code}: {resp.text[:200]}"
             )
         return resp.json()
+
+    async def get_task_status(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        fallback_token: str | None = None,
+    ) -> dict[str, Any]:
+        """GET /api/v1/orchestrator/tasks/{task_id} → A2A task status."""
+        headers = {"X-Tenant-Id": tenant_id}
+        if fallback_token:
+            headers["Authorization"] = f"Bearer {fallback_token}"
+        try:
+            async with httpx.AsyncClient(
+                auth=self._middleware(tenant_id) if not fallback_token else None,
+                timeout=self._timeout,
+            ) as client:
+                resp = await client.get(
+                    f"{self._base_url}/api/v1/orchestrator/tasks/{task_id}",
+                    headers=headers,
+                )
+        except httpx.HTTPError as exc:
+            raise OrchestratorClientError(f"orchestrator task transport error: {exc}") from exc
+        if resp.status_code != 200:
+            raise OrchestratorClientError(
+                f"orchestrator task returned {resp.status_code}: {resp.text[:200]}"
+            )
+        return resp.json()

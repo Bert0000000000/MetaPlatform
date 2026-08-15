@@ -1619,8 +1619,51 @@ async def chat_agent_stream(
       data: [DONE]
     """
     tid = _tid(request)
+    uid = _uid(request)
     messages = body.get("messages", [])
     model = body.get("model", "doubao-pro-32k")
+    temperature = body.get("temperature", 0.7)
+    max_tokens = body.get("maxTokens", body.get("max_tokens", None))
+    if isinstance(max_tokens, str):
+        max_tokens = None
+    conv_id = body.get("conversationId", "")
+
+    # 注入 session 上下文（与 /chat/completions/stream 对齐）：让 LLM 决策时
+    # 知道当前 session_id / tenant / user，下游 dispatch 可透传给数字员工。
+    session_id = body.get("sessionId", "") or conv_id
+
+    # Save user message if we have a conversation (mirror /chat/completions/stream).
+    if conv_id:
+        session = get_session()
+        try:
+            user_msg = MessageORM(
+                id=f"msg-{uuid.uuid4().hex[:12]}",
+                conversation_id=conv_id,
+                tenant_id=tid,
+                user_id=uid,
+                role="user",
+                content=messages[-1]["content"] if messages else "",
+                created_at=_now_iso(),
+                metadata_json=json.dumps({"model": model}),
+            )
+            session.add(user_msg)
+            session.commit()
+        finally:
+            session.close()
+    if session_id:
+        marker = (
+            "\n\n[Session Context]\n"
+            f"- session_id: {session_id}\n"
+            f"- tenant_id: {tid}\n"
+            "- 调度数字员工时，将 session_id 作为 audit / 沙箱关联键。"
+        )
+        if messages and messages[0].get("role") == "system":
+            messages = [
+                {**messages[0], "content": messages[0].get("content", "") + marker},
+                *messages[1:],
+            ]
+        else:
+            messages = [{"role": "system", "content": marker.strip()}, *messages]
 
     llmgw_host = os.getenv("MATE_LLMGW_HOST", "mate-tech-llmgw")
     llmgw_port = int(os.getenv("MATE_LLMGW_PORT", "8008"))
@@ -1660,12 +1703,15 @@ async def chat_agent_stream(
         model = provider_cfg["default_model"]
 
     async def event_stream():
+        agent_steps: list[dict[str, Any]] = []
+        full_response = ""
         try:
             roles = await orchestrator_client.list_roles(
                 tenant_id=tid,
                 fallback_token=user_token or None,
             )
         except OrchestratorClientError as exc:
+            agent_steps.append({"type": "reasoning", "text": f"无法获取数字员工列表：{exc}"})
             yield _agent_event({"type": "reasoning", "text": f"无法获取数字员工列表：{exc}"})
             roles = []
 
@@ -1681,10 +1727,13 @@ async def chat_agent_stream(
                 llm_provider=llm_provider,
                 llm_base_url=llm_base_url,
                 llm_api_key=llm_api_key,
+                temperature=temperature,
+                max_tokens=max_tokens,
             ):
                 etype = event.get("type")
                 if etype == "final":
                     content = str(event.get("content") or "")
+                    full_response += content
                     # Chunk the final answer so the frontend sees streaming deltas.
                     for i in range(0, len(content), 32):
                         chunk = content[i:i + 32]
@@ -1693,17 +1742,63 @@ async def chat_agent_stream(
                             "model": model,
                         })
                 else:
+                    # Persist reasoning / tool_call / tool_result events for the
+                    # assistant message timeline (stored under metadata_json).
+                    if etype in ("reasoning", "tool_call", "tool_result"):
+                        agent_steps.append(event)
                     yield _agent_event(event)
         except LlmgwStreamError as exc:
+            full_response = f"LLM 决策失败：{exc}"
             yield _agent_event({
-                "choices": [{"delta": {"content": f"LLM 决策失败：{exc}"}, "index": 0}],
+                "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             })
         except OrchestratorClientError as exc:
+            full_response = f"调度失败：{exc}"
             yield _agent_event({
-                "choices": [{"delta": {"content": f"调度失败：{exc}"}, "index": 0}],
+                "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             })
         yield "data: [DONE]\n\n"
+
+        # Persist assistant message + update conversation.
+        # Wrap in try/except so a DB failure doesn't break the already-streamed chat
+        # (mirror /chat/completions/stream's defensive persistence).
+        if conv_id and full_response:
+            try:
+                session = get_session()
+                try:
+                    ai_msg = MessageORM(
+                        id=f"msg-{uuid.uuid4().hex[:12]}",
+                        conversation_id=conv_id,
+                        tenant_id=tid,
+                        user_id=uid,
+                        role="assistant",
+                        content=full_response,
+                        created_at=_now_iso(),
+                        metadata_json=json.dumps({
+                            "model": model,
+                            "agentSteps": agent_steps,
+                        }),
+                    )
+                    session.add(ai_msg)
+                    conv = session.query(ConversationORM).filter_by(
+                        id=conv_id, tenant_id=tid, user_id=uid,
+                    ).first()
+                    if conv:
+                        if not conv.title or conv.title in ("新对话", "新会话"):
+                            first_user = next(
+                                (m.get("content", "") for m in messages if m.get("role") == "user"),
+                                "",
+                            )
+                            setattr(conv, "title", (first_user or conv.title)[:24])
+                        conv.message_count = (conv.message_count or 0) + 2
+                        setattr(conv, "preview", full_response[:100])
+                        setattr(conv, "updated_at", _now_iso())
+                    session.commit()
+                finally:
+                    session.close()
+            except Exception:  # noqa: BLE001 — DB 不可用时静默失败，已流式内容不受影响
+                pass
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")

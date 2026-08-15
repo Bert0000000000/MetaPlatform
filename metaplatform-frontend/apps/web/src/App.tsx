@@ -103,6 +103,7 @@ const McpOverviewPage = lazy(() => import('./pages/mcp/OverviewPage'));
 const McpCenterLayout = lazy(() => import('./pages/mcp/McpCenterLayout'));
 const McpSkillHubPage = lazy(() => import('./pages/mcp/SkillHubPage'));
 const A2aInternalAgentsPage = lazy(() => import('./pages/mcp/A2aInternalAgentsPage'));
+const A2aIntegrationGuidePage = lazy(() => import('./pages/mcp/A2aIntegrationGuidePage'));
 const McpConnectionMonitorPage = lazy(() => import('./pages/mcp/ConnectionMonitorPage'));
 const McpToolDetailPage = lazy(() => import('./pages/mcp/ToolDetailPage'));
 const McpToolEditPage = lazy(() => import('./pages/mcp/ToolEditPage'));
@@ -303,6 +304,7 @@ function AppRoutes() {
             {/* A2A 注册中心（内外 Agent） */}
             <Route path="internal-agents" element={<A2aInternalAgentsPage />} />
             <Route path="external-agents" element={<McpExternalAgentListPage />} />
+            <Route path="a2a-guide" element={<A2aIntegrationGuidePage />} />
             <Route path="external" element={<McpExternalPage />} />
             <Route path="integrations" element={<McpExternalPage />} />
             <Route path="trusts" element={<McpTrustManagementPage />} />

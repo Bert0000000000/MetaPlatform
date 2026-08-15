@@ -161,8 +161,18 @@ def _task_state_name(status: str) -> str:
 
 
 def _task_to_a2a_task(task: Any) -> A2ATask:
-    """Map a DelegationTask row into the canonical W3C A2A Task shape."""
+    """Map a DelegationTask row into the canonical W3C A2A Task shape.
+
+    The internal ``result`` payload is surfaced as a ``data`` artifact so
+    callers (the orchestrator A2AWorker / agent-loop poll) can read the
+    real worker outcome instead of only the status state.
+    """
     context_id = str(task.context.get("contextId") or task.id)
+    artifacts: list[A2AArtifact] = []
+    if getattr(task, "result", None):
+        artifacts.append(
+            A2AArtifact(parts=[A2APart(kind="data", data={"result": task.result})])
+        )
     return A2ATask(
         id=task.id,
         contextId=context_id,
@@ -170,6 +180,7 @@ def _task_to_a2a_task(task: Any) -> A2ATask:
             state=_task_state_name(task.status),
             message=str(task.message) or None,
         ),
+        artifacts=artifacts,
     )
 
 
@@ -275,6 +286,62 @@ async def post_message(request: Request, message: A2AMessage) -> A2ATask:
         artifacts=[],
         history=[message],
     )
+
+
+@router.post("/execute")
+async def execute(request: Request, message: A2AMessage) -> dict[str, Any]:
+    """Accept a W3C A2A message and execute it synchronously.
+
+    Creates the delegation task, then runs ``A2ADelegator.delegate_and_update``
+    inline so the response carries the real outcome (``completed`` /
+    ``failed`` / ``timeout`` / ``pending``) plus the worker ``result`` —
+    instead of a dangling task that stays ``submitted`` forever (the
+    ``/messages`` fire-and-forget path).
+    """
+    tid = _tid(request)
+    context = _message_data(message)
+    context.update(
+        {
+            "messageId": message.messageId,
+            "role": message.role,
+            "contextId": message.contextId,
+        }
+    )
+    target_agent_id = str(context.get("target_agent_id", "") or "")
+    task = create_delegation(tid, target_agent_id, _message_text(message), context)
+    delegator = get_default_delegator()
+    try:
+        outcome = await delegator.delegate_and_update(
+            tenant_id=tid,
+            task_id=task.id,
+            target_agent_id=target_agent_id,
+            message=_message_text(message),
+            context=context,
+            trace_id=getattr(request.state.ctx, "trace_id", ""),
+        )
+    except AgentNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "E_AGENT_NOT_FOUND",
+                "message": str(e),
+                "target_agent_id": target_agent_id,
+            },
+        ) from e
+    _emit(
+        request,
+        "a2a.delegation.executed",
+        task.id,
+        {
+            "task_id": task.id,
+            "target_agent_id": target_agent_id,
+            "status": outcome.get("status", "pending"),
+        },
+        tid,
+    )
+    outcome.setdefault("task_id", task.id)
+    outcome.setdefault("target_agent_id", target_agent_id)
+    return outcome
 
 
 # --- Delegation (1 POST, deprecated in favour of /messages) -----------------

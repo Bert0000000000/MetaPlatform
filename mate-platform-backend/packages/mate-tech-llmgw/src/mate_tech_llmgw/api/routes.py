@@ -12,10 +12,12 @@ Path alignment (P0 close-out, 2026-07-30):
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..stream.sse import make_streaming_response
@@ -316,6 +318,7 @@ class RealChatResponseAPI(BaseModel):
 
     content: str
     model: str
+    reasoning_content: str | None = None
     finish_reason: str | None = None
     usage: dict[str, int] = {}
     provider: str = ""
@@ -381,12 +384,66 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
         return RealChatResponseAPI(
             content=resp.content,
             model=resp.model,
+            reasoning_content=resp.reasoning_content or None,
             finish_reason=resp.finish_reason,
             usage=resp.usage,
             provider=req.provider,
             fallback=is_fallback,
             tool_calls=resp.tool_calls,
         )
+
+
+@router.post("/chat/real/stream")
+async def real_chat_stream_endpoint(req: RealChatRequest):
+    """Streaming function-calling decision turn (SuperAI agent loop).
+
+    Same request shape as ``/chat/real`` but streams the provider deltas
+    as SSE events so callers see reasoning tokens in real time:
+
+      data: {"type": "token", "content", "reasoning_content", "tool_calls"}
+      data: {"type": "done", "content", "reasoning_content", "tool_calls",
+             "finish_reason", "usage"}
+    """
+    await _enforce_monthly_ceiling(req)
+    if req.provider not in ("openai", "custom"):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"streaming only supports openai/custom providers, got "
+                f"{req.provider!r}"
+            ),
+        )
+    from ..providers.real_openai_provider import RealOpenAIProvider
+
+    model = req.model or "gpt-4o-mini"
+    provider = RealOpenAIProvider(
+        model=model,
+        base_url=req.base_url,
+        api_key=req.api_key,
+    )
+
+    async def _event_stream():
+        try:
+            async for event in provider.stream_chat(
+                req.messages,
+                temperature=req.temperature,
+                max_tokens=req.max_tokens,
+                tools=req.tools,
+                tenant_id=req.tenant_id,
+            ):
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        finally:
+            await provider.aclose()
+
+    return StreamingResponse(
+        _event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X_Accel_Buffering": "no",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -41,6 +41,7 @@ export const SERVICES: Record<string, ServiceRoute> = {
   obs:     { name: 'tech-obs',     port: 8401, apiPrefix: '/api/v1/obs',     label: 'OBS' },
   msg:     { name: 'tech-msg',     port: 8411, apiPrefix: '/api/v1/msg',     label: 'MSG' },
   a2a:     { name: 'mate-a2a',     port: 8502, apiPrefix: '/api/v1/a2a',     label: 'A2A' },
+  orchestrator: { name: 'mate-tech-orchestrator', port: 8505, apiPrefix: '/api/v1/orchestrator', label: 'ORCHESTRATOR' },
   gw:      { name: 'tech-gw',      port: 8000, apiPrefix: '/api/v1',         label: 'GW' },
 };
 

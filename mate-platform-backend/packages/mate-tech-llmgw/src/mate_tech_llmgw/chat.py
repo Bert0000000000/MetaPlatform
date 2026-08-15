@@ -26,6 +26,7 @@ class ChatResponse:
 
     content: str
     model: str
+    reasoning_content: str = ""
     finish_reason: str | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     usage: dict[str, int] = field(default_factory=dict)

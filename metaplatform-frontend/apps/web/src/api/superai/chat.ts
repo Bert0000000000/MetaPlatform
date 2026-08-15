@@ -184,7 +184,7 @@ export async function streamAgentChat(
   messages: StreamMessage[],
   callbacks: StreamAgentCallbacks,
   signal?: AbortSignal,
-  options?: { model?: string; temperature?: number; maxTokens?: number },
+  options?: { model?: string; temperature?: number; maxTokens?: number; conversationId?: string },
 ): Promise<void> {
   const token = getToken();
   const user = getUser();
@@ -203,6 +203,7 @@ export async function streamAgentChat(
         maxTokens: options?.maxTokens ?? 2048,
         user: user?.id,
         appId: 'app-superai',
+        ...(options?.conversationId ? { conversationId: options.conversationId } : {}),
       }),
       signal,
     });

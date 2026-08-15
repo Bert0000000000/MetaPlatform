@@ -18,6 +18,7 @@ The provider implements the same ``chat`` signature as the existing
 """
 from __future__ import annotations
 
+import json
 import os
 from typing import Any
 
@@ -164,6 +165,9 @@ class RealOpenAIProvider:
         return ChatResponse(
             content=message.get("content", "") or "",
             model=data.get("model", self.model),
+            reasoning_content=(
+                message.get("reasoning_content") or message.get("reasoning") or ""
+            ),
             finish_reason=choice.get("finish_reason"),
             tool_calls=message.get("tool_calls", []) or [],
             usage={
@@ -176,6 +180,141 @@ class RealOpenAIProvider:
     @property
     def dim(self) -> int:
         return 0
+
+    async def stream_chat(
+        self,
+        messages: list[ChatMessage],
+        *,
+        temperature: float = 1.0,
+        max_tokens: int | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        tenant_id: str = "",
+        **kwargs: Any,
+    ) -> Any:
+        """Stream OpenAI Chat Completions deltas (``stream: true``).
+
+        Yields token / done events with accumulated ``reasoning_content``
+        and per-index tool_calls (OpenAI streams arguments as fragments
+        that we join). On transport failure yields a single stub done event.
+        """
+        api_key = self._resolve_api_key(tenant_id)
+        if not api_key:
+            logger.warning(
+                "llmgw.real.openai.stream.no_key",
+                tenant_id=tenant_id,
+                model=self.model,
+            )
+            yield self._done_event(_stub_response(self.model, messages))
+            return
+
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": [self._serialize_message(m) for m in messages],
+            "temperature": temperature,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
+        if max_tokens:
+            payload["max_tokens"] = max_tokens
+        if tools:
+            payload["tools"] = tools
+
+        content = ""
+        reasoning = ""
+        tool_calls: list[dict[str, Any]] = []
+        finish_reason: str | None = None
+        usage: dict[str, int] = {}
+        try:
+            client = await self._get_client(api_key)
+            async with client.as_to("POST", "/chat/completions", json=payload) as resp:
+                resp.raise_for_status()
+                async for raw in resp.aiter_lines():
+                    if not raw:
+                        continue
+                    line = raw[6:] if raw.startswith("data: ") else raw
+                    if line.strip() == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    choices = chunk.get("choices") or []
+                    if not choices:
+                        if chunk.get("usage"):
+                            usage = chunk["usage"]
+                        continue
+                    delta = choices[0].get("delta", {})
+                    finish_reason = choices[0].get("finish_reason") or finish_reason
+                    changed = False
+                    rc = delta.get("reasoning_content") or delta.get("reasoning")
+                    if rc:
+                        reasoning += rc
+                        changed = True
+                    c = delta.get("content")
+                    if c:
+                        content += c
+                        changed = True
+                    for tc in delta.get("tool_calls") or []:
+                        idx = tc.get("index", 0)
+                        while len(tool_calls) <= idx:
+                            tool_calls.append({
+                                "id": None, "type": "function",
+                                "function": {"name": None, "arguments": ""},
+                            })
+                        entry = tool_calls[idx]
+                        if tc.get("id"):
+                            entry["id"] = tc["id"]
+                        fn = tc.get("function") or {}
+                        if fn.get("name"):
+                            entry["function"]["name"] = fn["name"]
+                        if fn.get("arguments"):
+                            entry["function"]["arguments"] += fn["arguments"]
+                        changed = True
+                    if changed:
+                        yield {
+                            "type": "token",
+                            "content": content,
+                            "reasoning_content": reasoning,
+                            "tool_calls": [dict(tc) for tc in tool_calls],
+                        }
+        except httpx.TimeoutException:
+            logger.warning(
+                "llmgw.real.openai.stream.timeout",
+                tenant_id=tenant_id,
+                model=self.model,
+            )
+            yield self._done_event(_stub_response(self.model, messages))
+            return
+        except httpx.HTTPError as e:
+            logger.warning(
+                "llmgw.real.openai.stream.error",
+                tenant_id=tenant_id,
+                model=self.model,
+                error=str(e),
+            )
+            yield self._done_event(_stub_response(self.model, messages))
+            return
+
+        yield {
+            "type": "done",
+            "content": content,
+            "reasoning_content": reasoning,
+            "tool_calls": [dict(tc) for tc in tool_calls],
+            "finish_reason": finish_reason,
+            "usage": usage,
+        }
+
+    @staticmethod
+    def _done_event(stub: ChatResponse) -> dict[str, Any]:
+        """Build a ``done`` event for the stub-fallback path."""
+        return {
+            "type": "done",
+            "content": stub.content,
+            "reasoning_content": "",
+            "tool_calls": [],
+            "finish_reason": stub.finish_reason,
+            "usage": stub.usage,
+        }
 
     async def aclose(self) -> None:
         if self._client is not None:

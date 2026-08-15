@@ -52,6 +52,17 @@ class A2AMessagesClient:
         r.raise_for_status()
         return r.json()
 
+    async def execute(self, *, envelope: dict[str, Any]) -> dict[str, Any]:
+        """Execute a W3C A2A message synchronously; returns the real outcome.
+
+        ``POST /api/v1/a2a/execute`` creates the delegation task, runs it
+        inline, and returns ``{status, result, task_id, ...}`` so callers
+        get the worker's actual result rather than a fire-and-forget task.
+        """
+        r = await self._client.post(f"{self.base_url}/api/v1/a2a/execute", json=envelope)
+        r.raise_for_status()
+        return r.json()
+
     async def get_task(self, *, task_id: str) -> dict[str, Any]:
         """Read an A2A task by id."""
         r = await self._client.get(f"{self.base_url}/api/v1/a2a/tasks/{task_id}")

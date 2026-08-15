@@ -30,6 +30,7 @@ const HUB_SUBTABS: Record<string, SubTabItem[]> = {
   a2a: [
     { label: '内部 Agent', path: '/mcp/internal-agents' },
     { label: '外部 Agent', path: '/mcp/external-agents' },
+    { label: '接入说明', path: '/mcp/a2a-guide' },
   ],
   skill: [],
 };
@@ -39,6 +40,7 @@ function groupForPath(pathname: string): string {
   if (
     pathname.startsWith('/mcp/internal-agents') ||
     pathname.startsWith('/mcp/external-agents') ||
+    pathname.startsWith('/mcp/a2a-guide') ||
     pathname.startsWith('/mcp/integrations') ||
     pathname.startsWith('/mcp/trusts') ||
     pathname.startsWith('/mcp/collaborations') ||
