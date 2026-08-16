@@ -135,6 +135,17 @@ SANDBOX-01 → SANDBOX-02
 
 **测试**：kernel + tech-ont 511/514 pass（3 pre-existing failure 经 `git stash` 验证不在本 Batch）；PG e2e 5/5 pass；`RUNTIME-MVP-02-ACCEPTANCE.md` 收口。
 
+## 6.5 v3.1 增补：组合内核（2026-08-17 收口）
+
+> cordis 范式引入评估（`.tmp-research/cordis/cordis-analysis.html`）A 案：**引原理不引组件**。
+> ADR-0042 决策 + 四条形式化不变量（I1 恢复 / I2 保序 / I3 环活性 / I4 惰性）作为验收断言。
+
+| Batch | 范围 | 状态 | 证据 |
+|---|---|---|---|
+| **MP-COMP-01** | `mate-platform/composition` 内核（effect/coeffect/fiber，674 行零依赖）+ orchestrator 能力反应式运行时试点（lifespan + capability 端点 + dispatch overlay） | ✅ Accepted 2026-08-17 | `evidence/MP-COMP-01-ACCEPTANCE.md` |
+
+**关键增量**：能力可用性 = coeffect（`capability:{tenant}:{name}`）；工具下线 → 依赖角色 fiber 反应式失活（效果全部逆回收）→ 回归自动复激活；裸 TestClient（无 lifespan）回退与旧行为逐字节一致。19 内核 tests + 9 试点 tests；pyright-strict / ruff 干净；mate-platform 287 全量回归零影响。
+
 ## 7. 关联文档
 
 - 蓝图：`docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4
