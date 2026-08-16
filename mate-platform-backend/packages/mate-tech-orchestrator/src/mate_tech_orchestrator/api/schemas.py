@@ -22,6 +22,13 @@ class RegisterRoleRequest(BaseModel):
     capabilities: list[CapabilityBindingRequest] = Field(default_factory=list)
 
 
+class TrackCapabilityRequest(BaseModel):
+    """Body for POST /api/v1/orchestrator/capabilities (MP-COMP-01)."""
+
+    name: str = Field(min_length=1, description="capability name (e.g. MCP tool name)")
+    ref: str = Field(min_length=1, description="worker reference (e.g. MCP tool ref)")
+
+
 class DispatchRequest(BaseModel):
     """Body for POST /api/v1/orchestrator/dispatch."""
 

@@ -168,6 +168,20 @@ components:
         feedback:
           type: string
           default: ""
+    TrackCapabilityRequest:
+      type: object
+      required:
+      - name
+      - ref
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: 能力名（如 MCP 工具名）
+        ref:
+          type: string
+          minLength: 1
+          description: worker 引用（如 MCP 工具 ref）
 paths:
   /healthz:
     get:
@@ -256,6 +270,66 @@ paths:
         '404':
           description: 角色未注册
       operationId: orchestratorDeleteRolesRole
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/capabilities:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 能力上线（MCP 工具注册通知，MP-COMP-01）
+      tags: [orchestrator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackCapabilityRequest'
+      responses:
+        '201':
+          description: 已跟踪（返回 fiber 快照）
+        '401':
+          description: 缺少或无效 JWT
+        '503':
+          description: capability runtime 未启动（lifespan 未运行）
+      operationId: orchestratorPostCapabilities
+      x-mate-implementation-status: implemented
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: 能力/角色 fiber 状态快照
+      tags: [orchestrator]
+      responses:
+        '200':
+          description: "OK — {capabilities: {key: state}, roles: {key: state}}"
+        '503':
+          description: capability runtime 未启动
+      operationId: orchestratorGetCapabilities
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/capabilities/{name}:
+    delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 能力下线（依赖角色 fiber 反应式失活，MP-COMP-01）
+      tags: [orchestrator]
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 已撤销（返回 fiber 快照）
+        '404':
+          description: 能力未跟踪
+        '503':
+          description: capability runtime 未启动
+      operationId: orchestratorDeleteCapabilitiesName
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/dispatch:
     post:

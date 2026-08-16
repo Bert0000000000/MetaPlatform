@@ -11,6 +11,7 @@ from typing import Any
 
 from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
 
+from .capability_runtime import CapabilityRuntime, get_capability_runtime
 from .role_registry import (
     CapabilityBinding,
     DigitalEmployeeRole,
@@ -42,6 +43,7 @@ class Dispatcher:
         mcp_worker: Any = None,
         a2a_worker: Any = None,
         local_executor: Any = None,
+        capability_runtime: CapabilityRuntime | None = None,
     ) -> None:
         self._registry = registry or get_role_registry()
         self._selector = AgentSelector()
@@ -49,6 +51,7 @@ class Dispatcher:
         self._mcp_worker = mcp_worker
         self._a2a_worker = a2a_worker
         self._local_executor = local_executor
+        self._capability_runtime = capability_runtime
 
     async def dispatch(
         self,
@@ -106,6 +109,16 @@ class Dispatcher:
     def _resolve_by_capability(
         self, tenant_id: str, capability: str,
     ) -> tuple[DigitalEmployeeRole, CapabilityBinding]:
+        # MP-COMP-01 overlay: when the reactive capability runtime tracks
+        # this capability and its provider fiber is not ACTIVE, the tool is
+        # gone — refuse before invoking a stale binding. Untracked
+        # capabilities keep the legacy behavior unchanged.
+        runtime = self._capability_runtime or get_capability_runtime()
+        if runtime is not None and not runtime.allows(tenant_id, capability):
+            raise NoRoleForTaskError(
+                f"capability {capability!r} is tracked but not available "
+                f"for tenant {tenant_id!r} (tool unmounted)"
+            )
         found = self._registry.find_by_capability(tenant_id, capability)
         if found is None:
             raise NoRoleForTaskError(

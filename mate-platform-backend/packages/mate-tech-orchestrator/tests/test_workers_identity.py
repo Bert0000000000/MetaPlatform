@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import jwt
-
 from mate_tech_orchestrator.workers.identity import LegacyServiceIdentity, build_service_identity
 
 

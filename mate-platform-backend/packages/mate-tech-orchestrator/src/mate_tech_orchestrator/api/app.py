@@ -27,6 +27,7 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
+from ..scheduler.capability_runtime import get_capability_runtime
 from ..scheduler.dispatcher import (
     DispatcherError,
     NoRoleForTaskError,
@@ -100,6 +101,9 @@ async def register_role(request: Request, body: RegisterRoleRequest) -> dict[str
         )
     except (RoleRegistryError, ValueError) as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    runtime = get_capability_runtime()
+    if runtime is not None:
+        await runtime.attach_role(role)  # MP-COMP-01: bind fate to capability liveness
     _emit(
         request,
         "orchestrator.role.registered",
@@ -135,6 +139,9 @@ async def unregister_role(role: str, request: Request) -> dict[str, str]:
     ok = get_role_registry().unregister(tid, role)
     if not ok:
         raise HTTPException(status_code=404, detail=f"role not registered: {role}")
+    runtime = get_capability_runtime()
+    if runtime is not None:
+        await runtime.detach_role(tid, role)  # MP-COMP-01: drop the role fiber
     _emit(request, "orchestrator.role.unregistered", role, {"role": role}, tid)
     return {"deleted": role}
 
@@ -181,7 +188,7 @@ async def task_status(task_id: str, request: Request) -> dict[str, Any]:
     tid = _tid(request)
     try:
         return await get_a2a_worker().get_task(tenant_id=tid, task_id=task_id)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise HTTPException(status_code=502, detail=f"task read failed: {e}") from e
 
 

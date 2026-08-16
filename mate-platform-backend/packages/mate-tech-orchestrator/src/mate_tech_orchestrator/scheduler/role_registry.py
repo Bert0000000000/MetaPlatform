@@ -129,6 +129,10 @@ class RoleRegistry:
     def list(self, tenant_id: str) -> list[DigitalEmployeeRole]:
         return [r for (tid, _), r in self._roles.items() if tid == tenant_id]
 
+    def iter_all(self) -> list[DigitalEmployeeRole]:
+        """All registered roles across tenants (startup wiring)."""
+        return list(self._roles.values())
+
     def unregister(self, tenant_id: str, role: str) -> bool:
         removed = self._roles.pop((tenant_id, role), None)
         if removed is None:

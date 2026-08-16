@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import pytest
-
-from mate_kernel.agent.orchestrator import AgentRole
 from mate_tech_orchestrator.bootstrap import seed_default_roles
 from mate_tech_orchestrator.scheduler.role_registry import get_role_registry
+
+from mate_kernel.agent.orchestrator import AgentRole
 
 
 @pytest.fixture(autouse=True)

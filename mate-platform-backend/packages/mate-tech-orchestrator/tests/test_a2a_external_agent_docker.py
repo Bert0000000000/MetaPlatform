@@ -15,8 +15,7 @@ the rebuilt image once the compose stack is up.
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
-
-from mate_a2a_external_agent.server import app, SKILLS
+from mate_a2a_external_agent.server import SKILLS, app
 
 
 def _client() -> TestClient:
