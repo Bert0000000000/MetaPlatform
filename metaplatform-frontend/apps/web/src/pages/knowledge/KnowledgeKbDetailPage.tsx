@@ -3,19 +3,20 @@
  * --------------------------------------------------
  * 路由: /knowledge/kb/:kbId
  * 从知识库列表「查看详情」进入。展示 KB 信息 + 文档列表,
+ * 支持直接上传文档到当前 KB(真实入库 RAG),
  * 点击文档行展开该文档的切片(chunk)原文。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Button, Card, Collapse, Descriptions, Empty, Input, Spin,
-  Table, Tag, Toast, Typography,
+  Button, Card, Collapse, Descriptions, Empty, Input, Spin, Space, Toast,
+  Table, Tag, Typography,
 } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
-import { ArrowLeft, FileText, RefreshCw, Search } from 'lucide-react';
+import { ArrowLeft, FileText, RefreshCw, Search, Upload as UploadIcon } from 'lucide-react';
 import { useApiErrorBoundary, useAsync } from '@mate/shared';
 import {
-  getKbDetail, listDocuments, getDocumentChunks,
+  getKbDetail, listDocuments, getDocumentChunks, uploadDocumentToKb,
   type KbDocument, type KbEntity, type DocumentChunk,
 } from '@/api/kb';
 
@@ -42,6 +43,29 @@ export default function KnowledgeKbDetailPage() {
   const [activeDoc, setActiveDoc] = useState<string>();
   const [chunksByDoc, setChunksByDoc] = useState<Record<string, DocumentChunk[]>>({});
   const [loadingChunks, setLoadingChunks] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const result = await uploadDocumentToKb(kbId, file);
+      Toast.success(`「${result.filename}」已入库（${result.chunkCount} 个切片，已建立索引）`);
+      setChunksByDoc({});
+      await reload();
+    } catch (e) {
+      report(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    files.forEach((f) => handleUpload(f));
+    // 允许重复选同一个文件再次上传
+    e.target.value = '';
+  };
 
   const { data: kb, loading: loadingKb } = useAsync<KbEntity | null>(
     () => (kbId ? getKbDetail(kbId).catch(() => null) : Promise.resolve(null)),
@@ -110,9 +134,32 @@ export default function KnowledgeKbDetailPage() {
             </span>
           }
           headerExtraContent={
-            <Button icon={<RefreshCw size={14} />} onClick={reload} loading={loadingDocs}>
-              刷新
-            </Button>
+            <Space>
+              {/* 原生 input + ref:不依赖 Semi Upload 的回调语义(uploadTrigger="custom"
+                  下 onFileChange 实测不触发)。选中即走 uploadDocumentToKb 手动上传,
+                  同时写 KB 文档表 + 真实 RAG 入库。 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.txt,.md"
+                multiple
+                hidden
+                onChange={onFilesPicked}
+              />
+              <Button
+                icon={<UploadIcon size={14} />}
+                theme="solid"
+                type="primary"
+                loading={uploading}
+                title={`上传文档到「${kb?.displayName ?? kbId}」`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                上传文档
+              </Button>
+              <Button icon={<RefreshCw size={14} />} onClick={reload} loading={loadingDocs}>
+                刷新
+              </Button>
+            </Space>
           }
         >
           <Spin spinning={loadingKb}>
@@ -168,7 +215,7 @@ export default function KnowledgeKbDetailPage() {
                 return <Empty description="暂无切片内容（文档可能未索引，或服务为内存模式重启后清空）" style={{ padding: 12 }} />;
               }
               return (
-                <Collapse style={{ background: 'var(--semi-color-bg-1)' }}>
+                <Collapse style={{ background: 'var(--semi-color-bg-1)' }} defaultActiveKey={chunks[0]?.chunkId}>
                   {chunks.map((c, i) => (
                     <Collapse.Panel
                       header={`切片 ${i + 1} · ${c.chunkId.slice(0, 8)}…`}
