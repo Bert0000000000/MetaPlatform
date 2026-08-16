@@ -82,7 +82,7 @@ async def test_target_flip_mid_unload_chains_reload() -> None:
     task = asyncio.create_task(pf1.dispose())
     await asyncio.sleep(0)
     await asyncio.sleep(0)
-    pf2 = await ctx.use(p2)  # svc satisfied again mid-unload
+    await ctx.use(p2)             # svc satisfied again mid-unload
     await asyncio.sleep(0)
     unload_gate.set()        # unload completes → must chain reload
     await task

@@ -104,7 +104,7 @@ async def test_ordering_holds_with_async_disposers() -> None:
     dep = Component(name="d", inject=frozenset({"svc"}), provide=frozenset(), apply=d_apply)
 
     pf = await ctx.use(provider)
-    df = await ctx.use(dep)
+    await ctx.use(dep)
     await ctx.start()
 
     await pf.dispose()
