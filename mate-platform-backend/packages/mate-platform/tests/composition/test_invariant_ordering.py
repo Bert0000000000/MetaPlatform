@@ -7,6 +7,7 @@ async disposers.
 """
 from __future__ import annotations
 
+import asyncio
 import sys
 from pathlib import Path
 
@@ -89,13 +90,13 @@ async def test_ordering_holds_with_async_disposers() -> None:
         fctx.set("svc", "v")
 
         async def p_d():
-            await __import__("asyncio").sleep(0)
+            await asyncio.sleep(0)
             events.append("provider-dispose")
         yield p_d
 
     async def d_apply(fctx):
         async def d_d():
-            await __import__("asyncio").sleep(0)
+            await asyncio.sleep(0)
             events.append("dep-dispose")
         yield d_d
 

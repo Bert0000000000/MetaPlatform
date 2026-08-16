@@ -37,7 +37,8 @@ async def test_use_raises_cycle_error_with_path() -> None:
         await ctx.use(b)
     cycle = exc_info.value.cycle
     assert set(cycle) == {"a", "b"}
-    assert ("a", "b") in ctx.detect_cycles()
+    # b was rejected — the registered graph (a alone) holds no cycle.
+    assert ctx.detect_cycles() == []
 
 
 @pytest.mark.asyncio

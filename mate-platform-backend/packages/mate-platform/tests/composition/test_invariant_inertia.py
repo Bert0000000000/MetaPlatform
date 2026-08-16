@@ -44,9 +44,10 @@ async def test_target_flip_mid_load_chains_unload() -> None:
 
     task = asyncio.create_task(ctx.start())
     await asyncio.sleep(0)  # d enters LOADING, blocked on gate
-    await pf.dispose()      # target flips to None mid-load
+    dispose_task = asyncio.create_task(pf.dispose())  # target flips to None
     await asyncio.sleep(0)
     gate.set()              # load completes → must chain unload
+    await dispose_task
     await task
 
     assert df.state is FiberState.PENDING

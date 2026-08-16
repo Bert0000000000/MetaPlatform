@@ -5,6 +5,7 @@ yield boundaries, and partial disposal when apply raises.
 """
 from __future__ import annotations
 
+import asyncio
 import sys
 from pathlib import Path
 
@@ -41,7 +42,7 @@ async def test_async_disposers_run_sequentially_in_reverse() -> None:
     events: list[str] = []
 
     async def d(name: str) -> None:
-        await __import__("asyncio").sleep(0)
+        await asyncio.sleep(0)
         events.append(f"d{name}")
 
     async def cb():
@@ -58,17 +59,23 @@ async def test_async_disposers_run_sequentially_in_reverse() -> None:
 async def test_guard_stops_iteration_keeps_yielded_disposers() -> None:
     ctx = create_context("root")
     events: list[str] = []
+    gate = asyncio.Event()
 
     async def apply(fctx):
         events.append("apply:e1")
         yield lambda: events.append("apply:d1")
-        # Long-running step: never yields again until interrupted.
-        await __import__("asyncio").Event().wait()
+        await gate.wait()
+        yield lambda: events.append("apply:d2")  # must be discarded
 
     comp = Component(name="stuck", inject=frozenset(), provide=frozenset(), apply=apply)
     fiber = await ctx.use(comp)
-    await __import__("asyncio").sleep(0)  # let the drive start
-    await fiber.dispose()
+    await asyncio.sleep(0)  # drive reaches the blocked await inside apply
+
+    task = asyncio.create_task(fiber.dispose())
+    await asyncio.sleep(0)  # dispose marks retired and joins the drive
+    gate.set()              # apply resumes, yields d2 → guard discards it
+    await task
+
     assert fiber.state is FiberState.DISPOSED
     assert events == ["apply:e1", "apply:d1"]
 
