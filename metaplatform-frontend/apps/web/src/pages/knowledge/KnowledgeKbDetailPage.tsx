@@ -6,11 +6,11 @@
  * 支持直接上传文档到当前 KB(真实入库 RAG),
  * 点击文档行展开该文档的切片(chunk)原文。
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Button, Card, Collapse, Descriptions, Empty, Input, Spin, Space, Toast,
-  Table, Tag, Typography,
+  Table, Tag, Typography, Upload,
 } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { ArrowLeft, FileText, RefreshCw, Search, Upload as UploadIcon } from 'lucide-react';
@@ -44,7 +44,6 @@ export default function KnowledgeKbDetailPage() {
   const [chunksByDoc, setChunksByDoc] = useState<Record<string, DocumentChunk[]>>({});
   const [loadingChunks, setLoadingChunks] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -55,16 +54,10 @@ export default function KnowledgeKbDetailPage() {
       await reload();
     } catch (e) {
       report(e instanceof Error ? e : new Error(String(e)));
+      throw e;
     } finally {
       setUploading(false);
     }
-  };
-
-  const onFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    files.forEach((f) => handleUpload(f));
-    // 允许重复选同一个文件再次上传
-    e.target.value = '';
   };
 
   const { data: kb, loading: loadingKb } = useAsync<KbEntity | null>(
@@ -135,27 +128,32 @@ export default function KnowledgeKbDetailPage() {
           }
           headerExtraContent={
             <Space>
-              {/* 原生 input + ref:不依赖 Semi Upload 的回调语义(uploadTrigger="custom"
-                  下 onFileChange 实测不触发)。选中即走 uploadDocumentToKb 手动上传,
-                  同时写 KB 文档表 + 真实 RAG 入库。 */}
-              <input
-                ref={fileInputRef}
-                type="file"
+              {/* Semi Upload 官方接管姿势:customRequest 替换内置 xhr,
+                  fileInstance 是浏览器原生 File,成功/失败回调驱动 UI 状态。
+                  (uploadTrigger="custom" 是"等 ref.upload() 手动触发"的语义,
+                  不是"不发请求把文件交给我",此前误用。) action 为必填占位。 */}
+              <Upload
+                action="/api/v1/kb/upload"
                 accept=".pdf,.doc,.docx,.txt,.md"
                 multiple
-                hidden
-                onChange={onFilesPicked}
-              />
-              <Button
-                icon={<UploadIcon size={14} />}
-                theme="solid"
-                type="primary"
-                loading={uploading}
-                title={`上传文档到「${kb?.displayName ?? kbId}」`}
-                onClick={() => fileInputRef.current?.click()}
+                showUploadList={false}
+                draggable={false}
+                customRequest={({ fileInstance, onSuccess, onError }) => {
+                  handleUpload(fileInstance)
+                    .then((r) => onSuccess(r ?? null))
+                    .catch(() => onError({ status: 0 }));
+                }}
               >
-                上传文档
-              </Button>
+                <Button
+                  icon={<UploadIcon size={14} />}
+                  theme="solid"
+                  type="primary"
+                  loading={uploading}
+                  title={`上传文档到「${kb?.displayName ?? kbId}」`}
+                >
+                  上传文档
+                </Button>
+              </Upload>
               <Button icon={<RefreshCw size={14} />} onClick={reload} loading={loadingDocs}>
                 刷新
               </Button>

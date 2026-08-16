@@ -5,8 +5,8 @@
  * 文档上传走 KB 域自己的 /api/v1/kb/upload —— 它同时写 KB 文档表(本页数据源)
  * 和真实 RAG 入库(豆包 embedding),所以上传后立即可见、可被检索。
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card, Empty, Input, Select, Space, Table, Tag, Toast, Typography } from '@douyinfe/semi-ui';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Card, Empty, Input, Select, Space, Table, Tag, Toast, Typography, Upload } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { FileText, RefreshCw, Search, Upload as UploadIcon } from 'lucide-react';
 import { useAsync, useApiErrorBoundary } from '@mate/shared';
@@ -56,7 +56,7 @@ export default function KnowledgeDocsPage() {
   const handleUpload = async (file: File) => {
     if (!kbId) {
       Toast.warning('请先选择知识库');
-      return;
+      throw new Error('no kb selected');
     }
     setUploading(true);
     try {
@@ -65,15 +65,10 @@ export default function KnowledgeDocsPage() {
       await reload();
     } catch (e) {
       report(e instanceof Error ? e : new Error(String(e)));
+      throw e;
     } finally {
       setUploading(false);
     }
-  };
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const onFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    Array.from(e.target.files ?? []).forEach((f) => handleUpload(f));
-    e.target.value = '';
   };
 
   const kbNameById = useMemo(
@@ -138,27 +133,33 @@ export default function KnowledgeDocsPage() {
           title="文档管理"
           headerExtraContent={
             <Space>
-              {/* 原生 input + ref:uploadTrigger="custom" 下 Semi 的 onFileChange
-                  实测不触发,原生 change 完全可控。 */}
-              <input
-                ref={fileInputRef}
-                type="file"
+              {/* Semi Upload 官方接管姿势:customRequest 替换内置 xhr(fileInstance
+                  为原生 File);action 必填仅占位。uploadTrigger="custom" 是等待
+                  ref.upload() 的语义,此前误用。 */}
+              <Upload
+                action="/api/v1/kb/upload"
                 accept=".pdf,.doc,.docx,.txt,.md"
                 multiple
-                hidden
-                onChange={onFilesPicked}
-              />
-              <Button
-                icon={<UploadIcon size={14} />}
-                theme="solid"
-                type="primary"
-                loading={uploading}
+                showUploadList={false}
+                draggable={false}
                 disabled={!kbId}
-                title={kbId ? '上传文档到当前知识库' : '请先选择知识库'}
-                onClick={() => fileInputRef.current?.click()}
+                customRequest={({ fileInstance, onSuccess, onError }) => {
+                  handleUpload(fileInstance)
+                    .then((r) => onSuccess(r ?? null))
+                    .catch(() => onError({ status: 0 }));
+                }}
               >
-                上传文档
-              </Button>
+                <Button
+                  icon={<UploadIcon size={14} />}
+                  theme="solid"
+                  type="primary"
+                  loading={uploading}
+                  disabled={!kbId}
+                  title={kbId ? '上传文档到当前知识库' : '请先选择知识库'}
+                >
+                  上传文档
+                </Button>
+              </Upload>
               <Button icon={<RefreshCw size={14} />} onClick={reload} loading={loadingDocuments} disabled={!kbId}>
                 刷新
               </Button>
