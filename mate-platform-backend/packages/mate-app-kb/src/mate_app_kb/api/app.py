@@ -331,7 +331,8 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                 # worker thread to avoid deadlocking the event loop.
                 data = await asyncio.to_thread(
                     _rag(request).upload,
-                    raw, file.filename or "unknown", doc_id, file.content_type or "text/plain"
+                    raw, file.filename or "unknown", doc_id, file.content_type or "text/plain",
+                    kb_id=col_id or None,
                 )
             except Exception:
                 # Mark the document as failed if the upstream errors.

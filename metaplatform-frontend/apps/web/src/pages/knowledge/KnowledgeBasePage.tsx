@@ -6,6 +6,7 @@
  *          保留 4-tab 导航壳。
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Table, Button, Space, Tag, Modal, Form, Toast } from '@douyinfe/semi-ui';
 import { Plus, RefreshCw, Database } from 'lucide-react';
 import { PageRoot, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
@@ -20,6 +21,7 @@ const KB_KIND_OPTIONS = [
 ];
 
 export default function KnowledgeBasePage() {
+  const navigate = useNavigate();
   const { report } = useApiErrorBoundary();
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
@@ -90,6 +92,19 @@ export default function KnowledgeBasePage() {
                 render: (e: boolean) => <Tag color={e ? 'green' : 'red'}>{e ? '启用' : '禁用'}</Tag>,
               },
               { title: '描述', dataIndex: 'description', ellipsis: true },
+              {
+                title: '操作',
+                width: 110,
+                render: (_: unknown, record: { id: string }) => (
+                  <Button
+                    size="small"
+                    theme="borderless"
+                    onClick={() => navigate(`/knowledge/kb/${encodeURIComponent(record.id)}`)}
+                  >
+                    查看详情
+                  </Button>
+                ),
+              },
             ]}
           />
         </Card>

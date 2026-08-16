@@ -116,10 +116,18 @@ class FakeDb:
             return [(rid,)], 1
 
         # BM25-ish search (rank = query-token overlap count).
+        # OR-tsquery shape: params = (tok…, tok…, limit) — the token list is
+        # bound twice (match + rank expr) then LIMIT. Tokens may also arrive
+        # as the legacy plainto shape (tokens, tokens, limit).
         if "TS_RANK" in u:
             table = self._token_table(u)
-            q_tokens = set(str(params[0]).split())
-            limit = int(params[2])
+            if "TO_TSQUERY" in u:
+                n_toks = (len(params) - 1) // 2
+                q_tokens = set(str(p) for p in params[:n_toks])
+                limit = int(params[-1])
+            else:
+                q_tokens = set(str(params[0]).split())
+                limit = int(params[2])
             scored = [
                 (float(len(r["tokens"] & q_tokens)), r)
                 for r in self.rows[table]

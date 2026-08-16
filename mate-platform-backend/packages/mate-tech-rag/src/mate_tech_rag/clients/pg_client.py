@@ -406,6 +406,35 @@ class PGClient:
             _log.warning("PG list_documents failed: %s", exc)
             return []
 
+    def list_chunks(self, document_id: str, limit: int = 100) -> list[dict[str, Any]]:
+        """Chunks of one document, insertion order — document detail view."""
+        if not self._available:
+            return []
+        try:
+            with self._pool.connection() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT chunk_id, document_id, text, metadata, created_at
+                    FROM kb_chunks WHERE document_id = %s
+                    ORDER BY created_at, chunk_id LIMIT %s
+                    """,
+                    (document_id, max(1, limit)),
+                )
+                rows = cur.fetchall()
+            return [
+                {
+                    "chunk_id": r[0],
+                    "document_id": r[1],
+                    "text": r[2],
+                    "metadata": r[3] or {},
+                    "created_at": r[4].isoformat() if r[4] else None,
+                }
+                for r in rows
+            ]
+        except Exception as exc:
+            _log.warning("PG list_chunks failed: %s", exc)
+            return []
+
     def count_chunks(self) -> int:
         if not self._available:
             return 0

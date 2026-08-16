@@ -49,12 +49,17 @@ class RAGClient:
         if self._auth is not None and tenant_id:
             self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
-    def upload(self, file_content: bytes, filename: str, document_id: str, content_type: str = "text/plain") -> dict[str, Any]:
+    def upload(self, file_content: bytes, filename: str, document_id: str, content_type: str = "text/plain", kb_id: str | None = None) -> dict[str, Any]:
         files = {"file": (filename, file_content, content_type)}
+        params: dict[str, str] = {"document_id": document_id}
+        # Forward the collection id so RAG's kb-document registry
+        # (rag_kb_documents, kb_id-scoped retrieval filter) gets populated.
+        if kb_id:
+            params["kb_id"] = kb_id
         r = self._client.post(
             f"{self._base_url}/api/v1/rag/upload",
             files=files,
-            params={"document_id": document_id},
+            params=params,
         )
         r.raise_for_status()
         return r.json()

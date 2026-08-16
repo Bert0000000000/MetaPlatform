@@ -281,16 +281,22 @@ class PgGraphRAGClient(_BasePgStore):
         tokens = _cjk_tokens(query)
         if not tokens.strip():
             return []
+        # OR semantics across tokens: plainto_tsquery ANDs every token, so a
+        # multi-word CJK query ("考勤制度") whose bigrams partially miss the
+        # chunk tokens ("勤制"/"制度" absent) returned 0 rows. Build an OR
+        # tsquery per token — ts_rank then rewards rows matching more tokens.
+        toks = [t for t in tokens.split() if t][:12]
+        match_expr = " || ".join(["to_tsquery('simple', %s)"] * len(toks))
         rows = self._fetch(
             f"""
             SELECT id, document_id, text, metadata,
-                   ts_rank(ts_vector, plainto_tsquery('simple', %s)) AS rank
+                   ts_rank(ts_vector, {match_expr}) AS rank
             FROM {self._TABLE}
-            WHERE ts_vector @@ plainto_tsquery('simple', %s)
+            WHERE ts_vector @@ ({match_expr})
             ORDER BY rank DESC
             LIMIT %s
             """,
-            (tokens, tokens, max(1, top_k)),
+            (*toks, *toks, max(1, top_k)),
         )
         if not rows:
             return []
@@ -357,16 +363,22 @@ class PgLightRAGClient(_BasePgStore):
         tokens = _cjk_tokens(query)
         if not tokens.strip():
             return []
+        # OR semantics across tokens: plainto_tsquery ANDs every token, so a
+        # multi-word CJK query ("考勤制度") whose bigrams partially miss the
+        # chunk tokens ("勤制"/"制度" absent) returned 0 rows. Build an OR
+        # tsquery per token — ts_rank then rewards rows matching more tokens.
+        toks = [t for t in tokens.split() if t][:12]
+        match_expr = " || ".join(["to_tsquery('simple', %s)"] * len(toks))
         rows = self._fetch(
             f"""
             SELECT id, document_id, text, metadata,
-                   ts_rank(ts_vector, plainto_tsquery('simple', %s)) AS rank
+                   ts_rank(ts_vector, {match_expr}) AS rank
             FROM {self._TABLE}
-            WHERE ts_vector @@ plainto_tsquery('simple', %s)
+            WHERE ts_vector @@ ({match_expr})
             ORDER BY rank DESC
             LIMIT %s
             """,
-            (tokens, tokens, max(1, top_k)),
+            (*toks, *toks, max(1, top_k)),
         )
         if not rows:
             return []

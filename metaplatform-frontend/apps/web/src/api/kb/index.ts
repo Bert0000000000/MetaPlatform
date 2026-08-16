@@ -186,6 +186,38 @@ export interface KbUploadResult {
   indexedIn: string[];
 }
 
+/** 文档的切片内容 — GET /api/v1/rag/documents/{id}/chunks(KB 详情页用)。 */
+export interface DocumentChunk {
+  chunkId: string;
+  documentId: string;
+  text: string;
+  metadata: Record<string, string>;
+  createdAt?: string | null;
+}
+
+export async function getDocumentChunks(documentId: string, limit = 100): Promise<DocumentChunk[]> {
+  const resp = await ragClient.get<unknown[]>(`/documents/${encodeURIComponent(documentId)}/chunks`, {
+    params: { limit },
+  });
+  const raw = (resp.data ?? []) as Array<{
+    chunk_id: string; document_id: string; text: string;
+    metadata: Record<string, string>; created_at?: string | null;
+  }>;
+  return raw.map((r) => ({
+    chunkId: r.chunk_id,
+    documentId: r.document_id,
+    text: r.text,
+    metadata: r.metadata ?? {},
+    createdAt: r.created_at ?? null,
+  }));
+}
+
+/** 获取单个知识库详情 — GET /api/v1/kb/collections/{id}。 */
+export async function getKbDetail(kbId: string): Promise<KbEntity> {
+  const resp = await kbClient.get<KbCollectionRaw>(`/collections/${encodeURIComponent(kbId)}`);
+  return mapCollection(resp.data);
+}
+
 export async function uploadDocumentToKb(kbId: string, file: File): Promise<KbUploadResult> {
   const form = new FormData();
   form.append('file', file);

@@ -91,6 +91,7 @@ const KnowledgeBasePage = lazy(() => import('./pages/knowledge/KnowledgeBasePage
 const KnowledgeDocsPage = lazy(() => import('./pages/knowledge/KnowledgeDocsPage'));
 const KnowledgeTestPage = lazy(() => import('./pages/knowledge/KnowledgeTestPage'));
 const KnowledgeConfigPage = lazy(() => import('./pages/knowledge/KnowledgeConfigPage'));
+const KnowledgeKbDetailPage = lazy(() => import('./pages/knowledge/KnowledgeKbDetailPage'));
 
 const McpToolsPage = lazy(() => import('./pages/mcp/McpToolsPage'));
 const McpServerPage = lazy(() => import('./pages/mcp/McpServerPage'));
@@ -267,6 +268,7 @@ function AppRoutes() {
 
           {/* 閻儴鐦戞惔?*/}
           <Route path="knowledge" element={<KnowledgeLayout><KnowledgeBasePage /></KnowledgeLayout>} />
+          <Route path="knowledge/kb/:kbId" element={<KnowledgeLayout><KnowledgeKbDetailPage /></KnowledgeLayout>} />
           <Route path="knowledge/docs" element={<KnowledgeLayout><KnowledgeDocsPage /></KnowledgeLayout>} />
           <Route path="knowledge/test" element={<KnowledgeLayout><KnowledgeTestPage /></KnowledgeLayout>} />
           <Route path="knowledge/config" element={<KnowledgeLayout><KnowledgeConfigPage /></KnowledgeLayout>} />

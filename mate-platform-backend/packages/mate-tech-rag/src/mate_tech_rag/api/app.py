@@ -51,6 +51,7 @@ from mate_tech_rag.api.retrieval import (
     get_graph,
     get_hybrid,
     get_lightrag,
+    get_pg_client,
     get_pg_store,
     get_ragflow,
     is_pg_mode,
@@ -562,6 +563,30 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------------
     # P1.7 RAG 增强: cascade-delete a document across all RAG surfaces
     # ------------------------------------------------------------------
+    @app.get("/api/v1/rag/documents/{doc_id}/chunks")
+    async def list_document_chunks(  # pyright: ignore[reportUnusedFunction]
+        request: Request, doc_id: str, limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Chunk texts of one document (kb detail view). PG-mode reads the
+        persistent kb_chunks table; memory mode falls back to the hybrid
+        store's in-memory chunks when it exposes them."""
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
+        tenant_id = str(request.state.ctx.tenant_id)
+        # Tenant ownership guard (hard rule 3): only the owning tenant's docs.
+        owned = tenant_document_ids(tenant_id)
+        if doc_id not in owned:
+            raise HTTPException(status_code=404, detail="document not found")
+        pgc = get_pg_client()
+        if is_pg_mode() and pgc is not None:
+            return pgc.list_chunks(doc_id, limit)
+        # Memory fallback: hybrid store search is the only chunk surface.
+        hybrid = get_hybrid()
+        getter = getattr(hybrid, "chunks_of_document", None)
+        if getter is not None:
+            return getter(doc_id)
+        return []
+
     @app.delete("/api/v1/rag/documents/{doc_id}", response_model=DeleteDocumentResponse)
     async def delete_document_endpoint(  # pyright: ignore[reportUnusedFunction]
         request: Request, doc_id: str,
