@@ -155,6 +155,14 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             _log.info("KB_STORE=sql: tables ensured + tenant-default seeded")
         except Exception as exc:
             _log.warning("KB_STORE=sql init failed (falling back at repo layer): %s", exc)
+    # Dev fast path for cross-container kb→rag calls (same mechanism as
+    # dev_server's dev_token): a pre-minted HS256 token from KB_DEV_TOKEN
+    # (delivered via .env.local / compose env_file). Production uses the
+    # Keycloak service identity instead.
+    _dev_token = os.environ.get("KB_DEV_TOKEN", "")
+    if _dev_token:
+        app.state.dev_token = _dev_token
+        _log.info("KB dev_token loaded (dev-only service identity)")
     # Hook 1 of 3: install the auth middleware (SEC-IAM-01).
     # After this call, every incoming request has request.state.ctx
     # populated with a verified RequestContext (or a 401/403 response

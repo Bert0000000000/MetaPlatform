@@ -33,6 +33,15 @@ services:
     build:
       context: ./.tmp-build-context
       dockerfile: Dockerfile
+    # 持久化模式(RAG_MODE=pg):chunks+embedding(halfvec/pgvector)+registry
+    # 全在共享 PG,milvus/neo4j 不再是硬依赖 —— depends_on 整体替换只留 postgres。
+    environment:
+      RAG_MODE: pg
+      PG_DSN: postgresql://meta:meta@postgres:5432/metaplatform
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
   mate-tech-agent:
     build:
       context: ./.tmp-build-context
@@ -41,6 +50,17 @@ services:
     build:
       context: ./.tmp-build-context
       dockerfile: packages/mate-tech-ont/Dockerfile
+    environment:
+      KERNEL_BACKEND: pg
+      KERNEL_PG_DSN: postgresql://meta:meta@postgres:5432/metaplatform
+      ONT_SEED_DEMO: "1"
+  mate-tech-dw:
+    build:
+      context: ./.tmp-build-context
+      dockerfile: packages/mate-tech-dw/Dockerfile
+    environment:
+      DW_STORE: sql
+      MATE_DB_URL: postgresql+psycopg://meta:meta@postgres:5432/metaplatform
   mate-tech-msg:
     build:
       context: ./.tmp-build-context
@@ -57,6 +77,13 @@ services:
     build:
       context: ./.tmp-build-context
       dockerfile: Dockerfile.app-kb
+    # dev-only:跨容器 kb→rag 调用的快捷身份(与 dev_server 的 dev_token 同机制;
+    # 生产走 Keycloak 服务身份)。token 放 .env.local(已 gitignore)。
+    env_file:
+      - .env.local
+    environment:
+      KB_STORE: sql
+      MATE_DB_URL: postgresql+psycopg://meta:meta@postgres:5432/metaplatform
   mate-api-gateway:
     build:
       context: ./.tmp-build-context

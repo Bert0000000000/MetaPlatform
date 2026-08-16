@@ -410,10 +410,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # milvus/neo4j 仅 RAG_MODE=hybrid|graph|full 才真正使用;memory/pg 模式
+      # create_clients 自动降级。required:false = 未启用这些服务时不阻塞启动。
       milvus:
         condition: service_healthy
+        required: false
       neo4j:
         condition: service_healthy
+        required: false
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8001/healthz || exit 1"]
       interval: 15s
@@ -480,8 +484,11 @@ services:
     depends_on:
       mate-tech-rag:
         condition: service_healthy
+      # agent(chat 场景)非 KB 文档/检索链路必需;required:false 允许
+      # 在未配置 OPENAI_API_KEY 等外部依赖时独立启动 KB 服务。
       mate-tech-agent:
         condition: service_healthy
+        required: false
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8003/healthz || exit 1"]
       interval: 15s
