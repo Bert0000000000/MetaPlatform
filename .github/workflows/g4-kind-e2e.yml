@@ -25,14 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: helm/kind-action@v1.10.0
+      - uses: actions/checkout@v7
+      - uses: helm/kind-action@v1.14.0
         with:
           version: v0.22.0
           node_image: kindest/node:v1.29.2
           cluster_name: mate-platform-e2e
           wait: 120s
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
         with: { version: v3.14.4 }
       - name: helm install (local values)
         run: |
