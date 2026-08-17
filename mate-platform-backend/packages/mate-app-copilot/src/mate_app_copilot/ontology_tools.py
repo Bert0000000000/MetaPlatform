@@ -1,0 +1,171 @@
+"""MP-SAL-01: copilot 侧 ontology 工具接线（ADR-0043 §2.3/§2.6 消费者）。
+
+把 kernel schema_gen 的产出接到 SuperAI agent loop：
+- ``build_ontology_tools``：虚拟注册表 —— 从 repo 类型清单实时计算工具
+  （list_classes + inspect_class + 每类型 query_<slug>，按 agent markings 过滤）；
+- ``execute_ontology_tool``：模拟 FC 调用的执行端 —— query_<slug> 参数是
+  ObjectSetQuery IR 的薄外壳；marking 在执行期二次校验（缺标记 → PermissionError）。
+"""
+
+from __future__ import annotations
+
+from typing import Any, Protocol
+
+from mate_kernel.objectset.ir import (
+    Aggregation,
+    Condition,
+    MetricSpec,
+    ObjectSetQuery,
+    QueryOp,
+    QueryResult,
+    SortKey,
+    TraversalStep,
+)
+from mate_kernel.ontology.instances import LinkInstance
+from mate_kernel.ontology.types import ObjectType
+from mate_kernel.tooling.schema_gen import (
+    agent_tool_schemas,
+    slug_of_rid,
+    tool_name_for,
+    visible_object_types,
+)
+
+
+class OntologyToolRepo(Protocol):
+    """copilot 依赖的 repo 面（Pg / InMemory 均满足）。"""
+
+    def list_object_types(self, limit: int = ..., offset: int = ...) -> list[ObjectType]: ...
+    def get_object_type(self, rid: Any) -> ObjectType: ...
+    def list_link_instances(self) -> list[LinkInstance]: ...
+    def execute_object_query(self, q: ObjectSetQuery) -> QueryResult: ...
+
+
+def build_ontology_tools(
+    repo: OntologyToolRepo, agent_markings: tuple[str, ...] | list[str] = (),
+) -> list[dict[str, Any]]:
+    """发布即可见：每次调用从 repo 实时计算（虚拟注册表，零 push 同步）。"""
+    types = repo.list_object_types(10000, 0)
+    links = repo.list_link_instances()
+    return agent_tool_schemas(types, links, tuple(agent_markings))
+
+
+def execute_ontology_tool(
+    repo: OntologyToolRepo,
+    name: str,
+    arguments: dict[str, Any],
+    agent_markings: tuple[str, ...] | list[str] = (),
+) -> dict[str, Any]:
+    """工具名 → 执行。query_<slug> 执行前按类型 marking 二次校验可见性。"""
+    if name == "list_classes":
+        return _list_classes(repo, tuple(agent_markings))
+    if name == "inspect_class":
+        return _inspect_class(repo, str(arguments.get("class_rid", "")))
+    if name.startswith("query_"):
+        return _execute_query(repo, name, arguments, tuple(agent_markings))
+    raise KeyError(f"unknown ontology tool: {name!r}")
+
+
+def _list_classes(repo: OntologyToolRepo, _markings: tuple[str, ...]) -> dict[str, Any]:
+    """发现面：列出全部类（含各自 marking 元数据）——可见性只约束 query 工具与执行。"""
+    types = repo.list_object_types(10000, 0)
+    return {
+        "classes": [
+            {
+                "rid": t.rid.rid,
+                "slug": slug_of_rid(t.rid.rid),
+                "display_name": t.display_name,
+                "marking": list(t.marking),
+            }
+            for t in types
+        ],
+    }
+
+
+def _inspect_class(repo: OntologyToolRepo, class_rid: str) -> dict[str, Any]:
+    from mate_kernel.ontology.identity import ClassRef  # noqa: PLC0415
+
+    ot = repo.get_object_type(ClassRef(class_rid))
+    return {
+        "class_rid": ot.rid.rid,
+        "display_name": ot.display_name,
+        "marking": list(ot.marking),
+        "properties": [
+            {"slug": slug_of_rid(p.rid.rid), "type": p.type_id, "format": p.format.value}
+            for p in ot.properties
+        ],
+        "links": [
+            {"link_type": li.link_type_rid.rid}
+            for li in repo.list_link_instances()
+        ][:50],
+    }
+
+
+def _execute_query(
+    repo: OntologyToolRepo,
+    name: str,
+    arguments: dict[str, Any],
+    markings: tuple[str, ...],
+) -> dict[str, Any]:
+    types = repo.list_object_types(10000, 0)
+    target: ObjectType | None = None
+    for t in types:
+        if tool_name_for(t) == name:
+            target = t
+            break
+    if target is None:
+        raise KeyError(f"unknown ontology tool: {name!r}")
+    # 执行期二次校验（工具可见性不等于执行放行）
+    if not visible_object_types((target,), markings):
+        raise PermissionError(
+            f"tool {name!r} requires markings {list(target.marking)}, "
+            f"agent has {list(markings)}"
+        )
+
+    agg: Aggregation | None = None
+    raw_agg = arguments.get("aggregation")
+    if isinstance(raw_agg, dict):
+        agg = Aggregation(
+            group_by=tuple(raw_agg.get("group_by", ())),
+            metrics=tuple(
+                MetricSpec(
+                    fn=str(m["fn"]),
+                    field=m.get("field"),
+                    alias=m.get("alias"),
+                )
+                for m in raw_agg.get("metrics", ())
+            ),
+        )
+    q: ObjectSetQuery
+    try:
+        q = ObjectSetQuery(
+            source=target.rid.rid,
+            filters=tuple(
+                Condition(field=str(c["field"]), op=QueryOp(str(c["op"])), value=c.get("value"))
+                for c in arguments.get("filters", ())
+                if isinstance(c, dict)
+            ),
+            aggregation=agg,
+            traversal=tuple(
+                TraversalStep(
+                    link_type=str(t["link_type"]), direction=str(t["direction"]),
+                )
+                for t in arguments.get("traversal", ())
+                if isinstance(t, dict)
+            ),
+            sort=tuple(
+                SortKey(field=str(s["field"]), desc=bool(s.get("desc", False)))
+                for s in arguments.get("sort", ())
+                if isinstance(s, dict)
+            ),
+            paging_offset=int(arguments.get("paging_offset", 0)),
+            paging_limit=int(arguments.get("paging_limit", 100)),
+        )
+    except ValueError as e:
+        raise ValueError(f"invalid query arguments: {e}") from e
+
+    result = repo.execute_object_query(q)
+    return {
+        "kind": result.kind,
+        "rows": [dict(r) for r in result.rows],
+        "result_schema": result.result_schema,
+    }

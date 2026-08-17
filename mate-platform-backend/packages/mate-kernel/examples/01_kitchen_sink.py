@@ -314,7 +314,39 @@ def main() -> None:
     print(f"  plan_id: {state.plan.plan_id}, HITL token issued")
     print(f"  token valid: {token.is_valid()}")
 
-    print("\n=== 全部 11 步通过 ===")
+    # ───── 12) MP-SAL-01: 建模即工具(发布 → schema_gen → IR 查询) ─────
+    banner("12. MP-SAL-01: 建模即工具")
+    from mate_kernel.objectset.ir import (
+        Aggregation,
+        Condition,
+        InMemoryQueryExecutor,
+        MetricSpec,
+        ObjectSetQuery,
+        QueryOp,
+    )
+    from mate_kernel.tooling.schema_gen import agent_tool_schemas
+
+    tools = agent_tool_schemas([ot_order], [], [])
+    print(f"  tools: {[t['function']['name'] for t in tools]}")
+    qe = InMemoryQueryExecutor(
+        individuals=inds, links=[], object_types=[ot_order],
+    )
+    objects_res = qe.execute(ObjectSetQuery(
+        source=ot_order.rid,
+        filters=(Condition("status", QueryOp.EQ, "open"),),
+    ))
+    print(f"  objects rows: {[(r['status'], r['amount']) for r in objects_res.rows]}")
+    agg_res = qe.execute(ObjectSetQuery(
+        source=ot_order.rid,
+        aggregation=Aggregation(
+            group_by=("status",),
+            metrics=(MetricSpec(fn="sum", field="amount"), MetricSpec(fn="count")),
+        ),
+    ))
+    print(f"  aggregates rows: {agg_res.rows[0]}")
+    assert objects_res.rows and agg_res.rows
+
+    print("\n=== 全部 12 步通过 ===")
     drained = mgr.drain_changes()
     print(f"Manager drained: {len(drained)} changes")
 

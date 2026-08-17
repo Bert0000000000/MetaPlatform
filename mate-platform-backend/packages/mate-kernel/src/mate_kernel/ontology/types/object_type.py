@@ -19,6 +19,7 @@ class ObjectType:
     properties: tuple[Property, ...]
     interfaces: tuple[ClassRef, ...] = field(default_factory=tuple)
     display_name: str = ""
+    marking: tuple[str, ...] = ()  # 类型级安全标记（ADR-0043 §2.6，工具可见性）
 
     def __post_init__(self) -> None:
         if not self.primary_key:

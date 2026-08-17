@@ -1072,6 +1072,94 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ObjectSetResult'}
         '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/object-query:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Execute structured ObjectSet IR query (SAL-01)
+      description: >-
+        Structured operator-tree query (ADR-0043). Filters, aggregation
+        (group_by + metrics), link traversal, multi-key sort and paging are
+        expressed as structured JSON — no expression string to parse. Returns
+        a result envelope {kind, rows, result_schema}: aggregates return rows
+        of group keys + metric values, not individuals.
+      operationId: ontExecuteV2ObjectQuery
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL01-OBJECTQUERY]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ObjectQueryV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ObjectQueryResultV2'}
+        '403': {$ref: ../common/errors.yaml#/components/responses/Error403}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/classes/{class_rid}/inspect:
+    parameters:
+    - in: path
+      name: class_rid
+      required: true
+      schema: {type: string}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Inspect class metadata (properties/links/actions) for agents (SAL-01)
+      description: >-
+        Type introspection for LLM agents (ADR-0043 §2.2): the metadata
+        source that schema_gen consumes — properties with formats and
+        markings, inbound/outbound link types, actions bound to the class.
+      operationId: ontInspectV2Class
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL01-INSPECTCLASS]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ClassInspectV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/agent-tools:
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Virtual registry of agent tools generated from ObjectTypes (SAL-01)
+      description: >-
+        Computed on demand from ont_object_types (ADR-0043 §2.5) — no push
+        sync. Each published ObjectType yields a query_<slug> tool whose
+        parameters are a thin veneer over the ObjectQuery IR. Optional
+        `markings` query param filters by visibility rule
+        (type marking ⊆ caller markings).
+      operationId: ontListV2AgentTools
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL01-AGENTTOOLS]
+      x-mate-implementation-status: implemented
+      parameters:
+      - in: query
+        name: markings
+        required: false
+        description: Comma-separated caller markings for visibility filtering
+        schema: {type: string}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/AgentToolV2'}
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
     - in: path
@@ -1434,6 +1522,10 @@ components:
           type: array
           items: {$ref: '#/components/schemas/RidString'}
         display_name: {type: string}
+        marking:
+          type: array
+          items: {type: string}
+          description: Type-level security markings; visible tool = type marking subset of agent required_markings (ADR-0043 §2.6)
     ObjectTypeCreateV2:
       type: object
       additionalProperties: false
@@ -1452,6 +1544,9 @@ components:
           type: array
           items: {$ref: '#/components/schemas/RidString'}
         display_name: {type: string}
+        marking:
+          type: array
+          items: {type: string}
     LinkTypeV2:
       type: object
       additionalProperties: false
@@ -1724,6 +1819,114 @@ components:
           type: array
           items: {$ref: '#/components/schemas/IndividualV2'}
         count: {type: integer}
+    QueryConditionV2:
+      type: object
+      additionalProperties: false
+      required: [field, op]
+      properties:
+        field: {type: string, minLength: 1}
+        op:
+          type: string
+          enum: [eq, ne, gt, gte, lt, lte, startswith, contains, truthy]
+        value: {}
+    QueryMetricV2:
+      type: object
+      additionalProperties: false
+      required: [fn]
+      properties:
+        fn: {type: string, enum: [sum, count, avg, min, max]}
+        field: {type: string}
+        alias: {type: string}
+    QueryAggregationV2:
+      type: object
+      additionalProperties: false
+      required: [metrics]
+      properties:
+        group_by:
+          type: array
+          items: {type: string}
+        metrics:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/QueryMetricV2'}
+    QueryTraversalV2:
+      type: object
+      additionalProperties: false
+      required: [link_type, direction]
+      properties:
+        link_type: {$ref: '#/components/schemas/RidString'}
+        direction: {type: string, enum: [out, in]}
+    QuerySortKeyV2:
+      type: object
+      additionalProperties: false
+      required: [field]
+      properties:
+        field: {type: string, minLength: 1}
+        desc: {type: boolean, default: false}
+    ObjectQueryV2:
+      type: object
+      additionalProperties: false
+      required: [source]
+      properties:
+        source: {$ref: '#/components/schemas/RidString'}
+        filters:
+          type: array
+          items: {$ref: '#/components/schemas/QueryConditionV2'}
+        aggregation: {$ref: '#/components/schemas/QueryAggregationV2'}
+        traversal:
+          type: array
+          items: {$ref: '#/components/schemas/QueryTraversalV2'}
+        sort:
+          type: array
+          items: {$ref: '#/components/schemas/QuerySortKeyV2'}
+        paging_offset: {type: integer, minimum: 0, default: 0}
+        paging_limit: {type: integer, minimum: 1, maximum: 10000, default: 100}
+    ObjectQueryResultV2:
+      type: object
+      additionalProperties: false
+      required: [kind, rows]
+      properties:
+        kind: {type: string, enum: [objects, aggregates]}
+        rows:
+          type: array
+          items: {type: object, additionalProperties: true}
+        result_schema: {type: object, additionalProperties: true}
+    ClassInspectV2:
+      type: object
+      additionalProperties: false
+      required: [rid, properties]
+      properties:
+        rid: {$ref: '#/components/schemas/RidString'}
+        display_name: {type: string}
+        marking:
+          type: array
+          items: {type: string}
+        properties:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyV2'}
+        links:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [link_type, direction, peer_class]
+            properties:
+              link_type: {$ref: '#/components/schemas/RidString'}
+              direction: {type: string, enum: [out, in]}
+              peer_class: {$ref: '#/components/schemas/RidString'}
+        actions:
+          type: array
+          items: {$ref: '#/components/schemas/RidString'}
+    AgentToolV2:
+      type: object
+      additionalProperties: false
+      required: [name, description, class_rid, input_schema]
+      properties:
+        name: {type: string, minLength: 1}
+        description: {type: string}
+        class_rid: {$ref: '#/components/schemas/RidString'}
+        input_schema: {type: object, additionalProperties: true}
+        result_schema: {type: object, additionalProperties: true}
     VersionV2:
       type: object
       additionalProperties: false

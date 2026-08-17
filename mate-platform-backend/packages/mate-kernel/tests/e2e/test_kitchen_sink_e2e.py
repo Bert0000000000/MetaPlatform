@@ -298,5 +298,5 @@ class TestKitchenSinkE2E:
         # runpy 把 stdout 灌到 capsys（不灌，因为 pytest 默认捕获）
         runpy.run_path(str(example), run_name="__main__")
         out = capsys.readouterr().out
-        assert "全部 11 步通过" in out
+        assert "全部 12 步通过" in out
         assert "Manager drained" in out

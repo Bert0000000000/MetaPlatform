@@ -191,6 +191,16 @@ class InMemoryOntologyRepository(OntologyRepository):
         items = list(self._individuals.values())
         return InMemoryObjectSetExecutor(items).execute(os_)
 
+    def execute_object_query(self, q: "ObjectSetQuery") -> "QueryResult":
+        """MP-SAL-01: 结构化 IR 查询（ADR-0043），与 PG 侧同语义。"""
+        from mate_kernel.objectset.ir import InMemoryQueryExecutor
+        executor = InMemoryQueryExecutor(
+            individuals=tuple(self._individuals.values()),
+            links=tuple(self._link_instances.values()),
+            object_types=tuple(self._object_types.values()),
+        )
+        return executor.execute(q)
+
     def apply_action(self, action_rid: ClassRef, target_iid: str, parameters: dict[str, Any], provenance: dict[str, Any]) -> tuple[datetime, list[str]]:
         # ACTION-03 协议：submission_criteria 求值 → Function 落库 → side_effects。
         # GOVERN-05: function_result 写回 target.props（按 at.parameters 短名）。

@@ -45,6 +45,7 @@ from .federation_routes import router as federation_router_routes
 from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
 from .tools.kb_search import build_kb_search_tool
+from .tools.ontology_proxy import build_ontology_proxy_tools
 from .tools.rate_limit import RateLimitConfig, ToolRateLimiter
 from .tools.skill_search import build_read_skill_tool, build_search_skill_tool
 
@@ -59,6 +60,10 @@ mcp_server.register_tool(build_kb_search_tool())
 # skill 检索工具（agent 按能力检索 skillhub → 读 SKILL.md 搭应用）。
 mcp_server.register_tool(build_search_skill_tool())
 mcp_server.register_tool(build_read_skill_tool())
+
+# MP-SAL-01: ontology 三件套代理工具（tech-ont v2，ADR-0043 §2.3 消费者）。
+for _tool in build_ontology_proxy_tools():
+    mcp_server.register_tool(_tool)
 
 # Ontology resource.
 _ontology: OntologyResource = build_ontology_resource()

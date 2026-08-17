@@ -19,15 +19,19 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import replace as _dc_replace
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 
-from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler
+from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler, individual_to_row
+from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp, QueryResult
 from mate_kernel.objectset.sql_compiler import SQLCompiler
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.identity import ClassRef, Version
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
 from mate_kernel.ontology.reasoning import Axiom, Function
+from mate_kernel.ontology.reasoning.axiom import AxiomKind
+from mate_kernel.ontology.reasoning.function import FunctionLanguage
 from mate_kernel.ontology.types import (
     ActionType,
     Interface,
@@ -36,6 +40,7 @@ from mate_kernel.ontology.types import (
     Property,
     PropertyFormat,
 )
+from mate_kernel.ontology.types.link_type import Cardinality, Directionality
 
 # GOVERN-05: 默认 inline 源码 —— apply 没注册源码时 fallback，让 dev / 旧测试
 # 仍可走通。最简 main(target, params) → params 原样返回。
@@ -53,10 +58,13 @@ DDL: tuple[str, ...] = (
         properties   JSONB NOT NULL,
         interfaces   TEXT[] NOT NULL DEFAULT '{}',
         display_name TEXT NOT NULL DEFAULT '',
+        marking      TEXT[] NOT NULL DEFAULT '{}',
         updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ot_tenant ON ont_object_type (tenant_id)",
+    # MP-SAL-01：类型级 marking（ADR-0043 §2.6）——旧库补列
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS marking TEXT[] NOT NULL DEFAULT '{}'",
     """
     CREATE TABLE IF NOT EXISTS ont_individual (
         rid          TEXT PRIMARY KEY,
@@ -80,10 +88,15 @@ DDL: tuple[str, ...] = (
         side_effects         JSONB NOT NULL DEFAULT '[]'::jsonb,
         function_ref         TEXT NOT NULL DEFAULT '',
         target_object_types  TEXT[] NOT NULL DEFAULT '{}',
+        title                TEXT NOT NULL DEFAULT '',
+        description          TEXT NOT NULL DEFAULT '',
         updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_at_tenant ON ont_action_type (tenant_id)",
+    # 旧库补列（CREATE TABLE IF NOT EXISTS 不会给已存在的表加列）
+    "ALTER TABLE ont_action_type ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_action_type ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''",
     """
     CREATE TABLE IF NOT EXISTS ont_link_type (
         rid             TEXT PRIMARY KEY,
@@ -225,6 +238,46 @@ def _prop_slug(rid: str) -> str:
     return parts[3] if len(parts) >= 5 else parts[-1]
 
 
+def _ir_where(
+    conditions: tuple[Condition, ...], slug_to_rid: dict[str, str]
+) -> tuple[str, list[Any]]:
+    """IR 条件组（AND）→ 参数化 WHERE 片段。语义对齐 SQLCompiler._cmp/_like。"""
+    parts: list[str] = []
+    params: list[Any] = []
+    for cond in conditions:
+        field = slug_to_rid.get(cond.field, cond.field)
+        op = cond.op
+        if op is QueryOp.TRUTHY:
+            parts.append("(props ->> %s) IS NOT NULL AND (props ->> %s) <> ''")
+            params.extend([field, field])
+            continue
+        if op in (QueryOp.STARTSWITH, QueryOp.CONTAINS):
+            v = str(cond.value).replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
+            pat = f"{v}%" if op is QueryOp.STARTSWITH else f"%{v}%"
+            parts.append("(props ->> %s) LIKE %s")
+            params.extend([field, pat])
+            continue
+        if op is QueryOp.EQ or op is QueryOp.NE:
+            sql_op = "=" if op is QueryOp.EQ else "<>"
+            if isinstance(cond.value, (int, float)):
+                parts.append(f"((props ->> %s)::numeric {sql_op} %s)")
+            else:
+                parts.append(f"(props ->> %s {sql_op} %s)")
+            params.extend([field, cond.value])
+            continue
+        sql_op = {
+            QueryOp.GT: ">",
+            QueryOp.GTE: ">=",
+            QueryOp.LT: "<",
+            QueryOp.LTE: "<=",
+        }.get(op)
+        if sql_op is None:
+            raise ValueError(f"unsupported IR op {op!r}")
+        parts.append(f"((props ->> %s)::numeric {sql_op} %s)")
+        params.extend([field, cond.value])
+    return " AND ".join(parts), params
+
+
 def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
     return {
         "rid": ot.rid.rid,
@@ -243,6 +296,7 @@ def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
         ],
         "interfaces": [i.rid for i in ot.interfaces],
         "display_name": ot.display_name,
+        "marking": list(ot.marking),
     }
 
 
@@ -263,6 +317,7 @@ def _row_to_ot(row: dict[str, Any]) -> ObjectType:
         ),
         interfaces=tuple(ClassRef(i) for i in row["interfaces"]),
         display_name=row["display_name"],
+        marking=tuple(row.get("marking") or ()),
     )
 
 
@@ -302,13 +357,46 @@ def _lt_to_row(lt: LinkType) -> dict[str, Any]:
     }
 
 
+def _row_to_at(row: dict[str, Any]) -> ActionType:
+    """ont_action_type 行 → ActionType。
+
+    parameters 列历史上有两种格式：早期只存 rid 字符串数组（属性定义丢失），
+    现在存完整 property dict。两种都兼容。
+    """
+    params: list[Property] = []
+    for p in row.get("parameters") or []:
+        if isinstance(p, str):
+            params.append(Property(
+                rid=ClassRef(p), type_id="string", nullable=True,
+                primary_key=False, title="", format=PropertyFormat.STRING,
+            ))
+        elif isinstance(p, dict):
+            params.append(Property(
+                rid=ClassRef(p["rid"]), type_id=p["type_id"],
+                nullable=bool(p.get("nullable", True)),
+                primary_key=bool(p.get("primary_key", False)),
+                title=p.get("title", ""),
+                format=PropertyFormat(p.get("format", "string")),
+            ))
+    return ActionType(
+        rid=ClassRef(row["rid"]),
+        parameters=tuple(params),
+        submission_criteria=tuple(row.get("submission_criteria") or []),
+        side_effects=tuple(row.get("side_effects") or []),
+        function_ref=ClassRef(row["function_ref"]) if row.get("function_ref") else ClassRef("ont.system.fn.noop.v1"),
+        on=tuple(ClassRef(r) for r in row.get("target_object_types") or []),
+        title=row.get("title") or "",
+        description=row.get("description") or "",
+    )
+
+
 def _row_to_lt(row: dict[str, Any]) -> LinkType:
     return LinkType(
         rid=ClassRef(row["rid"]),
         src=ClassRef(row["src_rid"]),
         dst=ClassRef(row["dst_rid"]),
-        cardinality=row["cardinality"],
-        directionality=row["directionality"],
+        cardinality=Cardinality(row["cardinality"]),
+        directionality=Directionality(row["directionality"]),
         link_properties=tuple(
             Property(
                 rid=ClassRef(p["rid"]),
@@ -433,7 +521,7 @@ def _row_to_ax(row: dict[str, Any]) -> Axiom:
             metadata.append((str(item[0]), str(item[1])))
     return Axiom(
         rid=ClassRef(row["rid"]),
-        kind=row["kind"],
+        kind=AxiomKind(row["kind"]),
         operands=tuple(ClassRef(o) for o in row.get("operands") or []),
         rule_ref=row.get("rule_ref") or "",
         metadata=tuple(metadata),
@@ -459,7 +547,7 @@ def _row_to_fn(row: dict[str, Any]) -> Function:
             signatures.append((str(item[0]), str(item[1])))
     return Function(
         rid=ClassRef(row["rid"]),
-        language=row["language"],
+        language=FunctionLanguage(row["language"]),
         version=row["version"],
         source_ref=row.get("source_ref") or "",
         signatures=tuple(signatures),
@@ -626,13 +714,14 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     """
                     INSERT INTO ont_object_type
-                        (rid, tenant_id, primary_key, properties, interfaces, display_name, updated_at)
-                    VALUES (%s, %s, %s, %s::jsonb, %s, %s, now())
+                        (rid, tenant_id, primary_key, properties, interfaces, display_name, marking, updated_at)
+                    VALUES (%s, %s, %s, %s::jsonb, %s, %s, %s, now())
                     ON CONFLICT (rid) DO UPDATE SET
                         primary_key = EXCLUDED.primary_key,
                         properties = EXCLUDED.properties,
                         interfaces = EXCLUDED.interfaces,
                         display_name = EXCLUDED.display_name,
+                        marking = EXCLUDED.marking,
                         updated_at = now()
                     """,
                     (
@@ -642,6 +731,7 @@ class PgOntologyRepository(OntologyRepository):
                         json.dumps(row["properties"]),
                         row["interfaces"],
                         row["display_name"],
+                        row["marking"],
                     ),
                 )
             conn.commit()
@@ -719,24 +809,35 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     """
                     INSERT INTO ont_action_type
-                        (rid, tenant_id, parameters, submission_criteria, side_effects, function_ref, target_object_types, updated_at)
-                    VALUES (%s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s, now())
+                        (rid, tenant_id, parameters, submission_criteria, side_effects, function_ref, target_object_types, title, description, updated_at)
+                    VALUES (%s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s, %s, %s, now())
                     ON CONFLICT (rid) DO UPDATE SET
                         parameters = EXCLUDED.parameters,
                         submission_criteria = EXCLUDED.submission_criteria,
                         side_effects = EXCLUDED.side_effects,
                         function_ref = EXCLUDED.function_ref,
                         target_object_types = EXCLUDED.target_object_types,
+                        title = EXCLUDED.title,
+                        description = EXCLUDED.description,
                         updated_at = now()
                     """,
                     (
                         at.rid.rid,
                         tenant,
-                        json.dumps([p.rid.rid for p in at.parameters]),
+                        json.dumps([
+                            {
+                                "rid": p.rid.rid, "type_id": p.type_id,
+                                "nullable": p.nullable, "primary_key": p.primary_key,
+                                "title": p.title, "format": p.format.value,
+                            }
+                            for p in at.parameters
+                        ]),
                         json.dumps(list(at.submission_criteria)),
                         json.dumps(list(at.side_effects)),
                         at.function_ref.rid,
                         [c.rid for c in at.on],
+                        at.title,
+                        at.description,
                     ),
                 )
             conn.commit()
@@ -824,22 +925,9 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute("SELECT rid, parameters FROM ont_action_type ORDER BY rid")
+                cur.execute("SELECT * FROM ont_action_type ORDER BY rid")
                 rows = cur.fetchall()
-            from mate_kernel.ontology.types.action_type import ActionType
-            out: list[ActionType] = []
-            for r in rows:
-                out.append(
-                    ActionType(
-                        rid=ClassRef(r["rid"]),
-                        parameters=(),
-                        submission_criteria=(),
-                        side_effects=(),
-                        function_ref=ClassRef("ont.system.fn.noop.v1"),
-                        on=(),
-                    )
-                )
-            return out
+            return [_row_to_at(r) for r in rows]
         finally:
             conn.close()
 
@@ -876,28 +964,7 @@ class PgOntologyRepository(OntologyRepository):
                 row = cur.fetchone()
             if row is None:
                 raise KeyError(f"ActionType not found: {rid.rid}")
-            from mate_kernel.ontology.types.action_type import ActionType
-            # GOVERN-04: parameters 字段在 JSONB 存的是 rid 字符串列表。
-            # 重建时仅需 rid 元数据（slug 解析）；format/type_id 等不影响 apply。
-            param_rids = row.get("parameters") or []
-            return ActionType(
-                rid=ClassRef(row["rid"]),
-                parameters=tuple(
-                    Property(
-                        rid=ClassRef(p),
-                        type_id="string",
-                        nullable=False,
-                        primary_key=False,
-                        title="",
-                        format=PropertyFormat.STRING,
-                    )
-                    for p in param_rids
-                ),
-                submission_criteria=tuple(row.get("submission_criteria", []) or []),
-                side_effects=tuple(row.get("side_effects", []) or []),
-                function_ref=ClassRef(row.get("function_ref") or "ont.system.fn.noop.v1"),
-                on=tuple(ClassRef(c) for c in (row.get("target_object_types") or [])),
-            )
+            return _row_to_at(row)
         finally:
             conn.close()
 
@@ -1176,6 +1243,153 @@ class PgOntologyRepository(OntologyRepository):
             return [_row_to_individual(r) for r in rows]
         finally:
             conn.close()
+
+    # ───── MP-SAL-01: 结构化 IR 查询（ADR-0043 §2.1）─────
+
+    def execute_object_query(self, q: ObjectSetQuery) -> QueryResult:
+        """ObjectSetQuery IR → PG 执行，返回结果信封（与 InMemoryQueryExecutor 同语义）。"""
+        self._ensure_schema()
+        if q.aggregation is not None and q.sort:
+            raise ValueError("sort with aggregation is not supported")
+        for m in (q.aggregation.metrics if q.aggregation else ()):
+            if m.fn not in ("sum", "count", "avg", "min", "max"):
+                raise ValueError(f"unknown metric fn {m.fn!r}")
+            if m.fn != "count" and m.field is None:
+                raise ValueError(f"metric fn={m.fn!r} requires a field")
+
+        # slug → 完整 rid 归一化（与 evaluate_object_set 同一策略）
+        try:
+            ot = self.get_object_type(ClassRef(q.source))
+        except KeyError:
+            ot = None
+        slug_to_rid: dict[str, str] = {}
+        rid_type: dict[str, str] = {}
+        if ot is not None:
+            for p in ot.properties:
+                slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
+                rid_type[p.rid.rid] = p.type_id
+
+        params: list[Any] = [q.source]
+        inner = "SELECT rid FROM ont_individual WHERE class_rid = %s"
+        where_sql, where_params = _ir_where(q.filters, slug_to_rid)
+        if where_sql:
+            inner += f" AND ({where_sql})"
+            params.extend(where_params)
+
+        final_class = q.source
+        for step in q.traversal:
+            try:
+                lt = self.get_link_type(ClassRef(step.link_type))
+            except KeyError:
+                lt = None
+            if step.direction == "out":
+                inner = (
+                    "SELECT DISTINCT li.dst AS rid FROM ont_link_instance li "
+                    f"WHERE li.link_type_rid = %s AND li.src IN ({inner})"
+                )
+                final_class = lt.dst.rid if lt is not None else final_class
+            else:
+                inner = (
+                    "SELECT DISTINCT li.src AS rid FROM ont_link_instance li "
+                    f"WHERE li.link_type_rid = %s AND li.dst IN ({inner})"
+                )
+                final_class = lt.src.rid if lt is not None else final_class
+            # 新占位符（link_type_rid）在 SQL 文本中先于内层参数出现
+            params = [step.link_type, *params]
+
+        if q.aggregation is not None:
+            return self._object_query_aggregate(q, inner, params, slug_to_rid, final_class)
+
+        sql = f"SELECT * FROM ont_individual WHERE rid IN ({inner})"  # noqa: S608
+        order_parts: list[str] = []
+        for key in q.sort:
+            field_name = slug_to_rid.get(key.field, key.field)
+            if not _SAFE_JSON_KEY.match(field_name):
+                raise ValueError(f"unsafe sort field {key.field!r}")
+            cast = "::numeric" if rid_type.get(field_name) in _NUMERIC_TYPE_IDS else "::text"
+            direction = "DESC" if key.desc else "ASC"
+            order_parts.append(f"(props ->> '{field_name}'){cast} {direction}")
+        if order_parts:
+            sql += " ORDER BY " + ", ".join(order_parts)
+        sql += " LIMIT %s OFFSET %s"
+        params.extend([q.paging_limit, q.paging_offset])
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(sql, params)
+                rows = cur.fetchall()
+            individuals = [_row_to_individual(r) for r in rows]
+        finally:
+            conn.close()
+        return QueryResult(
+            kind="objects",
+            rows=tuple(individual_to_row(i) for i in individuals),
+            result_schema=self._ir_objects_schema(final_class),
+        )
+
+    def _object_query_aggregate(
+        self,
+        q: ObjectSetQuery,
+        inner: str,
+        params: list[Any],
+        slug_to_rid: dict[str, str],
+        final_class: str,
+    ) -> QueryResult:
+        agg = q.aggregation
+        assert agg is not None
+        select_parts: list[str] = []
+        group_parts: list[str] = []
+        for f in agg.group_by:
+            key = slug_to_rid.get(f, f)
+            if not _SAFE_JSON_KEY.match(key):
+                raise ValueError(f"unsafe group_by field {f!r}")
+            select_parts.append(f"(props ->> '{key}') AS \"{f}\"")
+            group_parts.append(f"(props ->> '{key}')")
+        for m in agg.metrics:
+            name = m.output_name()
+            if m.fn == "count" and m.field is None:
+                select_parts.append(f"COUNT(*) AS \"{name}\"")
+                continue
+            assert m.field is not None
+            key = slug_to_rid.get(m.field, m.field)
+            if not _SAFE_JSON_KEY.match(key):
+                raise ValueError(f"unsafe metric field {m.field!r}")
+            fn_sql = {"sum": "SUM", "count": "COUNT", "avg": "AVG", "min": "MIN", "max": "MAX"}[m.fn]
+            select_parts.append(f"{fn_sql}((props ->> '{key}')::numeric) AS \"{name}\"")
+
+        sql = (
+            f"SELECT {', '.join(select_parts)} FROM ont_individual "  # noqa: S608
+            f"WHERE rid IN ({inner})"
+        )
+        if group_parts:
+            sql += " GROUP BY " + ", ".join(group_parts)
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(sql, params)
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        normalized = tuple(
+            {k: (float(v) if isinstance(v, Decimal) else v) for k, v in r.items()} for r in rows
+        )
+        schema: dict[str, Any] = {f: {"role": "dimension"} for f in agg.group_by}
+        for m in agg.metrics:
+            schema[m.output_name()] = {"fn": m.fn, "field": m.field}
+        _ = final_class  # 聚合结果的 result_schema 与类无关（维度+度量）
+        return QueryResult(kind="aggregates", rows=normalized, result_schema=schema)
+
+    def _ir_objects_schema(self, class_rid: str) -> dict[str, Any] | None:
+        try:
+            ot = self.get_object_type(ClassRef(class_rid))
+        except KeyError:
+            return None
+        out: dict[str, Any] = {}
+        for p in ot.properties:
+            out[_prop_slug(p.rid.rid)] = {"type": p.type_id, "rid": p.rid.rid}
+        return out
 
     def apply_action(
         self,

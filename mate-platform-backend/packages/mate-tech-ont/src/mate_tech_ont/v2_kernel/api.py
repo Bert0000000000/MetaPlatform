@@ -34,6 +34,15 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from mate_kernel.objectset.ir import (  # noqa: I001
+    Aggregation,
+    Condition,
+    MetricSpec,
+    ObjectSetQuery,
+    QueryOp,
+    SortKey,
+    TraversalStep,
+)
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual, LinkInstance
@@ -44,6 +53,8 @@ from mate_kernel.ontology.types.interface import Interface
 from mate_kernel.ontology.types.link_type import Cardinality, Directionality, LinkType
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+from mate_kernel.tooling import schema_gen
+from mate_kernel.tooling.schema_gen import agent_tool_schemas
 from mate_platform.tenancy.guards import require_tenant
 
 router = APIRouter(prefix="/api/v1/ont/v2", tags=["v2-kernel"])
@@ -67,6 +78,7 @@ class ObjectTypeDTO(BaseModel):
     properties: list[PropertyDTO]
     display_name: str = ""
     interfaces: list[str] = Field(default_factory=list)
+    marking: list[str] = Field(default_factory=list)
 
 
 class ObjectTypeResponse(BaseModel):
@@ -75,6 +87,7 @@ class ObjectTypeResponse(BaseModel):
     properties: list[PropertyDTO]
     display_name: str = ""
     interfaces: list[str] = Field(default_factory=list)
+    marking: list[str] = Field(default_factory=list)
 
 
 class IndividualCreateDTO(BaseModel):
@@ -132,6 +145,8 @@ class ActionTypeDTO(BaseModel):
     side_effects: list[str] = Field(default_factory=list)
     function_ref: str
     on: list[str] = Field(default_factory=list)
+    title: str = ""
+    description: str = ""
 
 
 class LinkTypeDTO(BaseModel):
@@ -298,6 +313,7 @@ def _ot_to_dto(ot: ObjectType) -> ObjectTypeResponse:
         properties=[_prop_to_dto(p) for p in ot.properties],
         display_name=ot.display_name,
         interfaces=[i.rid for i in ot.interfaces],
+        marking=list(ot.marking),
     )
 
 
@@ -309,6 +325,8 @@ def _dto_to_action_type(d: ActionTypeDTO) -> ActionType:
         side_effects=tuple(d.side_effects),
         function_ref=ClassRef(d.function_ref),
         on=tuple(ClassRef(o) for o in d.on),
+        title=d.title,
+        description=d.description,
     )
 
 
@@ -320,6 +338,8 @@ def _action_type_to_dto(at: ActionType) -> ActionTypeDTO:
         side_effects=list(at.side_effects),
         function_ref=at.function_ref.rid,
         on=[c.rid for c in at.on],
+        title=at.title,
+        description=at.description,
     )
 
 
@@ -446,6 +466,7 @@ def _dto_to_ot(d: ObjectTypeDTO) -> ObjectType:
         properties=tuple(_dto_to_prop(p) for p in d.properties),
         display_name=d.display_name,
         interfaces=tuple(ClassRef(i) for i in d.interfaces),
+        marking=tuple(d.marking),
     )
 
 
@@ -951,6 +972,203 @@ async def query_object_set(
     results = await _call_scoped(request, "evaluate_object_set", os_)
     items = [_individual_to_response(i) for i in results]
     return ObjectSetResult(results=items, count=len(items))
+
+
+# ─────────────────── 11b) MP-SAL-01: IR 查询 / inspect / agent 工具 ───────────────────
+
+
+class QueryConditionDTO(BaseModel):
+    field: str
+    op: str
+    value: Any = None
+
+
+class QueryMetricDTO(BaseModel):
+    fn: str
+    field: str | None = None
+    alias: str | None = None
+
+
+class QueryAggregationDTO(BaseModel):
+    group_by: list[str] = Field(default_factory=list)
+    metrics: list[QueryMetricDTO]
+
+
+class QueryTraversalDTO(BaseModel):
+    link_type: str
+    direction: str
+
+
+class QuerySortKeyDTO(BaseModel):
+    field: str
+    desc: bool = False
+
+
+class ObjectQueryDTO(BaseModel):
+    source: str
+    filters: list[QueryConditionDTO] = Field(default_factory=list)
+    aggregation: QueryAggregationDTO | None = None
+    traversal: list[QueryTraversalDTO] = Field(default_factory=list)
+    sort: list[QuerySortKeyDTO] = Field(default_factory=list)
+    paging_offset: int = 0
+    paging_limit: int = 100
+
+
+class ObjectQueryResultDTO(BaseModel):
+    kind: str
+    rows: list[dict[str, Any]] = Field(default_factory=list)
+    result_schema: dict[str, Any] | None = None
+
+
+class InspectLinkDTO(BaseModel):
+    link_type: str
+    direction: str
+    peer_class: str
+
+
+class ClassInspectDTO(BaseModel):
+    rid: str
+    display_name: str = ""
+    marking: list[str] = Field(default_factory=list)
+    properties: list[PropertyDTO] = Field(default_factory=list)
+    links: list[InspectLinkDTO] = Field(default_factory=list)
+    actions: list[str] = Field(default_factory=list)
+
+
+class AgentToolDTO(BaseModel):
+    name: str
+    description: str = ""
+    class_rid: str | None = None
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+    result_schema: dict[str, Any] | None = None
+
+
+def _dto_to_ir_query(d: ObjectQueryDTO) -> ObjectSetQuery:
+    agg = None
+    if d.aggregation is not None:
+        agg = Aggregation(
+            group_by=tuple(d.aggregation.group_by),
+            metrics=tuple(
+                MetricSpec(fn=m.fn, field=m.field, alias=m.alias)
+                for m in d.aggregation.metrics
+            ),
+        )
+    try:
+        return ObjectSetQuery(
+            source=d.source,
+            filters=tuple(
+                Condition(field=c.field, op=QueryOp(c.op), value=c.value)
+                for c in d.filters
+            ),
+            aggregation=agg,
+            traversal=tuple(
+                TraversalStep(link_type=t.link_type, direction=t.direction)
+                for t in d.traversal
+            ),
+            sort=tuple(SortKey(field=s.field, desc=s.desc) for s in d.sort),
+            paging_offset=d.paging_offset,
+            paging_limit=d.paging_limit,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@router.post(
+    "/object-query",
+    response_model=ObjectQueryResultDTO,
+    operation_id="ontExecuteV2ObjectQuery",
+)
+async def execute_object_query(
+    payload: ObjectQueryDTO, request: Request,
+) -> ObjectQueryResultDTO:
+    """Structured IR query (ADR-0043): filters / aggregation / traversal / multi-key sort."""
+    ctx = _ctx(request)
+    if not payload.source.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant query denied")
+    q = _dto_to_ir_query(payload)
+    result = await _call_scoped(request, "execute_object_query", q)
+    return ObjectQueryResultDTO(
+        kind=result.kind,
+        rows=[dict(r) for r in result.rows],
+        result_schema=result.result_schema,
+    )
+
+
+@router.get(
+    "/classes/{class_rid}/inspect",
+    response_model=ClassInspectDTO,
+    operation_id="ontInspectV2Class",
+)
+async def inspect_class(class_rid: str, request: Request) -> ClassInspectDTO:
+    """Type introspection for agents (ADR-0043 §2.2)."""
+    _ctx(request)
+    try:
+        ot = await _call_scoped(request, "get_object_type", ClassRef(class_rid))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    link_types = await _call_scoped(request, "list_link_types")
+    links: list[InspectLinkDTO] = []
+    for lt in link_types:
+        if lt.src.rid == class_rid:
+            links.append(InspectLinkDTO(
+                link_type=lt.rid.rid, direction="out", peer_class=lt.dst.rid,
+            ))
+        if lt.dst.rid == class_rid:
+            links.append(InspectLinkDTO(
+                link_type=lt.rid.rid, direction="in", peer_class=lt.src.rid,
+            ))
+    action_types = await _call_scoped(request, "list_action_types")
+    actions = [
+        at.rid.rid for at in action_types
+        if class_rid in [str(r) for r in getattr(at, "on", ())]
+    ]
+    return ClassInspectDTO(
+        rid=ot.rid.rid,
+        display_name=ot.display_name,
+        marking=list(ot.marking),
+        properties=[_prop_to_dto(p) for p in ot.properties],
+        links=links,
+        actions=actions,
+    )
+
+
+@router.get(
+    "/agent-tools",
+    response_model=list[AgentToolDTO],
+    operation_id="ontListV2AgentTools",
+)
+async def list_agent_tools(
+    request: Request, markings: str = "",
+) -> list[AgentToolDTO]:
+    """Virtual registry: tools computed on demand from ont_object_types (zero push sync)."""
+    ctx = _ctx(request)
+    caller_markings = tuple(m.strip() for m in markings.split(",") if m.strip())
+
+    object_types = await _call_scoped(request, "list_object_types", 10000, 0)
+    links = await _call_scoped(request, "list_link_instances")
+    schemas = agent_tool_schemas(object_types, links, caller_markings)
+    tools: list[AgentToolDTO] = []
+    for s in schemas:
+        name = s["function"]["name"]
+        if not name.startswith("query_"):
+            continue
+        tools.append(AgentToolDTO(
+            name=name,
+            description=s["function"].get("description", ""),
+            class_rid=_class_rid_of_tool(object_types, name),
+            input_schema=s["function"]["parameters"],
+        ))
+    return tools
+
+
+def _class_rid_of_tool(
+    object_types: list[ObjectType], tool_name: str,
+) -> str | None:
+    slug = tool_name.removeprefix("query_")
+    for ot in object_types:
+        if schema_gen.slug_of_rid(ot.rid.rid).replace("-", "_") == slug:
+            return ot.rid.rid
+    return None
 
 
 # ─────────────────── 12) LinkInstance CRUD ───────────────────

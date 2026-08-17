@@ -83,15 +83,21 @@ def build_system_prompt(roles: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def build_tools(roles: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """有可调度角色时暴露 dispatch_employee，否则不暴露工具（纯对话）。"""
-    if not roles:
-        return []
-    schema = json.loads(json.dumps(DISPATCH_TOOL_SCHEMA))
-    slug_values = [str(r.get("role")) for r in roles if r.get("role")]
-    if slug_values:
-        schema["function"]["parameters"]["properties"]["target_rid"]["enum"] = slug_values
-    return [schema]
+def build_tools(
+    roles: list[dict[str, Any]],
+    ontology_tools: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """dispatch_employee（有可调度角色时）+ ontology 工具（MP-SAL-01，虚拟注册表）。"""
+    tools: list[dict[str, Any]] = []
+    if roles:
+        schema = json.loads(json.dumps(DISPATCH_TOOL_SCHEMA))
+        slug_values = [str(r.get("role")) for r in roles if r.get("role")]
+        if slug_values:
+            schema["function"]["parameters"]["properties"]["target_rid"]["enum"] = slug_values
+        tools.append(schema)
+    if ontology_tools:
+        tools.extend(json.loads(json.dumps(t)) for t in ontology_tools)
+    return tools
 
 
 def _fallback_decision(
