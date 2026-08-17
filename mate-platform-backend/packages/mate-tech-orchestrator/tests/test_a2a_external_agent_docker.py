@@ -14,6 +14,13 @@ the rebuilt image once the compose stack is up.
 """
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip(
+    "mate_a2a_external_agent",
+    reason="a2a-external-agent service package is not present in this checkout",
+)
+
 from fastapi.testclient import TestClient
 from mate_a2a_external_agent.server import SKILLS, app
 

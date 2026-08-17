@@ -1,12 +1,13 @@
 """Cross-service E2E: SuperAI (orchestrator) → real A2A center, no mock.
 
 The orchestrator's A2AWorker posts over a REAL HTTP transport (httpx
-``ASGITransport``) to a live ``mate-app-a2a`` ASGI app. The A2A center
-authenticates the service call (INSECURE profile), creates a
-``DelegationTask`` for the target digital employee, and returns a W3C
-Task. We then read the A2A center's repository directly to prove the
-other agent really received the delegation — the whole SuperAI → A2A
-scheduling scenario is exercised across two independent services.
+``ASGITransport``) to a live ``mate-app-a2a`` ASGI app — via the sync
+``POST /execute`` path. The A2A center authenticates the service call
+(INSECURE profile), creates a ``DelegationTask`` for the target digital
+employee, runs it inline, and returns the real outcome. We then read
+the A2A center's repository directly to prove the other agent really
+received the delegation — the whole SuperAI → A2A scheduling scenario
+is exercised across two independent services.
 
 Unlike ``test_superai_a2a_scheduling.py`` (which asserts the wire
 envelope via ``respx``), this test does NOT mock the center: the
@@ -151,7 +152,7 @@ def test_superai_delegates_to_agent_across_services() -> None:
         task = delegated[0]
         assert task.target_agent_id == TARGET_AGENT  # addressed to the other agent
         assert task.tenant_id == TENANT
-        assert task.status == "pending"  # internal model; maps to W3C "submitted"
+        assert task.status == "completed"  # sync execute runs the agent inline
         # W3C correlation ids are preserved on the A2A side.
         assert str(task.context["messageId"]).startswith("orch-")
         assert task.context["target_agent_id"] == TARGET_AGENT

@@ -6,7 +6,7 @@ full chain end-to-end:
 
     SuperAI intent → employee match → plan generate → plan execute
         → Dispatcher → A2AWorker → A2AMessagesClient
-        → POST /api/v1/a2a/messages  (real W3C envelope on the wire)
+        → POST /api/v1/a2a/execute  (real W3C envelope, sync outcome)
 
 The A2A center's HTTP surface is intercepted with ``respx`` (not mocked at
 the worker boundary), so the assertion is on the *actual* message the
@@ -34,7 +34,7 @@ from mate_clients.a2a.messages import A2AMessagesClient
 
 # A virtual A2A center the respx router stands up in front of.
 A2A_BASE = "http://mock-a2a-center:8502"
-MESSAGES_URL = f"{A2A_BASE}/api/v1/a2a/messages"
+EXECUTE_URL = f"{A2A_BASE}/api/v1/a2a/execute"
 
 TARGET_AGENT = "ext-translator"  # the "other agent" / digital employee being scheduled
 
@@ -76,14 +76,13 @@ def _reset() -> None:
     get_role_registry().reset()
 
 
-def _a2a_task_response() -> dict[str, object]:
-    """The W3C A2A Task object the center returns (matches a2a.yaml contract)."""
+def _a2a_execute_response() -> dict[str, object]:
+    """The sync outcome the center returns for ``POST /execute`` (a2a contract)."""
     return {
-        "id": "task-a2a-delegated-1",
-        "contextId": "ctx-1",
-        "status": {"state": "submitted"},
-        "artifacts": [],
-        "history": [],
+        "status": "completed",
+        "task_id": "task-a2a-delegated-1",
+        "target_agent_id": TARGET_AGENT,
+        "result": {"message": "delegated task"},
     }
 
 
@@ -95,8 +94,8 @@ def test_superai_schedules_other_agent_over_a2a(
     _register_roles()
     _wire_real_a2a_dispatcher()
     try:
-        route = respx.post(MESSAGES_URL)
-        route.return_value = httpx.Response(200, json=_a2a_task_response())
+        route = respx.post(EXECUTE_URL)
+        route.return_value = httpx.Response(200, json=_a2a_execute_response())
 
         # 1. Intent detection — text → intent → matched employee.
         intent = client.post(
@@ -166,8 +165,8 @@ async def test_a2a_worker_emits_w3c_envelope_to_target_agent() -> None:
     Invokes the real worker (no Dispatcher) so the wire format is verified
     in isolation from the plan runner's HITL mechanics.
     """
-    route = respx.post(MESSAGES_URL)
-    route.return_value = httpx.Response(200, json=_a2a_task_response())
+    route = respx.post(EXECUTE_URL)
+    route.return_value = httpx.Response(200, json=_a2a_execute_response())
 
     worker = A2AWorker(client=A2AMessagesClient(base_url=A2A_BASE))
     try:
@@ -186,8 +185,9 @@ async def test_a2a_worker_emits_w3c_envelope_to_target_agent() -> None:
         }
         text_part = next(p for p in envelope["parts"] if p["kind"] == "text")
         assert text_part["text"] == "translate this contract"
-        # The worker echoes back the agent it dispatched to.
-        assert task["id"] == "task-a2a-delegated-1"
+        # The worker echoes back the agent it dispatched to, plus the sync outcome.
+        assert task["task_id"] == "task-a2a-delegated-1"
+        assert task["status"] == "completed"
         assert task["target_agent_id"] == TARGET_AGENT
     finally:
         await worker.aclose()
