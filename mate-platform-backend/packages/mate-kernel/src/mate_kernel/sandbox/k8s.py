@@ -14,8 +14,10 @@ RUNTIME-K8S-02 (RUNTIME-MVP-02 合并提速) 加 SubprocessExecutor 真起进程
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import uuid
 import subprocess
 import sys
 import tempfile
@@ -210,6 +212,129 @@ class SubprocessExecutor:
                 return (1, "", f"runner error: {type(e).__name__}: {e}")
 
 
+class K8sJobExecutor:
+    """MP-SAL-03（ADR-0040 §2.5.2）：真接 K8s Job 的 L2 执行器。
+
+    零新依赖：经 `kubectl` 子进程提交 batch/v1 Job（manifest 由 K8sSandboxSpec
+    渲染，资源限/超时/NetworkPolicy 语义映射 activeDeadlineSeconds + Limits），
+    等待完成 → 取日志 → 清理。dev 双轨保留（SANDBOX_BACKEND=subprocess 默认，
+    ADR-0040 §2.5.1）；prod 置 SANDBOX_BACKEND=k8s + 提供 KUBECONFIG。
+
+    安全：restartPolicy=Never；serviceAccount 最小权限；超时走
+    activeDeadlineSeconds（控制器级，非进程级）。
+    """
+
+    def __init__(
+        self,
+        kubectl: str = "kubectl",
+        namespace: str = "mate-sandbox",
+        poll_interval: float = 1.0,
+        _runner: Any = None,  # 测试注入（默认 subprocess.run）
+    ) -> None:
+        self._kubectl = kubectl
+        self._namespace = namespace
+        self._poll_interval = poll_interval
+        self._run = _runner or subprocess.run
+
+    def render_job_manifest(self, spec: K8sSandboxSpec, job_name: str) -> dict[str, Any]:
+        limits = spec.resource_limits
+        driver = (
+            "import sys, json\n"
+            "_args = json.loads(sys.argv[1])\n"
+            f"_USER_SRC = {spec.function_source!r}\n"
+            "_ns = {}\n"
+            "exec(compile(_USER_SRC, '<sandbox>', 'exec'), {'__builtins__': __builtins__}, _ns)\n"
+            "_fn = _ns.get('handler') or _ns.get('main') or _ns.get('fn')\n"
+            "if _fn is None or not callable(_fn):\n"
+            "    print('NO_HANDLER', file=sys.stderr); sys.exit(2)\n"
+            "_out = _fn(*_args)\n"
+            "print(json.dumps(_out, default=str))\n"
+        )
+        labels = {
+            "app.kubernetes.io/managed-by": "mate-sandbox",
+            "mate.metaplatform/function-ref": spec.function_ref.replace(".", "-"),
+            **{f"mate.metaplatform/{k}": v for k, v in spec.labels.items()},
+        }
+        return {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {"name": job_name, "namespace": self._namespace, "labels": labels},
+            "spec": {
+                "backoffLimit": 0,
+                "activeDeadlineSeconds": limits.timeout_seconds,
+                "ttlSecondsAfterFinished": 600,
+                "template": {
+                    "metadata": {
+                        "annotations": {
+                            # NetworkPolicy 声明留给集群 default-deny 策略（硬规则 13）；
+                            # egress 白名单以注解携带，由 NetPol 控制器对齐。
+                            "mate.metaplatform/egress-allow": ",".join(spec.network_policy.egress_allow_cidrs),
+                        },
+                    },
+                    "spec": {
+                        "restartPolicy": "Never",
+                        "serviceAccountName": spec.service_account,
+                        "containers": [{
+                            "name": "fn",
+                            "image": spec.image,
+                            "command": ["python", "-c", driver],
+                            "args": [json.dumps(list(spec.arguments), default=str)],
+                            "resources": {
+                                "limits": {
+                                    "cpu": f"{limits.cpu_millicores}m",
+                                    "memory": f"{limits.memory_mb}Mi",
+                                    "ephemeral-storage": f"{limits.ephemeral_storage_mb}Mi",
+                                },
+                            },
+                        }],
+                    },
+                },
+            },
+        }
+
+    def execute(self, source: str, args: tuple[Any, ...]) -> tuple[int, str, str]:
+        """FunctionExecutor 协议入口：完整 Job 生命周期（apply→wait→logs→delete）。"""
+        spec = K8sSandboxSpec(
+            function_ref="fn.exec", function_source=source, arguments=args,
+            resource_limits=ResourceLimits(),
+            network_policy=NetworkPolicy(),
+        )
+        job_name = f"sandbox-fn-{uuid.uuid4().hex[:10]}"
+        manifest = self.render_job_manifest(spec, job_name)
+        try:
+            applied = self._run(
+                [self._kubectl, "-n", self._namespace, "apply", "-f", "-"],
+                input=json.dumps(manifest), capture_output=True, text=True, timeout=30,
+            )
+            if applied.returncode != 0:
+                return (1, "", f"kubectl apply failed: {applied.stderr}")
+            waited = self._run(
+                [self._kubectl, "-n", self._namespace, "wait", f"job/{job_name}",
+                 "--for=condition=complete", f"--timeout={spec.resource_limits.timeout_seconds}s"],
+                capture_output=True, text=True, timeout=spec.resource_limits.timeout_seconds + 30,
+            )
+            if waited.returncode != 0:
+                logs = self._run(
+                    [self._kubectl, "-n", self._namespace, "logs", f"job/{job_name}"],
+                    capture_output=True, text=True, timeout=30,
+                )
+                return (1, logs.stdout or "", f"job failed: {waited.stderr or 'condition not met'}")
+            logs = self._run(
+                [self._kubectl, "-n", self._namespace, "logs", f"job/{job_name}"],
+                capture_output=True, text=True, timeout=30,
+            )
+            return (0, logs.stdout, logs.stderr)
+        except Exception as e:  # noqa: BLE001 — 集群不可达等降级为执行失败
+            return (1, "", f"k8s executor error: {type(e).__name__}: {e}")
+        finally:
+            with contextlib.suppress(Exception):
+                self._run(
+                    [self._kubectl, "-n", self._namespace, "delete", "job", job_name,
+                     "--ignore-not-found"],
+                    capture_output=True, text=True, timeout=30,
+                )
+
+
 class K8sSandboxRunner:
     """K8s Job 抽象 —— M3 内存模拟器（行为对齐真 K8s：pending → running → result）。"""
 
@@ -220,11 +345,14 @@ class K8sSandboxRunner:
     ) -> None:
         # RUNTIME-K8S-02: 默认用 SubprocessExecutor 真跑；
         # 显式 backend="memory" 才退到 _SimplePythonExecutor（test 兼容）。
+        # MP-SAL-03: backend="k8s" → K8sJobExecutor 真接 K8s Job（L2，prod）。
         self.backend = (backend or os.getenv("SANDBOX_BACKEND", "subprocess")).lower()
         if executor is not None:
             self.executor = executor
         elif self.backend == "subprocess":
             self.executor = SubprocessExecutor()
+        elif self.backend == "k8s":
+            self.executor = K8sJobExecutor()
         else:
             self.executor = _SimplePythonExecutor()
         self._jobs: dict[str, SandboxResult] = {}
@@ -263,6 +391,7 @@ class K8sSandboxRunner:
 
 __all__ = [
     "JobPhase",
+    "K8sJobExecutor",
     "K8sSandboxRunner",
     "K8sSandboxSpec",
     "NetworkPolicy",

@@ -47,6 +47,14 @@ class TestExecutionAuthenticity:
     def test_apply_records_proposal_id_and_hitl_token(self) -> None:
         s = self._service()
         self._register_fn(s)
+        # MP-SAL-04（ADR-0044）：apply(proposal_id) 要求真实且已确认的 proposal
+        p = s.propose(
+            action_rid="ont.acme.act.approve",
+            parameters={"status": "pending"},
+            target_iid="ont.acme.ind.order.1",
+            impact_summary="Approve order 1",
+        )
+        s.confirm_proposal(p.proposal_id, confirmed_by="alice")
         outcome = s.apply(
             action_rid="ont.acme.act.approve",
             submission_criteria=("status == 'pending'",),
@@ -56,9 +64,9 @@ class TestExecutionAuthenticity:
             parameters={"status": "pending"},
             side_effects=("notify_email",),
             ctx=self._ctx(hitl_token="tok-abc"),
-            proposal_id="prop-1234",
+            proposal_id=p.proposal_id,
         )
-        assert outcome.proposal_id == "prop-1234"
+        assert outcome.proposal_id == p.proposal_id
         assert outcome.hitl_token == "tok-abc"
         assert outcome.function_result == {"ok": True}
 
@@ -75,6 +83,14 @@ class TestExecutionAuthenticity:
                 return "evt-2"
             return None
 
+        # MP-SAL-04（ADR-0044）：emitter 证据链走真实已确认 proposal
+        p = s.propose(
+            action_rid="ont.acme.act.notify",
+            parameters={},
+            target_iid="ont.acme.ind.order.1",
+            impact_summary="Notify",
+        )
+        s.confirm_proposal(p.proposal_id, confirmed_by="alice")
         outcome = s.apply(
             action_rid="ont.acme.act.notify",
             submission_criteria=(),
@@ -84,7 +100,7 @@ class TestExecutionAuthenticity:
             parameters={},
             side_effects=("notify_email", "audit_log", "noop"),
             ctx=self._ctx(),
-            proposal_id="prop-9",
+            proposal_id=p.proposal_id,
             side_effect_emitter=emit,
         )
         assert ("notify_email", "evt-1") in outcome.side_effect_events
