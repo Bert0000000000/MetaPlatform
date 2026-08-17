@@ -1237,6 +1237,50 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ProposalV2'}
         '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/action-types/{rid}/flow:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema: {type: string}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Get flow orchestration definition for an ActionType (SAL-05 persist)
+      operationId: ontGetV2ActionFlow
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL05-GETFLOW]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ActionFlowV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+    put:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Persist flow orchestration definition for an ActionType (SAL-05 persist)
+      operationId: ontPutV2ActionFlow
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL05-PUTFLOW]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ActionFlowUpsertV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ActionFlowV2'}
   /api/v1/ont/v2/proposals/{proposal_id}:
     parameters:
     - in: path
@@ -2189,6 +2233,22 @@ components:
       properties:
         type_def: {$ref: '#/components/schemas/ObjectTypeCreateV2'}
         impact_summary: {type: string}
+    ActionFlowUpsertV2:
+      type: object
+      additionalProperties: false
+      required: [flow_json]
+      properties:
+        flow_json: {type: object, additionalProperties: true, description: "FlowGram WorkflowJSON (nodes/edges)"}
+        config: {type: object, additionalProperties: true, description: "per-node editable field config"}
+    ActionFlowV2:
+      type: object
+      additionalProperties: false
+      required: [action_rid, flow_json]
+      properties:
+        action_rid: {type: string}
+        flow_json: {type: object, additionalProperties: true}
+        config: {type: object, additionalProperties: true}
+        updated_at: {type: string, format: date-time}
     ProposalV2:
       type: object
       additionalProperties: false

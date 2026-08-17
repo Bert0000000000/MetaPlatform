@@ -52,6 +52,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._embeddings: dict[str, dict[str, Any]] = {}
         # MP-SAL-04: side_effect outbox 写回（None = dev 未接）
         self._outbox_writer: Any = None
+        # MP-SAL-05: 流程编排定义持久化
+        self._flow_definitions: dict[str, dict[str, Any]] = {}
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
         from .function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
@@ -421,6 +423,29 @@ class InMemoryOntologyRepository(OntologyRepository):
 
     def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
         return self._action_service.reject_proposal(proposal_id, confirmed_by=confirmed_by)
+
+    # ───── MP-SAL-05: 流程编排定义持久化（dev InMemory 同语义）─────
+
+    def get_flow_definition(self, action_rid: ClassRef) -> dict[str, Any]:
+        key = action_rid.rid
+        if key not in self._flow_definitions:
+            raise KeyError(f"flow definition not found: {key}")
+        return dict(self._flow_definitions[key])
+
+    def put_flow_definition(
+        self, action_rid: ClassRef, flow_json: dict[str, Any],
+        config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        from datetime import UTC as _UTC, datetime as _dt
+
+        entry = {
+            "action_rid": action_rid.rid,
+            "flow_json": dict(flow_json),
+            "config": dict(config or {}),
+            "updated_at": _dt.now(_UTC).isoformat(),
+        }
+        self._flow_definitions[action_rid.rid] = entry
+        return dict(entry)
 
     def apply_action(self, action_rid: ClassRef, target_iid: str, parameters: dict[str, Any], provenance: dict[str, Any]) -> tuple[datetime, list[str]]:
         # ACTION-03 协议：submission_criteria 求值 → Function 落库 → side_effects。

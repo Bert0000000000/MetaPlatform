@@ -209,6 +209,17 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_fn_tenant ON ont_function (tenant_id)",
+    # MP-SAL-05: 流程编排定义持久化（FlowGram WorkflowJSON + 字段配置，按 action_rid 关联）
+    """
+    CREATE TABLE IF NOT EXISTS ont_flow_definition (
+        action_rid TEXT PRIMARY KEY,
+        tenant_id  TEXT NOT NULL,
+        flow_json  JSONB NOT NULL DEFAULT '{}'::jsonb,
+        config     JSONB NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_flow_tenant ON ont_flow_definition (tenant_id)",
 )
 
 
@@ -1824,6 +1835,61 @@ class PgOntologyRepository(OntologyRepository):
             )
             return saved
         raise ValueError(f"unknown proposal kind: {p.kind!r}")
+
+    # ───── MP-SAL-05: 流程编排定义持久化（flow definition）─────
+
+    def get_flow_definition(self, action_rid: ClassRef) -> dict[str, Any]:
+        """读取 ActionType 的流程编排定义（未保存 → KeyError）。"""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_flow_definition WHERE action_rid = %s",
+                    (action_rid.rid,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            raise KeyError(f"flow definition not found: {action_rid.rid}")
+        return {
+            "action_rid": row["action_rid"],
+            "flow_json": row["flow_json"] if isinstance(row["flow_json"], dict) else json.loads(row["flow_json"]),
+            "config": row["config"] if isinstance(row["config"], dict) else json.loads(row["config"]),
+            "updated_at": row["updated_at"],
+        }
+
+    def put_flow_definition(
+        self, action_rid: ClassRef, flow_json: dict[str, Any],
+        config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """持久化 ActionType 的流程编排定义（upsert）。"""
+        self._ensure_schema()
+        tenant_id = action_rid.rid.split(".")[1] if "." in action_rid.rid else ""
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_flow_definition
+                        (action_rid, tenant_id, flow_json, config, updated_at)
+                    VALUES (%s, %s, %s::jsonb, %s::jsonb, now())
+                    ON CONFLICT (action_rid) DO UPDATE SET
+                        flow_json = EXCLUDED.flow_json,
+                        config = EXCLUDED.config,
+                        updated_at = now()
+                    """,
+                    (
+                        action_rid.rid, tenant_id,
+                        json.dumps(flow_json, default=str),
+                        json.dumps(config or {}, default=str),
+                    ),
+                )
+            conn.commit()
+            return self.get_flow_definition(action_rid)
+        finally:
+            conn.close()
 
     def apply_action(
         self,

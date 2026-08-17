@@ -884,6 +884,60 @@ async def propose_action(
     return _proposal_to_dto(prop)
 
 
+class ActionFlowUpsertDTO(BaseModel):
+    """MP-SAL-05：流程编排定义持久化（FlowGram WorkflowJSON + 字段配置）。"""
+
+    flow_json: dict[str, Any]
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class ActionFlowResponse(BaseModel):
+    action_rid: str
+    flow_json: dict[str, Any]
+    config: dict[str, Any] = Field(default_factory=dict)
+    updated_at: str = ""
+
+
+@router.get(
+    "/action-types/{rid:path}/flow",
+    response_model=ActionFlowResponse,
+    operation_id="ontGetV2ActionFlow",
+)
+async def get_action_flow(rid: str, request: Request) -> ActionFlowResponse:
+    """MP-SAL-05：读取 ActionType 的流程编排定义（未保存 → 404）。"""
+    _ctx(request)
+    try:
+        d = await _call_scoped(request, "get_flow_definition", ClassRef(rid))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return ActionFlowResponse(
+        action_rid=d["action_rid"], flow_json=d["flow_json"], config=d["config"],
+        updated_at=str(d.get("updated_at") or ""),
+    )
+
+
+@router.put(
+    "/action-types/{rid:path}/flow",
+    response_model=ActionFlowResponse,
+    operation_id="ontPutV2ActionFlow",
+)
+async def put_action_flow(
+    rid: str, payload: ActionFlowUpsertDTO, request: Request,
+) -> ActionFlowResponse:
+    """MP-SAL-05：持久化 ActionType 的流程编排定义（upsert）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant flow denied")
+    d = await _call_scoped(
+        request, "put_flow_definition", ClassRef(rid),
+        payload.flow_json, payload.config,
+    )
+    return ActionFlowResponse(
+        action_rid=d["action_rid"], flow_json=d["flow_json"], config=d["config"],
+        updated_at=str(d.get("updated_at") or ""),
+    )
+
+
 @router.get(
     "/proposals/{proposal_id}",
     response_model=ProposalResponse,
