@@ -608,7 +608,7 @@ class PgOntologyRepository(OntologyRepository):
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
         self._function_executor: object | None = None
         # MP-SAL-02: 对象语义检索 embedder（env 未配置时为 None → 索引跳过）
-        from .object_search import build_env_embedder  # noqa: PLC0415
+        from .object_search import build_env_embedder
         self._embedder: object | None = build_env_embedder()
         # MP-SAL-04: side_effect outbox 写回（ADR-0044 §2.3；None = dev 未接，行为不变）
         self._outbox_writer: Any = None
@@ -619,7 +619,7 @@ class PgOntologyRepository(OntologyRepository):
         # 友好（compose 启动顺序保护），生产期望 K8s readiness 失败。
         try:
             self._ensure_schema()
-        except Exception as exc:  # noqa: BLE001 — bootstrap 失败降级
+        except Exception as exc:  # bootstrap 失败降级
             import logging
             logging.getLogger(__name__).warning(
                 "pg_schema_bootstrap_failed", extra={"dsn": dsn, "error": str(exc)},
@@ -1436,11 +1436,13 @@ class PgOntologyRepository(OntologyRepository):
         """注入 embedder（协议：embed(text)->list[float]）；None = 跳过索引。"""
         self._embedder = embedder
 
-    def _embed_chunks(self, ind: Individual) -> list[tuple[str, str, str, str, list[float]]]:
-        """Individual → [(chunk_id, individual_rid, class_rid, property_rid, vec)]。"""
+    def _embed_chunks(
+        self, ind: Individual,
+    ) -> list[tuple[str, str, str, str, str, list[float]]]:
+        """Individual → [(chunk_id, individual_rid, class_rid, property_rid, value_text, vec)]。"""
         if self._embedder is None:
             return []
-        out: list[tuple[str, str, str, str, list[float]]] = []
+        out: list[tuple[str, str, str, str, str, list[float]]] = []
         for prop_ref, value in ind.props:
             slug = _prop_slug(prop_ref.rid)
             text = f"{slug} {value}"
@@ -1449,6 +1451,7 @@ class PgOntologyRepository(OntologyRepository):
                 ind.rid,
                 ind.class_rid.rid,
                 prop_ref.rid,
+                str(value),
                 self._embedder.embed(text),
             ))
         return out
@@ -1460,7 +1463,7 @@ class PgOntologyRepository(OntologyRepository):
             if not chunks:
                 return
             with self._cursor(conn) as cur:
-                for chunk_id, individual_rid, class_rid, property_rid, vec in chunks:
+                for chunk_id, individual_rid, class_rid, property_rid, value_text, vec in chunks:
                     cur.execute(
                         """
                         INSERT INTO ont_object_embedding
@@ -1469,14 +1472,15 @@ class PgOntologyRepository(OntologyRepository):
                         VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, now())
                         ON CONFLICT (chunk_id) DO UPDATE SET
                             embedding = EXCLUDED.embedding,
+                            value_text = EXCLUDED.value_text,
                             created_at = now()
                         """,
                         (
                             chunk_id, individual_rid, class_rid, property_rid,
-                            chunk_id.split("#", 1)[1], json.dumps(vec), ind.tenant_id,
+                            value_text, json.dumps(vec), ind.tenant_id,
                         ),
                     )
-        except Exception:  # noqa: BLE001 — 索引失败不影响主路径
+        except Exception:  # 索引失败不影响主路径
             import logging
             logging.getLogger(__name__).warning(
                 "object_embedding_index_failed", extra={"rid": ind.rid},
@@ -1484,18 +1488,31 @@ class PgOntologyRepository(OntologyRepository):
 
     def search_objects(
         self, text: str, class_rid: str | None = None, top_k: int = 5,
+        tenant_id: str | None = None,
     ) -> list[dict[str, Any]]:
-        """语义检索 → 对象卡片（带 rid 可追溯）。"""
+        """语义检索 → 对象卡片（带 rid 可追溯）。
+
+        tenant_id 显式传入优先（``_call_scoped`` 经 asyncio.to_thread 执行，
+        tenant_scope 的 threading.local 在工作线程不可见 —— 显式参数是
+        RLS 之外的第二道防线，13 硬规则 #3）。
+        """
         if self._embedder is None:
             return []
-        from .object_search import build_card, cosine  # noqa: PLC0415
+        from .object_search import build_card, cosine
 
         qvec = self._embedder.embed(text)
-        sql = "SELECT * FROM ont_object_embedding"
+        tenant = tenant_id or self._current_tenant()
+        conds: list[str] = []
         params: list[Any] = []
+        if tenant:
+            conds.append("tenant_id = %s")
+            params.append(tenant)
         if class_rid:
-            sql += " WHERE class_rid = %s"
+            conds.append("class_rid = %s")
             params.append(class_rid)
+        sql = "SELECT * FROM ont_object_embedding"
+        if conds:
+            sql += " WHERE " + " AND ".join(conds)
         self._ensure_schema()
         conn, _ = self._connect()
         try:
@@ -1530,13 +1547,19 @@ class PgOntologyRepository(OntologyRepository):
         cards.sort(key=lambda c: c["score"], reverse=True)
         return cards[:top_k]
 
-    def reindex_object_embeddings(self) -> int:
-        """存量补齐：全量 Individual 重嵌入（返回索引的 Individual 数）。"""
+    def reindex_object_embeddings(self, tenant_id: str | None = None) -> int:
+        """存量补齐：租户内全量 Individual 重嵌入（返回索引数；tenant 显式传参优先）。"""
         self._ensure_schema()
         conn, _ = self._connect()
         try:
+            tenant = tenant_id or self._current_tenant()
             with self._cursor(conn) as cur:
-                cur.execute("SELECT * FROM ont_individual")
+                if tenant:
+                    cur.execute(
+                        "SELECT * FROM ont_individual WHERE tenant_id = %s", (tenant,),
+                    )
+                else:
+                    cur.execute("SELECT * FROM ont_individual")
                 rows = cur.fetchall()
             count = 0
             for r in rows:
@@ -1626,7 +1649,7 @@ class PgOntologyRepository(OntologyRepository):
 
     def _hydrate_proposal(self, row: dict[str, Any]) -> Any:
         """PG 行 → ActionProposal（并回填引擎镜像，apply 校验用）。"""
-        from mate_kernel.action.engine import ActionProposal, ProposalStatus  # noqa: PLC0415
+        from mate_kernel.action.engine import ActionProposal, ProposalStatus
 
         params = row.get("parameters") or {}
         if not isinstance(params, dict):
@@ -1646,7 +1669,7 @@ class PgOntologyRepository(OntologyRepository):
             confirmed_by=row.get("confirmed_by"),
             confirmed_at=row.get("confirmed_at"),
         )
-        self._action_service._proposals[prop.proposal_id] = prop  # noqa: SLF001 — 镜像回填
+        self._action_service._proposals[prop.proposal_id] = prop  # 镜像回填
         return prop
 
     def _persist_proposal_transition(self, prop: Any) -> None:
@@ -1705,18 +1728,16 @@ class PgOntologyRepository(OntologyRepository):
         # outbox writer 注入时构造 emitter，事件 id 回填 ApplyOutcome.side_effect_events。
         proposal_id = provenance.get("proposal_id") or None
         if proposal_id is not None:
-            try:
+            with suppress(KeyError):
                 self.get_proposal(proposal_id)  # 跨进程场景：行 → 引擎镜像回填
-            except KeyError:
-                pass
         emitter = None
         if self._outbox_writer is not None:
-            def emitter(se: str, *, _w=self._outbox_writer, _t=ind.tenant_id, _a=at.rid.rid, _g=target_iid, _p=proposal_id) -> str | None:  # noqa: E731
+            def emitter(se: str, *, _w=self._outbox_writer, _t=ind.tenant_id, _a=at.rid.rid, _g=target_iid, _p=proposal_id) -> str | None:
                 try:
                     return str(_w(se, _t, {
                         "action_rid": _a, "target_iid": _g, "proposal_id": _p,
                     }))
-                except Exception:  # noqa: BLE001 — outbox 失败不阻断 apply（审计留 None）
+                except Exception:  # outbox 失败不阻断 apply（审计留 None）
                     return None
 
         outcome = self._action_service.apply(

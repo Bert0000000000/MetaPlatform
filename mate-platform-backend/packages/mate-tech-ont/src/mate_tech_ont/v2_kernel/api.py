@@ -34,7 +34,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from mate_kernel.objectset.ir import (  # noqa: I001
+from mate_kernel.action.engine import ProposalNotConfirmed
+from mate_kernel.objectset.ir import (
     Aggregation,
     Condition,
     MetricSpec,
@@ -697,6 +698,9 @@ async def _apply_action(request: Request, action_rid: str, payload: ActionApplyB
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except ProposalNotConfirmed as e:
+        # MP-SAL-04：未确认/已拒绝/不匹配的 proposal 永不落库（北极星 negative）
+        raise HTTPException(status_code=409, detail=str(e)) from e
     return ActionApplyResponse(
         action_rid=rid_ref.rid,
         applied_at=applied_at.isoformat(),
@@ -1263,7 +1267,7 @@ async def list_agent_tools(
     request: Request, markings: str = "",
 ) -> list[AgentToolDTO]:
     """Virtual registry: tools computed on demand from ont_object_types (zero push sync)."""
-    ctx = _ctx(request)
+    _ctx(request)
     caller_markings = tuple(m.strip() for m in markings.split(",") if m.strip())
 
     object_types = await _call_scoped(request, "list_object_types", 10000, 0)
@@ -1319,6 +1323,7 @@ async def search_objects(
         raise HTTPException(status_code=403, detail="cross-tenant search denied")
     cards = await _call_scoped(
         request, "search_objects", payload.text, payload.class_rid, payload.top_k,
+        str(ctx.tenant_id),  # type: ignore[attr-defined]  # to_thread 下 thread-local 不可见，显式传租户
     )
     return ObjectSearchResultDTO(cards=cards)
 
@@ -1328,9 +1333,11 @@ async def search_objects(
     operation_id="ontReindexV2ObjectSearch",
 )
 async def reindex_object_search(request: Request) -> dict[str, int]:
-    """MP-SAL-02: 存量 Individual 补齐 embedding。"""
-    _ctx(request)
-    count = await _call_scoped(request, "reindex_object_embeddings")
+    """MP-SAL-02: 存量 Individual 补齐 embedding（租户内）。"""
+    ctx = _ctx(request)
+    count = await _call_scoped(
+        request, "reindex_object_embeddings", str(ctx.tenant_id),  # type: ignore[attr-defined]
+    )
     return {"indexed": count}
 
 

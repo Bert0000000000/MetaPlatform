@@ -25,11 +25,13 @@ class HashEmbedder:
     """确定性离线 embedder（token-bag + hashed projection，L2 归一）。
 
     dev / 测试用：无外部依赖、可复现；质量低于真实模型（同 tech-rag
-    LocalTinyEmbedder 的取舍）。
+    LocalTinyEmbedder 的取舍）。中文按字符 bigram 切分（否则整句单 token，
+    与任何 chunk 零重叠）。
     """
 
     DIM = 384
-    _TOKEN_RE = re.compile(r"[\w一-鿿]+", re.UNICODE)
+    _WORD_RE = re.compile(r"[0-9A-Za-z]+", re.UNICODE)
+    _CJK_RE = re.compile(r"[㐀-䶿一-鿿豈-﫿]+", re.UNICODE)
 
     def __init__(self, dim: int = DIM) -> None:
         self._dim = dim
@@ -38,9 +40,19 @@ class HashEmbedder:
     def dim(self) -> int:
         return self._dim
 
+    @classmethod
+    def _tokenize(cls, text: str) -> list[str]:
+        tokens = [w.lower() for w in cls._WORD_RE.findall(text)]
+        for run in cls._CJK_RE.findall(text):
+            if len(run) == 1:
+                tokens.append(run)
+            else:
+                tokens.extend(run[i : i + 2] for i in range(len(run) - 1))
+        return tokens
+
     def embed(self, text: str) -> list[float]:
         vec = [0.0] * self._dim
-        tokens = [t.lower() for t in self._TOKEN_RE.findall(text) if t]
+        tokens = self._tokenize(text)
         for tok in tokens:
             h = hashlib.sha512(tok.encode("utf-8")).digest()
             for i in range(min(8, len(h) // 4)):
@@ -54,11 +66,11 @@ class HashEmbedder:
 
 
 def build_env_embedder() -> Embedder | None:
-    """OPENAI_API_KEY 存在时返回 OpenAI 兼容 embedder，否则 None（索引跳过）。"""
-    if not os.environ.get("OPENAI_API_KEY"):
-        return None
+    """优先级：ONT_EMBEDDER=hash（离线确定性，无需 key）> OPENAI_API_KEY 兼容客户端 > None。"""
     if os.environ.get("ONT_EMBEDDER", "").lower() == "hash":
         return HashEmbedder()
+    if not os.environ.get("OPENAI_API_KEY"):
+        return None
     return _OpenAICompatEmbedder()
 
 
