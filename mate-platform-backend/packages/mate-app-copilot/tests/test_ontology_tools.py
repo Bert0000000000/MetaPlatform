@@ -60,6 +60,7 @@ class _FakeRepo:
     def __init__(self, types: tuple[ObjectType, ...]) -> None:
         self.types = types
         self.queries: list[ObjectSetQuery] = []
+        self.proposals: list[dict] = []
 
     def list_object_types(self, limit: int = 10000, offset: int = 0) -> tuple[ObjectType, ...]:
         return self.types
@@ -81,6 +82,25 @@ class _FakeRepo:
             result_schema={"amount": {"type": "integer", "rid": f"ont.{_T}.prop.amount.v1"}},
         )
 
+    def search_objects(
+        self, text: str, class_rid: str | None = None, top_k: int = 5,
+    ) -> list[dict]:
+        return []
+
+    def propose_action(
+        self, action_rid, parameters, target_iid, impact_summary, expected_diff=None,
+    ):
+        from types import SimpleNamespace
+        self.proposals.append({
+            "action_rid": str(action_rid), "parameters": parameters,
+            "target_iid": target_iid, "impact_summary": impact_summary,
+        })
+        from mate_kernel.action.engine import ProposalStatus
+        return SimpleNamespace(
+            proposal_id="prop-xyz", status=ProposalStatus.PENDING,
+            impact_summary=impact_summary,
+        )
+
 
 def _repo() -> _FakeRepo:
     return _FakeRepo((_ot("order"), _ot("ledger", marking=("domain:finance",))))
@@ -90,8 +110,13 @@ class TestBuildOntologyTools:
     def test_fixed_plus_unmarked_type_tools(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=())
         names = [t["function"]["name"] for t in tools]
-        # SAL-02 起固定辅助面为 4 件：list/inspect/search + 每类型 query_<slug>
-        assert names == ["list_classes", "inspect_class", "query_order", "search_objects"]
+        # SAL-04 起固定辅助面 5 件：list/inspect/search/propose + 每类型 query_<slug>
+        assert names == [
+            "list_classes", "inspect_class", "query_order", "search_objects",
+            "propose_action",
+        ]
+        # HITL 边界：confirm/reject 绝不作为 LLM 工具出现
+        assert not any("confirm" in n or "reject" in n for n in names)
 
     def test_marked_type_visible_with_marking(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=("domain:finance",))

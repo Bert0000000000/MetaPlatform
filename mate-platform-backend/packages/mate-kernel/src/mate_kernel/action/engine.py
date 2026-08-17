@@ -17,8 +17,9 @@ GOVERN-05 扩展：
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Iterable, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
@@ -49,6 +50,17 @@ class FunctionExecutionError(RuntimeError):
 
 class FunctionTimeout(FunctionExecutionError):
     """Function 执行超时。"""
+
+
+class ProposalNotConfirmed(RuntimeError):
+    """MP-SAL-04（ADR-0044 §2.1）：proposal 未确认/已拒绝/不匹配 —— 未确认的 proposal 永不落库。"""
+
+
+class ProposalStatus(StrEnum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+    APPLIED = "applied"
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,7 +141,7 @@ class SimpleRuleEvaluator:
 
 @dataclass(frozen=True, slots=True)
 class ActionProposal:
-    """proposal 模型 —— HITL 流程前置产物。"""
+    """proposal 模型 —— HITL 流程前置产物（ADR-0044 状态机：pending→confirmed→applied / rejected）。"""
 
     proposal_id: str
     action_rid: str
@@ -138,6 +150,10 @@ class ActionProposal:
     impact_summary: str  # 人类可读的"将做什么"
     created_at: datetime
     requires_hitl: bool = True
+    status: ProposalStatus = ProposalStatus.PENDING
+    expected_diff: dict[str, Any] = field(default_factory=dict)  # 预期 diff（staging 语义）
+    confirmed_by: str | None = None
+    confirmed_at: datetime | None = None
 
 
 class ActionService:
@@ -183,6 +199,7 @@ class ActionService:
         parameters: dict[str, Any],
         target_iid: str | None,
         impact_summary: str,
+        expected_diff: dict[str, Any] | None = None,
     ) -> ActionProposal:
         import uuid
         prop = ActionProposal(
@@ -193,6 +210,7 @@ class ActionService:
             impact_summary=impact_summary,
             created_at=datetime.now(timezone.utc),
             requires_hitl=True,
+            expected_diff=dict(expected_diff or {}),
         )
         self._proposals[prop.proposal_id] = prop
         return prop
@@ -202,6 +220,32 @@ class ActionService:
         if p is None:
             raise KeyError(f"proposal not found: {proposal_id}")
         return p
+
+    def _transition_proposal(
+        self, proposal_id: str, to_status: ProposalStatus, *, by: str | None,
+    ) -> ActionProposal:
+        p = self.get_proposal(proposal_id)
+        if p.status is not ProposalStatus.PENDING:
+            raise ValueError(
+                f"proposal {proposal_id} is {p.status.value}, only pending can transition "
+                f"(to {to_status.value})"
+            )
+        updated = replace(
+            p,
+            status=to_status,
+            confirmed_by=by,
+            confirmed_at=datetime.now(timezone.utc) if to_status is ProposalStatus.CONFIRMED else p.confirmed_at,
+        )
+        self._proposals[proposal_id] = updated
+        return updated
+
+    def confirm_proposal(self, proposal_id: str, confirmed_by: str = "") -> ActionProposal:
+        """pending → confirmed（用户确认；ADR-0044 §2.5：只能由用户侧发起，非 LLM）。"""
+        return self._transition_proposal(proposal_id, ProposalStatus.CONFIRMED, by=confirmed_by)
+
+    def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> ActionProposal:
+        """pending → rejected（终态）。"""
+        return self._transition_proposal(proposal_id, ProposalStatus.REJECTED, by=confirmed_by)
 
     # ───── apply (post-HITL confirmation) ─────
 
@@ -220,6 +264,24 @@ class ActionService:
         proposal_id: str | None = None,
         side_effect_emitter: callable = None,
     ) -> ApplyOutcome:
+        # 0) MP-SAL-04（ADR-0044 §2.1）：带 proposal_id 的 apply 强制校验——
+        #    未确认的 proposal 永不落库（北极星 negative）。
+        if proposal_id is not None:
+            try:
+                proposal = self.get_proposal(proposal_id)
+            except KeyError as e:
+                raise ProposalNotConfirmed(f"proposal not found: {proposal_id}") from e
+            if proposal.action_rid != action_rid:
+                raise ProposalNotConfirmed(
+                    f"proposal {proposal_id} is for action {proposal.action_rid!r}, "
+                    f"apply targets {action_rid!r}"
+                )
+            if proposal.status is not ProposalStatus.CONFIRMED:
+                raise ProposalNotConfirmed(
+                    f"proposal {proposal_id} is {proposal.status.value}; "
+                    "apply requires a confirmed proposal"
+                )
+
         # 1) submission_criteria 全部通过
         for expr in submission_criteria:
             if not self.evaluator.evaluate(expr, parameters, target_props or {}):
@@ -312,6 +374,13 @@ class ActionService:
             side_effect_events=event_evidences,
         )
         self._audit.append(outcome)
+        if proposal_id is not None:
+            try:
+                self._proposals[proposal_id] = replace(
+                    self.get_proposal(proposal_id), status=ProposalStatus.APPLIED,
+                )
+            except KeyError:
+                pass
         return outcome
 
     def get_audit(self) -> list[ApplyOutcome]:

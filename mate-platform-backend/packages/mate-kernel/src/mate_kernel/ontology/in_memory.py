@@ -49,6 +49,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         # MP-SAL-02: 对象语义检索（embedder + 属性级 embedding 缓存）
         self._embedder: Any = None
         self._embeddings: dict[str, dict[str, Any]] = {}
+        # MP-SAL-04: side_effect outbox 写回（None = dev 未接）
+        self._outbox_writer: Any = None
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
         from .function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
@@ -267,6 +269,54 @@ class InMemoryOntologyRepository(OntologyRepository):
         )
         return executor.execute(q)
 
+    # ───── MP-SAL-04: proposal 状态机 + outbox（ADR-0044 §2.2-2.3）─────
+
+    def set_outbox_writer(self, writer: Any) -> None:
+        """注入 outbox 写回：writer(event_type, tenant_id, payload) -> event_id | None。"""
+        self._outbox_writer = writer
+
+    def _side_effect_emitter_hook(
+        self, action_rid: str, target_iid: str, proposal_id: Any,
+    ) -> Any:
+        if self._outbox_writer is None:
+            return None
+
+        def _emit(se: str) -> str | None:
+            try:
+                return str(self._outbox_writer(se, "", {
+                    "action_rid": action_rid, "target_iid": target_iid,
+                    "proposal_id": proposal_id,
+                }))
+            except Exception:  # noqa: BLE001
+                return None
+
+        return _emit
+
+    def propose_action(
+        self, action_rid: ClassRef, parameters: dict[str, Any],
+        target_iid: str | None, impact_summary: str,
+        expected_diff: dict[str, Any] | None = None,
+    ) -> Any:
+        if action_rid not in self._action_types:
+            raise KeyError(f"action not found: {action_rid}")
+        at = self._action_types[action_rid]
+        return self._action_service.propose(
+            action_rid=at.rid.rid, parameters=parameters, target_iid=target_iid,
+            impact_summary=impact_summary, expected_diff=expected_diff,
+        )
+
+    def get_proposal(self, proposal_id: str) -> Any:
+        return self._action_service.get_proposal(proposal_id)
+
+    def list_proposals(self) -> list[Any]:
+        return list(self._action_service._proposals.values())  # noqa: SLF001
+
+    def confirm_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
+        return self._action_service.confirm_proposal(proposal_id, confirmed_by=confirmed_by)
+
+    def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
+        return self._action_service.reject_proposal(proposal_id, confirmed_by=confirmed_by)
+
     def apply_action(self, action_rid: ClassRef, target_iid: str, parameters: dict[str, Any], provenance: dict[str, Any]) -> tuple[datetime, list[str]]:
         # ACTION-03 协议：submission_criteria 求值 → Function 落库 → side_effects。
         # GOVERN-05: function_result 写回 target.props（按 at.parameters 短名）。
@@ -294,6 +344,9 @@ class InMemoryOntologyRepository(OntologyRepository):
             ),
             target_props=target_props,
             proposal_id=provenance.get("proposal_id"),
+            side_effect_emitter=self._side_effect_emitter_hook(
+                at.rid.rid, target_iid, provenance.get("proposal_id"),
+            ),
         )
         now = outcome.applied_at
         if parameters or outcome.function_result is not None:

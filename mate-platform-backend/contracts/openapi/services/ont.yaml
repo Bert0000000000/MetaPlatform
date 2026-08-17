@@ -1209,6 +1209,112 @@ paths:
                 required: [indexed]
                 properties:
                   indexed: {type: integer}
+  /api/v1/ont/v2/action-types/{rid}/propose:
+    parameters:
+    - in: path
+      name: rid
+      required: true
+      schema: {type: string}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Propose an action (SAL-04 pending proposal, not applied)
+      operationId: ontProposeV2ActionType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL04-PROPOSE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProposalCreateV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProposalV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/proposals/{proposal_id}:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema: {type: string}
+    get:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Get proposal (SAL-04 state machine)
+      operationId: ontGetV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL04-GETPROPOSAL]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProposalV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/proposals/{proposal_id}/confirm:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema: {type: string}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Confirm proposal (user-side HITL; pending -> confirmed)
+      operationId: ontConfirmV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL04-CONFIRM]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProposalConfirmV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProposalV2'}
+        '409': {$ref: ../common/errors.yaml#/components/responses/Error409}
+  /api/v1/ont/v2/proposals/{proposal_id}/reject:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema: {type: string}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Reject proposal (terminal)
+      operationId: ontRejectV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL04-REJECT]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProposalConfirmV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProposalV2'}
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
     - in: path
@@ -1976,6 +2082,34 @@ components:
         class_rid: {$ref: '#/components/schemas/RidString'}
         input_schema: {type: object, additionalProperties: true}
         result_schema: {type: object, additionalProperties: true}
+    ProposalCreateV2:
+      type: object
+      additionalProperties: false
+      properties:
+        parameters: {type: object, additionalProperties: true}
+        target_iid: {type: string}
+        impact_summary: {type: string}
+        expected_diff: {type: object, additionalProperties: true}
+    ProposalConfirmV2:
+      type: object
+      additionalProperties: false
+      properties:
+        confirmed_by: {type: string}
+    ProposalV2:
+      type: object
+      additionalProperties: false
+      required: [proposal_id, action_rid, status]
+      properties:
+        proposal_id: {type: string}
+        action_rid: {type: string}
+        target_iid: {type: [string, 'null']}
+        parameters: {type: object, additionalProperties: true}
+        impact_summary: {type: string}
+        expected_diff: {type: object, additionalProperties: true}
+        status: {type: string, enum: [pending, confirmed, rejected, applied]}
+        confirmed_by: {type: [string, 'null']}
+        created_at: {type: string}
+        confirmed_at: {type: [string, 'null']}
     ObjectSearchV2:
       type: object
       additionalProperties: false

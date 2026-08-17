@@ -16,7 +16,7 @@ import json
 import re
 import threading
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import replace as _dc_replace
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -177,6 +177,24 @@ DDL: tuple[str, ...] = (
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_oemb_tenant ON ont_object_embedding (tenant_id)",
     "CREATE INDEX IF NOT EXISTS ix_ont_oemb_ind ON ont_object_embedding (individual_rid)",
+    # MP-SAL-04: proposal 状态机持久化（ADR-0044 §2.2）
+    """
+    CREATE TABLE IF NOT EXISTS ont_proposal (
+        proposal_id    TEXT PRIMARY KEY,
+        tenant_id      TEXT NOT NULL,
+        action_rid     TEXT NOT NULL,
+        target_iid     TEXT,
+        parameters     JSONB NOT NULL DEFAULT '{}'::jsonb,
+        impact_summary TEXT NOT NULL DEFAULT '',
+        expected_diff  JSONB NOT NULL DEFAULT '{}'::jsonb,
+        status         TEXT NOT NULL DEFAULT 'pending',
+        confirmed_by   TEXT,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        confirmed_at   TIMESTAMPTZ,
+        applied_at     TIMESTAMPTZ
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_prop_tenant ON ont_proposal (tenant_id)",
     """
     CREATE TABLE IF NOT EXISTS ont_function (
         rid        TEXT PRIMARY KEY,
@@ -592,6 +610,8 @@ class PgOntologyRepository(OntologyRepository):
         # MP-SAL-02: 对象语义检索 embedder（env 未配置时为 None → 索引跳过）
         from .object_search import build_env_embedder  # noqa: PLC0415
         self._embedder: object | None = build_env_embedder()
+        # MP-SAL-04: side_effect outbox 写回（ADR-0044 §2.3；None = dev 未接，行为不变）
+        self._outbox_writer: Any = None
 
         # GOVERN-12-02: 构造即 bootstrap DDL。任何路径（启动 / 测试 fixture /
         # 迁移脚本）拿到 PgOntologyRepository 实例即可用；不需要启动序列先
@@ -1527,6 +1547,140 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
+    # ───── MP-SAL-04: proposal 状态机（ADR-0044 §2.1-2.3）─────
+
+    def set_outbox_writer(self, writer: Any) -> None:
+        """注入 outbox 写回：writer(event_type, tenant_id, payload) -> event_id | None。"""
+        self._outbox_writer = writer
+
+    def propose_action(
+        self,
+        action_rid: ClassRef,
+        parameters: dict[str, Any],
+        target_iid: str | None,
+        impact_summary: str,
+        expected_diff: dict[str, Any] | None = None,
+    ) -> Any:
+        """AI/用户提议 → pending proposal（持久化 + 引擎镜像）。"""
+        self._ensure_schema()
+        at = self.get_action_type(action_rid)
+        prop = self._action_service.propose(
+            action_rid=at.rid.rid,
+            parameters=parameters,
+            target_iid=target_iid,
+            impact_summary=impact_summary,
+            expected_diff=expected_diff,
+        )
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ont_proposal
+                        (proposal_id, tenant_id, action_rid, target_iid, parameters,
+                         impact_summary, expected_diff, status, created_at)
+                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, %s)
+                    """,
+                    (
+                        prop.proposal_id,
+                        action_rid.rid.split(".")[1] if "." in action_rid.rid else "",
+                        prop.action_rid,
+                        target_iid,
+                        json.dumps(parameters, default=str),
+                        impact_summary,
+                        json.dumps(expected_diff or {}, default=str),
+                        prop.status.value,
+                        prop.created_at,
+                    ),
+                )
+            conn.commit()
+            return prop
+        finally:
+            conn.close()
+
+    def get_proposal(self, proposal_id: str) -> Any:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_proposal WHERE proposal_id = %s", (proposal_id,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            raise KeyError(f"proposal not found: {proposal_id}")
+        return self._hydrate_proposal(row)
+
+    def list_proposals(self) -> list[Any]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_proposal ORDER BY created_at DESC LIMIT 200")
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        return [self._hydrate_proposal(r) for r in rows]
+
+    def _hydrate_proposal(self, row: dict[str, Any]) -> Any:
+        """PG 行 → ActionProposal（并回填引擎镜像，apply 校验用）。"""
+        from mate_kernel.action.engine import ActionProposal, ProposalStatus  # noqa: PLC0415
+
+        params = row.get("parameters") or {}
+        if not isinstance(params, dict):
+            params = json.loads(params)
+        diff = row.get("expected_diff") or {}
+        if not isinstance(diff, dict):
+            diff = json.loads(diff)
+        prop = ActionProposal(
+            proposal_id=row["proposal_id"],
+            action_rid=row["action_rid"],
+            target_iid=row.get("target_iid"),
+            parameters=params,
+            impact_summary=row.get("impact_summary", ""),
+            created_at=row["created_at"],
+            status=ProposalStatus(row.get("status", "pending")),
+            expected_diff=diff,
+            confirmed_by=row.get("confirmed_by"),
+            confirmed_at=row.get("confirmed_at"),
+        )
+        self._action_service._proposals[prop.proposal_id] = prop  # noqa: SLF001 — 镜像回填
+        return prop
+
+    def _persist_proposal_transition(self, prop: Any) -> None:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    UPDATE ont_proposal
+                    SET status = %s, confirmed_by = %s, confirmed_at = %s,
+                        applied_at = CASE WHEN %s = 'applied' THEN now() ELSE applied_at END
+                    WHERE proposal_id = %s
+                    """,
+                    (
+                        prop.status.value, prop.confirmed_by, prop.confirmed_at,
+                        prop.status.value, prop.proposal_id,
+                    ),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def confirm_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
+        self.get_proposal(proposal_id)  # 行存在性 + 镜像回填
+        prop = self._action_service.confirm_proposal(proposal_id, confirmed_by=confirmed_by)
+        self._persist_proposal_transition(prop)
+        return prop
+
+    def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
+        self.get_proposal(proposal_id)
+        prop = self._action_service.reject_proposal(proposal_id, confirmed_by=confirmed_by)
+        self._persist_proposal_transition(prop)
+        return prop
+
     def apply_action(
         self,
         action_rid: ClassRef,
@@ -1546,6 +1700,25 @@ class PgOntologyRepository(OntologyRepository):
         at = self.get_action_type(action_rid)
         ind = self.get_individual(target_iid)
         target_props = {k.rid: v for k, v in ind.props}
+
+        # MP-SAL-04（ADR-0044 §2.1/2.3）：proposal_id 透传引擎校验（未确认永不落库）；
+        # outbox writer 注入时构造 emitter，事件 id 回填 ApplyOutcome.side_effect_events。
+        proposal_id = provenance.get("proposal_id") or None
+        if proposal_id is not None:
+            try:
+                self.get_proposal(proposal_id)  # 跨进程场景：行 → 引擎镜像回填
+            except KeyError:
+                pass
+        emitter = None
+        if self._outbox_writer is not None:
+            def emitter(se: str, *, _w=self._outbox_writer, _t=ind.tenant_id, _a=at.rid.rid, _g=target_iid, _p=proposal_id) -> str | None:  # noqa: E731
+                try:
+                    return str(_w(se, _t, {
+                        "action_rid": _a, "target_iid": _g, "proposal_id": _p,
+                    }))
+                except Exception:  # noqa: BLE001 — outbox 失败不阻断 apply（审计留 None）
+                    return None
+
         outcome = self._action_service.apply(
             action_rid=at.rid.rid,
             submission_criteria=at.submission_criteria,
@@ -1559,7 +1732,14 @@ class PgOntologyRepository(OntologyRepository):
                 tenant_id=str(provenance.get("tenant_id", ind.tenant_id)),
             ),
             target_props=target_props,
+            proposal_id=proposal_id,
+            side_effect_emitter=emitter,
         )
+        if proposal_id is not None:
+            with suppress(KeyError):
+                self._persist_proposal_transition(
+                    self._action_service.get_proposal(proposal_id),
+                )
         now = outcome.applied_at
         if parameters or outcome.function_result is not None:
             param_rids: dict[str, ClassRef] = {}

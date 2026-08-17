@@ -717,8 +717,130 @@ async def apply_action_by_rid(
 
     Contract path style: rid in the path, body carries parameters /
     target_iid / provenance. AI/Function/SDK all converge here.
+    MP-SAL-04：provenance.proposal_id 现在被引擎真正校验（未确认永不落库）。
     """
     return await _apply_action(request, rid, payload)
+
+
+# ─────────────────── MP-SAL-04: Proposal 状态机端点（ADR-0044 §2.4）───────────────────
+
+
+class ProposalCreateDTO(BaseModel):
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    target_iid: str = ""
+    impact_summary: str = ""
+    expected_diff: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProposalConfirmDTO(BaseModel):
+    confirmed_by: str = ""
+
+
+class ProposalResponse(BaseModel):
+    proposal_id: str
+    action_rid: str
+    target_iid: str | None = None
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    impact_summary: str = ""
+    expected_diff: dict[str, Any] = Field(default_factory=dict)
+    status: str
+    confirmed_by: str | None = None
+    created_at: str = ""
+    confirmed_at: str | None = None
+
+
+def _proposal_to_dto(p: Any) -> ProposalResponse:
+    return ProposalResponse(
+        proposal_id=p.proposal_id,
+        action_rid=p.action_rid,
+        target_iid=p.target_iid,
+        parameters=dict(p.parameters),
+        impact_summary=p.impact_summary,
+        expected_diff=dict(p.expected_diff),
+        status=p.status.value,
+        confirmed_by=p.confirmed_by,
+        created_at=p.created_at.isoformat() if p.created_at else "",
+        confirmed_at=p.confirmed_at.isoformat() if p.confirmed_at else None,
+    )
+
+
+@router.post(
+    "/action-types/{rid:path}/propose",
+    response_model=ProposalResponse,
+    operation_id="ontProposeV2ActionType",
+)
+async def propose_action(
+    rid: str, payload: ProposalCreateDTO, request: Request,
+) -> ProposalResponse:
+    """AI/用户提议（ADR-0044）：产出 pending proposal（含预期 diff），不落库。"""
+    ctx = _ctx(request)
+    rid_ref = ClassRef(rid)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    try:
+        prop = await _call_scoped(
+            request, "propose_action", rid_ref,
+            payload.parameters, payload.target_iid or None,
+            payload.impact_summary, payload.expected_diff or None,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _proposal_to_dto(prop)
+
+
+@router.get(
+    "/proposals/{proposal_id}",
+    response_model=ProposalResponse,
+    operation_id="ontGetV2Proposal",
+)
+async def get_proposal(proposal_id: str, request: Request) -> ProposalResponse:
+    _ctx(request)
+    try:
+        prop = await _call_scoped(request, "get_proposal", proposal_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _proposal_to_dto(prop)
+
+
+@router.post(
+    "/proposals/{proposal_id}/confirm",
+    response_model=ProposalResponse,
+    operation_id="ontConfirmV2Proposal",
+)
+async def confirm_proposal(
+    proposal_id: str, payload: ProposalConfirmDTO, request: Request,
+) -> ProposalResponse:
+    """用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。"""
+    _ctx(request)
+    try:
+        prop = await _call_scoped(
+            request, "confirm_proposal", proposal_id, payload.confirmed_by,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    return _proposal_to_dto(prop)
+
+
+@router.post(
+    "/proposals/{proposal_id}/reject",
+    response_model=ProposalResponse,
+    operation_id="ontRejectV2Proposal",
+)
+async def reject_proposal(
+    proposal_id: str, payload: ProposalConfirmDTO, request: Request,
+) -> ProposalResponse:
+    _ctx(request)
+    try:
+        prop = await _call_scoped(
+            request, "reject_proposal", proposal_id, payload.confirmed_by,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    return _proposal_to_dto(prop)
 
 
 @router.post(

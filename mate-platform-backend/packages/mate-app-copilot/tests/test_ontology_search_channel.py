@@ -38,6 +38,11 @@ class _FakeRepo:
     def execute_object_query(self, q: Any) -> Any:  # pragma: no cover - not used here
         raise AssertionError
 
+    def propose_action(
+        self, action_rid, parameters, target_iid, impact_summary, expected_diff=None,
+    ):
+        raise AssertionError("propose not under test here")
+
     def search_objects(
         self, text: str, class_rid: str | None = None, top_k: int = 5,
     ) -> list[dict[str, Any]]:
@@ -58,7 +63,7 @@ class TestSearchObjectsTool:
     def test_search_tool_in_registry(self) -> None:
         tools = build_ontology_tools(_FakeRepo())
         names = [t["function"]["name"] for t in tools]
-        assert "search_objects" in names
+        assert "search_objects" in names and "propose_action" in names
 
     def test_execute_search_returns_cards(self) -> None:
         out = execute_ontology_tool(_FakeRepo(), "search_objects", {"text": "rush"})

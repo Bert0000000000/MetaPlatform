@@ -38,6 +38,14 @@ class OntologyToolRepo(Protocol):
     def get_object_type(self, rid: Any) -> ObjectType: ...
     def list_link_instances(self) -> list[LinkInstance]: ...
     def execute_object_query(self, q: ObjectSetQuery) -> QueryResult: ...
+    def search_objects(
+        self, text: str, class_rid: str | None = ..., top_k: int = ...,
+    ) -> list[dict[str, Any]]: ...
+    def propose_action(
+        self, action_rid: Any, parameters: dict[str, Any],
+        target_iid: str | None, impact_summary: str,
+        expected_diff: dict[str, Any] | None = ...,
+    ) -> Any: ...
 
 
 SEARCH_OBJECTS_TOOL: dict[str, Any] = {
@@ -57,6 +65,29 @@ SEARCH_OBJECTS_TOOL: dict[str, Any] = {
     },
 }
 
+# MP-SAL-04（ADR-0044 §2.5）：AI 只能提议；confirm/reject 不是 LLM 工具（用户侧端点）。
+PROPOSE_ACTION_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "propose_action",
+        "description": (
+            "提议执行一个 ActionType：产出 pending proposal(含预期 diff)，"
+            "等待用户确认后才会落库。不会直接修改任何数据。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action_rid": {"type": "string", "description": "ActionType rid"},
+                "parameters": {"type": "object", "description": "动作参数"},
+                "target_iid": {"type": "string", "description": "目标对象 rid"},
+                "impact_summary": {"type": "string", "description": "人类可读的将做什么"},
+                "expected_diff": {"type": "object", "description": "预期变更(可选)"},
+            },
+            "required": ["action_rid", "impact_summary"],
+        },
+    },
+}
+
 
 def build_ontology_tools(
     repo: OntologyToolRepo, agent_markings: tuple[str, ...] | list[str] = (),
@@ -64,7 +95,11 @@ def build_ontology_tools(
     """发布即可见：每次调用从 repo 实时计算（虚拟注册表，零 push 同步）。"""
     types = repo.list_object_types(10000, 0)
     links = repo.list_link_instances()
-    return [*agent_tool_schemas(types, links, tuple(agent_markings)), SEARCH_OBJECTS_TOOL]
+    return [
+        *agent_tool_schemas(types, links, tuple(agent_markings)),
+        SEARCH_OBJECTS_TOOL,
+        PROPOSE_ACTION_TOOL,
+    ]
 
 
 def execute_ontology_tool(
@@ -85,6 +120,20 @@ def execute_ontology_tool(
                 class_rid=arguments.get("class_rid") or None,
                 top_k=int(arguments.get("top_k", 5)),
             ),
+        }
+    if name == "propose_action":
+        prop = repo.propose_action(
+            action_rid=arguments.get("action_rid", ""),
+            parameters=dict(arguments.get("parameters") or {}),
+            target_iid=arguments.get("target_iid") or None,
+            impact_summary=str(arguments.get("impact_summary", "")),
+            expected_diff=dict(arguments.get("expected_diff") or {}),
+        )
+        return {
+            "proposal_id": prop.proposal_id,
+            "status": prop.status.value,
+            "impact_summary": prop.impact_summary,
+            "note": "已产出待确认提议；等待用户确认(confirm)后才会落库。",
         }
     if name.startswith("query_"):
         return _execute_query(repo, name, arguments, tuple(agent_markings))
