@@ -163,3 +163,14 @@ SANDBOX-01 → SANDBOX-02
 - 端到端示例：
   - `packages/mate-kernel/examples/01_kitchen_sink.py`（kernel 闭环）
   - `examples/02_curl_walkthrough.sh`（v2 HTTP curl 验收）
+
+## §SAL 语义层 AI 落地（2026-08-17 启动）
+
+> 程序目标（spec `2026-08-17-semantic-layer-ai-landing-plan.md` v0.3 §4.0）：核心闭环 = **SAL-01 读 + SAL-02 想 + SAL-04 写**，SAL-03 生产门并行。北极星 demo：未付订单标记待复核全链路。
+
+| Batch | 状态 | 交付 | 证据 |
+|---|---|---|---|
+| **MP-SAL-01 工具化基座（读）** | **Accepted 2026-08-17** | ADR-0043 九条定案落地：ObjectSetQuery IR（filter/aggregate/traverse/多键 sort，双后端同源）+ schema_gen（query_<slug> 每类型工具 + list/inspect）+ 虚拟注册表（/v2/agent-tools 零同步）+ markings 上抬一级（类型级标记 + 可见性 + 执行期二次校验）+ copilot/MCP 双消费接线 + ont.yaml 3 新端点 | `evidence/MP-SAL-01-ACCEPTANCE.md`（kernel 455 / ont 172 / orchestrator 47 / mcp 0 failed；ruff+pyright 新文件全净） |
+| MP-SAL-02 OAG 检索上下文（想） | Pending | pgvector embedding 召回 + copilot 上下文通道（对象卡片带 rid） | — |
+| MP-SAL-03 Function 沙箱生产化 | Pending（并行） | K8s Job 真接 + copilot 真鉴权收口 | — |
+| MP-SAL-04 Assisted Action 端到端（写） | Pending（先 ADR-0044） | Proposal/Scenario 状态机 + 两套 HITL 统一 + outbox 写回 | — |
