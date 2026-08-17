@@ -165,6 +165,8 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
         side_effects=("notify_email", "audit_log"),
         function_ref=ClassRef(f"ont.{t}.fn.approve-leave.v1"),
         on=(ClassRef(f"ont.{t}.obj.leave-request.v1"),),
+        title="审批请假",
+        description="对员工请假申请做出批准 / 驳回决定，通过邮件通知申请人并写审计日志",
     ))
     repo.upsert_action_type(ActionType(
         rid=ClassRef(f"ont.{t}.act.close-ticket.v1"),
@@ -173,6 +175,8 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
         side_effects=("notify_customer",),
         function_ref=ClassRef(f"ont.{t}.fn.close-ticket.v1"),
         on=(ClassRef(f"ont.{t}.obj.ticket.v1"),),
+        title="关闭工单",
+        description="填写处理结论并关闭客户工单，自动通知工单提交人",
     ))
 
     # ── Function / LinkType / LinkInstance ──
@@ -301,6 +305,8 @@ def _seed_enterprise_ontology(
         side_effects=("notify_email", "audit_log"),
         function_ref=ClassRef(f"ont.{t}.fn.approve-contract.v1"),
         on=(ClassRef(f"ont.{t}.obj.crm.contract.v1"),),
+        title="审批合同",
+        description="对客户合同进行审批流转（批准 / 驳回），邮件通知相关方并记录审计日志",
     ))
     repo.upsert_function(_function_placeholder(t, "approve-contract.v1"))
     created += 2
@@ -476,6 +482,8 @@ def seed_hr_it_finance_orchestrator(repo: OntologyRepository, tenant_id: str = T
             side_effects=("audit_log", "notify_email"),
             function_ref=ClassRef(fn_rid),
             on=(ClassRef(f"ont.{t}.obj.dw-digital-employee.v1"),),
+            title=f"{name} · 任务执行",
+            description=f"触发数字员工「{name}」（{role_category}/{role}）执行任务，能力：{cap_csv}",
         ))
         created += 3
 
@@ -509,10 +517,49 @@ def seed_hr_it_finance_orchestrator(repo: OntologyRepository, tenant_id: str = T
         side_effects=("audit_log",),
         function_ref=ClassRef(sa_fn_rid),
         on=(ClassRef(f"ont.{t}.obj.superai.v1"),),
+        title="SuperAI 编排调度",
+        description="解析用户意图，匹配并编排数字员工执行任务，汇总各员工返回结果",
     ))
     created += 3
 
     return created
 
 
-__all__ = ["seed_demo", "seed_hr_it_finance_orchestrator", "TENANT"]
+# rid 末段 → (title, description)。老库 ActionType 行缺展示元数据时按此回填。
+_ACTION_DISPLAY_META: dict[str, tuple[str, str]] = {
+    "act.approve-leave.v1": ("审批请假", "对员工请假申请做出批准 / 驳回决定，通过邮件通知申请人并写审计日志"),
+    "act.close-ticket.v1": ("关闭工单", "填写处理结论并关闭客户工单，自动通知工单提交人"),
+    "act.approve-contract.v1": ("审批合同", "对客户合同进行审批流转（批准 / 驳回），邮件通知相关方并记录审计日志"),
+    "act.superai-orchestrate.v1": ("SuperAI 编排调度", "解析用户意图，匹配并编排数字员工执行任务，汇总各员工返回结果"),
+}
+
+
+def backfill_action_display(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
+    """给已有 ActionType 行补 title/description（幂等：有 title 即跳过该行）。
+
+    新装环境由 seed 直接带元数据；本函数服务"先有数据、后加字段"的老库，
+    在 seed_demo 因非空而提前返回时仍能把展示名补齐。
+    """
+    from dataclasses import replace as _replace
+
+    dw_names = {f"act.dw-{slug}-execute.v1": name for slug, name, *_ in _DW_EMPLOYEES}
+    updated = 0
+    for at in repo.list_action_types():
+        if at.title:
+            continue
+        tail = ".".join(at.rid.rid.split(".")[-3:])  # act.<slug>.v1
+        title = description = ""
+        if tail in _ACTION_DISPLAY_META:
+            title, description = _ACTION_DISPLAY_META[tail]
+        elif tail in dw_names:
+            name = dw_names[tail]
+            title = f"{name} · 任务执行"
+            description = f"触发数字员工「{name}」执行任务"
+        if not title:
+            continue
+        repo.upsert_action_type(_replace(at, title=title, description=description))
+        updated += 1
+    return updated
+
+
+__all__ = ["seed_demo", "seed_hr_it_finance_orchestrator", "backfill_action_display", "TENANT"]

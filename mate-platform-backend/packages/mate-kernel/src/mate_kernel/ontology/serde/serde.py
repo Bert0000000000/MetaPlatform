@@ -150,6 +150,8 @@ def action_type_to_dict(at: ActionType) -> dict[str, Any]:
         "side_effects": list(at.side_effects),
         "function_ref": at.function_ref.rid,
         "on": [t.rid for t in at.on],
+        "title": at.title,
+        "description": at.description,
     }
 
 
@@ -161,6 +163,8 @@ def action_type_from_dict(d: dict[str, Any]) -> ActionType:
         side_effects=tuple(d["side_effects"]),
         function_ref=ClassRef(d["function_ref"]),
         on=tuple(ClassRef(t) for t in d["on"]),
+        title=d.get("title", ""),
+        description=d.get("description", ""),
     )
 
 

@@ -262,12 +262,14 @@ def build_app() -> FastAPI:
             app.state.kernel_repo = InMemoryOntologyRepository()
         if os.getenv("ONT_SEED_DEMO", "0") == "1":
             from mate_tech_ont.v2_kernel.seed import (
+                backfill_action_display,
                 seed_demo,
                 seed_hr_it_finance_orchestrator,
             )
 
             seed_demo(app.state.kernel_repo)
             seed_hr_it_finance_orchestrator(app.state.kernel_repo)
+            backfill_action_display(app.state.kernel_repo)
         logger.info("kernel_repo.initialized", extra={"backend": _kb_backend})
     except Exception as e:
         logger.warning("Failed to mount ont: %s", e)

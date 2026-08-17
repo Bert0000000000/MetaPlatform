@@ -20,3 +20,6 @@ class ActionType:
     side_effects: tuple[str, ...]  # 副作用（通知 / webhook / outbox topic）
     function_ref: ClassRef  # 引用的 Function rid
     on: tuple[ClassRef, ...]  # 作用对象（ObjectType / Interface / LinkType）
+    # 面向用户的展示元数据（对称于 ObjectType.display_name）；空串 = 未设置
+    title: str = ""
+    description: str = ""
