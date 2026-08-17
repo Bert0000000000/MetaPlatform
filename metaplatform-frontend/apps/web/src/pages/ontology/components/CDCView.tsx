@@ -63,7 +63,7 @@ export default function CDCView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Toolbar */}
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12}}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           监控源数据库到目标存储的实时变更同步
         </div>
@@ -76,7 +76,7 @@ export default function CDCView() {
       </Card>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: '总任务数', value: tasks.length, color: 'var(--foreground)', icon: Radio },
           { label: '运行中', value: tasks.filter(t => t.status === 'RUNNING').length, color: '#10b981', icon: Activity },
@@ -85,7 +85,7 @@ export default function CDCView() {
         ].map(s => {
           const Icon = s.icon;
           return (
-            <Card key={s.label}  style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Card key={s.label}  bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12}}>
               <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color + '20', color: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon style={{ width: 18, height: 18 }} />
               </div>
@@ -111,7 +111,7 @@ export default function CDCView() {
             const SmIcon = sm.icon;
             const sourceName = sources.find(s => s.sourceId === t.sourceId)?.name || t.sourceId;
             return (
-              <Card key={t.taskId}  style={{ padding: 16 }}>
+              <Card key={t.taskId}  bodyStyle={{padding: 16}}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -214,7 +214,7 @@ function CreateCDCDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <Card style={{ width: 560, maxHeight: '90vh', overflow: 'auto' }}>
+      <Card style={{width: 560, maxHeight: '90vh', overflow: 'auto'}} bodyStyle={{overflow: 'auto'}}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建 CDC 任务</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>

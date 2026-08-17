@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { Card, Tag, Table } from '@douyinfe/semi-ui';
+import { Button, Card, Tabs, Tag, Table } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { useEffect, useState } from 'react';
 import {
@@ -102,44 +102,33 @@ export default function OntologyDatacenterPage({ initialSubTab }: { initialSubTa
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
-          {/* Toolbar（Shell 已统一全局 AI 助手；此处只保留 tab-specific 操作） */}
+          {/* Toolbar（Semi Button，替换原生 button） */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 16 }}>
-            <button onClick={() => setReloadKey((k) => k + 1)} style={{ padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-              <RefreshCw style={{ width: 12, height: 12 }} />刷新
-            </button>
+            <Button theme="light" type="secondary" size="small" icon={<RefreshCw style={{ width: 12, height: 12 }} />} onClick={() => setReloadKey((k) => k + 1)}>
+              刷新
+            </Button>
           </div>
 
-          {/* SubTab 导航 */}
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', borderBottom: '1px solid var(--border)', marginBottom: 20, rowGap: 4 }}>
-            {DATACENTER_SUBTABS.map((tab) => {
+          {/* SubTab 导航（Semi Tabs：可横向滚动、激活下划线由组件管理，不再手写换行边框） */}
+          <Tabs
+            type="line"
+            size="small"
+            activeKey={activeSubTab}
+            onChange={(k) => setActiveSubTab(k)}
+            tabList={DATACENTER_SUBTABS.map((tab) => {
               const Icon = tab.icon;
-              const isActive = activeSubTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveSubTab(tab.id)}
-                  style={{
-                    padding: '10px 16px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: isActive ? 'var(--primary)' : 'var(--muted-foreground)',
-                    fontSize: 13,
-                    fontWeight: isActive ? 600 : 500,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    borderBottom: isActive ? '2px solid var(--primary)' : '2px solid transparent',
-                    marginBottom: -1,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <Icon style={{ width: 14, height: 14 }} />
-                  {tab.label}
-                </button>
-              );
+              return {
+                itemKey: tab.id,
+                tab: (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Icon style={{ width: 14, height: 14 }} />
+                    {tab.label}
+                  </span>
+                ),
+              };
             })}
-          </div>
+            style={{ marginBottom: 16 }}
+          />
 
           {/* SubTab 内容 */}
           {renderSubTabContent()}
@@ -209,7 +198,7 @@ function MappingView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12}}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           外部数据源到 Ontology 实体的字段映射（真实：CDC 任务 + 数据产品）
         </div>
@@ -298,9 +287,9 @@ function QualityView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
         {metrics.map((q) => (
-          <Card key={q.label}  style={{ padding: '14px 16px' }}>
+          <Card key={q.label}  bodyStyle={{padding: '14px 16px'}}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 8 }}>{q.label}</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: q.level === 'good' ? 'var(--success)' : q.level === 'fair' ? 'var(--warning)' : 'var(--destructive)' }}>{q.value}</div>
             <div style={{ height: 4, background: 'var(--muted)', borderRadius: 2, marginTop: 8, overflow: 'hidden' }}>
@@ -361,7 +350,7 @@ function LakeView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card style={{ padding: 16 }}>
+      <Card bodyStyle={{padding: 16}}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>数据湖表（Iceberg ADS 数据产品）</div>
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>加载中…</div>

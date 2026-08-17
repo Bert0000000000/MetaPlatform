@@ -65,7 +65,7 @@ export default function SchedulerView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12}}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           统一任务调度中心：CRON/事件/依赖 多种触发方式
         </div>
@@ -77,14 +77,14 @@ export default function SchedulerView() {
         </button>
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: '总调度', value: tasks.length, color: 'var(--foreground)' },
           { label: '运行中', value: tasks.filter(t => t.status === 'ACTIVE').length, color: '#10b981' },
           { label: '已暂停', value: tasks.filter(t => t.status === 'PAUSED').length, color: '#94a3b8' },
           { label: '总触发', value: tasks.reduce((s, t) => s + (t.totalTriggers || 0), 0), color: '#3b82f6' },
         ].map(s => (
-          <Card key={s.label}  style={{ padding: 12 }}>
+          <Card key={s.label}  bodyStyle={{padding: 12}}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
           </Card>
@@ -103,7 +103,7 @@ export default function SchedulerView() {
             const trm = TRIGGER_META[t.triggerType] || TRIGGER_META.MANUAL;
             const TrIcon = trm.icon;
             return (
-              <Card key={t.schedulerId}  style={{ padding: 16 }}>
+              <Card key={t.schedulerId}  bodyStyle={{padding: 16}}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>

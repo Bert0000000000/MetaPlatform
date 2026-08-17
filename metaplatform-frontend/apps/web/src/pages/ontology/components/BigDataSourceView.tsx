@@ -82,7 +82,7 @@ function InnerBody({ report }: { report: any }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Toolbar */}
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'}}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search style={{ position: 'absolute', left: 10, top: 10, width: 14, height: 14, color: 'var(--muted-foreground)' }} />
           <input
@@ -128,7 +128,7 @@ function InnerBody({ report }: { report: any }) {
       </Card>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: '总数', value: sources.length, color: 'var(--foreground)' },
           { label: '运行中', value: sources.filter(s => s.status === 'ACTIVE').length, color: '#10b981' },
@@ -136,7 +136,7 @@ function InnerBody({ report }: { report: any }) {
           { label: '异常', value: sources.filter(s => s.status === 'ERROR').length, color: '#ef4444' },
           { label: '类型数', value: new Set(sources.map(s => s.sourceType)).size, color: 'var(--primary)' },
         ].map(s => (
-          <Card key={s.label}  style={{ padding: '12px 16px' }}>
+          <Card key={s.label}  bodyStyle={{padding: '12px 16px'}}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 4 }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
           </Card>
@@ -150,7 +150,7 @@ function InnerBody({ report }: { report: any }) {
           加载中...
         </div>
       ) : sources.length === 0 ? (
-        <Card style={{ padding: 60, textAlign: 'center', color: 'var(--muted-foreground)' }}>
+        <Card bodyStyle={{padding: 60, textAlign: 'center', color: 'var(--muted-foreground)'}}>
           <Database style={{ width: 40, height: 40, margin: '0 auto 12px', opacity: 0.3 }} />
           <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>暂无数据源</div>
           <div style={{ fontSize: 12, marginBottom: 16 }}>点击右上角"新建数据源"开始接入</div>
@@ -283,7 +283,7 @@ function CreateSourceModal({ onClose, onSuccess, report }: { onClose: () => void
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <Card style={{ width: 640, maxHeight: '90vh', overflow: 'auto' }}>
+      <Card style={{width: 640, maxHeight: '90vh', overflow: 'auto'}} bodyStyle={{overflow: 'auto'}}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建大数据源</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>

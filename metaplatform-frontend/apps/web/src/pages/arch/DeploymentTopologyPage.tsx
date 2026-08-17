@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, Tag, Toast, Popconfirm, Space, Typography, Row, Col } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Graph } from '@antv/x6';
+import SemiGraphCanvas, { type GraphNodeSpec, type GraphEdgeSpec } from '@/components/SemiGraphCanvas';
 import { listDeploymentTopologies, createDeploymentTopology, updateDeploymentTopology, deleteDeploymentTopology } from '@/api/arch/deployments';
 import type { DeploymentTopology, DeploymentNode, DeploymentEdge } from '@/api/arch/types';
 
@@ -44,8 +44,6 @@ export default function DeploymentTopologyPage() {
   const [editing, setEditing] = useState<DeploymentTopology | null>(null);
   const [selectedTopology, setSelectedTopology] = useState<DeploymentTopology | null>(null);
   const [form] = Form.useForm<DeploymentTopologyFormValues>();
-  const graphRef = useRef<Graph | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -58,60 +56,30 @@ export default function DeploymentTopologyPage() {
 
   useEffect(() => { load(); }, [filteredEnv]);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const graph = new Graph({
-      container: containerRef.current,
-      width: containerRef.current.clientWidth,
-      height: 480,
-      grid: true,
-      panning: true,
-      mousewheel: true,
-    });
-    graphRef.current = graph;
-    const handleResize = () => {
-      if (containerRef.current && graphRef.current) {
-        graphRef.current.resize(containerRef.current.clientWidth, 480);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      graph.dispose();
-      graphRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    graph.clearCells();
-    if (!selectedTopology) return;
-
-    const nodeMap = new Map<string, ReturnType<typeof graph.addNode>>();
-    selectedTopology.nodes?.forEach((node) => {
+  const { nodes, edges, worldWidth, worldHeight } = useMemo(() => {
+    if (!selectedTopology?.nodes) return { nodes: [] as GraphNodeSpec[], edges: [] as GraphEdgeSpec[], worldWidth: 800, worldHeight: 480 };
+    const nodeSpecs: GraphNodeSpec[] = selectedTopology.nodes.map((node) => {
       const color = NODE_COLORS[node.type ?? 'default'] ?? NODE_COLORS.default;
-      const added = graph.addNode({
+      return {
         id: node.id,
-        x: node.x ?? 100 + Math.random() * 400,
-        y: node.y ?? 100 + Math.random() * 200,
-        width: 140,
-        height: 48,
+        x: node.x ?? 100 + ((node.id.charCodeAt(0) * 37) % 400),
+        y: node.y ?? 100 + ((node.id.charCodeAt(1) * 53) % 200),
+        w: 140, h: 48,
         label: node.name,
-        attrs: { body: { fill: '#f0f5ff', stroke: color, rx: 6, ry: 6 }, label: { fill: color } },
-      });
-      nodeMap.set(node.id, added);
+        color,
+      };
     });
-
-    selectedTopology.edges?.forEach((edge) => {
-      graph.addEdge({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        label: edge.label,
-        attrs: { line: { stroke: edge.status === 'critical' ? '#ff4d4f' : '#bfbfbf', strokeWidth: 1.5 } },
-      });
-    });
+    const edgeSpecs: GraphEdgeSpec[] = (selectedTopology.edges ?? []).map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      color: edge.status === 'critical' ? '#ff4d4f' : undefined,
+      width: 1.5,
+    }));
+    const maxX = Math.max(240, ...nodeSpecs.map((n) => n.x + 100));
+    const maxY = Math.max(200, ...nodeSpecs.map((n) => n.y + 80));
+    return { nodes: nodeSpecs, edges: edgeSpecs, worldWidth: maxX + 40, worldHeight: maxY + 40 };
   }, [selectedTopology]);
 
   const parseJson = (text: string): unknown => {
@@ -193,7 +161,21 @@ export default function DeploymentTopologyPage() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={24}>
           <Card title={selectedTopology ? `部署拓扑：${selectedTopology.name}（${ENV_OPTIONS.find((o) => o.value === selectedTopology.environment)?.label ?? selectedTopology.environment}）` : '部署拓扑'}>
-            <div ref={containerRef} style={{ width: '100%', height: 480 }} />
+            {selectedTopology && (selectedTopology.nodes?.length ?? 0) > 0 ? (
+              <SemiGraphCanvas
+                nodes={nodes}
+                edges={edges}
+                worldWidth={worldWidth}
+                worldHeight={worldHeight}
+                height={480}
+                autoFit
+                showGrid
+              />
+            ) : (
+              <div style={{ height: 480, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: 13, border: '1px dashed var(--semi-color-border)', borderRadius: 8 }}>
+                {selectedTopology ? '该拓扑未定义节点（编辑拓扑并填入节点 JSON 后即可可视化）' : '选择一条拓扑记录查看可视化'}
+              </div>
+            )}
           </Card>
         </Col>
       </Row>

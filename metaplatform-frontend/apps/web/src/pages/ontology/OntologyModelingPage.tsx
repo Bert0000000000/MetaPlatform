@@ -13,6 +13,7 @@ import {
   type KernelObjectType, type KernelActionType, type KernelLinkType,
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
+import { actionDisplayName } from './actions/ActionTypeListPage';
 
 
 // 领域码 → 中文（rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1）
@@ -354,7 +355,7 @@ export default function OntologyModelingPage({
           </div>
 
           {/* Concept Table */}
-          <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
               <h4 style={{ fontSize: 14, fontWeight: 600 }}>
                 {DOMAIN_LABELS[selectedDomain] ?? (selectedDomain || '全部')} - 概念
@@ -434,7 +435,7 @@ export default function OntologyModelingPage({
             <div ref={detailRef} style={{ display: 'flex', gap: 20, marginTop: 20, scrollMarginTop: 12 }}>
               {/* Attribute Table + Add-property form + 关联 Action */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <Card style={{ padding: 0, overflow: 'hidden' }}>
+                <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                     <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} · 属性定义</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -526,7 +527,7 @@ export default function OntologyModelingPage({
 
                 {/* 关联 Action */}
                 {selectedActions.length > 0 && (
-                  <Card style={{ padding: 0, overflow: 'hidden', marginTop: 16 }}>
+                  <Card style={{overflow: 'hidden', marginTop: 16}} bodyStyle={{padding: 0}}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                       <h4 style={{ fontSize: 14, fontWeight: 600 }}>关联 Action</h4>
                       <span className="v-eyebrow">{selectedActions.length} 个</span>
@@ -535,9 +536,11 @@ export default function OntologyModelingPage({
                       {selectedActions.map((at) => (
                         <div key={at.rid} className="om-relation-item">
                           <div className="om-relation-icon"><Zap style={{ width: 14, height: 14 }} /></div>
-                          <span className="om-relation-label">{at.rid.split('.').slice(0, -2).pop()}</span>
+                          <span className="om-relation-label">{actionDisplayName(at)}</span>
                           <ArrowRight style={{ color: 'var(--muted-foreground)', fontSize: 12, flexShrink: 0, width: 14, height: 14 }} />
-                          <span className="om-relation-target">side_effects: {at.side_effects.join(', ')}</span>
+                          <span className="om-relation-target" title={at.description || at.rid}>
+                            {at.description ? at.description : `side_effects: ${at.side_effects.join(', ') || '—'}`}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -547,7 +550,7 @@ export default function OntologyModelingPage({
 
               {/* Relation Panel */}
               <div style={{ width: 300, flexShrink: 0 }}>
-                <Card style={{ padding: 0, overflow: 'hidden', height: 'fit-content' }}>
+                <Card style={{overflow: 'hidden', height: 'fit-content'}} bodyStyle={{padding: 0}}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
                     <h4 style={{ fontSize: 14, fontWeight: 600 }}>{selectedConceptDetail.display_name} - 关系定义</h4>
                     <span className="v-eyebrow">{selectedLinks.length} 个关系</span>

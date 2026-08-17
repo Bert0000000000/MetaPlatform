@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card } from '@douyinfe/semi-ui';
 import { createPortal as ReactDOM_createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
-  TestTube, Plus, Search, Calculator, Bell, GitBranch, Plug, Webhook,
+  TestTube, Plus, GitBranch, Plug, Zap,
   Copy, Trash2, Save, Sparkles, Diamond, RefreshCw, ArrowDownToLine,
   ArrowUpFromLine, Undo2, Redo2, ZoomIn, ZoomOut, Maximize2, Play, Download,
   X, Minimize2, Settings, Cpu, Database, ShieldCheck, Sliders, FileText,
@@ -42,33 +42,13 @@ import { defaultFixedSemiMaterials } from '@flowgram.ai/fixed-semi-materials';
 import '@flowgram.ai/free-layout-editor/index.css';
 import '@flowgram.ai/fixed-layout-editor/index.css';
 import { FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
-import { SEED_EXECUTION_HISTORY } from './actions/executionHistory';
+import {
+  listActionTypes, listObjectTypes, slugAndVersionOfObjectType,
+  type KernelActionType, type KernelObjectType,
+} from '@/api/ont/kernel';
+import { actionDisplayName } from './actions/ActionTypeListPage';
 
-
-// MOCK: Action 列表
-const ACTIONS = [
-  { id: 'act-1', name: '客户信息查询', type: '查询', icon: Search, enabled: true },
-  { id: 'act-2', name: '风险评估计算', type: '计算', icon: Calculator, enabled: true },
-  { id: 'act-3', name: '发送审批通知', type: '通知', icon: Bell, enabled: true },
-  { id: 'act-4', name: '合同审批流程', type: '审批', icon: GitBranch, enabled: true },
-  { id: 'act-5', name: 'ERP 数据同步', type: '数据同步', icon: Plug, enabled: true },
-  { id: 'act-6', name: 'Webhook 外部集成', type: '集成', icon: Webhook, enabled: false },
-];
-
-// MOCK: 输入参数
-const INPUT_PARAMS = [
-  { name: 'recipient_id', type: 'String', required: true, desc: '接收人 ID' },
-  { name: 'approval_data', type: 'Object', required: true, desc: '审批数据体' },
-  { name: 'channel', type: 'Enum', required: false, desc: '通知渠道 (im/email/sms)' },
-];
-
-// MOCK: 关联本体概念
-const RELATED_CONCEPTS = ['通知', '审批', '用户', '组织'];
-
-// MOCK: 关联触发器
-const RELATED_TRIGGERS = ['审批流程 - 提交节点', '审批流程 - 催办节点'];
-
-// MOCK: 节点属性配置
+// 节点属性配置
 const NODE_PROPS: Record<string, Record<string, unknown>> = {
   'llm-extract': { model: 'doubao-pro-32k', temperature: 0.3, maxTokens: 4096, prompt: '你是一个专业的实体抽取助手...\n1. 姓名\n2. 公司\n3. 职位', inputMap: '$input.raw_data → customer_text', outputMap: '$output.entities → $node-condition.input', id: 'node-llm-extract-01', timeout: '30,000 ms', retry: 3 },
   'input': { id: 'node-input-01', source: 'HTTP POST', format: 'application/json' },
@@ -78,9 +58,6 @@ const NODE_PROPS: Record<string, Record<string, unknown>> = {
   'llm-relation': { id: 'node-llm-rel-01', model: 'doubao-pro-128k', temperature: 0.2, maxTokens: 8192 },
   'output': { id: 'node-output-01', target: 'neo4j://graph/mate-platform', writeMode: 'merge' },
 };
-
-// MOCK: 执行历史
-const EXEC_HISTORY = SEED_EXECUTION_HISTORY;
 
 // 节点颜色（按 type 区分）
 function colorOf(type: string): { border: string; bg: string; text: string; label: string } {
@@ -1556,10 +1533,51 @@ function CustomBaseNode() {
 
 export default function OntologyActionPage() {
   const navigate = useNavigate();
-    const [selectedAction, setSelectedAction] = useState(2);
+    const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
+  const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
+  const [loadingKernel, setLoadingKernel] = useState(true);
+  // 选中 ActionType 的 rid（真实数据按 rid 索引，避免顺序耦合）
+  const [selectedActionRid, setSelectedActionRid] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedFlowNode, setSelectedFlowNode] = useState('llm-extract');
   const [actionFlowSelect, setActionFlowSelect] = useState('客户数据清洗 Action');
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [ats, ots] = await Promise.all([
+          listActionTypes().catch(() => [] as KernelActionType[]),
+          listObjectTypes().catch(() => [] as KernelObjectType[]),
+        ]);
+        if (!active) return;
+        setActionTypes(ats);
+        setObjectTypes(ots);
+        if (ats.length > 0) setSelectedActionRid((prev) => prev && ats.some((a) => a.rid === prev) ? prev : ats[0].rid);
+      } catch (e) {
+        console.warn('Action 数据加载失败', e);
+      } finally {
+        if (active) setLoadingKernel(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const selectedAction = actionTypes.find((a) => a.rid === selectedActionRid) ?? null;
+
+  const otDisplayName = (rid: string) => {
+    const ot = objectTypes.find((o) => o.rid === rid);
+    if (ot) return ot.display_name || slugAndVersionOfObjectType(rid).slug;
+    return rid.split('.').slice(-2, -1)[0] ?? rid;
+  };
+
+  // 真实统计（来自 kernel 数据）
+  const stats = useMemo(() => ({
+    total: actionTypes.length,
+    params: actionTypes.reduce((acc, a) => acc + a.parameters.length, 0),
+    targets: new Set(actionTypes.flatMap((a) => a.on)).size,
+    functions: new Set(actionTypes.map((a) => a.function_ref)).size,
+  }), [actionTypes]);
 
   // 节点颜色已抽取到模块级 colorOf
 
@@ -1617,25 +1635,23 @@ export default function OntologyActionPage() {
           <Button theme="solid" type="primary" onClick={() => setDrawerOpen(true)} style={{ marginLeft: 8 }}><Plus style={{ width: 16, height: 16 }} />新建 Action</Button>
         </div>
 
-      {/* Stats */}
+      {/* Stats（真实 kernel 数据） */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
         <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>45</div>
+          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.total}</div>
           <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Action 总数</div>
         </div>
         <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>38</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>已启用</div>
-          <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4 }}>84.4%</div>
+          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.targets}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>作用对象数</div>
         </div>
         <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>1,284</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>本月执行次数</div>
+          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.params}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>输入参数总数</div>
         </div>
         <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>99.2%</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>成功率</div>
-          <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4 }}>+0.3%</div>
+          <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{loadingKernel ? '…' : stats.functions}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>引用 Function 数</div>
         </div>
       </div>
 
@@ -1644,37 +1660,47 @@ export default function OntologyActionPage() {
         <div style={{ width: 240, flexShrink: 0 }}>
           <Card style={{ height: 'fit-content' }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Actions</h3>
-            {ACTIONS.map((a, i) => (
-              <div
-                key={a.id}
-                onClick={() => setSelectedAction(i)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-                  borderRadius: 4, cursor: 'pointer', fontSize: 13,
-                  color: i === selectedAction ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  background: i === selectedAction ? 'var(--muted)' : 'transparent',
-                  marginBottom: 2, transition: 'background .15s',
-                }}
-              >
-                <a.icon style={{ width: 16, height: 16, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--background)', color: 'var(--muted-foreground)' }}>{a.type}</span>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: a.enabled ? 'var(--success)' : 'var(--muted-foreground)' }} />
+            {loadingKernel ? (
+              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--muted-foreground)' }}>加载中…</div>
+            ) : actionTypes.length === 0 ? (
+              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--muted-foreground)' }}>暂无 ActionType</div>
+            ) : actionTypes.map((a) => {
+              const isSel = a.rid === selectedActionRid;
+              return (
+                <div
+                  key={a.rid}
+                  onClick={() => setSelectedActionRid(a.rid)}
+                  title={a.rid}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                    borderRadius: 4, cursor: 'pointer', fontSize: 13,
+                    color: isSel ? 'var(--foreground)' : 'var(--muted-foreground)',
+                    background: isSel ? 'var(--muted)' : 'transparent',
+                    marginBottom: 2, transition: 'background .15s',
+                  }}
+                >
+                  <Zap style={{ width: 16, height: 16, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actionDisplayName(a)}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--background)', color: 'var(--muted-foreground)' }}>
+                        {a.on.length > 0 ? otDisplayName(a.on[0]) : '未绑定对象'}
+                      </span>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: 'var(--success)' }} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </Card>
         </div>
 
         {/* Right: Detail */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <Card style={{ marginBottom: 20, padding: 0, overflow: 'hidden' }}>
+          <Card style={{marginBottom: 20, overflow: 'hidden'}} bodyStyle={{padding: 0}}>
             {/* Header: title + actions */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600 }}>{ACTIONS[selectedAction].name}</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 600 }}>{selectedAction ? actionDisplayName(selectedAction) : '未选择 Action'}</h3>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Copy style={{ width: 14, height: 14 }} />复制</Button>
                 <Button theme="light" type="secondary" style={{ height: 32, padding: '0 12px', fontSize: 12 }}><Trash2 style={{ width: 14, height: 14 }} />删除</Button>
@@ -1724,13 +1750,13 @@ export default function OntologyActionPage() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>基本信息</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '12px 16px', alignItems: 'start' }}>
                     <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>名称</div>
-                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}>发送审批通知</div>
+                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}>{selectedAction ? actionDisplayName(selectedAction) : '—'}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>标识符</div>
-                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}><code style={codeStyle}>action.approval.notify</code></div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>类型</div>
-                    <div style={{ fontSize: 13 }}><span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 9999, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>通知</span></div>
+                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}><code style={codeStyle}>{selectedAction?.rid ?? '—'}</code></div>
+                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>Function 引用</div>
+                    <div style={{ fontSize: 13, color: 'var(--foreground)' }}><code style={codeStyle}>{selectedAction?.function_ref ?? '—'}</code></div>
                     <div style={{ fontSize: 12, color: 'var(--muted-foreground)', paddingTop: 3 }}>描述</div>
-                    <div style={{ fontSize: 13, color: 'var(--foreground)', lineHeight: 1.6 }}>通过 IM / Email / SMS 渠道向指定接收人发送审批通知</div>
+                    <div style={{ fontSize: 13, color: 'var(--foreground)', lineHeight: 1.6 }}>{selectedAction?.description || '（未填写描述）'}</div>
                   </div>
                 </div>
               )}
@@ -1738,6 +1764,7 @@ export default function OntologyActionPage() {
               {detailTab === 'io' && (
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>输入参数</div>
+                  {selectedAction && selectedAction.parameters.length > 0 ? (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 20 }}>
                     <thead>
                       <tr>
@@ -1748,25 +1775,28 @@ export default function OntologyActionPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {INPUT_PARAMS.map((p) => (
-                        <tr key={p.name}>
-                          <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', borderBottom: '1px solid var(--border)' }}>{p.name}</td>
-                          <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.type}</td>
-                          <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)' }}>{p.required ? '是' : '否'}</td>
-                          <td style={{ padding: '6px 10px', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.desc}</td>
+                      {selectedAction.parameters.map((p) => {
+                        const name = p.rid.split('.').slice(-2, -1)[0] ?? p.rid;
+                        return (
+                        <tr key={p.rid}>
+                          <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', borderBottom: '1px solid var(--border)' }}>{name}</td>
+                          <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.type_id}</td>
+                          <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)' }}>{p.nullable ? '否' : '是'}</td>
+                          <td style={{ padding: '6px 10px', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.title || '—'}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
+                  ) : (
+                    <div style={{ padding: '12px 0 20px', fontSize: 12, color: 'var(--muted-foreground)' }}>该 Action 无输入参数</div>
+                  )}
 
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>输出定义</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>副作用与提交规则</div>
                   <div style={{ background: 'var(--muted)', borderRadius: 'var(--radius)', padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.8 }}>
-                    {'{'}<br />
-                    &nbsp;&nbsp;"success": "boolean",<br />
-                    &nbsp;&nbsp;"message_id": "string",<br />
-                    &nbsp;&nbsp;"sent_at": "datetime",<br />
-                    &nbsp;&nbsp;"channel": "string"<br />
-                    {'}'}
+                    <div>side_effects: {selectedAction && selectedAction.side_effects.length > 0 ? selectedAction.side_effects.join(', ') : '[]'}</div>
+                    <div>submission_criteria: {selectedAction && selectedAction.submission_criteria.length > 0 ? selectedAction.submission_criteria.join('; ') : '[]'}</div>
+                    <div>apply: POST /ont/v2/action-types/&#123;rid&#125;/apply</div>
                   </div>
                 </div>
               )}
@@ -1774,21 +1804,21 @@ export default function OntologyActionPage() {
               {detailTab === 'relations' && (
                 <div>
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>关联本体概念</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>关联本体概念（作用对象）</div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {RELATED_CONCEPTS.map((c) => (
-                        <span key={c} style={{ padding: '4px 10px', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, color: 'var(--foreground)', cursor: 'pointer' }}>{c}</span>
-                      ))}
+                      {selectedAction && selectedAction.on.length > 0 ? selectedAction.on.map((rid) => (
+                        <span key={rid} title={rid} style={{ padding: '4px 10px', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, color: 'var(--foreground)', cursor: 'pointer' }}>{otDisplayName(rid)}</span>
+                      )) : (
+                        <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>该 Action 未绑定作用对象</span>
+                      )}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>关联触发器</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12 }}>Function 实现引用</div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {RELATED_TRIGGERS.map((t) => (
-                        <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--foreground)' }}>
-                          <GitBranch style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />{t}
-                        </span>
-                      ))}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--foreground)' }}>
+                        <GitBranch style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />{selectedAction?.function_ref ?? '—'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1842,33 +1872,13 @@ export default function OntologyActionPage() {
           <Card>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600 }}>执行历史</h3>
-              <Button theme="light" type="secondary" style={{ height: 28, padding: '0 10px', fontSize: 11 }}>查看全部</Button>
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {['触发者', '时间', '输入摘要', '输出摘要', '耗时', '状态'].map((h) => (
-                    <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {EXEC_HISTORY.map((r, i) => (
-                  <tr key={i}>
-                    <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--foreground)', fontWeight: 500, borderBottom: '1px solid var(--border)' }}>{r.trigger}</td>
-                    <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{r.time}</td>
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted-foreground)', background: 'var(--background)', padding: '1px 6px', borderRadius: 3 }}>{r.input}</code></td>
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}><code style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted-foreground)', background: 'var(--background)', padding: '1px 6px', borderRadius: 3 }}>{r.output}</code></td>
-                    <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--foreground)', borderBottom: '1px solid var(--border)' }}>{r.duration}</td>
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
-                      <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 9999, background: r.status === 'success' ? 'rgba(98,209,120,0.12)' : 'rgba(255,97,102,0.15)', color: r.status === 'success' ? 'var(--success)' : 'var(--destructive)' }}>
-                        {r.status === 'success' ? '成功' : '失败'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>
+              暂无执行记录
+              <div style={{ fontSize: 12, marginTop: 6 }}>
+                kernel 尚未提供执行历史查询；在概念详情或 SuperAI 编排中触发 ActionType.apply 后可在此回看
+              </div>
+            </div>
           </Card>
         </div>
       </div>

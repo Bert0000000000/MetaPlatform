@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, Tag, Toast, Popconfirm, Space, Typography, Row, Col } from '@douyinfe/semi-ui';
 import type { TagColor } from '@douyinfe/semi-ui/lib/es/tag';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Graph } from '@antv/x6';
+import SemiGraphCanvas, { type GraphNodeSpec, type GraphEdgeSpec } from '@/components/SemiGraphCanvas';
 import { listTechnologyStacks, createTechnologyStack, updateTechnologyStack, deleteTechnologyStack } from '@/api/arch/technologyStacks';
 import { listTechnologyComponents } from '@/api/arch/technologyComponents';
 import type { TechnologyStack, TechnologyComponent } from '@/api/arch/types';
@@ -41,8 +41,6 @@ export default function TechStackPage() {
   const [editing, setEditing] = useState<TechnologyStack | null>(null);
   const [selectedStack, setSelectedStack] = useState<TechnologyStack | null>(null);
   const [form] = Form.useForm<Partial<TechnologyStack>>();
-  const graphRef = useRef<Graph | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -56,65 +54,43 @@ export default function TechStackPage() {
 
   useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const graph = new Graph({
-      container: containerRef.current,
-      width: containerRef.current.clientWidth,
-      height: 360,
-      grid: true,
-      panning: true,
-      mousewheel: true,
-    });
-    graphRef.current = graph;
-    const handleResize = () => {
-      if (containerRef.current && graphRef.current) {
-        graphRef.current.resize(containerRef.current.clientWidth, 360);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      graph.dispose();
-      graphRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    const graph = graphRef.current;
-    if (!graph) return;
-    graph.clearCells();
-    if (!selectedStack) return;
-
-    const appNode = graph.addNode({
+  const { nodes, edges, worldWidth, worldHeight } = useMemo(() => {
+    if (!selectedStack) return { nodes: [] as GraphNodeSpec[], edges: [] as GraphEdgeSpec[], worldWidth: 800, worldHeight: 360 };
+    const nodeSpecs: GraphNodeSpec[] = [{
       id: `app-${selectedStack.id}`,
-      x: 40,
-      y: 160,
-      width: 160,
-      height: 48,
+      x: 40 + 80,
+      y: 160 + 24,
+      w: 160, h: 48,
       label: selectedStack.name,
-      attrs: { body: { fill: '#e6f7ff', stroke: '#1677ff', rx: 6, ry: 6 }, label: { fill: '#1677ff' } },
-    });
-
-    selectedStack.components?.forEach((ref, index) => {
+      color: '#1677ff',
+    }];
+    const edgeSpecs: GraphEdgeSpec[] = [];
+    // 运行时兼容：旧字段 components（ref 列表）/ 后端实际返回 component_ids（id 数组）
+    const stack = selectedStack as TechnologyStack & { component_ids?: string[] };
+    const refs: Array<{ componentId: string; componentName?: string; type?: string }> =
+      selectedStack.components ?? (stack.component_ids ?? []).map((cid) => ({ componentId: cid }));
+    refs.forEach((ref, index) => {
       const comp = components.find((c) => c.id === ref.componentId);
-      const type = comp?.type ?? ref.type ?? 'other';
+      const type = comp?.type ?? ref.type ?? (comp as unknown as { category?: string } | undefined)?.category ?? 'other';
       const color = COMPONENT_COLORS[type] ?? '#8c8c8c';
-      const compNode = graph.addNode({
-        id: `comp-${ref.componentId}-${index}`,
-        x: 280 + (index % 3) * 180,
-        y: 60 + Math.floor(index / 3) * 100,
-        width: 150,
-        height: 48,
+      const id = `comp-${ref.componentId}-${index}`;
+      nodeSpecs.push({
+        id,
+        x: 280 + (index % 3) * 180 + 75,
+        y: 60 + Math.floor(index / 3) * 100 + 24,
+        w: 150, h: 48,
         label: comp?.name ?? ref.componentName ?? ref.componentId,
-        attrs: { body: { fill: '#f6ffed', stroke: color, rx: 6, ry: 6 }, label: { fill: color } },
+        color,
       });
-      graph.addEdge({
-        source: appNode,
-        target: compNode,
-        attrs: { line: { stroke: '#bfbfbf', strokeWidth: 1.5 } },
-      });
+      edgeSpecs.push({ source: `app-${selectedStack.id}`, target: id });
     });
+    const rows = Math.max(1, Math.ceil(refs.length / 3));
+    return {
+      nodes: nodeSpecs,
+      edges: edgeSpecs,
+      worldWidth: 280 + 3 * 180 + 40,
+      worldHeight: 60 + rows * 100 + 60,
+    };
   }, [selectedStack, components]);
 
   const handleSubmit = async () => {
@@ -172,18 +148,29 @@ export default function TechStackPage() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={16}>
           <Card title={selectedStack ? `依赖关系图：${selectedStack.name}` : '依赖关系图'}>
-            <div ref={containerRef} style={{ width: '100%', height: 360 }} />
+            <SemiGraphCanvas
+              nodes={nodes}
+              edges={edges}
+              worldWidth={worldWidth}
+              worldHeight={worldHeight}
+              height={360}
+              autoFit
+              showGrid
+            />
           </Card>
         </Col>
         <Col span={8}>
           <Card title="组件清单">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {(selectedStack?.components ?? []).map((ref, idx) => {
+              {(selectedStack
+                ? (selectedStack.components ?? ((selectedStack as TechnologyStack & { component_ids?: string[] }).component_ids ?? []).map((cid) => ({ componentId: cid })))
+                : []
+              ).map((ref, idx) => {
                 const comp = components.find((c) => c.id === ref.componentId);
                 return (
                   <div key={`${ref.componentId}-${idx}`} style={{ padding: '6px 0' }}>
                     <Space>
-                      <Tag color={comp ? COMPONENT_TAG_COLORS[comp.type] ?? 'grey' : 'grey'}>{idx + 1}</Tag>
+                      <Tag color={comp ? COMPONENT_TAG_COLORS[comp.type ?? (comp as unknown as { category?: string }).category ?? 'other'] ?? 'grey' : 'grey'}>{idx + 1}</Tag>
                       <span>{comp?.name ?? ref.componentName ?? ref.componentId}</span>
                       {ref.version && <Tag>{ref.version}</Tag>}
                     </Space>

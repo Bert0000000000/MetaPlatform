@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { Graph } from '@antv/x6';
+// 能力-本体映射图 — Semi DOM 渲染（SemiGraphCanvas，X6 已移除）。
+import { useMemo } from 'react';
+import SemiGraphCanvas, { type GraphNodeSpec, type GraphEdgeSpec } from '@/components/SemiGraphCanvas';
 import type { OntologyMapping } from '@/api/arch/types';
 import { analyzeImpact } from '@/api/arch/ontologyMapping';
 import type { ImpactAnalysisResult } from '@/api/arch/types';
@@ -10,78 +11,79 @@ interface Props {
 }
 
 export default function OntologyMappingGraph({ mappings, onImpact }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<Graph | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    if (!Array.isArray(mappings) || mappings.length === 0) return;
-
-    const graph = new Graph({
-      container: containerRef.current,
-      background: { color: '#fafafa' },
-      grid: { visible: true, type: 'dot' },
-      panning: true,
-      mousewheel: true,
-    });
-    graphRef.current = graph;
-
-    const capNodes = new Map<string, string>();
-    const conNodes = new Map<string, string>();
+  const { nodes, edges, worldWidth, worldHeight } = useMemo(() => {
+    if (!Array.isArray(mappings) || mappings.length === 0) {
+      return { nodes: [] as GraphNodeSpec[], edges: [] as GraphEdgeSpec[], worldWidth: 500, worldHeight: 80 };
+    }
+    const capSeen = new Set<string>();
+    const conSeen = new Set<string>();
+    const nodeSpecs: GraphNodeSpec[] = [];
+    const edgeSpecs: GraphEdgeSpec[] = [];
 
     mappings.forEach((m, idx) => {
       const row = idx;
-      if (!capNodes.has(m.capabilityId)) {
-        capNodes.set(m.capabilityId, m.capabilityName);
-        graph.addNode({
+      if (!capSeen.has(m.capabilityId)) {
+        capSeen.add(m.capabilityId);
+        nodeSpecs.push({
           id: `cap_${m.capabilityId}`,
-          shape: 'rect',
-          x: 40,
-          y: row * 70 + 20,
-          width: 140,
-          height: 44,
-          attrs: { body: { fill: '#e6f4ff', stroke: '#1677ff', rx: 6 }, label: { text: m.capabilityName, fill: '#1677ff', fontSize: 12 } },
+          x: 40 + 70,
+          y: row * 70 + 20 + 22,
+          w: 140, h: 44,
+          label: m.capabilityName,
+          color: '#1677ff',
         });
       }
-      if (!conNodes.has(m.conceptId)) {
-        conNodes.set(m.conceptId, m.conceptName);
-        graph.addNode({
+      if (!conSeen.has(m.conceptId)) {
+        conSeen.add(m.conceptId);
+        nodeSpecs.push({
           id: `con_${m.conceptId}`,
-          shape: 'rect',
-          x: 320,
-          y: row * 70 + 20,
-          width: 140,
-          height: 44,
-          attrs: { body: { fill: '#f9f0ff', stroke: '#722ed1', rx: 6 }, label: { text: m.conceptName, fill: '#722ed1', fontSize: 12 } },
+          x: 320 + 70,
+          y: row * 70 + 20 + 22,
+          w: 140, h: 44,
+          label: m.conceptName,
+          color: '#722ed1',
         });
       }
       const color = m.mappingType === 'direct' ? '#52c41a' : m.mappingType === 'partial' ? '#faad14' : '#d9d9d9';
-      graph.addEdge({
+      edgeSpecs.push({
         source: `cap_${m.capabilityId}`,
         target: `con_${m.conceptId}`,
-        attrs: { line: { stroke: color, strokeWidth: 2, strokeDasharray: m.mappingType === 'planned' ? '4 4' : '0' } },
-        labels: [{ text: `${m.confidence}%`, position: 'middle', attrs: { label: { fill: color, fontSize: 10 } } }],
+        color,
+        width: 2,
+        dashed: m.mappingType === 'planned',
+        label: `${m.confidence}%`,
       });
     });
 
-    graph.on('node:dblclick', async ({ node }) => {
-      const id = node.id.replace('cap_', '');
-      if (mappings.some((m) => m.capabilityId === id)) {
-        const result = await analyzeImpact(id);
-        onImpact?.(result);
-      }
-    });
-
-    graph.zoomToFit({ padding: 20, maxScale: 1.5 });
-
-    return () => {
-      graph.dispose();
+    return {
+      nodes: nodeSpecs,
+      edges: edgeSpecs,
+      worldWidth: 500,
+      worldHeight: mappings.length * 70 + 80,
     };
-  }, [mappings, onImpact]);
+  }, [mappings]);
+
+  if (!Array.isArray(mappings) || mappings.length === 0) {
+    return <div style={{ width: '100%', height: 400, border: '1px solid var(--semi-color-border)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>暂无映射数据</div>;
+  }
 
   return (
     <div>
-      <div ref={containerRef} style={{ width: '100%', height: 400, border: '1px solid var(--semi-color-border)', borderRadius: 8 }} />
+      <SemiGraphCanvas
+        nodes={nodes}
+        edges={edges}
+        worldWidth={worldWidth}
+        worldHeight={worldHeight}
+        height={400}
+        autoFit
+        showGrid
+        onNodeDblClick={(nodeId) => {
+          const id = nodeId.replace('cap_', '');
+          if (mappings.some((m) => m.capabilityId === id)) {
+            analyzeImpact(id).then((result) => onImpact?.(result)).catch(() => undefined);
+          }
+        }}
+      />
       <div style={{ marginTop: 8, fontSize: 12, color: 'var(--semi-color-text-2)' }}>双击能力节点可查看影响分析</div>
     </div>
   );

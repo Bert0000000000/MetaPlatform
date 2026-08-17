@@ -53,7 +53,7 @@ export default function RelationshipTypeListPage() {
           </div>
         </div>
 
-        <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <Card style={{overflow: 'hidden'}} bodyStyle={{padding: 0}}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
             <h4 style={{ fontSize: 14, fontWeight: 600 }}>LinkType 列表</h4>
           </div>

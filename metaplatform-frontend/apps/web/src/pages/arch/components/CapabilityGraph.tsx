@@ -1,14 +1,17 @@
-import { useEffect, useRef } from 'react';
-import { Graph } from '@antv/x6';
+// 能力树图 — Semi DOM 渲染（SemiGraphCanvas，X6 已移除）。
+import { useMemo } from 'react';
 import { Spin } from '@douyinfe/semi-ui';
+import SemiGraphCanvas, { type GraphNodeSpec, type GraphEdgeSpec } from '@/components/SemiGraphCanvas';
 import type { Capability } from '@/api/arch/types';
 
 interface Props {
   data: Capability[];
 }
 
-function buildNodes(caps: Capability[], parentId?: string, x = 0, y = 0, level = 0): Array<{ id: string; name: string; parentId?: string; level: number }> {
-  const result: Array<{ id: string; name: string; parentId?: string; level: number }> = [];
+interface FlatNode { id: string; name: string; parentId?: string; level: number }
+
+function buildNodes(caps: Capability[], parentId?: string, level = 0): FlatNode[] {
+  const result: FlatNode[] = [];
   const getId = (c: Capability) => c.capabilityId || (c as unknown as Record<string, unknown>).id as string || '';
   const getParent = (c: Capability) => c.parentCapabilityId || (c as unknown as Record<string, unknown>).parent_id as string || '';
   const visited = new Set<string>();
@@ -19,7 +22,7 @@ function buildNodes(caps: Capability[], parentId?: string, x = 0, y = 0, level =
     if (visited.has(id)) return;
     visited.add(id);
     result.push({ id, name: c.name, parentId, level });
-    result.push(...buildNodes(caps, id, x, y, level + 1));
+    result.push(...buildNodes(caps, id, level + 1));
   });
   if (!parentId) {
     const roots = caps.filter((c) => !getParent(c) && !visited.has(getId(c)));
@@ -28,75 +31,56 @@ function buildNodes(caps: Capability[], parentId?: string, x = 0, y = 0, level =
       if (visited.has(id)) return;
       visited.add(id);
       result.push({ id, name: c.name, level: 0 });
-      result.push(...buildNodes(caps, id, x, y, level + 1));
+      result.push(...buildNodes(caps, id, level + 1));
     });
   }
   return result;
 }
 
 export default function CapabilityGraph({ data }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<Graph | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const graph = new Graph({
-      container: containerRef.current,
-      background: { color: '#fafafa' },
-      grid: { visible: true, type: 'dot' },
-      interacting: { nodeMovable: true },
-      panning: true,
-      mousewheel: true,
-    });
-    graphRef.current = graph;
-
-    const flatNodes = buildNodes(data);
-    const nodeMap = new Map(flatNodes.map((n) => [n.id, n]));
-
+  const { nodes, edges, worldWidth, worldHeight } = useMemo(() => {
+    const flat = buildNodes(data);
     const colWidth = 200;
     const rowHeight = 80;
-
-    flatNodes.forEach((node) => {
+    const nodeSpecs: GraphNodeSpec[] = flat.map((node) => {
       const col = node.level;
-      const sameLevel = flatNodes.filter((n) => n.level === node.level);
+      const sameLevel = flat.filter((n) => n.level === node.level);
       const row = sameLevel.findIndex((n) => n.id === node.id);
-      graph.addNode({
+      return {
         id: node.id,
-        shape: 'rect',
-        x: col * colWidth + 40,
-        y: row * rowHeight + 40,
-        width: 140,
-        height: 40,
-        attrs: {
-          body: { fill: col === 0 ? '#1677ff' : '#f0f5ff', stroke: '#1677ff', rx: 6, ry: 6 },
-          label: { text: node.name, fill: col === 0 ? '#fff' : '#333', fontSize: 13 },
-        },
-      });
+        x: col * colWidth + 40 + 70,
+        y: row * rowHeight + 40 + 20,
+        w: 140, h: 40,
+        label: node.name,
+        color: '#1677ff',
+        solid: col === 0,
+      };
     });
-
-    flatNodes.forEach((node) => {
-      if (node.parentId && nodeMap.has(node.parentId)) {
-        graph.addEdge({
-          source: node.parentId,
-          target: node.id,
-          attrs: {
-            line: { stroke: '#bbb', strokeWidth: 1.5, targetMarker: { name: 'block', width: 8, height: 6 } },
-          },
-        });
-      }
-    });
-
-    graph.zoomToFit({ padding: 20, maxScale: 1.5 });
-
-    return () => {
-      graph.dispose();
+    const edgeSpecs: GraphEdgeSpec[] = flat
+      .filter((n) => n.parentId && flat.some((p) => p.id === n.parentId))
+      .map((n) => ({ source: n.parentId as string, target: n.id }));
+    const maxCol = Math.max(0, ...flat.map((n) => n.level));
+    const levels = Array.from(new Set(flat.map((n) => n.level)));
+    const maxRows = Math.max(1, ...levels.map((l) => flat.filter((n) => n.level === l).length), 1);
+    return {
+      nodes: nodeSpecs,
+      edges: edgeSpecs,
+      worldWidth: (maxCol + 1) * colWidth + 80,
+      worldHeight: maxRows * rowHeight + 80,
     };
   }, [data]);
 
   return (
     <div>
-      <div ref={containerRef} style={{ width: '100%', height: 480, border: '1px solid var(--semi-color-border)', borderRadius: 8 }} />
+      <SemiGraphCanvas
+        nodes={nodes}
+        edges={edges}
+        worldWidth={worldWidth}
+        worldHeight={worldHeight}
+        height={480}
+        autoFit
+        showGrid
+      />
       {data.length === 0 && <Spin />}
     </div>
   );

@@ -27,6 +27,8 @@ export interface KernelActionType {
   side_effects: string[];
   function_ref: string;
   on: string[];
+  title?: string;
+  description?: string;
 }
 
 export interface KernelLinkType {

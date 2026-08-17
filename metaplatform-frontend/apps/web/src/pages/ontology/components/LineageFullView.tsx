@@ -247,7 +247,7 @@ export default function LineageFullView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
       {/* 工具栏 */}
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'}}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search style={{ position: 'absolute', left: 10, top: 10, width: 14, height: 14, color: 'var(--muted-foreground)' }} />
           <input
@@ -299,14 +299,14 @@ export default function LineageFullView() {
       </Card>
 
       {/* 统计 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: '总节点', value: totalNodes, color: 'var(--foreground)' },
           { label: '可见节点', value: visibleNodes, color: '#3b82f6' },
           { label: '总边', value: totalEdges, color: 'var(--foreground)' },
           { label: '可见边', value: visibleEdges, color: '#10b981' },
         ].map(s => (
-          <Card key={s.label}  style={{ padding: 12 }}>
+          <Card key={s.label}  bodyStyle={{padding: 12}}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
           </Card>
@@ -334,7 +334,7 @@ export default function LineageFullView() {
           onSvgMouseUp={onMouseUp}
         />
       ) : (
-        <Card style={{ padding: 16, overflow: 'auto', flex: 1, minHeight: 360 }}>
+        <Card style={{overflow: 'auto', flex: 1, minHeight: 360}} bodyStyle={{padding: 16, overflow: 'auto'}}>
           <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', minWidth: '100%' }}>
             {nodesByLayer.map((group, layerIdx) => (
               <div key={group.layer} style={{ marginBottom: 24 }}>
@@ -372,7 +372,7 @@ export default function LineageFullView() {
       )}
 
       {/* 图例 */}
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11}}>
         <span style={{ color: 'var(--muted-foreground)' }}>图例:</span>
         {LAYER_ORDER.map(l => (
           <span key={l} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -557,7 +557,7 @@ function NodeDetailPanel({ node, edges, nodes, onClose }: { node: LineageNode; e
   const inEdges = edges.filter(e => e.to === node.id);
   const meta = NODE_TYPE_META[node.type];
   return (
-    <Card style={{ padding: 16 }}>
+    <Card bodyStyle={{padding: 16}}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: meta.color }} />

@@ -62,7 +62,7 @@ export default function ETLView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12}}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           大数据 ETL 任务，支持 Spark/Flink 批流处理
         </div>
@@ -74,14 +74,14 @@ export default function ETLView() {
         </button>
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: '总任务', value: tasks.length, color: 'var(--foreground)' },
           { label: '运行中', value: tasks.filter(t => t.status === 'RUNNING').length, color: '#3b82f6' },
           { label: '成功', value: tasks.filter(t => t.status === 'SUCCESS').length, color: '#10b981' },
           { label: '失败', value: tasks.filter(t => t.status === 'FAILED').length, color: '#ef4444' },
         ].map(s => (
-          <Card key={s.label}  style={{ padding: 12 }}>
+          <Card key={s.label}  bodyStyle={{padding: 12}}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
           </Card>
@@ -205,7 +205,7 @@ function CreateETLDialog({ sources, onClose, onSuccess }: { sources: BigDataSour
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <Card style={{ width: 600, maxHeight: '90vh', overflow: 'auto' }}>
+      <Card style={{width: 600, maxHeight: '90vh', overflow: 'auto'}} bodyStyle={{overflow: 'auto'}}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建 ETL 任务</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>

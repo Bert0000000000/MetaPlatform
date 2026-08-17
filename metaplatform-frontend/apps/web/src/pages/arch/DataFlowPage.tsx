@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, Button, Space, Modal, Form, Input, Select, Toast, Popconfirm } from '@douyinfe/semi-ui';
 import { PlusOutlined, ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Graph } from '@antv/x6';
+import SemiGraphCanvas, { type GraphNodeSpec, type GraphEdgeSpec } from '@/components/SemiGraphCanvas';
 import { listEntities, listFlows, createFlow, updateFlow, deleteFlow } from '@/api/arch/dataArchitecture';
 import type { DataEntity, DataFlow } from '@/api/arch/types';
 
 export default function DataFlowPage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<Graph | null>(null);
   const [entities, setEntities] = useState<DataEntity[]>([]);
   const [flows, setFlows] = useState<DataFlow[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -22,68 +20,35 @@ export default function DataFlowPage() {
 
   useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    if (!containerRef.current || entities.length === 0) return;
-    if (graphRef.current) {
-      graphRef.current.dispose();
-    }
-
-    const graph = new Graph({
-      container: containerRef.current,
-      width: containerRef.current.clientWidth,
-      height: 600,
-      grid: true,
-      panning: true,
-      mousewheel: true,
-    });
-    graphRef.current = graph;
-
+  const { nodes, edges, worldWidth, worldHeight } = useMemo(() => {
     const nodeWidth = 180;
     const nodeHeight = 80;
-    const cols = Math.max(1, Math.floor((containerRef.current.clientWidth - 40) / (nodeWidth + 40)));
-
-    entities.forEach((entity, index) => {
-      const col = index % cols;
-      const row = Math.floor(index / cols);
-      graph.addNode({
-        id: entity.id,
-        x: 40 + col * (nodeWidth + 40),
-        y: 40 + row * (nodeHeight + 60),
-        width: nodeWidth,
-        height: nodeHeight,
-        shape: 'rect',
-        label: `${entity.name}\n${entity.code}`,
-        attrs: {
-          body: { fill: '#e6f4ff', stroke: '#1677ff', rx: 8, ry: 8 },
-          label: { fill: '#1f1f1f', fontSize: 12, whiteSpace: 'pre-wrap' },
-        },
-      });
-    });
-
-    flows.forEach((flow) => {
-      if (entities.find((e) => e.id === flow.sourceEntityId) && entities.find((e) => e.id === flow.targetEntityId)) {
-        graph.addEdge({
-          id: flow.id,
-          source: flow.sourceEntityId,
-          target: flow.targetEntityId,
-          label: flow.name,
-          attrs: {
-            line: { stroke: '#1677ff', strokeWidth: 2, targetMarker: { name: 'classic', size: 8 } },
-            label: { fill: '#1677ff', fontSize: 11 },
-          },
-        });
-      }
-    });
-
-    const handleResize = () => {
-      if (containerRef.current && graphRef.current) {
-        graphRef.current.resize(containerRef.current.clientWidth, 600);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      graph.dispose();
+    const cols = 4;
+    const nodeSpecs: GraphNodeSpec[] = entities.map((entity, index) => ({
+      id: entity.id,
+      x: 40 + (index % cols) * (nodeWidth + 40) + nodeWidth / 2,
+      y: 40 + Math.floor(index / cols) * (nodeHeight + 60) + nodeHeight / 2,
+      w: nodeWidth, h: nodeHeight,
+      label: entity.name,
+      sublabel: entity.code,
+      color: '#1677ff',
+    }));
+    const edgeSpecs: GraphEdgeSpec[] = flows
+      .filter((flow) => entities.find((e) => e.id === flow.sourceEntityId) && entities.find((e) => e.id === flow.targetEntityId))
+      .map((flow) => ({
+        id: flow.id,
+        source: flow.sourceEntityId,
+        target: flow.targetEntityId,
+        label: flow.name,
+        color: '#1677ff',
+        width: 2,
+      }));
+    const rows = Math.max(1, Math.ceil(Math.max(entities.length, 1) / cols));
+    return {
+      nodes: nodeSpecs,
+      edges: edgeSpecs,
+      worldWidth: cols * (nodeWidth + 40) + 40,
+      worldHeight: rows * (nodeHeight + 60) + 40,
     };
   }, [entities, flows]);
 
@@ -129,7 +94,15 @@ export default function DataFlowPage() {
         </Space>
       }
     >
-      <div ref={containerRef} style={{ width: '100%', height: 600, border: '1px solid var(--semi-color-border)' }} />
+      <SemiGraphCanvas
+        nodes={nodes}
+        edges={edges}
+        worldWidth={worldWidth}
+        worldHeight={worldHeight}
+        height={600}
+        autoFit
+        showGrid
+      />
       <div style={{ marginTop: 16 }}>
         {flows.map((flow) => (
           <Button key={flow.id} theme="borderless" type="primary" onClick={() => openEdit(flow)}>

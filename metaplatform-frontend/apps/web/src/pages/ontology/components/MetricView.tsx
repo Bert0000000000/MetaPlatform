@@ -58,7 +58,7 @@ export default function MetricView() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12}}>
         <div style={{ flex: 1, fontSize: 13, color: 'var(--muted-foreground)' }}>
           数据指标平台：原子/派生/复合/实时 4 类指标 + 自动血缘
         </div>
@@ -70,14 +70,14 @@ export default function MetricView() {
         </button>
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: '总指标', value: metrics.length, color: 'var(--foreground)' },
           { label: '运行中', value: metrics.filter(m => m.status === 'ACTIVE').length, color: '#10b981' },
           { label: '原子', value: metrics.filter(m => m.type === 'ATOMIC').length, color: '#3b82f6' },
           { label: '派生', value: metrics.filter(m => m.type === 'DERIVED').length, color: '#a855f7' },
         ].map(s => (
-          <Card key={s.label}  style={{ padding: 12 }}>
+          <Card key={s.label}  bodyStyle={{padding: 12}}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
           </Card>
@@ -94,7 +94,7 @@ export default function MetricView() {
             const trend = (m.lastValue || 0) > 1000 ? 'up' : Math.random() > 0.5 ? 'up' : 'down';
             const trendPct = (Math.random() * 20 - 5).toFixed(1);
             return (
-              <Card key={m.metricId}  style={{ padding: 16 }}>
+              <Card key={m.metricId}  bodyStyle={{padding: 16}}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -172,7 +172,7 @@ function CreateMetricDialog({ sources, onClose, onSuccess }: { sources: BigDataS
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <Card style={{ width: 560, maxHeight: '90vh', overflow: 'auto' }}>
+      <Card style={{width: 560, maxHeight: '90vh', overflow: 'auto'}} bodyStyle={{overflow: 'auto'}}>
         <div style={{ padding: 20, borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>新建数据指标</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>
@@ -230,7 +230,7 @@ function CreateMetricDialog({ sources, onClose, onSuccess }: { sources: BigDataS
 function LineageDialog({ metric, onClose }: { metric: Metric; onClose: () => void }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--semi-color-overlay-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <Card style={{ width: 520, padding: 20 }}>
+      <Card style={{width: 520}} bodyStyle={{padding: 20}}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>指标血缘: {metric.name}</div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20 }}>×</button>

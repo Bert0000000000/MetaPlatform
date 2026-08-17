@@ -412,7 +412,7 @@ export default function DataGraphView() {
         .dg-node-card.dg-node-selected { border-color: var(--lineage-accent, var(--semi-color-primary)); box-shadow: 0 0 0 2px var(--lineage-accent-soft, var(--semi-color-primary-light-default)); }
       `}</style>
 
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'}}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search style={{ position: 'absolute', left: 10, top: 10, width: 14, height: 14, color: 'var(--muted-foreground)' }} />
           <input
@@ -485,14 +485,14 @@ export default function DataGraphView() {
         </div>
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: '总节点', value: totalNodes, color: 'var(--foreground)' },
           { label: '可见节点', value: visibleNodes, color: '#3b82f6' },
           { label: '总边', value: totalEdges, color: 'var(--foreground)' },
           { label: '可见边', value: visibleEdges, color: '#10b981' },
         ].map((s) => (
-          <Card key={s.label} style={{ padding: 12 }}>
+          <Card key={s.label} bodyStyle={{padding: 12}}>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: 0.04 + 'em' as any }}>{s.label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
           </Card>
@@ -670,7 +670,7 @@ export default function DataGraphView() {
         )}
       </div>
 
-      <Card style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
+      <Card bodyStyle={{padding: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11}}>
         <span style={{ color: 'var(--muted-foreground)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <Filter style={{ width: 12, height: 12 }} />图例
         </span>
@@ -708,7 +708,7 @@ function renderNodeTooltip(n: NodeRow, degree: number) {
 function NodeDetailPanel({ node, inEdges, outEdges, nodes, onClose }: { node: NodeRow; inEdges: EdgeRow[]; outEdges: EdgeRow[]; nodes: NodeRow[]; onClose: () => void }) {
   const meta = NODE_TYPE_META[node.type] || NODE_TYPE_META.source;
   return (
-    <Card style={{ padding: 16, overflow: 'auto' }}>
+    <Card style={{overflow: 'auto'}} bodyStyle={{padding: 16, overflow: 'auto'}}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
