@@ -171,6 +171,6 @@ SANDBOX-01 → SANDBOX-02
 | Batch | 状态 | 交付 | 证据 |
 |---|---|---|---|
 | **MP-SAL-01 工具化基座（读）** | **Accepted 2026-08-17** | ADR-0043 九条定案落地：ObjectSetQuery IR（filter/aggregate/traverse/多键 sort，双后端同源）+ schema_gen（query_<slug> 每类型工具 + list/inspect）+ 虚拟注册表（/v2/agent-tools 零同步）+ markings 上抬一级（类型级标记 + 可见性 + 执行期二次校验）+ copilot/MCP 双消费接线 + ont.yaml 3 新端点 | `evidence/MP-SAL-01-ACCEPTANCE.md`（kernel 455 / ont 172 / orchestrator 47 / mcp 0 failed；ruff+pyright 新文件全净） |
-| MP-SAL-02 OAG 检索上下文（想） | Pending | pgvector embedding 召回 + copilot 上下文通道（对象卡片带 rid） | — |
+| **MP-SAL-02 OAG 检索上下文（想）** | **Accepted 2026-08-17** | ont_object_embedding 属性级索引（index-on-write + reindex）+ search_objects（cosine→对象卡片带 rid）+ REST /v2/object-search + copilot search_objects 工具 + system prompt 卡片注入 | `evidence/MP-SAL-02-ACCEPTANCE.md`（kernel 455 / ont+kernel 634 合跑 / copilot 相关 39；ruff+pyright 全净） |
 | MP-SAL-03 Function 沙箱生产化 | Pending（并行） | K8s Job 真接 + copilot 真鉴权收口 | — |
 | MP-SAL-04 Assisted Action 端到端（写） | Pending（先 ADR-0044） | Proposal/Scenario 状态机 + 两套 HITL 统一 + outbox 写回 | — |
