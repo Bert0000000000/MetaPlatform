@@ -44,6 +44,7 @@ import '@flowgram.ai/fixed-layout-editor/index.css';
 import { FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import {
   listActionTypes, listObjectTypes, slugAndVersionOfObjectType,
+  getActionFlow, putActionFlow,
   type KernelActionType, type KernelObjectType,
 } from '@/api/ont/kernel';
 import { actionDisplayName } from './actions/ActionTypeListPage';
@@ -124,8 +125,12 @@ const NODE_TYPE_META: Record<string, { category: string; icon: typeof Cpu; secti
   'output':    { category: '数据目标', icon: Database,   sections: ['基本信息', '数据契约', '写入策略', '执行配置', '权限审计'] },
 };
 
-// 节点 ID → 配置项 mock 数据（用于全屏属性面板展示）
-const NODE_DETAIL_PROPS: Record<string, Record<string, { label: string; value: React.ReactNode; mono?: boolean; type?: 'text' | 'json' | 'list' }>> = {
+// 节点配置字段（可编辑）
+type NodeField = { label: string; value: string; mono?: boolean; type?: 'text' | 'json' | 'list' };
+type NodeConfig = Record<string, Record<string, NodeField>>;
+
+// 节点 ID → 配置项默认数据（全屏属性面板的初始值；编辑后写入组件 state）
+const NODE_DETAIL_PROPS: NodeConfig = {
   'input': {
     id: { label: '节点 ID', value: 'node-input-01', mono: true },
     source: { label: '数据源', value: 'HTTP POST /api/v1/customers/import', mono: true },
@@ -183,6 +188,28 @@ const NODE_DETAIL_PROPS: Record<string, Record<string, { label: string; value: R
   },
 };
 
+// 内置 demo 流程定义（未持久化时兜底展示）
+const DEFAULT_FLOW: WorkflowJSON = {
+  nodes: [
+    { id: 'input', type: 'flow-input', meta: { position: { x: 60, y: 60 } }, data: { originalType: 'flow-input', title: '接收数据输入', desc: '接收原始客户数据（JSON / CSV）' } },
+    { id: 'llm-extract', type: 'flow-llm', meta: { position: { x: 60, y: 220 } }, data: { originalType: 'flow-llm', title: 'LLM: 实体抽取', desc: '从客户数据中抽取实体信息' } },
+    { id: 'condition', type: 'flow-condition', meta: { position: { x: 60, y: 380 } }, data: { originalType: 'flow-condition', title: '数据完整?', desc: '检查必填字段是否齐全' } },
+    { id: 'loop-complete', type: 'flow-loop', meta: { position: { x: -200, y: 540 } }, data: { originalType: 'flow-loop', title: '工具: 数据补全', desc: '调用 MCP Tool 补全缺失字段' } },
+    { id: 'tool-ontology', type: 'flow-tool', meta: { position: { x: 340, y: 540 } }, data: { originalType: 'flow-tool', title: '工具: 本体匹配', desc: '将抽取实体与本体概念进行语义匹配' } },
+    { id: 'llm-relation', type: 'flow-llm', meta: { position: { x: 340, y: 700 } }, data: { originalType: 'flow-llm', title: 'LLM: 关系推理', desc: '推理实体间关系并生成三元组' } },
+    { id: 'output', type: 'flow-output', meta: { position: { x: 340, y: 860 } }, data: { originalType: 'flow-output', title: '知识图谱更新', desc: '将推理结果写入知识图谱 Neo4j' } },
+  ],
+  edges: [
+    { sourceNodeID: 'input', targetNodeID: 'llm-extract' },
+    { sourceNodeID: 'llm-extract', targetNodeID: 'condition' },
+    { sourceNodeID: 'condition', targetNodeID: 'tool-ontology' },
+    { sourceNodeID: 'condition', targetNodeID: 'loop-complete' },
+    { sourceNodeID: 'tool-ontology', targetNodeID: 'llm-relation' },
+    { sourceNodeID: 'llm-relation', targetNodeID: 'output' },
+    { sourceNodeID: 'loop-complete', targetNodeID: 'llm-extract' },
+  ],
+};
+
 // 全屏编辑 Modal：流程编排编辑器
 // 主题：UI 是黑色 → 图内元素（线/边框）使用**浅色**（#a1a1aa 灰 + 类型色饱和度调高）
 // 浅色 UI 时 → 图内元素使用**黑色**（主题色值由 useThemeMode 决定）
@@ -191,16 +218,28 @@ function FlowFullscreenEditor({
   initialData,
   nodeRegistries,
   CustomBaseNode: CustomNode,
+  initialConfig,
+  onSave,
+  saving,
 }: {
   onClose: () => void;
   initialData: WorkflowJSON;
   nodeRegistries: WorkflowNodeRegistry[];
   CustomBaseNode: React.ComponentType;
+  initialConfig: NodeConfig;
+  onSave: (flow: WorkflowJSON, config: NodeConfig) => Promise<void>;
+  saving?: boolean;
 }) {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null); // 默认无选中 → 隐藏属性面板
   const [activeSection, setActiveSection] = useState('基本信息');
   const [themeMode] = useState<'dark' | 'light'>('dark'); // 演示固定为深色
   const [layoutMode, setLayoutMode] = useState<'free' | 'fixed'>('fixed'); // 布局模式：默认固定布局
+  // 可编辑节点配置（初始值为 initialConfig 深拷贝；属性面板读写此 state）
+  const [nodeConfig, setNodeConfig] = useState<NodeConfig>(() =>
+    JSON.parse(JSON.stringify(initialConfig)),
+  );
+  // 画布 document 引用（由 EditorRenderer 的 onAllLayersRendered 回填；用于增删节点）
+  const docRef = React.useRef<any>(null);
 
   // 主题取反色配置：UI 黑 → 图内元素 = 浅边框 + 黑色背景 + 浅色文字
   const palette = themeMode === 'dark'
@@ -300,7 +339,37 @@ function FlowFullscreenEditor({
   })();
   const meta = NODE_TYPE_META[activeType] || NODE_TYPE_META['input'];
   const TypeIcon = meta.icon;
-  const activeData = (activeNodeId ? NODE_DETAIL_PROPS[activeNodeId] : null) || {};
+  const activeData = (activeNodeId ? nodeConfig[activeNodeId] : null) || {};
+  const updateField = (key: string, value: string) => {
+    if (!activeNodeId) return;
+    setNodeConfig((prev) => ({
+      ...prev,
+      [activeNodeId]: { ...(prev[activeNodeId] || {}), [key]: { ...prev[activeNodeId]?.[key], value } },
+    }));
+  };
+  const deleteActiveNode = () => {
+    if (!activeNodeId) return;
+    docRef.current?.removeNode?.(activeNodeId);
+    setActiveNodeId(null);
+  };
+  const copyActiveNode = () => {
+    if (!activeNodeId) return;
+    const flowType = `flow-${activeType}`;
+    const id = `${activeNodeId}-copy-${Date.now().toString(36)}`;
+    docRef.current?.createWorkflowNodeByType?.(
+      flowType,
+      { x: 0, y: 0 },
+      {
+        id,
+        type: flowType,
+        data: {
+          originalType: flowType,
+          title: NODE_DATA[activeNodeId]?.title || activeNodeId,
+          desc: NODE_DATA[activeNodeId]?.desc || '',
+        },
+      },
+    );
+  };
 
   // 渲染指定 section 的字段
   const renderSectionFields = (section: string) => {
@@ -355,29 +424,31 @@ function FlowFullscreenEditor({
             <span>{f.label}</span>
           </div>
           {f.type === 'json' ? (
-            <pre style={{
-              margin: 0, padding: '10px 12px',
-              background: palette.panelMuted,
-              border: `1px solid ${palette.modalBorder}`,
-              borderRadius: 6,
-              fontFamily: 'var(--font-mono)', fontSize: 12, color: palette.panelText,
-              whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6,
-            }}>{String(f.value)}</pre>
-          ) : f.type === 'list' ? (
-            <div style={{ display: 'flex', gap: 6 }}>
-              {String(f.value).split(' / ').map((s) => (
-                <span key={s} style={{ padding: '4px 10px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, borderRadius: 4, fontSize: 12, color: palette.panelText }}>{s}</span>
-              ))}
-            </div>
+            <textarea
+              value={String(f.value)}
+              onChange={(e) => updateField(k, e.target.value)}
+              rows={5}
+              style={{
+                width: '100%', boxSizing: 'border-box', margin: 0, padding: '10px 12px',
+                background: palette.panelMuted,
+                border: `1px solid ${palette.modalBorder}`,
+                borderRadius: 6, resize: 'vertical',
+                fontFamily: 'var(--font-mono)', fontSize: 12, color: palette.panelText,
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6, outline: 'none',
+              }}
+            />
           ) : (
-            <div style={{
-              padding: '8px 12px',
-              background: palette.panelMuted,
-              border: `1px solid ${palette.modalBorder}`,
-              borderRadius: 6,
-              fontSize: 13, color: palette.panelText,
-              fontFamily: f.mono ? 'var(--font-mono)' : 'var(--font-sans)',
-            }}>{f.value}</div>
+            <input
+              value={String(f.value)}
+              onChange={(e) => updateField(k, e.target.value)}
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '8px 12px',
+                background: palette.panelMuted,
+                border: `1px solid ${palette.modalBorder}`,
+                borderRadius: 6, fontSize: 13, color: palette.panelText,
+                fontFamily: f.mono ? 'var(--font-mono)' : 'var(--font-sans)', outline: 'none',
+              }}
+            />
           )}
         </div>
       );
@@ -472,7 +543,14 @@ function FlowFullscreenEditor({
           <div style={{ width: 1, height: 20, background: palette.modalBorder }} />
           <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12 }}><Play style={{ width: 14, height: 14 }} />运行调试</button>
           <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12 }}><Download style={{ width: 14, height: 14 }} />导出</button>
-          <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }}><Save style={{ width: 14, height: 14, color: '#ffffff' }} />保存</button>
+          <button
+            onClick={() => {
+              const flow = (docRef.current as { toJSON?: () => WorkflowJSON } | null)?.toJSON?.() || initialData;
+              void onSave(flow, nodeConfig);
+            }}
+            disabled={saving}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.2)', opacity: saving ? 0.6 : 1 }}
+          ><Save style={{ width: 14, height: 14, color: '#ffffff' }} />{saving ? '保存中…' : '保存'}</button>
           <button
             onClick={onClose}
             title="退出全屏"
@@ -488,6 +566,7 @@ function FlowFullscreenEditor({
               initialData={initialData}
               palette={palette}
               onSelectNode={setActiveNodeId}
+              onDocumentReady={(doc) => { docRef.current = doc; }}
               leftSlot={<FixedNodeLibrary palette={palette} />}
             />
           ) : (
@@ -497,6 +576,7 @@ function FlowFullscreenEditor({
               CustomNode={CustomNode}
               palette={palette}
               onSelectNode={setActiveNodeId}
+              onDocumentReady={(doc) => { docRef.current = doc; }}
               leftSlot={<FreeNodeLibrary palette={palette} />}
             />
           )}
@@ -563,8 +643,8 @@ function FlowFullscreenEditor({
 
             {/* 底部操作 */}
             <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderTop: `1px solid ${palette.modalBorder}`, background: palette.panelHeader }}>
-              <button style={{ flex: 1, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Copy style={{ width: 14, height: 14 }} />复制节点</button>
-              <button style={{ flex: 1, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 style={{ width: 14, height: 14 }} />删除节点</button>
+              <button onClick={copyActiveNode} style={{ flex: 1, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Copy style={{ width: 14, height: 14 }} />复制节点</button>
+              <button onClick={deleteActiveNode} style={{ flex: 1, height: 32, padding: '0 12px', background: palette.panelMuted, border: `1px solid ${palette.modalBorder}`, color: palette.panelText, borderRadius: 6, cursor: 'pointer', fontSize: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 style={{ width: 14, height: 14 }} />删除节点</button>
             </div>
           </div>
           )}
@@ -833,11 +913,12 @@ function FixedBaseNode() {
 
 // 固定布局编辑器（FixedLayout）
 function FixedLayoutEditor({
-  initialData, palette, onSelectNode, leftSlot,
+  initialData, palette, onSelectNode, onDocumentReady, leftSlot,
 }: {
   initialData: WorkflowJSON;
   palette: FlowPalette;
   onSelectNode: (id: string) => void;
+  onDocumentReady?: (doc: unknown) => void;
   leftSlot?: React.ReactNode;
 }) {
   // activeNodeId 用于让 FixedBaseNode 知道哪个被选中（高亮发光）
@@ -872,6 +953,7 @@ function FixedLayoutEditor({
                   components: defaultFixedSemiMaterials,
                 }}
                 onAllLayersRendered={(ctx) => {
+                  onDocumentReady?.(ctx.document);
                   setTimeout(() => {
                     try {
                       const bounds = ctx.document.root.bounds;
@@ -955,13 +1037,14 @@ function FixedLayoutDarkCSS() {
 }
 
 function FullscreenFlowEditor({
-  initialData, nodeRegistries, CustomNode, palette, onSelectNode, leftSlot,
+  initialData, nodeRegistries, CustomNode, palette, onSelectNode, onDocumentReady, leftSlot,
 }: {
   initialData: WorkflowJSON;
   nodeRegistries: WorkflowNodeRegistry[];
   CustomNode: React.ComponentType;
   palette: FlowPalette;
   onSelectNode: (id: string) => void;
+  onDocumentReady?: (doc: unknown) => void;
   leftSlot?: React.ReactNode;
 }) {
   // 官方插件组合（按 demo-free-layout 顺序）
@@ -1000,6 +1083,7 @@ function FullscreenFlowEditor({
           materials={{ components: {}, renderDefaultNode: FullscreenBaseNodeWithSelect }}
           playground={{ preventGlobalGesture: true }}
           onAllLayersRendered={(ctx) => {
+            onDocumentReady?.(ctx.document);
             try { (ctx.playground as { zoom?: number }).zoom = 1; } catch { /* ignore */ }
             ctx.tools.fitView(false);
           }}
@@ -1581,26 +1665,38 @@ export default function OntologyActionPage() {
 
   // 节点颜色已抽取到模块级 colorOf
 
-  // 初始流程定义（FlowGram.AI WorkflowJSON 格式）
-  const initialData: WorkflowJSON = {
-    nodes: [
-      { id: 'input', type: 'flow-input', meta: { position: { x: 60, y: 60 } }, data: { originalType: 'flow-input', title: '接收数据输入', desc: '接收原始客户数据（JSON / CSV）' } },
-      { id: 'llm-extract', type: 'flow-llm', meta: { position: { x: 60, y: 220 } }, data: { originalType: 'flow-llm', title: 'LLM: 实体抽取', desc: '从客户数据中抽取实体信息' } },
-      { id: 'condition', type: 'flow-condition', meta: { position: { x: 60, y: 380 } }, data: { originalType: 'flow-condition', title: '数据完整?', desc: '检查必填字段是否齐全' } },
-      { id: 'loop-complete', type: 'flow-loop', meta: { position: { x: -200, y: 540 } }, data: { originalType: 'flow-loop', title: '工具: 数据补全', desc: '调用 MCP Tool 补全缺失字段' } },
-      { id: 'tool-ontology', type: 'flow-tool', meta: { position: { x: 340, y: 540 } }, data: { originalType: 'flow-tool', title: '工具: 本体匹配', desc: '将抽取实体与本体概念进行语义匹配' } },
-      { id: 'llm-relation', type: 'flow-llm', meta: { position: { x: 340, y: 700 } }, data: { originalType: 'flow-llm', title: 'LLM: 关系推理', desc: '推理实体间关系并生成三元组' } },
-      { id: 'output', type: 'flow-output', meta: { position: { x: 340, y: 860 } }, data: { originalType: 'flow-output', title: '知识图谱更新', desc: '将推理结果写入知识图谱 Neo4j' } },
-    ],
-    edges: [
-      { sourceNodeID: 'input', targetNodeID: 'llm-extract' },
-      { sourceNodeID: 'llm-extract', targetNodeID: 'condition' },
-      { sourceNodeID: 'condition', targetNodeID: 'tool-ontology' },
-      { sourceNodeID: 'condition', targetNodeID: 'loop-complete' },
-      { sourceNodeID: 'tool-ontology', targetNodeID: 'llm-relation' },
-      { sourceNodeID: 'llm-relation', targetNodeID: 'output' },
-      { sourceNodeID: 'loop-complete', targetNodeID: 'llm-extract' },
-    ],
+  // 流程编排定义（初始内置 demo；选中 Action 后加载其持久化 flow，未保存则回退 demo）
+  const [initialData, setInitialData] = useState<WorkflowJSON>(DEFAULT_FLOW);
+  const [flowConfig, setFlowConfig] = useState<NodeConfig>(() =>
+    JSON.parse(JSON.stringify(NODE_DETAIL_PROPS)),
+  );
+  const [savingFlow, setSavingFlow] = useState(false);
+
+  useEffect(() => {
+    if (!selectedActionRid) return;
+    let active = true;
+    getActionFlow(selectedActionRid)
+      .then((f) => {
+        if (!active) return;
+        setInitialData(f.flow_json as unknown as WorkflowJSON);
+        setFlowConfig((f.config || {}) as NodeConfig);
+      })
+      .catch(() => {
+        if (!active) return;
+        setInitialData(DEFAULT_FLOW);
+        setFlowConfig(JSON.parse(JSON.stringify(NODE_DETAIL_PROPS)));
+      });
+    return () => { active = false; };
+  }, [selectedActionRid]);
+
+  const saveFlow = async (flow: WorkflowJSON, config: NodeConfig) => {
+    if (!selectedActionRid || savingFlow) return;
+    setSavingFlow(true);
+    try {
+      await putActionFlow(selectedActionRid, flow as unknown as Record<string, unknown>, config as unknown as Record<string, unknown>);
+    } finally {
+      setSavingFlow(false);
+    }
   };
 
   // 节点注册：6 个不同类型（input / llm / condition / loop / tool / output）
@@ -1963,10 +2059,14 @@ export default function OntologyActionPage() {
       {/* 流程编排全屏编辑 Modal */}
       {flowFullscreen && (
         <FlowFullscreenEditor
+          key={selectedActionRid || 'demo'}
           onClose={() => setFlowFullscreen(false)}
           initialData={initialData}
           nodeRegistries={nodeRegistries}
           CustomBaseNode={CustomBaseNode}
+          initialConfig={flowConfig}
+          onSave={saveFlow}
+          saving={savingFlow}
         />
       )}
       </div>

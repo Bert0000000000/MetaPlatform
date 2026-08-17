@@ -123,6 +123,31 @@ export async function createObjectType(payload: KernelObjectTypeCreate): Promise
   return resp.data as KernelObjectType;
 }
 
+// ── MP-SAL-05: 流程编排定义持久化（FlowGram WorkflowJSON + 字段配置） ──
+
+export interface KernelActionFlow {
+  action_rid: string;
+  flow_json: Record<string, unknown>;
+  config: Record<string, unknown>;
+  updated_at?: string;
+}
+
+/** 读取 ActionType 的流程编排定义（未保存 → 抛 404）。 */
+export async function getActionFlow(rid: string): Promise<KernelActionFlow> {
+  const resp = await apiClient.get(v2(`/action-types/${encodeURIComponent(rid)}/flow`));
+  return resp.data as KernelActionFlow;
+}
+
+/** 持久化 ActionType 的流程编排定义（upsert）。 */
+export async function putActionFlow(
+  rid: string, flow_json: Record<string, unknown>, config: Record<string, unknown>,
+): Promise<KernelActionFlow> {
+  const resp = await apiClient.put(
+    v2(`/action-types/${encodeURIComponent(rid)}/flow`), { flow_json, config },
+  );
+  return resp.data as KernelActionFlow;
+}
+
 // 域名段 → 一级本体分组。rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1。
 export function domainOfObjectType(rid: string): string {
   const parts = rid.split('.');
