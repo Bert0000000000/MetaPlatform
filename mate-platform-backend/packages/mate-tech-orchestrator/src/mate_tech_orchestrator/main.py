@@ -27,7 +27,7 @@ from .scheduler.capability_runtime import (
     set_capability_runtime,
 )
 from .scheduler.dispatcher import get_dispatcher
-from .scheduler.plan_runner import get_plan_runner
+from .scheduler.plan_runner import PlanRunner, get_plan_runner, set_plan_runner
 from .scheduler.role_registry import get_role_registry
 
 
@@ -65,6 +65,10 @@ def create_app() -> FastAPI:
     seed_default_roles()
     app.state.role_registry = registry
     app.state.dispatcher = get_dispatcher()
+    # MP-SAL-05：plan runner 注入 ontology client（action 步骤执行器；
+    # tech-ont 不可达时 action 类步骤报错降级，CALL_AGENT 不受影响）。
+    from .scheduler.ontology_client import OntologyActionClient
+    set_plan_runner(PlanRunner(ontology_client=OntologyActionClient()))
     app.state.plan_runner = get_plan_runner()
     app.state.outbox_writer = InMemoryOutboxWriter()
 

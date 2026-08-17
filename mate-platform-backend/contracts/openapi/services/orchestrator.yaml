@@ -131,6 +131,39 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/PlanStepRequest'
+    PlanGraph:
+      type: object
+      additionalProperties: false
+      required: [plan_id, status, nodes, edges]
+      properties:
+        plan_id: {type: string}
+        status: {type: string, enum: [running, hitl_waiting, completed, aborted, failed]}
+        current_step_id: {type: [string, 'null']}
+        nodes:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, kind, target, hitl, status]
+            properties:
+              id: {type: string}
+              kind: {type: string, enum: [call_agent, apply_action, propose, run_function, evaluate_object_set]}
+              target: {type: string}
+              hitl: {type: boolean}
+              status: {type: string, enum: [pending, running, completed, failed, hitl_waiting, skipped]}
+              proposal_id: {type: [string, 'null']}
+              expected_diff: {type: object, additionalProperties: true}
+              impact_summary: {type: string}
+        edges:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [from_step, to_step]
+            properties:
+              from_step: {type: string}
+              to_step: {type: string}
+              data_refs: {type: array, items: {type: string}}
     PlanStatus:
       type: object
       properties:
@@ -416,6 +449,31 @@ paths:
         '404':
           description: 计划不存在
       operationId: orchestratorGetPlansPlanId
+      x-mate-implementation-status: implemented
+  /api/v1/orchestrator/plans/{plan_id}/graph:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: 计划流程图模型（SAL-05 可视化：节点状态 + proposal 关联 + 数据流边）
+      tags: [orchestrator]
+      parameters:
+      - name: plan_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanGraph'
+        '404':
+          description: 计划不存在
+      operationId: orchestratorGetPlansPlanIdGraph
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/plans/{plan_id}/execute:
     post:

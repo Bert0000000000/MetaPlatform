@@ -47,6 +47,9 @@ from ..scheduler.role_registry import (
 from ..workers.a2a import get_a2a_worker
 from .schemas import (
     DispatchRequest,
+    GraphEdge,
+    GraphNode,
+    PlanGraph,
     PlanStatus,
     PlanStepStatus,
     RegisterRoleRequest,
@@ -60,6 +63,16 @@ router = APIRouter(prefix="/api/v1/orchestrator", tags=["orchestrator"])
 def _tid(request: Request) -> str:
     ctx = request.state.ctx
     return str(require_tenant(ctx))
+
+
+def _user_token(request: Request) -> str:
+    """透传用户 Bearer（ctx 属性缺省时回落原始 Authorization 头）。"""
+    token = str(getattr(request.state.ctx, "authorization", "") or "")
+    if not token:
+        raw = request.headers.get("Authorization", "")
+        if raw.lower().startswith("bearer "):
+            token = raw[7:].strip()
+    return token
 
 
 def _emit(
@@ -242,8 +255,9 @@ async def plan_status(plan_id: str, request: Request) -> PlanStatus:
 @router.post("/plans/{plan_id}/execute")
 async def plan_execute(plan_id: str, request: Request) -> dict[str, Any]:
     tid = _tid(request)
+    token = _user_token(request)
     try:
-        return await get_plan_runner().execute(plan_id=plan_id, tenant_id=tid)
+        return await get_plan_runner().execute(plan_id=plan_id, tenant_id=tid, token=token)
     except PlanNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
@@ -253,6 +267,7 @@ async def plan_review(
     plan_id: str, step_id: str, request: Request, body: ReviewRequest,
 ) -> dict[str, Any]:
     tid = _tid(request)
+    token = _user_token(request)
     try:
         return await get_plan_runner().review(
             plan_id=plan_id,
@@ -260,6 +275,71 @@ async def plan_review(
             approved=body.approved,
             feedback=body.feedback,
             tenant_id=tid,
+            token=token,
         )
     except PlanNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.get("/plans/{plan_id}/graph", response_model=PlanGraph)
+async def plan_graph(plan_id: str, request: Request) -> PlanGraph:
+    """MP-SAL-05 可视化：plan → 节点/边图模型（实时状态 + proposal 关联 + 数据流引用）。"""
+    _tid(request)
+    try:
+        state = get_plan_runner().get(plan_id)
+    except PlanNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    latest: dict[str, Any] = {}
+    for h in state.history:
+        latest[h.step_id] = h  # 后写覆盖前写
+    cur = state.current_step.step_id if state.current_step else None
+    nodes: list[GraphNode] = []
+    for s in state.plan.steps:
+        h = latest.get(s.step_id)
+        if h is not None:
+            status = h.status.value
+        elif s.step_id == cur and not state.aborted:
+            status = "running"
+        elif state.aborted:
+            status = "skipped"
+        else:
+            status = "pending"
+        out = h.output if isinstance(h.output, dict) else {}
+        nodes.append(GraphNode(
+            id=s.step_id,
+            kind=s.kind.value,
+            target=s.target,
+            hitl=s.requires_hitl or s.kind.value in ("propose", "apply_action"),
+            status=status,
+            proposal_id=out.get("proposal_id"),
+            expected_diff=out.get("expected_diff"),
+            impact_summary=str(out.get("impact_summary") or ""),
+        ))
+
+    import re as _re
+
+    edges: list[GraphEdge] = []
+    steps = state.plan.steps
+    for a, b in zip(steps, steps[1:], strict=False):
+        refs = [
+            v for _, v in dict(b.payload).items()
+            if isinstance(v, str)
+            and _re.search(r"\{\{steps\.[A-Za-z0-9_\-]+\.", v)
+        ]
+        edges.append(GraphEdge(
+            from_step=a.step_id, to_step=b.step_id, data_refs=refs,
+        ))
+
+    if state.aborted:
+        status = "aborted"
+    elif cur is None:
+        status = "completed"
+    elif any(n.status == "hitl_waiting" for n in nodes):
+        status = "hitl_waiting"
+    else:
+        status = "running"
+    return PlanGraph(
+        plan_id=plan_id, status=status, current_step_id=cur,
+        nodes=nodes, edges=edges,
+    )
