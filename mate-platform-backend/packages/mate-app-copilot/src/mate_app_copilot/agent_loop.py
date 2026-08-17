@@ -69,11 +69,13 @@ DISPATCH_TOOL_SCHEMA: dict[str, Any] = {
 def build_system_prompt(
     roles: list[dict[str, Any]],
     object_cards: list[dict[str, Any]] | None = None,
+    ontology_hint: bool = False,
 ) -> str:
     """从 orchestrator 注册的数字员工角色动态生成 system prompt。
 
     MP-SAL-02（OAG）：``object_cards`` 非空时追加「相关对象上下文」段——
     检索命中的对象卡片（带 rid 可追溯）进入 prompt，AI「想」的时候本体在上下文里。
+    MP-SAL 接线：``ontology_hint`` 提示本体工具选用语义（查=直连，干=派员工）。
     """
     lines = [
         "你是 SuperAI 编排助手。用户要求执行业务任务时，用 dispatch_employee 工具调度数字员工完成。",
@@ -83,6 +85,13 @@ def build_system_prompt(
     for r in roles:
         caps = ", ".join(c.get("name", "") for c in r.get("capabilities", []))
         lines.append(f"- {r.get('role')}（{r.get('name') or r.get('role')}）：{caps}")
+    if ontology_hint:
+        lines.append(
+            "本体能力：你可直接使用本体工具（list_classes/inspect_class/query_<类型>/"
+            "search_objects 等）。用户问「系统里有什么对象/查数据/多少条」这类问题时"
+            "直接调本体工具回答，不必派员工；要新增或修改数据时用 propose_* 工具提议"
+            "（你只能提议，确认由用户完成）；只有执行业务流程/跨系统动作才 dispatch_employee。"
+        )
     lines.append(
         "调度完成后，拿到每个员工的结果给用户简洁的中文汇总（用了哪些员工、各自结果如何）。"
         "不要凭空编造调度结果；调度结果以工具返回为准。"
@@ -287,6 +296,9 @@ async def run_agent_loop(
     dispatch_timeout: float = 30.0,
     poll_timeout: float = 20.0,
     poll_interval: float = 2.0,
+    ontology_tools: list[dict[str, Any]] | None = None,
+    ontology_tool_exec: Any = None,
+    object_cards: list[dict[str, Any]] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Run the decision→dispatch→feed-back loop, yielding event dicts.
 
@@ -295,10 +307,20 @@ async def run_agent_loop(
       {"type": "tool_call", "callId": str, "tool": str, "args": dict}
       {"type": "tool_result", "callId": str, "status": "success"|"error", "result": dict}
       {"type": "final", "content": str}
+
+    MP-SAL 接线：``ontology_tools``（schema 列表）+ ``ontology_tool_exec``
+    （name,args→dict，同步，内部 to_thread）让 SuperAI 直查本体；
+    ``object_cards``（OAG 检索卡片）注入 system prompt——「想」的时候本体在上下文。
     """
-    system_prompt = build_system_prompt(roles)
-    tools = build_tools(roles)
+    system_prompt = build_system_prompt(
+        roles, object_cards=object_cards, ontology_hint=bool(ontology_tools),
+    )
+    tools = build_tools(roles, ontology_tools=ontology_tools)
     slug_enum = {str(r.get("role")) for r in roles if r.get("role")}
+    onto_names = {
+        t["function"]["name"] for t in (ontology_tools or ())
+        if isinstance(t, dict) and "function" in t
+    }
 
     history: list[dict[str, Any]] = [dict(m) for m in messages]
     if history and history[0].get("role") == "system":
@@ -354,6 +376,47 @@ async def run_agent_loop(
         if not tool_calls:
             yield {"type": "final", "content": _strip_chain_of_thought(content)}
             return
+
+        # MP-SAL：本体类工具调用（list/inspect/query/search/propose）——同步执行，
+        # 结果回填历史，下一轮 LLM 拿着真实本体数据作答/继续决策。
+        onto_calls: list[dict[str, Any]] = []
+        for tc in tool_calls:
+            fn = tc.get("function", {}) if isinstance(tc, dict) else {}
+            name = fn.get("name", "") if isinstance(fn, dict) else ""
+            if name in onto_names and ontology_tool_exec is not None:
+                tc_id = tc.get("id") if isinstance(tc, dict) else None
+                call_id = str(tc_id) if tc_id else f"call-{uuid.uuid4().hex[:10]}"
+                try:
+                    args = json.loads(fn.get("arguments") or "{}")
+                    if not isinstance(args, dict):
+                        args = {}
+                except (ValueError, TypeError):
+                    args = {}
+                onto_calls.append({"call_id": call_id, "name": name, "args": args})
+
+        if onto_calls:
+            assistant_tc = [
+                {"id": c["call_id"], "type": "function",
+                 "function": {"name": c["name"], "arguments": json.dumps(c["args"], ensure_ascii=False)}}
+                for c in onto_calls
+            ]
+            history.append({
+                "role": "assistant", "content": content or "", "tool_calls": assistant_tc,
+            })
+            for c in onto_calls:
+                yield {"type": "tool_call", "callId": c["call_id"], "tool": c["name"], "args": c["args"]}
+                status, result = "success", {}
+                try:
+                    result = await asyncio.to_thread(ontology_tool_exec, c["name"], c["args"])
+                except Exception as e:
+                    status, result = "error", {"error": f"{type(e).__name__}: {e}"}
+                yield {"type": "tool_result", "callId": c["call_id"], "status": status, "result": result}
+                history.append({
+                    "role": "tool", "tool_call_id": c["call_id"],
+                    "name": c["name"],
+                    "content": json.dumps(result, ensure_ascii=False, default=str)[:8000],
+                })
+            continue  # 下一轮：LLM 基于本体数据继续（回答或再调度）
 
         # Collect + validate every dispatch_employee call in this decision.
         calls: list[dict[str, Any]] = []
@@ -424,7 +487,7 @@ async def run_agent_loop(
                     interval=poll_interval,
                 )
                 return (c["call_id"], result, "success")
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return (
                     c["call_id"],
                     {"error": f"dispatch timeout after {int(dispatch_timeout)}s"},

@@ -17,7 +17,7 @@ def _fresh_registry() -> None:
 
 def test_seed_app_role_with_skill_capabilities() -> None:
     n = seed_default_roles(tenant_id="tenant-acme")
-    assert n == 1  # 仅 App 角色带 skill 能力
+    assert n == 2  # App（skill 检索）+ ONTOLOGY（MCP 本体代理）
     role = get_role_registry().get("tenant-acme", AgentRole.APP.value)
     assert role is not None
     caps = {c.name for c in role.capabilities}

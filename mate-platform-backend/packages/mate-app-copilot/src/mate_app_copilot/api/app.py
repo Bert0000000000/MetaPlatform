@@ -10,24 +10,24 @@ Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import uuid
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-import os
 import sqlparse
 from fastapi import APIRouter, Body, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
-from sqlalchemy import delete, select
 from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
     list_capability_tree,
     list_data_assets,
     list_data_entities,
     list_data_flows,
 )
+from sqlalchemy import select
 
 from mate_clients.security.bearer import BearerAuth
 from mate_platform.messaging.events import Event
@@ -59,6 +59,8 @@ from ..repositories import (
     list_templates,
     put_asset,
     put_conversation,
+)
+from ..repositories import (
     delete_conversation as in_memory_delete_conversation,
 )
 from ..repositories.sql_models import ConversationORM, MessageORM
@@ -88,7 +90,7 @@ def _uid(request: Request) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _conv_orm_to_dict(orm: Any) -> dict[str, Any]:
@@ -203,7 +205,7 @@ def _get_client(request: Request) -> AsyncCopilotClient:
     return AsyncCopilotClient(
         base_url=os.getenv("MATE_GATEWAY_URL", "http://mate-api-gateway:8100"),
         auth=BearerAuth(
-            token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+            token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
             client_id="metaplatform-backend",
             client_secret="stub",  # noqa: S106
             scope="platform.read platform.write",
@@ -255,7 +257,7 @@ async def _apply_action_to_kernel(
             provenance={"actor": str(getattr(request.state.ctx, "user_id", ""))},
             fallback_token=fallback_token or None,
         )
-    except Exception:  # noqa: BLE001 — bridge failure degrades to emit-only
+    except Exception:
         return None
 
 
@@ -686,24 +688,24 @@ async def create_conversation(request: Request, body: dict = Body(...)) -> dict[
             id=conv_id, tenant_id=tid, user_id=uid, title=title,
             summary="", message_count=0, created_at=now,
         )
-        setattr(orm, "mode", mode)
-        setattr(orm, "favorite", False)
-        setattr(orm, "updated_at", now)
-        setattr(orm, "preview", "")
+        orm.mode = mode
+        orm.favorite = False
+        orm.updated_at = now
+        orm.preview = ""
         session.add(orm)
         session.commit()
         session.refresh(orm)
         _emit(request, "copilot.conversation.created", conv_id, {"title": title}, tid)
         return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
-    except Exception:  # noqa: BLE001 — DB 不可用时 in-memory 兜底
+    except Exception:
         conv = Conversation(
             id=conv_id, tenant_id=tid, title=title, user_id=uid,
             summary="", message_count=0, created_at=now,
         )
-        setattr(conv, "mode", mode)
-        setattr(conv, "favorite", False)
-        setattr(conv, "updated_at", now)
-        setattr(conv, "preview", "")
+        conv.mode = mode
+        conv.favorite = False
+        conv.updated_at = now
+        conv.preview = ""
         put_conversation(tid, conv)
         _emit(request, "copilot.conversation.created", conv_id, {"title": title}, tid)
         return {"code": 0, "data": _conv_in_memory_to_dict(conv), "message": "ok"}
@@ -739,7 +741,7 @@ async def delete_conversation(request: Request, conv_id: str) -> dict[str, Any]:
             _emit(request, "copilot.conversation.deleted", conv_id, {}, tid)
         # Idempotent: return success even if not found
         return {"code": 0, "data": None, "message": "ok"}
-    except Exception:  # noqa: BLE001 — DB 不可用时 in-memory 兜底
+    except Exception:
         if in_memory_delete_conversation(tid, conv_id, uid):
             _emit(request, "copilot.conversation.deleted", conv_id, {}, tid)
         return {"code": 0, "data": None, "message": "ok"}
@@ -756,22 +758,22 @@ async def toggle_favorite(request: Request, conv_id: str) -> dict[str, Any]:
         orm = session.query(ConversationORM).filter_by(id=conv_id, tenant_id=tid, user_id=uid).first()
         if not orm:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        setattr(orm, "favorite", not getattr(orm, "favorite", False))
-        setattr(orm, "updated_at", _now_iso())
+        orm.favorite = not getattr(orm, "favorite", False)
+        orm.updated_at = _now_iso()
         session.commit()
         session.refresh(orm)
         return {"code": 0, "data": _conv_orm_to_dict(orm), "message": "ok"}
     except HTTPException:
         raise
-    except Exception:  # noqa: BLE001 — DB 不可用时 in-memory 兜底
+    except Exception:
         conv = next(
             (c for c in list_conversations(tid, user_id=uid) if c.id == conv_id),
             None,
         )
         if conv is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        setattr(conv, "favorite", not getattr(conv, "favorite", False))
-        setattr(conv, "updated_at", _now_iso())
+        conv.favorite = not getattr(conv, "favorite", False)
+        conv.updated_at = _now_iso()
         put_conversation(tid, conv)
         return {"code": 0, "data": _conv_in_memory_to_dict(conv), "message": "ok"}
     finally:
@@ -899,7 +901,7 @@ async def chat_completions_stream(
             host=llmgw_host,
             port=llmgw_port,
             auth=BearerAuth(
-                token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+                token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
                 client_secret="stub",  # noqa: S106
                 scope="platform.read platform.write",
@@ -915,7 +917,7 @@ async def chat_completions_stream(
             provider_cfg = await client.get_provider_config(
                 tid, "custom", user_token or None
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             provider_cfg = {}
         llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
         llm_base_url = provider_cfg.get("base_url") or None
@@ -1051,10 +1053,10 @@ async def chat_completions_stream(
                             (m.get("content", "") for m in messages if m.get("role") == "user"),
                             "",
                         )
-                        setattr(conv, "title", (first_user or conv.title)[:24])
+                        conv.title = (first_user or conv.title)[:24]
                     conv.message_count = (conv.message_count or 0) + 2
-                    setattr(conv, "preview", full_response[:100])
-                    setattr(conv, "updated_at", _now_iso())
+                    conv.preview = full_response[:100]
+                    conv.updated_at = _now_iso()
                 session.commit()
             finally:
                 session.close()
@@ -1230,7 +1232,7 @@ async def get_multimodal_models(request: Request) -> dict[str, Any]:
                 if i.get("enabled", True)
             ]
             return {"items": mapped, "total": len(mapped)}
-    except Exception:  # noqa: BLE001 — IAM 不可用降级到 seed
+    except Exception:
         pass
     return _resp(list_models(tid))
 
@@ -1623,7 +1625,7 @@ async def chat_agent_stream(
     messages = body.get("messages", [])
     model = body.get("model", "doubao-pro-32k")
     temperature = body.get("temperature", 0.7)
-    max_tokens = body.get("maxTokens", body.get("max_tokens", None))
+    max_tokens = body.get("maxTokens", body.get("max_tokens"))
     if isinstance(max_tokens, str):
         max_tokens = None
     conv_id = body.get("conversationId", "")
@@ -1694,7 +1696,7 @@ async def chat_agent_stream(
         provider_cfg = await _get_client(request).get_provider_config(
             tid, "custom", user_token or None
         )
-    except Exception:  # noqa: BLE001
+    except Exception:
         provider_cfg = {}
     llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
     llm_base_url = provider_cfg.get("base_url") or None
@@ -1715,6 +1717,31 @@ async def chat_agent_stream(
             yield _agent_event({"type": "reasoning", "text": f"无法获取数字员工列表：{exc}"})
             roles = []
 
+        # MP-SAL 接线：本体工具面 + OAG 卡片（best-effort——tech-ont 不可达时
+        # 降级为纯调度模式，不阻断聊天）。
+        ontology_tools: list[dict[str, Any]] | None = None
+        ontology_exec = None
+        object_cards: list[dict[str, Any]] | None = None
+        try:
+            from ..ontology_http_repo import OntologyHttpRepo  # noqa: PLC0415
+            from ..ontology_tools import build_ontology_tools, execute_ontology_tool
+
+            auth_headers = {"Authorization": f"Bearer {user_token or ''}", "X-Tenant-Id": tid}
+            onto_repo = OntologyHttpRepo(headers=auth_headers)
+            ontology_tools = build_ontology_tools(onto_repo)
+            _exec = execute_ontology_tool
+            _repo = onto_repo
+            ontology_exec = lambda name, args: _exec(_repo, name, args)  # noqa: E731
+            last_user = next(
+                (str(m.get("content") or "") for m in reversed(messages)
+                 if m.get("role") == "user"),
+                "",
+            )
+            if last_user:
+                object_cards = onto_repo.search_objects(last_user, top_k=3)
+        except Exception:
+            ontology_tools, ontology_exec, object_cards = None, None, None
+
         try:
             async for event in run_agent_loop(
                 llmgw_client=llmgw_client,
@@ -1729,6 +1756,9 @@ async def chat_agent_stream(
                 llm_api_key=llm_api_key,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                ontology_tools=ontology_tools,
+                ontology_tool_exec=ontology_exec,
+                object_cards=object_cards,
             ):
                 etype = event.get("type")
                 if etype == "final":
@@ -1791,14 +1821,14 @@ async def chat_agent_stream(
                                 (m.get("content", "") for m in messages if m.get("role") == "user"),
                                 "",
                             )
-                            setattr(conv, "title", (first_user or conv.title)[:24])
+                            conv.title = (first_user or conv.title)[:24]
                         conv.message_count = (conv.message_count or 0) + 2
-                        setattr(conv, "preview", full_response[:100])
-                        setattr(conv, "updated_at", _now_iso())
+                        conv.preview = full_response[:100]
+                        conv.updated_at = _now_iso()
                     session.commit()
                 finally:
                     session.close()
-            except Exception:  # noqa: BLE001 — DB 不可用时静默失败，已流式内容不受影响
+            except Exception:
                 pass
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")

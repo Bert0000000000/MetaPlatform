@@ -498,7 +498,11 @@ async def list_object_types(
 ) -> list[ObjectTypeResponse]:
     """List ObjectTypes with pagination."""
     _ctx(request)
-    items = await _call_scoped(request, "list_object_types", limit=limit, offset=offset)
+    ctx = _ctx(request)
+    items = await _call_scoped(
+        request, "list_object_types", limit=limit, offset=offset,
+        tenant_id=str(ctx.tenant_id),  # type: ignore[attr-defined]
+    )
     return [_ot_to_dto(i) for i in items]
 
 
@@ -1355,10 +1359,13 @@ async def list_agent_tools(
     request: Request, markings: str = "",
 ) -> list[AgentToolDTO]:
     """Virtual registry: tools computed on demand from ont_object_types (zero push sync)."""
-    _ctx(request)
+    ctx = _ctx(request)
     caller_markings = tuple(m.strip() for m in markings.split(",") if m.strip())
 
-    object_types = await _call_scoped(request, "list_object_types", 10000, 0)
+    object_types = await _call_scoped(
+        request, "list_object_types", 10000, 0,
+        str(ctx.tenant_id),  # type: ignore[attr-defined]  # 显式租户（thread-local 不可见）
+    )
     links = await _call_scoped(request, "list_link_instances")
     schemas = agent_tool_schemas(object_types, links, caller_markings)
     tools: list[AgentToolDTO] = []

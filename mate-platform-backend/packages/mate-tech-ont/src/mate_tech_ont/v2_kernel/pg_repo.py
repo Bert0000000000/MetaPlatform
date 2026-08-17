@@ -792,15 +792,25 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def list_object_types(self, limit: int, offset: int) -> list[ObjectType]:
+    def list_object_types(
+        self, limit: int, offset: int, tenant_id: str | None = None,
+    ) -> list[ObjectType]:
         self._ensure_schema()
+        tenant = tenant_id or self._current_tenant()
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
-                cur.execute(
-                    "SELECT * FROM ont_object_type ORDER BY rid LIMIT %s OFFSET %s",
-                    (limit, offset),
-                )
+                if tenant:  # 深度防御：RLS 之外显式租户过滤（to_thread 下 thread-local 不可见）
+                    cur.execute(
+                        "SELECT * FROM ont_object_type WHERE tenant_id = %s "
+                        "ORDER BY rid LIMIT %s OFFSET %s",
+                        (tenant, limit, offset),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT * FROM ont_object_type ORDER BY rid LIMIT %s OFFSET %s",
+                        (limit, offset),
+                    )
                 rows = cur.fetchall()
             return [_row_to_ot(r) for r in rows]
         finally:
@@ -1742,9 +1752,10 @@ class PgOntologyRepository(OntologyRepository):
 
     def execute_proposal(self, proposal_id: str) -> Any:
         """MP-SAL-04b：confirmed proposal 落库执行（create_instance / model_type）。"""
-        from datetime import UTC as _UTC, datetime as _dt
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
 
-        from mate_kernel.action.engine import (  # noqa: PLC0415
+        from mate_kernel.action.engine import (
             ProposalNotConfirmed,
             ProposalStatus,
         )

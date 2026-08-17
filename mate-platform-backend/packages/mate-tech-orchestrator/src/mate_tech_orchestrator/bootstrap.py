@@ -22,6 +22,14 @@ _DEFAULT_ROLE_CAPABILITIES: dict[AgentRole, tuple[CapabilityBinding, ...]] = {
         CapabilityBinding(name="search_skill", worker_kind="mcp", ref="search_skill"),
         CapabilityBinding(name="read_skill", worker_kind="mcp", ref="read_skill"),
     ),
+    # MP-SAL 接线：本体数字员工——能力绑定 MCP 中心的 ontology 代理工具
+    # （SAL-01 注册：ont_list_classes / ont_inspect_class / ont_object_query，
+    # 转发 tech-ont v2）。SuperAI 系统提示因此列出本体员工，dispatch 可派。
+    AgentRole.ONTOLOGY: (
+        CapabilityBinding(name="list_classes", worker_kind="mcp", ref="ont_list_classes"),
+        CapabilityBinding(name="inspect_class", worker_kind="mcp", ref="ont_inspect_class"),
+        CapabilityBinding(name="object_query", worker_kind="mcp", ref="ont_object_query"),
+    ),
 }
 
 
