@@ -144,13 +144,14 @@ class ActionProposal:
     """proposal 模型 —— HITL 流程前置产物（ADR-0044 状态机：pending→confirmed→applied / rejected）。"""
 
     proposal_id: str
-    action_rid: str
+    action_rid: str  # subject rid：kind=action→ActionType；create_instance→class；model_type→新类型 rid
     target_iid: str | None
     parameters: dict[str, Any]
     impact_summary: str  # 人类可读的"将做什么"
     created_at: datetime
     requires_hitl: bool = True
     status: ProposalStatus = ProposalStatus.PENDING
+    kind: str = "action"  # action / create_instance / model_type（MP-SAL-04b）
     expected_diff: dict[str, Any] = field(default_factory=dict)  # 预期 diff（staging 语义）
     confirmed_by: str | None = None
     confirmed_at: datetime | None = None
@@ -200,6 +201,7 @@ class ActionService:
         target_iid: str | None,
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        kind: str = "action",
     ) -> ActionProposal:
         import uuid
         prop = ActionProposal(
@@ -211,6 +213,7 @@ class ActionService:
             created_at=datetime.now(timezone.utc),
             requires_hitl=True,
             expected_diff=dict(expected_diff or {}),
+            kind=kind,
         )
         self._proposals[prop.proposal_id] = prop
         return prop
@@ -246,6 +249,21 @@ class ActionService:
     def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> ActionProposal:
         """pending → rejected（终态）。"""
         return self._transition_proposal(proposal_id, ProposalStatus.REJECTED, by=confirmed_by)
+
+    def mark_applied(self, proposal_id: str) -> ActionProposal:
+        """confirmed → applied（MP-SAL-04b：create/model 类 proposal 的落库回执）。
+
+        与 apply() 的回写互斥使用：execute_proposal 成功执行后调用；
+        仅 confirmed 可达 applied（未确认/已拒绝/已应用 → ProposalNotConfirmed）。
+        """
+        p = self.get_proposal(proposal_id)
+        if p.status is not ProposalStatus.CONFIRMED:
+            raise ProposalNotConfirmed(
+                f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
+            )
+        updated = replace(p, status=ProposalStatus.APPLIED)
+        self._proposals[proposal_id] = updated
+        return updated
 
     # ───── apply (post-HITL confirmation) ─────
 

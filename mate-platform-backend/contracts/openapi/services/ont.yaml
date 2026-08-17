@@ -1315,6 +1315,86 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/ProposalV2'}
+  /api/v1/ont/v2/classes/{class_rid}/propose-instance:
+    parameters:
+    - in: path
+      name: class_rid
+      required: true
+      schema: {type: string}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Propose a new instance from extracted fields (SAL-04b ingest)
+      operationId: ontProposeV2Instance
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL04B-PROPOSEINSTANCE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InstanceProposeV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProposalV2'}
+        '404': {$ref: ../common/errors.yaml#/components/responses/Error404}
+  /api/v1/ont/v2/object-types/propose:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Propose a new ObjectType from text (SAL-04b AI-assisted modeling)
+      operationId: ontProposeV2ObjectType
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL04B-PROPOSETYPE]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TypeProposeV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProposalV2'}
+  /api/v1/ont/v2/proposals/{proposal_id}/execute:
+    parameters:
+    - in: path
+      name: proposal_id
+      required: true
+      schema: {type: string}
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Execute a confirmed proposal (create_instance / model_type; SAL-04b)
+      operationId: ontExecuteV2Proposal
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL04B-EXECUTE]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [kind]
+                properties:
+                  kind: {type: string, enum: [create_instance, model_type]}
+                  individual_rid: {type: string}
+                  type_rid: {type: string}
+        '409': {$ref: ../common/errors.yaml#/components/responses/Error409}
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
     - in: path
@@ -2095,6 +2175,20 @@ components:
       additionalProperties: false
       properties:
         confirmed_by: {type: string}
+    InstanceProposeV2:
+      type: object
+      additionalProperties: false
+      properties:
+        props: {type: object, additionalProperties: true}
+        impact_summary: {type: string}
+        expected_diff: {type: object, additionalProperties: true}
+    TypeProposeV2:
+      type: object
+      additionalProperties: false
+      required: [type_def]
+      properties:
+        type_def: {$ref: '#/components/schemas/ObjectTypeCreateV2'}
+        impact_summary: {type: string}
     ProposalV2:
       type: object
       additionalProperties: false

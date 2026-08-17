@@ -110,13 +110,13 @@ class TestBuildOntologyTools:
     def test_fixed_plus_unmarked_type_tools(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=())
         names = [t["function"]["name"] for t in tools]
-        # SAL-04 起固定辅助面 5 件：list/inspect/search/propose + 每类型 query_<slug>
+        # 04b 起固定辅助面 7 件：list/inspect/search/propose×3 + 每类型 query_<slug>
         assert names == [
             "list_classes", "inspect_class", "query_order", "search_objects",
-            "propose_action",
+            "propose_action", "propose_create_instance", "propose_model_type",
         ]
-        # HITL 边界：confirm/reject 绝不作为 LLM 工具出现
-        assert not any("confirm" in n or "reject" in n for n in names)
+        # HITL 边界：confirm/reject/execute 绝不作为 LLM 工具出现
+        assert not any("confirm" in n or "reject" in n or "execute" in n for n in names)
 
     def test_marked_type_visible_with_marking(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=("domain:finance",))

@@ -195,6 +195,8 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_prop_tenant ON ont_proposal (tenant_id)",
+    # MP-SAL-04b: proposal kind（action / create_instance / model_type）
+    "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'action'",
     """
     CREATE TABLE IF NOT EXISTS ont_function (
         rid        TEXT PRIMARY KEY,
@@ -1583,16 +1585,27 @@ class PgOntologyRepository(OntologyRepository):
         target_iid: str | None,
         impact_summary: str,
         expected_diff: dict[str, Any] | None = None,
+        kind: str = "action",
     ) -> Any:
-        """AI/用户提议 → pending proposal（持久化 + 引擎镜像）。"""
+        """AI/用户提议 → pending proposal（持久化 + 引擎镜像）。kind 见 MP-SAL-04b。"""
         self._ensure_schema()
-        at = self.get_action_type(action_rid)
+        if kind == "action":
+            at = self.get_action_type(action_rid)
+            subject = at.rid.rid
+        else:
+            subject = str(action_rid.rid)  # create_instance→class rid / model_type→新类型 rid
+            try:
+                if kind == "create_instance":
+                    self.get_object_type(action_rid)
+            except KeyError as e:
+                raise KeyError(str(e)) from e
         prop = self._action_service.propose(
-            action_rid=at.rid.rid,
+            action_rid=subject,
             parameters=parameters,
             target_iid=target_iid,
             impact_summary=impact_summary,
             expected_diff=expected_diff,
+            kind=kind,
         )
         conn, _ = self._connect()
         try:
@@ -1601,18 +1614,19 @@ class PgOntologyRepository(OntologyRepository):
                     """
                     INSERT INTO ont_proposal
                         (proposal_id, tenant_id, action_rid, target_iid, parameters,
-                         impact_summary, expected_diff, status, created_at)
-                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, %s)
+                         impact_summary, expected_diff, status, kind, created_at)
+                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, %s, %s)
                     """,
                     (
                         prop.proposal_id,
-                        action_rid.rid.split(".")[1] if "." in action_rid.rid else "",
-                        prop.action_rid,
+                        subject.split(".")[1] if "." in subject else "",
+                        subject,
                         target_iid,
                         json.dumps(parameters, default=str),
                         impact_summary,
                         json.dumps(expected_diff or {}, default=str),
                         prop.status.value,
+                        kind,
                         prop.created_at,
                     ),
                 )
@@ -1620,6 +1634,27 @@ class PgOntologyRepository(OntologyRepository):
             return prop
         finally:
             conn.close()
+
+    def propose_create_instance(
+        self, class_rid: str, props: dict[str, Any],
+        impact_summary: str, expected_diff: dict[str, Any] | None = None,
+    ) -> Any:
+        """MP-SAL-04b：文本抽取字段 → 新建实例提议（subject=class rid）。"""
+        return self.propose_action(
+            ClassRef(class_rid), {"props": dict(props)}, None,
+            impact_summary, expected_diff, kind="create_instance",
+        )
+
+    def propose_model_type(
+        self, type_def: dict[str, Any], impact_summary: str,
+    ) -> Any:
+        """MP-SAL-04b：文本→新类型定义提议（subject=新类型 rid）。"""
+        if not isinstance(type_def, dict) or "rid" not in type_def:
+            raise ValueError("type_def must carry 'rid'")
+        return self.propose_action(
+            ClassRef(str(type_def["rid"])), {"type_def": type_def}, None,
+            impact_summary, {"+type": type_def["rid"]}, kind="model_type",
+        )
 
     def get_proposal(self, proposal_id: str) -> Any:
         self._ensure_schema()
@@ -1665,6 +1700,7 @@ class PgOntologyRepository(OntologyRepository):
             impact_summary=row.get("impact_summary", ""),
             created_at=row["created_at"],
             status=ProposalStatus(row.get("status", "pending")),
+            kind=row.get("kind", "action"),
             expected_diff=diff,
             confirmed_by=row.get("confirmed_by"),
             confirmed_at=row.get("confirmed_at"),
@@ -1703,6 +1739,80 @@ class PgOntologyRepository(OntologyRepository):
         prop = self._action_service.reject_proposal(proposal_id, confirmed_by=confirmed_by)
         self._persist_proposal_transition(prop)
         return prop
+
+    def execute_proposal(self, proposal_id: str) -> Any:
+        """MP-SAL-04b：confirmed proposal 落库执行（create_instance / model_type）。"""
+        from datetime import UTC as _UTC, datetime as _dt
+
+        from mate_kernel.action.engine import (  # noqa: PLC0415
+            ProposalNotConfirmed,
+            ProposalStatus,
+        )
+
+        p = self.get_proposal(proposal_id)  # 行存在 + 镜像回填
+        if p.status is not ProposalStatus.CONFIRMED:
+            raise ProposalNotConfirmed(
+                f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
+            )
+        if p.kind == "action":
+            raise ValueError(
+                "action-kind proposals execute via /action-types/{rid}/apply, not /execute"
+            )
+        if p.kind == "create_instance":
+            ot = self.get_object_type(ClassRef(p.action_rid))
+            props_in: dict[str, Any] = dict(p.parameters.get("props") or {})
+            slug_to_ref = {q.rid.rid.split(".")[3]: q.rid for q in ot.properties}
+            pk_slug = ot.primary_key[0].rid.split(".")[3]
+            pk_value = props_in.get(pk_slug)
+            if pk_value is None:
+                raise ValueError(f"primary key '{pk_slug}' required to create {p.action_rid}")
+            parts = ot.rid.rid.split(".")
+            tenant, cls_slug = parts[1], parts[3]
+            resolved = []
+            for key, value in props_in.items():
+                ref = slug_to_ref.get(key) or (ClassRef(key) if key.startswith("ont.") else None)
+                if ref is None:
+                    raise KeyError(f"unknown property {key!r} for {p.action_rid}")
+                resolved.append((ref, value))
+            ind = Individual(
+                rid=f"ont.{tenant}.ind.{cls_slug}.{pk_value}",
+                class_rid=ot.rid,
+                props=tuple(resolved),
+                primary_key=str(pk_value),
+                created_at=_dt.now(_UTC),
+                updated_at=_dt.now(_UTC),
+                tenant_id=tenant,
+            )
+            created = self.create_individual(ind)
+            self._persist_proposal_transition(
+                self._action_service.mark_applied(proposal_id),
+            )
+            return created
+        if p.kind == "model_type":
+            type_def = p.parameters["type_def"]
+            ot = ObjectType(
+                rid=ClassRef(str(type_def["rid"])),
+                primary_key=tuple(ClassRef(pk) for pk in type_def["primary_key"]),
+                properties=tuple(
+                    Property(
+                        rid=ClassRef(pd["rid"]), type_id=pd.get("type_id", "string"),
+                        nullable=pd.get("nullable", True),
+                        primary_key=pd.get("primary_key", False),
+                        title=pd.get("title", ""),
+                        format=PropertyFormat(pd.get("format", "string")),
+                    )
+                    for pd in type_def.get("properties", ())
+                ),
+                interfaces=tuple(ClassRef(i) for i in type_def.get("interfaces", ())),
+                display_name=type_def.get("display_name", ""),
+                marking=tuple(type_def.get("marking", ())),
+            )
+            saved = self.upsert_object_type(ot)
+            self._persist_proposal_transition(
+                self._action_service.mark_applied(proposal_id),
+            )
+            return saved
+        raise ValueError(f"unknown proposal kind: {p.kind!r}")
 
     def apply_action(
         self,

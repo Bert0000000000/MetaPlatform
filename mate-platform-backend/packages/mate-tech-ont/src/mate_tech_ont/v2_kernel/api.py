@@ -748,6 +748,7 @@ class ProposalResponse(BaseModel):
     impact_summary: str = ""
     expected_diff: dict[str, Any] = Field(default_factory=dict)
     status: str
+    kind: str = "action"
     confirmed_by: str | None = None
     created_at: str = ""
     confirmed_at: str | None = None
@@ -762,10 +763,97 @@ def _proposal_to_dto(p: Any) -> ProposalResponse:
         impact_summary=p.impact_summary,
         expected_diff=dict(p.expected_diff),
         status=p.status.value,
+        kind=getattr(p, "kind", "action"),
         confirmed_by=p.confirmed_by,
         created_at=p.created_at.isoformat() if p.created_at else "",
         confirmed_at=p.confirmed_at.isoformat() if p.confirmed_at else None,
     )
+
+
+class InstanceProposeDTO(BaseModel):
+    """MP-SAL-04b：文本抽取字段 → 新建实例提议。"""
+
+    props: dict[str, Any] = Field(default_factory=dict)
+    impact_summary: str = ""
+    expected_diff: dict[str, Any] = Field(default_factory=dict)
+
+
+class TypeProposeDTO(BaseModel):
+    """MP-SAL-04b：文本 → 新类型定义提议。"""
+
+    type_def: ObjectTypeDTO
+    impact_summary: str = ""
+
+
+class ProposalExecuteResultDTO(BaseModel):
+    kind: str
+    individual_rid: str | None = None
+    type_rid: str | None = None
+
+
+@router.post(
+    "/classes/{class_rid}/propose-instance",
+    response_model=ProposalResponse,
+    operation_id="ontProposeV2Instance",
+)
+async def propose_instance(
+    class_rid: str, payload: InstanceProposeDTO, request: Request,
+) -> ProposalResponse:
+    """MP-SAL-04b：AI 从文本抽取的字段 → 新建实例提议（kind=create_instance，不落库）。"""
+    ctx = _ctx(request)
+    if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    try:
+        prop = await _call_scoped(
+            request, "propose_create_instance", class_rid,
+            payload.props, payload.impact_summary, payload.expected_diff or None,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _proposal_to_dto(prop)
+
+
+@router.post(
+    "/object-types/propose",
+    response_model=ProposalResponse,
+    operation_id="ontProposeV2ObjectType",
+)
+async def propose_object_type(
+    payload: TypeProposeDTO, request: Request,
+) -> ProposalResponse:
+    """MP-SAL-04b：AI 辅助建模提议（kind=model_type；确认后经 execute 落库）。"""
+    ctx = _ctx(request)
+    type_def = payload.type_def.model_dump()
+    if not type_def["rid"].startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    prop = await _call_scoped(
+        request, "propose_model_type", type_def, payload.impact_summary,
+    )
+    return _proposal_to_dto(prop)
+
+
+@router.post(
+    "/proposals/{proposal_id}/execute",
+    response_model=ProposalExecuteResultDTO,
+    operation_id="ontExecuteV2Proposal",
+)
+async def execute_proposal(
+    proposal_id: str, request: Request,
+) -> ProposalExecuteResultDTO:
+    """MP-SAL-04b：confirmed proposal 落库执行（create_instance → 新建实例；
+    model_type → upsert 类型；action → 409 指引走 /apply）。"""
+    _ctx(request)
+    try:
+        out = await _call_scoped(request, "execute_proposal", proposal_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ProposalNotConfirmed as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    if hasattr(out, "class_rid"):  # Individual
+        return ProposalExecuteResultDTO(kind="create_instance", individual_rid=out.rid)
+    return ProposalExecuteResultDTO(kind="model_type", type_rid=out.rid.rid)
 
 
 @router.post(

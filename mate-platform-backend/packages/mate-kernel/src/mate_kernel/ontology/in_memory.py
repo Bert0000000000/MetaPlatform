@@ -20,6 +20,7 @@ from mate_kernel.ontology.types import (
     LinkType,
     ObjectType,
     Property,
+    PropertyFormat,
 )
 
 
@@ -305,11 +306,115 @@ class InMemoryOntologyRepository(OntologyRepository):
             impact_summary=impact_summary, expected_diff=expected_diff,
         )
 
+    # ───── MP-SAL-04b: 文本→本体 ingest（kind=create_instance / model_type）─────
+
+    def propose_create_instance(
+        self, class_rid: str, props: dict[str, Any],
+        impact_summary: str, expected_diff: dict[str, Any] | None = None,
+    ) -> Any:
+        """文本抽取字段 → 新建实例提议（subject=class rid，payload=props）。"""
+        self.get_object_type(ClassRef(class_rid))  # 类不存在 → KeyError
+        return self._action_service.propose(
+            action_rid=class_rid, parameters={"props": dict(props)},
+            target_iid=None, impact_summary=impact_summary,
+            expected_diff=expected_diff, kind="create_instance",
+        )
+
+    def propose_model_type(
+        self, type_def: dict[str, Any], impact_summary: str,
+    ) -> Any:
+        """文本→新类型定义提议（subject=新类型 rid，payload=type_def）。"""
+        if "rid" not in type_def:
+            raise ValueError("type_def must carry 'rid'")
+        return self._action_service.propose(
+            action_rid=str(type_def["rid"]), parameters={"type_def": type_def},
+            target_iid=None, impact_summary=impact_summary,
+            expected_diff={"+type": type_def["rid"]}, kind="model_type",
+        )
+
+    def execute_proposal(self, proposal_id: str) -> Any:
+        """confirmed proposal 的落库执行（按 kind 分派）。
+
+        create_instance → 新建 Individual（rid = ont.<t>.ind.<cls>.<pk>）
+        model_type      → upsert ObjectType
+        action          → 拒绝（走 /action-types/{rid}/apply 唯一写入口）
+        """
+        from datetime import UTC as _UTC, datetime as _dt
+
+        from mate_kernel.action.engine import ProposalNotConfirmed, ProposalStatus
+
+        p = self._action_service.get_proposal(proposal_id)
+        if p.status is not ProposalStatus.CONFIRMED:
+            raise ProposalNotConfirmed(
+                f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
+            )
+        if p.kind == "action":
+            raise ValueError(
+                "action-kind proposals execute via /action-types/{rid}/apply, not /execute"
+            )
+        if p.kind == "create_instance":
+            ot = self.get_object_type(ClassRef(p.action_rid))
+            props_in: dict[str, Any] = dict(p.parameters.get("props") or {})
+            slug_to_ref: dict[str, ClassRef] = {
+                q.rid.rid.split(".")[3]: q.rid for q in ot.properties
+            }
+            pk_slug = ot.primary_key[0].rid.split(".")[3]
+            pk_value = props_in.get(pk_slug)
+            if pk_value is None:
+                raise ValueError(f"primary key '{pk_slug}' required to create {p.action_rid}")
+            rid_parts = ot.rid.rid.split(".")
+            tenant, cls_slug = rid_parts[1], rid_parts[3]
+            resolved: list[tuple[ClassRef, Any]] = []
+            for key, value in props_in.items():
+                ref = slug_to_ref.get(key) or (
+                    ClassRef(key) if key.startswith("ont.") else None
+                )
+                if ref is None:
+                    raise KeyError(f"unknown property {key!r} for {p.action_rid}")
+                resolved.append((ref, value))
+            ind = Individual(
+                rid=f"ont.{tenant}.ind.{cls_slug}.{pk_value}",
+                class_rid=ot.rid,
+                props=tuple(resolved),
+                primary_key=str(pk_value),
+                created_at=_dt.now(_UTC),
+                updated_at=_dt.now(_UTC),
+                tenant_id=tenant,
+            )
+            self.create_individual(ind)
+            self._action_service.mark_applied(proposal_id)
+            return ind
+        if p.kind == "model_type":
+            ot = self._type_def_to_object_type(p.parameters["type_def"])
+            self.upsert_object_type(ot)
+            self._action_service.mark_applied(proposal_id)
+            return ot
+        raise ValueError(f"unknown proposal kind: {p.kind!r}")
+
+    @staticmethod
+    def _type_def_to_object_type(type_def: dict[str, Any]) -> ObjectType:
+        return ObjectType(
+            rid=ClassRef(str(type_def["rid"])),
+            primary_key=tuple(ClassRef(pk) for pk in type_def["primary_key"]),
+            properties=tuple(
+                Property(
+                    rid=ClassRef(pd["rid"]), type_id=pd.get("type_id", "string"),
+                    nullable=pd.get("nullable", True),
+                    primary_key=pd.get("primary_key", False),
+                    title=pd.get("title", ""), format=PropertyFormat(pd.get("format", "string")),
+                )
+                for pd in type_def.get("properties", ())
+            ),
+            interfaces=tuple(ClassRef(i) for i in type_def.get("interfaces", ())),
+            display_name=type_def.get("display_name", ""),
+            marking=tuple(type_def.get("marking", ())),
+        )
+
     def get_proposal(self, proposal_id: str) -> Any:
         return self._action_service.get_proposal(proposal_id)
 
     def list_proposals(self) -> list[Any]:
-        return list(self._action_service._proposals.values())  # noqa: SLF001
+        return list(self._action_service._proposals.values())  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
     def confirm_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
         return self._action_service.confirm_proposal(proposal_id, confirmed_by=confirmed_by)

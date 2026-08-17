@@ -89,6 +89,51 @@ PROPOSE_ACTION_TOOL: dict[str, Any] = {
 }
 
 
+# MP-SAL-04b（ADR-0044 附录）：文本→本体 ingest——AI 只能提议，confirm/execute 均非 LLM 工具。
+PROPOSE_CREATE_INSTANCE_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "propose_create_instance",
+        "description": (
+            "从文本抽取的字段提议新建一个本体对象实例(kind=create_instance)。"
+            "产出 pending proposal 等用户确认, 不会直接落库。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "class_rid": {"type": "string", "description": "目标 ObjectType rid"},
+                "props": {"type": "object", "description": "字段值(含主键)"},
+                "impact_summary": {"type": "string"},
+                "expected_diff": {"type": "object"},
+            },
+            "required": ["class_rid", "props", "impact_summary"],
+        },
+    },
+}
+
+PROPOSE_MODEL_TYPE_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "propose_model_type",
+        "description": (
+            "提议新建一个 ObjectType(AI 辅助建模, kind=model_type)。"
+            "确认后经 execute 落库; schema 变更必须人工审。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "type_def": {
+                    "type": "object",
+                    "description": "ObjectType 定义(rid/primary_key/properties/display_name/marking)",
+                },
+                "impact_summary": {"type": "string"},
+            },
+            "required": ["type_def", "impact_summary"],
+        },
+    },
+}
+
+
 def build_ontology_tools(
     repo: OntologyToolRepo, agent_markings: tuple[str, ...] | list[str] = (),
 ) -> list[dict[str, Any]]:
@@ -99,6 +144,8 @@ def build_ontology_tools(
         *agent_tool_schemas(types, links, tuple(agent_markings)),
         SEARCH_OBJECTS_TOOL,
         PROPOSE_ACTION_TOOL,
+        PROPOSE_CREATE_INSTANCE_TOOL,
+        PROPOSE_MODEL_TYPE_TOOL,
     ]
 
 
@@ -134,6 +181,30 @@ def execute_ontology_tool(
             "status": prop.status.value,
             "impact_summary": prop.impact_summary,
             "note": "已产出待确认提议；等待用户确认(confirm)后才会落库。",
+        }
+    if name == "propose_create_instance":
+        prop = repo.propose_create_instance(
+            class_rid=str(arguments.get("class_rid", "")),
+            props=dict(arguments.get("props") or {}),
+            impact_summary=str(arguments.get("impact_summary", "")),
+            expected_diff=dict(arguments.get("expected_diff") or {}) or None,
+        )
+        return {
+            "proposal_id": prop.proposal_id,
+            "kind": "create_instance",
+            "status": prop.status.value,
+            "note": "已产出新建实例提议；等待用户确认后 execute 落库。",
+        }
+    if name == "propose_model_type":
+        prop = repo.propose_model_type(
+            type_def=dict(arguments.get("type_def") or {}),
+            impact_summary=str(arguments.get("impact_summary", "")),
+        )
+        return {
+            "proposal_id": prop.proposal_id,
+            "kind": "model_type",
+            "status": prop.status.value,
+            "note": "已产出建模提议；schema 变更需用户确认后 execute 落库。",
         }
     if name.startswith("query_"):
         return _execute_query(repo, name, arguments, tuple(agent_markings))
