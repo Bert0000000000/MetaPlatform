@@ -1,7 +1,7 @@
 # AI 助手启动 Prompt（MP-SAL 语义层 AI 落地 · 完整闭环程序）
 
 > 版本：v1.1 · 2026-08-17
-> **状态：程序已完结（2026-08-17）**——SAL-01 读 / SAL-02 想 / SAL-04 写 / SAL-03 生产门 **四批全部 Accepted**，证据 `docs/active/delivery/evidence/MP-SAL-0X-ACCEPTANCE.md` ×4，ADR-0043/0044 落档，分支 `refactor/mp-sal-01`（12 commits）。本 prompt 保留作复盘/续作入口；后续增量：生产部署 checklist（K8s 接入 / Keycloak 配置 / pgvector 升级）、proposal 过期/乐观锁（ADR-0044 §4 出范围项）、MP-SAL-05~07（P1/P2）。
+> **状态：程序已完结（2026-08-17）**——SAL-01 读 / SAL-02 想 / SAL-04 写 / SAL-03 生产门 **四批全部 Accepted**，证据 `docs/active/delivery/evidence/MP-SAL-0X-ACCEPTANCE.md` ×4，ADR-0043/0044 落档，分支 `refactor/mp-sal-01`（12 commits）。北极星链路已于同日 live 实机验证通过（真 uvicorn+真 PG 全链 HTTP 级，见 PROGRAM-BOARD 2026-08-17 live 行）。本 prompt 保留作复盘/续作入口；后续增量：生产部署 checklist（K8s 接入 / Keycloak 配置 / pgvector 升级）、proposal 过期/乐观锁（ADR-0044 §4 出范围项）、MP-SAL-05~07（P1/P2）。
 > 用途：**新 Codex / AI 会话**开启时**整段复制粘贴**到对话开头（覆盖 SAL-01→04 全程序；单会话只做一个 Batch，做完按 §接力交接收尾）
 > 出处：`docs/active/specs/2026-08-17-semantic-layer-ai-landing-plan.md` v0.3 §4.0（程序目标锁定）+ `ADR-0043`
 > 状态：SAL-01 待开工；设计定案已齐，无阻塞
