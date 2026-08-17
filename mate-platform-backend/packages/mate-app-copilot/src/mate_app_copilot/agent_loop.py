@@ -66,8 +66,15 @@ DISPATCH_TOOL_SCHEMA: dict[str, Any] = {
 }
 
 
-def build_system_prompt(roles: list[dict[str, Any]]) -> str:
-    """从 orchestrator 注册的数字员工角色动态生成 system prompt。"""
+def build_system_prompt(
+    roles: list[dict[str, Any]],
+    object_cards: list[dict[str, Any]] | None = None,
+) -> str:
+    """从 orchestrator 注册的数字员工角色动态生成 system prompt。
+
+    MP-SAL-02（OAG）：``object_cards`` 非空时追加「相关对象上下文」段——
+    检索命中的对象卡片（带 rid 可追溯）进入 prompt，AI「想」的时候本体在上下文里。
+    """
     lines = [
         "你是 SuperAI 编排助手。用户要求执行业务任务时，用 dispatch_employee 工具调度数字员工完成。",
         "一次可以调用多个 dispatch_employee 把任务并行派给不同员工。",
@@ -80,6 +87,13 @@ def build_system_prompt(roles: list[dict[str, Any]]) -> str:
         "调度完成后，拿到每个员工的结果给用户简洁的中文汇总（用了哪些员工、各自结果如何）。"
         "不要凭空编造调度结果；调度结果以工具返回为准。"
     )
+    if object_cards:
+        lines.append("")
+        lines.append("相关对象上下文（来自本体检索，rid 可追溯，回答时优先引用）：")
+        for card in object_cards:
+            lines.append(
+                f"- [{card.get('individual_rid', '?')}] {card.get('card_text', '')}"
+            )
     return "\n".join(lines)
 
 

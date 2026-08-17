@@ -1171,6 +1171,47 @@ def _class_rid_of_tool(
     return None
 
 
+class ObjectSearchDTO(BaseModel):
+    text: str
+    class_rid: str | None = None
+    top_k: int = 5
+
+
+class ObjectSearchResultDTO(BaseModel):
+    cards: list[dict[str, Any]] = Field(default_factory=list)
+
+
+@router.post(
+    "/object-search",
+    response_model=ObjectSearchResultDTO,
+    operation_id="ontSearchV2Objects",
+)
+async def search_objects(
+    payload: ObjectSearchDTO, request: Request,
+) -> ObjectSearchResultDTO:
+    """MP-SAL-02: 对象语义检索（OAG）→ 对象卡片（带 rid 可追溯）。"""
+    ctx = _ctx(request)
+    if payload.class_rid and not payload.class_rid.startswith(
+        f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
+    ):
+        raise HTTPException(status_code=403, detail="cross-tenant search denied")
+    cards = await _call_scoped(
+        request, "search_objects", payload.text, payload.class_rid, payload.top_k,
+    )
+    return ObjectSearchResultDTO(cards=cards)
+
+
+@router.post(
+    "/object-search/reindex",
+    operation_id="ontReindexV2ObjectSearch",
+)
+async def reindex_object_search(request: Request) -> dict[str, int]:
+    """MP-SAL-02: 存量 Individual 补齐 embedding。"""
+    _ctx(request)
+    count = await _call_scoped(request, "reindex_object_embeddings")
+    return {"indexed": count}
+
+
 # ─────────────────── 12) LinkInstance CRUD ───────────────────
 
 

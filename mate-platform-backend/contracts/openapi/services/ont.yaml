@@ -1160,6 +1160,55 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/AgentToolV2'}
+  /api/v1/ont/v2/object-search:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      tags: [ont]
+      summary: Semantic object search - OAG retrieval context (SAL-02)
+      description: >-
+        Object-instance semantic retrieval (ADR per spec SAL-02): embeds the
+        query, ranks property-level embeddings (ont_object_embedding), and
+        returns object cards with traceable rids for agent prompt injection.
+      operationId: ontSearchV2Objects
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.read
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL02-OBJECTSEARCH]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ObjectSearchV2'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ObjectSearchResultV2'}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}
+  /api/v1/ont/v2/object-search/reindex:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      tags: [ont]
+      summary: Backfill object embeddings for the tenant (SAL-02)
+      operationId: ontReindexV2ObjectSearch
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-SAL02-REINDEX]
+      x-mate-implementation-status: implemented
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [indexed]
+                properties:
+                  indexed: {type: integer}
   /api/v1/ont/v2/versions/{class_rid}:
     parameters:
     - in: path
@@ -1927,6 +1976,41 @@ components:
         class_rid: {$ref: '#/components/schemas/RidString'}
         input_schema: {type: object, additionalProperties: true}
         result_schema: {type: object, additionalProperties: true}
+    ObjectSearchV2:
+      type: object
+      additionalProperties: false
+      required: [text]
+      properties:
+        text: {type: string, minLength: 1}
+        class_rid: {type: string}
+        top_k: {type: integer, minimum: 1, maximum: 50, default: 5}
+    ObjectCardV2:
+      type: object
+      additionalProperties: false
+      required: [individual_rid, class_rid, score, matched]
+      properties:
+        individual_rid: {type: string}
+        class_rid: {type: string}
+        score: {type: number}
+        matched:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [property_rid, value_text, score]
+            properties:
+              property_rid: {type: string}
+              value_text: {type: string}
+              score: {type: number}
+        card_text: {type: string}
+    ObjectSearchResultV2:
+      type: object
+      additionalProperties: false
+      required: [cards]
+      properties:
+        cards:
+          type: array
+          items: {$ref: '#/components/schemas/ObjectCardV2'}
     VersionV2:
       type: object
       additionalProperties: false

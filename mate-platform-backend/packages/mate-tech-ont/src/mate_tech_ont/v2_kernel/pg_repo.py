@@ -162,6 +162,21 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ax_tenant ON ont_axiom (tenant_id)",
+    # MP-SAL-02: 对象语义检索索引表（OAG，spec §4.2 SAL-02）
+    """
+    CREATE TABLE IF NOT EXISTS ont_object_embedding (
+        chunk_id       TEXT PRIMARY KEY,
+        individual_rid TEXT NOT NULL,
+        class_rid      TEXT NOT NULL,
+        property_rid   TEXT NOT NULL,
+        value_text     TEXT NOT NULL DEFAULT '',
+        embedding      JSONB,
+        tenant_id      TEXT NOT NULL,
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_oemb_tenant ON ont_object_embedding (tenant_id)",
+    "CREATE INDEX IF NOT EXISTS ix_ont_oemb_ind ON ont_object_embedding (individual_rid)",
     """
     CREATE TABLE IF NOT EXISTS ont_function (
         rid        TEXT PRIMARY KEY,
@@ -574,6 +589,9 @@ class PgOntologyRepository(OntologyRepository):
         from mate_kernel.ontology.function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
         self._function_executor: object | None = None
+        # MP-SAL-02: 对象语义检索 embedder（env 未配置时为 None → 索引跳过）
+        from .object_search import build_env_embedder  # noqa: PLC0415
+        self._embedder: object | None = build_env_embedder()
 
         # GOVERN-12-02: 构造即 bootstrap DDL。任何路径（启动 / 测试 fixture /
         # 迁移脚本）拿到 PgOntologyRepository 实例即可用；不需要启动序列先
@@ -996,6 +1014,7 @@ class PgOntologyRepository(OntologyRepository):
                         ind.updated_at,
                     ),
                 )
+            self._index_individual_embeddings(conn, ind)
             conn.commit()
             return ind
         finally:
@@ -1390,6 +1409,123 @@ class PgOntologyRepository(OntologyRepository):
         for p in ot.properties:
             out[_prop_slug(p.rid.rid)] = {"type": p.type_id, "rid": p.rid.rid}
         return out
+
+    # ───── MP-SAL-02: 对象语义检索（OAG）─────
+
+    def set_embedder(self, embedder: Any) -> None:
+        """注入 embedder（协议：embed(text)->list[float]）；None = 跳过索引。"""
+        self._embedder = embedder
+
+    def _embed_chunks(self, ind: Individual) -> list[tuple[str, str, str, str, list[float]]]:
+        """Individual → [(chunk_id, individual_rid, class_rid, property_rid, vec)]。"""
+        if self._embedder is None:
+            return []
+        out: list[tuple[str, str, str, str, list[float]]] = []
+        for prop_ref, value in ind.props:
+            slug = _prop_slug(prop_ref.rid)
+            text = f"{slug} {value}"
+            out.append((
+                f"{ind.rid}#{prop_ref.rid}",
+                ind.rid,
+                ind.class_rid.rid,
+                prop_ref.rid,
+                self._embedder.embed(text),
+            ))
+        return out
+
+    def _index_individual_embeddings(self, conn: Any, ind: Individual) -> None:
+        """index-on-write（best-effort：embedder 缺席或失败不阻断主写入）。"""
+        try:
+            chunks = self._embed_chunks(ind)
+            if not chunks:
+                return
+            with self._cursor(conn) as cur:
+                for chunk_id, individual_rid, class_rid, property_rid, vec in chunks:
+                    cur.execute(
+                        """
+                        INSERT INTO ont_object_embedding
+                            (chunk_id, individual_rid, class_rid, property_rid,
+                             value_text, embedding, tenant_id, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, now())
+                        ON CONFLICT (chunk_id) DO UPDATE SET
+                            embedding = EXCLUDED.embedding,
+                            created_at = now()
+                        """,
+                        (
+                            chunk_id, individual_rid, class_rid, property_rid,
+                            chunk_id.split("#", 1)[1], json.dumps(vec), ind.tenant_id,
+                        ),
+                    )
+        except Exception:  # noqa: BLE001 — 索引失败不影响主路径
+            import logging
+            logging.getLogger(__name__).warning(
+                "object_embedding_index_failed", extra={"rid": ind.rid},
+            )
+
+    def search_objects(
+        self, text: str, class_rid: str | None = None, top_k: int = 5,
+    ) -> list[dict[str, Any]]:
+        """语义检索 → 对象卡片（带 rid 可追溯）。"""
+        if self._embedder is None:
+            return []
+        from .object_search import build_card, cosine  # noqa: PLC0415
+
+        qvec = self._embedder.embed(text)
+        sql = "SELECT * FROM ont_object_embedding"
+        params: list[Any] = []
+        if class_rid:
+            sql += " WHERE class_rid = %s"
+            params.append(class_rid)
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(sql, params)
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+
+        per_individual: dict[str, list[dict[str, Any]]] = {}
+        class_of: dict[str, str] = {}
+        for r in rows:
+            emb = r.get("embedding")
+            if not emb:
+                continue
+            vec = emb if isinstance(emb, list) else json.loads(emb)
+            score = cosine(qvec, vec)
+            if score <= 0.0:
+                continue
+            class_of[r["individual_rid"]] = r["class_rid"]
+            per_individual.setdefault(r["individual_rid"], []).append({
+                "property_rid": r["property_rid"],
+                "value_text": r["value_text"],
+                "score": score,
+            })
+        cards: list[dict[str, Any]] = []
+        for individual_rid, matched in per_individual.items():
+            matched.sort(key=lambda m: m["score"], reverse=True)
+            cards.append(
+                build_card(individual_rid, class_of[individual_rid], matched[:3])
+            )
+        cards.sort(key=lambda c: c["score"], reverse=True)
+        return cards[:top_k]
+
+    def reindex_object_embeddings(self) -> int:
+        """存量补齐：全量 Individual 重嵌入（返回索引的 Individual 数）。"""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_individual")
+                rows = cur.fetchall()
+            count = 0
+            for r in rows:
+                self._index_individual_embeddings(conn, _row_to_individual(r))
+                count += 1
+            conn.commit()
+            return count
+        finally:
+            conn.close()
 
     def apply_action(
         self,

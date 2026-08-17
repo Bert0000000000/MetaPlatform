@@ -90,7 +90,8 @@ class TestBuildOntologyTools:
     def test_fixed_plus_unmarked_type_tools(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=())
         names = [t["function"]["name"] for t in tools]
-        assert names == ["list_classes", "inspect_class", "query_order"]
+        # SAL-02 起固定辅助面为 4 件：list/inspect/search + 每类型 query_<slug>
+        assert names == ["list_classes", "inspect_class", "query_order", "search_objects"]
 
     def test_marked_type_visible_with_marking(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=("domain:finance",))

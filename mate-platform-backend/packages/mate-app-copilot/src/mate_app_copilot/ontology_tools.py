@@ -40,13 +40,31 @@ class OntologyToolRepo(Protocol):
     def execute_object_query(self, q: ObjectSetQuery) -> QueryResult: ...
 
 
+SEARCH_OBJECTS_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "search_objects",
+        "description": "对象语义检索：用自然语言找相关本体对象，返回对象卡片(带 rid 可追溯)。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "自然语言检索文本"},
+                "class_rid": {"type": "string", "description": "限定对象类型(可选)"},
+                "top_k": {"type": "integer", "minimum": 1, "maximum": 50},
+            },
+            "required": ["text"],
+        },
+    },
+}
+
+
 def build_ontology_tools(
     repo: OntologyToolRepo, agent_markings: tuple[str, ...] | list[str] = (),
 ) -> list[dict[str, Any]]:
     """发布即可见：每次调用从 repo 实时计算（虚拟注册表，零 push 同步）。"""
     types = repo.list_object_types(10000, 0)
     links = repo.list_link_instances()
-    return agent_tool_schemas(types, links, tuple(agent_markings))
+    return [*agent_tool_schemas(types, links, tuple(agent_markings)), SEARCH_OBJECTS_TOOL]
 
 
 def execute_ontology_tool(
@@ -60,6 +78,14 @@ def execute_ontology_tool(
         return _list_classes(repo, tuple(agent_markings))
     if name == "inspect_class":
         return _inspect_class(repo, str(arguments.get("class_rid", "")))
+    if name == "search_objects":
+        return {
+            "cards": repo.search_objects(
+                text=str(arguments.get("text", "")),
+                class_rid=arguments.get("class_rid") or None,
+                top_k=int(arguments.get("top_k", 5)),
+            ),
+        }
     if name.startswith("query_"):
         return _execute_query(repo, name, arguments, tuple(agent_markings))
     raise KeyError(f"unknown ontology tool: {name!r}")

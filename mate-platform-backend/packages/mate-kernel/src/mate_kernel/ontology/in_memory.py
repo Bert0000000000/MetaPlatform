@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.identity import ClassRef, Version
 from mate_kernel.ontology.instances import Individual, LinkInstance
 from mate_kernel.ontology.query import ObjectSet
+
+if TYPE_CHECKING:
+    from mate_kernel.objectset.ir import ObjectSetQuery, QueryResult
 from mate_kernel.ontology.reasoning import Axiom, Function
 from mate_kernel.action.engine import ActionService, SubmissionContext
 from mate_kernel.ontology.types import (
@@ -43,6 +46,9 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._axioms: dict[ClassRef, Axiom] = {}
         self._functions: dict[ClassRef, Function] = {}
         self._action_service = ActionService()
+        # MP-SAL-02: 对象语义检索（embedder + 属性级 embedding 缓存）
+        self._embedder: Any = None
+        self._embeddings: dict[str, dict[str, Any]] = {}
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
         from .function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
@@ -140,7 +146,67 @@ class InMemoryOntologyRepository(OntologyRepository):
 
     def create_individual(self, ind: Individual) -> Individual:
         self._individuals[ind.rid] = ind
+        if self._embedder is not None:
+            self._index_embeddings(ind)
         return ind
+
+    def set_embedder(self, embedder: Any) -> None:
+        """MP-SAL-02: 注入 embedder（embed(text)->list[float]）；None = 跳过索引。"""
+        self._embedder = embedder
+
+    def _index_embeddings(self, ind: Individual) -> None:
+        assert self._embedder is not None
+        for prop_ref, value in ind.props:
+            parts = prop_ref.rid.split(".")
+            slug = parts[3] if len(parts) >= 5 else parts[-1]
+            self._embeddings[f"{ind.rid}#{prop_ref.rid}"] = {
+                "individual_rid": ind.rid,
+                "class_rid": ind.class_rid.rid,
+                "property_rid": prop_ref.rid,
+                "value_text": str(value),
+                "embedding": self._embedder.embed(f"{slug} {value}"),
+            }
+
+    def search_objects(
+        self, text: str, class_rid: str | None = None, top_k: int = 5,
+    ) -> list[dict[str, Any]]:
+        """MP-SAL-02: 对象语义检索 → 对象卡片（与 PG 侧同语义，dev/test 用）。"""
+        if self._embedder is None:
+            return []
+        import math  # noqa: PLC0415
+
+        qvec = self._embedder.embed(text)
+        qnorm = math.sqrt(sum(x * x for x in qvec)) or 1.0
+        per_individual: dict[str, list[dict[str, Any]]] = {}
+        class_of: dict[str, str] = {}
+        for chunk in self._embeddings.values():
+            if class_rid and chunk["class_rid"] != class_rid:
+                continue
+            vec = chunk["embedding"]
+            norm = math.sqrt(sum(x * x for x in vec)) or 1.0
+            score = sum(x * y for x, y in zip(qvec, vec, strict=True)) / (qnorm * norm)
+            if score <= 0.0:
+                continue
+            class_of[chunk["individual_rid"]] = chunk["class_rid"]
+            per_individual.setdefault(chunk["individual_rid"], []).append({
+                "property_rid": chunk["property_rid"],
+                "value_text": chunk["value_text"],
+                "score": score,
+            })
+        cards: list[dict[str, Any]] = []
+        for rid_key, matched in per_individual.items():
+            matched.sort(key=lambda m: m["score"], reverse=True)
+            top = matched[0]
+            card_text = f"{rid_key}:\n- {top['value_text']}"
+            cards.append({
+                "individual_rid": rid_key,
+                "class_rid": class_of[rid_key],
+                "score": top["score"],
+                "matched": matched[:3],
+                "card_text": card_text,
+            })
+        cards.sort(key=lambda c: c["score"], reverse=True)
+        return cards[:top_k]
 
     def get_individual(self, rid: str) -> Individual:
         return self._individuals[rid]
