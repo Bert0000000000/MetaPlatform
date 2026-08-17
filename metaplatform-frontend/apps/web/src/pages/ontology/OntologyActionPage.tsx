@@ -9,6 +9,7 @@ import {
   X, Minimize2, Settings, Cpu, Database, ShieldCheck, Sliders, FileText,
   Code2, Clock, Hash, Activity, Boxes, Workflow, BookOpen, Layers,
   MousePointerSquareDashed, Grid3x3,
+  PlayCircle, Square,
 } from 'lucide-react';
 import {
   FreeLayoutEditorProvider,
@@ -63,6 +64,8 @@ const NODE_PROPS: Record<string, Record<string, unknown>> = {
 // 节点颜色（按 type 区分）
 function colorOf(type: string): { border: string; bg: string; text: string; label: string } {
   switch (type) {
+    case 'start': return { border: '#22c55e', bg: 'rgba(34,197,94,0.12)', text: '#22c55e', label: '开始' };
+    case 'end':   return { border: '#94a3b8', bg: 'rgba(148,163,184,0.15)', text: '#94a3b8', label: '结束' };
     case 'input': return { border: '#60a5fa', bg: 'rgba(96,165,250,0.12)', text: '#60a5fa', label: '输入' };
     case 'output': return { border: '#60a5fa', bg: 'rgba(96,165,250,0.12)', text: '#60a5fa', label: '输出' };
     case 'llm': return { border: '#a78bfa', bg: 'rgba(167,139,250,0.12)', text: '#a78bfa', label: 'LLM' };
@@ -87,6 +90,10 @@ const NODE_DATA: Record<string, { title: string; desc: string }> = {
 // 节点库（拖拽源）—— 业务实例：审批流 / 业务流 / AI 协同流程
 // 按 https://flowgram.ai/materials/cli.html 官方物料 + 业务自定义
 const NODE_LIBRARY: { type: string; title: string; desc: string; icon: typeof ArrowDownToLine; category: string; scenario: string }[] = [
+  // ============ BPMN 起止节点（每个流程必须存在：start 只有 output 端口，end 只有 input 端口） ============
+  { type: 'flow-start',     title: '开始',         desc: '流程起点（每个流程 1 个）',       icon: PlayCircle,     category: 'BPMN',  scenario: '业务流' },
+  { type: 'flow-end',       title: '结束',         desc: '流程终点（可多个：多分支汇聚）', icon: Square,         category: 'BPMN',  scenario: '业务流' },
+
   // ============ 数据 / 业务节点 ============
   { type: 'flow-input',     title: '数据输入',     desc: '接收 HTTP / 消息 / 文件',      icon: ArrowDownToLine, category: '数据源',  scenario: '业务流' },
   { type: 'flow-tool',      title: 'MCP 工具',     desc: '调用 MCP 工具 / 外部 API',     icon: Plug,           category: '数据源',  scenario: '业务流' },
@@ -191,21 +198,25 @@ const NODE_DETAIL_PROPS: NodeConfig = {
 // 内置 demo 流程定义（未持久化时兜底展示）
 const DEFAULT_FLOW: WorkflowJSON = {
   nodes: [
-    { id: 'input', type: 'flow-input', meta: { position: { x: 60, y: 60 } }, data: { originalType: 'flow-input', title: '接收数据输入', desc: '接收原始客户数据（JSON / CSV）' } },
-    { id: 'llm-extract', type: 'flow-llm', meta: { position: { x: 60, y: 220 } }, data: { originalType: 'flow-llm', title: 'LLM: 实体抽取', desc: '从客户数据中抽取实体信息' } },
-    { id: 'condition', type: 'flow-condition', meta: { position: { x: 60, y: 380 } }, data: { originalType: 'flow-condition', title: '数据完整?', desc: '检查必填字段是否齐全' } },
-    { id: 'loop-complete', type: 'flow-loop', meta: { position: { x: -200, y: 540 } }, data: { originalType: 'flow-loop', title: '工具: 数据补全', desc: '调用 MCP Tool 补全缺失字段' } },
-    { id: 'tool-ontology', type: 'flow-tool', meta: { position: { x: 340, y: 540 } }, data: { originalType: 'flow-tool', title: '工具: 本体匹配', desc: '将抽取实体与本体概念进行语义匹配' } },
-    { id: 'llm-relation', type: 'flow-llm', meta: { position: { x: 340, y: 700 } }, data: { originalType: 'flow-llm', title: 'LLM: 关系推理', desc: '推理实体间关系并生成三元组' } },
-    { id: 'output', type: 'flow-output', meta: { position: { x: 340, y: 860 } }, data: { originalType: 'flow-output', title: '知识图谱更新', desc: '将推理结果写入知识图谱 Neo4j' } },
+    { id: 'start',   type: 'flow-start',     meta: { position: { x: 60,  y: 60  } }, data: { originalType: 'flow-start',   title: '开始',     desc: '流程起点' } },
+    { id: 'input',   type: 'flow-input',     meta: { position: { x: 60,  y: 220 } }, data: { originalType: 'flow-input',   title: '接收数据输入', desc: '接收原始客户数据（JSON / CSV）' } },
+    { id: 'llm-extract', type: 'flow-llm',   meta: { position: { x: 60,  y: 380 } }, data: { originalType: 'flow-llm',     title: 'LLM: 实体抽取', desc: '从客户数据中抽取实体信息' } },
+    { id: 'condition', type: 'flow-condition',meta: { position: { x: 60,  y: 540 } }, data: { originalType: 'flow-condition',title: '数据完整?', desc: '检查必填字段是否齐全' } },
+    { id: 'loop-complete', type: 'flow-loop', meta: { position: { x: -200, y: 700 } }, data: { originalType: 'flow-loop',    title: '工具: 数据补全', desc: '调用 MCP Tool 补全缺失字段' } },
+    { id: 'tool-ontology', type: 'flow-tool', meta: { position: { x: 340, y: 700 } }, data: { originalType: 'flow-tool',    title: '工具: 本体匹配', desc: '将抽取实体与本体概念进行语义匹配' } },
+    { id: 'llm-relation', type: 'flow-llm',   meta: { position: { x: 340, y: 860 } }, data: { originalType: 'flow-llm',     title: 'LLM: 关系推理', desc: '推理实体间关系并生成三元组' } },
+    { id: 'output', type: 'flow-output', meta: { position: { x: 340, y: 1020 } }, data: { originalType: 'flow-output', title: '知识图谱更新', desc: '将推理结果写入知识图谱 Neo4j' } },
+    { id: 'end',     type: 'flow-end',       meta: { position: { x: 340, y: 1180 } }, data: { originalType: 'flow-end',     title: '结束',     desc: '流程终点' } },
   ],
   edges: [
-    { sourceNodeID: 'input', targetNodeID: 'llm-extract' },
+    { sourceNodeID: 'start',   targetNodeID: 'input' },
+    { sourceNodeID: 'input',   targetNodeID: 'llm-extract' },
     { sourceNodeID: 'llm-extract', targetNodeID: 'condition' },
     { sourceNodeID: 'condition', targetNodeID: 'tool-ontology' },
     { sourceNodeID: 'condition', targetNodeID: 'loop-complete' },
     { sourceNodeID: 'tool-ontology', targetNodeID: 'llm-relation' },
     { sourceNodeID: 'llm-relation', targetNodeID: 'output' },
+    { sourceNodeID: 'output',         targetNodeID: 'end' },
     { sourceNodeID: 'loop-complete', targetNodeID: 'llm-extract' },
   ],
 };
@@ -675,6 +686,9 @@ const FlowPaletteContext = React.createContext<FlowPalette | null>(null);
 // 暴露当前 ctx.document 给父组件（用于左侧节点库触发 addNode）
 const DocumentContext = React.createContext<{ addNode: (type: string, x: number, y: number) => void } | null>(null);
 
+// 共享的画布 document ref（fixed/free 两编辑器共持一份，drag-drop 与复制/删除共用）
+const _sharedDocRef: { current: unknown } = { current: null };
+
 // 节点库分组（按业务域划分）
 // 数据：input/output, 工具：tool/loop, AI：llm, 逻辑：condition
 // 三类业务场景：审批流 / 业务流 / AI 协同流程
@@ -1083,6 +1097,7 @@ function FullscreenFlowEditor({
           materials={{ components: {}, renderDefaultNode: FullscreenBaseNodeWithSelect }}
           playground={{ preventGlobalGesture: true }}
           onAllLayersRendered={(ctx) => {
+            _sharedDocRef.current = ctx.document;
             onDocumentReady?.(ctx.document);
             try { (ctx.playground as { zoom?: number }).zoom = 1; } catch { /* ignore */ }
             ctx.tools.fitView(false);
@@ -1091,7 +1106,38 @@ function FullscreenFlowEditor({
           <div style={{ display: 'flex', width: '100%', height: '100%' }}>
             {/* leftSlot 必须在 Provider 内（依赖 useService/usePlayground） */}
             {leftSlot}
-            <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+            <div
+              data-flowgram-dropzone
+              style={{ flex: 1, minWidth: 0, position: 'relative' }}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes('application/flowgram-node')) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'copy';
+                }
+              }}
+              onDrop={(e) => {
+                const raw = e.dataTransfer.getData('application/flowgram-node');
+                if (!raw) return;
+                e.preventDefault();
+                const doc = _sharedDocRef.current as null | { createWorkflowNodeByType: Function };
+                if (!doc) return;
+                const layer = (e.currentTarget.querySelector('.gedit-playground-layer') as HTMLElement | null);
+                const rect = layer?.getBoundingClientRect();
+                const transform = layer?.style?.transform || '';
+                const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
+                const transMatch = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+                const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+                const tx = transMatch ? parseFloat(transMatch[1]) : 0;
+                const ty = transMatch ? parseFloat(transMatch[2]) : 0;
+                const cx = ((e.clientX - (rect?.left || 0)) - tx) / scale;
+                const cy = ((e.clientY - (rect?.top || 0)) - ty) / scale;
+                const id = `${raw.replace('flow-', '')}_${Date.now().toString(36)}`;
+                doc.createWorkflowNodeByType(raw, { x: cx - 110, y: cy - 40 }, {
+                  id, type: raw,
+                  data: { originalType: raw, title: raw, desc: '从节点库拖入' },
+                });
+              }}
+            >
               <EditorRenderer style={{ width: '100%', height: '100%' }} />
               {/* 缩放/适应/自动布局 —— 画布顶部悬浮 */}
               <div ref={(el) => setFlowgramSlot('zoomSlot', el)} style={{ position: 'absolute', top: 12, left: 0, right: 0, pointerEvents: 'none', display: 'flex', justifyContent: 'center', zIndex: 50 }}></div>
@@ -1699,9 +1745,11 @@ export default function OntologyActionPage() {
     }
   };
 
-  // 节点注册：6 个不同类型（input / llm / condition / loop / tool / output）
-  // 渲染通过 FreeLayoutEditorProvider 的 materials.renderDefaultNode = CustomBaseNode
+  // 节点注册：start/end/其他 6 种类型（渲染通过 FreeLayoutEditorProvider 的 materials.renderDefaultNode = CustomBaseNode）
+  // start 只有 output 端口（流程起点），end 只有 input 端口（流程终点）—— BPMN 起止语义
   const nodeRegistries: WorkflowNodeRegistry[] = [
+    { type: 'flow-start',     meta: { size: { width: 180, height: 64 }, defaultPorts: [{ type: 'output' }] } },
+    { type: 'flow-end',       meta: { size: { width: 180, height: 64 }, defaultPorts: [{ type: 'input'  }] } },
     { type: 'flow-input',     meta: { size: { width: 220, height: 80 }, defaultPorts: [{ type: 'output' }] } },
     { type: 'flow-llm',       meta: { size: { width: 220, height: 80 } } },
     { type: 'flow-condition', meta: { size: { width: 200, height: 80 } } },
