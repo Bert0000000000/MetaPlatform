@@ -125,8 +125,12 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._interfaces[i.rid] = i
         return i
 
-    def list_object_types(self, limit: int, offset: int) -> list[ObjectType]:
+    def list_object_types(
+        self, limit: int, offset: int, tenant_id: str | None = None,
+    ) -> list[ObjectType]:
         items = list(self._object_types.values())
+        if tenant_id:
+            items = [t for t in items if str(t.rid).split(".")[1] == tenant_id]
         return items[offset : offset + limit]
 
     def list_link_types(self) -> list[LinkType]:
