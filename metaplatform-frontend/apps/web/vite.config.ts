@@ -22,7 +22,15 @@ export default defineConfig({
     port: 9200,
     proxy: {
       // v3.2: all routes proxy to unified backend on BACKEND_PORT (default 8100)
-      '/api/v1': { target: proxyTarget(BACKEND_PORT), changeOrigin: true },
+      '/api/v1': { target: proxyTarget(BACKEND_PORT), changeOrigin: true,
+        // MP-SAL: 透传浏览器 Authorization/X-Tenant-Id 头（默认 vite 不转，否则 401）
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
+            if (req.headers['x-tenant-id']) proxyReq.setHeader('X-Tenant-Id', req.headers['x-tenant-id']);
+          });
+        },
+      },
     },
   },
   optimizeDeps: {
