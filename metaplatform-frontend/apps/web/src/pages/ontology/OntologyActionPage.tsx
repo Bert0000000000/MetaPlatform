@@ -1268,6 +1268,12 @@ function NodeLibrary({
       width: 240, flexShrink: 0, background: palette.modalPanel,
       borderRight: `1px solid ${palette.modalBorder}`,
       display: 'flex', flexDirection: 'column',
+      // MP-SAL：节点库是 flow-lines-container 的同级子元素，但 svg absolute
+      // 浮在 zIndex 2000+。flow-lines 在 EditorRoot 下创建了新的 stacking context，
+      // 普通 zIndex 没用。最稳：节点库从 EditorRoot 拖出，自己一个层。
+      // (正方案：改 FreeLayoutEditorProvider 的 root zIndex，但 risk 高)
+      // 临时：position fixed 拉出来，避免被 flow-lines svg 拦截
+      position: 'relative', zIndex: 9999,
     }}>
       <div style={{ padding: '14px 16px', borderBottom: `1px solid ${palette.modalBorder}`, background: palette.panelHeader }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: palette.panelText, fontSize: 13, fontWeight: 600 }}>
@@ -1347,9 +1353,13 @@ function NodeLibrary({
 
 // 自由布局节点库：使用 free-layout 官方 API 添加节点
 function FreeNodeLibrary({ palette }: { palette: FlowPalette }) {
-  const document = React.useContext(WorkflowDocumentContext);
+  const documentCtx = React.useContext(WorkflowDocumentContext);
+  const documentRef = React.useRef<any>(documentCtx);
+  React.useEffect(() => { documentRef.current = documentCtx; }, [documentCtx]);
   const playground = usePlayground();
   const addNode = React.useCallback((item: typeof NODE_LIBRARY[number]) => {
+    const document = documentRef.current;
+    if (!document) { console.warn('[MP-SAL] document not ready; click ignored'); return; }
     const el = (playground as unknown as { el?: HTMLElement; container?: HTMLElement }).el
       || (playground as unknown as { container?: HTMLElement }).container;
     const rect = el?.getBoundingClientRect();
@@ -1364,21 +1374,25 @@ function FreeNodeLibrary({ palette }: { palette: FlowPalette }) {
     const cy = ((rect?.height || 0) / 2 - ty) / scale;
     const id = `${item.type.replace('flow-', '')}_${Date.now().toString(36)}`;
     document.createWorkflowNodeByType(item.type, { x: cx - 110, y: cy - 40 }, { id, type: item.type, data: { originalType: item.type, title: item.title, desc: item.desc } });
-  }, [document, playground]);
+  }, [playground]);
   return <NodeLibrary palette={palette} addNode={addNode} />;
 }
 
 // 固定布局节点库：使用 fixed-layout 官方 document.addNode 添加节点
 function FixedNodeLibrary({ palette }: { palette: FlowPalette }) {
   const ctx = useClientContext();
+  const ctxRef = React.useRef(ctx);
+  React.useEffect(() => { ctxRef.current = ctx; }, [ctx]);
   const addNode = React.useCallback((item: typeof NODE_LIBRARY[number]) => {
+    const c = ctxRef.current;
+    if (!c) return;
     const id = `${item.type.replace('flow-', '')}_${Date.now().toString(36)}`;
-    (ctx.document as unknown as { addNode?: (n: unknown) => void }).addNode?.({
+    (c.document as unknown as { addNode?: (n: unknown) => void }).addNode?.({
       id,
       type: 'custom',
       data: { originalType: item.type, title: item.title, desc: item.desc },
     });
-  }, [ctx]);
+  }, []);
   return <NodeLibrary palette={palette} addNode={addNode} />;
 }
 
