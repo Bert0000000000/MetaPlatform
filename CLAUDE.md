@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-17（**MP-COMP-01 收口（cordis 范式自建组合内核）** — ADR-0042 引原理不引组件：`mate_platform/composition` 内核 674 行零依赖（revertible effects + reactive coeffects + 惰性 fiber），四条形式化不变量 I1-I4 共 19 tests 绿；orchestrator 能力反应式试点（capability fiber + dispatch overlay + lifespan，裸 TestClient 回退逐字节一致），9 试点 tests；board §6.5 + `evidence/MP-COMP-01-ACCEPTANCE.md`）；上一版 2026-08-10（GOVERN-10 收口）
+> **最近更新**：2026-08-17（**MP-COMP-01 + ADR-0043 战略升格** — `mate_platform/composition` 内核 674 行零依赖（revertible effects + reactive coeffects + 惰性 fiber），四条形式化不变量 I1-I4 共 19 tests 绿；orchestrator 能力反应式试点（capability fiber + dispatch overlay + lifespan，裸 TestClient 回退逐字节一致），9 试点 tests；ADR-0043 把内核升格为平台集成层 OS，下设四大面向 Batch 占位：MP-EMP-EVOLVE-01 / MP-MKT-INSTALL-01 / MP-ACTION-CONFIRM-01 / MP-INTEGRATION-HUB-01；board §6.5 + §6.6 + `evidence/MP-COMP-01-ACCEPTANCE.md`）；上一版 2026-08-10（GOVERN-10 收口）
 >
 > **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** Ontology / 数字员工 / SuperAI 子计划 20/20 Batch Accepted；**v4** RUNTIME 路线 5/5 Batch Accepted
 >
@@ -209,6 +209,7 @@ AGENT-ORCH-01    ┘         RAG-ONT-01         ┘         AGENT-EXT-01
 - ADR-0040（沙箱架构）：`docs/active/decisions/ADR-0040-sandbox-architecture.md`
 - ADR-0041（Session Sandbox）：`docs/active/decisions/ADR-0041-session-sandbox.md`
 - ADR-0042（组合内核 · cordis 范式自建，MP-COMP-01）：`docs/active/decisions/ADR-0042-composition-kernel.md`（内核 `mate_platform/composition`，orchestrator 能力反应式试点）
+- ADR-0043（all-in-one 集成核心 · cordis 范式升格）：`docs/active/decisions/ADR-0043-all-in-one-integration-core.md`（四大面向：数字员工自进化 / Marketplace 第三方 / AI proposal 回滚 / 跨服务能力拓扑）
 - 决策纪要：`docs/active/decisions/PENDING-DECISIONS.md`
 - 评审记录：`docs/active/decisions/ADR-REVIEW-2026-08-06.md`
 - 任务板：`docs/active/delivery/V31-ONTOLOGY-BOARD.md`

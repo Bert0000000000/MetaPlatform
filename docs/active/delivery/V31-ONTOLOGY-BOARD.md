@@ -146,6 +146,19 @@ SANDBOX-01 → SANDBOX-02
 
 **关键增量**：能力可用性 = coeffect（`capability:{tenant}:{name}`）；工具下线 → 依赖角色 fiber 反应式失活（效果全部逆回收）→ 回归自动复激活；裸 TestClient（无 lifespan）回退与旧行为逐字节一致。19 内核 tests + 9 试点 tests；pyright-strict / ruff 干净；mate-platform 287 全量回归零影响。
 
+## 6.6 v3.1 增补：all-in-one 集成核心（2026-08-17 战略升格）
+
+> ADR-0043：把 composition kernel 从 orchestrator 单点升格为平台集成层可组合 OS。下设四大面向，每个面向按 v3.1 Batch 节奏独立收口。
+
+| Batch | 面向 | 范围 | 状态 | 证据 |
+|---|---|---|---|---|
+| `MP-EMP-EVOLVE-01` | A · 数字员工自进化（§1.2.2） | 7+N 类员工 session 内热挂载技能/子 agent；kernel `AgentRole` 不动，复用 CapabilityRuntime | 🟡 占位 | — |
+| `MP-MKT-INSTALL-01` | B · Marketplace 第三方订阅（§6.3） | install/uninstall 走 composition 通道，capability 清单进 use() 校验；intercept/policy 先定义 dataclass 不做运行时拦截 | 🟡 占位 | — |
+| `MP-ACTION-CONFIRM-01` | C · AI proposal 回滚（§6.1） | 对位 ADR-0044：propose/confirm/withdraw/reject 升级为可逆 effect + OTel 事件；I1 ≃ 等价判定 | 🟡 占位 | — |
+| `MP-INTEGRATION-HUB-01` | D · 跨服务能力拓扑（§3.2 + §6.2 broker） | platform-level Context 总线；Phase 1 选「MCP center dynamic registry + Marketplace install service + A2A center AgentCapability」3 个高 ROI 候选做 fiber 试点 | 🟡 占位 | — |
+
+**关键边界**：每个面向的内核 API 只增不改（composition kernel `mate_platform/composition/` 不动实现，只扩展使用面）；每个 Batch 独立 ACCEPTANCE.md + I1-I4 不变量测试。
+
 ## 7. 关联文档
 
 - 蓝图：`docs/active/specs/2026-08-06-ontology-kernel-blueprint.md` v0.4
