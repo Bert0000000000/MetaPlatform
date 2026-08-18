@@ -16,7 +16,6 @@ import {
   EditorRenderer,
   useNodeRender,
   usePlaygroundTools,
-  useService,
   usePlayground,
   WorkflowDocument,
   type WorkflowJSON,
@@ -250,6 +249,8 @@ function FlowFullscreenEditor({
     JSON.parse(JSON.stringify(initialConfig)),
   );
   // 画布 document 引用（由 EditorRenderer 的 onAllLayersRendered 回填；用于增删节点）
+  // 用 React state 触发 WorkflowDocumentContext 重渲（ref 不会自动 re-render）
+  const [doc, setDoc] = useState<any>(null);
   const docRef = React.useRef<any>(null);
 
   // 主题取反色配置：UI 黑 → 图内元素 = 浅边框 + 黑色背景 + 浅色文字
@@ -577,7 +578,7 @@ function FlowFullscreenEditor({
               initialData={initialData}
               palette={palette}
               onSelectNode={setActiveNodeId}
-              onDocumentReady={(doc) => { docRef.current = doc; }}
+              onDocumentReady={(doc) => { docRef.current = doc; setDoc(doc); }}
               leftSlot={<FixedNodeLibrary palette={palette} />}
             />
           ) : (
@@ -587,7 +588,7 @@ function FlowFullscreenEditor({
               CustomNode={CustomNode}
               palette={palette}
               onSelectNode={setActiveNodeId}
-              onDocumentReady={(doc) => { docRef.current = doc; }}
+              onDocumentReady={(doc) => { docRef.current = doc; setDoc(doc); }}
               leftSlot={<FreeNodeLibrary palette={palette} />}
             />
           )}
@@ -685,20 +686,21 @@ const FlowPaletteContext = React.createContext<FlowPalette | null>(null);
 
 // 暴露当前 ctx.document 给父组件（用于左侧节点库触发 addNode）
 const DocumentContext = React.createContext<{ addNode: (type: string, x: number, y: number) => void } | null>(null);
-
-// 共享的画布 document ref（fixed/free 两编辑器共持一份，drag-drop 与复制/删除共用）
-const _sharedDocRef: { current: unknown } = { current: null };
-
 // 节点库分组（按业务域划分）
 // 数据：input/output, 工具：tool/loop, AI：llm, 逻辑：condition
 // 三类业务场景：审批流 / 业务流 / AI 协同流程
 
+// MP-SAL：把 WorkflowDocument 从父层传下来 —— useService 拿不到（DI 容器没注册
+// WorkflowDocument 这个 token），改为 React Context 注入，onDocumentReady 触发 setDoc
+// 触发 Provider 重渲。
+const WorkflowDocumentContext = React.createContext<any>(null);
+
 // 节点面板渲染器：MP-SAL 修复 —— free-node-panel 插件的 WorkflowNodePanelService
 // 内部 this.document 未注入（Layer onReady 绑定丢失），onSelect 走它会无效。
-// 这里直接 useService(WorkflowDocument) 拿 document，自己 addNode 后关面板。
+// 这里直接从父 WorkflowDocumentContext 取 document（useService 拿不到 —— DI 容器没注册它）。
 function MyNodePanelRenderer(props: NodePanelRenderProps & { palette: FlowPalette }) {
   const { onSelect, onClose, palette } = props;
-  const document = useService(WorkflowDocument);
+  const document = React.useContext(WorkflowDocumentContext);
   return (
     <div
       onClick={(e) => e.stopPropagation()}
@@ -952,6 +954,8 @@ function FixedLayoutEditor({
   onDocumentReady?: (doc: unknown) => void;
   leftSlot?: React.ReactNode;
 }) {
+  const [doc, setDoc] = React.useState<any>(null);
+  const docRef = React.useRef<any>(null);
   // activeNodeId 用于让 FixedBaseNode 知道哪个被选中（高亮发光）
   const [activeId, setActiveId] = React.useState<string | null>(null);
   // 合并 onSelectNode：点击节点时同时更新 activeId
@@ -984,6 +988,7 @@ function FixedLayoutEditor({
                   components: defaultFixedSemiMaterials,
                 }}
                 onAllLayersRendered={(ctx) => {
+                  docRef.current = ctx.document; setDoc(ctx.document);
                   onDocumentReady?.(ctx.document);
                   setTimeout(() => {
                     try {
@@ -1078,6 +1083,8 @@ function FullscreenFlowEditor({
   onDocumentReady?: (doc: unknown) => void;
   leftSlot?: React.ReactNode;
 }) {
+  const [doc, setDoc] = useState<any>(null);
+  const docRef = React.useRef<any>(null);
   // 官方插件组合（按 demo-free-layout 顺序）
   const plugins = React.useMemo(() => () => [
     createFreeNodePanelPlugin({
@@ -1094,6 +1101,7 @@ function FullscreenFlowEditor({
   ], [palette]);
 
   return (
+    <WorkflowDocumentContext.Provider value={doc}>
     <FlowPaletteContext.Provider value={palette}>
       <SelectionContext.Provider value={onSelectNode}>
         <FreeLayoutEditorProvider
@@ -1114,7 +1122,7 @@ function FullscreenFlowEditor({
           materials={{ components: {}, renderDefaultNode: FullscreenBaseNodeWithSelect }}
           playground={{ preventGlobalGesture: true }}
           onAllLayersRendered={(ctx) => {
-            _sharedDocRef.current = ctx.document;
+            docRef.current = ctx.document; setDoc(ctx.document);
             onDocumentReady?.(ctx.document);
             try { (ctx.playground as { zoom?: number }).zoom = 1; } catch { /* ignore */ }
             ctx.tools.fitView(false);
@@ -1136,7 +1144,7 @@ function FullscreenFlowEditor({
                 const raw = e.dataTransfer.getData('application/flowgram-node');
                 if (!raw) return;
                 e.preventDefault();
-                const doc = _sharedDocRef.current as null | { createWorkflowNodeByType: Function };
+                const doc = docRef.current as null | { createWorkflowNodeByType: Function };
                 if (!doc) return;
                 const layer = (e.currentTarget.querySelector('.gedit-playground-layer') as HTMLElement | null);
                 const rect = layer?.getBoundingClientRect();
@@ -1164,6 +1172,7 @@ function FullscreenFlowEditor({
         </FreeLayoutEditorProvider>
       </SelectionContext.Provider>
     </FlowPaletteContext.Provider>
+    </WorkflowDocumentContext.Provider>
   );
 }
 
@@ -1202,7 +1211,7 @@ function UndoRedoInner() {
 
 // 实时节点/连线计数（用 WorkflowDocument.toJSON）
 function FlowCounterInner() {
-  const document = useService(WorkflowDocument);
+  const document = React.useContext(WorkflowDocumentContext);
   const palette = React.useContext(FlowPaletteContext);
   const [counterSlot, setCounterSlot] = React.useState<HTMLElement | null>(null);
   const [, force] = React.useReducer((x) => x + 1, 0);
@@ -1338,7 +1347,7 @@ function NodeLibrary({
 
 // 自由布局节点库：使用 free-layout 官方 API 添加节点
 function FreeNodeLibrary({ palette }: { palette: FlowPalette }) {
-  const document = useService(WorkflowDocument);
+  const document = React.useContext(WorkflowDocumentContext);
   const playground = usePlayground();
   const addNode = React.useCallback((item: typeof NODE_LIBRARY[number]) => {
     const el = (playground as unknown as { el?: HTMLElement; container?: HTMLElement }).el
