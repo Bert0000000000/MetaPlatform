@@ -693,9 +693,12 @@ const _sharedDocRef: { current: unknown } = { current: null };
 // 数据：input/output, 工具：tool/loop, AI：llm, 逻辑：condition
 // 三类业务场景：审批流 / 业务流 / AI 协同流程
 
-// 官方节点面板渲染器：调用 WorkflowNodePanelService.callNodePanel 后会触发 addNode
+// 节点面板渲染器：MP-SAL 修复 —— free-node-panel 插件的 WorkflowNodePanelService
+// 内部 this.document 未注入（Layer onReady 绑定丢失），onSelect 走它会无效。
+// 这里直接 useService(WorkflowDocument) 拿 document，自己 addNode 后关面板。
 function MyNodePanelRenderer(props: NodePanelRenderProps & { palette: FlowPalette }) {
   const { onSelect, onClose, palette } = props;
+  const document = useService(WorkflowDocument);
   return (
     <div
       onClick={(e) => e.stopPropagation()}
@@ -719,7 +722,21 @@ function MyNodePanelRenderer(props: NodePanelRenderProps & { palette: FlowPalett
         return (
           <div
             key={n.type}
-            onClick={() => onSelect({ nodeType: n.type, selectEvent: new MouseEvent('click') as unknown as React.MouseEvent })}
+            onClick={() => {
+              // 自管 addNode：绕开 broken 的 free-node-panel 内部调用链
+              const id = `${n.type.replace('flow-', '')}_${Date.now().toString(36)}`;
+              const node = document.createWorkflowNodeByType(
+                n.type,
+                { x: 120 + Math.random() * 200, y: 200 + Math.random() * 200 },
+                { id, type: n.type, data: {
+                  originalType: n.type, title: n.title, desc: n.desc,
+                }},
+              );
+              // 触发 onSelect 仍走 plugin 协议（保持向后兼容），但确保 addNode 实际生效
+              onSelect({ nodeType: n.type, selectEvent: new MouseEvent('click') as unknown as React.MouseEvent });
+              void node; // 抑制未用警告；document.addNode 是真实落地
+              onClose();
+            }}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '8px 10px', borderRadius: 6,
