@@ -1283,7 +1283,9 @@ function NodeLibrary({
         <div style={{ fontSize: 11, color: palette.panelTextMuted, marginTop: 4 }}>点击或拖拽节点到画布</div>
       </div>
       <div style={{ flex: 1, padding: 12, overflow: 'auto' }}>
-        {(['业务流', '审批流', 'AI 协同'] as const).map((scenario) => {
+        {/* scenario 名需与 NODE_LIBRARY 实际数据一致：'业务流' / '审批流' / 'AI'。
+            之前的 'AI 协同' 字面量与 scenario: 'AI' 不匹配，导致 AI 分组整段 return null 静默丢失。 */}
+        {(['业务流', '审批流', 'AI'] as const).map((scenario) => {
           // 按 scenario 分组，每个 scenario 内的子分类（数据源/逻辑/AI/审批）合并展示
           const items = NODE_LIBRARY.filter((n) => n.scenario === scenario);
           if (items.length === 0) return null;
