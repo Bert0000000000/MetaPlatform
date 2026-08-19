@@ -24,7 +24,7 @@ ROLES = [
 
 
 def _drop_reasoning(events: list[dict]) -> list[dict]:
-    return [e for e in events if e.get("type") != "reasoning"]
+    return [e for e in events if e.get("type") not in ("reasoning", "routing_decision")]
 
 
 class FakeLlm:
@@ -139,7 +139,10 @@ async def test_loop_dispatch_then_final() -> None:
         )
     ])
     types = [e["type"] for e in events]
-    assert types[0] == "reasoning" and events[0]["text"]
+    assert types[0] == "routing_decision"
+    # first reasoning event has the placeholder text
+    reasoning_events = [e for e in events if e["type"] == "reasoning"]
+    assert reasoning_events and reasoning_events[0]["text"]
     dropped = _drop_reasoning(events)
     assert [e["type"] for e in dropped] == ["tool_call", "tool_result", "final"]
 
@@ -405,7 +408,7 @@ async def test_loop_plain_text_no_dispatch() -> None:
             tenant_id="tenant-acme",
         )
     ])
-    assert [e["type"] for e in events] == ["reasoning", "final"]
+    assert [e["type"] for e in events] == ["routing_decision", "reasoning", "final"]
     assert events[-1]["content"] == "好的，还有什么可以帮你？"
     assert orch.calls == []
 
@@ -456,7 +459,7 @@ async def test_loop_dispatch_error_reported() -> None:
             tenant_id="tenant-acme",
         )
     ])
-    tr = events[2]
+    tr = next(e for e in events if e["type"] == "tool_result")
     assert tr["status"] == "error"
     assert "role not registered" in tr["result"]["error"]
 
