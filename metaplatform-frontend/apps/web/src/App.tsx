@@ -18,7 +18,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 // 閹虫帒濮炴潪钘夋倗濡€虫健妞ょ敻娼?
 
 const SuperaiOverviewPage = lazy(() => import('./pages/superai/ChatPage'));
-const SuperaiChatPage = lazy(() => import('./pages/superai/ChatPage'));
+const SuperaiChatPage = lazy(() => import('./pages/superai/SuperAIChatPage'));
 const SuperaiA2ACollaborationPage = lazy(() => import('./pages/superai/A2ACollaborationPage'));
 const SuperaiAgentCopilotPage = lazy(() => import('./pages/superai/AgentCopilotPage'));
 const SuperaiCostOptimizationPage = lazy(() => import('./pages/superai/CostOptimizationPage'));
