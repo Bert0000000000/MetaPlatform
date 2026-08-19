@@ -1146,6 +1146,8 @@ function FullscreenFlowEditor({
     createFreeHoverPlugin({}),
   ], [palette]);
 
+  // 拿 client context 用来在 dropzone onDrop 里访问 linesManager（v1.6：自动建连线）
+  const ctx = useClientContext();
   return (
     <WorkflowDocumentContext.Provider value={doc}>
     <FlowPaletteContext.Provider value={palette}>
@@ -1177,48 +1179,105 @@ function FullscreenFlowEditor({
           <div style={{ display: 'flex', width: '100%', height: '100%' }}>
             {/* leftSlot 必须在 Provider 内（依赖 useService/usePlayground） */}
             {leftSlot}
-            <div
-              data-flowgram-dropzone
-              style={{ flex: 1, minWidth: 0, position: 'relative' }}
-              onDragOver={(e) => {
-                if (e.dataTransfer.types.includes('application/flowgram-node')) {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'copy';
-                }
-              }}
-              onDrop={(e) => {
-                const raw = e.dataTransfer.getData('application/flowgram-node');
-                if (!raw) return;
-                e.preventDefault();
-                const doc = docRef.current as null | { createWorkflowNodeByType: Function };
-                if (!doc) return;
-                const layer = (e.currentTarget.querySelector('.gedit-playground-layer') as HTMLElement | null);
-                const rect = layer?.getBoundingClientRect();
-                const transform = layer?.style?.transform || '';
-                const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
-                const transMatch = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-                const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-                const tx = transMatch ? parseFloat(transMatch[1]) : 0;
-                const ty = transMatch ? parseFloat(transMatch[2]) : 0;
-                const cx = ((e.clientX - (rect?.left || 0)) - tx) / scale;
-                const cy = ((e.clientY - (rect?.top || 0)) - ty) / scale;
-                const id = `${raw.replace('flow-', '')}_${Date.now().toString(36)}`;
-                doc.createWorkflowNodeByType(raw, { x: cx - 110, y: cy - 40 }, {
-                  id, type: raw,
-                  data: { originalType: raw, title: raw, desc: '从节点库拖入' },
-                });
-              }}
-            >
-              <EditorRenderer style={{ width: '100%', height: '100%' }} />
-              {/* 缩放/适应/自动布局 —— 画布顶部悬浮 */}
-              <div ref={(el) => setFlowgramSlot('zoomSlot', el)} style={{ position: 'absolute', top: 12, left: 0, right: 0, pointerEvents: 'none', display: 'flex', justifyContent: 'center', zIndex: 50 }}></div>
-            </div>
+            <FreeLayoutDropZone
+              onDocumentReady={onDocumentReady}
+              onSelectNode={onSelectNode}
+              docRef={docRef}
+              setDoc={setDoc}
+            />
           </div>
           <FlowToolsWithProvider />
         </FreeLayoutEditorProvider>
       </SelectionContext.Provider>
     </FlowPaletteContext.Provider>
     </WorkflowDocumentContext.Provider>
+  );
+}
+
+// 内部组件：拿 useClientContext 后的 FreeLayoutEditor 子树（含 dropzone + onDrop）
+function FreeLayoutDropZone({
+  onDocumentReady,
+  onSelectNode,
+  docRef,
+  setDoc,
+}: {
+  onDocumentReady?: (doc: unknown) => void;
+  onSelectNode: (id: string) => void;
+  docRef: React.MutableRefObject<any>;
+  setDoc: React.Dispatch<React.SetStateAction<any>>;
+}) {
+  const ctx = useClientContext();
+  return (
+    <div
+      data-flowgram-dropzone
+      style={{ flex: 1, minWidth: 0, position: 'relative' }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('application/flowgram-node')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      }}
+      onDrop={(e) => {
+        const raw = e.dataTransfer.getData('application/flowgram-node');
+        if (!raw) return;
+        e.preventDefault();
+        const doc = docRef.current as null | { createWorkflowNodeByType: Function };
+        if (!doc) return;
+        const layer = (e.currentTarget.querySelector('.gedit-playground-layer') as HTMLElement | null);
+        const rect = layer?.getBoundingClientRect();
+        const transform = layer?.style?.transform || '';
+        const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
+        const transMatch = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+        const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+        const tx = transMatch ? parseFloat(transMatch[1]) : 0;
+        const ty = transMatch ? parseFloat(transMatch[2]) : 0;
+        const cx = ((e.clientX - (rect?.left || 0)) - tx) / scale;
+        const cy = ((e.clientY - (rect?.top || 0)) - ty) / scale;
+        const id = `${raw.replace('flow-', '')}_${Date.now().toString(36)}`;
+        // 默认 title/desc：flow-* → 短名 → NODE_DATA 兜底（v1.6：避免空 title 字段）
+        const shortType = raw.replace('flow-', '');
+        const nodeMeta = NODE_LIBRARY.find((n) => n.type === raw);
+        const defaults = (NODE_DATA as Record<string, { title: string; desc: string }>)[shortType];
+        const title = nodeMeta?.title || defaults?.title || raw;
+        const desc = nodeMeta?.desc || defaults?.desc || '从节点库拖入';
+        doc.createWorkflowNodeByType(raw, { x: cx - 110, y: cy - 40 }, {
+          id, type: raw,
+          data: { originalType: raw, title, desc },
+        });
+        // v1.6：port-to-port 自动连线
+        // 策略：连到「最后一个节点」（start 跳过连 + 第一个节点时连 start）
+        try {
+          const c = ctx as unknown as { document?: { linesManager?: { createLine?: (o: any) => void }; toJSON?: () => { nodes?: Array<{id:string}> } | null } } | null;
+          const linesManager = c?.document?.linesManager;
+          const docAll = doc as unknown as { toJSON?: () => { nodes?: Array<{id:string}> } | null } | null;
+          const json = docAll?.toJSON?.() || c?.document?.toJSON?.();
+          if (json && linesManager && typeof linesManager.createLine === 'function') {
+            const all = (json.nodes || []).map((n) => n.id);
+            const candidates = all.filter((nid) => nid !== id);
+            // 跳过 start 不主动建线（start 只有 output 端口）
+            if (raw === 'flow-start') {
+              // do nothing
+            } else if (candidates.length === 0) {
+              // 没有候选节点时尝试连 start（如有）
+              const start = (json.nodes || []).find((n: { id: string }) => n.id.includes('start'));
+              if (start) linesManager.createLine({ from: start.id, to: id });
+            } else {
+              // 默认连到最后一个节点（按 nodes 数组顺序）
+              const lastId = candidates[candidates.length - 1];
+              if (lastId && lastId !== id) {
+                linesManager.createLine({ from: lastId, to: id });
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[drop] auto-line failed:', err);
+        }
+      }}
+    >
+      <EditorRenderer style={{ width: '100%', height: '100%' }} />
+      {/* 缩放/适应/自动布局 —— 画布顶部悬浮 */}
+      <div ref={(el) => setFlowgramSlot('zoomSlot', el)} style={{ position: 'absolute', top: 12, left: 0, right: 0, pointerEvents: 'none', display: 'flex', justifyContent: 'center', zIndex: 50 }}></div>
+    </div>
   );
 }
 
