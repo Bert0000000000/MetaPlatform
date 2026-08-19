@@ -123,6 +123,75 @@ export async function createObjectType(payload: KernelObjectTypeCreate): Promise
   return resp.data as KernelObjectType;
 }
 
+// ── MP-DEDUP-01: 相似候选扫描 + 合并 ──
+
+/** precheck 入参：候选 (display_name, slug, domain)。 */
+export interface ObjectTypePrecheckRequest {
+  name: string;
+  slug: string;
+  domain?: string;
+  top_k?: number;
+}
+
+/** precheck 返回的单个候选。 */
+export interface ObjectTypeCandidate {
+  rid: string;
+  display_name: string;
+  slug: string;
+  similarity: number;
+  suggested_action: 'merge' | 'rename' | 'cancel' | string;
+}
+
+/** precheck 响应。 */
+export interface ObjectTypePrecheckResponse {
+  candidates: ObjectTypeCandidate[];
+}
+
+/**
+ * 创建前相似扫描（POST /object-types/precheck）。
+ * 后端走 embedder（或 slug 归一化兜底），不写库，仅返回候选列表。
+ */
+export async function precheckObjectTypes(payload: ObjectTypePrecheckRequest): Promise<ObjectTypePrecheckResponse> {
+  const resp = await apiClient.post(v2('/object-types/precheck'), payload);
+  const data = resp.data as { data?: ObjectTypePrecheckResponse } | ObjectTypePrecheckResponse;
+  if (data && typeof data === 'object' && 'data' in data && (data as { data?: ObjectTypePrecheckResponse }).data) {
+    return (data as { data: ObjectTypePrecheckResponse }).data;
+  }
+  return data as ObjectTypePrecheckResponse;
+}
+
+/** merge 入参：source / target rid + 可选 Property 映射。 */
+export interface MergeObjectTypeRequest {
+  source_rid: string;
+  target_rid: string;
+  /** source Property rid → target Property rid；缺省时后端按 slug 兜底。 */
+  mapping?: Record<string, string>;
+}
+
+/** merge 响应。 */
+export interface MergeObjectTypeResponse {
+  source_rid: string;
+  target_rid: string;
+  mapping: Record<string, string>;
+  affected_individuals: number;
+  affected_links: number;
+  source_archived: boolean;
+}
+
+/**
+ * 合并两个 ObjectType（POST /object-types/merge）。
+ * 后端会把 Individual.class_rid / rid / props 全部从 source 重映射到 target，
+ * 然后把 source 软删（archived=true）。
+ */
+export async function mergeObjectTypes(payload: MergeObjectTypeRequest): Promise<MergeObjectTypeResponse> {
+  const resp = await apiClient.post(v2('/object-types/merge'), payload);
+  const data = resp.data as { data?: MergeObjectTypeResponse } | MergeObjectTypeResponse;
+  if (data && typeof data === 'object' && 'data' in data && (data as { data?: MergeObjectTypeResponse }).data) {
+    return (data as { data: MergeObjectTypeResponse }).data;
+  }
+  return data as MergeObjectTypeResponse;
+}
+
 // ── MP-SAL-05: 流程编排定义持久化（FlowGram WorkflowJSON + 字段配置） ──
 
 export interface KernelActionFlow {
@@ -170,6 +239,136 @@ export function slugAndVersionOfObjectType(rid: string): { slug: string; version
   const m = last.match(/^v\d+$/);
   if (!m) return { slug: tail.join('.'), version: '' };
   return { slug: tail.slice(0, -1).join('.'), version: last };
+}
+
+// ── MP-ONT-PROPOSAL-01: AI Assistant 提案 staging preview / confirm / execute / reject ──
+
+/** ProposalKind：4 种后端支持的提案类型。 */
+export type ProposalKind =
+  | 'model_type'
+  | 'create_instance'
+  | 'merge_suggestion'
+  | 'action';
+
+/** 单个 Property 映射（merge_suggestion 用，source rid → target rid）。 */
+export interface PropertyMapping {
+  source_rid: string;
+  target_rid: string;
+}
+
+/** 影响摘要：受影响的 Individual / LinkInstance / 跨 schema 引用。 */
+export interface ImpactSummary {
+  affected_individuals: number;
+  affected_link_instances: number;
+  cross_schema_refs: string[];
+}
+
+/** model_type 提案预览的字段。 */
+export interface ModelTypePreview {
+  rid: string;
+  display_name: string;
+  primary_key: string[];
+  properties: KernelProperty[];
+  interfaces: string[];
+  domain?: string;
+  slug?: string;
+}
+
+/** create_instance 提案预览的字段。 */
+export interface CreateInstancePreview {
+  class_rid: string;
+  primary_key: string;
+  props: Record<string, unknown>;
+  validation_errors?: string[];
+}
+
+/** merge_suggestion 提案预览的字段。 */
+export interface MergeSuggestionPreview {
+  source_rid: string;
+  target_rid: string;
+  source_display_name?: string;
+  target_display_name?: string;
+  mapping: PropertyMapping[];
+  similarity?: number;
+}
+
+/** action 提案预览的字段。 */
+export interface ActionPreview {
+  action_rid: string;
+  target_objects: Array<{ rid: string; primary_key: string }>;
+  parameters: Record<string, unknown>;
+}
+
+/** Proposal 预览（GET /ont/v2/proposals/{id}/preview）。 */
+export interface ProposalPreview {
+  id: string;
+  kind: ProposalKind;
+  status?: 'pending' | 'confirmed' | 'rejected' | 'executed' | string;
+  title?: string;
+  summary?: string;
+  created_by?: string;
+  created_at?: string;
+  // 4 种 kind 对应的渲染字段（按 kind 只出现其中一个）
+  model_type?: ModelTypePreview;
+  create_instance?: CreateInstancePreview;
+  merge_suggestion?: MergeSuggestionPreview;
+  action?: ActionPreview;
+  // 通用影响说明（所有 kind 都可能附带）
+  impact?: ImpactSummary;
+}
+
+/** 通用操作响应（confirm / reject / execute）。 */
+export interface ProposalOperationResponse {
+  id: string;
+  status: string;
+  /** 副作用统计：影响多少 Individual / LinkInstance / 新建 rid 等。 */
+  affected_individuals?: number;
+  affected_links?: number;
+  created_rid?: string;
+  message?: string;
+}
+
+/**
+ * 读取 Proposal 的 staging 预览（GET /ont/v2/proposals/{id}/preview）。
+ * 用于在 ProposalConfirmDrawer 中渲染前先看一眼变更的详细 schema 投影 + 影响说明。
+ */
+export async function getProposalPreview(id: string): Promise<ProposalPreview> {
+  const resp = await apiClient.get(v2(`/proposals/${encodeURIComponent(id)}/preview`));
+  const payload = resp.data as { data?: ProposalPreview } | ProposalPreview;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalPreview }).data) {
+    return (payload as { data: ProposalPreview }).data;
+  }
+  return payload as ProposalPreview;
+}
+
+/** 确认 Proposal（POST /ont/v2/proposals/{id}/confirm）。 */
+export async function confirmProposal(id: string): Promise<ProposalOperationResponse> {
+  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/confirm`));
+  const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
+    return (payload as { data: ProposalOperationResponse }).data;
+  }
+  return payload as ProposalOperationResponse;
+}
+
+/** 执行已确认的 Proposal（POST /ont/v2/proposals/{id}/execute）。 */
+export async function executeProposal(id: string): Promise<ProposalOperationResponse> {
+  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/execute`));
+  const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
+    return (payload as { data: ProposalOperationResponse }).data;
+  }
+  return payload as ProposalOperationResponse;
+}
+
+/** 拒绝 Proposal（POST /ont/v2/proposals/{id}/reject）。 */
+export async function rejectProposal(id: string): Promise<ProposalOperationResponse> {
+  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/reject`));
+  const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
+  if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
+    return (payload as { data: ProposalOperationResponse }).data;
+  }
+  return payload as ProposalOperationResponse;
 }
 
 // property rid 形如 ont.<tenant>.prp.<slug>.v<N>。

@@ -57,6 +57,8 @@ from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 from mate_kernel.tooling import schema_gen
 from mate_kernel.tooling.schema_gen import agent_tool_schemas
 from mate_platform.tenancy.guards import require_tenant
+from .pg_repo import SlugConflictError  # MP-DEDUP-01: 409 翻译
+from .similarity import search_similar_object_types  # MP-DEDUP-01: precheck 相似扫描
 
 router = APIRouter(prefix="/api/v1/ont/v2", tags=["v2-kernel"])
 
@@ -482,9 +484,27 @@ def _dto_to_ot(d: ObjectTypeDTO) -> ObjectType:
 async def upsert_object_type(
     payload: ObjectTypeDTO, request: Request,
 ) -> ObjectTypeResponse:
-    """Upsert an ObjectType — registers Property + Class in kernel repo."""
+    """Upsert an ObjectType — registers Property + Class in kernel repo.
+
+    MP-DEDUP-01：DB UNIQUE (tenant_id, slug) 触发 → 409 + 建议合并到已有 rid。
+    """
     ot = _dto_to_ot(payload)
-    saved = await _call_scoped(request, "upsert_object_type", ot)
+    try:
+        saved = await _call_scoped(request, "upsert_object_type", ot)
+    except SlugConflictError as e:
+        # 409 + 让前端引导用户 precheck / merge
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "slug_conflict",
+                "message": str(e),
+                "existing_rid": e.existing_rid,
+                "existing_display_name": e.existing_display_name,
+                "slug": e.slug,
+                "hint": "Call POST /v2/object-types/precheck to find similar types, "
+                        "or POST /v2/object-types/merge to merge into the existing one.",
+            },
+        ) from e
     return _ot_to_dto(saved)
 
 
@@ -793,6 +813,11 @@ class ProposalExecuteResultDTO(BaseModel):
     kind: str
     individual_rid: str | None = None
     type_rid: str | None = None
+    # MP-DEDUP-01：merge_suggestion 落库后返回 merge 摘要
+    source_rid: str | None = None
+    target_rid: str | None = None
+    affected_individuals: int | None = None
+    affected_links: int | None = None
 
 
 @router.post(
@@ -844,8 +869,13 @@ async def propose_object_type(
 async def execute_proposal(
     proposal_id: str, request: Request,
 ) -> ProposalExecuteResultDTO:
-    """MP-SAL-04b：confirmed proposal 落库执行（create_instance → 新建实例；
-    model_type → upsert 类型；action → 409 指引走 /apply）。"""
+    """MP-SAL-04b / MP-DEDUP-01：confirmed proposal 落库执行。
+
+    - create_instance → 新建实例
+    - model_type → upsert 类型
+    - merge_suggestion → 自动触发 merge_object_types，archived source
+    - action → 409 指引走 /apply
+    """
     _ctx(request)
     try:
         out = await _call_scoped(request, "execute_proposal", proposal_id)
@@ -855,6 +885,15 @@ async def execute_proposal(
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    if isinstance(out, dict) and out.get("source_rid") and out.get("target_rid"):
+        # MP-DEDUP-01：merge_suggestion 落库
+        return ProposalExecuteResultDTO(
+            kind="merge_suggestion",
+            source_rid=out["source_rid"],
+            target_rid=out["target_rid"],
+            affected_individuals=out.get("affected_individuals", 0),
+            affected_links=out.get("affected_links", 0),
+        )
     if hasattr(out, "class_rid"):  # Individual
         return ProposalExecuteResultDTO(kind="create_instance", individual_rid=out.rid)
     return ProposalExecuteResultDTO(kind="model_type", type_rid=out.rid.rid)
@@ -878,6 +917,152 @@ async def propose_action(
             request, "propose_action", rid_ref,
             payload.parameters, payload.target_iid or None,
             payload.impact_summary, payload.expected_diff or None,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _proposal_to_dto(prop)
+
+
+# ─────────────────── 1b) MP-DEDUP-01: precheck / merge / propose-merge ───────────────────
+
+
+class ObjectTypePrecheckDTO(BaseModel):
+    """precheck 入参：候选 (display_name, slug, domain)。
+
+    domain 仅作为 hint 元数据透传（v1 不参与过滤）。"""
+    name: str
+    slug: str
+    domain: str = ""
+    top_k: int = 5
+
+
+class ObjectTypeCandidateDTO(BaseModel):
+    rid: str
+    display_name: str
+    slug: str
+    similarity: float
+    suggested_action: str  # merge | rename | cancel
+
+
+class ObjectTypePrecheckResponse(BaseModel):
+    candidates: list[ObjectTypeCandidateDTO] = Field(default_factory=list)
+
+
+@router.post(
+    "/object-types/precheck",
+    response_model=ObjectTypePrecheckResponse,
+    operation_id="ontPrecheckV2ObjectType",
+)
+async def precheck_object_type(
+    payload: ObjectTypePrecheckDTO, request: Request,
+) -> ObjectTypePrecheckResponse:
+    """MP-DEDUP-01：创建前相似扫描 —— 找到候选后再决定走 merge / rename。
+
+    不写库，纯只读。embedder 未配置时 fallback 到 slug 归一化（去 ``-`` / ``_``，
+    子串 / 前缀打分），保证 dev 路径可用。
+    """
+    ctx = _ctx(request)
+    tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    repo = _repo(request)
+    # _call_scoped 推 threadpool 会丢失 threading.local tenant；显式传 tenant_id
+    cands = await asyncio.to_thread(
+        search_similar_object_types,
+        repo, tenant_id, payload.name, payload.slug, payload.top_k,
+    )
+    return ObjectTypePrecheckResponse(
+        candidates=[ObjectTypeCandidateDTO(**c) for c in cands],
+    )
+
+
+class MergeObjectTypeDTO(BaseModel):
+    """Merge 入参：source / target rid + 可选 Property 映射。
+
+    mapping 缺省 → 按 Property slug 兜底（source prop rid 第 4 段 slug
+    对应到 target prop rid）。"""
+    source_rid: str
+    target_rid: str
+    mapping: dict[str, str] = Field(default_factory=dict)
+
+
+class MergeObjectTypeResponse(BaseModel):
+    source_rid: str
+    target_rid: str
+    mapping: dict[str, str] = Field(default_factory=dict)
+    affected_individuals: int = 0
+    affected_links: int = 0
+    source_archived: bool = True
+
+
+@router.post(
+    "/object-types/merge",
+    response_model=MergeObjectTypeResponse,
+    operation_id="ontMergeV2ObjectTypes",
+)
+async def merge_object_types(
+    payload: MergeObjectTypeDTO, request: Request,
+) -> MergeObjectTypeResponse:
+    """MP-DEDUP-01：source → target 重映射 + 软删 source。
+
+    重映射范围：
+    - Individual.class_rid: source → target
+    - Individual.rid: rid 中的 source slug 替换为 target slug
+    - LinkInstance.src / dst: Individual rid 同步替换
+    - Individual.props JSONB 键: source Property rid → target Property rid
+
+    source 设置 archived=true，UNIQUE INDEX 自动让出 slug，可后续复用。
+    """
+    ctx = _ctx(request)
+    tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.source_rid.startswith(f"ont.{tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant merge denied")
+    if not payload.target_rid.startswith(f"ont.{tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant merge denied")
+    try:
+        result = await _call_scoped(
+            request, "merge_object_types",
+            payload.source_rid, payload.target_rid, payload.mapping,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    return MergeObjectTypeResponse(**result)
+
+
+class MergeProposalDTO(BaseModel):
+    """AI 提议合并的入参。
+
+    similarity 透传到 proposal.parameters 用于前端展示。"""
+    source_rid: str
+    target_rid: str
+    similarity: float = 0.0
+    impact_summary: str = ""
+    mapping: dict[str, str] = Field(default_factory=dict)
+
+
+@router.post(
+    "/object-types/propose-merge",
+    response_model=ProposalResponse,
+    operation_id="ontProposeV2ObjectTypeMerge",
+)
+async def propose_object_type_merge(
+    payload: MergeProposalDTO, request: Request,
+) -> ProposalResponse:
+    """MP-DEDUP-01：AI 提议两个 ObjectType 可能相同 → 走 proposal 状态机。
+
+    user confirm → 自动调 ``execute_proposal`` → 触发 merge_object_types。
+    """
+    ctx = _ctx(request)
+    tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.source_rid.startswith(f"ont.{tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    if not payload.target_rid.startswith(f"ont.{tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    try:
+        prop = await _call_scoped(
+            request, "propose_merge",
+            payload.source_rid, payload.target_rid,
+            payload.similarity, payload.impact_summary, payload.mapping,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -1007,6 +1192,479 @@ async def apply_action_legacy(
     inside the body. New callers should use `/action-types/{rid}/apply`.
     """
     return await _apply_action(request, payload.action_rid, payload)
+
+
+# ─────────────────── 4b) MP-SAL-04c: Staging Preview（pending proposal 渲染） ───────────────────
+
+
+class ProposalPreviewResponse(BaseModel):
+    """MP-SAL-04c：pending proposal 渲染预览（不落库）。
+
+    字段说明：
+    - kind: action / create_instance / model_type / merge_suggestion
+    - action_type: 后端建议的动作标签（"create" / "upsert" / "execute" / "apply"）
+    - impact_summary: 自动算出的影响摘要（受影响个体数 / 跨 schema 引用 / etc）
+    - parameters: 原样透传 proposals.parameters（结构化）
+    - expected_diff: 原样透传 proposals.expected_diff
+    - 额外 kind-specific 字段：properties / field_values / merge_mapping / etc
+    """
+
+    proposal_id: str
+    kind: str
+    action_type: str
+    target_rid: str | None = None
+    status: str
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    expected_diff: dict[str, Any] = Field(default_factory=dict)
+    impact_summary: dict[str, Any] = Field(default_factory=dict)
+    # kind=model_type 专用
+    properties: list[dict[str, Any]] = Field(default_factory=list)
+    primary_key: list[str] = Field(default_factory=list)
+    interfaces: list[str] = Field(default_factory=list)
+    display_name: str = ""
+    backward_link_candidates: list[str] = Field(default_factory=list)
+    # kind=create_instance 专用
+    field_values: dict[str, Any] = Field(default_factory=dict)
+    class_rid: str | None = None
+    validation_status: str = "unknown"
+    # kind=merge_suggestion 专用
+    merge_source_rid: str | None = None
+    merge_target_rid: str | None = None
+    merge_mapping: dict[str, str] = Field(default_factory=dict)
+    merge_property_overlap: dict[str, Any] = Field(default_factory=dict)
+    # 通用 audit
+    created_at: str = ""
+    confirmed_by: str | None = None
+    confirmed_at: str | None = None
+
+
+_PREVIEW_LOCK_STATES = {"confirmed", "applied", "rejected"}
+_PREVIEW_LOCK_MESSAGES = {
+    "confirmed": "proposal already confirmed; further preview not allowed",
+    "applied": "proposal already applied; preview not available (look at audit)",
+    "rejected": "proposal already rejected; cannot preview",
+}
+
+
+def _slug_from_rid(rid: str) -> str:
+    parts = (rid or "").split(".")
+    if len(parts) >= 5:
+        return parts[3]
+    return ""
+
+
+async def _render_model_type_preview(
+    request: Request, tenant_id: str, parameters: dict[str, Any],
+) -> dict[str, Any]:
+    """compute kind=model_type preview payload（不含 proposal metadata）。"""
+    type_def = parameters.get("type_def") or {}
+    if not isinstance(type_def, dict):
+        type_def = {}
+    raw_props = type_def.get("properties") or []
+    pk = type_def.get("primary_key") or []
+    if isinstance(pk, str):
+        pk = [pk]
+    interfaces = list(type_def.get("interfaces") or [])
+    display_name = str(type_def.get("display_name") or "")
+    rid = str(type_def.get("rid") or "")
+    slug = _slug_from_rid(rid)
+
+    properties: list[dict[str, Any]] = []
+    pk_in_props: list[str] = []
+    for p in raw_props:
+        if not isinstance(p, dict):
+            continue
+        p_rid = str(p.get("rid") or "")
+        properties.append({
+            "rid": p_rid,
+            "name": _slug_from_rid(p_rid),
+            "type_id": str(p.get("type_id") or "string"),
+            "nullable": bool(p.get("nullable", False)),
+            "primary_key": bool(p.get("primary_key", False)),
+            "title": str(p.get("title") or ""),
+            "format": str(p.get("format") or "string"),
+        })
+        if p.get("primary_key"):
+            pk_in_props.append(p_rid)
+    pk_rids = [r for r in pk if isinstance(r, str)] if isinstance(pk, list) else []
+    if not pk_rids:
+        pk_rids = pk_in_props
+
+    # 反向引用 —— 已有同 tenant 内引用本 slug 的 Property rid / LinkType 都视作反向引用
+    backward: list[str] = []
+    try:
+        all_ots = await _call_scoped(
+            request, "list_object_types", 10000, 0, tenant_id,
+        )
+        for ot in all_ots:
+            other_slug = _slug_from_rid(ot.rid.rid)
+            if other_slug == slug:
+                continue
+            for p in getattr(ot, "properties", ()):
+                p_rid = getattr(p.rid, "rid", "") if hasattr(p, "rid") else str(p)
+                if slug and slug in p_rid:
+                    backward.append(str(p_rid))
+                    break
+    except Exception:
+        # 预览阶段容错：repo 抛错时不影响主字段
+        backward = []
+
+    return {
+        "properties": properties,
+        "primary_key": pk_rids,
+        "interfaces": interfaces,
+        "display_name": display_name,
+        "backward_link_candidates": backward,
+    }
+
+
+async def _render_create_instance_preview(
+    request: Request, tenant_id: str, parameters: dict[str, Any],
+    fallback_class_rid: str = "",
+) -> dict[str, Any]:
+    """compute kind=create_instance preview payload。
+
+    参数来源：
+    1) 直传 ``{class_rid, props}``（LLM / 手动路径）
+    2) InMemory/PG.propose_create_instance 包装为 ``{"props": ...}``，class_rid 由
+       proposal.action_rid 字段承担 —— fallback 用 ``fallback_class_rid``。
+    """
+    class_rid = ""
+    props: dict[str, Any] = {}
+    if "class_rid" in parameters:
+        class_rid = str(parameters.get("class_rid") or "")
+        props = dict(parameters.get("props") or {})
+    elif "props" in parameters and isinstance(parameters.get("props"), dict):
+        props = dict(parameters["props"])
+    if not class_rid:
+        class_rid = fallback_class_rid
+    field_values: dict[str, Any] = {}
+    for k, v in props.items():
+        key = str(k)
+        if isinstance(v, dict) and "value" in v:
+            field_values[key] = v["value"]
+        else:
+            field_values[key] = v
+    validation_status = "ok"
+    note: list[str] = []
+    try:
+        if class_rid:
+            ot = await _call_scoped(
+                request, "get_object_type", ClassRef(class_rid),
+            )
+            required_props = [
+                getattr(p.rid, "rid", "") for p in getattr(ot, "properties", ())
+                if getattr(p, "primary_key", False) or not getattr(p, "nullable", True)
+            ]
+            missing = [r for r in required_props if r and r not in field_values]
+            if missing:
+                validation_status = "missing_required"
+                note.append(f"missing required props: {missing}")
+            elif not field_values:
+                validation_status = "empty"
+                note.append("no props provided")
+    except KeyError:
+        validation_status = "class_not_found"
+        note.append(f"class not found: {class_rid}")
+    except Exception as e:
+        validation_status = "validation_error"
+        note.append(f"{type(e).__name__}: {e}")
+
+    out: dict[str, Any] = {
+        "field_values": field_values,
+        "class_rid": class_rid,
+        "validation_status": validation_status,
+    }
+    if note:
+        out["note"] = note
+    return out
+
+
+async def _render_merge_suggestion_preview(
+    request: Request, tenant_id: str, parameters: dict[str, Any],
+) -> dict[str, Any]:
+    """compute kind=merge_suggestion preview payload。"""
+    src = str(parameters.get("source_rid") or "")
+    tgt = str(parameters.get("target_rid") or "")
+    mapping_raw = parameters.get("mapping") or {}
+    if not isinstance(mapping_raw, dict):
+        mapping_raw = {}
+    mapping: dict[str, str] = {str(k): str(v) for k, v in mapping_raw.items()}
+
+    overlap: dict[str, Any] = {"shared_props": [], "source_only": [], "target_only": []}
+    try:
+        src_ot = await _call_scoped(
+            request, "get_object_type", ClassRef(src),
+        )
+        tgt_ot = await _call_scoped(
+            request, "get_object_type", ClassRef(tgt),
+        )
+        src_names = {getattr(p.rid, "rid", ""): getattr(p, "title", "") for p in src_ot.properties}
+        tgt_names = {getattr(p.rid, "rid", ""): getattr(p, "title", "") for p in tgt_ot.properties}
+        overlap["source_only"] = list(src_names.keys())
+        overlap["target_only"] = list(tgt_names.keys())
+        for p_rid, _title in src_names.items():
+            p_slug = _slug_from_rid(p_rid).split("-")[-1]
+            for t_rid, _t_title in tgt_names.items():
+                t_slug = _slug_from_rid(t_rid).split("-")[-1]
+                if p_slug and p_slug == t_slug:
+                    overlap["shared_props"].append({
+                        "source": p_rid, "target": t_rid,
+                        "auto_mapped": p_rid not in mapping,
+                    })
+                    break
+    except KeyError as e:
+        overlap = {"shared_props": [], "source_only": [], "target_only": [],
+                   "error": f"class not found: {e}"}
+    except Exception as e:
+        overlap = {"shared_props": [], "source_only": [], "target_only": [],
+                   "error": f"{type(e).__name__}: {e}"}
+
+    return {
+        "merge_source_rid": src,
+        "merge_target_rid": tgt,
+        "merge_mapping": mapping,
+        "merge_property_overlap": overlap,
+    }
+
+
+def _render_action_preview(parameters: dict[str, Any]) -> dict[str, Any]:
+    """kind=action（apply 路径）—— 不在 preview 内执行，仅透传参数。"""
+    return {
+        "note": "action-kind proposals execute via /action-types/{rid}/apply, not /execute; "
+                "preview only shows intended parameters."
+    }
+
+
+@router.get(
+    "/proposals/{proposal_id}/preview",
+    response_model=ProposalPreviewResponse,
+    operation_id="ontPreviewV2Proposal",
+)
+async def get_proposal_preview(
+    proposal_id: str, request: Request,
+) -> ProposalPreviewResponse:
+    """MP-SAL-04c：pending proposal 渲染（前端 staging 卡片用）。
+
+    返回 proposal 的渲染信息 + 自动算出的 ``impact_summary``：
+    - kind=model_type：受影响 Property 表 / 主键 / interface / 反向引用列表
+    - kind=create_instance：字段值 / class 关联 / 验证状态
+    - kind=merge_suggestion：source/target 对比 + property mapping 建议
+    - kind=action：透传参数 + 提示走 /apply
+
+    已确认/已应用/已拒绝的 proposal 返回 409（preview 已不可改）。
+    """
+    from mate_kernel.action.engine import ProposalStatus  # local import 避免 module 循环
+    ctx = _ctx(request)
+    tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    try:
+        prop = await _call_scoped(request, "get_proposal", proposal_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    status_value = (
+        prop.status.value if hasattr(prop.status, "value") else str(prop.status)
+    )
+    if status_value in _PREVIEW_LOCK_STATES:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "proposal_locked",
+                "message": _PREVIEW_LOCK_MESSAGES[status_value],
+                "proposal_id": proposal_id,
+                "status": status_value,
+            },
+        )
+
+    parameters = dict(getattr(prop, "parameters", {}) or {})
+    expected_diff = dict(getattr(prop, "expected_diff", {}) or {})
+    extra: dict[str, Any] = {}
+
+    kind = str(getattr(prop, "kind", "action") or "action")
+    target_rid = str(getattr(prop, "action_rid", "") or "")
+    action_type = "execute"
+    if kind == "model_type":
+        action_type = "upsert"
+        try:
+            extra = await _render_model_type_preview(request, tenant_id, parameters)
+        except Exception as e:
+            extra = {"error": f"{type(e).__name__}: {e}"}
+    elif kind == "create_instance":
+        action_type = "create"
+        try:
+            extra = await _render_create_instance_preview(
+                request, tenant_id, parameters,
+                fallback_class_rid=target_rid,
+            )
+        except Exception as e:
+            extra = {"class_rid": target_rid,
+                     "validation_status": "validation_error",
+                     "field_values": {},
+                     "error": f"{type(e).__name__}: {e}"}
+    elif kind == "merge_suggestion":
+        action_type = "execute"
+        try:
+            extra = await _render_merge_suggestion_preview(request, tenant_id, parameters)
+        except Exception as e:
+            extra = {"merge_source_rid": parameters.get("source_rid", ""),
+                     "merge_target_rid": parameters.get("target_rid", ""),
+                     "merge_mapping": {},
+                     "merge_property_overlap": {},
+                     "error": f"{type(e).__name__}: {e}"}
+    else:  # action
+        action_type = "apply"
+        extra = _render_action_preview(parameters)
+
+    try:
+        impact_summary = await _compute_impact_summary(
+            kind=kind, request=request, tenant_id=tenant_id,
+            parameters=parameters, target_rid=target_rid, extra=extra,
+        )
+    except Exception as e:
+        impact_summary = {"error": f"{type(e).__name__}: {e}"}
+
+    created_at = getattr(prop, "created_at", None)
+    confirmed_at = getattr(prop, "confirmed_at", None)
+    confirmed_by = getattr(prop, "confirmed_by", None)
+    return ProposalPreviewResponse(
+        proposal_id=proposal_id,
+        kind=kind,
+        action_type=action_type,
+        target_rid=target_rid or None,
+        status=status_value,
+        parameters=parameters,
+        expected_diff=expected_diff,
+        impact_summary=impact_summary,
+        properties=extra.get("properties", []),
+        primary_key=extra.get("primary_key", []),
+        interfaces=extra.get("interfaces", []),
+        display_name=extra.get("display_name", ""),
+        backward_link_candidates=extra.get("backward_link_candidates", []),
+        field_values=extra.get("field_values", {}),
+        class_rid=extra.get("class_rid"),
+        validation_status=extra.get("validation_status", "unknown"),
+        merge_source_rid=extra.get("merge_source_rid"),
+        merge_target_rid=extra.get("merge_target_rid"),
+        merge_mapping=extra.get("merge_mapping", {}),
+        merge_property_overlap=extra.get("merge_property_overlap", {}),
+        created_at=created_at.isoformat() if created_at else "",
+        confirmed_by=confirmed_by,
+        confirmed_at=confirmed_at.isoformat() if confirmed_at else None,
+    )
+
+
+async def _compute_impact_summary(
+    *,
+    kind: str,
+    request: Request,
+    tenant_id: str,
+    parameters: dict[str, Any],
+    target_rid: str,
+    extra: dict[str, Any],
+) -> dict[str, Any]:
+    """MP-SAL-04c：根据 proposal kind 自动算影响摘要。"""
+    summary: dict[str, Any] = {
+        "kind": kind,
+        "tenant_id": tenant_id,
+        "warnings": [],
+    }
+
+    if kind == "model_type":
+        type_def = parameters.get("type_def") or {}
+        rid = str(type_def.get("rid") or target_rid or "")
+        properties = extra.get("properties", []) or []
+        primary_key = extra.get("primary_key", []) or []
+        backward = extra.get("backward_link_candidates", []) or []
+        summary.update({
+            "new_object_type_rid": rid,
+            "new_property_count": len(properties),
+            "primary_key": primary_key,
+            "interfaces": extra.get("interfaces", []) or [],
+            "backward_link_candidates": backward,
+            "affected_individuals_estimate": 0,
+            "affected_link_instances_estimate": 0,
+        })
+        if backward:
+            summary["warnings"].append(
+                f"{len(backward)} properties from other ObjectTypes seem to reference "
+                f"this slug's name; after apply, you may want to consolidate via merge."
+            )
+        cross_refs: list[dict[str, str]] = []
+        for r in backward:
+            cross_refs.append({"source_property_rid": str(r)})
+        summary["cross_schema_references"] = cross_refs
+
+    elif kind == "create_instance":
+        class_rid = extra.get("class_rid") or ""
+        validation = extra.get("validation_status", "unknown")
+        field_values = extra.get("field_values", {}) or {}
+        existing_count = 0
+        try:
+            if class_rid:
+                rows = await _call_scoped(
+                    request, "list_individuals", ClassRef(class_rid),
+                )
+                existing_count = len(rows)
+        except Exception:
+            existing_count = 0
+        summary.update({
+            "class_rid": class_rid,
+            "field_count": len(field_values),
+            "validation_status": validation,
+            "affected_individuals_estimate": 1,
+            "existing_individuals_in_class": existing_count,
+            "cross_schema_references": [],
+        })
+        if validation in {"missing_required", "empty"}:
+            summary["warnings"].append(
+                f"validation status={validation}; user will need to refill fields before confirm."
+            )
+
+    elif kind == "merge_suggestion":
+        src = str(parameters.get("source_rid") or "")
+        tgt = str(parameters.get("target_rid") or "")
+        mapping = extra.get("merge_mapping", {}) or {}
+        overlap = extra.get("merge_property_overlap", {}) or {}
+        ind_count, li_count = 0, 0
+        try:
+            inds = await _call_scoped(
+                request, "list_individuals", ClassRef(src),
+            )
+            lis = await _call_scoped(request, "list_link_instances")
+            ind_count = len(inds)
+            li_count = sum(1 for li in lis if li.src.startswith(src) or li.dst.startswith(src))
+        except Exception:
+            pass
+        try:
+            similarity = float(parameters.get("similarity") or 0.0)
+        except (TypeError, ValueError):
+            similarity = 0.0
+        summary.update({
+            "source_rid": src,
+            "target_rid": tgt,
+            "similarity": similarity,
+            "mapping_count": len(mapping),
+            "shared_property_count": len(overlap.get("shared_props", []) or []),
+            "affected_individuals": ind_count,
+            "affected_links": li_count,
+            "cross_schema_references": [
+                {"source_property_rid": str(p.get("source"))}
+                for p in (overlap.get("shared_props", []) or [])
+            ],
+        })
+        if similarity < 0.7:
+            summary["warnings"].append(
+                f"similarity={similarity:.2f} below safe-merge floor (0.7); user must confirm explicitly."
+            )
+
+    else:  # action
+        summary.update({
+            "target_action_rid": target_rid,
+            "parameters_keys": list(parameters.keys()),
+            "affected_individuals_estimate": 1,
+        })
+
+    return summary
 
 
 # ─────────────────── 5) ActionType CRUD ───────────────────

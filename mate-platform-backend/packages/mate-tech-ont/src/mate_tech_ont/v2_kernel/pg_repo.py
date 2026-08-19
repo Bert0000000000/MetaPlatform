@@ -42,6 +42,12 @@ from mate_kernel.ontology.types import (
 )
 from mate_kernel.ontology.types.link_type import Cardinality, Directionality
 
+# MP-DEDUP-01：psycopg2 错误类引用（UniqueViolation 捕获用）
+try:
+    import psycopg2.errors as psycopg2_errors  # type: ignore
+except ImportError:  # pragma: no cover — psycopg2 始终在依赖中
+    psycopg2_errors = None  # type: ignore[assignment]
+
 # GOVERN-05: 默认 inline 源码 —— apply 没注册源码时 fallback，让 dev / 旧测试
 # 仍可走通。最简 main(target, params) → params 原样返回。
 _PG_DEFAULT_INLINE_FN = "def main(target, params):\n    return params\n"
@@ -49,22 +55,65 @@ _PG_DEFAULT_INLINE_FN = "def main(target, params):\n    return params\n"
 # source_ref → source 命名注册表（seed / 测试可用）
 _PG_INLINE_FUNCTIONS: dict[str, str] = {}
 
+
+class SlugConflictError(Exception):
+    """MP-DEDUP-01：DB UNIQUE 冲突 on (tenant_id, slug) —— API 翻译为 409。
+
+    Attributes:
+        tenant_id: 触发冲突的租户。
+        slug: 触发冲突的 slug（第 4 段 rid）。
+        existing_rid: 已存在的 ObjectType rid（NULL = 仅检测到 UNIQUE 触发，rid 不可知）。
+        existing_display_name: 已存在的 ObjectType display_name（best-effort）。
+    """
+
+    def __init__(
+        self,
+        tenant_id: str,
+        slug: str,
+        existing_rid: str | None,
+        existing_display_name: str = "",
+    ) -> None:
+        self.tenant_id = tenant_id
+        self.slug = slug
+        self.existing_rid = existing_rid
+        self.existing_display_name = existing_display_name
+        msg = (
+            f"ObjectType slug '{slug}' already exists for tenant '{tenant_id}'"
+            + (
+                f" (existing rid={existing_rid}, display_name={existing_display_name!r})"
+                if existing_rid
+                else ""
+            )
+            + ". Please merge into existing or rename."
+        )
+        super().__init__(msg)
+
+
 DDL: tuple[str, ...] = (
     """
     CREATE TABLE IF NOT EXISTS ont_object_type (
         rid          TEXT PRIMARY KEY,
         tenant_id    TEXT NOT NULL,
+        slug         TEXT NOT NULL DEFAULT '',
         primary_key  TEXT[] NOT NULL,
         properties   JSONB NOT NULL,
         interfaces   TEXT[] NOT NULL DEFAULT '{}',
         display_name TEXT NOT NULL DEFAULT '',
         marking      TEXT[] NOT NULL DEFAULT '{}',
+        archived     BOOLEAN NOT NULL DEFAULT FALSE,
         updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ot_tenant ON ont_object_type (tenant_id)",
     # MP-SAL-01：类型级 marking（ADR-0043 §2.6）——旧库补列
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS marking TEXT[] NOT NULL DEFAULT '{}'",
+    # MP-DEDUP-01：slug 列（从 rid 第 4 段派生）+ archived 列（merge 软删标记）
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE",
+    # MP-DEDUP-01：(tenant_id, slug) 唯一约束。WHERE 子句排除 archived 行（merge 后
+    # 软删的源 OT 不再占 slug）与空 slug（兼容旧库未填写 slug 的脏数据）。
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_ont_ot_tenant_slug "
+    "ON ont_object_type (tenant_id, slug) WHERE archived = FALSE AND slug != ''",
     """
     CREATE TABLE IF NOT EXISTS ont_individual (
         rid          TEXT PRIMARY KEY,
@@ -325,9 +374,14 @@ def _ir_where(
 
 
 def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
+    rid_parts = ot.rid.rid.split(".")
     return {
         "rid": ot.rid.rid,
-        "tenant_id": ot.rid.rid.split(".")[1] if "." in ot.rid.rid else "",
+        "tenant_id": rid_parts[1] if len(rid_parts) >= 2 else "",
+        # MP-DEDUP-01：slug 从 rid 第 5 段派生（与 kernel ``individual_to_row`` 同规则）
+        # rid 形如 ``ont.<tenant>.obj.<domain>.<slug>.v1``，所以 parts[4] 才是 slug，
+        # parts[3] 是 domain（与 seed.py 实际使用的 6 段格式一致）。
+        "slug": rid_parts[4] if len(rid_parts) >= 6 else "",
         "primary_key": [pk.rid for pk in ot.primary_key],
         "properties": [
             {
@@ -761,30 +815,81 @@ class PgOntologyRepository(OntologyRepository):
         row = _ot_to_row(ot)
         conn, _ = self._connect()
         try:
+            # MP-DEDUP-01：先做 (tenant_id, slug) pre-check，命中即抛 SlugConflictError
+            # 带 existing_rid 让 API 层返回有意义的 409 hint。空 slug 跳过（兼容旧库）。
+            # race window 内仍依赖 UNIQUE INDEX 兜底（见下方 UniqueViolation 捕获）。
+            if row["slug"]:
+                with self._cursor(conn) as cur:
+                    cur.execute(
+                        "SELECT rid, display_name FROM ont_object_type "
+                        "WHERE tenant_id = %s AND slug = %s "
+                        "AND archived = FALSE AND rid != %s LIMIT 1",
+                        (row["tenant_id"], row["slug"], row["rid"]),
+                    )
+                    conflict = cur.fetchone()
+                if conflict:
+                    raise SlugConflictError(
+                        tenant_id=row["tenant_id"],
+                        slug=row["slug"],
+                        existing_rid=conflict["rid"],
+                        existing_display_name=conflict.get("display_name", ""),
+                    )
+
             with self._cursor(conn) as cur:
-                cur.execute(
-                    """
-                    INSERT INTO ont_object_type
-                        (rid, tenant_id, primary_key, properties, interfaces, display_name, marking, updated_at)
-                    VALUES (%s, %s, %s, %s::jsonb, %s, %s, %s, now())
-                    ON CONFLICT (rid) DO UPDATE SET
-                        primary_key = EXCLUDED.primary_key,
-                        properties = EXCLUDED.properties,
-                        interfaces = EXCLUDED.interfaces,
-                        display_name = EXCLUDED.display_name,
-                        marking = EXCLUDED.marking,
-                        updated_at = now()
-                    """,
-                    (
-                        row["rid"],
-                        row["tenant_id"],
-                        row["primary_key"],
-                        json.dumps(row["properties"]),
-                        row["interfaces"],
-                        row["display_name"],
-                        row["marking"],
-                    ),
-                )
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO ont_object_type
+                            (rid, tenant_id, slug, primary_key, properties, interfaces,
+                             display_name, marking, updated_at)
+                        VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s, now())
+                        ON CONFLICT (rid) DO UPDATE SET
+                            slug = EXCLUDED.slug,
+                            primary_key = EXCLUDED.primary_key,
+                            properties = EXCLUDED.properties,
+                            interfaces = EXCLUDED.interfaces,
+                            display_name = EXCLUDED.display_name,
+                            marking = EXCLUDED.marking,
+                            updated_at = now()
+                        """,
+                        (
+                            row["rid"],
+                            row["tenant_id"],
+                            row["slug"],
+                            row["primary_key"],
+                            json.dumps(row["properties"]),
+                            row["interfaces"],
+                            row["display_name"],
+                            row["marking"],
+                        ),
+                    )
+                except psycopg2_errors.UniqueViolation as e:
+                    # race：另一并发事务先 commit 了同 slug 的另一 rid。回滚后
+                    # 重新查 existing_rid 抛 SlugConflictError。diag.constraint_name
+                    # 区分是哪条 UNIQUE INDEX 触发的，避免误报。
+                    conn.rollback()
+                    constraint = ""
+                    diag = getattr(e, "diag", None)
+                    if diag is not None:
+                        constraint = getattr(diag, "constraint_name", "") or ""
+                    if constraint == "uq_ont_ot_tenant_slug":
+                        with self._cursor(conn) as cur2:
+                            cur2.execute(
+                                "SELECT rid, display_name FROM ont_object_type "
+                                "WHERE tenant_id = %s AND slug = %s "
+                                "AND archived = FALSE AND rid != %s LIMIT 1",
+                                (row["tenant_id"], row["slug"], row["rid"]),
+                            )
+                            existing = cur2.fetchone()
+                        raise SlugConflictError(
+                            tenant_id=row["tenant_id"],
+                            slug=row["slug"],
+                            existing_rid=existing["rid"] if existing else None,
+                            existing_display_name=(
+                                existing.get("display_name", "") if existing else ""
+                            ),
+                        ) from e
+                    raise
             conn.commit()
             return ot
         finally:
@@ -826,6 +931,188 @@ class PgOntologyRepository(OntologyRepository):
             return [_row_to_ot(r) for r in rows]
         finally:
             conn.close()
+
+    # ───── MP-DEDUP-01: ObjectType 去重 + merge（ADR-0044 §3）─────
+
+    def merge_object_types(
+        self,
+        source_rid: str,
+        target_rid: str,
+        mapping: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """把 source ObjectType 的实例 / 链接重映射到 target，软删 source。
+
+        步骤（事务内执行）：
+        1. UPDATE ont_individual.class_rid: source → target
+        2. UPDATE ont_link_instance.src/dst: 替换 Individual rid 中的 source slug
+           前缀为 target slug 前缀（rid 形如 ont.<tenant>.ind.<slug>.<pk>）
+        3. UPDATE ont_object_type.archived = TRUE WHERE rid = source
+
+        Args:
+            source_rid: 被合并的 ObjectType rid（merge 后 archived）。
+            target_rid: 接收方 ObjectType rid（保留 active）。
+            mapping: 可选 source Property rid → target Property rid 映射表。
+                     空 dict → 不做字段级迁移（Individual.props 内仍含源 rid，
+                     但后续 evaluate_object_set 归一化按 slug 走，仍能查到 target 的
+                     properties）。Property 字段名归一化由 evaluate_object_set 自带的
+                     slug→rid 映射兜底。
+
+        Returns:
+            {source_rid, target_rid, mapping, affected_individuals,
+             affected_links, source_archived}
+
+        Raises:
+            KeyError: source / target 不存在。
+            ValueError: 同 rid / 跨租户。
+        """
+        self._ensure_schema()
+        if source_rid == target_rid:
+            raise ValueError("source_rid and target_rid must differ")
+        # 两端必须存在 —— 复用 get_object_type 让 RLS 自动守门
+        try:
+            self.get_object_type(ClassRef(source_rid))
+        except KeyError as e:
+            raise KeyError(f"source ObjectType not found: {source_rid}") from e
+        try:
+            self.get_object_type(ClassRef(target_rid))
+        except KeyError as e:
+            raise KeyError(f"target ObjectType not found: {target_rid}") from e
+
+        src_parts = source_rid.split(".")
+        tgt_parts = target_rid.split(".")
+        if len(src_parts) < 6 or len(tgt_parts) < 6:
+            raise ValueError("invalid rid format (expected ont.<tenant>.obj.<domain>.<slug>.<ver>)")
+        if src_parts[1] != tgt_parts[1]:
+            raise ValueError("cross-tenant merge denied")
+        tenant_id = src_parts[1]
+        # rid 形如 ``ont.<tenant>.obj.<domain>.<slug>.v1``，parts[4] 是 slug。
+        src_slug, tgt_slug = src_parts[4], tgt_parts[4]
+
+        # Property 字段重映射（mapping）：在 Individual.props JSONB 键里
+        # 把 source prop rid 替换为 target prop rid。target 的 primary_key 不动。
+        # 没传 mapping 时按 slug 兜底：source prop rid 第 4 段 slug → target prop rid。
+        property_remap: dict[str, str] = {}
+        if mapping:
+            property_remap.update(mapping)
+        else:
+            try:
+                src_ot = self.get_object_type(ClassRef(source_rid))
+                tgt_ot = self.get_object_type(ClassRef(target_rid))
+            except KeyError:
+                property_remap = {}
+            else:
+                src_slugs = {p.rid.rid.split(".")[3]: p.rid.rid for p in src_ot.properties}
+                tgt_slugs = {p.rid.rid.split(".")[3]: p.rid.rid for p in tgt_ot.properties}
+                for slug, src_p_rid in src_slugs.items():
+                    if slug in tgt_slugs:
+                        property_remap[src_p_rid] = tgt_slugs[slug]
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                # 1) Individual.class_rid 重映射
+                cur.execute(
+                    "UPDATE ont_individual SET class_rid = %s, updated_at = now() "
+                    "WHERE class_rid = %s AND tenant_id = %s",
+                    (target_rid, source_rid, tenant_id),
+                )
+                affected_individuals = cur.rowcount
+
+                # 2) Individual rid 重写（class slug 切换）+ JSONB props 字段重映射
+                src_ind_prefix = f"ont.{tenant_id}.ind.{src_slug}."
+                tgt_ind_prefix = f"ont.{tenant_id}.ind.{tgt_slug}."
+                cur.execute(
+                    "UPDATE ont_individual SET rid = REPLACE(rid, %s, %s), "
+                    "primary_key = REPLACE(primary_key, %s, %s), "
+                    "updated_at = now() "
+                    "WHERE class_rid = %s AND tenant_id = %s",
+                    (
+                        src_ind_prefix, tgt_ind_prefix,
+                        src_ind_prefix, tgt_ind_prefix,
+                        target_rid, tenant_id,
+                    ),
+                )
+
+                # 3) LinkInstance.src / dst 重写（Individual rid 同步替换）
+                cur.execute(
+                    "UPDATE ont_link_instance SET src = REPLACE(src, %s, %s) "
+                    "WHERE src LIKE %s",
+                    (src_ind_prefix, tgt_ind_prefix, f"{src_ind_prefix}%"),
+                )
+                src_updates = cur.rowcount
+                cur.execute(
+                    "UPDATE ont_link_instance SET dst = REPLACE(dst, %s, %s) "
+                    "WHERE dst LIKE %s",
+                    (src_ind_prefix, tgt_ind_prefix, f"{src_ind_prefix}%"),
+                )
+                dst_updates = cur.rowcount
+                affected_links = src_updates + dst_updates
+
+                # 4) Individual.props JSONB 键重映射（Property rid 切换）
+                # 用 jsonb_set 一条一条改成本高，改成：读出 → 改键 → 写回。
+                # 简化：遍历 property_remap，每条做一次 jsonb key rename。
+                for src_p_rid, tgt_p_rid in property_remap.items():
+                    if src_p_rid == tgt_p_rid:
+                        continue
+                    # 仅当 key 存在才更新（jsonb - 操作符会保留所有键，这里用 jsonb 表达式）
+                    cur.execute(
+                        "UPDATE ont_individual SET props = props - %s "
+                        "|| jsonb_build_object(%s, props -> %s), "
+                        "updated_at = now() "
+                        "WHERE tenant_id = %s AND props ? %s",
+                        (src_p_rid, tgt_p_rid, src_p_rid, tenant_id, src_p_rid),
+                    )
+
+                # 5) 软删 source ObjectType（archived = TRUE）
+                #    archived 行从 UNIQUE INDEX 排除 → 同 slug 重新可用
+                cur.execute(
+                    "UPDATE ont_object_type SET archived = TRUE, updated_at = now() "
+                    "WHERE rid = %s",
+                    (source_rid,),
+                )
+                source_archived = cur.rowcount > 0
+
+            conn.commit()
+            return {
+                "source_rid": source_rid,
+                "target_rid": target_rid,
+                "mapping": property_remap,
+                "affected_individuals": affected_individuals,
+                "affected_links": affected_links,
+                "source_archived": source_archived,
+            }
+        finally:
+            conn.close()
+
+    def propose_merge(
+        self,
+        source_rid: str,
+        target_rid: str,
+        similarity: float,
+        impact_summary: str,
+        mapping: dict[str, str] | None = None,
+    ) -> Any:
+        """MP-DEDUP-01：AI 提议合并（同 source/target），走 proposal 状态机。
+
+        user confirm → execute_proposal 自动调 merge_object_types。
+        """
+        parameters = {
+            "source_rid": source_rid,
+            "target_rid": target_rid,
+            "similarity": similarity,
+            "mapping": dict(mapping or {}),
+        }
+        expected_diff = {
+            "+merge": {"source": source_rid, "target": target_rid},
+            "archived": [source_rid],
+        }
+        # subject 用 target rid（merge 写入端），便于 API 层定位 ObjectType
+        return self.propose_action(
+            ClassRef(target_rid),
+            parameters, None,
+            impact_summary, expected_diff,
+            kind="merge_suggestion",
+        )
 
     def upsert_link_type(self, lt: LinkType) -> LinkType:
         self._ensure_schema()
@@ -1789,7 +2076,10 @@ class PgOntologyRepository(OntologyRepository):
             if pk_value is None:
                 raise ValueError(f"primary key '{pk_slug}' required to create {p.action_rid}")
             parts = ot.rid.rid.split(".")
-            tenant, cls_slug = parts[1], parts[3]
+            # rid 形如 ``ont.<tenant>.obj.<domain>.<slug>.v1``，parts[4] 是 slug，
+            # parts[3] 是 domain；这里用 slug 构造 Individual rid
+            # ``ont.<tenant>.ind.<slug>.<pk>``（保持 5 段 individual 格式与 seed.py 一致）。
+            tenant, cls_slug = parts[1], parts[4] if len(parts) >= 6 else parts[3]
             resolved = []
             for key, value in props_in.items():
                 ref = slug_to_ref.get(key) or (ClassRef(key) if key.startswith("ont.") else None)
@@ -1834,6 +2124,20 @@ class PgOntologyRepository(OntologyRepository):
                 self._action_service.mark_applied(proposal_id),
             )
             return saved
+        if p.kind == "merge_suggestion":
+            # MP-DEDUP-01：user confirm → 自动触发 merge_object_types
+            source_rid = p.parameters.get("source_rid")
+            target_rid = p.parameters.get("target_rid")
+            if not source_rid or not target_rid:
+                raise ValueError(
+                    "merge_suggestion proposal requires source_rid + target_rid"
+                )
+            mapping = p.parameters.get("mapping") or {}
+            result = self.merge_object_types(source_rid, target_rid, mapping)
+            self._persist_proposal_transition(
+                self._action_service.mark_applied(proposal_id),
+            )
+            return result
         raise ValueError(f"unknown proposal kind: {p.kind!r}")
 
     # ───── MP-SAL-05: 流程编排定义持久化（flow definition）─────
@@ -1984,4 +2288,4 @@ async def run_in_thread(repo_method, /, *args, **kwargs):  # pyright: ignore[rep
     return await asyncio.to_thread(repo_method, *args, **kwargs)
 
 
-__all__ = ["DDL", "PgOntologyRepository"]
+__all__ = ["DDL", "PgOntologyRepository", "SlugConflictError"]

@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card } from '@douyinfe/semi-ui';
+import { Button, Card, Modal } from '@douyinfe/semi-ui';
 import { useLocation } from 'react-router-dom';
 import {
   Hexagon, Search, Plus, Columns3,
-  Link as LinkIcon, ArrowRight, Zap, GitBranch,
+  Link as LinkIcon, ArrowRight, Zap, GitBranch, GitMerge, AlertTriangle,
 } from 'lucide-react';
 import { FormDrawer, Field, TextInput } from '@mate/shared';
 import {
   listObjectTypes, listActionTypes, listLinkTypes,
   createObjectType, appendObjectTypeProperty,
+  getObjectType,
+  precheckObjectTypes, mergeObjectTypes,
   domainOfObjectType, slugAndVersionOfObjectType, slugAndVersionOfProperty,
   type KernelObjectType, type KernelActionType, type KernelLinkType,
+  type ObjectTypeCandidate,
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
 import { actionDisplayName } from './actions/ActionTypeListPage';
+import OntologyMergeDrawer from './components/OntologyMergeDrawer';
 
 
 // 领域码 → 中文（rid 形如 ont.<tenant>.obj.<domain>.<slug>.v1）
@@ -53,9 +57,12 @@ function conceptStatus(ot: KernelObjectType, linkTypes: KernelLinkType[], action
 export default function OntologyModelingPage({
   createOpen,
   setCreateOpen,
+  refreshKey,
 }: {
   createOpen: boolean;
   setCreateOpen: (v: boolean) => void;
+  /** Shell 注入：proposal execute 成功后递增，触发本组件重新拉数据。 */
+  refreshKey?: number;
 }) {
     const [objectTypes, setObjectTypes] = useState<KernelObjectType[]>([]);
   const [actionTypes, setActionTypes] = useState<KernelActionType[]>([]);
@@ -79,6 +86,16 @@ export default function OntologyModelingPage({
   const [createDomain, setCreateDomain] = useState('crm');
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
+  // 相似候选扫描（precheck onBlur） + 合并 drawer
+  const [precheckLoading, setPrecheckLoading] = useState(false);
+  const [candidates, setCandidates] = useState<ObjectTypeCandidate[]>([]);
+  const [candidateModalOpen, setCandidateModalOpen] = useState(false);
+  const [precheckSource, setPrecheckSource] = useState<{ name: string; slug: string; domain: string } | null>(null);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeSource, setMergeSource] = useState<KernelObjectType | null>(null);
+  const [mergeTarget, setMergeTarget] = useState<KernelObjectType | null>(null);
+  const [mergeSubmitting, setMergeSubmitting] = useState(false);
+
   const detailRef = useRef<HTMLDivElement>(null);
 
   // 重拉全部 kernel 数据（初始加载 / 写操作后刷新）
@@ -96,7 +113,7 @@ export default function OntologyModelingPage({
       try {
         const ots = await refreshAll();
         if (!active) return;
-        if (ots.length > 0) {
+        if (ots.length > 0 && !selectedConcept) {
           setSelectedDomain(domainOfObjectType(ots[0].rid));
           setSelectedConcept(ots[0].rid);
         }
@@ -108,7 +125,7 @@ export default function OntologyModelingPage({
     })();
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshKey]);
 
   // 一级本体列表：按 rid 域名段分组
   const domains = useMemo(() => {
@@ -237,6 +254,89 @@ export default function OntologyModelingPage({
       console.warn('新建概念失败', e);
     } finally {
       setCreateSubmitting(false);
+    }
+  };
+
+  // 概念名称 onBlur → 调 precheck；命中候选 → 弹 Modal 让用户选 merge / 继续创建 / 取消
+  const handlePrecheck = async () => {
+    const name = createName.trim();
+    const slug = createSlug.trim();
+    if (!name) return;
+    // slug 暂未填也允许按 name 扫（后端兜底走 embedder）；只在两者都空时跳过
+    setPrecheckLoading(true);
+    try {
+      const resp = await precheckObjectTypes({ name, slug: slug || name, domain: createDomain, top_k: 5 });
+      const list = resp?.candidates ?? [];
+      if (list.length > 0) {
+        setCandidates(list);
+        setPrecheckSource({ name, slug, domain: createDomain });
+        setCandidateModalOpen(true);
+      }
+    } catch (e) {
+      // precheck 失败不阻塞创建流程（best-effort）
+      console.warn('precheck 失败', e);
+    } finally {
+      setPrecheckLoading(false);
+    }
+  };
+
+  // 用户在候选 Modal 里选了某个候选 → 打开合并 drawer（先 resolve source / target 完整定义）
+  const openMergeDrawerForCandidate = async (candidate: ObjectTypeCandidate) => {
+    if (!precheckSource) return;
+    setCandidateModalOpen(false);
+    try {
+      const tenant = getTenantId() || 'demo';
+      const sourceRid = `ont.${tenant}.obj.${precheckSource.domain}.${precheckSource.slug}.v1`;
+      const [source, target] = await Promise.all([
+        getObjectType(sourceRid).catch(() => null),
+        getObjectType(candidate.rid).catch(() => null),
+      ]);
+      // 兜底：若 source 还没建出来（仅 precheck 命中），从现有列表里挑一个等价的 rid
+      const resolvedSource = source ?? objectTypes.find((ot) =>
+        ot.display_name === precheckSource.name || slugAndVersionOfObjectType(ot.rid).slug === `obj.${precheckSource.domain}.${precheckSource.slug}`,
+      ) ?? null;
+      const resolvedTarget = target ?? objectTypes.find((ot) => ot.rid === candidate.rid) ?? null;
+      if (!resolvedSource || !resolvedTarget) {
+        console.warn('无法 resolve source / target rid，跳过合并 drawer');
+        return;
+      }
+      setMergeSource(resolvedSource);
+      setMergeTarget(resolvedTarget);
+      setMergeOpen(true);
+    } catch (e) {
+      console.warn('resolve 合并对象失败', e);
+    }
+  };
+
+  // 合并 drawer 确认 → 调 /object-types/merge → 刷新列表 → 选中 target
+  const submitMerge = async (mapping: Record<string, string>): Promise<boolean> => {
+    if (!mergeSource || !mergeTarget) return false;
+    setMergeSubmitting(true);
+    try {
+      await mergeObjectTypes({
+        source_rid: mergeSource.rid,
+        target_rid: mergeTarget.rid,
+        mapping,
+      });
+      setMergeOpen(false);
+      setMergeSource(null);
+      setMergeTarget(null);
+      // 候选 Modal 也关掉、create drawer 关掉、清空已输入字段
+      setCandidateModalOpen(false);
+      setCandidates([]);
+      setCreateOpen(false);
+      setCreateName('');
+      setCreateSlug('');
+      const ots = await refreshAll();
+      const targetDomain = domainOfObjectType(mergeTarget.rid);
+      setSelectedDomain(targetDomain);
+      if (ots.some((ot) => ot.rid === mergeTarget.rid)) setSelectedConcept(mergeTarget.rid);
+      return true;
+    } catch (e) {
+      console.warn('合并失败', e);
+      return false;
+    } finally {
+      setMergeSubmitting(false);
     }
   };
 
@@ -589,11 +689,22 @@ export default function OntologyModelingPage({
         confirmLoading={createSubmitting}
       >
         <Field label="概念名称" required>
-          <TextInput
-            placeholder="例如：客户"
-            value={createName}
-            onChange={(e) => setCreateName(e.target.value)}
-          />
+          <div style={{ position: 'relative' }}>
+            <TextInput
+              placeholder="例如：客户"
+              value={createName}
+              onChange={(e) => setCreateName(e.target.value)}
+              onBlur={handlePrecheck}
+            />
+            {precheckLoading && (
+              <span style={{
+                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                fontSize: 11, color: 'var(--muted-foreground)',
+              }}>
+                相似扫描中…
+              </span>
+            )}
+          </div>
         </Field>
         <Field label="slug（rid 末段）" required>
           <TextInput
@@ -618,6 +729,112 @@ export default function OntologyModelingPage({
           <br />自动创建主键属性：<code>ont.{getTenantId() || 'demo'}.prop.{createSlug.trim() || '<slug>'}-id.v1</code>
         </div>
       </FormDrawer>
+
+      {/* 相似候选 Modal：precheck 命中后展示，每个候选可三选一 */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle style={{ width: 16, height: 16, color: 'var(--warning)' }} />
+            <span>检测到相似概念</span>
+          </div>
+        }
+        visible={candidateModalOpen}
+        onCancel={() => setCandidateModalOpen(false)}
+        footer={null}
+        width={640}
+      >
+        <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 12, lineHeight: 1.6 }}>
+          概念名「<strong style={{ color: 'var(--foreground)' }}>{precheckSource?.name}</strong>」与下方已有概念相似，
+          请选择「合并到它」（走合并 drawer，迁移数据后软删源）或「继续新建」（忽略提示，直接创建新概念）。
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {candidates.map((c) => {
+            const sim = Math.round(c.similarity * 100);
+            return (
+              <div
+                key={c.rid}
+                style={{
+                  border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                  padding: 12, display: 'flex', alignItems: 'center', gap: 12,
+                  background: 'var(--card)',
+                }}
+              >
+                <GitMerge style={{ width: 16, height: 16, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{c.display_name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>
+                    rid：<code>{c.rid}</code>
+                  </div>
+                </div>
+                <div style={{
+                  flexShrink: 0, padding: '2px 8px', borderRadius: 4,
+                  background: sim >= 80 ? 'var(--destructive)' : sim >= 60 ? 'var(--warning)' : 'var(--muted)',
+                  color: sim >= 60 ? 'var(--primary-foreground, #fff)' : 'var(--foreground)',
+                  fontSize: 11, fontWeight: 600,
+                }}>
+                  {sim}%
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openMergeDrawerForCandidate(c)}
+                  style={{
+                    height: 30, padding: '0 12px', fontSize: 12,
+                    background: 'var(--primary)', color: 'var(--primary-foreground, #fff)',
+                    border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer',
+                  }}
+                >
+                  合并到它
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', gap: 8,
+          marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)',
+        }}>
+          <button
+            type="button"
+            onClick={() => setCandidateModalOpen(false)}
+            style={{
+              height: 34, padding: '0 14px', fontSize: 13,
+              background: 'var(--card)', color: 'var(--foreground)',
+              border: '1px solid var(--border)', borderRadius: 'var(--radius)', cursor: 'pointer',
+            }}
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCandidateModalOpen(false);
+              // 走原本 submitCreate（继续新建）
+              submitCreate();
+            }}
+            style={{
+              height: 34, padding: '0 14px', fontSize: 13,
+              background: 'var(--primary)', color: 'var(--primary-foreground, #fff)',
+              border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer',
+            }}
+          >
+            继续新建
+          </button>
+        </div>
+      </Modal>
+
+      {/* 合并 drawer：source/target 属性对比 + 用户勾选映射 → 提交 /object-types/merge */}
+      <OntologyMergeDrawer
+        open={mergeOpen}
+        source={mergeSource}
+        target={mergeTarget}
+        onMerge={submitMerge}
+        onCancel={() => {
+          setMergeOpen(false);
+          setMergeSource(null);
+          setMergeTarget(null);
+        }}
+        submitting={mergeSubmitting}
+      />
       </div>
     </div>
   );
