@@ -17,11 +17,13 @@ import {
   useNodeRender,
   usePlaygroundTools,
   usePlayground,
+  useClientContext,
   WorkflowDocument,
   type WorkflowJSON,
   type WorkflowNodeRegistry,
   type WorkflowNodeEntity,
 } from '@flowgram.ai/free-layout-editor';
+import { Field } from '@flowgram.ai/editor';
 import { createFreeNodePanelPlugin, WorkflowNodePanelService, type NodePanelRenderProps } from '@flowgram.ai/free-node-panel-plugin';
 import { createFreeSnapPlugin } from '@flowgram.ai/free-snap-plugin';
 import { createMinimapPlugin } from '@flowgram.ai/minimap-plugin';
@@ -351,13 +353,37 @@ function FlowFullscreenEditor({
   })();
   const meta = NODE_TYPE_META[activeType] || NODE_TYPE_META['input'];
   const TypeIcon = meta.icon;
-  const activeData = (activeNodeId ? nodeConfig[activeNodeId] : null) || {};
+  // v1.5 R1.6：走 FlowGram document 读节点 data，解决之前 nodeConfig[activeNodeId] 对新拖入节点空白的问题
+  const ctx = useClientContext();
+  const [, setDocRefresh] = React.useState(0);
+  React.useEffect(() => {
+    if (!ctx?.document) return;
+    const disp = ctx.document.onContentChange?.(() => setDocRefresh((x) => x + 1));
+    return () => disp?.dispose?.();
+  }, [ctx]);
+  const activeNodeJson = (() => {
+    if (!activeNodeId || !ctx?.document) return null;
+    return ctx.document.getNode(activeNodeId)?.toJSON?.() || null;
+  })();
+  const fallback = (NODE_DETAIL_PROPS as Record<string, Record<string, { value: string; label: string }>>)[activeType]
+    || (NODE_DETAIL_PROPS as Record<string, Record<string, { value: string; label: string }>>)[activeNodeId] || {};
+  const liveData = (activeNodeJson?.data as Record<string, unknown> | undefined) || {};
+  const activeData = {
+    ...Object.fromEntries(Object.entries(fallback).map(([k, v]) => [k, v.value])),
+    ...liveData,
+  };
   const updateField = (key: string, value: string) => {
-    if (!activeNodeId) return;
-    setNodeConfig((prev) => ({
-      ...prev,
-      [activeNodeId]: { ...(prev[activeNodeId] || {}), [key]: { ...prev[activeNodeId]?.[key], value } },
-    }));
+    if (!activeNodeId || !ctx?.document) return;
+    const json = ctx.document.toJSON();
+    const curData = (ctx.document.getNode(activeNodeId)?.toJSON()?.data || {}) as Record<string, unknown>;
+    const nextData = { ...curData, [key]: value };
+    const updated = {
+      ...json,
+      nodes: json.nodes.map((n: { id: string; data?: Record<string, unknown> }) =>
+        n.id === activeNodeId ? { ...n, data: nextData } : n
+      ),
+    };
+    ctx.document.fromJSON(updated);
   };
   const deleteActiveNode = () => {
     if (!activeNodeId) return;
@@ -405,9 +431,23 @@ function FlowFullscreenEditor({
       '数据源': ['source', 'format'],
     };
     const keys = sectionFields[section] || [];
-    return keys.map((k) => {
+    // 兼容两层结构：activeData[k] 可能是 {value,label}（fallback NODE_DETAIL_PROPS）也可能是 string（live data）
+    const getVal = (k: string): string => {
       const f = activeData[k];
-      if (!f) return null;
+      if (f == null) return '';
+      if (typeof f === 'string') return f;
+      if (typeof f === 'object' && 'value' in (f as Record<string, unknown>)) return String((f as { value: unknown }).value ?? '');
+      return '';
+    };
+    const getLabel = (k: string): string => {
+      const f = activeData[k];
+      if (f && typeof f === 'object' && 'label' in (f as Record<string, unknown>)) return String((f as { label: unknown }).label);
+      return k;
+    };
+    return keys.map((k) => {
+      if (!activeData[k] && getVal(k) === '') return null;
+      const value = getVal(k);
+      const label = getLabel(k);
       return (
         <div key={k} style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: palette.panelTextMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -433,11 +473,11 @@ function FlowFullscreenEditor({
             {k === 'format' && <FileText style={{ width: 12, height: 12 }} />}
             {k === 'threshold' && <Sliders style={{ width: 12, height: 12 }} />}
             {k === 'maxRetries' && <RefreshCw style={{ width: 12, height: 12 }} />}
-            <span>{f.label}</span>
+            <span>{label}</span>
           </div>
-          {f.type === 'json' ? (
+          {(k === 'prompt' || k === 'schema' || k === 'sample') ? (
             <textarea
-              value={String(f.value)}
+              value={value}
               onChange={(e) => updateField(k, e.target.value)}
               rows={5}
               style={{
@@ -451,14 +491,14 @@ function FlowFullscreenEditor({
             />
           ) : (
             <input
-              value={String(f.value)}
+              value={value}
               onChange={(e) => updateField(k, e.target.value)}
               style={{
                 width: '100%', boxSizing: 'border-box', padding: '8px 12px',
                 background: palette.panelMuted,
                 border: `1px solid ${palette.modalBorder}`,
                 borderRadius: 6, fontSize: 13, color: palette.panelText,
-                fontFamily: f.mono ? 'var(--font-mono)' : 'var(--font-sans)', outline: 'none',
+                fontFamily: 'inherit', outline: 'none',
               }}
             />
           )}
@@ -619,12 +659,19 @@ function FlowFullscreenEditor({
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 ><X style={{ width: 14, height: 14 }} /></button>
               </div>
-              <div style={{ fontSize: 13, color: palette.panelText, fontWeight: 500 }}>
-                {NODE_DATA[activeNodeId]?.title || activeNodeId}
-              </div>
-              <div style={{ fontSize: 12, color: palette.panelTextMuted, marginTop: 2 }}>
-                {NODE_DATA[activeNodeId]?.desc || ''}
-              </div>
+              {/* v1.5 R1.6：title/desc 走 liveData（FlowGram document），新拖入节点也能显示 */}
+              <input
+                value={String(activeData.title || '')}
+                placeholder="节点标题"
+                onChange={(e) => updateField('title', e.target.value)}
+                style={{ width: '100%', padding: '4px 8px', boxSizing: 'border-box', background: palette.panelMuted, color: palette.panelText, border: 'none', borderRadius: 4, fontSize: 13, fontWeight: 500, outline: 'none', marginTop: 4, fontFamily: 'inherit' }}
+              />
+              <input
+                value={String(activeData.desc || '')}
+                placeholder="节点描述"
+                onChange={(e) => updateField('desc', e.target.value)}
+                style={{ width: '100%', padding: '4px 8px', boxSizing: 'border-box', background: palette.panelMuted, color: palette.panelTextMuted, border: 'none', borderRadius: 4, fontSize: 12, outline: 'none', marginTop: 4, fontFamily: 'inherit' }}
+              />
             </div>
 
             {/* 分组 Section tab */}
@@ -1591,10 +1638,14 @@ function CanvasDropZone({
 }
 
 // 全屏节点渲染器：从 FlowPaletteContext 读 palette 实现反色
+// v1.5 R1.6：参考 FlowGram 官方 base-node.tsx —— 加 onMouseDown={nodeRender.startDrag}
+// 让节点能自由拖动定位；加 hover 状态 + Trash2 删除按钮
 function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = {}) {
   const nodeRender = useNodeRender();
+  const ctx = useClientContext();
   const n = nodeRender.node;
   const palette = React.useContext(FlowPaletteContext);
+  const [isHover, setIsHover] = React.useState(false);
 
   const idToType: Record<string, string> = {
     'input': 'input', 'output': 'output',
@@ -1602,7 +1653,9 @@ function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = 
     'condition': 'condition', 'loop-complete': 'loop', 'tool-ontology': 'tool',
   };
   const shortType = idToType[n.id] || String(n.type || '').replace(/^flow-/, '').toLowerCase();
-  const data = (NODE_DATA[n.id] as { title?: string; desc?: string } | undefined) || {};
+  // 优先从 nodeRender.data 取（FlowGram 自动从 WorkflowNodeJSON.data 提取）
+  const data = (nodeRender.data as { title?: string; desc?: string } | undefined)
+    || (NODE_DATA[n.id] as { title?: string; desc?: string } | undefined) || {};
   const isSel = !!nodeRender.selected;
 
   // CSS 注入已由父级 FlowFullscreenEditor 完成（避免每个节点都操作 DOM）
@@ -1611,27 +1664,41 @@ function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = 
 
   const labelInfo = palette.nodeLabel(shortType);
   const tColor = palette.typeColor(shortType);
+  const doDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    ctx.operation.deleteNode(n);
+  };
 
   return (
     <div
       ref={nodeRender.nodeRef as unknown as React.RefObject<HTMLDivElement>}
       onClick={(e) => { e.stopPropagation(); onSelect?.(n.id); nodeRender.selectNode(e); }}
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => setIsHover(false)}
+      onMouseDown={(e) => {
+        // 官方 base-node 模式：startDrag + stopPropagation，让节点可拖动
+        nodeRender.startDrag(e);
+        e.stopPropagation();
+      }}
       style={{
         width: '100%', height: '100%',
-        background: palette.nodeBg,  // 黑色（深色 UI）/ 白色（浅色 UI）
-        border: `2px solid ${isSel ? tColor : palette.nodeBorder}`, // 选中时边框 = 类型色，否则浅色
+        background: palette.nodeBg,
+        border: `2px solid ${isSel ? tColor : palette.nodeBorder}`,
         borderRadius: 10,
         padding: 12,
-        cursor: 'pointer',
+        cursor: 'grab',
         transition: 'box-shadow .15s, border-color .15s, transform .15s',
         boxShadow: isSel
           ? `0 0 0 3px ${tColor}, 0 0 0 6px ${tColor}40, 0 8px 24px ${tColor}80`
-          : palette.nodeShadow,
+          : isHover
+            ? `0 4px 16px ${tColor}40, 0 0 0 1px ${tColor}60`
+            : palette.nodeShadow,
         boxSizing: 'border-box',
         color: palette.nodeText,
         fontFamily: 'var(--font-sans)',
         pointerEvents: 'auto',
         userSelect: 'none',
+        opacity: nodeRender.dragging ? 0.4 : 1,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -1644,7 +1711,18 @@ function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = 
         <div style={{
           fontSize: 12, fontWeight: 600, color: palette.nodeText,
           flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{data.title || '未命名'}</div>
+        }}>{data.title || data.title || '未命名'}</div>
+        {(isHover || isSel) && (
+          <button
+            onClick={doDelete}
+            title="删除节点"
+            style={{
+              border: 'none', background: 'transparent', padding: 2,
+              cursor: 'pointer', color: palette.nodeDesc, opacity: 0.7,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >✕</button>
+        )}
       </div>
       <div style={{
         fontSize: 10, color: palette.nodeDesc, lineHeight: 1.4,
@@ -1655,10 +1733,12 @@ function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = 
 }
 
 // FlowGram 自定义默认节点渲染器：直接基于 node.type 选择 color 和 label
-// 必须返回带 ref={nodeRender.nodeRef} 的容器，FlowGram 才会测量尺寸
+// v1.5 R1.6：加 onMouseDown={nodeRender.startDrag} 跟官方 base-node 一致，让节点可拖动
 function CustomBaseNode() {
   const nodeRender = useNodeRender();
+  const ctx = useClientContext();
   const n = nodeRender.node;
+  const [isHover, setIsHover] = React.useState(false);
   // 用 n.id 映射到 shortType（最可靠，DOM 上只有 id）
   const idToType: Record<string, string> = {
     'input': 'input',
@@ -1675,29 +1755,53 @@ function CustomBaseNode() {
   // 兜底：从 NODE_DATA 静态表查（FlowGram 1.0.12 的 materials 渲染下 data 可能未注入）
   const data = (nodeRender.data as { title?: string; desc?: string } | undefined) || (NODE_DATA[n.id] as { title?: string; desc?: string }) || {};
   const isSel = !!nodeRender.selected;
+  const doDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    ctx.operation.deleteNode(n);
+  };
   return (
     <div
       ref={nodeRender.nodeRef as unknown as React.RefObject<HTMLDivElement>}
       onClick={(e) => { e.stopPropagation(); nodeRender.selectNode(e); }}
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => setIsHover(false)}
+      onMouseDown={(e) => {
+        // 官方 base-node 模式：startDrag + stopPropagation，让节点可自由拖动
+        nodeRender.startDrag(e);
+        e.stopPropagation();
+      }}
       style={{
         width: '100%', height: '100%',
         background: '#111111',
-        border: `2px solid ${c.border}`,
+        border: `2px solid ${isSel ? c.border : isHover ? c.text : c.border}`,
         borderRadius: 8,
         padding: 12,
-        cursor: 'pointer',
-        transition: 'box-shadow .15s, transform .15s',
-        boxShadow: isSel ? `0 0 0 2px ${c.border}, 0 0 16px ${c.bg}` : `0 0 0 1px ${c.bg}`,
+        cursor: 'grab',
+        transition: 'box-shadow .15s, transform .15s, border-color .15s',
+        boxShadow: isSel ? `0 0 0 2px ${c.border}, 0 0 16px ${c.bg}` : isHover ? `0 0 0 1px ${c.text}80` : `0 0 0 1px ${c.bg}`,
         boxSizing: 'border-box',
         color: '#fafafa',
         fontFamily: 'var(--font-sans)',
         pointerEvents: 'auto',
         userSelect: 'none',
+        opacity: nodeRender.dragging ? 0.4 : 1,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <div style={{ width: 22, height: 22, borderRadius: 5, background: c.bg, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 600, fontSize: 10 }}>{c.label}</div>
         <div style={{ fontSize: 12, fontWeight: 600, color: '#fafafa', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data?.title || '未命名'}</div>
+        {(isHover || isSel) && (
+          <button
+            onClick={doDelete}
+            title="删除节点"
+            style={{
+              border: 'none', background: 'transparent', padding: 2,
+              cursor: 'pointer', color: '#a1a1aa', opacity: 0.7,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, lineHeight: 1,
+            }}
+          >✕</button>
+        )}
       </div>
       <div style={{ fontSize: 10, color: '#a1a1aa', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data?.desc || ' '}</div>
     </div>
