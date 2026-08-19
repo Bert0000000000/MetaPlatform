@@ -326,6 +326,39 @@ class InMemoryOntologyRepository(OntologyRepository):
             expected_diff=expected_diff, kind="create_instance",
         )
 
+    def propose_merge(
+        self,
+        source_rid: str,
+        target_rid: str,
+        similarity: float,
+        impact_summary: str,
+        mapping: dict[str, str] | None = None,
+    ) -> Any:
+        """MP-DEDUP-01：AI 提议合并（subject=target rid，kind=merge_suggestion）。
+
+        与 PgOntologyRepository.propose_merge 行为对齐 —— 不要求 target 已注册为
+        ActionType，只用 target rid 作为 subject；后续 execute 时按 kind=merge_suggestion
+        落库合并。
+        """
+        parameters = {
+            "source_rid": source_rid,
+            "target_rid": target_rid,
+            "similarity": float(similarity),
+            "mapping": dict(mapping or {}),
+        }
+        expected_diff = {
+            "+merge": {"source": source_rid, "target": target_rid},
+            "archived": [source_rid],
+        }
+        return self._action_service.propose(
+            action_rid=str(target_rid),
+            parameters=parameters,
+            target_iid=None,
+            impact_summary=impact_summary,
+            expected_diff=expected_diff,
+            kind="merge_suggestion",
+        )
+
     def propose_model_type(
         self, type_def: dict[str, Any], impact_summary: str,
     ) -> Any:
@@ -369,7 +402,8 @@ class InMemoryOntologyRepository(OntologyRepository):
             if pk_value is None:
                 raise ValueError(f"primary key '{pk_slug}' required to create {p.action_rid}")
             rid_parts = ot.rid.rid.split(".")
-            tenant, cls_slug = rid_parts[1], rid_parts[3]
+            # rid 形如 ``ont.<tenant>.obj.<domain>.<slug>.v1``，parts[4] 是 slug。
+            tenant, cls_slug = rid_parts[1], rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
             resolved: list[tuple[ClassRef, Any]] = []
             for key, value in props_in.items():
                 ref = slug_to_ref.get(key) or (

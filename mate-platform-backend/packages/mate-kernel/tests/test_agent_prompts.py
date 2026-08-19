@@ -9,7 +9,11 @@ from mate_kernel.agent.prompts import SYSTEM_PROMPTS
 
 # 每个 role 的 prompt 必须包含的身份关键词（与实现能力对应）
 _IDENTITY_MARKERS: dict[AgentRole, tuple[str, ...]] = {
-    AgentRole.ONTOLOGY: ("本体员工", "ObjectSet", "needs_clarification"),
+    # M3 LLM-driven：proposal 状态机 + 6 种 action_kind
+    AgentRole.ONTOLOGY: (
+        "本体员工", "propose_object_type", "propose_instance",
+        "merge_suggestion", "proposal_id",
+    ),
     AgentRole.WORKFLOW: ("工作流员工", "FlowDefinition", "WaitUser", "AWAITING_USER"),
     AgentRole.APP: ("应用员工", "PageManifest", "slot", "action_button"),
     AgentRole.DATA_PRODUCT: ("数据产品员工", "DataProduct", "LineageEdge", "QualitySummary"),

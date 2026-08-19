@@ -52,6 +52,11 @@ class MCPServer:
                 "description": getattr(t, "description", ""),
                 "category": getattr(t, "category", ""),
                 "inputSchema": getattr(t, "input_schema", {}),
+                # MP-SAL-04 / ADR-0044：operationId + agent_invokable 桥接
+                "operationId": getattr(t, "operation_id", ""),
+                "capabilities": list(getattr(t, "capabilities", ())),
+                "agentInvokable": bool(getattr(t, "agent_invokable", True)),
+                "readonlyByUser": bool(getattr(t, "readonly_by_user", False)),
             }
             for t in self._tools
         ]
@@ -69,12 +74,28 @@ class MCPServer:
         ]
 
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
-        """调用已注册工具."""
+        """调用已注册工具.
+
+        MP-SAL-04 / ADR-0044 HITL 边界：若 ``agent_invokable=False``，必须由
+        caller 显式声明 ``__caller__="user"``；agent 调用（默认）会被拒。
+        """
+        if isinstance(arguments, dict):
+            caller = arguments.pop("__caller__", None)
+        else:
+            caller = None
         for tool in self._tools:
             if getattr(tool, "name", None) == name:
+                # HITL 闸门：agent_invokable=False 仅允许 user caller
+                if not bool(getattr(tool, "agent_invokable", True)):
+                    if caller != "user":
+                        raise PermissionError(
+                            f"Tool {name!r} is HITL-bound (agent_invokable=False); "
+                            f"only user caller can invoke. Got __caller__={caller!r}",
+                        )
                 handler = getattr(tool, "handler", None)
                 if handler is None:
-                    raise RuntimeError(f"Tool '\''{name}'\'' has no handler")
+                    # Fallback: 工具本身即 handler（ontology_proxy 风格）
+                    handler = tool
                 result = handler(**arguments)
                 if hasattr(result, "__await__"):
                     result = await result

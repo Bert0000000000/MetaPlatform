@@ -114,7 +114,9 @@ def build_crud_app(
     action_rids: tuple[str, ...] = (),
 ) -> AppDefinition:
     """开箱即用：把一个 ObjectType 生成 list / detail / form 三页。"""
-    cls_slug = bound_class.rid.split(".")[3] if "." in bound_class.rid else "obj"
+    parts = bound_class.rid.split(".")
+    # rid 形如 ``ont.<tenant>.obj.<domain>.<slug>.v1``，parts[4] 是 slug。
+    cls_slug = parts[4] if len(parts) >= 6 else (parts[3] if len(parts) >= 4 else "obj")
     base = app_rid.rsplit(".", 2)[0]  # 取前缀
     return AppDefinition(
         app_rid=app_rid,
