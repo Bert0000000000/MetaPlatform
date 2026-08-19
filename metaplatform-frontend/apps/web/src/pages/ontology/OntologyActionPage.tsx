@@ -243,7 +243,7 @@ function FlowFullscreenEditor({
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null); // 默认无选中 → 隐藏属性面板
   const [activeSection, setActiveSection] = useState('基本信息');
   const [themeMode] = useState<'dark' | 'light'>('dark'); // 演示固定为深色
-  const [layoutMode, setLayoutMode] = useState<'free' | 'fixed'>('fixed'); // 布局模式：默认固定布局
+  const [layoutMode, setLayoutMode] = useState<'free' | 'fixed'>('free'); // 自由布局（默认）：dropzone 默认挂载，节点库拖拽即落
   // 可编辑节点配置（初始值为 initialConfig 深拷贝；属性面板读写此 state）
   const [nodeConfig, setNodeConfig] = useState<NodeConfig>(() =>
     JSON.parse(JSON.stringify(initialConfig)),
