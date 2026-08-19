@@ -1222,13 +1222,14 @@ function FlowCounterInner() {
     return () => clearInterval(id);
   }, []);
   React.useEffect(() => {
+    if (!document) return;
     const d = document as unknown as { onContentChange?: (cb: () => void) => { dispose: () => void } };
     if (d.onContentChange) {
       const disp = d.onContentChange(() => force());
       return () => disp.dispose();
     }
   }, [document]);
-  const data = (document as unknown as { toJSON?: () => { nodes?: unknown[]; edges?: unknown[] } }).toJSON?.() || {};
+  const data = document?.toJSON?.() || {};
   const nodeCount = (data.nodes || []).length;
   const edgeCount = (data.edges || []).length;
   if (!palette || !counterSlot) return null;
@@ -2017,11 +2018,29 @@ export default function OntologyActionPage() {
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>流程编排</div>
                       <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>当前 Action 包含 <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}>7</span> 个节点 / <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--foreground)' }}>7</span> 条连线</div>
                     </div>
-                    <Button theme="solid" type="primary" onClick={() => setFlowFullscreen(true)}
-                      style={{ height: 32, padding: '0 12px', fontSize: 12 }}
+                    <button
+                      type="button"
+                      onClick={() => setFlowFullscreen(true)}
+                      data-testid="enter-fullscreen-editor"
+                      style={{
+                        height: 32,
+                        padding: '0 12px',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        fontFamily: 'inherit',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: 'var(--primary, #7c3aed)',
+                        color: 'var(--primary-foreground, #fff)',
+                        border: 'none',
+                        borderRadius: 'var(--radius)',
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                      }}
                     >
                       <Maximize2 style={{ width: 14, height: 14 }} />进入全屏编辑
-                    </Button>
+                    </button>
                   </div>
                   <div style={{ height: 360, background: 'var(--background)', borderRadius: 'var(--radius)', border: '1px solid var(--border)', overflow: 'hidden', position: 'relative' }}>
                     <FreeLayoutEditorProvider
