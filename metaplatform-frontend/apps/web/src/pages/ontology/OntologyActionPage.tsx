@@ -22,7 +22,6 @@ import {
   type WorkflowNodeRegistry,
   type WorkflowNodeEntity,
 } from '@flowgram.ai/free-layout-editor';
-import { Field } from '@flowgram.ai/editor';
 import { createFreeNodePanelPlugin, WorkflowNodePanelService, type NodePanelRenderProps } from '@flowgram.ai/free-node-panel-plugin';
 import { createFreeSnapPlugin } from '@flowgram.ai/free-snap-plugin';
 import { createMinimapPlugin } from '@flowgram.ai/minimap-plugin';
@@ -42,6 +41,7 @@ import {
 import { defaultFixedSemiMaterials } from '@flowgram.ai/fixed-semi-materials';
 import '@flowgram.ai/free-layout-editor/index.css';
 import '@flowgram.ai/fixed-layout-editor/index.css';
+// 后续使用：<Field label="..."> —— 用 @mate/shared 的 FormFields.Field
 import { FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import {
   listActionTypes, listObjectTypes, slugAndVersionOfObjectType,
@@ -130,6 +130,99 @@ const NODE_TYPE_META: Record<string, { category: string; icon: typeof Cpu; secti
   'tool':      { category: 'MCP 工具', icon: Plug,       sections: ['基本信息', '工具选择', '参数配置', '输出映射', '执行配置', '权限审计'] },
   'loop':      { category: '循环控制', icon: RefreshCw,  sections: ['基本信息', '循环条件', '迭代体配置', '执行配置', '权限审计'] },
   'output':    { category: '数据目标', icon: Database,   sections: ['基本信息', '数据契约', '写入策略', '执行配置', '权限审计'] },
+};
+
+// v1.7：节点库条目 → 动态字段 schema（按 NODE_LIBRARY.type 注册，属性面板按此加载）
+// 结构：flow-input → 数据源 schema；flow-llm → AI 模型 schema；等等
+type FieldSchema = { label: string; value: string; mono?: boolean; type?: 'text' | 'json' | 'list'; required?: boolean };
+type NodeSchema = { category: string; icon: typeof Cpu; sections: { name: string; fields: FieldSchema[] }[] };
+const NODE_SCHEMAS: Record<string, NodeSchema> = {
+  'flow-start':     { category: 'BPMN',       icon: PlayCircle,    sections: [{ name: '基本信息', fields: [{ label: '节点 ID', value: 'flow-start', mono: true }, { label: '类型', value: 'BPMN 开始节点' }] }] },
+  'flow-end':       { category: 'BPMN',       icon: Square,        sections: [{ name: '基本信息', fields: [{ label: '节点 ID', value: 'flow-end', mono: true }, { label: '类型', value: 'BPMN 结束节点' }] }] },
+  'flow-input':     NODE_TYPE_META.input && { category: '数据源', icon: Database,   sections: [
+    { name: '基本信息', fields: [
+      { label: '节点 ID', value: 'flow-input', mono: true, required: true },
+      { label: '类型', value: 'HTTP POST' },
+      { label: '数据格式', value: 'application/json' },
+    ] },
+    { name: '数据契约', fields: [
+      { label: 'Schema', value: '{ "type": "object", "properties": { "id": "string", "name": "string" } }', type: 'json' },
+      { label: '示例数据', value: '{ "id": 12345, "name": "示例" }', type: 'json' },
+    ] },
+    { name: '执行配置', fields: [
+      { label: '超时时间 (ms)', value: '10000' },
+      { label: '重试次数', value: '3' },
+      { label: '鉴权', value: 'Bearer Token' },
+    ] },
+  ] },
+  'flow-output':    NODE_TYPE_META.output && { category: '数据目标', icon: Database,  sections: [
+    { name: '基本信息', fields: [
+      { label: '节点 ID', value: 'flow-output', mono: true, required: true },
+      { label: '类型', value: 'Neo4j / PostgreSQL' },
+    ] },
+    { name: '数据契约', fields: [
+      { label: 'Schema', value: '{ "type": "object", "properties": { "subject": "string", "predicate": "string", "object": "string" } }', type: 'json' },
+    ] },
+    { name: '写入策略', fields: [
+      { label: '写入目标', value: 'neo4j://graph/mate-platform', mono: true },
+      { label: '写入模式', value: 'merge' },
+    ] },
+  ] },
+  'flow-condition': NODE_TYPE_META.condition && { category: '逻辑控制', icon: Diamond,  sections: [
+    { name: '基本信息', fields: [
+      { label: '节点 ID', value: 'flow-condition', mono: true, required: true },
+    ] },
+    { name: '条件表达式', fields: [
+      { label: '表达式', value: 'input.score > 0.8', mono: true, required: true },
+      { label: 'Yes 分支', value: '→ tool-ontology', mono: true },
+      { label: 'No 分支',  value: '→ loop-complete', mono: true },
+    ] },
+  ] },
+  'flow-loop':      NODE_TYPE_META.loop && { category: '循环控制', icon: RefreshCw,  sections: [
+    { name: '基本信息', fields: [
+      { label: '节点 ID', value: 'flow-loop', mono: true, required: true },
+    ] },
+    { name: '循环条件', fields: [
+      { label: '最大迭代次数', value: '10' },
+      { label: '循环条件', value: 'missing_fields.length > 0', mono: true },
+    ] },
+    { name: '迭代体配置', fields: [
+      { label: '迭代输入', value: 'input.missing_fields', mono: true },
+      { label: '迭代输出', value: 'output.filled_data', mono: true },
+    ] },
+  ] },
+  'flow-tool':      NODE_TYPE_META.tool && { category: 'MCP 工具', icon: Plug,  sections: [
+    { name: '基本信息', fields: [
+      { label: '节点 ID', value: 'flow-tool', mono: true, required: true },
+    ] },
+    { name: '工具选择', fields: [
+      { label: '工具 ID', value: 'mcp.ontology.match', mono: true, required: true },
+      { label: '相似度阈值', value: '0.85' },
+    ] },
+    { name: '参数配置', fields: [
+      { label: '输入映射', value: 'input.entities → tool.match', mono: true },
+      { label: '输出映射', value: 'output.matched → next.input', mono: true },
+    ] },
+  ] },
+  'flow-llm':       NODE_TYPE_META.llm && { category: 'AI 模型', icon: Sparkles,  sections: [
+    { name: '基本信息', fields: [
+      { label: '节点 ID', value: 'flow-llm', mono: true, required: true },
+    ] },
+    { name: '模型配置', fields: [
+      { label: '模型', value: 'doubao-pro-32k', mono: true, required: true },
+      { label: 'Temperature', value: '0.3' },
+      { label: '最大 Token', value: '4096' },
+    ] },
+    { name: 'Prompt 编辑', fields: [
+      { label: 'System Prompt', value: '你是一个专业的实体抽取助手...', type: 'json' },
+    ] },
+    { name: '输入映射', fields: [
+      { label: '输入', value: 'input.raw_data → prompt.context', mono: true },
+    ] },
+    { name: '输出映射', fields: [
+      { label: '输出', value: 'output.entities → next.input', mono: true },
+    ] },
+  ] },
 };
 
 // 节点配置字段（可编辑）
@@ -242,6 +335,12 @@ function FlowFullscreenEditor({
   saving?: boolean;
 }) {
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null); // 默认无选中 → 隐藏属性面板
+  // 暴露 setActiveNodeId 到 window 供 e2e test 用
+  // （绕过 React 19 root delegation onClick 不 commit 坑）
+  // 注意：只挂一次（deps []），避免 useEffect 死循环；opRef 在 onAllLayersRendered 同步
+  React.useEffect(() => {
+    (window as unknown as { __flowgram_select_node__?: (id: string | null) => void }).__flowgram_select_node__ = setActiveNodeId;
+  }, []);
   const [activeSection, setActiveSection] = useState('基本信息');
   const [themeMode] = useState<'dark' | 'light'>('dark'); // 演示固定为深色
   const [layoutMode, setLayoutMode] = useState<'free' | 'fixed'>('free'); // 自由布局（默认）：dropzone 默认挂载，节点库拖拽即落
@@ -253,6 +352,7 @@ function FlowFullscreenEditor({
   // 用 React state 触发 WorkflowDocumentContext 重渲（ref 不会自动 re-render）
   const [doc, setDoc] = useState<any>(null);
   const docRef = React.useRef<any>(null);
+  const opRef = React.useRef<{ deleteNode?: (id: string) => void } | null>(null);
 
   // 主题取反色配置：UI 黑 → 图内元素 = 浅边框 + 黑色背景 + 浅色文字
   const palette = themeMode === 'dark'
@@ -340,17 +440,31 @@ function FlowFullscreenEditor({
         panelSection: '#ffffff',
       };
 
-  // 选中节点类型映射
+  // 选中节点类型映射（v1.7：优先按 activeNodeId 完整前缀匹配 flow-xxx，找不到再退化 includes）
   const activeType = (() => {
     if (!activeNodeId) return 'input';
+    if (activeNodeId === 'start' || activeNodeId === 'end') return 'input'; // demo 旧节点（没 flow- 前缀）按 input
+    const flowType = activeNodeId.startsWith('flow-') ? activeNodeId : `flow-${activeNodeId}`;
+    // NODE_SCHEMAS 优先（v1.7），其次 NODE_TYPE_META 类型映射
+    if (NODE_SCHEMAS[flowType]) {
+      // flow-llm → 'llm'，flow-tool → 'tool'，flow-condition → 'condition' ...
+      const short = flowType.replace('flow-', '');
+      return short;
+    }
+    // 退化
     if (activeNodeId.includes('llm')) return 'llm';
     if (activeNodeId.includes('condition')) return 'condition';
     if (activeNodeId.includes('tool')) return 'tool';
     if (activeNodeId.includes('loop')) return 'loop';
-    if (activeNodeId === 'output') return 'output';
+    if (activeNodeId.includes('output')) return 'output';
     return 'input';
   })();
-  const meta = NODE_TYPE_META[activeType] || NODE_TYPE_META['input'];
+  // 节点类型 meta（图标 + 分组）：用 NODE_SCHEMAS 优先，fallback NODE_TYPE_META
+  const activeFlowType = activeNodeId?.startsWith('flow-') ? activeNodeId : `flow-${activeType}`;
+  const activeSchema = NODE_SCHEMAS[activeFlowType];
+  const meta = activeSchema
+    ? { category: activeSchema.category, icon: activeSchema.icon, sections: activeSchema.sections.map(s => s.name) }
+    : NODE_TYPE_META[activeType] || NODE_TYPE_META['input'];
   const TypeIcon = meta.icon;
   // v1.5 R1.6：走 FlowGram document 读节点 data，解决之前 nodeConfig[activeNodeId] 对新拖入节点空白的问题
   const ctx = useClientContext();
@@ -408,9 +522,56 @@ function FlowFullscreenEditor({
     );
   };
 
-  // 渲染指定 section 的字段
+  // v1.7：按节点类型动态加载字段（NODE_SCHEMAS 优先 → fallback 硬编码 sectionFields）
   const renderSectionFields = (section: string) => {
-    // 简单按 section 名称字段映射
+    // 先从新 NODE_SCHEMAS 找
+    const schema = NODE_SCHEMAS[activeFlowType];
+    if (schema) {
+      const sect = schema.sections.find((s) => s.name === section);
+      if (sect) {
+        return sect.fields.map((f, i) => {
+          // 字段 value 优先用节点 data，再退化到 schema 默认
+          const liveVal = activeData[f.label] || (activeNodeJson?.data as Record<string, unknown> | undefined)?.[f.label];
+          const value = (liveVal != null ? String(liveVal) : f.value) || f.value;
+          return (
+            <div key={`${f.label}-${i}`} style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: palette.panelTextMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {f.required && <span style={{ color: 'var(--semi-color-danger, #f56565)' }}>*</span>}
+                <span>{f.label}</span>
+              </div>
+              {f.type === 'json' ? (
+                <textarea
+                  value={value}
+                  readOnly
+                  rows={5}
+                  style={{
+                    width: '100%', boxSizing: 'border-box', margin: 0, padding: '10px 12px',
+                    background: palette.panelMuted,
+                    border: `1px solid ${palette.modalBorder}`,
+                    borderRadius: 6, resize: 'vertical',
+                    fontFamily: 'var(--font-mono)', fontSize: 12, color: palette.panelText,
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6, outline: 'none',
+                  }}
+                />
+              ) : (
+                <input
+                  value={value}
+                  readOnly
+                  style={{
+                    width: '100%', boxSizing: 'border-box', padding: '8px 12px',
+                    background: palette.panelMuted,
+                    border: `1px solid ${palette.modalBorder}`,
+                    borderRadius: 6, fontSize: 13, color: palette.panelText,
+                    fontFamily: f.mono ? 'var(--font-mono)' : 'var(--font-sans)', outline: 'none',
+                  }}
+                />
+              )}
+            </div>
+          );
+        });
+      }
+    }
+    // fallback：v1.5 之前硬编码 sectionFields 映射（兼容老 demo 节点）
     const sectionFields: Record<string, string[]> = {
       '基本信息': ['id'],
       '模型配置': ['model', 'temperature', 'maxTokens'],
@@ -1035,6 +1196,8 @@ function FixedLayoutEditor({
                 }}
                 onAllLayersRendered={(ctx) => {
                   docRef.current = ctx.document; setDoc(ctx.document);
+                  opRef.current = (ctx as unknown as { operation?: { deleteNode?: (id: string) => void } }).operation ?? null;
+                  (window as unknown as { __flowgram_op__?: unknown }).__flowgram_op__ = opRef.current;
                   onDocumentReady?.(ctx.document);
                   setTimeout(() => {
                     try {
@@ -1171,6 +1334,8 @@ function FullscreenFlowEditor({
           playground={{ preventGlobalGesture: true }}
           onAllLayersRendered={(ctx) => {
             docRef.current = ctx.document; setDoc(ctx.document);
+            opRef.current = (ctx as unknown as { operation?: { deleteNode?: (id: string) => void } }).operation ?? null;
+            (window as unknown as { __flowgram_op__?: unknown }).__flowgram_op__ = opRef.current;
             onDocumentReady?.(ctx.document);
             try { (ctx.playground as { zoom?: number }).zoom = 1; } catch { /* ignore */ }
             ctx.tools.fitView(false);
