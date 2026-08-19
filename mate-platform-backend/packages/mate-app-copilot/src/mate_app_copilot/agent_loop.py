@@ -28,6 +28,8 @@ from typing import Any
 
 from .clients.llmgw_stream import LlmgwStreamError
 from .clients.orchestrator_client import OrchestratorClientError
+from .dispatcher import DispatchResult, dispatch_by_routing
+from .semantic_router import CandidateRole, SemanticRouter
 
 MAX_TOOL_ITERATIONS = 5
 
@@ -70,19 +72,39 @@ def build_system_prompt(
     roles: list[dict[str, Any]],
     object_cards: list[dict[str, Any]] | None = None,
     ontology_hint: bool = False,
+    *,
+    candidate_roles: list[CandidateRole] | None = None,
 ) -> str:
     """从 orchestrator 注册的数字员工角色动态生成 system prompt。
 
     MP-SAL-02（OAG）：``object_cards`` 非空时追加「相关对象上下文」段——
     检索命中的对象卡片（带 rid 可追溯）进入 prompt，AI「想」的时候本体在上下文里。
     MP-SAL 接线：``ontology_hint`` 提示本体工具选用语义（查=直连，干=派员工）。
+    MP-SR-01（任务2）：``candidate_roles`` 非空时只列 top_k 候选，并在 prompt
+    顶部加一段「候选已由 semantic_router 预筛」提示，LLM 在候选范围内选。
     """
+    if candidate_roles:
+        selected_roles = [
+            {
+                "role": c.role_slug,
+                "name": c.display_name or c.role_slug,
+                "capabilities": [{"name": t} for t in c.capability_tags],
+            }
+            for c in candidate_roles
+        ]
+    else:
+        selected_roles = roles
+
     lines = [
         "你是 SuperAI 编排助手。用户要求执行业务任务时，用 dispatch_employee 工具调度数字员工完成。",
         "一次可以调用多个 dispatch_employee 把任务并行派给不同员工。",
-        "可调度的数字员工：",
     ]
-    for r in roles:
+    if candidate_roles:
+        lines.append(
+            "（候选已由 semantic_router 预筛，请从下列候选中选择最合适的数字员工。）"
+        )
+    lines.append("可调度的数字员工：")
+    for r in selected_roles:
         caps = ", ".join(c.get("name", "") for c in r.get("capabilities", []))
         lines.append(f"- {r.get('role')}（{r.get('name') or r.get('role')}）：{caps}")
     if ontology_hint:
@@ -299,6 +321,9 @@ async def run_agent_loop(
     ontology_tools: list[dict[str, Any]] | None = None,
     ontology_tool_exec: Any = None,
     object_cards: list[dict[str, Any]] | None = None,
+    semantic_router: SemanticRouter | None = None,
+    candidate_top_k: int = 3,
+    dispatch_by_routing_fn: Any | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Run the decision→dispatch→feed-back loop, yielding event dicts.
 
@@ -306,14 +331,48 @@ async def run_agent_loop(
       {"type": "reasoning", "text": str}
       {"type": "tool_call", "callId": str, "tool": str, "args": dict}
       {"type": "tool_result", "callId": str, "status": "success"|"error", "result": dict}
+      {"type": "routing_decision", "candidates": [...], "selected": str|None, "reason": str}
       {"type": "final", "content": str}
 
     MP-SAL 接线：``ontology_tools``（schema 列表）+ ``ontology_tool_exec``
     （name,args→dict，同步，内部 to_thread）让 SuperAI 直查本体；
     ``object_cards``（OAG 检索卡片）注入 system prompt——「想」的时候本体在上下文。
+
+    MP-SR-01（任务2）：
+      - ``semantic_router`` 给定时，第一轮 decision_turn 前用其预筛 top_k
+        候选；候选注入 system prompt（LLM 决策面收窄）。
+      - ``dispatch_by_routing_fn`` 给定时，LLM 决策不可用 / 不返回
+        ``dispatch_employee`` 时走 4 级 fallback 链（a2a → kernel_role →
+        embedding_match → keyword_substring），命中即派发。每轮都打
+        ``routing_decision`` SSE event 供前端 trace。
     """
+    # Pre-screen: 算 candidate_roles（仅取最后一条 user message 算语义）
+    last_user_msg = next(
+        (str(m.get("content") or "") for m in reversed(messages)
+         if m.get("role") == "user"),
+        "",
+    )
+    router = semantic_router or SemanticRouter()
+    candidate_roles: list[CandidateRole] = []
+    if last_user_msg and roles:
+        candidate_roles = router.route(last_user_msg, roles, top_k=candidate_top_k)
+
+    # Emit routing_decision（在 reasoning 前，让前端先看到候选）
+    yield {
+        "type": "routing_decision",
+        "candidates": [c.to_dict() for c in candidate_roles],
+        "selected": None,
+        "reason": (
+            "semantic_router pre-screened roles by embedding + keyword hit"
+            if candidate_roles else "no candidates (empty roles or query)"
+        ),
+    }
+
     system_prompt = build_system_prompt(
-        roles, object_cards=object_cards, ontology_hint=bool(ontology_tools),
+        roles,
+        object_cards=object_cards,
+        ontology_hint=bool(ontology_tools),
+        candidate_roles=candidate_roles or None,
     )
     tools = build_tools(roles, ontology_tools=ontology_tools)
     slug_enum = {str(r.get("role")) for r in roles if r.get("role")}
@@ -358,14 +417,32 @@ async def run_agent_loop(
                 llm_down = True
 
         if llm_down:
-            decision = _fallback_decision(history, roles)
-            if decision is None:
-                yield {
-                    "type": "final",
-                    "content": "LLM 决策服务不可用，且未匹配到可调度的数字员工。",
-                }
-                return
-            degraded = True
+            # MP-SR-01: 优先走 dispatcher fallback 链；未注入时回退到 _fallback_decision
+            if dispatch_by_routing_fn is not None and roles:
+                fallback_result = await _dispatch_fallback(
+                    user_message=last_user_msg,
+                    roles=roles,
+                    dispatch_by_routing_fn=dispatch_by_routing_fn,
+                )
+                if fallback_result is not None:
+                    decision = _synthesize_dispatch_decision(fallback_result, last_user_msg)
+                    degraded = True
+                    yield _routing_decision_event(fallback_result)
+                else:
+                    yield {
+                        "type": "final",
+                        "content": "LLM 决策服务不可用，且未匹配到可调度的数字员工。",
+                    }
+                    return
+            else:
+                decision = _fallback_decision(history, roles)
+                if decision is None:
+                    yield {
+                        "type": "final",
+                        "content": "LLM 决策服务不可用，且未匹配到可调度的数字员工。",
+                    }
+                    return
+                degraded = True
         if decision is None:
             yield {"type": "final", "content": "LLM 决策服务不可用。"}
             return
@@ -374,8 +451,26 @@ async def run_agent_loop(
         content = str(decision.get("content") or "")
 
         if not tool_calls:
-            yield {"type": "final", "content": _strip_chain_of_thought(content)}
-            return
+            # MP-SR-01: LLM 没返回 dispatch_employee → 试 dispatcher fallback
+            if dispatch_by_routing_fn is not None and roles:
+                fallback_result = await _dispatch_fallback(
+                    user_message=last_user_msg,
+                    roles=roles,
+                    dispatch_by_routing_fn=dispatch_by_routing_fn,
+                )
+                if fallback_result is not None:
+                    decision = _synthesize_dispatch_decision(fallback_result, last_user_msg)
+                    degraded = True
+                    yield _routing_decision_event(fallback_result)
+                    tool_calls = decision.get("tool_calls") or []
+                    content = str(decision.get("content") or "")
+                    # fall through to dispatch below
+                else:
+                    yield {"type": "final", "content": _strip_chain_of_thought(content)}
+                    return
+            else:
+                yield {"type": "final", "content": _strip_chain_of_thought(content)}
+                return
 
         # MP-SAL：本体类工具调用（list/inspect/query/search/propose）——同步执行，
         # 结果回填历史，下一轮 LLM 拿着真实本体数据作答/继续决策。
@@ -545,3 +640,71 @@ async def run_agent_loop(
     else:
         content = "已达到最大调度轮数，请补充说明以便继续。"
     yield {"type": "final", "content": content}
+
+
+# ────────────────── MP-SR-01 helpers ──────────────────
+
+
+async def _dispatch_fallback(
+    *,
+    user_message: str,
+    roles: list[dict[str, Any]],
+    dispatch_by_routing_fn: Any,
+) -> DispatchResult | None:
+    """Wrap ``dispatch_by_routing_fn`` for the agent loop.
+
+    Returns ``None`` when no fallback step matched (chain returned
+    ``source="none"``), so caller can decide between final-text /
+    graceful-degradation.
+    """
+    try:
+        result = await dispatch_by_routing_fn(
+            user_message=user_message,
+            available_roles=roles,
+        )
+    except Exception:
+        return None
+    if result is None or getattr(result, "source", None) in (None, "none"):
+        return None
+    if not getattr(result, "target_rid", None):
+        return None
+    return result
+
+
+def _synthesize_dispatch_decision(
+    fallback_result: DispatchResult,
+    user_message: str,
+) -> dict[str, Any]:
+    """Build a ``decision`` dict (with synthetic ``dispatch_employee`` tool_call)
+    from a fallback ``DispatchResult``.
+
+    Lets the existing dispatch / history-append / tool_result paths handle the
+    rest unchanged.
+    """
+    target = str(fallback_result.target_rid or "")
+    return {
+        "content": (
+            f"（由 {fallback_result.source} 兜底选择 {target}：{fallback_result.reason}）"
+        ),
+        "tool_calls": [{
+            "id": f"call-{uuid.uuid4().hex[:10]}",
+            "type": "function",
+            "function": {
+                "name": "dispatch_employee",
+                "arguments": json.dumps({
+                    "target_rid": target,
+                    "message": user_message[:120],
+                }, ensure_ascii=False),
+            },
+        }],
+    }
+
+
+def _routing_decision_event(fallback_result: DispatchResult) -> dict[str, Any]:
+    """Build a ``routing_decision`` SSE event from a fallback result."""
+    return {
+        "type": "routing_decision",
+        "candidates": [c.to_dict() for c in fallback_result.candidates],
+        "selected": fallback_result.target_rid,
+        "reason": fallback_result.reason,
+    }

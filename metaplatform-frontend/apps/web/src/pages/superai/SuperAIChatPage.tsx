@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Card, Input, InputGroup, Button, Empty, Tag, Space, Select } from '@douyinfe/semi-ui';
 import { Row, Col } from '@douyinfe/semi-ui/lib/es/grid';
 import { SendOutlined, ThunderboltOutlined, useApiErrorBoundary } from '@mate/shared';
@@ -6,16 +6,22 @@ import {
   InteractionProvider, useInteractionContext, toInteractionContextJson,
   streamAgentRun, ClaimRenderer, EvidenceRenderer,
 } from '@mate/shared';
+import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
+import type { RoutingDecision } from './hooks/useAgentStream';
 
 /**
  * SuperAI 对话页（P4.3.1）。
+ *
+ * <p>订阅路由事件：<code>routing_decision</code>（MP-SR-01 task 2 后端
+ * Stage 2 会发出） → 解析为 <code>RoutingDecision</code> → 渲染
+ * <code>RoutingDecisionPanel</code>，每轮 assistant 消息下方挂一份。</p>
  */
 function SuperAIInner() {
   const { report } = useApiErrorBoundary();
 
   const interaction = useInteractionContext();
   const [mode, setMode] = useState<'fast' | 'deep'>('fast');
-  const [messages, setMessages] = useState<Array<{ role: string; content: string; claims?: any[]; evidences?: any[]; subAgents?: any[] }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: string; content: string; claims?: any[]; evidences?: any[]; subAgents?: any[]; routingDecisions?: RoutingDecision[] }>>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
@@ -32,7 +38,7 @@ function SuperAIInner() {
 
     const ctx = toInteractionContextJson(interaction, input);
     const idx = messages.length + 1;
-    setMessages(m => [...m, { role: 'assistant', content: '', claims: [], evidences: [], subAgents: [] }]);
+    setMessages(m => [...m, { role: 'assistant', content: '', claims: [], evidences: [], subAgents: [], routingDecisions: [] }]);
 
     try {
       const controller = new AbortController();
@@ -41,15 +47,22 @@ function SuperAIInner() {
         agentId: mode === 'fast' ? 'superai-fast' : 'superai-deep',
         request: ctx,
         signal: controller.signal,
-        onEvent: (ev) => {
+        onEvent: (ev: { type: string; payload?: Record<string, unknown>; data?: Record<string, unknown>; seq?: number; ts?: string }) => {
           if (ev.type === 'CLAIM_PRODUCED') {
-            setMessages(m => m.map((x, i) => i === idx ? { ...x, claims: [...(x.claims ?? []), ev.data] } : x));
+            setMessages(m => m.map((x, i) => i === idx ? { ...x, claims: [...(x.claims ?? []), ev.data?.claim ?? ev.payload?.claim] } : x));
           } else if (ev.type === 'EVIDENCE_ATTACHED') {
-            setMessages(m => m.map((x, i) => i === idx ? { ...x, evidences: [...(x.evidences ?? []), ev.data] } : x));
+            setMessages(m => m.map((x, i) => i === idx ? { ...x, evidences: [...(x.evidences ?? []), ev.data?.evidence ?? ev.payload?.evidence] } : x));
           } else if (ev.type === 'SUBAGENT_STARTED') {
-            setMessages(m => m.map((x, i) => i === idx ? { ...x, subAgents: [...(x.subAgents ?? []), ev.data] } : x));
+            setMessages(m => m.map((x, i) => i === idx ? { ...x, subAgents: [...(x.subAgents ?? []), ev.data ?? ev.payload] } : x));
+          } else if (ev.type === 'routing_decision') {
+            const rd = parseRoutingDecisionFromEvent(ev);
+            if (rd) {
+              setMessages(m => m.map((x, i) => i === idx
+                ? { ...x, routingDecisions: [...(x.routingDecisions ?? []), rd] }
+                : x));
+            }
           } else if (ev.type === 'token' || ev.type === 'message') {
-            const text = String(ev.data?.content ?? ev.data?.text ?? '');
+            const text = String(ev.data?.content ?? ev.data?.text ?? ev.payload?.content ?? ev.payload?.text ?? '');
             setMessages(m => m.map((x, i) => i === idx ? { ...x, content: x.content + text } : x));
           } else if (ev.type === 'RUN_COMPLETED' || ev.type === 'end') {
             setLatency(Date.now() - startRef.current);
@@ -136,6 +149,9 @@ function SuperAIInner() {
                           </div>
                         </div>
                       )}
+                      {(msg.routingDecisions ?? []).length > 0 && (
+                        <RoutingDecisionPanel decision={msg.routingDecisions!} />
+                      )}
                     </div>
                   )}
                 </div>
@@ -167,4 +183,66 @@ export default function SuperAIChatPage() {
       <SuperAIInner />
     </InteractionProvider>
   );
+}
+
+/**
+ * Parse a routing_decision SSE event payload into the typed RoutingDecision.
+ *
+ * <p>这里的实现与 <code>useAgentStream</code> 内部版本同源，区别在于直接读
+ * <code>ev.data</code>（SuperAIApi 的 backward-compatible alias for payload），
+ * 而非 <code>ev.payload</code>，确保 SuperAIChatPage 这条独立流路径也能
+ * 正确还原 RoutingDecision。</p>
+ */
+function parseRoutingDecisionFromEvent(
+  ev: { payload?: Record<string, unknown>; data?: Record<string, unknown>; seq?: number; ts?: string },
+): RoutingDecision | null {
+  const p = (ev.data ?? ev.payload ?? {}) as Record<string, unknown>;
+  const rawCandidates = Array.isArray(p.candidates) ? p.candidates : [];
+  const candidates = rawCandidates
+    .filter((c) => c && typeof c === 'object')
+    .map((c) => {
+      const cc = c as Record<string, unknown>;
+      return {
+        role_slug: String(cc.role_slug ?? ''),
+        role_rid: typeof cc.role_rid === 'string' ? cc.role_rid : undefined,
+        display_name: String(cc.display_name ?? cc.role_slug ?? ''),
+        capability_tags: Array.isArray(cc.capability_tags)
+          ? (cc.capability_tags as unknown[]).map(String)
+          : undefined,
+        similarity: typeof cc.similarity === 'number' ? cc.similarity : 0,
+        reason: typeof cc.reason === 'string' ? cc.reason : undefined,
+      };
+    });
+
+  const rawSelected = p.selected;
+  let selected: RoutingDecision['selected'] | null = null;
+  if (rawSelected && typeof rawSelected === 'object') {
+    const sel = rawSelected as Record<string, unknown>;
+    selected = {
+      role_slug: String(sel.role_slug ?? ''),
+      reason: typeof sel.reason === 'string' ? sel.reason : undefined,
+    };
+  } else if (typeof rawSelected === 'string' && rawSelected.length > 0) {
+    selected = { role_slug: rawSelected };
+  }
+
+  const rawTaken = p.taken_path;
+  const taken_path: RoutingDecision['taken_path'] =
+    rawTaken === 'llm_fc' || rawTaken === 'semantic_router' ||
+    rawTaken === 'dispatcher' || rawTaken === 'keyword_fallback'
+      ? rawTaken
+      : null;
+
+  const reason = typeof p.reason === 'string'
+    ? p.reason
+    : selected?.reason ?? (candidates.length === 0 ? 'no candidates' : 'semantic_router pre-screen');
+
+  return {
+    candidates,
+    selected,
+    taken_path,
+    reason,
+    seq: ev.seq ?? 0,
+    ts: ev.ts ?? new Date().toISOString(),
+  };
 }

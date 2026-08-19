@@ -43,6 +43,11 @@ from ..agent_loop import run_agent_loop
 from ..clients import AsyncCopilotClient
 from ..clients.llmgw_stream import LlmgwStreamClient, LlmgwStreamError
 from ..clients.orchestrator_client import OrchestratorClient, OrchestratorClientError
+from ..dispatcher import (
+    dispatch_by_routing,
+    make_embedding_match_handler,
+    make_keyword_substring_handler,
+)
 from ..llm import stub_provider
 from ..repositories import (
     AssetRecord,
@@ -1743,6 +1748,25 @@ async def chat_agent_stream(
             ontology_tools, ontology_exec, object_cards = None, None, None
 
         try:
+            # MP-SR-01（任务2）：4 级 fallback dispatcher 兜底；LLM 决策
+            # 不可用 / 不返回 dispatch_employee 时降级到 keyword_substring。
+            embedding_handler = make_embedding_match_handler(min_similarity=0.05)
+            keyword_handler = make_keyword_substring_handler()
+
+            async def _dispatch_by_routing_fn(
+                user_message: str,
+                available_roles: list[dict[str, Any]],
+                **_: Any,
+            ):
+                return await dispatch_by_routing(
+                    user_message=user_message,
+                    available_roles=available_roles,
+                    a2a_handler=None,  # A2A 由上层 run_agent_loop 走 orchestrator_client
+                    kernel_role_handler=None,
+                    embedding_handler=embedding_handler,
+                    keyword_substring_handler=keyword_handler,
+                )
+
             async for event in run_agent_loop(
                 llmgw_client=llmgw_client,
                 orchestrator_client=orchestrator_client,
@@ -1759,6 +1783,7 @@ async def chat_agent_stream(
                 ontology_tools=ontology_tools,
                 ontology_tool_exec=ontology_exec,
                 object_cards=object_cards,
+                dispatch_by_routing_fn=_dispatch_by_routing_fn,
             ):
                 etype = event.get("type")
                 if etype == "final":

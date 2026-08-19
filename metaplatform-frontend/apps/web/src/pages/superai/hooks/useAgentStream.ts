@@ -26,7 +26,8 @@ export type RunEventType =
   | 'TOOL_COMPLETED'
   | 'CLAIM_PRODUCED'
   | 'EVIDENCE_ATTACHED'
-  | 'SUBAGENT_STARTED';
+  | 'SUBAGENT_STARTED'
+  | 'routing_decision';
 
 export interface RunEvent {
   eventId: string;
@@ -55,6 +56,49 @@ export interface Evidence {
   objectId?: string;
   toolCallId?: string;
   envelopeId: string;
+}
+
+/**
+ * RoutingDecision — semantic_router / dispatcher / llm_fc 路由决策 (MP-SR-01 Stage 2)。
+ *
+ * <p>前端订阅 routing_decision SSE 事件后渲染：top-k 候选 + 最终选中 + 命中路径。
+ * 一轮 run 可能收到多张 routing_decision（pre-screen 在 reasoning 之前，selected
+ * 在 dispatch 之前），按事件顺序累加。</p>
+ */
+export type RoutingTakenPath =
+  | 'llm_fc'
+  | 'semantic_router'
+  | 'dispatcher'
+  | 'keyword_fallback';
+
+export interface RoutingCandidate {
+  role_slug: string;
+  role_rid?: string;
+  display_name: string;
+  capability_tags?: string[];
+  similarity: number;
+  reason?: string;
+}
+
+export interface RoutingSelected {
+  role_slug: string;
+  reason?: string;
+}
+
+export interface RoutingDecision {
+  /** semantic_router top-k 候选（按相似度降序） */
+  candidates: RoutingCandidate[];
+  /** 最终选中的角色（selected=null 表示 pre-screen 尚未决策） */
+  selected: RoutingSelected | null;
+  /** 命中路径标签：llm_fc=LLM function calling 直接选 / semantic_router=向量预筛
+   *  / dispatcher=fallback 链 / keyword_fallback=关键词兜底 */
+  taken_path: RoutingTakenPath | null;
+  /** 后端原始 reason 描述（兜底信息） */
+  reason: string;
+  /** 事件序号，用于同 run 多事件排序 */
+  seq: number;
+  /** 事件时间戳 */
+  ts: string;
 }
 
 export interface InteractionContext {
@@ -100,6 +144,8 @@ export interface UseAgentStreamReturn {
   claims: Claim[];
   /** All received evidence */
   evidence: Evidence[];
+  /** All received routing_decision events (one run may emit multiple: pre-screen + selected) */
+  routingDecisions: RoutingDecision[];
   /** Final assembled response text (assistant) */
   answer: string;
   /** Last error */
@@ -110,6 +156,72 @@ export interface UseAgentStreamReturn {
 
 const AGENT_RUN_PATH = '/api/v1/agent/runs/stream';
 
+/**
+ * Normalize a routing_decision SSE event payload into the frontend contract.
+ *
+ * <p>Tolerates both formats:
+ * <ul>
+ *   <li>Stage-2 contract (MP-SR-01 task 2):
+ *       <code>{candidates, selected: {role_slug, reason}, taken_path, reason}</code></li>
+ *   <li>Legacy Stage-1 fallback (already deployed in some envs):
+ *       <code>{candidates, selected: string|null, reason}</code> — selected 为字符串
+ *       role slug/rid 时自动包成 <code>RoutingSelected</code>。</li>
+ * </ul>
+ * </p>
+ */
+function parseRoutingDecision(ev: RunEvent): RoutingDecision | null {
+  const p = (ev.payload ?? {}) as Record<string, unknown>;
+  const rawCandidates = Array.isArray(p.candidates) ? p.candidates : [];
+  const candidates: RoutingCandidate[] = rawCandidates
+    .filter((c) => c && typeof c === 'object')
+    .map((c) => {
+      const cc = c as Record<string, unknown>;
+      return {
+        role_slug: String(cc.role_slug ?? ''),
+        role_rid: typeof cc.role_rid === 'string' ? cc.role_rid : undefined,
+        display_name: String(cc.display_name ?? cc.role_slug ?? ''),
+        capability_tags: Array.isArray(cc.capability_tags)
+          ? (cc.capability_tags as unknown[]).map(String)
+          : undefined,
+        similarity: typeof cc.similarity === 'number' ? cc.similarity : 0,
+        reason: typeof cc.reason === 'string' ? cc.reason : undefined,
+      } satisfies RoutingCandidate;
+    });
+
+  const rawSelected = p.selected;
+  let selected: RoutingSelected | null = null;
+  if (rawSelected && typeof rawSelected === 'object') {
+    const sel = rawSelected as Record<string, unknown>;
+    selected = {
+      role_slug: String(sel.role_slug ?? ''),
+      reason: typeof sel.reason === 'string' ? sel.reason : undefined,
+    };
+  } else if (typeof rawSelected === 'string' && rawSelected.length > 0) {
+    // Legacy shape: selected = role slug/rid string
+    selected = { role_slug: rawSelected };
+  }
+
+  const rawTaken = p.taken_path;
+  const taken_path: RoutingTakenPath | null =
+    rawTaken === 'llm_fc' || rawTaken === 'semantic_router' ||
+    rawTaken === 'dispatcher' || rawTaken === 'keyword_fallback'
+      ? rawTaken
+      : null;
+
+  const reason = typeof p.reason === 'string'
+    ? p.reason
+    : selected?.reason ?? (candidates.length === 0 ? 'no candidates' : 'semantic_router pre-screen');
+
+  return {
+    candidates,
+    selected,
+    taken_path,
+    reason,
+    seq: ev.seq,
+    ts: ev.ts,
+  };
+}
+
 export function useAgentStream(options: UseAgentStreamOptions): UseAgentStreamReturn {
   const { baseContext, onEvent, onClaim, onEvidence, onDone } = options;
 
@@ -118,6 +230,7 @@ export function useAgentStream(options: UseAgentStreamOptions): UseAgentStreamRe
   const [events, setEvents] = useState<RunEvent[]>([]);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
+  const [routingDecisions, setRoutingDecisions] = useState<RoutingDecision[]>([]);
   const [answer, setAnswer] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [streaming, setStreaming] = useState<boolean>(false);
@@ -145,6 +258,7 @@ export function useAgentStream(options: UseAgentStreamOptions): UseAgentStreamRe
       setEvents([]);
       setClaims([]);
       setEvidence([]);
+      setRoutingDecisions([]);
       setAnswer('');
       setStatus('starting');
       setStreaming(true);
@@ -228,6 +342,9 @@ export function useAgentStream(options: UseAgentStreamOptions): UseAgentStreamRe
               const e = ev.payload.evidence as unknown as Evidence;
               setEvidence((prev) => [...prev, e]);
               onEvidence?.(e);
+            } else if (ev.type === 'routing_decision') {
+              const rd = parseRoutingDecision(ev);
+              if (rd) setRoutingDecisions((prev) => [...prev, rd]);
             } else if (ev.type === 'RUN_COMPLETED') {
               finalStatus = 'COMPLETED';
               if (typeof ev.payload.answer === 'string') setAnswer(ev.payload.answer);
@@ -259,5 +376,5 @@ export function useAgentStream(options: UseAgentStreamOptions): UseAgentStreamRe
     [baseContext, onEvent, onClaim, onEvidence, onDone, runId],
   );
 
-  return { send, abort, runId, status, events, claims, evidence, answer, error, streaming };
+  return { send, abort, runId, status, events, claims, evidence, routingDecisions, answer, error, streaming };
 }

@@ -7,6 +7,10 @@ export type {
   InteractionContext,
   UseAgentStreamOptions,
   UseAgentStreamReturn,
+  RoutingDecision,
+  RoutingCandidate,
+  RoutingSelected,
+  RoutingTakenPath,
 } from './useAgentStream';
 export {
   InteractionContextProvider,
