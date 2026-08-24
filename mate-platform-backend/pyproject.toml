@@ -84,14 +84,14 @@ members = [
     "packages/*",
     "services/*",
 ]
-# services/agent + services/rag are GOVERN-07 historical placeholders
-# (README-only, code lives in packages/mate-tech-{agent,rag}). They match the
-# `services/*` glob but have no pyproject.toml, which would make uv reject the
-# whole workspace and block every `uv run`/test invocation. Exclude them until
-# they are removed outright.
+# These service directories are historical or externally provisioned
+# placeholders. They match the `services/*` glob but have no pyproject.toml,
+# which would make uv reject the whole workspace and block every `uv run`/test
+# invocation. Exclude them until they are removed outright or become packages.
 exclude = [
     "services/agent",
     "services/rag",
+    "services/a2a-external-agent",
 ]
 
 [build-system]
@@ -106,8 +106,8 @@ pythonpath = ["packages", "packages/mate-common/src", "packages/mate-kernel/src"
 # pytest-asyncio 触碰即抛 PermissionError。将临时目录重定向到仓库内可写路径；
 # 损坏目录留待系统级清理，不影响测试。（pytest 缓存目录固定为 .pytest_cache，
 # 该目录 ACL 损坏只产生良性写缓存警告，不阻断测试。）
-norecursedirs = ["src", ".venv", "build", "dist", "node_modules", ".pytest_cache", ".git", ".pytest-tmp"]
-addopts = ["-ra", "--strict-markers", "--strict-config", "--basetemp=.pytest-tmp"]
+norecursedirs = ["src", ".venv", "build", "dist", "node_modules", ".pytest_cache*", ".git", ".pytest-tmp*"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib", "--basetemp=.pytest-tmp"]
 
 # Mirror ruff.toml so newer ruff versions (>=0.8) discover the
 # config via pyproject when invoked from the repo root. The canonical

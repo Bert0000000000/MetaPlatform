@@ -36,6 +36,9 @@ from unittest.mock import AsyncMock  # noqa: E402
 import pytest  # noqa: E402
 
 _BSL_MONOREPO = _bsl_Path(__file__).resolve().parents[3]
+_TESTS_DIR = str(_bsl_Path(__file__).resolve().parent)
+if _TESTS_DIR not in _bsl_sys.path:
+    _bsl_sys.path.insert(0, _TESTS_DIR)
 for _bsl_sub in (
     "mate-tech-mcp",
     "mate-platform",

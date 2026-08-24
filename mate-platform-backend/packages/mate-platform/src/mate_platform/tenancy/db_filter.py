@@ -78,8 +78,11 @@ def _has_tenant_column(table: Table) -> bool:  # pyright: ignore[reportUnusedFun
 def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction]
     """Attach do_orm_execute event listener.
 
-    Idempotent: a flag on the engine keeps the listener single-registered.
+    Idempotent: a function-local marker keeps the listeners single-registered.
     """
+    if getattr(_register_event_listeners, "_registered", False):
+        return
+
     from sqlalchemy.engine import Engine
 
     @event.listens_for(Engine, "before_execute", named=True)
@@ -110,8 +113,7 @@ def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction
             _build_tenant_predicate(ctx)
         )
 
-    _LISTENER_REGISTERED.setdefault(_LISTENER_REGISTERED, True)
-
+    setattr(_register_event_listeners, "_registered", True)
 
 def _build_tenant_predicate(ctx: RequestContext):
     from sqlalchemy import column, literal
@@ -135,6 +137,3 @@ def _emit_cross_tenant_audit(ctx: RequestContext, stmt: Any) -> None:
             "statement_summary": str(stmt)[:200] if stmt else "",
         },
     )
-
-
-_LISTENER_REGISTERED: dict = {}

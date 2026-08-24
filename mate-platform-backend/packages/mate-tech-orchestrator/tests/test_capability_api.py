@@ -1,11 +1,34 @@
 """MP-COMP-01 pilot: capability endpoints + dispatch gate (ADR-0042)."""
 from __future__ import annotations
 
+import time
+
 from fastapi.testclient import TestClient
+from jwt import encode as jwt_encode
 from mate_tech_orchestrator.main import create_app
 from mate_tech_orchestrator.scheduler.role_registry import get_role_registry
 
-from conftest import _keycloak_token
+
+def _keycloak_token(*, tenant_id: str = "tenant-acme") -> str:
+    now = int(time.time())
+    return jwt_encode(
+        {
+            "sub": "u-1",
+            "iss": "http://localhost:8080/realms/metaplatform",
+            "aud": "metaplatform-backend",
+            "azp": "metaplatform-backend",
+            "preferred_username": "u-1",
+            "realm_access": {"roles": ["PLATFORM_SUPER_ADMIN"]},
+            "scope": "platform.read platform.write",
+            "attributes": {"tenant_id": [tenant_id]},
+            "tenant_id": tenant_id,
+            "roles": ["PLATFORM_SUPER_ADMIN"],
+            "iat": now,
+            "exp": now + 3600,
+        },
+        "test-secret",
+        algorithm="HS256",
+    )
 
 
 def _lifespan_client() -> TestClient:

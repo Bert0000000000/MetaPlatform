@@ -7,7 +7,38 @@ client-routed code explanation endpoint.
 """
 from __future__ import annotations
 
-from conftest import _keycloak_token
+import time
+
+import jwt as pyjwt
+
+
+def _keycloak_token(
+    *,
+    sub: str = "u-1",
+    roles: list[str] | None = None,
+    scopes: str = "platform.read platform.write",
+    tenant_id: str = "tenant-acme",
+) -> str:
+    now = int(time.time())
+    resolved = roles if roles is not None else ["PLATFORM_SUPER_ADMIN"]
+    return pyjwt.encode(
+        {
+            "sub": sub,
+            "iss": "http://localhost:8080/realms/metaplatform",
+            "aud": "metaplatform-backend",
+            "azp": "metaplatform-backend",
+            "preferred_username": sub,
+            "realm_access": {"roles": resolved},
+            "scope": scopes,
+            "attributes": {"tenant_id": [tenant_id]},
+            "tenant_id": tenant_id,
+            "roles": resolved,
+            "iat": now,
+            "exp": now + 3600,
+        },
+        "test-secret",
+        algorithm="HS256",
+    )
 
 
 def test_auth_login_returns_token(client) -> None:
