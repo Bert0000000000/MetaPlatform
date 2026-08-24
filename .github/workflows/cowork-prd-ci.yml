@@ -1,0 +1,65 @@
+name: cowork-prd-ci
+
+# 双轨分支隔离（LOOP-ROLLOUT-01 第一阶段交付）
+# 仅在以下情况触发：
+#   - PR 到 main 且改动只在 docs/active/specs/** 或 docs/active/delivery/evidence/**
+#   - push 到 cowork/** 分支（本地迭代通道）
+# 不触发 ga-acceptance.yml 的 13 硬规则，避开历史债干扰。
+# 关联交付：docs/active/delivery/evidence/LOOP-ROLLOUT-01-ACCEPTANCE.md
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/active/specs/**"
+      - "docs/active/delivery/evidence/**"
+      - ".github/workflows/cowork-prd-ci.yml"
+      - "scripts/ci/check_prd_skeleton.py"
+  push:
+    branches: ["cowork/**"]
+    paths:
+      - "docs/active/specs/**"
+      - "docs/active/delivery/evidence/**"
+      - ".github/workflows/cowork-prd-ci.yml"
+      - "scripts/ci/check_prd_skeleton.py"
+
+permissions:
+  contents: read
+
+# 同分支取消先前运行（节省 CI 资源）
+concurrency:
+  group: cowork-prd-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1) Markdown lint（轻量）
+  md-lint:
+    name: cowork md-lint (pymarkdownlnt)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install pymarkdownlnt
+        run: pip install pymarkdownlnt==10.4
+      - name: Lint changed docs
+        run: |
+          pymarkdownlnt scan --disable-rules md013,md041 \
+            docs/active/specs docs/active/delivery/evidence
+
+  # 2) PRD 骨架校验（强约束）
+  prd-skeleton:
+    name: cowork PRD skeleton check
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Run check_prd_skeleton.py
+        run: |
+          python scripts/ci/check_prd_skeleton.py \
+            --prd-dir docs/active/specs \
+            --evidence-dir docs/active/delivery/evidence \
+            --strict

@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v6.0.0)'
+        required: true
+        default: 'v6.0.0'
+
+env:
+  HARBOR_REGISTRY: harbor.mp-platform.local
+  HARBOR_PROJECT: mp
+
+jobs:
+  # 1. 构建 + 推送所有应用镜像
+  build-images:
+    name: Build Images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - app-web
+          - mate-studio
+          - admin-web
+          - edge-biz
+          - edge-ontology
+          - edge-workflow
+          - edge-action
+          - edge-admin
+          - hitl-hub
+          - threshold-monitor
+          - threshold-router
+          - temporal-worker
+          - dsh-runtime
+          - dsh-scheduler
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Harbor
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ matrix.app }}:${{ github.ref_name }}
+            ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ matrix.app }}:latest
+          cache-from: type=registry,ref=${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ matrix.app }}:buildcache
+          cache-to: type=inline
+
+  # 2. 镜像漏洞扫描（trivy）
+  scan-images:
+    name: Trivy Image Scan
+    needs: build-images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - app-web
+          - edge-biz
+          - edge-ontology
+          - edge-workflow
+          - edge-action
+          - hitl-hub
+          - temporal-worker
+          - dsh-runtime
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/${{ matrix.app }}:${{ github.ref_name }}
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+          ignore-unfixed: true
+
+  # 3. 部署到 staging
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [build-images, scan-images]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+      - name: ArgoCD login
+        run: |
+          argocd login $ARGOCD_SERVER \
+             --username ${{ secrets.ARGOCD_USERNAME }} \
+             --password ${{ secrets.ARGOCD_PASSWORD }} \
+             --insecure
+      - name: Sync staging
+        run: |
+          argocd app sync mp-staging --prune
+          argocd app wait mp-staging --health --timeout 600
+      - name: Smoke test
+        run: |
+          curl -f https://staging.mp-platform.local/health || exit 1
+          echo "✅ Staging health check passed"
+
+  # 4. 创建 GitHub Release
+  create-release:
+    name: Create GitHub Release
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Generate changelog
+        id: changelog
+        run: |
+          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD > CHANGELOG_DIFF.txt
+          cat CHANGELOG_DIFF.txt
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: CHANGELOG_DIFF.txt
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'rc') }}

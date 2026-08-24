@@ -1,0 +1,171 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# 取消上一次未完成的运行（节省 CI 时间）
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1. 静态检查（必须）
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.19, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+
+  # 2. 类型检查（必须）
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.19, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+
+  # 3. 单元 + 集成测试（必须）
+  test:
+    name: Test
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      SUPABASE_URL: http://localhost:54321
+      SUPABASE_ANON_KEY: test-anon-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.19, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test
+      - run: pnpm run test:coverage
+      - uses: actions/upload-artifact@v4
+        with: { name: coverage, path: coverage/ }
+
+  # 4. 构建（必须）
+  build:
+    name: Build
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.19, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - uses: actions/upload-artifact@v4
+        with: { name: build, path: lib/
+
+  # 5. evidence 检查（必须，对应规则 #10）
+  evidence-check:
+    name: Evidence Document Check
+    needs: [lint, typecheck, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check evidence exists for Batch
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME#refs/heads/}}"
+          echo "Branch: ${BRANCH}"
+
+          # 提取 Batch ID（feat/mp-v6-<batch-name> → mp-v6-<batch-name>）
+          if [[ "$BRANCH" =~ ^feat/mp-v6-(.+)$ ]]; then
+            BATCH_ID="${BASH_REMATCH[1]}"
+            EVIDENCE_FILE="evidence/MP-V6-${BATCH_ID^^}-ACCEPTANCE.md"
+
+            if [ ! -f "${EVIDENCE_FILE}" ]; then
+              echo "::error::evidence/${EVIDENCE_FILE} not found"
+              echo "::error::Each Batch PR must include evidence/ACCEPTANCE.md"
+              exit 1
+            fi
+
+            # 检查关键章节
+            for section in "验收标准" "测试结果" "部署验证"; do
+              if ! grep -q "${section}" "${EVIDENCE_FILE}"; then
+                echo "::warning::evidence/${EVIDENCE_FILE} 缺少 '${section}' 章节"
+              fi
+            done
+
+            echo "✅ Evidence check passed: ${EVIDENCE_FILE}"
+          else
+            echo "Skip evidence check (not a Batch branch)"
+          fi
+
+  # 6. Secret 扫描（必须，对应规则 #12）
+  secret-scan:
+    name: Secret Scan
+    needs: [lint, typecheck, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 7. Helm + NetworkPolicy 校验（对应规则 #8 #13）
+  helm-validate:
+    name: Helm + NetworkPolicy Validate
+    needs: [lint, typecheck, test, build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: kubeconform
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          args: "-strict -summary -ignore-missing-schemas k8s/helm/"
+
+  # 8. RLS policy 检查（必须，对应规则 #3）
+  rls-check:
+    name: RLS Policy Check
+    needs: [lint, typecheck, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.22' }
+      - name: Install sqlfluff
+        run: pip install sqlfluff
+      - name: Check RLS enabled on all tables
+        run: |
+          # 检查所有 CREATE TABLE 都有 ENABLE ROW LEVEL SECURITY
+          UNPROTECTED=$(grep -r "CREATE TABLE" supabase/migrations/ \
+            | grep -v "ENABLE ROW LEVEL SECURITY" || true)
+          if [ -n "$UNPROTECTED" ]; then
+            echo "::error::以下表未启用 RLS:"
+            echo "$UNPROTECTED"
+            exit 1
+          fi
+          echo "✅ All tables have RLS enabled"

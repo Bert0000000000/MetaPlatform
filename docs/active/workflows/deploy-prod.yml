@@ -1,0 +1,131 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v6.0.0)'
+        required: true
+      dry_run:
+        description: 'Dry run (no actual deploy)'
+        required: false
+        default: 'true'
+        type: boolean
+
+# 必须由 SRE Lead 手动触发（双重审批）
+environment:
+  name: production
+  url: https://mp-platform.local
+
+jobs:
+  # 1. 预检查
+  preflight:
+    name: Pre-flight Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify image exists in Harbor
+        run: |
+          IMAGE="harbor.mp-platform.local/mp/app-web:${{ inputs.version }}"
+          if ! docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "::error::Image $IMAGE not found"
+            exit 1
+          fi
+
+      - name: Check production readiness
+        run: |
+          # 检查 v6.0 GA checklist
+          if [ ! -f "evidence/v6.0-GA-READY.md" ]; then
+            echo "::error::evidence/v6.0-GA-READY.md not found"
+            echo "::error::Complete Sprint 3 first"
+            exit 1
+          fi
+
+  # 2. 蓝绿部署
+  deploy-blue-green:
+    name: Blue-Green Deploy
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+      - name: ArgoCD login
+        run: |
+          argocd login $ARGOCD_SERVER \
+             --username ${{ secrets.ARGOCD_USERNAME }} \
+             --password ${{ secrets.ARGOCD_PASSWORD }} \
+             --insecure
+      - name: Dry run (sync preview)
+        if: inputs.dry_run == 'true'
+        run: |
+          echo "::group::ArgoCD diff"
+          argocd app diff mp-prod --revision ${{ inputs.version }}
+          echo "::endgroup::"
+
+      - name: Blue-green switch
+        if: inputs.dry_run == 'false'
+        run: |
+          # 蓝绿切换：v6.0 上线，v3.0 降级为应急模式
+          argocd app sync mp-prod --revision ${{ inputs.version }} --prune
+          argocd app wait mp-prod --health --timeout 1200
+
+          # 标记 v3.0 为 deprecated
+          argocd app set mp-v3-legacy --deprecated
+
+          echo "✅ Blue-green deploy completed"
+
+  # 3. 生产 smoke test
+  smoke-test:
+    name: Production Smoke Test
+    needs: deploy-blue-green
+    if: inputs.dry_run == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health check
+        run: |
+          for i in {1..30}; do
+            if curl -f https://mp-platform.local/health; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Health check failed"
+          exit 1
+
+      - name: Smoke test endpoints
+        run: |
+          # 测试关键 API
+          curl -f https://mp-platform.local/api/v1/health
+          curl -f https://api.mp-platform.local/rest/v1/
+
+      - name: Verify Grafana metrics
+        run: |
+          curl -f https://grafana.mp-platform.local/api/health
+
+  # 4. 通知
+  notify:
+    name: Notify Team
+    needs: smoke-test
+    if: inputs.dry_run == 'false' && success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "✅ MetaPlatform v6.0 ${{ inputs.version }} 已部署到生产环境"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_PROD }}
+
+      - name: Create GitHub Deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          environment: production
+          deployment-status: success

@@ -1,0 +1,6 @@
+# MP-SAL placeholder: mate-tech-agent Dockerfile
+# 历史此容器有真实 agent 实现（a7d135e3 chore(cleanup) 之前），现在职责已被
+# mate-app-copilot + 数字员工角色登记（MP-SAL bootstrap）取代。
+# 占位镜像以保持 docker-compose.yml 配置有效；启动即退出，不影响其它服务。
+FROM scratch
+CMD ["/bin/true"]

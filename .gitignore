@@ -179,3 +179,6 @@ mate-platform-backend/contracts/runtime/*.json
 test-results/
 metaplatform-frontend/apps/web/tests/e2e/.auth/
 metaplatform-frontend/apps/web/tests/e2e/.artifacts/
+tests/e2e/.artifacts/
+tests/e2e/.auth/
+tests/e2e/screenshots/

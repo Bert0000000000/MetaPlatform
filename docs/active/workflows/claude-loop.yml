@@ -1,0 +1,110 @@
+name: Claude Code Loop
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: 'Batch ID (e.g. MP-V6-FOUNDATION-01)'
+        required: true
+      branch_base:
+        description: 'Base branch to branch from'
+        required: false
+        default: 'main'
+      loop_mode:
+        description: 'Loop mode'
+        type: choice
+        required: false
+        default: 'single'
+        options:
+          - single    # 执行单个 Batch
+          - next      # 执行下一个 Batch
+          - chain     # 链式执行直到 evidence 缺失
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  claude-loop:
+    name: Run Claude Code Loop
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440  # 24 小时上限
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.19
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure Git
+        run: |
+          git config user.name "claude-code-bot"
+          git config user.email "claude-code@mp-platform.local"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+
+      - name: Run Claude Code Loop
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # 读取 loop 配置
+          if [ "${{ inputs.loop_mode }}" == "single" ]; then
+            BATCH="${{ inputs.batch }}"
+          else
+            # 从 evidence/MIGRATION 找下一个未完成的 Batch
+            BATCH=$(./scripts/loop/next-batch.sh)
+          fi
+
+          echo "🎯 目标 Batch: $BATCH"
+          echo "🔄 模式: ${{ inputs.loop_mode }}"
+
+          # 创建分支
+          BRANCH_NAME="feat/$(echo $BATCH | tr '[:upper:]' '[:lower:]')"
+          git checkout ${{ inputs.branch_base }}
+          git pull origin ${{ inputs.branch_base }}
+          git checkout -b "$BRANCH_NAME"
+
+          # 执行 Claude Code loop
+          claude --loop .claude/loop-prompt.md --batch "$BATCH" \
+            --branch "$BRANCH_NAME" \
+            --pr-title "feat: $BATCH" \
+            --evidence-dir evidence/ \
+            --pr-template .github/PULL_REQUEST_TEMPLATE.md
+
+          echo "✅ Claude Code loop completed"
+
+      - name: Verify evidence created
+        if: always()
+        run: |
+          if [ -f "evidence/${{ inputs.batch }}-ACCEPTANCE.md" ]; then
+            echo "✅ evidence/${{ inputs.batch }}-ACCEPTANCE.md found"
+          else
+            echo "::warning::evidence/${{ inputs.batch }}-ACCEPTANCE.md NOT found"
+            echo "::warning::Loop may not have completed successfully"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Claude Code Loop Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Batch: ${{ inputs.batch }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: feat/$(echo ${{ inputs.batch }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_STEP_SUMMARY
+          echo "- Evidence: $([ -f 'evidence/${{ inputs.batch }}-ACCEPTANCE.md' ] && echo '✅ Created' || echo '❌ Missing')" >> $GITHUB_STEP_SUMMARY
+          echo "- Loop mode: ${{ inputs.loop_mode }}" >> $GITHUB_STEP_SUMMARY
