@@ -16,6 +16,7 @@ from .schemas import (
     CreateReviewCaseRequest,
     CreateReviewCaseResponse,
     RejectActionProposalRequest,
+    validate_evidence_bundle,
 )
 
 router = APIRouter(prefix="/api/v1/orchestrator", tags=["order-review"])
@@ -92,7 +93,9 @@ def _bearer_credential(request: Request) -> str:
 
 
 def _response_evidence(evidence: Any) -> dict[str, Any] | None:
-    return deepcopy(evidence) if isinstance(evidence, dict) else None
+    if validate_evidence_bundle(evidence) is None:
+        return None
+    return deepcopy(evidence)
 
 
 def _raise_service_error(error: Exception) -> NoReturn:

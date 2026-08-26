@@ -17,6 +17,7 @@ from sqlalchemy import DateTime, Integer, String, Text, select, update
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base, create_all, get_session
+from mate_tech_orchestrator.api.schemas import validate_evidence_bundle
 from mate_tech_orchestrator.order_review.evidence import (
     EvidenceUnavailable as OrderReviewEvidenceUnavailable,
 )
@@ -319,7 +320,7 @@ class OrderReviewService:
         current_order_version: int,
     ) -> dict[str, Any]:
         evidence = self._evidence_from_case(case)
-        if evidence is None:
+        if evidence is None or validate_evidence_bundle(evidence) is None:
             raise self.EvidenceRequired("evidence bundle is required before confirmation")
         if evidence.get("status") != "complete":
             raise self.EvidenceUnavailable("evidence bundle must be complete before confirmation")

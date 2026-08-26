@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
 class CapabilityBindingRequest(BaseModel):
@@ -233,6 +233,16 @@ class EvidenceBundle(BaseModel):
     data: EvidenceData
     derivation: list[EvidenceDerivation]
     recommendation: EvidenceRecommendation
+
+
+def validate_evidence_bundle(value: Any) -> EvidenceBundle | None:
+    """Return the schema-validated bundle, or None for legacy incomplete data."""
+    if not isinstance(value, dict):
+        return None
+    try:
+        return EvidenceBundle.model_validate(value)
+    except ValidationError:
+        return None
 
 
 class CreateReviewCaseResponse(BaseModel):

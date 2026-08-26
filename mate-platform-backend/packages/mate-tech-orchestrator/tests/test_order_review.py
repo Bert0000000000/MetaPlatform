@@ -20,7 +20,11 @@ from mate_tech_orchestrator.api.order_review import OrderReviewService
 from mate_tech_orchestrator.api.order_review import public_router as order_review_public_router
 from mate_tech_orchestrator.main import create_app
 from mate_tech_orchestrator.order_review import OntologyContract
-from mate_tech_orchestrator.repositories.order_review import ActionProposalORM, ReviewCaseORM
+from mate_tech_orchestrator.repositories.order_review import (
+    ActionProposalORM,
+    IdempotencyRecordORM,
+    ReviewCaseORM,
+)
 from sqlalchemy import select
 
 from mate_tech_db.base import create_all, get_session, init_engine, reset_engine
@@ -532,6 +536,85 @@ def test_historical_proposal_detail_returns_200_without_evidence_bundle(
         "policy://payment-follow-up-policy",
     ]
     assert detail_payload["evidence"] is None
+
+
+def test_incomplete_historical_evidence_returns_detail_and_blocks_confirm_without_side_effects(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_headers_acme: dict[str, str],
+) -> None:
+    service = OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+    monkeypatch.setattr(order_review_api, "_service", service)
+    client = TestClient(create_app())
+    headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
+
+    assert client.post(
+        "/api/v1/orders",
+        headers=headers,
+        json={
+            "order_id": "order-http-incomplete-evidence",
+            "amount_cents": 188000,
+            "payment_status": "unpaid",
+        },
+    ).status_code == 201
+    created_response = client.post(
+        "/api/v1/review-cases",
+        headers=headers,
+        json={
+            "order_id": "order-http-incomplete-evidence",
+            "suggestion": {"action": "follow_up_payment", "reason": "unpaid"},
+            "source_refs": ["ontology://Order/order-http-incomplete-evidence"],
+        },
+    )
+    assert created_response.status_code == 201, created_response.text
+    proposal_id = created_response.json()["proposal_id"]
+
+    with get_session() as session, session.begin():
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        case = session.get(ReviewCaseORM, ("tenant-acme", proposal.review_case_id))
+        assert case is not None
+        suggestion = json.loads(case.suggestion)
+        evidence = suggestion["evidence_bundle"]
+        for field in ("proposal_id", "order_id", "tenant_id", "captured_at"):
+            evidence.pop(field)
+        evidence["data"]["facts"][0].pop("field")
+        evidence["data"]["facts"][0].pop("label")
+        case.suggestion = json.dumps(suggestion, ensure_ascii=False, sort_keys=True)
+
+    before_task_count = len(service.list_follow_up_tasks(tenant_id="tenant-acme"))
+    before_outbox_count = len(service.list_outbox_events(tenant_id="tenant-acme"))
+    with get_session() as session:
+        before_idempotency_count = len(session.execute(select(IdempotencyRecordORM)).scalars().all())
+
+    detail_response = client.get(f"/api/v1/action-proposals/{proposal_id}", headers=headers)
+
+    assert detail_response.status_code == 200, detail_response.text
+    detail_payload = detail_response.json()
+    assert detail_payload["proposal_id"] == proposal_id
+    assert detail_payload["suggestion"]["action"] == "follow_up_payment"
+    assert detail_payload["source_refs"] == [
+        "ontology://object-type/ont.tenant-acme.obj.crm.order.v1",
+        "ontology://action-type/ont.tenant-acme.act.order-review-confirm.v1",
+        "policy://payment-follow-up-policy",
+    ]
+    assert detail_payload["evidence"] is None
+
+    confirm_response = client.post(
+        f"/api/v1/action-proposals/{proposal_id}:confirm",
+        headers={**headers, "Idempotency-Key": "http-confirm-incomplete-evidence"},
+        json={"actor_id": "u-reviewer"},
+    )
+
+    assert confirm_response.status_code == 409
+    assert confirm_response.headers["x-error-code"] == "evidence_required"
+    assert confirm_response.json()["detail"] == "evidence bundle is required before confirmation"
+    assert len(service.list_follow_up_tasks(tenant_id="tenant-acme")) == before_task_count
+    assert len(service.list_outbox_events(tenant_id="tenant-acme")) == before_outbox_count
+    with get_session() as session:
+        assert len(session.execute(select(IdempotencyRecordORM)).scalars().all()) == before_idempotency_count
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        assert proposal.status == "pending"
 
 
 def test_order_review_openapi_declares_evidence_contract() -> None:
