@@ -6,7 +6,10 @@ test.use({ storageState: 'tests/e2e/.auth/state.json' });
 const MOCK_ORDER_ID = 'mock-order-review-1001';
 const MOCK_PROPOSAL_ID = 'proposal-mock-order-review-1001';
 
-function mockEvidence(status: 'complete' | 'unavailable' = 'complete') {
+function mockEvidence(
+  status: 'complete' | 'unavailable' = 'complete',
+  thresholdCents = 100_000,
+) {
   return {
     schema_version: 'order-review-evidence.v1',
     status,
@@ -77,10 +80,10 @@ function mockEvidence(status: 'complete' | 'unavailable' = 'complete') {
     derivation: [
       {
         id: 'threshold',
-        label: '订单金额 ≥ ¥1,000.00',
+        label: `订单金额 ≥ ¥${(thresholdCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
         passed: true,
         fact_refs: ['fact.amount_cents'],
-        details: { operator: '>=', expected_cents: 100_000 },
+        details: { operator: '>=', expected_cents: thresholdCents },
       },
       {
         id: 'unpaid',
@@ -169,15 +172,19 @@ async function mockCreatedEvidenceWithDetailMissing(page: Page, action?: 'confir
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([{
-        tenant_id: 'tenant-default',
-        order_id: MOCK_ORDER_ID,
-        amount_cents: 250_000,
-        payment_status: 'unpaid',
-        review_status: 'pending',
-        version: 7,
-        updated_at: '2026-08-26T11:30:00Z',
-      }]),
+      body: JSON.stringify({
+        items: [{
+          tenant_id: 'tenant-default',
+          order_id: MOCK_ORDER_ID,
+          amount_cents: 250_000,
+          payment_status: 'unpaid',
+          review_status: 'pending',
+          version: 7,
+          updated_at: '2026-08-26T11:30:00Z',
+        }],
+        total: 1,
+        threshold_cents: 200_000,
+      }),
     });
   });
   await page.route('**/api/v1/review-cases', async (route) => {
@@ -189,7 +196,7 @@ async function mockCreatedEvidenceWithDetailMissing(page: Page, action?: 'confir
         proposal_id: MOCK_PROPOSAL_ID,
         status: 'pending',
         expected_order_version: 7,
-        evidence: mockEvidence(),
+        evidence: mockEvidence('complete', 200_000),
       }),
     });
   });
@@ -304,12 +311,14 @@ test('创建响应 evidence 在 proposal detail 暂缺时仍驱动复核 UI', as
 
   const tracker = trackApiFailures(page, 'created-evidence');
   await page.goto('/superai/order-review');
+  await expect(page.getByText('高价值未支付订单（≥ ¥2,000.00）')).toBeVisible();
   await page.getByTestId(`review-order-${MOCK_ORDER_ID}`).click();
 
   await expect(page.getByTestId('review-evidence')).toContainText('captured_at: 2026-08-26T12:00:00Z');
   await expect(page.getByTestId('review-fact-amount')).toContainText('¥2,500.00');
   await expect(page.getByTestId('review-fact-amount')).toContainText('order_review_orders.amount_cents');
   await expect(page.getByTestId('review-fact-payment-status')).toContainText('未支付');
+  await expect(page.getByTestId('review-derivation-threshold')).toContainText('expected_cents: 200000');
   await expect(page.getByRole('button', { name: '确认执行' })).toBeEnabled();
   expect(token).toBeTruthy();
   expect(tracker.failures.length, tracker.report()).toBe(0);

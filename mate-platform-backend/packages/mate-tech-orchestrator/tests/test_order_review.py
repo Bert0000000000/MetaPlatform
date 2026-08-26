@@ -172,14 +172,29 @@ def test_confirm_atomically_updates_order_creates_follow_up_and_outbox(service: 
         event for event in events if event["event_type"] == "order.review.proposal_created"
     )
     confirmed = next(event for event in events if event["event_type"] == "order.review.confirmed")
-    assert proposal_created["payload"]["evidence_schema_version"] == "order-review-evidence.v1"
-    assert proposal_created["payload"]["evidence_fact_ids"] == [
+    audit_confirmed = next(
+        event for event in events if event["event_type"] == "audit.action_proposal.confirmed"
+    )
+    expected_fact_ids = [
         "fact.amount_cents",
         "fact.payment_status",
         "fact.review_status",
         "fact.version",
     ]
-    assert confirmed["payload"]["evidence_order_version"] == 1
+    expected_graph_node_ids = [
+        "order-fact-anchor:order-1001",
+        "object-type:ont.tenant-acme.obj.crm.order.v1",
+        "action-type:ont.tenant-acme.act.order-review-confirm.v1",
+    ]
+    for emitted_event in (proposal_created, confirmed, audit_confirmed):
+        assert emitted_event["payload"]["evidence_schema_version"] == "order-review-evidence.v1"
+        assert emitted_event["payload"]["fact_ids"] == expected_fact_ids
+        assert emitted_event["payload"]["graph_node_ids"] == expected_graph_node_ids
+        assert emitted_event["payload"]["order_version"] == 1
+        assert emitted_event["payload"]["proposal_id"] == proposal_id
+    assert result["order_version"] == 2
+    assert confirmed["payload"]["result_order_version"] == 2
+    assert audit_confirmed["payload"]["result_order_version"] == 2
     assert "ontology" not in proposal_created["payload"]
     assert "graph" not in confirmed["payload"]
 
@@ -378,12 +393,25 @@ def test_reject_does_not_change_order_but_records_audit(service: OrderReviewServ
     )
 
     assert result["status"] == "rejected"
+    assert result["order_id"] == "order-1001"
     assert service.get_order(tenant_id="tenant-acme", order_id="order-1001")["version"] == 1
     assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
     events = service.list_outbox_events(tenant_id="tenant-acme")
     assert events[-1]["event_type"] == "audit.action_proposal.rejected"
     assert events[-1]["payload"]["evidence_schema_version"] == "order-review-evidence.v1"
-    assert events[-1]["payload"]["evidence_order_version"] == 1
+    assert events[-1]["payload"]["fact_ids"] == [
+        "fact.amount_cents",
+        "fact.payment_status",
+        "fact.review_status",
+        "fact.version",
+    ]
+    assert events[-1]["payload"]["graph_node_ids"] == [
+        "order-fact-anchor:order-1001",
+        "object-type:ont.tenant-acme.obj.crm.order.v1",
+        "action-type:ont.tenant-acme.act.order-review-confirm.v1",
+    ]
+    assert events[-1]["payload"]["order_version"] == 1
+    assert events[-1]["payload"]["proposal_id"] == proposal_id
     assert "graph" not in events[-1]["payload"]
 
 
@@ -473,6 +501,109 @@ def test_list_high_value_unpaid_excludes_approved_orders(service: OrderReviewSer
     assert [item["order_id"] for item in items] == ["order-pending-visible"]
     assert all(item["payment_status"] == "unpaid" for item in items)
     assert all(item["review_status"] == "pending" for item in items)
+
+
+def test_custom_threshold_is_shared_by_list_and_evidence() -> None:
+    service = OrderReviewService(
+        threshold_cents=200_000,
+        ontology_catalog=_FakeOntologyCatalog(),
+    )
+    for order_id, amount_cents in (
+        ("order-below-custom-threshold", 199_999),
+        ("order-at-custom-threshold", 200_000),
+        ("order-above-custom-threshold", 200_001),
+    ):
+        service.create_order(
+            tenant_id="tenant-acme",
+            order_id=order_id,
+            amount_cents=amount_cents,
+            payment_status="unpaid",
+        )
+
+    items = service.list_high_value_unpaid(tenant_id="tenant-acme", min_amount_cents=None)
+
+    assert service.threshold_cents == 200_000
+    assert [item["order_id"] for item in items] == [
+        "order-above-custom-threshold",
+        "order-at-custom-threshold",
+    ]
+    with pytest.raises(OrderReviewService.EvidenceUnavailable):
+        service.create_review_case(
+            tenant_id="tenant-acme",
+            order_id="order-below-custom-threshold",
+            suggestion={"action": "follow_up_payment"},
+            source_refs=[],
+            auth_token=TEST_AUTH_TOKEN,
+        )
+
+    created = service.create_review_case(
+        tenant_id="tenant-acme",
+        order_id="order-at-custom-threshold",
+        suggestion={"action": "follow_up_payment"},
+        source_refs=[],
+        auth_token=TEST_AUTH_TOKEN,
+    )
+    threshold = next(
+        item for item in created["evidence"]["derivation"] if item["id"] == "threshold"
+    )
+    assert threshold["label"] == "订单金额 ≥ ¥2,000.00"
+    assert threshold["details"]["expected_cents"] == 200_000
+
+
+def test_service_resolves_threshold_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ORDER_REVIEW_THRESHOLD_CENTS", "175000")
+
+    service = OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+
+    assert service.threshold_cents == 175_000
+
+
+@pytest.mark.parametrize("raw_threshold", ["", "0", "-1", "not-an-integer"])
+def test_service_rejects_invalid_threshold_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_threshold: str,
+) -> None:
+    monkeypatch.setenv("ORDER_REVIEW_THRESHOLD_CENTS", raw_threshold)
+
+    with pytest.raises(ValueError, match="ORDER_REVIEW_THRESHOLD_CENTS"):
+        OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+
+
+def test_high_value_unpaid_api_returns_effective_threshold(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_headers_acme: dict[str, str],
+) -> None:
+    service = OrderReviewService(
+        threshold_cents=175_000,
+        ontology_catalog=_FakeOntologyCatalog(),
+    )
+    monkeypatch.setattr(order_review_api, "_service", service)
+    client = TestClient(create_app())
+    headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
+    for order_id, amount_cents in (("order-1750", 175_000), ("order-2000", 200_000)):
+        response = client.post(
+            "/api/v1/orders",
+            headers=headers,
+            json={"order_id": order_id, "amount_cents": amount_cents},
+        )
+        assert response.status_code == 201, response.text
+
+    configured = client.get("/api/v1/orders/high-value-unpaid", headers=headers)
+    stricter = client.get(
+        "/api/v1/orders/high-value-unpaid",
+        headers=headers,
+        params={"min_amount_cents": 200_000},
+    )
+
+    assert configured.status_code == 200, configured.text
+    assert configured.json()["threshold_cents"] == 175_000
+    assert [item["order_id"] for item in configured.json()["items"]] == [
+        "order-2000",
+        "order-1750",
+    ]
+    assert stricter.status_code == 200, stricter.text
+    assert stricter.json()["threshold_cents"] == 200_000
+    assert [item["order_id"] for item in stricter.json()["items"]] == ["order-2000"]
 
 
 def test_catalog_failure_does_not_create_case_proposal_or_outbox() -> None:
@@ -1160,6 +1291,65 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
         "EvidenceBundle",
     ):
         assert static_components[schema_name]["required"] == components[schema_name]["required"]
+
+
+def test_order_review_openapi_declares_threshold_and_action_result_contract() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200, response.text
+    document = response.json()
+    components = document["components"]["schemas"]
+    list_operation = document["paths"]["/api/v1/orders/high-value-unpaid"]["get"]
+    list_parameter = next(
+        parameter
+        for parameter in list_operation["parameters"]
+        if parameter["name"] == "min_amount_cents"
+    )
+    assert "default" not in list_parameter["schema"]
+    list_schema = components["HighValueUnpaidResponse"]
+    assert list_schema["required"] == ["items", "total", "threshold_cents"]
+    assert list_schema["properties"]["threshold_cents"]["minimum"] == 1
+    assert list_operation["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/HighValueUnpaidResponse"
+    }
+
+    action_result_schema = components["ActionResult"]
+    assert action_result_schema["required"] == ["proposal_id", "order_id", "status"]
+    expected_optional_fields = {
+        "order_version": [{"minimum": 1, "type": "integer"}, {"type": "null"}],
+        "follow_up_task_id": [{"type": "string"}, {"type": "null"}],
+        "reason": [{"type": "string"}, {"type": "null"}],
+    }
+    for field_name, expected_schema in expected_optional_fields.items():
+        assert action_result_schema["properties"][field_name]["anyOf"] == expected_schema
+    for path in (
+        "/api/v1/action-proposals/{proposal_id}:confirm",
+        "/api/v1/action-proposals/{proposal_id}:reject",
+    ):
+        assert document["paths"][path]["post"]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"] == {"$ref": "#/components/schemas/ActionResult"}
+
+    static_document = yaml.safe_load(
+        (
+            Path(__file__).parents[3] / "contracts" / "openapi" / "services" / "orchestrator.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    static_components = static_document["components"]["schemas"]
+    assert static_components["HighValueUnpaidResponse"]["required"] == [
+        "items",
+        "total",
+        "threshold_cents",
+    ]
+    assert static_components["ActionResult"]["required"] == [
+        "proposal_id",
+        "order_id",
+        "status",
+    ]
+    for field_name, expected_schema in expected_optional_fields.items():
+        assert static_components["ActionResult"]["properties"][field_name]["anyOf"] == expected_schema
 
 
 def test_action_command_routes_precede_proposal_detail_route():

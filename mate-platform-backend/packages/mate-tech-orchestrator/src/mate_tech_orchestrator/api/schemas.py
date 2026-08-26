@@ -125,6 +125,22 @@ class CreateOrderRequest(BaseModel):
     payment_status: Literal["unpaid", "paid"] = "unpaid"
 
 
+class Order(BaseModel):
+    tenant_id: str
+    order_id: str
+    amount_cents: int = Field(ge=1)
+    payment_status: Literal["unpaid", "paid"]
+    review_status: Literal["pending", "approved"]
+    version: int = Field(ge=1)
+    updated_at: datetime
+
+
+class HighValueUnpaidResponse(BaseModel):
+    items: list[Order]
+    total: int = Field(ge=0)
+    threshold_cents: int = Field(ge=1)
+
+
 class CreateReviewCaseRequest(BaseModel):
     """Create a proposal from an upstream Ontology/RAG suggestion."""
 
@@ -140,6 +156,15 @@ class ConfirmActionProposalRequest(BaseModel):
 class RejectActionProposalRequest(BaseModel):
     actor_id: str = Field(default="system", min_length=1)
     reason: str = Field(default="")
+
+
+class ActionResult(BaseModel):
+    proposal_id: str
+    order_id: str
+    status: Literal["confirmed", "rejected"]
+    order_version: int | None = Field(default=None, ge=1)
+    follow_up_task_id: str | None = None
+    reason: str | None = None
 
 
 class _EvidenceModel(BaseModel):

@@ -11,10 +11,12 @@ from mate_platform.tenancy.guards import require_tenant
 from ..repositories.order_review import OrderReviewService
 from .schemas import (
     ActionProposal,
+    ActionResult,
     ConfirmActionProposalRequest,
     CreateOrderRequest,
     CreateReviewCaseRequest,
     CreateReviewCaseResponse,
+    HighValueUnpaidResponse,
     RejectActionProposalRequest,
     validate_evidence_bundle,
 )
@@ -154,17 +156,22 @@ async def create_order(request: Request, body: CreateOrderRequest) -> dict[str, 
         _raise_service_error(error)
 
 
-@public_router.get("/orders/high-value-unpaid")
+@public_router.get("/orders/high-value-unpaid", response_model=HighValueUnpaidResponse)
 @router.get("/orders/high-value-unpaid", include_in_schema=False)
 async def list_high_value_unpaid(
     request: Request,
-    min_amount_cents: int = Query(default=100_000, ge=1),
-) -> dict[str, Any]:
+    min_amount_cents: int | None = Query(default=None, ge=1),
+) -> HighValueUnpaidResponse:
+    threshold_cents = _service.effective_threshold_cents(min_amount_cents)
     items = _service.list_high_value_unpaid(
         tenant_id=_tenant_id(request),
         min_amount_cents=min_amount_cents,
     )
-    return {"items": items, "total": len(items)}
+    return HighValueUnpaidResponse(
+        items=items,
+        total=len(items),
+        threshold_cents=threshold_cents,
+    )
 
 
 @public_router.post(
@@ -199,7 +206,9 @@ async def create_review_case(
 
 
 @public_router.post(
-    "/action-proposals/{proposal_id}:confirm", responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES
+    "/action-proposals/{proposal_id}:confirm",
+    response_model=ActionResult,
+    responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES,
 )
 @router.post(
     "/action-proposals/{proposal_id}:confirm",
@@ -211,33 +220,34 @@ async def confirm_action_proposal(
     request: Request,
     body: ConfirmActionProposalRequest,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-) -> dict[str, Any]:
+) -> ActionResult:
     if not idempotency_key or not idempotency_key.strip():
         raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
     try:
-        return _service.confirm_proposal(
+        result = _service.confirm_proposal(
             tenant_id=_tenant_id(request),
             proposal_id=proposal_id,
             idempotency_key=idempotency_key.strip(),
             actor_id=body.actor_id,
             trace_id=_trace_id(request),
         )
+        return ActionResult.model_validate(result)
     except Exception as error:
         _raise_service_error(error)
 
 
-@public_router.post("/action-proposals/{proposal_id}:reject")
+@public_router.post("/action-proposals/{proposal_id}:reject", response_model=ActionResult)
 @router.post("/action-proposals/{proposal_id}:reject", include_in_schema=False)
 async def reject_action_proposal(
     proposal_id: str,
     request: Request,
     body: RejectActionProposalRequest,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-) -> dict[str, Any]:
+) -> ActionResult:
     if not idempotency_key or not idempotency_key.strip():
         raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
     try:
-        return _service.reject_proposal(
+        result = _service.reject_proposal(
             tenant_id=_tenant_id(request),
             proposal_id=proposal_id,
             idempotency_key=idempotency_key.strip(),
@@ -245,6 +255,7 @@ async def reject_action_proposal(
             reason=body.reason,
             trace_id=_trace_id(request),
         )
+        return ActionResult.model_validate(result)
     except Exception as error:
         _raise_service_error(error)
 

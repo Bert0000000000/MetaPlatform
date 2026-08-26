@@ -15,8 +15,6 @@ import {
 } from '@/api/superai/orderReview';
 import OrderReviewEvidence from '@/pages/superai/components/OrderReviewEvidence';
 
-const REVIEW_THRESHOLD_CENTS = 100_000;
-
 function formatAmount(amountCents: number): string {
   return `¥${(amountCents / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
 }
@@ -28,6 +26,7 @@ function statusLabel(status: ReviewOrder['review_status']): string {
 
 export default function OrderReviewPage() {
   const [orders, setOrders] = useState<ReviewOrder[]>([]);
+  const [thresholdCents, setThresholdCents] = useState<number>();
   const [selectedOrderId, setSelectedOrderId] = useState<string>();
   const [proposal, setProposal] = useState<ActionProposal>();
   const [result, setResult] = useState<ActionResult>();
@@ -56,8 +55,10 @@ export default function OrderReviewPage() {
     setLoading(true);
     setError(undefined);
     try {
-      const items = await listHighValueUnpaid(REVIEW_THRESHOLD_CENTS);
+      const response = await listHighValueUnpaid();
+      const { items } = response;
       setOrders(items);
+      setThresholdCents(response.threshold_cents);
       if (!selectedOrderId && items[0]) setSelectedOrderId(items[0].order_id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '订单加载失败');
@@ -159,7 +160,9 @@ export default function OrderReviewPage() {
         </Card>
 
         <Card
-          title={`高价值未支付订单（≥ ${formatAmount(REVIEW_THRESHOLD_CENTS)}）`}
+          title={thresholdCents === undefined
+            ? '高价值未支付订单'
+            : `高价值未支付订单（≥ ${formatAmount(thresholdCents)}）`}
           headerExtraContent={<Button icon={<RefreshCw size={14} />} loading={loading} onClick={() => void loadOrders()}>刷新</Button>}
         >
           {orders.length === 0 && !loading ? (

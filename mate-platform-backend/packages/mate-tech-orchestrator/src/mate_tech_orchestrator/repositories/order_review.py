@@ -19,6 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base, create_all, get_session
 from mate_tech_orchestrator.api.schemas import validate_evidence_bundle
+from mate_tech_orchestrator.order_review.config import resolve_order_review_threshold_cents
 from mate_tech_orchestrator.order_review.evidence import (
     EvidenceUnavailable as OrderReviewEvidenceUnavailable,
 )
@@ -181,11 +182,17 @@ class OrderReviewService:
         self,
         *,
         proposal_ttl: timedelta = timedelta(hours=24),
+        threshold_cents: int | None = None,
         evidence_builder: OrderReviewEvidenceBuilder | None = None,
         ontology_catalog: OrderReviewOntologyCatalog | None = None,
     ) -> None:
         self._proposal_ttl = proposal_ttl
-        self._evidence_builder = evidence_builder or OrderReviewEvidenceBuilder()
+        self.threshold_cents = resolve_order_review_threshold_cents(threshold_cents)
+        self._evidence_builder = evidence_builder or OrderReviewEvidenceBuilder(
+            threshold_cents=self.threshold_cents
+        )
+        if self._evidence_builder.threshold_cents != self.threshold_cents:
+            raise ValueError("evidence builder threshold must match the order-review threshold")
         self._ontology_catalog = ontology_catalog or OrderReviewOntologyCatalog()
 
     @staticmethod
@@ -274,21 +281,23 @@ class OrderReviewService:
 
     @staticmethod
     def _evidence_refs(evidence: dict[str, Any]) -> dict[str, Any]:
+        """Return the compact, exact evidence reference contract used by events."""
         facts = evidence.get("data", {}).get("facts", [])
         nodes = evidence.get("ontology", {}).get("graph", {}).get("nodes", [])
         return {
             "evidence_schema_version": evidence.get("schema_version"),
-            "evidence_order_version": evidence.get("order_version"),
-            "evidence_fact_ids": [
+            "fact_ids": [
                 str(fact.get("id"))
                 for fact in facts
                 if isinstance(fact, dict) and isinstance(fact.get("id"), str)
             ],
-            "evidence_graph_node_ids": [
+            "graph_node_ids": [
                 str(node.get("id"))
                 for node in nodes
                 if isinstance(node, dict) and isinstance(node.get("id"), str)
             ],
+            "order_version": evidence.get("order_version"),
+            "proposal_id": evidence.get("proposal_id"),
         }
 
     @staticmethod
@@ -406,10 +415,18 @@ class OrderReviewService:
             session.add(row)
         return self._order_dict(row)
 
+    def effective_threshold_cents(self, min_amount_cents: int | None = None) -> int:
+        if min_amount_cents is None:
+            return self.threshold_cents
+        if isinstance(min_amount_cents, bool) or min_amount_cents <= 0:
+            raise ValueError("min_amount_cents must be a positive integer")
+        return max(self.threshold_cents, min_amount_cents)
+
     def list_high_value_unpaid(
-        self, *, tenant_id: str, min_amount_cents: int
+        self, *, tenant_id: str, min_amount_cents: int | None = None
     ) -> list[dict[str, Any]]:
         self._ensure_schema()
+        effective_threshold_cents = self.effective_threshold_cents(min_amount_cents)
         with get_session() as session:
             rows = (
                 session.execute(
@@ -418,7 +435,7 @@ class OrderReviewService:
                         OrderORM.tenant_id == tenant_id,
                         OrderORM.payment_status == "unpaid",
                         OrderORM.review_status == "pending",
-                        OrderORM.amount_cents >= min_amount_cents,
+                        OrderORM.amount_cents >= effective_threshold_cents,
                     )
                     .order_by(OrderORM.amount_cents.desc(), OrderORM.order_id)
                 )
@@ -468,6 +485,10 @@ class OrderReviewService:
                 raise self.Conflict(f"order is not unpaid: {order_id}")
             if order_snapshot.review_status != "pending":
                 raise self.Conflict(f"order review is not pending: {order_id}")
+            if order_snapshot.amount_cents < self.threshold_cents:
+                raise self.EvidenceUnavailable(
+                    f"order amount is below the review threshold: {order_id}"
+                )
             facts = self._order_facts(order_snapshot)
         contract = self._ontology_catalog.get_contract(tenant_id=tenant_id, token=auth_token)
         evidence = self._persisted_evidence(
@@ -708,6 +729,7 @@ class OrderReviewService:
                         aggregate_id=order.order_id,
                         payload={
                             **response,
+                            "result_order_version": next_version,
                             "actor_id": actor_id,
                             **self._evidence_refs(evidence),
                         },
@@ -725,6 +747,7 @@ class OrderReviewService:
                             "actor_id": actor_id,
                             "order_id": order.order_id,
                             "idempotency_key": idempotency_key,
+                            "result_order_version": next_version,
                             **self._evidence_refs(evidence),
                         },
                         trace_id=trace_id,
@@ -783,7 +806,12 @@ class OrderReviewService:
                 if case is not None:
                     case.status = "rejected"
                 evidence = self._evidence_from_case(case)
-                response = {"proposal_id": proposal_id, "status": "rejected", "reason": reason}
+                response = {
+                    "proposal_id": proposal_id,
+                    "order_id": proposal.order_id,
+                    "status": "rejected",
+                    "reason": reason,
+                }
                 session.add(
                     IdempotencyRecordORM(
                         tenant_id=tenant_id,

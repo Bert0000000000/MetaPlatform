@@ -10,6 +10,12 @@ export interface ReviewOrder {
   updated_at: string;
 }
 
+export interface HighValueUnpaidResponse {
+  items: ReviewOrder[];
+  total: number;
+  threshold_cents?: number;
+}
+
 export interface EvidenceFact {
   id: string;
   field: string;
@@ -116,11 +122,21 @@ export interface ActionResult {
   reason?: string;
 }
 
-export async function listHighValueUnpaid(minAmountCents = 100_000): Promise<ReviewOrder[]> {
-  const payload = await get<{ items?: ReviewOrder[] } | ReviewOrder[]>('/orders/high-value-unpaid', {
-    min_amount_cents: minAmountCents,
-  });
-  return Array.isArray(payload) ? payload : (payload.items ?? []);
+export async function listHighValueUnpaid(
+  minAmountCents?: number,
+): Promise<HighValueUnpaidResponse> {
+  const payload = await get<HighValueUnpaidResponse | ReviewOrder[]>(
+    '/orders/high-value-unpaid',
+    minAmountCents === undefined ? undefined : { min_amount_cents: minAmountCents },
+  );
+  if (Array.isArray(payload)) {
+    return { items: payload, total: payload.length };
+  }
+  return {
+    items: payload.items ?? [],
+    total: payload.total ?? payload.items?.length ?? 0,
+    threshold_cents: payload.threshold_cents,
+  };
 }
 
 export async function createReviewCase(input: {

@@ -6,12 +6,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from .config import resolve_order_review_threshold_cents
+
 EVIDENCE_SCHEMA_VERSION = "order-review-evidence.v1"
 
 _FOLLOW_UP_ACTION = "follow_up_payment"
 _FOLLOW_UP_TITLE = "创建回款跟进单"
 _FOLLOW_UP_POLICY_REF = "policy://payment-follow-up-policy"
-_THRESHOLD_CENTS = 100_000
 _DISPLAY_VALUE_MAPPINGS = {
     "fact.payment_status": {
         "unpaid": "未支付",
@@ -148,6 +149,9 @@ def _validate_contract(
 class OrderReviewEvidenceBuilder:
     """Build a deterministic order-review evidence bundle from validated inputs."""
 
+    def __init__(self, *, threshold_cents: int | None = None) -> None:
+        self.threshold_cents = resolve_order_review_threshold_cents(threshold_cents)
+
     def build(
         self,
         *,
@@ -160,7 +164,7 @@ class OrderReviewEvidenceBuilder:
             facts=facts, contract=contract
         )
 
-        threshold_passed = facts.amount_cents >= _THRESHOLD_CENTS
+        threshold_passed = facts.amount_cents >= self.threshold_cents
         unpaid_passed = facts.payment_status == "unpaid"
         eligible_passed = threshold_passed and unpaid_passed
 
@@ -170,10 +174,10 @@ class OrderReviewEvidenceBuilder:
         derivation = [
             {
                 "id": "threshold",
-                "label": "订单金额 ≥ ¥1,000.00",
+                "label": f"订单金额 ≥ {_format_amount(self.threshold_cents)}",
                 "passed": threshold_passed,
                 "fact_refs": ["fact.amount_cents"],
-                "details": {"operator": ">=", "expected_cents": _THRESHOLD_CENTS},
+                "details": {"operator": ">=", "expected_cents": self.threshold_cents},
             },
             {
                 "id": "unpaid",

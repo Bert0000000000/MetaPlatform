@@ -233,6 +233,16 @@ components:
         order_id: {type: string, minLength: 1}
         amount_cents: {type: integer, minimum: 1}
         payment_status: {type: string, enum: [unpaid, paid], default: unpaid}
+    HighValueUnpaidResponse:
+      type: object
+      required: [items, total, threshold_cents]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Order'}}
+        total: {type: integer, minimum: 0}
+        threshold_cents:
+          type: integer
+          minimum: 1
+          description: 本次列表实际使用的服务端复核阈值，已包含可选的更高查询筛选。
     CreateReviewCaseRequest:
       type: object
       required: [order_id, suggestion]
@@ -438,6 +448,25 @@ components:
       properties:
         actor_id: {type: string, default: system}
         reason: {type: string, default: ""}
+    ActionResult:
+      type: object
+      required: [proposal_id, order_id, status]
+      properties:
+        proposal_id: {type: string}
+        order_id: {type: string}
+        status: {type: string, enum: [confirmed, rejected]}
+        order_version:
+          anyOf:
+          - {type: integer, minimum: 1}
+          - {type: 'null'}
+        follow_up_task_id:
+          anyOf:
+          - {type: string}
+          - {type: 'null'}
+        reason:
+          anyOf:
+          - {type: string}
+          - {type: 'null'}
 paths:
   /healthz:
     get:
@@ -1001,18 +1030,15 @@ paths:
       - name: min_amount_cents
         in: query
         required: false
-        schema: {type: integer, minimum: 1, default: 100000}
+        description: 可选的更高用户筛选；省略时使用服务端 ORDER_REVIEW_THRESHOLD_CENTS 配置。
+        schema: {type: integer, minimum: 1}
       responses:
         '200':
           description: 订单列表
           content:
             application/json:
               schema:
-                type: object
-                required: [items, total]
-                properties:
-                  items: {type: array, items: {$ref: '#/components/schemas/Order'}}
-                  total: {type: integer}
+                $ref: '#/components/schemas/HighValueUnpaidResponse'
       operationId: orderReviewGetHighValueUnpaidOrders
       x-mate-owner: orchestrator
       x-mate-permission: order.read
@@ -1104,6 +1130,10 @@ paths:
       responses:
         '200':
           description: 已确认，订单、跟进单、幂等记录和 Outbox 同事务提交
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
         '409':
           description: 版本冲突、重复处理、幂等键冲突或 evidence required
           headers:
@@ -1147,7 +1177,12 @@ paths:
             schema:
               $ref: '#/components/schemas/RejectActionProposalRequest'
       responses:
-        '200': {description: 已拒绝并写入审计 Outbox}
+        '200':
+          description: 已拒绝并写入审计 Outbox
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
         '409': {description: 重复处理或幂等键冲突}
       operationId: orderReviewPostActionProposalReject
       x-mate-owner: orchestrator

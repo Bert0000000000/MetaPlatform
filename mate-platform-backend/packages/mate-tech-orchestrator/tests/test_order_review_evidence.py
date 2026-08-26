@@ -236,6 +236,38 @@ def test_amount_threshold_is_inclusive(amount_cents: int, should_pass: bool) -> 
         )
 
 
+def test_custom_threshold_controls_eligibility_and_derivation_without_changing_amount_fact() -> None:
+    builder = OrderReviewEvidenceBuilder(threshold_cents=200_000)
+    now = datetime(2026, 8, 26, 12, 30, tzinfo=UTC)
+
+    with pytest.raises(EvidenceUnavailable):
+        builder.build(
+            facts=_facts(amount_cents=199_999),
+            contract=_contract(),
+            requested_suggestion={},
+            now=now,
+        )
+
+    bundle = builder.build(
+        facts=_facts(amount_cents=200_000),
+        contract=_contract(),
+        requested_suggestion={},
+        now=now,
+    )
+
+    threshold = next(item for item in bundle["derivation"] if item["id"] == "threshold")
+    amount_fact = next(item for item in bundle["data"]["facts"] if item["id"] == "fact.amount_cents")
+    assert threshold == {
+        "id": "threshold",
+        "label": "订单金额 ≥ ¥2,000.00",
+        "passed": True,
+        "fact_refs": ["fact.amount_cents"],
+        "details": {"operator": ">=", "expected_cents": 200_000},
+    }
+    assert amount_fact["value"] == 200_000
+    assert amount_fact["display_value"] == "¥2,000.00"
+
+
 @pytest.mark.parametrize(
     ("payment_status", "review_status", "should_pass"),
     [
