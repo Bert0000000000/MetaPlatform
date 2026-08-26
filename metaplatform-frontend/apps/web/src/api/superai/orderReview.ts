@@ -10,6 +10,76 @@ export interface ReviewOrder {
   updated_at: string;
 }
 
+export interface EvidenceFact {
+  id: string;
+  field?: string;
+  label?: string;
+  value: unknown;
+  display_value?: string;
+  source?: string;
+}
+
+export interface EvidenceGraphNode extends Record<string, unknown> {
+  id: string;
+  label: string;
+  type?: string;
+}
+
+export interface EvidenceGraphEdge extends Record<string, unknown> {
+  id?: string;
+  label?: string;
+  from?: string;
+  to?: string;
+  source?: string;
+  target?: string;
+}
+
+export interface EvidenceDerivation {
+  id: string;
+  label?: string;
+  passed: boolean;
+  fact_refs?: string[];
+  details?: Record<string, unknown>;
+  refs?: string[];
+}
+
+export interface EvidenceBundle {
+  schema_version: 'order-review-evidence.v1';
+  status: 'complete' | 'unavailable';
+  proposal_id: string;
+  order_id: string;
+  tenant_id: string;
+  order_version: number;
+  captured_at: string;
+  ontology: {
+    source?: string;
+    model_rid?: string;
+    action_rid?: string;
+    graph: {
+      nodes: EvidenceGraphNode[];
+      edges: EvidenceGraphEdge[];
+    };
+    legend: Record<string, string> | string;
+    contract?: Record<string, unknown>;
+  };
+  data: {
+    source?: string;
+    captured_at?: string;
+    facts: EvidenceFact[];
+    snapshot?: Record<string, unknown>;
+  };
+  derivation: EvidenceDerivation[];
+  recommendation: {
+    action: string;
+    title: string;
+    reason: string;
+    confidence?: number | null;
+    requires_confirmation: boolean;
+    derivation_refs: string[];
+    source_refs: string[];
+  };
+}
+
 export interface ActionProposal {
   tenant_id: string;
   proposal_id: string;
@@ -21,6 +91,7 @@ export interface ActionProposal {
   parameters: Record<string, unknown>;
   suggestion?: Record<string, unknown>;
   source_refs?: string[];
+  evidence?: EvidenceBundle | null;
   expires_at: string;
   created_at: string;
   resolved_at?: string | null;

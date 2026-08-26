@@ -12,6 +12,7 @@ import {
   type ActionResult,
   type ReviewOrder,
 } from '@/api/superai/orderReview';
+import OrderReviewEvidence from '@/pages/superai/components/OrderReviewEvidence';
 
 const REVIEW_THRESHOLD_CENTS = 100_000;
 
@@ -37,6 +38,18 @@ export default function OrderReviewPage() {
     () => orders.find((order) => order.order_id === selectedOrderId),
     [orders, selectedOrderId],
   );
+  const canConfirmProposal = proposal?.status === 'pending'
+    && proposal.evidence?.status === 'complete'
+    && proposal.evidence.recommendation.requires_confirmation === true;
+  const confirmationMessage = !proposal
+    ? undefined
+    : !proposal.evidence
+      ? '历史提案无证据快照，不能确认执行。'
+      : proposal.evidence.status !== 'complete'
+        ? `证据状态 ${proposal.evidence.status}，不能确认执行。`
+        : proposal.evidence.recommendation.requires_confirmation !== true
+          ? '当前建议不允许人工确认执行。'
+          : undefined;
 
   const loadOrders = async () => {
     setLoading(true);
@@ -65,14 +78,8 @@ export default function OrderReviewPage() {
         orderId: order.order_id,
         suggestion: {
           action: 'follow_up_payment',
-          reason: `订单金额 ${formatAmount(order.amount_cents)} 且支付状态为未支付，建议人工复核后创建回款跟进单。`,
-          confidence: 0.94,
-          evidence: ['Ontology:Order.payment_status', 'RAG:payment-follow-up-policy'],
         },
-        sourceRefs: [
-          `ontology://Order/${order.order_id}`,
-          'rag://payment-follow-up-policy',
-        ],
+        sourceRefs: [],
       });
       setProposal(await getActionProposal(created.proposal_id));
       Toast.success('复核建议已生成，等待人工确认');
@@ -131,7 +138,7 @@ export default function OrderReviewPage() {
         <div>
           <Typography.Title heading={3} style={{ margin: 0 }}>订单复核</Typography.Title>
           <Typography.Text type="tertiary">
-            SuperAI 基于 Ontology/RAG 生成建议，人工确认后通过 Action 更新订单并创建跟进单。
+            SuperAI 基于服务端 evidence 快照生成建议，人工确认后通过 Action 更新订单并创建跟进单。
           </Typography.Text>
         </div>
 
@@ -144,7 +151,7 @@ export default function OrderReviewPage() {
         <Card title="复核流程">
           <Steps current={result ? 3 : proposal ? 2 : selectedOrder ? 1 : 0} type="basic">
             <Steps.Step title="识别高价值未支付订单" />
-            <Steps.Step title="生成 Ontology/RAG 建议" />
+            <Steps.Step title="生成 evidence 建议" />
             <Steps.Step title="人工确认 Action" />
             <Steps.Step title="订单更新与跟进单" />
           </Steps>
@@ -187,19 +194,25 @@ export default function OrderReviewPage() {
           )}
         </Card>
 
-        {selectedOrder && proposal && (
+        {proposal && (
           <Card data-testid="review-proposal" title="AI 复核建议" headerExtraContent={<Tag color={proposal.status === 'pending' ? 'orange' : 'green'}>{proposal.status}</Tag>}>
             <Space vertical align="start" style={{ width: '100%' }}>
-              <Typography.Text strong>订单：{selectedOrder.order_id}</Typography.Text>
-              <Typography.Paragraph style={{ margin: 0 }}>
-                {String(proposal.suggestion?.reason ?? '建议人工复核该订单并跟进回款。')}
-              </Typography.Paragraph>
-              <Space wrap>
-                {(proposal.source_refs ?? []).map((source) => <Tag key={source} color="blue">{source}</Tag>)}
-              </Space>
+              <Typography.Text strong>订单：{proposal.order_id}</Typography.Text>
+              <OrderReviewEvidence evidence={proposal.evidence} />
+              {proposal.status === 'pending' && confirmationMessage && <Typography.Text type="danger">{confirmationMessage}</Typography.Text>}
+              <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                proposal_id：{proposal.proposal_id}
+              </Typography.Text>
               {proposal.status === 'pending' && (
                 <Space>
-                  <Button theme="solid" type="primary" icon={<CheckCircle2 size={14} />} loading={working} onClick={() => void confirm()}>
+                  <Button
+                    theme="solid"
+                    type="primary"
+                    icon={<CheckCircle2 size={14} />}
+                    loading={working}
+                    disabled={!canConfirmProposal}
+                    onClick={() => void confirm()}
+                  >
                     确认执行
                   </Button>
                   <Button type="danger" icon={<XCircle size={14} />} loading={working} onClick={() => void reject()}>
