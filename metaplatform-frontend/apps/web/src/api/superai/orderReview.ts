@@ -13,7 +13,7 @@ export interface ReviewOrder {
 export interface HighValueUnpaidResponse {
   items: ReviewOrder[];
   total: number;
-  threshold_cents?: number;
+  threshold_cents: number;
 }
 
 export interface EvidenceFact {
@@ -93,7 +93,7 @@ export interface ActionProposal {
   proposal_id: string;
   review_case_id: string;
   order_id: string;
-  action_type: string;
+  action_type: 'order_review_confirm';
   status: 'pending' | 'confirmed' | 'rejected' | 'expired';
   expected_order_version: number;
   parameters: Record<string, unknown>;
@@ -117,26 +117,18 @@ export interface ActionResult {
   proposal_id: string;
   order_id: string;
   status: 'confirmed' | 'rejected';
-  order_version?: number;
-  follow_up_task_id?: string;
-  reason?: string;
+  order_version?: number | null;
+  follow_up_task_id?: string | null;
+  reason?: string | null;
 }
 
 export async function listHighValueUnpaid(
   minAmountCents?: number,
 ): Promise<HighValueUnpaidResponse> {
-  const payload = await get<HighValueUnpaidResponse | ReviewOrder[]>(
+  return get<HighValueUnpaidResponse>(
     '/orders/high-value-unpaid',
     minAmountCents === undefined ? undefined : { min_amount_cents: minAmountCents },
   );
-  if (Array.isArray(payload)) {
-    return { items: payload, total: payload.length };
-  }
-  return {
-    items: payload.items ?? [],
-    total: payload.total ?? payload.items?.length ?? 0,
-    threshold_cents: payload.threshold_cents,
-  };
 }
 
 export async function createReviewCase(input: {

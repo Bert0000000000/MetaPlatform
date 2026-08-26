@@ -5,5 +5,5 @@
     "composite": false,
     "incremental": false
   },
-  "include": ["./ontology-bigdata-contract.ts"]
+  "include": ["./ontology-bigdata-contract.ts", "./order-review-contract.ts"]
 }

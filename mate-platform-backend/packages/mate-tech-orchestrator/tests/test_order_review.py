@@ -91,7 +91,7 @@ def _seed_proposal(service: OrderReviewService, *, tenant_id: str = "tenant-acme
 
 def _set_persisted_evidence_value(
     proposal_id: str,
-    path: tuple[str, ...],
+    path: tuple[str | int, ...],
     value: Any,
 ) -> None:
     with get_session() as session, session.begin():
@@ -415,6 +415,66 @@ def test_reject_does_not_change_order_but_records_audit(service: OrderReviewServ
     assert "graph" not in events[-1]["payload"]
 
 
+@pytest.mark.parametrize("evidence_state", ["missing", "malformed"])
+def test_historical_reject_emits_safe_empty_evidence_refs_without_order_side_effects(
+    service: OrderReviewService,
+    evidence_state: str,
+) -> None:
+    proposal_id = _seed_proposal(service)
+    with get_session() as session, session.begin():
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        case = session.get(ReviewCaseORM, ("tenant-acme", proposal.review_case_id))
+        assert case is not None
+        suggestion = json.loads(case.suggestion)
+        if evidence_state == "missing":
+            suggestion.pop("evidence_bundle", None)
+        else:
+            suggestion["evidence_bundle"] = {
+                "schema_version": "forged-evidence.v9",
+                "proposal_id": "proposal-forged",
+                "order_version": 999,
+                "data": {"facts": [{"id": "fact.forged"}]},
+                "ontology": {"graph": {"nodes": [{"id": "node-forged"}]}},
+            }
+        case.suggestion = json.dumps(suggestion, ensure_ascii=False, sort_keys=True)
+
+    result = service.reject_proposal(
+        tenant_id="tenant-acme",
+        proposal_id=proposal_id,
+        idempotency_key=f"reject-historical-{evidence_state}",
+        actor_id="u-reviewer",
+        reason="historical proposal",
+    )
+
+    assert result["status"] == "rejected"
+    order = service.get_order(tenant_id="tenant-acme", order_id="order-1001")
+    assert order["review_status"] == "pending"
+    assert order["version"] == 1
+    assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
+    rejected_event = next(
+        event
+        for event in service.list_outbox_events(tenant_id="tenant-acme")
+        if event["event_type"] == "audit.action_proposal.rejected"
+    )
+    assert {
+        key: rejected_event["payload"][key]
+        for key in (
+            "evidence_schema_version",
+            "fact_ids",
+            "graph_node_ids",
+            "order_version",
+            "proposal_id",
+        )
+    } == {
+        "evidence_schema_version": None,
+        "fact_ids": [],
+        "graph_node_ids": [],
+        "order_version": None,
+        "proposal_id": proposal_id,
+    }
+
+
 def test_get_proposal_returns_persisted_evidence_snapshot(service: OrderReviewService) -> None:
     service.create_order(
         tenant_id="tenant-acme",
@@ -687,6 +747,27 @@ def test_confirmation_requires_persisted_evidence_and_does_not_create_side_effec
             False,
             OrderReviewService.EvidenceRequired,
         ),
+        (("data", "facts", 0, "value"), 1, OrderReviewService.EvidenceRequired),
+        (
+            ("data", "facts", 1, "source"),
+            "order_review_orders.amount_cents",
+            OrderReviewService.EvidenceRequired,
+        ),
+        (
+            ("ontology", "graph", "edges", 0, "target"),
+            "action-type:ont.tenant-acme.act.order-review-confirm.v1",
+            OrderReviewService.EvidenceRequired,
+        ),
+        (
+            ("derivation", 0, "fact_refs"),
+            ["fact.payment_status"],
+            OrderReviewService.EvidenceRequired,
+        ),
+        (
+            ("derivation", 0, "details", "expected_cents"),
+            1,
+            OrderReviewService.EvidenceRequired,
+        ),
     ],
     ids=[
         "tenant",
@@ -701,11 +782,16 @@ def test_confirmation_requires_persisted_evidence_and_does_not_create_side_effec
         "anchor-version",
         "recommendation-action",
         "confirmation-not-allowed",
+        "fact-value",
+        "fact-source",
+        "edge-target",
+        "derivation-refs",
+        "derivation-details",
     ],
 )
 def test_confirmation_rejects_mismatched_evidence_without_side_effects(
     service: OrderReviewService,
-    path: tuple[str, ...],
+    path: tuple[str | int, ...],
     invalid_value: Any,
     expected_error: type[Exception],
 ) -> None:
@@ -716,7 +802,7 @@ def test_confirmation_rejects_mismatched_evidence_without_side_effects(
         service.confirm_proposal(
             tenant_id="tenant-acme",
             proposal_id=proposal_id,
-            idempotency_key=f"confirm-mismatched-{'-'.join(path)}",
+            idempotency_key=f"confirm-mismatched-{'-'.join(str(item) for item in path)}",
             actor_id="u-reviewer",
         )
 
@@ -737,7 +823,8 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     auth_headers_acme: dict[str, str],
 ):
     catalog = _FakeOntologyCatalog()
-    monkeypatch.setattr(order_review_api, "_service", OrderReviewService(ontology_catalog=catalog))
+    service = OrderReviewService(ontology_catalog=catalog)
+    monkeypatch.setattr(order_review_api, "_service", service)
     client = TestClient(create_app())
     headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
 
@@ -815,6 +902,12 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     )
     assert confirm_response.status_code == 200, confirm_response.text
     assert confirm_response.json()["status"] == "confirmed"
+    audit_event = next(
+        event
+        for event in service.list_outbox_events(tenant_id="tenant-acme")
+        if event["event_type"] == "audit.action_proposal.confirmed"
+    )
+    assert audit_event["payload"]["actor_id"] == "u-1"
 
     detail_response = client.get(
         f"/api/v1/action-proposals/{proposal_id}",
@@ -836,6 +929,49 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     )
     assert duplicate_response.status_code == 200
     assert duplicate_response.json() == confirm_response.json()
+
+
+def test_reject_http_uses_authenticated_actor_instead_of_body_actor(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_headers_acme: dict[str, str],
+) -> None:
+    service = OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+    monkeypatch.setattr(order_review_api, "_service", service)
+    client = TestClient(create_app())
+    headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
+    assert client.post(
+        "/api/v1/orders",
+        headers=headers,
+        json={
+            "order_id": "order-http-reject-actor",
+            "amount_cents": 188000,
+            "payment_status": "unpaid",
+        },
+    ).status_code == 201
+    case_response = client.post(
+        "/api/v1/review-cases",
+        headers=headers,
+        json={
+            "order_id": "order-http-reject-actor",
+            "suggestion": {"action": "follow_up_payment"},
+            "source_refs": [],
+        },
+    )
+    assert case_response.status_code == 201, case_response.text
+
+    reject_response = client.post(
+        f"/api/v1/action-proposals/{case_response.json()['proposal_id']}:reject",
+        headers={**headers, "Idempotency-Key": "reject-context-actor"},
+        json={"actor_id": "spoofed-client-actor", "reason": "manual reject"},
+    )
+
+    assert reject_response.status_code == 200, reject_response.text
+    audit_event = next(
+        event
+        for event in service.list_outbox_events(tenant_id="tenant-acme")
+        if event["event_type"] == "audit.action_proposal.rejected"
+    )
+    assert audit_event["payload"]["actor_id"] == "u-1"
 
 
 def test_create_review_case_http_returns_503_for_evidence_unavailable(
@@ -1350,6 +1486,16 @@ def test_order_review_openapi_declares_threshold_and_action_result_contract() ->
     ]
     for field_name, expected_schema in expected_optional_fields.items():
         assert static_components["ActionResult"]["properties"][field_name]["anyOf"] == expected_schema
+
+
+@pytest.mark.parametrize("compose_name", ["docker-compose.yml", "docker-compose.task5.yml"])
+def test_order_review_threshold_is_deployed_to_orchestrator(compose_name: str) -> None:
+    workspace_root = Path(__file__).parents[4]
+    compose = yaml.safe_load((workspace_root / compose_name).read_text(encoding="utf-8"))
+
+    assert compose["services"]["mate-tech-orchestrator"]["environment"][
+        "ORDER_REVIEW_THRESHOLD_CENTS"
+    ] == "${ORDER_REVIEW_THRESHOLD_CENTS:-100000}"
 
 
 def test_action_command_routes_precede_proposal_detail_route():

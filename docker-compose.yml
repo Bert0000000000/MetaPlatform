@@ -759,6 +759,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: metaplatform
       ONT_HTTP_BASE: http://mate-tech-ont:8007
+      ORDER_REVIEW_THRESHOLD_CENTS: ${ORDER_REVIEW_THRESHOLD_CENTS:-100000}
       SERVICE_CLIENT_ID: ${SERVICE_CLIENT_ID:-metaplatform-backend}
       SERVICE_CLIENT_SECRET: ${SERVICE_CLIENT_SECRET:-}
       MCP_URL: http://mate-tech-mcp:8081

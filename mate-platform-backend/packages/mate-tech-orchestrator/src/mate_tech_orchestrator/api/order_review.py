@@ -81,6 +81,17 @@ def _trace_id(request: Request) -> str:
     return str(getattr(ctx, "trace_id", "") or request.headers.get("X-Trace-Id", ""))
 
 
+def _authenticated_actor_id(request: Request) -> str:
+    ctx = getattr(request.state, "ctx", None)
+    actor_id = str(getattr(ctx, "user_id", "") or "").strip()
+    if not actor_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="authenticated user context is required",
+        )
+    return actor_id
+
+
 def _bearer_credential(request: Request) -> str:
     ctx = getattr(request.state, "ctx", None)
     token = str(getattr(ctx, "authorization", "") or "").strip()
@@ -228,7 +239,7 @@ async def confirm_action_proposal(
             tenant_id=_tenant_id(request),
             proposal_id=proposal_id,
             idempotency_key=idempotency_key.strip(),
-            actor_id=body.actor_id,
+            actor_id=_authenticated_actor_id(request),
             trace_id=_trace_id(request),
         )
         return ActionResult.model_validate(result)
@@ -251,7 +262,7 @@ async def reject_action_proposal(
             tenant_id=_tenant_id(request),
             proposal_id=proposal_id,
             idempotency_key=idempotency_key.strip(),
-            actor_id=body.actor_id,
+            actor_id=_authenticated_actor_id(request),
             reason=body.reason,
             trace_id=_trace_id(request),
         )

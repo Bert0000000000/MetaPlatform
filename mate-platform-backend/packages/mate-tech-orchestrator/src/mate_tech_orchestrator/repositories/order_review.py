@@ -147,6 +147,209 @@ class OutboxEventORM(Base):
     )
 
 
+class _EvidenceSemanticMismatchError(ValueError):
+    """Persisted evidence no longer describes the locked order snapshot."""
+
+
+def _format_amount_cents(amount_cents: int) -> str:
+    sign = "-" if amount_cents < 0 else ""
+    yuan, cents = divmod(abs(amount_cents), 100)
+    return f"{sign}¥{yuan:,}.{cents:02d}"
+
+
+def _require_exact_evidence_value(*, name: str, actual: Any, expected: Any) -> None:
+    if _json(actual) != _json(expected):
+        raise _EvidenceSemanticMismatchError(f"evidence {name} does not match the locked order")
+
+
+def _validate_confirmation_evidence_semantics(
+    *,
+    evidence: dict[str, Any],
+    tenant_id: str,
+    proposal: ActionProposalORM,
+    order: OrderORM,
+    threshold_cents: int,
+) -> None:
+    """Reject a snapshot whose facts, graph, derivation, or action semantics were altered."""
+    object_rid = f"ont.{tenant_id}.obj.crm.order.v1"
+    action_rid = f"ont.{tenant_id}.act.order-review-confirm.v1"
+    anchor_id = f"order-fact-anchor:{order.order_id}"
+    object_node_id = f"object-type:{object_rid}"
+    action_node_id = f"action-type:{action_rid}"
+    captured_at = evidence.get("captured_at")
+
+    expected_facts = [
+        {
+            "id": "fact.amount_cents",
+            "field": "amount_cents",
+            "label": "订单金额",
+            "value": order.amount_cents,
+            "display_value": _format_amount_cents(order.amount_cents),
+            "source": "order_review_orders.amount_cents",
+        },
+        {
+            "id": "fact.payment_status",
+            "field": "payment_status",
+            "label": "支付状态",
+            "value": order.payment_status,
+            "display_value": {"unpaid": "未支付", "paid": "已支付"}.get(
+                order.payment_status, order.payment_status
+            ),
+            "source": "order_review_orders.payment_status",
+        },
+        {
+            "id": "fact.review_status",
+            "field": "review_status",
+            "label": "复核状态",
+            "value": order.review_status,
+            "display_value": {"pending": "待复核", "approved": "已批准"}.get(
+                order.review_status, order.review_status
+            ),
+            "source": "order_review_orders.review_status",
+        },
+        {
+            "id": "fact.version",
+            "field": "version",
+            "label": "订单版本",
+            "value": order.version,
+            "display_value": f"v{order.version}",
+            "source": "order_review_orders.version",
+        },
+    ]
+    _require_exact_evidence_value(
+        name="data",
+        actual=evidence.get("data"),
+        expected={
+            "source": "order_review_orders",
+            "captured_at": captured_at,
+            "facts": expected_facts,
+        },
+    )
+
+    expected_ontology = {
+        "source": "ontology_kernel",
+        "model_rid": object_rid,
+        "action_rid": action_rid,
+        "graph": {
+            "nodes": [
+                {
+                    "id": anchor_id,
+                    "type": "transaction_anchor",
+                    "label": f"订单 {order.order_id}",
+                    "properties": {
+                        "order_id": order.order_id,
+                        "source": "order_review_orders",
+                        "version": order.version,
+                    },
+                },
+                {
+                    "id": object_node_id,
+                    "type": "object_type",
+                    "label": "订单",
+                    "properties": {"rid": object_rid, "version": "v1"},
+                },
+                {
+                    "id": action_node_id,
+                    "type": "action_type",
+                    "label": "订单复核确认",
+                    "properties": {
+                        "rid": action_rid,
+                        "action_type": "order_review_confirm",
+                    },
+                },
+            ],
+            "edges": [
+                {
+                    "id": "order-instance-of-model",
+                    "source": anchor_id,
+                    "target": object_node_id,
+                    "label": "符合对象模型",
+                },
+                {
+                    "id": "model-supports-action",
+                    "source": object_node_id,
+                    "target": action_node_id,
+                    "label": "支持动作",
+                },
+            ],
+        },
+        "legend": {
+            "transaction_anchor": "订单交易事实的语义锚点，不是已持久化的 Ontology Individual",
+            "object_type": "来自 Ontology Kernel 的正式对象模型",
+            "action_type": "来自 Ontology Kernel 的订单复核动作定义",
+        },
+    }
+    _require_exact_evidence_value(
+        name="ontology",
+        actual=evidence.get("ontology"),
+        expected=expected_ontology,
+    )
+
+    threshold_passed = order.amount_cents >= threshold_cents
+    unpaid_passed = order.payment_status == "unpaid"
+    expected_derivation = [
+        {
+            "id": "threshold",
+            "label": f"订单金额 ≥ {_format_amount_cents(threshold_cents)}",
+            "passed": threshold_passed,
+            "fact_refs": ["fact.amount_cents"],
+            "details": {"operator": ">=", "expected_cents": threshold_cents},
+        },
+        {
+            "id": "unpaid",
+            "label": "支付状态 = 未支付",
+            "passed": unpaid_passed,
+            "fact_refs": ["fact.payment_status"],
+            "details": {"operator": "=", "expected": "unpaid"},
+        },
+        {
+            "id": "eligible",
+            "label": "满足订单复核条件",
+            "passed": threshold_passed and unpaid_passed,
+            "fact_refs": ["threshold", "unpaid"],
+        },
+    ]
+    _require_exact_evidence_value(
+        name="derivation",
+        actual=evidence.get("derivation"),
+        expected=expected_derivation,
+    )
+
+    recommendation = evidence.get("recommendation")
+    if not isinstance(recommendation, dict):
+        raise _EvidenceSemanticMismatchError("evidence recommendation is missing")
+    expected_recommendation = {
+        "action": "follow_up_payment",
+        "title": "创建回款跟进单",
+        "reason": (
+            f"订单金额 {_format_amount_cents(order.amount_cents)} 且当前未支付，"
+            "建议人工确认后创建回款跟进单。"
+        ),
+        "requires_confirmation": True,
+        "derivation_refs": ["eligible"],
+        "source_refs": [
+            f"ontology://object-type/{object_rid}",
+            f"ontology://action-type/{action_rid}",
+            "policy://payment-follow-up-policy",
+        ],
+    }
+    for key, expected_value in expected_recommendation.items():
+        _require_exact_evidence_value(
+            name=f"recommendation.{key}",
+            actual=recommendation.get(key),
+            expected=expected_value,
+        )
+    confidence = recommendation.get("confidence")
+    if "confidence" in recommendation and (
+        isinstance(confidence, bool)
+        or not isinstance(confidence, (int, float))
+        or not 0 <= confidence <= 1
+    ):
+        raise _EvidenceSemanticMismatchError("evidence recommendation confidence is invalid")
+    if proposal.action_type != "order_review_confirm":
+        raise _EvidenceSemanticMismatchError("proposal action type is not order_review_confirm")
+
+
 class OrderReviewService:
     """Tenant-scoped transactional application service."""
 
@@ -280,12 +483,26 @@ class OrderReviewService:
         return [str(item) for item in source_refs if isinstance(item, str)]
 
     @staticmethod
-    def _evidence_refs(evidence: dict[str, Any]) -> dict[str, Any]:
+    def _evidence_refs(
+        evidence: dict[str, Any] | None,
+        *,
+        proposal_id: str,
+    ) -> dict[str, Any]:
         """Return the compact, exact evidence reference contract used by events."""
-        facts = evidence.get("data", {}).get("facts", [])
-        nodes = evidence.get("ontology", {}).get("graph", {}).get("nodes", [])
+        validated = validate_evidence_bundle(evidence)
+        if validated is None:
+            return {
+                "evidence_schema_version": None,
+                "fact_ids": [],
+                "graph_node_ids": [],
+                "order_version": None,
+                "proposal_id": proposal_id,
+            }
+        normalized = validated.model_dump(mode="json", exclude_none=True)
+        facts = normalized["data"]["facts"]
+        nodes = normalized["ontology"]["graph"]["nodes"]
         return {
-            "evidence_schema_version": evidence.get("schema_version"),
+            "evidence_schema_version": normalized["schema_version"],
             "fact_ids": [
                 str(fact.get("id"))
                 for fact in facts
@@ -296,8 +513,8 @@ class OrderReviewService:
                 for node in nodes
                 if isinstance(node, dict) and isinstance(node.get("id"), str)
             ],
-            "order_version": evidence.get("order_version"),
-            "proposal_id": evidence.get("proposal_id"),
+            "order_version": normalized["order_version"],
+            "proposal_id": proposal_id,
         }
 
     @staticmethod
@@ -364,6 +581,16 @@ class OrderReviewService:
             or recommendation.get("requires_confirmation") is not True
         ):
             raise self.EvidenceRequired("evidence bundle does not permit confirmation")
+        try:
+            _validate_confirmation_evidence_semantics(
+                evidence=evidence,
+                tenant_id=tenant_id,
+                proposal=proposal,
+                order=order,
+                threshold_cents=self.threshold_cents,
+            )
+        except _EvidenceSemanticMismatchError as error:
+            raise self.EvidenceRequired(str(error)) from error
         return evidence
 
     @staticmethod
@@ -556,7 +783,7 @@ class OrderReviewService:
                         "order_id": order_id,
                         "review_case_id": case_id,
                         "source_refs": normalized_source_refs,
-                        **self._evidence_refs(evidence),
+                        **self._evidence_refs(evidence, proposal_id=proposal_id),
                     },
                     trace_id=trace_id,
                 )
@@ -731,7 +958,7 @@ class OrderReviewService:
                             **response,
                             "result_order_version": next_version,
                             "actor_id": actor_id,
-                            **self._evidence_refs(evidence),
+                            **self._evidence_refs(evidence, proposal_id=proposal_id),
                         },
                         trace_id=trace_id,
                         correlation_id=proposal_id,
@@ -748,7 +975,7 @@ class OrderReviewService:
                             "order_id": order.order_id,
                             "idempotency_key": idempotency_key,
                             "result_order_version": next_version,
-                            **self._evidence_refs(evidence),
+                            **self._evidence_refs(evidence, proposal_id=proposal_id),
                         },
                         trace_id=trace_id,
                         correlation_id=proposal_id,
@@ -830,7 +1057,7 @@ class OrderReviewService:
                         payload={
                             "actor_id": actor_id,
                             "reason": reason,
-                            **(self._evidence_refs(evidence) if evidence is not None else {}),
+                            **self._evidence_refs(evidence, proposal_id=proposal_id),
                         },
                         trace_id=trace_id,
                         correlation_id=proposal_id,

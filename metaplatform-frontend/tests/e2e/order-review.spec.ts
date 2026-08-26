@@ -133,8 +133,8 @@ async function mockNegativeOrderReviewProposal(page: Page, proposalOverrides?: R
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        {
+      body: JSON.stringify({
+        items: [{
           tenant_id: 'tenant-default',
           order_id: MOCK_ORDER_ID,
           amount_cents: 250_000,
@@ -142,8 +142,10 @@ async function mockNegativeOrderReviewProposal(page: Page, proposalOverrides?: R
           review_status: 'pending',
           version: 7,
           updated_at: '2026-08-26T11:30:00Z',
-        },
-      ]),
+        }],
+        total: 1,
+        threshold_cents: 100_000,
+      }),
     });
   });
   await page.route('**/api/v1/review-cases', async (route) => {
