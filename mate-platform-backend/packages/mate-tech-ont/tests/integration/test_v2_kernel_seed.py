@@ -11,6 +11,7 @@ import pytest
 
 from fastapi.testclient import TestClient
 
+from mate_kernel.ontology.identity import ClassRef
 from mate_tech_ont.main import app
 from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 from mate_tech_ont.v2_kernel.seed import TENANT, seed_demo
@@ -107,6 +108,23 @@ class TestSeedDemo:
         r = c.get("/api/v1/ont/v2/functions")
         fns = {x["rid"] for x in r.json()}
         assert "ont.tenant-default.fn.approve-leave.v1" in fns
+        assert "ont.tenant-default.fn.order-review-confirm.v1" in fns
+
+    def test_seed_upgrades_old_demo_state_with_order_review_resources(self):
+        """既有 demo 种子缺少新增资源时，只补写订单复核 Action/Function。"""
+        repo = InMemoryOntologyRepository()
+        assert seed_demo(repo, TENANT) == 18
+
+        action_rid = ClassRef(f"ont.{TENANT}.act.order-review-confirm.v1")
+        function_rid = ClassRef(f"ont.{TENANT}.fn.order-review-confirm.v1")
+        # 构造升级前持久库：旧版 demo 的全部资源，唯独没有本任务新增的两项。
+        repo._action_types.pop(action_rid)
+        repo._functions.pop(function_rid)
+
+        assert seed_demo(repo, TENANT) == 2
+        assert action_rid in {action.rid for action in repo.list_action_types()}
+        assert function_rid in {function.rid for function in repo.list_functions()}
+        assert seed_demo(repo, TENANT) == 0
 
     def test_seed_idempotent(self, client_with_ctx):
         # 已 seed 过（同 repo 模块级共享），再次调用返回 0

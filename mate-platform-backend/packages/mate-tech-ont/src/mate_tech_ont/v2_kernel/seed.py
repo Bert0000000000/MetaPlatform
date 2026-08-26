@@ -1,7 +1,7 @@
 """员工请假审批 demo 种子数据（ONT_SEED_DEMO=1 时启动注入）。
 
 只通过 OntologyRepository Protocol 方法写（13 硬规则 #3：无裸 SQL），
-幂等：list_object_types() 非空即跳过。场景与 /goal 端到端验收一致：
+幂等：已存在 demo ObjectType 时仅补写后续版本新增的资源。场景与 /goal 端到端验收一致：
 copilot 面板执行 act-approve-leave / act-close-ticket → ActionType.apply
 （唯一合法写路径）→ side_effects 回显。
 
@@ -63,10 +63,37 @@ def _function_placeholder(t: str, slug: str) -> Function:
     )
 
 
+def _order_review_action_type(t: str) -> ActionType:
+    return ActionType(
+        rid=ClassRef(f"ont.{t}.act.order-review-confirm.v1"),
+        parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
+        submission_criteria=("decision in (confirm, reject)",),
+        side_effects=("update_order", "create_follow_up_task", "audit_log"),
+        function_ref=ClassRef(f"ont.{t}.fn.order-review-confirm.v1"),
+        on=(ClassRef(f"ont.{t}.obj.crm.order.v1"),),
+        title="订单复核确认",
+        description="人工确认订单复核建议，更新订单并创建回款跟进单",
+    )
+
+
+def _seed_order_review_resources(repo: OntologyRepository, t: str) -> int:
+    """补写订单复核 ActionType 与 Function，返回本次新增资源数。"""
+    action_rid = ClassRef(f"ont.{t}.act.order-review-confirm.v1")
+    function_rid = ClassRef(f"ont.{t}.fn.order-review-confirm.v1")
+    created = 0
+    if action_rid not in {action.rid for action in repo.list_action_types()}:
+        repo.upsert_action_type(_order_review_action_type(t))
+        created += 1
+    if function_rid not in {function.rid for function in repo.list_functions()}:
+        repo.upsert_function(_function_placeholder(t, "order-review-confirm.v1"))
+        created += 1
+    return created
+
+
 def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
     """幂等注入请假审批场景；返回创建资源数（已存在返回 0）。"""
     if repo.list_object_types(limit=1, offset=0):
-        return 0
+        return _seed_order_review_resources(repo, tenant_id)
 
     t = tenant_id
     now = datetime.now(timezone.utc)
@@ -178,21 +205,11 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
         title="关闭工单",
         description="填写处理结论并关闭客户工单，自动通知工单提交人",
     ))
-    repo.upsert_action_type(ActionType(
-        rid=ClassRef(f"ont.{t}.act.order-review-confirm.v1"),
-        parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
-        submission_criteria=("decision in (confirm, reject)",),
-        side_effects=("update_order", "create_follow_up_task", "audit_log"),
-        function_ref=ClassRef(f"ont.{t}.fn.order-review-confirm.v1"),
-        on=(ClassRef(f"ont.{t}.obj.crm.order.v1"),),
-        title="订单复核确认",
-        description="人工确认订单复核建议，更新订单并创建回款跟进单",
-    ))
+    order_review_created = _seed_order_review_resources(repo, t)
 
     # ── Function / LinkType / LinkInstance ──
     repo.upsert_function(_function_placeholder(t, "approve-leave.v1"))
     repo.upsert_function(_function_placeholder(t, "close-ticket.v1"))
-    repo.upsert_function(_function_placeholder(t, "order-review-confirm.v1"))
     repo.upsert_link_type(LinkType(
         rid=ClassRef(f"ont.{t}.link.employee-leave.v1"),
         src=ClassRef(f"ont.{t}.obj.employee.v1"),
@@ -218,7 +235,7 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
     # 一级本体列表，领域内 ObjectType 即二级本体/概念。
     _seed_enterprise_ontology(repo, t, now)
 
-    return 3 + 5 + 3 + 3 + 1 + 3  # obj types + individuals + action types + functions + link type + link instances
+    return 3 + 5 + 2 + 2 + order_review_created + 1 + 3  # obj types + individuals + action types + functions + link type + link instances
 
 
 def _seed_enterprise_ontology(
