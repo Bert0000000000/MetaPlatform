@@ -12,6 +12,7 @@ dependencies = [
     "aiokafka>=0.12.0",
     "tenacity>=9.0.0",
     "pybreaker>=1.2.0",
+    "temporalio>=1.16.0",
     "opentelemetry-api>=1.27.0",
     "opentelemetry-sdk>=1.27.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.27.0",
