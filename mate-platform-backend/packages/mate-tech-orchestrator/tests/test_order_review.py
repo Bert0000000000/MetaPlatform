@@ -6,6 +6,7 @@ useful production contract for the v1.0 north-star journey:
 
     unpaid order -> review proposal -> human confirmation -> follow-up/outbox
 """
+
 from __future__ import annotations
 
 import json
@@ -135,7 +136,9 @@ def test_confirm_atomically_updates_order_creates_follow_up_and_outbox(service: 
         "order.review.confirmed",
         "audit.action_proposal.confirmed",
     }
-    proposal_created = next(event for event in events if event["event_type"] == "order.review.proposal_created")
+    proposal_created = next(
+        event for event in events if event["event_type"] == "order.review.proposal_created"
+    )
     confirmed = next(event for event in events if event["event_type"] == "order.review.confirmed")
     assert proposal_created["payload"]["evidence_schema_version"] == "order-review-evidence.v1"
     assert proposal_created["payload"]["evidence_fact_ids"] == [
@@ -149,7 +152,9 @@ def test_confirm_atomically_updates_order_creates_follow_up_and_outbox(service: 
     assert "graph" not in confirmed["payload"]
 
 
-def test_duplicate_confirmation_is_idempotent_and_does_not_duplicate_side_effects(service: OrderReviewService):
+def test_duplicate_confirmation_is_idempotent_and_does_not_duplicate_side_effects(
+    service: OrderReviewService,
+):
     proposal_id = _seed_proposal(service)
     first = service.confirm_proposal(
         tenant_id="tenant-acme",
@@ -183,7 +188,10 @@ def test_stale_order_version_rejects_confirmation_without_side_effects(service: 
 
     assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
     assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 1
-    assert service.get_proposal(tenant_id="tenant-acme", proposal_id=proposal_id)["status"] == "pending"
+    assert (
+        service.get_proposal(tenant_id="tenant-acme", proposal_id=proposal_id)["status"]
+        == "pending"
+    )
 
 
 def test_tenant_isolation_prevents_read_and_confirm_acme_proposal(service: OrderReviewService):
@@ -430,11 +438,50 @@ def test_create_review_case_http_returns_503_for_evidence_unavailable(
     assert case_response.json()["detail"] == "tech-ont unavailable"
 
 
+def test_create_review_case_http_returns_503_when_response_evidence_is_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_headers_acme: dict[str, str],
+) -> None:
+    monkeypatch.setattr(
+        order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+    )
+    monkeypatch.setattr(order_review_api, "_response_evidence", lambda evidence: None)
+    client = TestClient(create_app())
+    headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
+
+    order_response = client.post(
+        "/api/v1/orders",
+        headers=headers,
+        json={
+            "order_id": "order-http-invalid-evidence",
+            "amount_cents": 188000,
+            "payment_status": "unpaid",
+        },
+    )
+    assert order_response.status_code == 201, order_response.text
+
+    case_response = client.post(
+        "/api/v1/review-cases",
+        headers=headers,
+        json={
+            "order_id": "order-http-invalid-evidence",
+            "suggestion": {"action": "follow_up_payment", "reason": "unpaid"},
+            "source_refs": ["ontology://Order/order-http-invalid-evidence"],
+        },
+    )
+
+    assert case_response.status_code == 503
+    assert case_response.headers["x-error-code"] == "evidence_unavailable"
+    assert case_response.json()["detail"] == "order review evidence bundle is missing or invalid"
+
+
 def test_confirm_http_returns_409_for_missing_persisted_evidence(
     monkeypatch: pytest.MonkeyPatch,
     auth_headers_acme: dict[str, str],
 ) -> None:
-    monkeypatch.setattr(order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog()))
+    monkeypatch.setattr(
+        order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+    )
     client = TestClient(create_app())
     headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
 
@@ -485,7 +532,9 @@ def test_historical_proposal_detail_returns_200_without_evidence_bundle(
     monkeypatch: pytest.MonkeyPatch,
     auth_headers_acme: dict[str, str],
 ) -> None:
-    monkeypatch.setattr(order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog()))
+    monkeypatch.setattr(
+        order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+    )
     client = TestClient(create_app())
     headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
 
@@ -547,15 +596,18 @@ def test_incomplete_historical_evidence_returns_detail_and_blocks_confirm_withou
     client = TestClient(create_app())
     headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
 
-    assert client.post(
-        "/api/v1/orders",
-        headers=headers,
-        json={
-            "order_id": "order-http-incomplete-evidence",
-            "amount_cents": 188000,
-            "payment_status": "unpaid",
-        },
-    ).status_code == 201
+    assert (
+        client.post(
+            "/api/v1/orders",
+            headers=headers,
+            json={
+                "order_id": "order-http-incomplete-evidence",
+                "amount_cents": 188000,
+                "payment_status": "unpaid",
+            },
+        ).status_code
+        == 201
+    )
     created_response = client.post(
         "/api/v1/review-cases",
         headers=headers,
@@ -584,7 +636,9 @@ def test_incomplete_historical_evidence_returns_detail_and_blocks_confirm_withou
     before_task_count = len(service.list_follow_up_tasks(tenant_id="tenant-acme"))
     before_outbox_count = len(service.list_outbox_events(tenant_id="tenant-acme"))
     with get_session() as session:
-        before_idempotency_count = len(session.execute(select(IdempotencyRecordORM)).scalars().all())
+        before_idempotency_count = len(
+            session.execute(select(IdempotencyRecordORM)).scalars().all()
+        )
 
     detail_response = client.get(f"/api/v1/action-proposals/{proposal_id}", headers=headers)
 
@@ -611,7 +665,10 @@ def test_incomplete_historical_evidence_returns_detail_and_blocks_confirm_withou
     assert len(service.list_follow_up_tasks(tenant_id="tenant-acme")) == before_task_count
     assert len(service.list_outbox_events(tenant_id="tenant-acme")) == before_outbox_count
     with get_session() as session:
-        assert len(session.execute(select(IdempotencyRecordORM)).scalars().all()) == before_idempotency_count
+        assert (
+            len(session.execute(select(IdempotencyRecordORM)).scalars().all())
+            == before_idempotency_count
+        )
         proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
         assert proposal is not None
         assert proposal.status == "pending"
@@ -626,16 +683,14 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
     document = response.json()
     components = document["components"]["schemas"]
 
-    create_response_schema = (
-        document["paths"]["/api/v1/review-cases"]["post"]["responses"]["201"]["content"]["application/json"]["schema"]
-    )
+    create_response_schema = document["paths"]["/api/v1/review-cases"]["post"]["responses"]["201"][
+        "content"
+    ]["application/json"]["schema"]
     assert create_response_schema["$ref"] == "#/components/schemas/CreateReviewCaseResponse"
-    assert (
-        document["paths"]["/api/v1/review-cases"]["post"]["responses"]["503"]["description"]
-    )
-    assert (
-        document["paths"]["/api/v1/action-proposals/{proposal_id}:confirm"]["post"]["responses"]["409"]["description"]
-    )
+    assert document["paths"]["/api/v1/review-cases"]["post"]["responses"]["503"]["description"]
+    assert document["paths"]["/api/v1/action-proposals/{proposal_id}:confirm"]["post"]["responses"][
+        "409"
+    ]["description"]
 
     action_proposal_schema = components["ActionProposal"]
     assert action_proposal_schema["required"] == [
@@ -671,7 +726,9 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
         "derivation",
         "recommendation",
     ]
-    assert _literal_values(evidence_bundle["properties"]["schema_version"]) == ["order-review-evidence.v1"]
+    assert _literal_values(evidence_bundle["properties"]["schema_version"]) == [
+        "order-review-evidence.v1"
+    ]
     assert _literal_values(evidence_bundle["properties"]["status"]) == ["complete", "unavailable"]
 
     ontology_schema = components["OntologyEvidence"]

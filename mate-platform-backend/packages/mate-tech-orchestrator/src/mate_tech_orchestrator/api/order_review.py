@@ -1,4 +1,5 @@
 """HTTP API for the transactional order-review vertical slice."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -98,6 +99,15 @@ def _response_evidence(evidence: Any) -> dict[str, Any] | None:
     return deepcopy(evidence)
 
 
+def _require_response_evidence(evidence: Any) -> dict[str, Any]:
+    response_evidence = _response_evidence(evidence)
+    if response_evidence is None:
+        raise OrderReviewService.EvidenceUnavailable(
+            "order review evidence bundle is missing or invalid"
+        )
+    return response_evidence
+
+
 def _raise_service_error(error: Exception) -> NoReturn:
     if isinstance(error, OrderReviewService.NotFound):
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -108,13 +118,21 @@ def _raise_service_error(error: Exception) -> NoReturn:
             headers={"X-Error-Code": "evidence_unavailable"},
         ) from error
     if isinstance(error, OrderReviewService.VersionConflict):
-        raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "version_conflict"}) from error
+        raise HTTPException(
+            status_code=409, detail=str(error), headers={"X-Error-Code": "version_conflict"}
+        ) from error
     if isinstance(error, OrderReviewService.IdempotencyConflict):
-        raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "idempotency_conflict"}) from error
+        raise HTTPException(
+            status_code=409, detail=str(error), headers={"X-Error-Code": "idempotency_conflict"}
+        ) from error
     if isinstance(error, OrderReviewService.AlreadyResolved):
-        raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "already_resolved"}) from error
+        raise HTTPException(
+            status_code=409, detail=str(error), headers={"X-Error-Code": "already_resolved"}
+        ) from error
     if isinstance(error, OrderReviewService.EvidenceRequired):
-        raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "evidence_required"}) from error
+        raise HTTPException(
+            status_code=409, detail=str(error), headers={"X-Error-Code": "evidence_required"}
+        ) from error
     if isinstance(error, OrderReviewService.Conflict):
         raise HTTPException(status_code=409, detail=str(error)) from error
     if isinstance(error, ValueError):
@@ -143,7 +161,8 @@ async def list_high_value_unpaid(
     min_amount_cents: int = Query(default=100_000, ge=1),
 ) -> dict[str, Any]:
     items = _service.list_high_value_unpaid(
-        tenant_id=_tenant_id(request), min_amount_cents=min_amount_cents,
+        tenant_id=_tenant_id(request),
+        min_amount_cents=min_amount_cents,
     )
     return {"items": items, "total": len(items)}
 
@@ -161,7 +180,9 @@ async def list_high_value_unpaid(
     responses=_REVIEW_CASE_RESPONSES,
     include_in_schema=False,
 )
-async def create_review_case(request: Request, body: CreateReviewCaseRequest) -> CreateReviewCaseResponse:
+async def create_review_case(
+    request: Request, body: CreateReviewCaseRequest
+) -> CreateReviewCaseResponse:
     try:
         created = _service.create_review_case(
             tenant_id=_tenant_id(request),
@@ -171,14 +192,20 @@ async def create_review_case(request: Request, body: CreateReviewCaseRequest) ->
             auth_token=_bearer_credential(request),
             trace_id=_trace_id(request),
         )
-        created["evidence"] = _response_evidence(created.get("evidence"))
+        created["evidence"] = _require_response_evidence(created.get("evidence"))
         return CreateReviewCaseResponse.model_validate(created)
     except Exception as error:
         _raise_service_error(error)
 
 
-@public_router.post("/action-proposals/{proposal_id}:confirm", responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES)
-@router.post("/action-proposals/{proposal_id}:confirm", responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES, include_in_schema=False)
+@public_router.post(
+    "/action-proposals/{proposal_id}:confirm", responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES
+)
+@router.post(
+    "/action-proposals/{proposal_id}:confirm",
+    responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES,
+    include_in_schema=False,
+)
 async def confirm_action_proposal(
     proposal_id: str,
     request: Request,

@@ -39,7 +39,9 @@ class OrderReviewOntologyCatalog:
 
     def _get_json(self, *, tenant_id: str, token: str, path: str) -> dict[str, Any]:
         try:
-            response = self._client.get(path, headers=self._headers(tenant_id=tenant_id, token=token))
+            response = self._client.get(
+                path, headers=self._headers(tenant_id=tenant_id, token=token)
+            )
         except httpx.TransportError as error:
             raise OntologyCatalogError(f"tech-ont GET {path} transport failed: {error}") from error
         if response.status_code < 200 or response.status_code >= 300:
@@ -80,15 +82,26 @@ class OrderReviewOntologyCatalog:
             )
         return payload
 
+    def _normalize_object_type(self, *, rid: str, payload: dict[str, Any]) -> dict[str, Any]:
+        title = payload.get("title")
+        if not isinstance(title, str) or not title.strip():
+            title = payload.get("display_name")
+        if not isinstance(title, str) or not title.strip():
+            raise OntologyCatalogError(f"tech-ont object-types {rid} missing title/display_name")
+        return {"rid": rid, "title": title.strip()}
+
     def get_contract(self, *, tenant_id: str, token: str) -> OntologyContract:
         object_rid = self._canonical_object_rid(tenant_id)
         action_rid = self._canonical_action_rid(tenant_id)
         return OntologyContract(
-            object_type=self._get_item(
-                tenant_id=tenant_id,
-                token=token,
-                resource="object-types",
+            object_type=self._normalize_object_type(
                 rid=object_rid,
+                payload=self._get_item(
+                    tenant_id=tenant_id,
+                    token=token,
+                    resource="object-types",
+                    rid=object_rid,
+                ),
             ),
             action_type=self._get_item(
                 tenant_id=tenant_id,

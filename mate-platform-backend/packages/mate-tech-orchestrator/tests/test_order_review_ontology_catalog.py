@@ -48,6 +48,31 @@ def test_get_contract_fetches_tenant_scoped_object_and_action_metadata() -> None
 
 
 @respx.mock
+def test_get_contract_maps_display_name_to_stable_object_type_title() -> None:
+    respx.get(f"{ONT_BASE}{ONT_V2_BASE}/object-types/{OBJECT_RID}").mock(
+        return_value=httpx.Response(
+            200,
+            json={"rid": OBJECT_RID, "display_name": "订单"},
+        )
+    )
+    respx.get(f"{ONT_BASE}{ONT_V2_BASE}/action-types/{ACTION_RID}").mock(
+        return_value=httpx.Response(
+            200,
+            json={"rid": ACTION_RID, "title": "订单复核确认", "on": [OBJECT_RID]},
+        )
+    )
+    catalog = OrderReviewOntologyCatalog(base_url=ONT_BASE)
+
+    try:
+        contract = catalog.get_contract(tenant_id=TENANT_ID, token=AUTH_TOKEN)
+    finally:
+        catalog.close()
+
+    assert contract.object_type == {"rid": OBJECT_RID, "title": "订单"}
+    assert contract.action_type == {"rid": ACTION_RID, "title": "订单复核确认", "on": [OBJECT_RID]}
+
+
+@respx.mock
 def test_get_contract_raises_catalog_error_on_non_2xx_response() -> None:
     respx.get(f"{ONT_BASE}{ONT_V2_BASE}/object-types/{OBJECT_RID}").mock(
         return_value=httpx.Response(404, json={"detail": "not found"})
