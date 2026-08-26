@@ -72,7 +72,12 @@ class _FakeOntologyCatalog:
         return None
 
 
-def _seed_proposal(service: OrderReviewService, *, tenant_id: str = "tenant-acme") -> str:
+def _seed_proposal(
+    service: OrderReviewService,
+    *,
+    tenant_id: str = "tenant-acme",
+    suggestion: dict[str, Any] | None = None,
+) -> str:
     service.create_order(
         tenant_id=tenant_id,
         order_id="order-1001",
@@ -82,7 +87,9 @@ def _seed_proposal(service: OrderReviewService, *, tenant_id: str = "tenant-acme
     result = service.create_review_case(
         tenant_id=tenant_id,
         order_id="order-1001",
-        suggestion={"action": "follow_up_payment", "reason": "high value unpaid"},
+        suggestion=suggestion
+        if suggestion is not None
+        else {"action": "follow_up_payment", "reason": "high value unpaid"},
         source_refs=["ontology://Order/order-1001", "rag://payment-policy/2026-01"],
         auth_token=TEST_AUTH_TOKEN,
     )
@@ -818,6 +825,87 @@ def test_confirmation_rejects_mismatched_evidence_without_side_effects(
         assert proposal.status == "pending"
 
 
+@pytest.mark.parametrize(
+    "path",
+    [("captured_at",), ("data", "captured_at")],
+    ids=["bundle-captured-at", "data-captured-at"],
+)
+def test_confirmation_rejects_evidence_timestamp_not_equal_to_proposal_creation(
+    service: OrderReviewService,
+    path: tuple[str, ...],
+) -> None:
+    proposal_id = _seed_proposal(service)
+    _set_persisted_evidence_value(proposal_id, ("captured_at",), "2026-01-01T00:00:00+00:00")
+    _set_persisted_evidence_value(
+        proposal_id,
+        ("data", "captured_at"),
+        "2026-01-01T00:00:00+00:00",
+    )
+
+    with pytest.raises(OrderReviewService.EvidenceRequired):
+        service.confirm_proposal(
+            tenant_id="tenant-acme",
+            proposal_id=proposal_id,
+            idempotency_key=f"confirm-tampered-{path[-1]}",
+            actor_id="u-reviewer",
+        )
+
+    assert service.get_order(tenant_id="tenant-acme", order_id="order-1001")["version"] == 1
+    assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
+    assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 1
+    with get_session() as session:
+        assert session.execute(select(IdempotencyRecordORM)).scalars().all() == []
+
+
+def test_confirmation_rejects_confidence_different_from_original_suggestion(
+    service: OrderReviewService,
+) -> None:
+    proposal_id = _seed_proposal(
+        service,
+        suggestion={
+            "action": "follow_up_payment",
+            "reason": "high value unpaid",
+            "confidence": 0.42,
+        },
+    )
+    _set_persisted_evidence_value(proposal_id, ("recommendation", "confidence"), 0.43)
+
+    with pytest.raises(OrderReviewService.EvidenceRequired, match="confidence"):
+        service.confirm_proposal(
+            tenant_id="tenant-acme",
+            proposal_id=proposal_id,
+            idempotency_key="confirm-tampered-confidence",
+            actor_id="u-reviewer",
+        )
+
+    assert service.get_order(tenant_id="tenant-acme", order_id="order-1001")["version"] == 1
+    assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
+    assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 1
+    with get_session() as session:
+        assert session.execute(select(IdempotencyRecordORM)).scalars().all() == []
+
+
+def test_confirmation_rejects_new_confidence_when_original_suggestion_has_none(
+    service: OrderReviewService,
+) -> None:
+    proposal_id = _seed_proposal(service)
+    _set_persisted_evidence_value(proposal_id, ("recommendation", "confidence"), 0.42)
+
+    with pytest.raises(OrderReviewService.EvidenceRequired, match="confidence"):
+        service.confirm_proposal(
+            tenant_id="tenant-acme",
+            proposal_id=proposal_id,
+            idempotency_key="confirm-added-confidence",
+            actor_id="u-reviewer",
+        )
+
+    assert service.get_order(tenant_id="tenant-acme", order_id="order-1001")["version"] == 1
+    assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
+    assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 1
+    with get_session() as session:
+        assert session.execute(select(IdempotencyRecordORM)).scalars().all() == []
+
+
 def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     monkeypatch: pytest.MonkeyPatch,
     auth_headers_acme: dict[str, str],
@@ -939,15 +1027,18 @@ def test_reject_http_uses_authenticated_actor_instead_of_body_actor(
     monkeypatch.setattr(order_review_api, "_service", service)
     client = TestClient(create_app())
     headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
-    assert client.post(
-        "/api/v1/orders",
-        headers=headers,
-        json={
-            "order_id": "order-http-reject-actor",
-            "amount_cents": 188000,
-            "payment_status": "unpaid",
-        },
-    ).status_code == 201
+    assert (
+        client.post(
+            "/api/v1/orders",
+            headers=headers,
+            json={
+                "order_id": "order-http-reject-actor",
+                "amount_cents": 188000,
+                "payment_status": "unpaid",
+            },
+        ).status_code
+        == 201
+    )
     case_response = client.post(
         "/api/v1/review-cases",
         headers=headers,
@@ -1464,9 +1555,9 @@ def test_order_review_openapi_declares_threshold_and_action_result_contract() ->
         "/api/v1/action-proposals/{proposal_id}:confirm",
         "/api/v1/action-proposals/{proposal_id}:reject",
     ):
-        assert document["paths"][path]["post"]["responses"]["200"]["content"][
-            "application/json"
-        ]["schema"] == {"$ref": "#/components/schemas/ActionResult"}
+        assert document["paths"][path]["post"]["responses"]["200"]["content"]["application/json"][
+            "schema"
+        ] == {"$ref": "#/components/schemas/ActionResult"}
 
     static_document = yaml.safe_load(
         (
@@ -1485,7 +1576,9 @@ def test_order_review_openapi_declares_threshold_and_action_result_contract() ->
         "status",
     ]
     for field_name, expected_schema in expected_optional_fields.items():
-        assert static_components["ActionResult"]["properties"][field_name]["anyOf"] == expected_schema
+        assert (
+            static_components["ActionResult"]["properties"][field_name]["anyOf"] == expected_schema
+        )
 
 
 @pytest.mark.parametrize("compose_name", ["docker-compose.yml", "docker-compose.task5.yml"])
@@ -1493,9 +1586,10 @@ def test_order_review_threshold_is_deployed_to_orchestrator(compose_name: str) -
     workspace_root = Path(__file__).parents[4]
     compose = yaml.safe_load((workspace_root / compose_name).read_text(encoding="utf-8"))
 
-    assert compose["services"]["mate-tech-orchestrator"]["environment"][
-        "ORDER_REVIEW_THRESHOLD_CENTS"
-    ] == "${ORDER_REVIEW_THRESHOLD_CENTS:-100000}"
+    assert (
+        compose["services"]["mate-tech-orchestrator"]["environment"]["ORDER_REVIEW_THRESHOLD_CENTS"]
+        == "${ORDER_REVIEW_THRESHOLD_CENTS:-100000}"
+    )
 
 
 def test_action_command_routes_precede_proposal_detail_route():

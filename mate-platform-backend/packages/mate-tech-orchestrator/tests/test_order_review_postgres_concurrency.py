@@ -11,12 +11,15 @@ from typing import Any
 
 import pytest
 from mate_tech_orchestrator.order_review import OntologyContract
-from mate_tech_orchestrator.repositories.order_review import OrderReviewService
-from sqlalchemy import create_engine, event
+from mate_tech_orchestrator.repositories.order_review import (
+    IdempotencyRecordORM,
+    OrderReviewService,
+)
+from sqlalchemy import create_engine, event, select
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
 
-from mate_tech_db.base import create_all, get_engine, init_engine, reset_engine
+from mate_tech_db.base import create_all, get_engine, get_session, init_engine, reset_engine
 
 POSTGRES_URL = os.environ.get("ORDER_REVIEW_POSTGRES_URL", "").strip()
 pytestmark = pytest.mark.skipif(
@@ -122,6 +125,81 @@ def test_concurrent_confirmations_create_one_resolution(
     assert len(service.list_follow_up_tasks(tenant_id="tenant-acme")) == 1
     events = service.list_outbox_events(tenant_id="tenant-acme")
     assert [event["event_type"] for event in events].count("order.review.confirmed") == 1
+    assert [event["event_type"] for event in events].count("audit.action_proposal.confirmed") == 1
+
+
+@pytest.mark.parametrize(
+    "operations",
+    [("confirm", "confirm"), ("confirm", "reject")],
+    ids=["confirm-confirm", "confirm-reject"],
+)
+def test_concurrent_distinct_proposals_share_tenant_key_idempotency_lock(
+    postgres_engine: Engine,
+    operations: tuple[str, str],
+) -> None:
+    service = OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+    proposal_ids: list[str] = []
+    for index in range(2):
+        order_id = f"order-postgres-shared-key-{index}"
+        service.create_order(
+            tenant_id="tenant-acme",
+            order_id=order_id,
+            amount_cents=250_000,
+            payment_status="unpaid",
+        )
+        created = service.create_review_case(
+            tenant_id="tenant-acme",
+            order_id=order_id,
+            suggestion={"action": "follow_up_payment"},
+            source_refs=[],
+        )
+        proposal_ids.append(str(created["proposal_id"]))
+
+    barrier = threading.Barrier(2)
+
+    def resolve(index: int) -> tuple[str, str]:
+        barrier.wait(timeout=10)
+        try:
+            if operations[index] == "confirm":
+                result = service.confirm_proposal(
+                    tenant_id="tenant-acme",
+                    proposal_id=proposal_ids[index],
+                    idempotency_key="postgres-shared-key",
+                    actor_id="u-postgres-reviewer",
+                )
+            else:
+                result = service.reject_proposal(
+                    tenant_id="tenant-acme",
+                    proposal_id=proposal_ids[index],
+                    idempotency_key="postgres-shared-key",
+                    actor_id="u-postgres-reviewer",
+                    reason="not needed",
+                )
+        except OrderReviewService.IdempotencyConflict:
+            return ("conflict", "idempotency_conflict")
+        return ("ok", str(result["status"]))
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(resolve, index) for index in range(2)]
+        results = [future.result(timeout=20) for future in futures]
+
+    assert [kind for kind, _ in results].count("ok") == 1
+    assert [kind for kind, _ in results].count("conflict") == 1
+    successful_status = next(status for kind, status in results if kind == "ok")
+    assert successful_status in {"confirmed", "rejected"}
+
+    tasks = service.list_follow_up_tasks(tenant_id="tenant-acme")
+    assert len(tasks) == int(successful_status == "confirmed")
+    events = service.list_outbox_events(tenant_id="tenant-acme")
     assert [event["event_type"] for event in events].count(
         "audit.action_proposal.confirmed"
-    ) == 1
+    ) == int(successful_status == "confirmed")
+    assert [event["event_type"] for event in events].count("order.review.confirmed") == int(
+        successful_status == "confirmed"
+    )
+    assert [event["event_type"] for event in events].count("audit.action_proposal.rejected") == int(
+        successful_status == "rejected"
+    )
+    with get_session() as session:
+        records = session.execute(select(IdempotencyRecordORM)).scalars().all()
+        assert len(records) == 1

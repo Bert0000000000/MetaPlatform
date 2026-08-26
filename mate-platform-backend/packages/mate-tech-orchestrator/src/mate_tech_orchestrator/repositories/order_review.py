@@ -8,13 +8,15 @@ consumers can be eventually consistent; the order write path cannot.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import DateTime, Integer, String, Text, select, update
+from sqlalchemy import DateTime, Integer, String, Text, select, text, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base, create_all, get_session
@@ -165,6 +167,7 @@ def _require_exact_evidence_value(*, name: str, actual: Any, expected: Any) -> N
 def _validate_confirmation_evidence_semantics(
     *,
     evidence: dict[str, Any],
+    original_suggestion: dict[str, Any],
     tenant_id: str,
     proposal: ActionProposalORM,
     order: OrderORM,
@@ -176,7 +179,12 @@ def _validate_confirmation_evidence_semantics(
     anchor_id = f"order-fact-anchor:{order.order_id}"
     object_node_id = f"object-type:{object_rid}"
     action_node_id = f"action-type:{action_rid}"
-    captured_at = evidence.get("captured_at")
+    expected_captured_at = _iso(proposal.created_at)
+    _require_exact_evidence_value(
+        name="captured_at",
+        actual=evidence.get("captured_at"),
+        expected=expected_captured_at,
+    )
 
     expected_facts = [
         {
@@ -221,7 +229,7 @@ def _validate_confirmation_evidence_semantics(
         actual=evidence.get("data"),
         expected={
             "source": "order_review_orders",
-            "captured_at": captured_at,
+            "captured_at": expected_captured_at,
             "facts": expected_facts,
         },
     )
@@ -346,6 +354,20 @@ def _validate_confirmation_evidence_semantics(
         or not 0 <= confidence <= 1
     ):
         raise _EvidenceSemanticMismatchError("evidence recommendation confidence is invalid")
+    original_confidence = original_suggestion.get("confidence")
+    if (
+        isinstance(original_confidence, bool)
+        or not isinstance(original_confidence, (int, float))
+        or not 0 <= float(original_confidence) <= 1
+    ):
+        if "confidence" in recommendation:
+            raise _EvidenceSemanticMismatchError(
+                "evidence recommendation confidence was not present in the original suggestion"
+            )
+    elif "confidence" not in recommendation or float(confidence) != float(original_confidence):
+        raise _EvidenceSemanticMismatchError(
+            "evidence recommendation confidence does not match the original suggestion"
+        )
     if proposal.action_type != "order_review_confirm":
         raise _EvidenceSemanticMismatchError("proposal action type is not order_review_confirm")
 
@@ -582,8 +604,10 @@ class OrderReviewService:
         ):
             raise self.EvidenceRequired("evidence bundle does not permit confirmation")
         try:
+            suggestion = _load(case.suggestion, {}) if case is not None else {}
             _validate_confirmation_evidence_semantics(
                 evidence=evidence,
+                original_suggestion=suggestion if isinstance(suggestion, dict) else {},
                 tenant_id=tenant_id,
                 proposal=proposal,
                 order=order,
@@ -844,6 +868,26 @@ class OrderReviewService:
             raise self.IdempotencyConflict(f"idempotency key already used: {key}")
         return _load(record.response, {})
 
+    def _flush_idempotency_record(self, session: Any, *, key: str) -> None:
+        try:
+            session.flush()
+        except IntegrityError as error:
+            if "order_review_idempotency_records" not in str(error):
+                raise
+            raise self.IdempotencyConflict(f"idempotency key already used: {key}") from error
+
+    @staticmethod
+    def _lock_idempotency_key(session: Any, *, tenant_id: str, key: str) -> None:
+        """Serialize a tenant-scoped idempotency key on PostgreSQL only."""
+        if session.get_bind().dialect.name != "postgresql":
+            return
+        digest = hashlib.sha256(f"{tenant_id}\x00{key}".encode()).digest()
+        lock_key = int.from_bytes(digest[:8], byteorder="big", signed=True)
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {"lock_key": lock_key},
+        )
+
     def confirm_proposal(
         self,
         *,
@@ -866,6 +910,11 @@ class OrderReviewService:
             )
             if proposal is None:
                 raise self.NotFound(f"action proposal not found: {proposal_id}")
+            self._lock_idempotency_key(
+                session,
+                tenant_id=tenant_id,
+                key=idempotency_key,
+            )
             previous = self._existing_idempotency(
                 session,
                 tenant_id=tenant_id,
@@ -948,6 +997,7 @@ class OrderReviewService:
                         response=_json(response),
                     )
                 )
+                self._flush_idempotency_record(session, key=idempotency_key)
                 session.add(
                     self._event(
                         tenant_id=tenant_id,
@@ -1010,6 +1060,11 @@ class OrderReviewService:
             )
             if proposal is None:
                 raise self.NotFound(f"action proposal not found: {proposal_id}")
+            self._lock_idempotency_key(
+                session,
+                tenant_id=tenant_id,
+                key=idempotency_key,
+            )
             previous = self._existing_idempotency(
                 session,
                 tenant_id=tenant_id,
@@ -1048,6 +1103,7 @@ class OrderReviewService:
                         response=_json(response),
                     )
                 )
+                self._flush_idempotency_record(session, key=idempotency_key)
                 session.add(
                     self._event(
                         tenant_id=tenant_id,
