@@ -174,6 +174,34 @@ def test_duplicate_confirmation_is_idempotent_and_does_not_duplicate_side_effect
     assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 3
 
 
+def test_approved_order_cannot_create_second_review_case(service: OrderReviewService) -> None:
+    proposal_id = _seed_proposal(service)
+    service.confirm_proposal(
+        tenant_id="tenant-acme",
+        proposal_id=proposal_id,
+        idempotency_key="confirm-approved-order",
+        actor_id="u-reviewer",
+    )
+
+    with pytest.raises(OrderReviewService.Conflict, match="order review is not pending"):
+        service.create_review_case(
+            tenant_id="tenant-acme",
+            order_id="order-1001",
+            suggestion={"action": "follow_up_payment", "reason": "high value unpaid"},
+            source_refs=["ontology://Order/order-1001", "rag://payment-policy/2026-01"],
+            auth_token=TEST_AUTH_TOKEN,
+        )
+
+    order = service.get_order(tenant_id="tenant-acme", order_id="order-1001")
+    assert order["review_status"] == "approved"
+    assert order["version"] == 2
+    assert len(service.list_follow_up_tasks(tenant_id="tenant-acme")) == 1
+    assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 3
+    with get_session() as session:
+        assert len(session.execute(select(ReviewCaseORM)).scalars().all()) == 1
+        assert len(session.execute(select(ActionProposalORM)).scalars().all()) == 1
+
+
 def test_stale_order_version_rejects_confirmation_without_side_effects(service: OrderReviewService):
     proposal_id = _seed_proposal(service)
     service.update_order_version(tenant_id="tenant-acme", order_id="order-1001")
@@ -269,6 +297,52 @@ def test_get_proposal_returns_persisted_evidence_snapshot(service: OrderReviewSe
     assert proposal["evidence"] == created["evidence"]
     assert proposal["suggestion"]["evidence_bundle"] == proposal["evidence"]
     assert proposal["source_refs"] == proposal["evidence"]["recommendation"]["source_refs"]
+
+
+def test_list_high_value_unpaid_excludes_approved_orders(service: OrderReviewService) -> None:
+    service.create_order(
+        tenant_id="tenant-acme",
+        order_id="order-pending-visible",
+        amount_cents=150000,
+        payment_status="unpaid",
+    )
+    service.create_order(
+        tenant_id="tenant-acme",
+        order_id="order-approved-hidden",
+        amount_cents=180000,
+        payment_status="unpaid",
+    )
+    service.create_order(
+        tenant_id="tenant-acme",
+        order_id="order-paid-hidden",
+        amount_cents=220000,
+        payment_status="paid",
+    )
+    service.create_order(
+        tenant_id="tenant-globex",
+        order_id="order-other-tenant-hidden",
+        amount_cents=250000,
+        payment_status="unpaid",
+    )
+    created = service.create_review_case(
+        tenant_id="tenant-acme",
+        order_id="order-approved-hidden",
+        suggestion={"action": "follow_up_payment", "reason": "high value unpaid"},
+        source_refs=["ontology://Order/order-approved-hidden"],
+        auth_token=TEST_AUTH_TOKEN,
+    )
+    service.confirm_proposal(
+        tenant_id="tenant-acme",
+        proposal_id=str(created["proposal_id"]),
+        idempotency_key="confirm-approved-hidden",
+        actor_id="u-reviewer",
+    )
+
+    items = service.list_high_value_unpaid(tenant_id="tenant-acme", min_amount_cents=100000)
+
+    assert [item["order_id"] for item in items] == ["order-pending-visible"]
+    assert all(item["payment_status"] == "unpaid" for item in items)
+    assert all(item["review_status"] == "pending" for item in items)
 
 
 def test_catalog_failure_does_not_create_case_proposal_or_outbox() -> None:

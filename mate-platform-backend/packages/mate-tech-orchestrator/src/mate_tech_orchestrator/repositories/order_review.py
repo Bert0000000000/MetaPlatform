@@ -5,6 +5,7 @@ proposal updates the order, creates the follow-up task, records idempotency,
 and appends audit/outbox events in one database transaction.  Search/RAG
 consumers can be eventually consistent; the order write path cannot.
 """
+
 from __future__ import annotations
 
 import json
@@ -68,7 +69,9 @@ class OrderORM(Base):
     payment_status: Mapped[str] = mapped_column(String(32), nullable=False, default="unpaid")
     review_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now
+    )
 
 
 class ReviewCaseORM(Base):
@@ -80,7 +83,9 @@ class ReviewCaseORM(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="open")
     suggestion: Mapped[str] = mapped_column(Text, nullable=False)
     source_refs: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now
+    )
 
 
 class ActionProposalORM(Base):
@@ -90,12 +95,16 @@ class ActionProposalORM(Base):
     proposal_id: Mapped[str] = mapped_column(String(128), primary_key=True)
     review_case_id: Mapped[str] = mapped_column(String(128), nullable=False)
     order_id: Mapped[str] = mapped_column(String(128), nullable=False)
-    action_type: Mapped[str] = mapped_column(String(64), nullable=False, default="order_review_confirm")
+    action_type: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="order_review_confirm"
+    )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     expected_order_version: Mapped[int] = mapped_column(Integer, nullable=False)
     parameters: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now
+    )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
@@ -109,7 +118,9 @@ class FollowUpTaskORM(Base):
     proposal_id: Mapped[str] = mapped_column(String(128), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="open")
     title: Mapped[str] = mapped_column(String(256), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now
+    )
 
 
 class IdempotencyRecordORM(Base):
@@ -120,7 +131,9 @@ class IdempotencyRecordORM(Base):
     operation: Mapped[str] = mapped_column(String(64), nullable=False)
     proposal_id: Mapped[str] = mapped_column(String(128), nullable=False)
     response: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now
+    )
 
 
 class OutboxEventORM(Base):
@@ -135,7 +148,9 @@ class OutboxEventORM(Base):
     trace_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     correlation_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     causation_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_now
+    )
 
 
 class OrderReviewService:
@@ -215,7 +230,9 @@ class OrderReviewService:
             suggestion = _load(case.suggestion, {})
             result["suggestion"] = suggestion
             result["source_refs"] = _load(case.source_refs, [])
-            result["evidence"] = suggestion.get("evidence_bundle") if isinstance(suggestion, dict) else None
+            result["evidence"] = (
+                suggestion.get("evidence_bundle") if isinstance(suggestion, dict) else None
+            )
         return result
 
     @staticmethod
@@ -329,7 +346,10 @@ class OrderReviewService:
                 f"order version changed: expected evidence {evidence.get('order_version')}, got {current_order_version}"
             )
         recommendation = evidence.get("recommendation")
-        if not isinstance(recommendation, dict) or recommendation.get("requires_confirmation") is not True:
+        if (
+            not isinstance(recommendation, dict)
+            or recommendation.get("requires_confirmation") is not True
+        ):
             raise self.EvidenceRequired("evidence bundle does not permit confirmation")
         return evidence
 
@@ -382,18 +402,25 @@ class OrderReviewService:
             session.add(row)
         return self._order_dict(row)
 
-    def list_high_value_unpaid(self, *, tenant_id: str, min_amount_cents: int) -> list[dict[str, Any]]:
+    def list_high_value_unpaid(
+        self, *, tenant_id: str, min_amount_cents: int
+    ) -> list[dict[str, Any]]:
         self._ensure_schema()
         with get_session() as session:
-            rows = session.execute(
-                select(OrderORM)
-                .where(
-                    OrderORM.tenant_id == tenant_id,
-                    OrderORM.payment_status == "unpaid",
-                    OrderORM.amount_cents >= min_amount_cents,
+            rows = (
+                session.execute(
+                    select(OrderORM)
+                    .where(
+                        OrderORM.tenant_id == tenant_id,
+                        OrderORM.payment_status == "unpaid",
+                        OrderORM.review_status == "pending",
+                        OrderORM.amount_cents >= min_amount_cents,
+                    )
+                    .order_by(OrderORM.amount_cents.desc(), OrderORM.order_id)
                 )
-                .order_by(OrderORM.amount_cents.desc(), OrderORM.order_id)
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
         return [self._order_dict(row) for row in rows]
 
     def get_order(self, *, tenant_id: str, order_id: str) -> dict[str, Any]:
@@ -435,6 +462,8 @@ class OrderReviewService:
                 raise self.NotFound(f"order not found: {order_id}")
             if order_snapshot.payment_status != "unpaid":
                 raise self.Conflict(f"order is not unpaid: {order_id}")
+            if order_snapshot.review_status != "pending":
+                raise self.Conflict(f"order review is not pending: {order_id}")
             facts = self._order_facts(order_snapshot)
         contract = self._ontology_catalog.get_contract(tenant_id=tenant_id, token=auth_token)
         evidence = self._persisted_evidence(
@@ -461,6 +490,8 @@ class OrderReviewService:
             ).scalar_one_or_none()
             if order is None:
                 raise self.NotFound(f"order not found: {order_id}")
+            if order.review_status != "pending":
+                raise self.Conflict(f"order review is not pending: {order_id}")
             if (
                 order.amount_cents != facts.amount_cents
                 or order.payment_status != facts.payment_status
@@ -490,19 +521,21 @@ class OrderReviewService:
                 created_at=now,
             )
             session.add_all([case, proposal])
-            session.add(self._event(
-                tenant_id=tenant_id,
-                event_type="order.review.proposal_created",
-                aggregate_type="action_proposal",
-                aggregate_id=proposal_id,
-                payload={
-                    "order_id": order_id,
-                    "review_case_id": case_id,
-                    "source_refs": normalized_source_refs,
-                    **self._evidence_refs(evidence),
-                },
-                trace_id=trace_id,
-            ))
+            session.add(
+                self._event(
+                    tenant_id=tenant_id,
+                    event_type="order.review.proposal_created",
+                    aggregate_type="action_proposal",
+                    aggregate_id=proposal_id,
+                    payload={
+                        "order_id": order_id,
+                        "review_case_id": case_id,
+                        "source_refs": normalized_source_refs,
+                        **self._evidence_refs(evidence),
+                    },
+                    trace_id=trace_id,
+                )
+            )
         return {
             "review_case_id": case_id,
             "proposal_id": proposal_id,
@@ -528,7 +561,13 @@ class OrderReviewService:
             return self._proposal_dict(proposal, case)
 
     def _existing_idempotency(
-        self, session: Any, *, tenant_id: str, key: str, operation: str, proposal_id: str,
+        self,
+        session: Any,
+        *,
+        tenant_id: str,
+        key: str,
+        operation: str,
+        proposal_id: str,
     ) -> dict[str, Any] | None:
         record = session.get(IdempotencyRecordORM, (tenant_id, key))
         if record is None:
@@ -623,36 +662,42 @@ class OrderReviewService:
                 "follow_up_task_id": task_id,
             }
             session.add(task)
-            session.add(IdempotencyRecordORM(
-                tenant_id=tenant_id,
-                idempotency_key=idempotency_key,
-                operation="confirm",
-                proposal_id=proposal_id,
-                response=_json(response),
-            ))
-            session.add(self._event(
-                tenant_id=tenant_id,
-                event_type="order.review.confirmed",
-                aggregate_type="order",
-                aggregate_id=order.order_id,
-                payload={**response, "actor_id": actor_id, **self._evidence_refs(evidence)},
-                trace_id=trace_id,
-                correlation_id=proposal_id,
-            ))
-            session.add(self._event(
-                tenant_id=tenant_id,
-                event_type="audit.action_proposal.confirmed",
-                aggregate_type="action_proposal",
-                aggregate_id=proposal_id,
-                payload={
-                    "actor_id": actor_id,
-                    "order_id": order.order_id,
-                    "idempotency_key": idempotency_key,
-                    **self._evidence_refs(evidence),
-                },
-                trace_id=trace_id,
-                correlation_id=proposal_id,
-            ))
+            session.add(
+                IdempotencyRecordORM(
+                    tenant_id=tenant_id,
+                    idempotency_key=idempotency_key,
+                    operation="confirm",
+                    proposal_id=proposal_id,
+                    response=_json(response),
+                )
+            )
+            session.add(
+                self._event(
+                    tenant_id=tenant_id,
+                    event_type="order.review.confirmed",
+                    aggregate_type="order",
+                    aggregate_id=order.order_id,
+                    payload={**response, "actor_id": actor_id, **self._evidence_refs(evidence)},
+                    trace_id=trace_id,
+                    correlation_id=proposal_id,
+                )
+            )
+            session.add(
+                self._event(
+                    tenant_id=tenant_id,
+                    event_type="audit.action_proposal.confirmed",
+                    aggregate_type="action_proposal",
+                    aggregate_id=proposal_id,
+                    payload={
+                        "actor_id": actor_id,
+                        "order_id": order.order_id,
+                        "idempotency_key": idempotency_key,
+                        **self._evidence_refs(evidence),
+                    },
+                    trace_id=trace_id,
+                    correlation_id=proposal_id,
+                )
+            )
         return response
 
     def reject_proposal(
@@ -698,36 +743,44 @@ class OrderReviewService:
                 case.status = "rejected"
             evidence = self._evidence_from_case(case)
             response = {"proposal_id": proposal_id, "status": "rejected", "reason": reason}
-            session.add(IdempotencyRecordORM(
-                tenant_id=tenant_id,
-                idempotency_key=idempotency_key,
-                operation="reject",
-                proposal_id=proposal_id,
-                response=_json(response),
-            ))
-            session.add(self._event(
-                tenant_id=tenant_id,
-                event_type="audit.action_proposal.rejected",
-                aggregate_type="action_proposal",
-                aggregate_id=proposal_id,
-                payload={
-                    "actor_id": actor_id,
-                    "reason": reason,
-                    **(self._evidence_refs(evidence) if evidence is not None else {}),
-                },
-                trace_id=trace_id,
-                correlation_id=proposal_id,
-            ))
+            session.add(
+                IdempotencyRecordORM(
+                    tenant_id=tenant_id,
+                    idempotency_key=idempotency_key,
+                    operation="reject",
+                    proposal_id=proposal_id,
+                    response=_json(response),
+                )
+            )
+            session.add(
+                self._event(
+                    tenant_id=tenant_id,
+                    event_type="audit.action_proposal.rejected",
+                    aggregate_type="action_proposal",
+                    aggregate_id=proposal_id,
+                    payload={
+                        "actor_id": actor_id,
+                        "reason": reason,
+                        **(self._evidence_refs(evidence) if evidence is not None else {}),
+                    },
+                    trace_id=trace_id,
+                    correlation_id=proposal_id,
+                )
+            )
         return response
 
     def list_follow_up_tasks(self, *, tenant_id: str) -> list[dict[str, Any]]:
         self._ensure_schema()
         with get_session() as session:
-            rows = session.execute(
-                select(FollowUpTaskORM)
-                .where(FollowUpTaskORM.tenant_id == tenant_id)
-                .order_by(FollowUpTaskORM.created_at)
-            ).scalars().all()
+            rows = (
+                session.execute(
+                    select(FollowUpTaskORM)
+                    .where(FollowUpTaskORM.tenant_id == tenant_id)
+                    .order_by(FollowUpTaskORM.created_at)
+                )
+                .scalars()
+                .all()
+            )
         return [
             {
                 "task_id": row.task_id,
@@ -743,11 +796,15 @@ class OrderReviewService:
     def list_outbox_events(self, *, tenant_id: str) -> list[dict[str, Any]]:
         self._ensure_schema()
         with get_session() as session:
-            rows = session.execute(
-                select(OutboxEventORM)
-                .where(OutboxEventORM.tenant_id == tenant_id)
-                .order_by(OutboxEventORM.created_at, OutboxEventORM.event_id)
-            ).scalars().all()
+            rows = (
+                session.execute(
+                    select(OutboxEventORM)
+                    .where(OutboxEventORM.tenant_id == tenant_id)
+                    .order_by(OutboxEventORM.created_at, OutboxEventORM.event_id)
+                )
+                .scalars()
+                .all()
+            )
         return [
             {
                 "event_id": row.event_id,
