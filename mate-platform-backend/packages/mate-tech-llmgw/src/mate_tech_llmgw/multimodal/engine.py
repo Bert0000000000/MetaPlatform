@@ -20,6 +20,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+from mate_platform.runtime import reject_production_fallback
+
 
 @dataclass
 class MultimodalRequest:
@@ -74,6 +76,7 @@ class StubMultimodalProvider:
         messages: list[dict[str, Any]],
         model: str,
     ) -> dict[str, Any]:
+        reject_production_fallback("multimodal provider")
         image_count = 0
         for message in messages:
             parts = message.get("content")
@@ -99,6 +102,8 @@ class MultimodalEngine:
     """
 
     def __init__(self, provider: MultimodalProviderProtocol | None = None) -> None:
+        if provider is None:
+            reject_production_fallback("multimodal provider")
         self.provider: MultimodalProviderProtocol = provider or StubMultimodalProvider()
 
     async def chat(self, request: MultimodalRequest) -> MultimodalResponse:

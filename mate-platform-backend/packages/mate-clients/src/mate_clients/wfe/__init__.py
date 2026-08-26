@@ -9,6 +9,8 @@ requiring a running BPMN engine.
 """
 from __future__ import annotations
 
+from mate_platform.runtime import is_production_profile
+
 
 class FlowableClient:
     """Stub Flowable BPMN client.
@@ -30,6 +32,10 @@ class FlowableClient:
         tenant_id: str,
     ) -> dict:
         """Start a Flowable process instance. Returns ``{processInstanceId}``."""
+        if is_production_profile():
+            raise RuntimeError(
+                "synthetic Flowable client is disabled in production"
+            )
         return {
             "processInstanceId": (
                 f"proc-{business_key}-{hash((process_key, tenant_id)) % 10000}"

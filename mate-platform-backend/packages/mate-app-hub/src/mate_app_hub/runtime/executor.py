@@ -21,6 +21,7 @@ import os
 from mate_clients.api_gateway import APIGatewayClient
 from mate_clients.forms import FormsClient
 from mate_clients.wfe import FlowableClient
+from mate_platform.runtime import is_production_profile, reject_production_fallback
 
 from ..telemetry import get_tracer
 from .schema import ActionResult, RuntimeAction, RuntimeContext
@@ -34,6 +35,7 @@ async def execute_action(
     ctx: RuntimeContext, action: RuntimeAction, payload: dict,
 ) -> ActionResult:
     """Execute via the legacy mock dispatch (kept for backward-compat)."""
+    reject_production_fallback("mock AppHub action execution")
     with get_tracer().start_as_current_span("apphub.runtime.execute") as span:
         span.set_attribute("apphub.action_type", action.action_type)
         span.set_attribute("apphub.tenant_id", ctx.tenant_id)
@@ -193,6 +195,8 @@ class RealExecutor:
 def get_executor() -> RealExecutor | MockExecutor:
     """Return the configured executor (real by default, mock opt-in)."""
     mode = os.getenv("APPHUB_EXECUTOR_MODE", "real")
+    if is_production_profile() and mode != "real":
+        raise RuntimeError("mock executor is disabled in production")
     if mode == "real":
         return RealExecutor(
             wfe=FlowableClient(

@@ -20,6 +20,7 @@ from typing import Any
 
 import httpx
 import structlog
+from mate_platform.runtime import is_production_profile
 
 from ..chat import ChatMessage, ChatResponse
 
@@ -59,12 +60,17 @@ class RealAnthropicProvider:
         base_url: str | None = None,
         timeout: float = 30.0,
         max_tokens: int = _DEFAULT_MAX_TOKENS,
+        allow_fallback: bool | None = None,
     ) -> None:
         self.model = model
         self._api_key = api_key
         self._base_url = base_url or os.getenv("ANTHROPIC_BASE_URL", _ANTHROPIC_BASE_URL)
         self._timeout = timeout
         self._max_tokens = max_tokens
+        self._allow_fallback = (
+            not is_production_profile()
+            and (True if allow_fallback is None else allow_fallback)
+        )
         self._client: httpx.AsyncClient | None = None
 
     def _resolve_api_key(self, tenant_id: str) -> str:
@@ -81,6 +87,10 @@ class RealAnthropicProvider:
             if val:
                 return val
         return os.getenv("ANTHROPIC_API_KEY", "")
+
+    def _fallback_enabled(self) -> bool:
+        """Re-evaluate the deployment profile for long-lived providers."""
+        return self._allow_fallback and not is_production_profile()
 
     async def _get_client(self, api_key: str) -> httpx.AsyncClient:
         if self._client is None:
@@ -112,6 +122,8 @@ class RealAnthropicProvider:
                 tenant_id=tenant_id,
                 model=self.model,
             )
+            if not self._fallback_enabled():
+                raise RuntimeError("Anthropic provider unavailable: API key is not configured")
             return _stub_response(self.model, messages)
 
         # Anthropic separates system messages from the conversation.
@@ -145,6 +157,10 @@ class RealAnthropicProvider:
                 tenant_id=tenant_id,
                 model=self.model,
             )
+            if not self._fallback_enabled():
+                raise RuntimeError(
+                    "Anthropic provider unavailable: request timed out"
+                ) from None
             return _stub_response(self.model, messages)
         except httpx.HTTPError as e:
             logger.warning(
@@ -153,6 +169,8 @@ class RealAnthropicProvider:
                 model=self.model,
                 error=str(e),
             )
+            if not self._fallback_enabled():
+                raise RuntimeError("Anthropic provider unavailable: upstream request failed") from e
             return _stub_response(self.model, messages)
 
         content_text = ""

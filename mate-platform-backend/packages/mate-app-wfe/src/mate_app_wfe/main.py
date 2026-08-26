@@ -15,12 +15,14 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from mate_platform.auth import install_auth
+from mate_platform.runtime import reject_production_fallback
 
 from .api import router as wfe_router
 
 
 def create_app() -> FastAPI:
     """Build the mate-app-wfe FastAPI application."""
+    reject_production_fallback("in-memory WFE state")
     app = FastAPI(
         title="mate-app-wfe",
         version="0.1.0",

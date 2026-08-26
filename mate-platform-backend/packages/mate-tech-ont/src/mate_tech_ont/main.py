@@ -18,13 +18,14 @@ from __future__ import annotations
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, Callable, Awaitable
+from typing import Any, Awaitable, Callable
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request, Response
 
 # TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2 (auth + tenant).
 from mate_platform.auth import install_auth
+from mate_platform.runtime import is_production_profile, require_real_dependency
 from mate_platform.tenancy.guards import TenantAccessError, require_tenant
 
 from .api.ontology import router as ontology_router
@@ -72,6 +73,7 @@ def _inject_function_executor(repo: object) -> None:
     - k8s（prod 占位）: 同 subprocess；K8s Job 提交归 SANDBOX-02 后续
     """
     backend = os.getenv("FUNCTION_BACKEND", "memory").lower()
+    require_real_dependency("FUNCTION_BACKEND", backend != "memory")
     if backend == "memory":
         from mate_kernel.sandbox.k8s import _SimplePythonExecutor
         repo.set_function_executor(_SimplePythonExecutor())  # type: ignore[attr-defined]
@@ -86,6 +88,17 @@ def _inject_function_executor(repo: object) -> None:
     else:
         raise RuntimeError(f"unknown FUNCTION_BACKEND={backend!r}")
     logger.info("function_executor.initialized", backend=backend)
+
+
+def _validate_production_configuration() -> None:
+    """Reject known non-durable ontology settings before the app starts."""
+    if not is_production_profile():
+        return
+    kernel_backend = os.getenv("KERNEL_BACKEND", "memory").lower()
+    require_real_dependency("KERNEL_BACKEND=pg", kernel_backend == "pg")
+    require_real_dependency(
+        "ONT_SEED_DEMO=0", os.getenv("ONT_SEED_DEMO", "0") != "1"
+    )
 
 
 def create_app() -> FastAPI:
@@ -185,6 +198,7 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")  # pyright: ignore[reportDeprecated]
     async def on_startup() -> None:
+        _validate_production_configuration()
         log_level = os.getenv("LOG_LEVEL", "INFO").upper()
         structlog.configure(
             processors=[

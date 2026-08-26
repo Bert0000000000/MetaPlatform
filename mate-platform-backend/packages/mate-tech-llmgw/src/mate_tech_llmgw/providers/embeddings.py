@@ -30,6 +30,7 @@ from typing import Any, Protocol, runtime_checkable
 
 import httpx
 import structlog
+from mate_platform.runtime import is_production_profile
 
 logger = structlog.get_logger(__name__)
 
@@ -118,12 +119,17 @@ class OpenAIEmbeddingProvider:
         base_url: str | None = None,
         timeout: float = 30.0,
         dim: int = _DEFAULT_DIM,
+        allow_fallback: bool | None = None,
     ) -> None:
         self.model = model
         self._api_key = api_key
         self._base_url = base_url or os.getenv("OPENAI_BASE_URL", _OPENAI_BASE_URL)
         self._timeout = timeout
         self._dim = dim
+        self._allow_fallback = (
+            not is_production_profile()
+            and (True if allow_fallback is None else allow_fallback)
+        )
         self._client: httpx.AsyncClient | None = None
 
     def _resolve_api_key(self, tenant_id: str) -> str:
@@ -140,6 +146,10 @@ class OpenAIEmbeddingProvider:
             if val:
                 return val
         return os.getenv("OPENAI_API_KEY", "")
+
+    def _fallback_enabled(self) -> bool:
+        """Re-evaluate the deployment profile for long-lived providers."""
+        return self._allow_fallback and not is_production_profile()
 
     async def _get_client(self, api_key: str) -> httpx.AsyncClient:
         if self._client is None:
@@ -167,6 +177,10 @@ class OpenAIEmbeddingProvider:
                 tenant_id=tenant_id,
                 model=target_model,
             )
+            if not self._fallback_enabled():
+                raise RuntimeError(
+                    "embedding provider unavailable: API key is not configured"
+                )
             return EmbeddingResult(
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
@@ -185,6 +199,10 @@ class OpenAIEmbeddingProvider:
                 tenant_id=tenant_id,
                 model=target_model,
             )
+            if not self._fallback_enabled():
+                raise RuntimeError(
+                    "embedding provider unavailable: request timed out"
+                ) from None
             return EmbeddingResult(
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
@@ -197,6 +215,10 @@ class OpenAIEmbeddingProvider:
                 model=target_model,
                 error=str(e),
             )
+            if not self._fallback_enabled():
+                raise RuntimeError(
+                    "embedding provider unavailable: upstream request failed"
+                ) from e
             return EmbeddingResult(
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
@@ -214,6 +236,10 @@ class OpenAIEmbeddingProvider:
                 model=target_model,
                 error=str(e),
             )
+            if not self._fallback_enabled():
+                raise RuntimeError(
+                    "embedding provider unavailable: invalid upstream response"
+                ) from e
             return EmbeddingResult(
                 embedding=_hash_embedding(text, self._dim),
                 model=target_model,
@@ -259,6 +285,8 @@ class LocalEmbeddingProvider:
         model: str | None = None,
         tenant_id: str = "",
     ) -> EmbeddingResult:
+        if is_production_profile():
+            raise RuntimeError("local embedding provider is disabled in production")
         target_model = model or self.model
         tokens = _estimate_tokens(text)
         return EmbeddingResult(
@@ -288,8 +316,15 @@ def get_embedding_provider(name: str) -> EmbeddingProvider:
     (离线 hash)。未知名称回退到 ``openai``。
     """
     key = (name or "").lower().strip()
+    if key == "local" and is_production_profile():
+        raise RuntimeError("local embedding provider is disabled in production")
     if key in _embedding_providers:
-        return _embedding_providers[key]
+        cached = _embedding_providers[key]
+        if is_production_profile() and getattr(cached, "_allow_fallback", False):
+            # The factory is synchronous; tighten policy in place instead of
+            # discarding an object that may own an async HTTP client.
+            cached._allow_fallback = False  # type: ignore[attr-defined]
+        return cached
 
     if key in ("", "openai"):
         provider: EmbeddingProvider = OpenAIEmbeddingProvider()
@@ -403,6 +438,8 @@ def build_configured_embedding_provider(
     cache_key = (base_url, api_key[:4] if api_key else "", model or _DEFAULT_MODEL)
     cached = _configured_provider_cache.get(cache_key)
     if cached is not None:
+        if is_production_profile() and cached._allow_fallback:
+            cached._allow_fallback = False
         return cached
     provider = OpenAIEmbeddingProvider(
         api_key=api_key or None,

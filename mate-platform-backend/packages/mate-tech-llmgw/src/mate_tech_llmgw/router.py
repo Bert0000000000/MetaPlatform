@@ -10,6 +10,7 @@ from typing import Any
 
 import structlog
 from fastapi import HTTPException
+from mate_platform.runtime import is_production_profile
 
 from .cache.llm_cache import LLMCache, cache_key
 from .chat import ChatMessage, ChatProvider, ChatResponse
@@ -196,6 +197,9 @@ def get_provider(model: str) -> ChatProvider:
     else:
         # model 名 → provider 名
         name = _provider_name(model)
+
+    if name == "local" and is_production_profile():
+        raise RuntimeError("local LLM provider is disabled in production")
 
     if name in _providers:
         return _providers[name]

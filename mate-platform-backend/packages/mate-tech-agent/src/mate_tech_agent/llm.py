@@ -9,6 +9,8 @@ import os
 from collections.abc import Iterator
 from typing import Any
 
+from mate_platform.runtime import is_production_profile
+
 _log = logging.getLogger(__name__)
 
 
@@ -33,7 +35,13 @@ class EchoLLM:
 
 
 def get_llm() -> Any:
-    provider = os.environ.get("LLM_PROVIDER", "echo").lower()
+    provider = os.environ.get("LLM_PROVIDER", "echo").strip().lower()
+    if is_production_profile() and provider in {"echo", "noop"}:
+        raise RuntimeError(
+            f"synthetic LLM provider {provider!r} is disabled in production"
+        )
+    if is_production_profile() and provider != "openai":
+        raise RuntimeError(f"unsupported LLM provider {provider!r} in production")
     if provider == "openai":
         try:
             from langchain_openai import ChatOpenAI  # pyright: ignore[reportMissingImports]
@@ -78,6 +86,8 @@ def synthesize_answer(llm: Any, query: str, chunks: list[dict[str, Any]]) -> str
             return text
         except Exception as exc:
             _log.warning("LLM stream failed, falling back to extractive: %s", exc)
+            if is_production_profile():
+                raise RuntimeError("LLM provider unavailable: stream failed") from exc
 
     try:
         result = llm.invoke(prompt)
@@ -86,6 +96,8 @@ def synthesize_answer(llm: Any, query: str, chunks: list[dict[str, Any]]) -> str
         return str(result)
     except Exception as exc:
         _log.warning("LLM invoke failed: %s", exc)
+        if is_production_profile():
+            raise RuntimeError("LLM provider unavailable") from exc
         if not chunks:
             return f"I could not find relevant information for: {query!r}"
         snippets = [c.get("text", "")[:150] for c in chunks[:3] if c.get("text")]
@@ -104,6 +116,8 @@ def stream_answer(llm: Any, query: str, chunks: list[dict[str, Any]]) -> Iterato
             return
         except Exception as exc:
             _log.warning("LLM stream failed, falling back: %s", exc)
+            if is_production_profile():
+                raise RuntimeError("LLM provider unavailable: stream failed") from exc
 
     full = synthesize_answer(llm, query, chunks)
     for word in full.split(" "):

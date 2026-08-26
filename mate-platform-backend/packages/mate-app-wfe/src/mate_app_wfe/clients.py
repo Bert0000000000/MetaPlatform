@@ -25,6 +25,7 @@ from typing import Any
 import httpx
 
 from mate_clients.security import BearerAuth, OutgoingAuthMiddleware
+from mate_platform.runtime import is_production_profile, require_real_dependency
 
 
 class FlowableClient:
@@ -55,6 +56,7 @@ class FlowableClient:
             "FLOWABLE_BASE_URL", ""
         )
         self.base_url = (resolved or "").strip().rstrip("/")
+        require_real_dependency("Flowable", bool(self.base_url))
         self.timeout = timeout
         # Build the AsyncClient once; attach OutgoingAuthMiddleware so
         # every outbound call carries Authorization + X-Tenant-Id.
@@ -83,6 +85,11 @@ class FlowableClient:
         engine is unconfigured or unreachable (graceful degradation).
         """
         if not self.base_url:
+            if is_production_profile():
+                raise RuntimeError(
+                    "Flowable is unavailable in production; "
+                    "in-memory deployment is disabled"
+                )
             return self._in_memory_deploy()
 
         try:
@@ -101,6 +108,11 @@ class FlowableClient:
             data = resp.json()
         except (httpx.HTTPError, OSError, ValueError):
             # Engine unreachable / bad response -> degrade to in-memory.
+            if is_production_profile():
+                raise RuntimeError(
+                    "Flowable is unavailable in production; "
+                    "in-memory deployment is disabled"
+                ) from None
             dep = self._in_memory_deploy()
             dep["status"] = "fallback"
             return dep

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from mate_platform.runtime import is_production_profile
+
 from ..chat import ChatMessage, ChatResponse
 
 
@@ -28,6 +30,8 @@ class LocalStubProvider:
         **kwargs: Any,
     ) -> ChatResponse:
         """返回确定性 echo-style stub 响应."""
+        if is_production_profile():
+            raise RuntimeError("local LLM provider is disabled in production")
         last = messages[-1].content if messages else ""
         return ChatResponse(
             content=f"[local-stub] {last}",

@@ -24,6 +24,7 @@ from fastapi.responses import StreamingResponse
 from mate_platform.auth import install_auth
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.runtime import reject_production_fallback
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 from mate_tech_agent import __version__
@@ -191,6 +192,7 @@ def _emit(
 
 
 def create_app() -> FastAPI:
+    reject_production_fallback("in-memory agent state")
     app = FastAPI(
         title="mate-tech-agent",
         version=__version__,

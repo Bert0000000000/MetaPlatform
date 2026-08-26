@@ -14,13 +14,16 @@ from fastapi import FastAPI, Response
 
 from mate_platform.auth import install_auth
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.runtime import reject_production_fallback
 
 from .api import router as apphub_router
-from .marketplace import install_marketplace_state, router as marketplace_router
+from .marketplace import install_marketplace_state
+from .marketplace import router as marketplace_router
 
 
 def create_app() -> FastAPI:
     """Build the apphub FastAPI application."""
+    reject_production_fallback("in-memory AppHub state")
     app = FastAPI(
         title="mate-app-hub",
         version="0.1.0",

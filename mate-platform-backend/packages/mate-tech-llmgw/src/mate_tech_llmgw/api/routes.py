@@ -18,6 +18,7 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
+from mate_platform.runtime import is_production_profile
 from pydantic import BaseModel, Field
 
 from ..stream.sse import make_streaming_response
@@ -27,6 +28,8 @@ from .router import chat as router_chat
 logger = structlog.get_logger(__name__)
 
 # P3-W9: management API helpers (cache / quota / cost singletons).
+from mate_platform.observability import journey_span  # noqa: E402
+
 from ..quota.bucket import QuotaExceededError  # noqa: E402
 from ..router import (  # noqa: E402
     get_cache,
@@ -35,7 +38,6 @@ from ..router import (  # noqa: E402
     get_quota_bucket,
     get_user_daily_cap,
 )
-from mate_platform.observability import journey_span  # noqa: E402
 
 
 # ADR-0018 §2.4: monthly token ceiling.
@@ -149,6 +151,11 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
             raise
         except (NotImplementedError, ValueError) as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
+        except RuntimeError as e:
+            raise HTTPException(
+                status_code=503,
+                detail="LLM provider unavailable; synthetic fallback is disabled",
+            ) from e
         except Exception as e:
             logger.error("llmgw.chat.error", error=str(e))
             raise HTTPException(status_code=500, detail=str(e)) from e
@@ -172,6 +179,11 @@ async def _mock_stream(*, messages=None, model=None, temperature=1.0, **kwargs):
 @router.post("/chat/stream")
 async def chat_stream_endpoint(req: ChatRequest):
     """ST-5.5.7: SSE 流式 chat 端点."""
+    if is_production_profile():
+        raise HTTPException(
+            status_code=503,
+            detail="LLM streaming provider is unavailable; synthetic stream is disabled",
+        )
     return make_streaming_response(
         _mock_stream,
         messages=req.messages,
@@ -276,7 +288,13 @@ async def embeddings_endpoint(req: EmbeddingRequest, request: Request) -> Embedd
     显式带 base_url/api_key 时，优先用后台 AI Provider 配置
     (ai.embedding.default_provider)。无 API key / 网络失败时自动回退到确定性 hash 向量。
     """
-    return await _run_embeddings(req, request)
+    try:
+        return await _run_embeddings(req, request)
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Embedding provider unavailable; synthetic fallback is disabled",
+        ) from e
 
 
 # ---------------------------------------------------------------------------
@@ -346,7 +364,9 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
 
         if req.provider == "anthropic":
             model = req.model or "claude-3-5-sonnet-20241022"
-            provider = RealAnthropicProvider(model=model)
+            provider = RealAnthropicProvider(
+                model=model, allow_fallback=not is_production_profile()
+            )
         elif req.provider in ("openai", "custom"):
             # custom = OpenAI 兼容第三方（MiniMax/DeepSeek 等），base_url/api_key 透传
             model = req.model or "gpt-4o-mini"
@@ -354,6 +374,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 model=model,
                 base_url=req.base_url,
                 api_key=req.api_key,
+                allow_fallback=not is_production_profile(),
             )
         else:
             raise HTTPException(
@@ -369,6 +390,11 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 tenant_id=req.tenant_id,
                 tools=req.tools,
             )
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="LLM provider unavailable; synthetic fallback is disabled",
+            ) from exc
         finally:
             await provider.aclose()
 
@@ -420,17 +446,34 @@ async def real_chat_stream_endpoint(req: RealChatRequest):
         model=model,
         base_url=req.base_url,
         api_key=req.api_key,
+        allow_fallback=not is_production_profile(),
     )
+
+    stream = provider.stream_chat(
+        req.messages,
+        temperature=req.temperature,
+        max_tokens=req.max_tokens,
+        tools=req.tools,
+        tenant_id=req.tenant_id,
+    )
+    try:
+        first_event = await stream.__anext__()
+    except RuntimeError as exc:
+        await provider.aclose()
+        raise HTTPException(
+            status_code=503,
+            detail="LLM provider unavailable; synthetic fallback is disabled",
+        ) from exc
+    except StopAsyncIteration as exc:
+        await provider.aclose()
+        raise HTTPException(
+            status_code=503, detail="LLM provider returned no stream"
+        ) from exc
 
     async def _event_stream():
         try:
-            async for event in provider.stream_chat(
-                req.messages,
-                temperature=req.temperature,
-                max_tokens=req.max_tokens,
-                tools=req.tools,
-                tenant_id=req.tenant_id,
-            ):
+            yield f"data: {json.dumps(first_event, ensure_ascii=False)}\n\n"
+            async for event in stream:
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
         finally:
             await provider.aclose()
@@ -483,6 +526,12 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
     calls are subject to the same per-tenant RPM/TPM limits and cost
     metering.
     """
+    if is_production_profile():
+        raise HTTPException(
+            status_code=503,
+            detail="Multimodal provider unavailable; synthetic fallback is disabled",
+        )
+
     from ..multimodal.engine import MultimodalEngine, MultimodalRequest
 
     # --- 1. Quota check (mirrors router.chat semantics) ---
@@ -644,6 +693,11 @@ async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
 )
 async def legacy_chat_stream(req: ChatRequest, response: Response):
     response.headers.update(_deprecation_header())
+    if is_production_profile():
+        raise HTTPException(
+            status_code=503,
+            detail="LLM streaming provider is unavailable; synthetic stream is disabled",
+        )
     return make_streaming_response(
         _mock_stream,
         messages=req.messages,
@@ -792,6 +846,7 @@ async def providers_models_endpoint(req: ProviderModelsRequest) -> ProviderModel
             detail=f"unknown provider: {provider!r}",
         )
     import httpx as _httpx
+
     from ..providers.test import default_probe_url
 
     timeout_sec = max(1.0, min(req.timeout_sec, 30.0))
