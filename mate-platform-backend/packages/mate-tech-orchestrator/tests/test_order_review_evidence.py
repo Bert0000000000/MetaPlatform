@@ -91,6 +91,10 @@ def test_build_creates_complete_bundle_for_tenant_default_order() -> None:
     assert all(item["passed"] for item in bundle["derivation"])
     assert bundle["recommendation"]["action"] == "follow_up_payment"
     assert bundle["recommendation"]["title"] == "创建回款跟进单"
+    assert {fact["id"]: fact["display_value"] for fact in bundle["data"]["facts"]}[
+        "fact.amount_cents"
+    ] == "¥2,500.00"
+    assert "¥2,500.00" in bundle["recommendation"]["reason"]
     assert "not a persisted Ontology Individual" in bundle["ontology"]["legend"]
     assert bundle["data"]["snapshot"]["updated_at"] == _facts().updated_at.isoformat()
     assert bundle["derivation"][-1]["refs"] == ["threshold", "unpaid"]
@@ -201,7 +205,9 @@ def test_version_seven_snapshot_is_preserved() -> None:
     updated_at = datetime(2026, 8, 25, 23, 45, tzinfo=UTC)
 
     bundle = builder.build(
-        facts=_facts(version=7, review_status="approved", payment_status="unpaid", updated_at=updated_at),
+        facts=_facts(
+            version=7, review_status="approved", payment_status="unpaid", updated_at=updated_at
+        ),
         contract=_contract(),
         requested_suggestion={"action": "something-else", "confidence": 0.42},
         now=datetime(2026, 8, 26, 12, 30, tzinfo=UTC),

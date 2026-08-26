@@ -44,7 +44,10 @@ def _expected_action_rid(tenant_id: str) -> str:
 
 
 def _format_amount(amount_cents: int) -> str:
-    return f"{amount_cents:,}"
+    sign = "-" if amount_cents < 0 else ""
+    absolute_cents = abs(amount_cents)
+    yuan, cents = divmod(absolute_cents, 100)
+    return f"{sign}¥{yuan:,}.{cents:02d}"
 
 
 def _copy_contract_item(item: dict[str, Any]) -> dict[str, Any]:
@@ -98,7 +101,9 @@ def _validate_contract(
     if object_rid != expected_object_rid:
         raise EvidenceUnavailable("object type RID does not match the tenant-scoped order model")
     if action_rid != expected_action_rid:
-        raise EvidenceUnavailable("action type RID does not match the tenant-scoped order review action")
+        raise EvidenceUnavailable(
+            "action type RID does not match the tenant-scoped order review action"
+        )
     if not isinstance(action_title, str) or not action_title.strip():
         raise EvidenceUnavailable("action title is required")
     if not isinstance(action_on, list) or expected_object_rid not in action_on:
