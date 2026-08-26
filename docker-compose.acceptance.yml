@@ -1,0 +1,12 @@
+# Local system-acceptance override.
+#
+# The original pgdata volume is retained for recovery, but this profile uses a
+# fresh tmpfs database so Docker Desktop filesystem fsync cannot block the
+# acceptance stack. No production compose settings are changed.
+
+services:
+  postgres:
+    volumes: !override
+      - ./infra/init-multiple-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+    tmpfs:
+      - /var/lib/postgresql/data

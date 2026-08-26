@@ -72,6 +72,7 @@ export const MODULE_MENU: ModuleMenuItem[] = [
       { key: 'cost', label: '成本优化', path: '/superai/cost', hidden: true },
       { key: 'data', label: '数据分析', path: '/superai/data', hidden: true },
       { key: 'employee-match', label: '员工匹配', path: '/superai/employee-match', hidden: true },
+      { key: 'order-review', label: '订单复核', path: '/superai/order-review', hidden: true },
     ],
   },
   {

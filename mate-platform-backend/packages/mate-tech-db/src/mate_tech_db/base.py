@@ -43,7 +43,17 @@ def _resolve_dsn(url: str | None = None) -> str:
     In production profile (``MATE_PROFILE=production``) SQLite is rejected.
     """
     profile = os.environ.get("MATE_PROFILE", "dev")
-    dsn = url or os.environ.get("MATE_DB_URL") or os.environ.get("DATABASE_URL")
+    # Compose commonly exports optional variables as empty strings.  Treat
+    # blank values as unset; passing ``""``/whitespace to SQLAlchemy produces
+    # an opaque URL parse error and prevents the documented dev SQLite default.
+    dsn = next(
+        (candidate.strip() for candidate in (
+            url,
+            os.environ.get("MATE_DB_URL"),
+            os.environ.get("DATABASE_URL"),
+        ) if candidate and candidate.strip()),
+        None,
+    )
 
     if dsn is None:
         if profile == "production":

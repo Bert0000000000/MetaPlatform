@@ -247,6 +247,21 @@ class TestTokenVerifier:
         with pytest.raises(TokenError, match="audience mismatch"):
             verifier.verify(token)
 
+    def test_audience_array_accepts_expected_client(self) -> None:
+        """Keycloak client-credentials tokens may encode ``aud`` as an array."""
+        cfg = _make_cfg()
+        payload = {
+            "iss": "https://kc.test/realms/metaplatform",
+            "aud": ["metaplatform-backend", "account"],
+            "sub": "service-account",
+            "exp": 9999999999,
+            "iat": 0,
+        }
+        token = _make_unsigned_jwt(payload)
+        verifier = TokenVerifier(cfg)
+        claims = verifier.verify(token)
+        assert "metaplatform-backend" in claims.aud
+
     def test_issuer_mismatch_rejected(self) -> None:
         cfg = _make_cfg()
         verifier = TokenVerifier(cfg)

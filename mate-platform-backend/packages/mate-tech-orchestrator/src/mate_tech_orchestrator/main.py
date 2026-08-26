@@ -20,6 +20,8 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 from .api.app import router as orchestrator_router
 from .api.capabilities import router as capabilities_router
+from .api.order_review import public_router as order_review_public_router
+from .api.order_review import router as order_review_router
 from .api.scheduling import router as scheduling_router
 from .bootstrap import seed_default_roles
 from .scheduler.capability_runtime import (
@@ -73,6 +75,8 @@ def create_app() -> FastAPI:
     app.state.outbox_writer = InMemoryOutboxWriter()
 
     app.include_router(orchestrator_router)
+    app.include_router(order_review_router)
+    app.include_router(order_review_public_router)
     app.include_router(scheduling_router)
     app.include_router(capabilities_router)
     app.add_api_route("/healthz", _healthz, methods=["GET"])

@@ -31,8 +31,9 @@ const STATUS_MAP: Record<AppStatus, { label: string; color: TagColor }> = {
   OFFLINE: { label: '已下线', color: 'grey' },
 };
 
-export default function AppLifecyclePage() {
-  const { appId } = useParams<{ appId: string }>();
+export default function AppLifecyclePage({ appId: appIdProp }: { appId?: string } = {}) {
+  const { appId: routeAppId } = useParams<{ appId: string }>();
+  const appId = appIdProp || routeAppId;
   const navigate = useNavigate();
   const [app, setApp] = useState<AppItem | null>(null);
   const [loading, setLoading] = useState(true);

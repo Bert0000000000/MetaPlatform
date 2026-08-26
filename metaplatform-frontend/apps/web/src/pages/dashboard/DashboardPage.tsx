@@ -388,7 +388,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
             </Card>
           </div>
 
-          {/* 右：系统状态 + 快捷入口 */}
+          {/* 右：最近消息 + 快捷入口 */}
           <div style={{ flex: 2, display: 'flex' }}>
             <Card style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>

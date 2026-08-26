@@ -114,3 +114,28 @@ class PlanGraph(BaseModel):
     current_step_id: str | None = None
     nodes: list[GraphNode] = Field(default_factory=list)
     edges: list[GraphEdge] = Field(default_factory=list)
+
+
+class CreateOrderRequest(BaseModel):
+    """Reference order write used by the local acceptance journey."""
+
+    order_id: str = Field(min_length=1)
+    amount_cents: int = Field(gt=0)
+    payment_status: Literal["unpaid", "paid"] = "unpaid"
+
+
+class CreateReviewCaseRequest(BaseModel):
+    """Create a proposal from an upstream Ontology/RAG suggestion."""
+
+    order_id: str = Field(min_length=1)
+    suggestion: dict[str, Any] = Field(min_length=1)
+    source_refs: list[str] = Field(default_factory=list)
+
+
+class ConfirmActionProposalRequest(BaseModel):
+    actor_id: str = Field(default="system", min_length=1)
+
+
+class RejectActionProposalRequest(BaseModel):
+    actor_id: str = Field(default="system", min_length=1)
+    reason: str = Field(default="")

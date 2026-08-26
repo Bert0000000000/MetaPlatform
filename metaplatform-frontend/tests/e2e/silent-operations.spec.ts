@@ -2,14 +2,12 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Silent operation gaps", () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("mate_platform_token", "e2e-token");
-      localStorage.setItem("mate_platform_user", JSON.stringify({ id: "e2e-user", username: "e2e", tenantId: "tenant-default", roles: ["admin"] }));
-    });
     page.on("dialog", async (dialog) => {
       throw new Error("Unexpected blocking dialog: " + dialog.message());
     });
   });
+
+  test.use({ storageState: 'tests/e2e/.auth/state.json' });
 
   test("DataGraphView keeps the page usable on rendering issues", async ({ page }) => {
     await page.goto("/ontology/datacenter?tab=datagraph");
@@ -21,6 +19,6 @@ test.describe("Silent operation gaps", () => {
       await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ message: "boom" }) });
     });
     await page.goto("/dashboard");
-    await expect(page.locator(".ant-message").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/仪表盘加载失败/).first()).toBeVisible({ timeout: 10_000 });
   });
 });

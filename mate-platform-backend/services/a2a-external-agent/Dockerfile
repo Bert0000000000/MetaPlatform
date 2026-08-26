@@ -8,7 +8,9 @@
 # selects a skill based on the message metadata's `role_slug` field.
 #
 # Build context: ./mate-platform-backend
-FROM python:3.12-slim
+# The configured local registry mirror currently returns 401 for the slim
+# manifest. Keep the runtime compatible with the verified Task5 Agent image.
+FROM python:3.12
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

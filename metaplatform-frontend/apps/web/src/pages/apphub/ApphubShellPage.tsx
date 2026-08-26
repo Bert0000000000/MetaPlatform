@@ -1,6 +1,6 @@
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Boxes, Store, FileText, Sparkles } from 'lucide-react';
-import { PageRoot, SubTabs } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
 import AppListPage from './AppListPage';
 import AppDetailPage from './AppDetailPage';
 import AppLifecyclePage from './AppLifecyclePage';
@@ -39,8 +39,19 @@ export default function ApphubShellPage() {
   const tid = searchParams.get('tid');
   const vid = searchParams.get('vid');
   const moduleId = searchParams.get('module');
+  const pageId = searchParams.get('page');
   const mp = searchParams.get('mp');
   const submit = searchParams.get('submit');
+    const requestedTab = searchParams.get('tab');
+    const appDetailTab = appId ? (requestedTab ?? 'detail') : undefined;
+  const assistant = usePageAssistant({
+    employeeId: 'application-designer',
+    employeeName: '应用设计数字员工',
+    employeeDescription: '帮助你设计应用、模块和页面，并检查发布准备状态',
+    moduleLabel: 'AppHub',
+    welcomeMessage: '你好，我是应用设计数字员工。可以协助你规划应用和页面。',
+    suggestions: ['帮我规划一个业务应用', '检查当前应用的发布准备度', '设计一个数据看板页面'],
+  });
 
   const subTabs = TABS.map((t) => ({
     label: t.label,
@@ -58,13 +69,21 @@ export default function ApphubShellPage() {
   // 根据参数分发到具体 page
   const renderBody = () => {
     // 我的应用 + 选中应用 → 详情/子项
+      if (requestedTab === 'page' && pageId) {
+      return <PageDesignerPage pageId={pageId} />;
+    }
     if (activeTab === 'list' && appId) {
-      if (vid) return <ReleaseRecordPage />;
+      if (vid) return <ReleaseRecordPage appId={appId} />;
       if (moduleId) {
-        // module-level 路径细分由 page 内部读 path 区分；
-        // 我们用 ?tab=form-designer|flow-designer 决定，Shell 不做 dispatch
-        return <div data-app-module-fallback />;
+        if (appDetailTab === 'form-designer') {
+          return <FormDesignerPage appId={appId} moduleId={moduleId} />;
+        }
+        if (appDetailTab === 'flow-designer') {
+          return <FlowDesignerPage appId={appId} moduleId={moduleId} />;
+        }
       }
+      if (appDetailTab === 'lifecycle') return <AppLifecyclePage appId={appId} />;
+      if (appDetailTab === 'versions') return <VersionManagementPage appId={appId} />;
       // 默认进应用详情
       return <AppDetailPage appId={appId || undefined} />;
     }
@@ -91,7 +110,7 @@ export default function ApphubShellPage() {
   const showAppSubtabs = activeTab === 'list' && !!appId;
   const appSubtab = (key: string) => {
     const next = new URLSearchParams(searchParams);
-    next.delete('mp'); next.delete('tid'); next.delete('vid'); next.delete('module'); next.delete('submit');
+    next.delete('mp'); next.delete('tid'); next.delete('vid'); next.delete('module'); next.delete('page'); next.delete('submit');
     next.set('app', appId || '');
     if (key === 'detail') next.delete('tab');
     else next.set('tab', key);
@@ -121,13 +140,15 @@ export default function ApphubShellPage() {
           embedded
         />
       </div>
+      <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
     </div>
   );
 
   return (
     <PageRoot header={stickyHeader}>
-      {showAppSubtabs && (
-        <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 16, flexWrap: 'wrap' }}>
+      <AIAssistantWorkspace assistant={assistant}>
+        {showAppSubtabs && (
+          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 16, flexWrap: 'wrap' }}>
           {[
             { key: 'detail', label: '详情' },
             { key: 'lifecycle', label: '生命周期' },
@@ -140,20 +161,21 @@ export default function ApphubShellPage() {
                 padding: '8px 16px',
                 border: 'none',
                 background: 'transparent',
-                color: (activeTab === t.key || (t.key === 'detail' && !searchParams.get('tab'))) ? 'var(--primary)' : 'var(--muted-foreground)',
+                color: (appDetailTab === t.key || (t.key === 'detail' && appDetailTab === 'detail')) ? 'var(--primary)' : 'var(--muted-foreground)',
                 fontSize: 13,
-                fontWeight: (activeTab === t.key || (t.key === 'detail' && !searchParams.get('tab'))) ? 600 : 500,
+                fontWeight: (appDetailTab === t.key || (t.key === 'detail' && appDetailTab === 'detail')) ? 600 : 500,
                 cursor: 'pointer',
-                borderBottom: (activeTab === t.key || (t.key === 'detail' && !searchParams.get('tab'))) ? '2px solid var(--primary)' : '2px solid transparent',
+                borderBottom: (appDetailTab === t.key || (t.key === 'detail' && appDetailTab === 'detail')) ? '2px solid var(--primary)' : '2px solid transparent',
                 marginBottom: -1,
               }}
             >
               {t.label}
             </button>
           ))}
-        </div>
-      )}
-      {renderBody()}
+          </div>
+        )}
+        {renderBody()}
+      </AIAssistantWorkspace>
     </PageRoot>
   );
 }

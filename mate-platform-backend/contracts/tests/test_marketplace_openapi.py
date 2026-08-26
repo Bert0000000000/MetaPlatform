@@ -89,7 +89,7 @@ def test_manifest_schema_includes_kind_and_digest() -> None:
     manifest_schema = spec["components"]["schemas"]["ArtifactManifest"]
     assert "kind" in manifest_schema["required"]
     assert "digest" in manifest_schema["required"]
-    assert manifest_schema["properties"]["kind"]["enum"] == ["mcp", "agent", "ontology"]
+    assert manifest_schema["properties"]["kind"]["enum"] == ["mcp", "agent", "ontology", "skill"]
     digest = manifest_schema["properties"]["digest"]
     assert digest["properties"]["sha256"]["pattern"].startswith("^[a-f0-9]{64}$")
 

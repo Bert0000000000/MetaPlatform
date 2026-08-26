@@ -393,6 +393,7 @@ paths:
       - MP-CONS-008
   /api/v1/marketplace/skills:
     post:
+      x-requirement-id: MP-CONS-009
       operationId: uploadSkill
       summary: 上传 SKILL（SKILL HUB）
       description: 上传一个公开或私有 SKILL 到 SkillHub。
@@ -415,7 +416,10 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-009
     get:
+      x-requirement-id: MP-CONS-010
       operationId: listSkills
       summary: 浏览 SKILL（公开 + 自有）
       tags: [marketplace]
@@ -444,8 +448,11 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-010
   /api/v1/marketplace/skills/installed:
     get:
+      x-requirement-id: MP-CONS-011
       operationId: listInstalledSkills
       summary: 已安装 SKILL（当前租户）
       tags: [marketplace]
@@ -465,8 +472,11 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-011
   /api/v1/marketplace/skills/{skill_id}:
     get:
+      x-requirement-id: MP-CONS-012
       operationId: getSkill
       summary: SKILL 详情
       tags: [marketplace]
@@ -487,7 +497,10 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-012
     put:
+      x-requirement-id: MP-CONS-013
       operationId: updateSkill
       summary: 更新自有 SKILL（仅作者）
       tags: [marketplace]
@@ -516,7 +529,10 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-013
     delete:
+      x-requirement-id: MP-CONS-014
       operationId: deleteSkill
       summary: 删除自有 SKILL
       tags: [marketplace]
@@ -531,8 +547,11 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-014
   /api/v1/marketplace/skills/{skill_id}/download:
     get:
+      x-requirement-id: MP-CONS-015
       operationId: downloadSkill
       summary: 下载 SKILL 内容
       tags: [marketplace]
@@ -558,8 +577,11 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.read
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-015
   /api/v1/marketplace/skills/{skill_id}/install:
     post:
+      x-requirement-id: MP-CONS-016
       operationId: installSkill
       summary: 安装 SKILL
       tags: [marketplace]
@@ -584,6 +606,8 @@ paths:
       x-mate-owner: marketplace-consumer
       x-mate-permission: marketplace.write
       x-mate-implementation-status: implemented
+      x-mate-requirements:
+      - MP-CONS-016
 components:
   securitySchemes:
     bearerAuth:

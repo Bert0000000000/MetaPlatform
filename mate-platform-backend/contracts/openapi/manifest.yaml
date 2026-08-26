@@ -85,6 +85,21 @@ domains:
     owner: ai-protocols
     visibility: external
     runtimeModule: mate_app_a2a.main:app
+  analytics:
+    contract: services/analytics.yaml
+    owner: analytics
+    visibility: external
+    runtimeModule: mate_tech_analytics.main:app
+  deep-research:
+    contract: services/deep-research.yaml
+    owner: ai-protocols
+    visibility: external
+    runtimeModule: mate_tech_deep_research.main:app
+  orchestrator:
+    contract: services/orchestrator.yaml
+    owner: ai-protocols
+    visibility: external
+    runtimeModule: mate_tech_orchestrator.main:app
   marketplace:
     contract: services/marketplace.yaml
     owner: marketplace-consumer

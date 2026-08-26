@@ -19,3 +19,7 @@ class AgentState(TypedDict, total=False):
     # channel. LangGraph only retains keys declared in the schema.
     tenant_id: str
     _scenario: str
+    # Request-scoped bearer token used for authenticated service calls.
+    # LangGraph drops undeclared state keys, so this must be part of the
+    # schema even though it is removed before the state is persisted.
+    _access_token: str

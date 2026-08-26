@@ -17,6 +17,7 @@ dependencies = [
     "neo4j>=5.25.0",
     "pymilvus>=2.5.0",
     "httpx>=0.28.0",
+    "langchain-openai>=1.0.0",
     "tenacity>=9.0.0",
     "structlog>=24.4.0",
     "kafka-python-ng>=2.2.0",
@@ -30,11 +31,13 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "opentelemetry-instrumentation-httpx>=0.48b0",
     "mate-common",
+    "mate-tech-db",
 ]
 
 
 [tool.uv.sources]
 mate-common = { workspace = true }
+mate-tech-db = { workspace = true }
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

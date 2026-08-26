@@ -27,8 +27,9 @@ import VersionDiff from './components/VersionDiff';
 import type { AppVersion } from '@/api/apphub/versions';
 import type { AppItem } from '@/api/apphub/types';
 
-export default function VersionManagementPage() {
-  const { appId } = useParams<{ appId: string }>();
+export default function VersionManagementPage({ appId: appIdProp }: { appId?: string } = {}) {
+  const { appId: routeAppId } = useParams<{ appId: string }>();
+  const appId = appIdProp || routeAppId;
   const navigate = useNavigate();
   const [app, setApp] = useState<AppItem | null>(null);
   const [versions, setVersions] = useState<AppVersion[]>([]);

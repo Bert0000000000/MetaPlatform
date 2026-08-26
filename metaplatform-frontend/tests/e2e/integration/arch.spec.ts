@@ -9,7 +9,7 @@ test.describe('联调-架构中心 Arch 模块', () => {
     await page.goto('/arch/capabilities');
     await expect(page.getByText('能力地图', { exact: true }).first()).toBeVisible();
     await expect(page.getByText(/能力列表|能力树|新增/).first()).toBeVisible();
-    await expect(page.locator('.ant-table-row').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.semi-table-row').first()).toBeVisible({ timeout: 15000 });
     expect(tracker.failures.length, tracker.report()).toBe(0);
   });
 
@@ -17,7 +17,7 @@ test.describe('联调-架构中心 Arch 模块', () => {
     const tracker = trackApiFailures(page);
     await page.goto('/arch/applications');
     await expect(page.getByText(/应用系统管理|注册应用|应用名称/).first()).toBeVisible();
-    await expect(page.locator('.ant-table-row').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.semi-table-row').first()).toBeVisible({ timeout: 15000 });
     expect(tracker.failures.length, tracker.report()).toBe(0);
   });
 

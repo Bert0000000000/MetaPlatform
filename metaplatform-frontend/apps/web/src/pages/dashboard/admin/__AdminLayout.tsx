@@ -9,7 +9,7 @@ const ADMIN_TABS: ModuleTab[] = [
   { key: "orgs", label: "组织管理", path: "/admin/orgs" },
   { key: "logs", label: "日志管理", path: "/admin/logs" },
   { key: "configs", label: "系统配置", path: "/admin/configs" },
-  { key: "ai-providers", label: "AI 供应商", path: "/admin/ai-providers" },
+  { key: "ai-providers", label: "AI 提供方", path: "/admin/ai-providers" },
   { key: "operations", label: "运维", path: "/admin/operations" },
   { key: "analytics", label: "分析", path: "/admin/analytics" },
   { key: "components", label: "组件", path: "/admin/components" },

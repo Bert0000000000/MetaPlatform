@@ -44,8 +44,9 @@ const scriptContextMessage = {
   info: Toast.info,
 };
 
-export default function PageDesignerPage() {
-  const { pageId } = useParams<{ pageId: string }>();
+export default function PageDesignerPage({ pageId: pageIdProp }: { pageId?: string } = {}) {
+  const { pageId: routePageId } = useParams<{ pageId: string }>();
+  const pageId = pageIdProp || routePageId;
   const navigate = useNavigate();
   const [config, setConfig] = useState<PageDesignerConfig>({
     name: '新页面',

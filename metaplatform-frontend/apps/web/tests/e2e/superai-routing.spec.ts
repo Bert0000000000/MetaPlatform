@@ -10,7 +10,7 @@
  *
  * <p>真链路：
  * <ul>
- *   <li>前端 /superai/chat mount SuperAIChatPage.tsx（已修 App.tsx 路由）</li>
+ *   <li>前端 /superai/chat mount the user-facing ChatPage.tsx</li>
  *   <li>SuperAI 流走 POST /api/v1/copilot/chat/agent/stream（gateway 转发到 mate-app-copilot:8601）</li>
  *   <li>copilot 内部调 orchestrator /api/v1/orchestrator/roles 取 4 个 role（app/workflow/data_product/ontology）</li>
  *   <li>semantic_router 算 top-3 embedding cosine 候选，发 SSE routing_decision 事件</li>
@@ -21,7 +21,7 @@ import { test, expect, type Page, type ConsoleMessage, type APIRequestContext } 
 import { injectAuth, fetchAccessToken, decodeJwtPayload } from './helpers/auth';
 
 const SCREENSHOT_DIR = 'tests/e2e/screenshots';
-const GATEWAY = process.env.E2E_GATEWAY_URL ?? 'http://localhost:8100/api/v1';
+const GATEWAY = process.env.E2E_GATEWAY_URL ?? 'http://127.0.0.1:8100/api/v1';
 
 interface RoutingCandidate {
   role_slug: string;
@@ -108,16 +108,17 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
     const claims = decodeJwtPayload(token);
     const tenantId = claims.tenant_id ?? 'tenant-default';
 
-    // 1. 进入 /superai/chat → SuperAIChatPage（RoutingDecisionPanel 折叠按钮可见）
+    // 1. 进入正式 SuperAI 用户入口，而不是语义路由诊断页。
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/superai-routing-01-chat-loaded.png`, fullPage: true });
 
-    // 2. 验证 SuperAIChatPage 已 mount（不是 ChatPage 兜底版）。
-    // ChatPage.tsx 用 Semi AIInput；SuperAIChatPage.tsx 用 RoutingDecisionPanel（含折叠按钮）。
-    // 通过 DOM 文本验证：textarea 或 composer 必须存在
-    const composerInput = page.locator('textarea, input[placeholder*="分析"]').first();
-    await expect(composerInput, '/superai/chat must render composer textarea').toBeVisible({ timeout: 10_000 });
+    // 2. 验证正式 ChatPage 已 mount：会话历史、后端会话入口和 AI 输入框
+    // 都是产品页的稳定语义标记；简化的 routing diagnostics 页不具备这些能力。
+    await expect(page.getByText('会话历史', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Mate Platform 介绍', { exact: true }).first()).toBeVisible({ timeout: 10_000 });
+    const composerInput = page.getByRole('textbox').first();
+    await expect(composerInput, '/superai/chat must render the product composer').toBeVisible({ timeout: 10_000 });
 
     // 3. 第一轮 prompt —— 销售订单场景
     const r1 = await collectRouting(request, '帮我看看有哪些销售订单', token, tenantId);

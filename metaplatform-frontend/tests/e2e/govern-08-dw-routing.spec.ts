@@ -8,9 +8,10 @@
 
 import { test, expect } from '@playwright/test';
 import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const FRONTEND_ROOT = join(__dirname, '..', '..', '..');
+const FRONTEND_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const APP_TSX = join(FRONTEND_ROOT, 'apps', 'web', 'src', 'App.tsx');
 const PAGES_DIR = join(FRONTEND_ROOT, 'apps', 'web', 'src', 'pages', 'dw');
 

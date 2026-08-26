@@ -680,6 +680,9 @@ paths:
           description: SSE 事件流
       operationId: mcpGetMcpProtocol
       x-mate-owner: ai-protocols
+      x-mate-permission: mcp.read
+      x-mate-requirements:
+      - FR-MCP-PROTOCOL-GET
       x-mate-implementation-status: implemented
     post:
       security:
@@ -696,6 +699,9 @@ paths:
           description: 缺少或无效 JWT
       operationId: mcpPostMcpProtocol
       x-mate-owner: ai-protocols
+      x-mate-permission: mcp.read
+      x-mate-requirements:
+      - FR-MCP-PROTOCOL-POST
       x-mate-implementation-status: implemented
 components:
   securitySchemes:

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ModuleTabsLayout, PageRoot, type ModuleTab } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, ModuleTabsLayout, PageRoot, type ModuleTab, usePageAssistant } from '@mate/shared';
 
 /**
  * 架构中心 6 个 tab 子页面（单级菜单，顶部 Tab 导航）。
@@ -45,9 +45,26 @@ export const ARCH_TABS: ModuleTab[] = [
 
 /** 架构中心布局：全局 ModuleTabsLayout + 6 个 tab，内容为具体页面 */
 export default function ArchLayout({ children }: { children: ReactNode }) {
+  const assistant = usePageAssistant({
+    employeeId: 'architecture-planner',
+    employeeName: '架构规划数字员工',
+    employeeDescription: '帮助你分析业务能力、应用关系和架构治理状态',
+    moduleLabel: 'Architecture Center',
+    welcomeMessage: '你好，我是架构规划数字员工。可以协助你分析能力地图和架构资产。',
+    suggestions: ['帮我分析当前业务架构', '找出应用架构的关键依赖', '检查架构治理风险'],
+  });
+
+  const header = (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', minHeight: 48, padding: '0 24px', borderBottom: '1px solid var(--border)' }}>
+      <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
+    </div>
+  );
+
   return (
-    <PageRoot>
-      <ModuleTabsLayout tabs={ARCH_TABS}>{children}</ModuleTabsLayout>
+    <PageRoot header={header}>
+      <AIAssistantWorkspace assistant={assistant}>
+        <ModuleTabsLayout tabs={ARCH_TABS}>{children}</ModuleTabsLayout>
+      </AIAssistantWorkspace>
     </PageRoot>
   );
 }

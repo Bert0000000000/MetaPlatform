@@ -226,7 +226,7 @@ class RealOpenAIProvider:
         usage: dict[str, int] = {}
         try:
             client = await self._get_client(api_key)
-            async with client.as_to("POST", "/chat/completions", json=payload) as resp:
+            async with client.stream("POST", "/chat/completions", json=payload) as resp:
                 resp.raise_for_status()
                 async for raw in resp.aiter_lines():
                     if not raw:

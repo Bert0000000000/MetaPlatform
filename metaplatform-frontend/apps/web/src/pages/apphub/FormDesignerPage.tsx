@@ -123,8 +123,10 @@ function normalizeConfig(m: ModuleItem): FormConfig {
   };
 }
 
-export default function FormDesignerPage() {
-  const { appId, moduleId } = useParams<{ appId: string; moduleId: string }>();
+export default function FormDesignerPage({ appId: appIdProp, moduleId: moduleIdProp }: { appId?: string; moduleId?: string } = {}) {
+  const { appId: routeAppId, moduleId: routeModuleId } = useParams<{ appId: string; moduleId: string }>();
+  const appId = appIdProp || routeAppId;
+  const moduleId = moduleIdProp || routeModuleId;
   const navigate = useNavigate();
   const [module, setModule] = useState<ModuleItem | null>(null);
   const [config, setConfig] = useState<FormConfig>({ name: '', fields: [] });

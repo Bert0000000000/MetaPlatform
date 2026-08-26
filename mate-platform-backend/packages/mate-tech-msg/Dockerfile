@@ -50,7 +50,7 @@ COPY packages/mate-tech-msg/src/mate_tech_msg /app/src/mate_tech_msg
 COPY packages/mate-platform/src/mate_platform /app/src/mate_platform
 
 RUN useradd --create-home --shell /bin/bash appuser && \
-    chown -R appuser:appuser /app
+    chown appuser:appuser /app /app/src
 USER appuser
 WORKDIR /app
 

@@ -96,11 +96,38 @@ class MCPServer:
                 if handler is None:
                     # Fallback: 工具本身即 handler（ontology_proxy 风格）
                     handler = tool
+                arguments = self._normalize_arguments(tool, arguments)
                 result = handler(**arguments)
                 if hasattr(result, "__await__"):
                     result = await result
                 return result
         raise KeyError(f"Tool '\''{name}'\'' not found")
+
+    @staticmethod
+    def _normalize_arguments(tool: Any, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Adapt generic dispatch arguments to the tool's declared schema.
+
+        Orchestrator dispatch uses ``message`` as its common task payload,
+        while MCP tools expose capability-specific fields such as ``query``
+        or ``markings``. Passing the generic field verbatim makes narrow
+        tools such as ``ont_list_classes()`` fail with ``TypeError``. When a
+        JSON-schema property map is declared, retain only declared fields and
+        map ``message`` to ``query`` where that conventional field exists.
+        Tools without a schema keep the legacy pass-through behaviour so
+        dynamic handlers remain compatible.
+        """
+        schema = getattr(tool, "input_schema", None)
+        properties = schema.get("properties") if isinstance(schema, dict) else None
+        if not isinstance(properties, dict):
+            return arguments
+
+        normalized = {
+            key: value for key, value in arguments.items() if key in properties
+        }
+        if "message" in arguments and "message" not in properties:
+            if "query" in properties and "query" not in normalized:
+                normalized["query"] = arguments["message"]
+        return normalized
 
 
 def create_server(name: str | None = None) -> MCPServer:

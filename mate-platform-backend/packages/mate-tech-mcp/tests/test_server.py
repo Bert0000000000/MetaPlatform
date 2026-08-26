@@ -77,6 +77,38 @@ async def test_call_tool(mcp_server: MCPServer) -> None:
 
 
 @pytest.mark.asyncio
+async def test_call_tool_normalizes_generic_message_to_declared_schema(
+    mcp_server: MCPServer,
+) -> None:
+    """Generic orchestrator dispatch args must not break narrow MCP tools."""
+
+    class ListClassesTool:
+        name = "list_classes"
+        input_schema = {"type": "object", "properties": {}}
+
+        async def __call__(self) -> str:
+            return "ok"
+
+    class SearchTool:
+        name = "search"
+        input_schema = {
+            "type": "object",
+            "properties": {"query": {"type": "string"}},
+        }
+
+        async def __call__(self, *, query: str) -> str:
+            return query
+
+    mcp_server.register_tool(ListClassesTool())
+    mcp_server.register_tool(SearchTool())
+
+    # A dispatch envelope carries a generic message. A no-argument tool
+    # ignores it; a query-shaped tool receives it through the documented alias.
+    assert await mcp_server.call_tool("list_classes", {"message": "订单"}) == "ok"
+    assert await mcp_server.call_tool("search", {"message": "订单"}) == "订单"
+
+
+@pytest.mark.asyncio
 async def test_call_tool_unknown_raises(mcp_server: MCPServer) -> None:
     with pytest.raises(KeyError, match="not found"):
         await mcp_server.call_tool("missing", {})

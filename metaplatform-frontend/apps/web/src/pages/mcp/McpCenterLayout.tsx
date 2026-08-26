@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AppstoreOutlined, ApiOutlined, TeamOutlined } from '@ant-design/icons';
-import { PageRoot, SubTabs, type SubTabItem } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, type SubTabItem, usePageAssistant } from '@mate/shared';
 
 /**
  * MCP 服务中心：三 HUB 顶层 SubTabs + 当前 HUB 的二级细分 SubTabs。
@@ -54,6 +54,14 @@ function groupForPath(pathname: string): string {
 
 export default function McpCenterLayout() {
   const location = useLocation();
+  const assistant = usePageAssistant({
+    employeeId: 'mcp-tool-specialist',
+    employeeName: 'MCP 工具专家',
+    employeeDescription: '帮助你管理 MCP 服务、工具、权限和连接状态',
+    moduleLabel: 'MCP Center',
+    welcomeMessage: '你好，我是 MCP 工具专家。可以协助你发现和治理工具能力。',
+    suggestions: ['检查 MCP 服务健康状态', '分析工具权限配置', '查找最近的连接异常'],
+  });
   const active = groupForPath(location.pathname);
   const activeHubPath = HUB_GROUPS.find((g) => g.key === active)?.path ?? '/mcp/skill-hub';
   const primaryItems: SubTabItem[] = HUB_GROUPS.map((g) => ({
@@ -74,12 +82,17 @@ export default function McpCenterLayout() {
           <SubTabs items={secondary} activePath={location.pathname} embedded />
         </div>
       )}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 24px 8px' }}>
+        <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
+      </div>
     </div>
   );
 
   return (
     <PageRoot header={header}>
-      <Outlet />
+      <AIAssistantWorkspace assistant={assistant}>
+        <Outlet />
+      </AIAssistantWorkspace>
     </PageRoot>
   );
 }

@@ -1,6 +1,6 @@
 import { ConfigProvider as SemiConfigProvider } from '@douyinfe/semi-ui';
 import zh_CN from '@douyinfe/semi-ui/lib/es/locale/source/zh_CN';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import {
   AppLayout,
@@ -17,8 +17,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 // 閹虫帒濮炴潪钘夋倗濡€虫健妞ょ敻娼?
 
-const SuperaiOverviewPage = lazy(() => import('./pages/superai/ChatPage'));
-const SuperaiChatPage = lazy(() => import('./pages/superai/SuperAIChatPage'));
+// `/superai/chat` is the user-facing SuperAI entry point.  Keep the
+// ontology-native/semantic-router surface in `SuperAIChatPage` for its
+// focused implementation, but do not expose that reduced diagnostics page
+// as the primary product experience.
+const SuperaiChatPage = lazy(() => import('./pages/superai/ChatPage'));
 const SuperaiA2ACollaborationPage = lazy(() => import('./pages/superai/A2ACollaborationPage'));
 const SuperaiAgentCopilotPage = lazy(() => import('./pages/superai/AgentCopilotPage'));
 const SuperaiCostOptimizationPage = lazy(() => import('./pages/superai/CostOptimizationPage'));
@@ -36,10 +39,40 @@ const SuperaiScheduleIntentPage = lazy(() => import('./pages/superai/ScheduleInt
 const SuperaiSchedulePlanCardPage = lazy(() => import('./pages/superai/SchedulePlanCardPage'));
 const SuperaiTaskOrchestrationPage = lazy(() => import('./pages/superai/TaskOrchestrationPage'));
 const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
+const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
 
 // 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换
 const ApphubShellPage = lazy(() => import('./pages/apphub/ApphubShellPage'));
 const ApphubRuntimePage = lazy(() => import('./pages/apphub/runtime/AppRuntimePage'));
+
+/**
+ * Legacy AppHub URLs remain bookmark-compatible while the UI uses the
+ * canonical single-shell route.  A literal `:appId` in <Navigate> is not
+ * interpolated by React Router, so resolve route params before redirecting.
+ */
+function LegacyAppRoute({ tab }: { tab: 'detail' | 'lifecycle' | 'versions' | 'form-designer' | 'flow-designer' | 'page' }) {
+  const { appId, moduleId, versionId, pageId } = useParams<{ appId: string; moduleId: string; versionId: string; pageId: string }>();
+  const query = new URLSearchParams();
+  if (tab === 'page') {
+    if (pageId) query.set('page', pageId);
+    query.set('tab', 'page');
+  } else {
+    if (appId) query.set('app', appId);
+    if (tab !== 'detail') query.set('tab', tab);
+    if (moduleId) query.set('module', moduleId);
+    if (versionId) query.set('vid', versionId);
+  }
+  return <Navigate to={`/apps?${query.toString()}`} replace />;
+}
+
+/** Preserve the old nested Datacenter tab while redirecting to Ontology Shell. */
+function LegacyOntologyDatacenterRoute() {
+  const [searchParams] = useSearchParams();
+  const next = new URLSearchParams({ tab: 'datacenter' });
+  const subTab = searchParams.get('tab');
+  if (subTab) next.set('subTab', subTab);
+  return <Navigate to={`/ontology?${next.toString()}`} replace />;
+}
 
 const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const DashboardMyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
@@ -213,6 +246,7 @@ function AppRoutes() {
           <Route path="superai/schedule/plan" element={<SuperaiSchedulePlanCardPage />} />
           <Route path="superai/tasks" element={<SuperaiTaskOrchestrationPage />} />
           <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
+          <Route path="superai/order-review" element={<SuperaiOrderReviewPage />} />
           {/* 閺嬭埖鐎稉顓炵妇(Phase 4: from apps/arch) */}
           <Route path="arch" element={<Navigate to="/arch/business" replace />} />
           <Route path="arch/business" element={<ArchLayout><ArchBusinessArchPage /></ArchLayout>} />
@@ -240,13 +274,13 @@ function AppRoutes() {
           {/* 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换 */}
           <Route path="apps" element={<ApphubShellPage />} />
           {/* 旧子路由重定向到合并页（带 tab + app/tid 参数保留用户上下文） */}
-          <Route path="apps/:appId" element={<Navigate to="/apps?app=:appId" replace />} />
-          <Route path="apps/:appId/lifecycle" element={<Navigate to="/apps?app=:appId&tab=lifecycle" replace />} />
-          <Route path="apps/:appId/versions" element={<Navigate to="/apps?app=:appId&tab=versions" replace />} />
-          <Route path="apps/:appId/versions/:versionId" element={<Navigate to="/apps?app=:appId&tab=versions&vid=:versionId" replace />} />
-          <Route path="apps/:appId/modules/:moduleId/form-designer" element={<Navigate to="/apps?app=:appId&module=:moduleId&tab=form-designer" replace />} />
-          <Route path="apps/:appId/modules/:moduleId/flow-designer" element={<Navigate to="/apps?app=:appId&module=:moduleId&tab=flow-designer" replace />} />
-          <Route path="pages/:pageId" element={<Navigate to="/apps?app=:pageId&tab=page" replace />} />
+          <Route path="apps/:appId" element={<LegacyAppRoute tab="detail" />} />
+          <Route path="apps/:appId/lifecycle" element={<LegacyAppRoute tab="lifecycle" />} />
+          <Route path="apps/:appId/versions" element={<LegacyAppRoute tab="versions" />} />
+          <Route path="apps/:appId/versions/:versionId" element={<LegacyAppRoute tab="versions" />} />
+          <Route path="apps/:appId/modules/:moduleId/form-designer" element={<LegacyAppRoute tab="form-designer" />} />
+          <Route path="apps/:appId/modules/:moduleId/flow-designer" element={<LegacyAppRoute tab="flow-designer" />} />
+          <Route path="pages/:pageId" element={<LegacyAppRoute tab="page" />} />
           <Route path="marketplace" element={<Navigate to="/apps?tab=market&mp=1" replace />} />
           <Route path="marketplace/:templateId" element={<Navigate to="/apps?tab=market&mp=1&tid=:templateId" replace />} />
           <Route path="market" element={<Navigate to="/apps?tab=market" replace />} />
@@ -258,7 +292,7 @@ function AppRoutes() {
           {/* 本体引擎原单页入口已下线，重定向到默认 tab */}
           <Route path="ontology" element={<OntologyShellPage />} />
           {/* 旧子路由重定向到合并页（带 tab 参数保留用户上下文） */}
-          <Route path="ontology/datacenter" element={<Navigate to="/ontology?tab=datacenter" replace />} />
+          <Route path="ontology/datacenter" element={<LegacyOntologyDatacenterRoute />} />
           <Route path="ontology/action" element={<Navigate to="/ontology?tab=action" replace />} />
           <Route path="ontology/graph" element={<Navigate to="/ontology?tab=graph" replace />} />
           <Route path="ontology/relationship-types" element={<Navigate to="/ontology?tab=relationship-types" replace />} />
@@ -289,6 +323,7 @@ function AppRoutes() {
             <Route path="debugger" element={<McpDebuggerPage />} />
             <Route path="ide-config" element={<McpIdeConfigPage />} />
             {/* MCP 服务（协议层） */}
+            <Route path="server" element={<Navigate to="/mcp/servers" replace />} />
             <Route path="servers" element={<McpServerPage />} />
             <Route path="servers/:id" element={<McpServerDetailPage />} />
             <Route path="clients" element={<McpClientPage />} />

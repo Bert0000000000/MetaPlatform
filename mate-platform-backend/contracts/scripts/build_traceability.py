@@ -26,7 +26,12 @@ def build()->None:
     if method not in METHODS: continue
     status=op["x-mate-implementation-status"]
     for req in op["x-mate-requirements"]:
-     requirements[req]={"prd":prd_for(domain),"service":domain,"operationIds":[op["operationId"]],"handler":f'{item["runtimeModule"]}#{op["operationId"]}' if status=="implemented" and item.get("runtimeModule") else None,"tests":["mate-platform-backend/contracts/tests/test_runtime_comparison.py"] if status=="implemented" else [],"implementationStatus":status,"acceptanceStatus":"notAccepted"}
+     requirement=requirements.setdefault(req,{"prd":prd_for(domain),"service":domain,"operationIds":[],"handler":None,"tests":[],"implementationStatus":status,"acceptanceStatus":"notAccepted"})
+     if op["operationId"] not in requirement["operationIds"]:
+      requirement["operationIds"].append(op["operationId"])
+     if status=="implemented" and item.get("runtimeModule"):
+      requirement["handler"]=f'{item["runtimeModule"]}#{op["operationId"]}'
+      requirement["tests"]=["mate-platform-backend/contracts/tests/test_runtime_comparison.py"]
  out={"version":1,"requirements":dict(sorted(requirements.items()))}
  target=WORKSPACE/"docs/active/delivery/REQUIREMENT-MATRIX.yaml"; target.parent.mkdir(parents=True,exist_ok=True); target.write_text(yaml.safe_dump(out,sort_keys=False,allow_unicode=True),encoding="utf-8")
 if __name__=="__main__":build()

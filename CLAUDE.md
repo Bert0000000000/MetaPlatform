@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-17（**MP-COMP-01 + ADR-0043 战略升格** — `mate_platform/composition` 内核 674 行零依赖（revertible effects + reactive coeffects + 惰性 fiber），四条形式化不变量 I1-I4 共 19 tests 绿；orchestrator 能力反应式试点（capability fiber + dispatch overlay + lifespan，裸 TestClient 回退逐字节一致），9 试点 tests；ADR-0043 把内核升格为平台集成层 OS，下设四大面向 Batch 占位：MP-EMP-EVOLVE-01 / MP-MKT-INSTALL-01 / MP-ACTION-CONFIRM-01 / MP-INTEGRATION-HUB-01；board §6.5 + §6.6 + `evidence/MP-COMP-01-ACCEPTANCE.md`）；上一版 2026-08-10（GOVERN-10 收口）
+> **最近更新**：2026-08-25（ADR-0061 Temporal Workflow 架构同步）；上一版 2026-08-17（MP-COMP-01 + ADR-0043 战略升格）
 >
-> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**；**v3.1** Ontology / 数字员工 / SuperAI 子计划 20/20 Batch Accepted；**v4** RUNTIME 路线 5/5 Batch Accepted
+> **当前架构版本**：**v3.0 GA + v3.1/v4 增量**；ADR-0061 已接受 **Temporal 作为业务 Workflow 可靠编排控制面**，PlanRunner 为 DSL 翻译层；Sprint 1A 迁移尚未完成，Flowable 仅作为双轨期 legacy
 >
 > **架构治理路线（2026-08-10 GOVERN-10 完结）**：`docs/active/governance/HARD-RULES-MATRIX.md` + `docs/active/governance/FOLLOW-UP-BOARD.md` + 计划文件 `cozy-orbiting-wombat.md`。**10/10 治理批次（GOVERN-01~10）全部完结**，13 硬规则状态 9 ✅ / 2 🟡 / 0 ⏳ / 0 🔧。67 个未收口测试失败入 FOLLOW-UP-BOARD（A: OpenAPI parity 40 / B: MCP PG 15 / C: copilot 10 / D: llmgw 3）。详见 §"13 硬规则 × CI 矩阵"。
 
@@ -34,6 +34,8 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 
 - 主架构（实施版）：`docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md` ⭐ THE ONE DOC
 - 技术栈定稿：`docs/active/specs/2026-07-27-mate-platform-tech-stack-confirmed.md`
+- Workflow 决策：`docs/active/decisions/ADR-0061-temporal-as-workflow-engine.md`
+- Workflow 迁移：`docs/active/V1.0-RELEASE-PLAN.md` §2.2 Sprint 1A
 - 交付版本计划：`docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md`
 - 13 硬规则设计：`docs/active/specs/2026-07-30-backend-production-readiness-design.md`
 - 8 个 ACCEPTANCE.md：`docs/active/delivery/evidence/`
@@ -50,14 +52,16 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 
 ### 核心能力
 - **Ontology 本体引擎**：统一语义建模与推理
-- **低代码应用构建**：BPMN 审批流（Flowable 8.0）+ AI Agent 编排流（LangGraph）
+- **低代码应用构建**：FlowGram/PlanSpec 可视化与 DSL + Temporal 可靠执行；LangGraph/AgentLoop 保留内部推理
 - **数字员工**：AI 驱动的自动化
 - **企业级 RAG**：RAGFlow + LightRAG + LLM Gateway
 - **MCP / A2A 协议**：对接外部 AI 工具与 Agent 系统
 
 ## v3.0 架构基线（一句话）
 
-**Python 主后端（业务）+ Java 外部引擎（Keycloak/Flowable/Drools 作为成熟产品）+ Python AI 服务 + 完整 docker-compose 基础设施栈。**
+**Python 主后端（业务）+ Temporal 可靠编排控制面 + 专用执行引擎/AI 服务 + 多语言基础设施栈。Temporal 编排跨服务流程，但不替代 CRUD、Kafka/Outbox、Flink/Airflow、AgentLoop、规则引擎或 K8s 沙箱。**
+
+> **实现状态边界**：ADR-0061 是已接受的目标架构；当前代码与 Compose 中仍存在 Flowable/PlanRunner legacy 路径。新增 Workflow 设计以主架构 §1.3 为准，迁移完成前不得删除 legacy 回滚能力，也不得宣称 Temporal 已上线。
 
 ### 服务全景（30+ 服务）
 

@@ -437,6 +437,11 @@ services:
       LEGACY_LOGIN_COMPAT: "true"
       INSECURE_SKIP_SIGNATURE: "true"
       KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-metaplatform}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-metaplatform-backend}
+      SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      SERVICE_CLIENT_SCOPE: ${AGENT_SERVICE_SCOPE:-openid}
       RAG_URL: http://mate-tech-rag:8001
       AGENT_PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_agent
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
@@ -1076,12 +1081,24 @@ services:
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      KC_DB: dev-mem   # dev 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮村Δ鈧禍鎯ь渻閵堝簼绨婚柛鐔告綑閻ｇ柉銇愰幒婵囨櫔闂佸憡渚楅崹鐗堟叏濞差亝鈷掑ù锝勮濞兼帡鏌涢弴鐐典粵闁伙絽澧庣槐鎾存媴閹绘帊澹曞┑鐘灱濞夋稒寰勯崶顒€纾婚柟鎹愵嚙缁€鍌氼熆鐠虹尨姊楀瑙勬礋濮婄粯鎷呴崨濠傛殘濠电偠顕滅粻鎾崇暦閹寸偛绶為柟閭﹀墯濡差剟姊虹紒妯哄闁稿簺鍊濋幃锟犳偄閻撳海顔愰柡澶婄墕婢х晫绮欐繝姘厸闁糕€崇箲濞呭洭鏌ｉ妷顔婚偗妞ゃ垺锕㈤幃娆撴濞戞艾骞楅梺?DB, 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾瑜版帒纾块柟瀵稿У閸犳劙鏌ｅΔ鈧悧鍡欑箔閹烘鐓曢柕濞垮劚閳ь剚鎮傞崺鐐哄箣閿旇棄浜归柣搴℃贡婵挳藟濠靛牏纾藉ù锝囨嚀婵牊銇勯妸銉уⅵ闁糕斁鍋撳銈嗗坊閸嬫挾绱掗悩鑼х€规洘娲熷畷锟犳倷瀹ュ棛娲存い銏★耿閹瑩鍩￠崒婊€绨存繝鐢靛仜椤曨厽鎱ㄩ幘顕呮晞闁糕剝绋掗崑鍌炴煛閸ャ儱鐏柣鎾崇箰椤潡鎳滃妤婁邯瀵鈽夊鍡欏數閻熸粍绮撳畷鏉款潩鏉堫煈娼?postgres
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-meta}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-meta}
       KC_HEALTH_ENABLED: "true"
     ports:
       - "${KEYCLOAK_PORT:-8180}:8080"
     volumes:
       - ./infra/keycloak/realm-mate.json:/opt/keycloak/data/import/realm-mate.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; grep -q \"200\" <&3'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   # ===========================================================================
   # 7. 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰亜閺冨倹鍤€濞存粓绠栭弻娑㈠箛闂堟稒鐏堥梻浣稿船濞差參寮婚敐澶婄睄闁稿被鍊楅崝鎼佹倵濞堝灝鏋涙繛纭风節楠炲啫螖閸愨晛鏋傞梺鍛婃处閸撴盯藝閵夈儮鏀介柣鎰皺濠€鎾煕閺傛寧鎹ｉ柛鎺撳浮瀹曞ジ鎮㈤搹鍦闂備焦鎮堕崕顖炲礉鎼淬劌鍌ㄩ柛妤冨亹閺€浠嬫煟閹邦厽缍戦柣蹇嬪劤閳ь剝顫夊ú锕傚礈閻旂厧绠栨慨妞诲亾闁轰焦鍔栧鍕偓锝庡墮楠炴淇婇悙顏勨偓鏍箰妤ｅ啫绐楅幖娣妼娴肩姵绻涘顔荤凹闁绘挻绋撻埀顒€鍘滈崑鎾绘倵閿濆骸澧扮悮锔戒繆閵堝洤啸闁稿鐩、鏍ㄥ緞閹邦剛鐣哄┑鐐叉閹告悂鐛姀鈥茬箚妞ゆ牗绻冮鐘裁归悩鍝勪汗缂佽鲸鎸荤粭鐔煎炊瑜庨悘鏇烆渻閵堝棙鑲犻柛銉戝懎寮ㄥ┑鐘灱閸╂牠宕濋弴顫稏闁告稑鐡ㄩ悡銉︾箾閹寸伝顏堫敂閳哄偆娈介柣鎰皺婢э附鎱ㄦ繝鍕笡闁瑰嘲鎳樺畷銊︾節閸愩劌澹嶉梻鍌欒兌椤牓鏁冮敐鍥у灊婵炲棙鍔掔换鍡涙煙缂併垹鏋涢柣鎺戠仛閵囧嫰骞掗幋婵愪痪闂佺粯鎸诲ú鐔煎箖濡ゅ懏鏅查幖绮光偓鑼嚬闂佽绻愮换鎺楀极閸濄儲顫曢柟鐑橆殢閺佸﹪鏌ｉ幇闈涘婵絽鐗撻幃妤冩喆閸曨剛顦梺绋跨箲閿曘垽濡存担鍓叉建闁逞屽墴楠炲啫顭ㄩ崼婵嗚€垮┑?(闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴鐔虹瘈闁汇垽娼у瓭闂佹寧娲忛崐妤呭焵椤掍礁鍤柛锝忕秮婵℃挳宕ㄩ弶鎴犵厬婵犮垼娉涢惉濂告儊閸喓绡€闁汇垽娼у瓭闂佺锕︾划顖炲疾鐠鸿　妲堥柕蹇ョ磿閸橀亶鏌ｆ惔顖滃埌闁告埃鍋撻梻渚囧弾閸ㄥ爼寮婚敍鍕勃闁告挆鍕灡闁诲孩顔栭崰妤呭箰閾忣偂绻嗛柟闂寸鍞悷婊冪焸閹姤绻濆顓涙嫽? 闂?services/api-gateway/, services/auth-service/)
@@ -1285,7 +1302,7 @@ services:
       postgres:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8101/healthz || exit 1"]
       interval: 15s

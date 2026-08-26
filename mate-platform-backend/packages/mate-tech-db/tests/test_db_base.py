@@ -84,6 +84,18 @@ def test_default_dsn_is_sqlite() -> None:
     assert "sqlite" in str(engine.url)
 
 
+def test_blank_env_dsn_is_treated_as_unconfigured() -> None:
+    """Compose's explicit empty DB variables must keep the dev fallback."""
+    os.environ["MATE_DB_URL"] = ""
+    os.environ["DATABASE_URL"] = "   "
+    try:
+        engine = init_engine()
+        assert "sqlite" in str(engine.url)
+    finally:
+        os.environ.pop("MATE_DB_URL", None)
+        os.environ.pop("DATABASE_URL", None)
+
+
 def test_env_dsn_takes_priority() -> None:
     """MATE_DB_URL env var overrides the default SQLite."""
     os.environ["MATE_DB_URL"] = "sqlite:///./test_priority.db"

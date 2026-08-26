@@ -107,8 +107,10 @@ function consumeDesignerImport(): { type: string; content: string } | null {
   }
 }
 
-export default function FlowDesignerPage() {
-  const { appId, moduleId } = useParams<{ appId: string; moduleId: string }>();
+export default function FlowDesignerPage({ appId: appIdProp, moduleId: moduleIdProp }: { appId?: string; moduleId?: string } = {}) {
+  const { appId: routeAppId, moduleId: routeModuleId } = useParams<{ appId: string; moduleId: string }>();
+  const appId = appIdProp || routeAppId;
+  const moduleId = moduleIdProp || routeModuleId;
   const navigate = useNavigate();
   const [module, setModule] = useState<ModuleItem | null>(null);
   const [config, setConfig] = useState<FlowConfig>({ name: '', description: '', nodes: [], edges: [] });

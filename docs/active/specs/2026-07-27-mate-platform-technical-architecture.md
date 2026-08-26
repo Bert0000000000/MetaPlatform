@@ -8,12 +8,14 @@
 >
 > 仅作为决策追溯保留。实施请参考新版文档。
 
+> **2026-08-25 Workflow 覆盖说明**：ADR-0061 已接受 Temporal 作为业务 Workflow 的可靠编排控制面，PlanRunner 退化为 LLM-friendly DSL 翻译层；本文所有“Flowable 是主 Workflow 引擎”的描述仅代表旧基线/迁移期 legacy，不再指导新增流程。Temporal 迁移仍处 Sprint 1A `Not Started`，当前实现事实请与实施版主架构 §1.3、附录 B 和 `V1.0-RELEASE-PLAN.md` 对照阅读。
 
-> **版本**：v3.0 | **日期**：2026-07-27 | **状态**：正式主架构（THE ONE DOC）
+
+> **版本**：v3.0 | **日期**：2026-07-27 | **状态**：决策归档（Workflow 章节已被 ADR-0061 覆盖）
 >
 > **核心突破**：抛弃"Java 主力 vs Python AI"的二元选择，采用**"Polyglot Microservice Architecture"（多语言微服务架构）**——**�a�言只是实现细节，业务按需选最佳技术**。
 >
-> **本文件状态**：Mate Platform **正式主架构（THE ONE DOC）**
+> **本文件状态**：保留 v3.0 Plan D 的决策背景、模式说明与迁移历史。当前 **THE ONE DOC** 为 `2026-07-27-mate-platform-architecture-implementation.md`。
 >
 > **历史文档**（已归档，供决策追溯）：
 > - v2.1 主架构：`archive/2026-07-27-mate-platform-technical-architecture-v2.1.md（Java 主力 + Python AI）

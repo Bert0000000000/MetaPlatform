@@ -13,21 +13,10 @@ attack surface listed in ``evidence/GOVERN-06-SUBSPEC.md §06-03``:
   T7. tenant_scope("acme") 内 SELECT 其他租户的 row → 0 行（USING 拦截）
   T8. tenant_scope("acme") 内 UPDATE 别人 row → 0 行受影响（WITH CHECK 拦截）
 
-Skipped entirely if PG is not reachable — same pattern as
-``tests/integration/test_function_apply_e2e.py``.
-
-**IMPORTANT** — PG role requirement: this suite ASSUMES the connection
-role is NOT a superuser / NOT BYPASSRLS. The default docker-compose
-``mate-postgres`` setup creates ``meta`` as superuser (initdb default);
-that role legitimately bypasses ``FORCE ROW LEVEL SECURITY``. To make
-these tests green, run as a non-superuser role or start PG with::
-
-    ALTER ROLE meta NOSUPERUSER NOBYPASSRLS;
-
-GOVERN-09 (Helm + NetworkPolicy + OTel) will fold this into the
-production Helm chart as part of the ``postgresql.existingSecret``
-provisioning. Until then, the test environment marks this suite as
-skip-able via ``--runxfail`` override.
+Skipped only if PostgreSQL is not reachable — the local and CI entrypoint
+``scripts/ci/verify_ont_rls.sh`` provisions the dedicated non-superuser role
+and database before collection. A privileged role is still rejected so a
+passing run always proves PostgreSQL RLS rather than superuser bypass.
 """
 from __future__ import annotations
 
@@ -37,7 +26,8 @@ from datetime import UTC, datetime
 import pytest
 
 PG_DSN = os.getenv(
-    "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test"
+    "PG_DSN",
+    "postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test",
 )
 
 KERNEL01_V2_TABLES_FOR_TESTS: tuple[str, ...] = (
@@ -115,8 +105,8 @@ def _clean_pg(pg_repo: object) -> None:
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:
-            for t in KERNEL01_V2_TABLES_FOR_TESTS:
-                cur.execute(f"DELETE FROM {t}")  # noqa: S608
+            tables = ", ".join(KERNEL01_V2_TABLES_FOR_TESTS)
+            cur.execute(f"TRUNCATE TABLE {tables}")  # noqa: S608
         conn.commit()
     finally:
         conn.close()
@@ -134,25 +124,26 @@ def _seed_ind_raw(repo: object, iid: str, tenant: str) -> None:
     so the RLS layer has something to deny.
     """
 
-    conn, _ = repo._connect()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO ont_individual "
-                "(rid, tenant_id, class_rid, props, primary_key, created_at, updated_at) "
-                "VALUES (%s, %s, %s, %s::jsonb, %s, now(), now()) "
-                "ON CONFLICT (rid) DO UPDATE SET tenant_id = EXCLUDED.tenant_id",
-                (
-                    iid,
-                    tenant,
-                    f"ont.{tenant}.obj.po.v1",
-                    "{}",
-                    iid.rsplit(".", maxsplit=1)[-1],
-                ),
-            )
-        conn.commit()
-    finally:
-        conn.close()
+    with repo.tenant_scope(tenant):
+        conn, _ = repo._connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO ont_individual "
+                    "(rid, tenant_id, class_rid, props, primary_key, created_at, updated_at) "
+                    "VALUES (%s, %s, %s, %s::jsonb, %s, now(), now()) "
+                    "ON CONFLICT (rid) DO UPDATE SET tenant_id = EXCLUDED.tenant_id",
+                    (
+                        iid,
+                        tenant,
+                        f"ont.{tenant}.obj.po.v1",
+                        "{}",
+                        iid.rsplit(".", maxsplit=1)[-1],
+                    ),
+                )
+            conn.commit()
+        finally:
+            conn.close()
 
 
 # ─────────────────────────── tests ───────────────────────────
@@ -277,8 +268,8 @@ def test_t5_link_instance_cross_tenant_blocked(pg_repo: object) -> None:
     from mate_kernel.ontology.instances import LinkInstance  # noqa: PLC0415
 
     li = LinkInstance(
-        rid="ont.acme.li.0",
-        link_type_rid=ClassRef("ont.acme.lt.rel.v1"),
+        rid="ont.other.lnk.rel.0",
+        link_type_rid=ClassRef("ont.acme.link.rel.v1"),
         src="ont.other.ind.po.0",
         dst="ont.acme.ind.po.0",
         props={},
@@ -311,8 +302,12 @@ def test_t6_write_with_wrong_tenant_id_blocked_by_with_check(pg_repo: object) ->
         primary_key="0",
         created_at=_now(),
         updated_at=_now(),
-        tenant_id="other",  # 故意与 rid.tenant 不一致
+        tenant_id="acme",
     )
+    # Domain validation correctly rejects this mismatch at construction time;
+    # bypass it only after construction so the database WITH CHECK policy is
+    # tested with a deliberately malformed row as intended by T6.
+    object.__setattr__(ind, "tenant_id", "other")
     with pg_repo.tenant_scope("acme") as repo:
         from psycopg2 import errors as pg_errors  # noqa: PLC0415
 
@@ -321,11 +316,11 @@ def test_t6_write_with_wrong_tenant_id_blocked_by_with_check(pg_repo: object) ->
 
 
 def test_t7_select_other_tenant_rows_returns_empty(pg_repo: object) -> None:
-    """T7: tenant_scope("acme") 内 SELECT 别人的 row — USING 拦截 → None。"""
+    """T7: tenant_scope("acme") 内 SELECT 别人的 row — USING 拦截 → 404 语义。"""
     _seed_ind_raw(pg_repo, "ont.other.ind.po.0", "other")
     with pg_repo.tenant_scope("acme") as repo:
-        got = repo.get_individual("ont.other.ind.po.0")
-    assert got is None
+        with pytest.raises(KeyError, match="Individual not found"):
+            repo.get_individual("ont.other.ind.po.0")
 
 
 def test_t8_update_other_tenant_row_touches_zero(pg_repo: object) -> None:

@@ -5,18 +5,60 @@ requirements:
     service: a2a
     operationIds:
     - a2aGetA2aAgentCardsSearch
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_a2a.main:app#a2aGetA2aAgentCardsSearch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-A2A-A2AGETA2ADELEGATIONS:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: a2a
     operationIds:
     - a2aGetA2aDelegations
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_a2a.main:app#a2aGetA2aDelegations
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-A2A-A2AGETA2AHEALTH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: a2a
+    operationIds:
+    - a2aGetA2aHealth
+    handler: mate_app_a2a.main:app#a2aGetA2aHealth
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-A2A-A2AGETA2ATASK:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: a2a
+    operationIds:
+    - a2aGetA2aTask
+    handler: mate_app_a2a.main:app#a2aGetA2aTask
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-A2A-A2APOSTA2ADELEGATE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: a2a
+    operationIds:
+    - a2aPostA2aDelegate
+    handler: mate_app_a2a.main:app#a2aPostA2aDelegate
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-A2A-A2APOSTA2AMESSAGES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: a2a
+    operationIds:
+    - a2aPostA2aMessages
+    handler: mate_app_a2a.main:app#a2aPostA2aMessages
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-AGENT-AGENTDELETEAGENTSTATETHREADID:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
@@ -63,626 +105,826 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-APP-HUB:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubGroups
+    - apphubDeleteApphubGroupsCode
+    handler: mate_app_hub.main:app#apphubDeleteApphubGroupsCode
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBDELETEAPPHUBAPPSCODE:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubDeleteApphubAppsCode
+    handler: mate_app_hub.main:app#apphubDeleteApphubAppsCode
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-APPHUB-APPHUBGETAPPHUBAPPS:
     prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
     service: apphub
     operationIds:
     - apphubGetApphubApps
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_hub.main:app#apphubGetApphubApps
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-APPHUB-APPHUBGETAPPHUBAPPSGROUPS:
     prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
     service: apphub
     operationIds:
     - apphubGetApphubAppsGroups
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_hub.main:app#apphubGetApphubAppsGroups
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-APPHUB-APPHUBGETAPPHUBMODULES:
     prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
     service: apphub
     operationIds:
     - apphubGetApphubModules
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_hub.main:app#apphubGetApphubModules
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-APPHUB-APPHUBGETAPPHUBPAGES:
     prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
     service: apphub
     operationIds:
     - apphubGetApphubPages
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_hub.main:app#apphubGetApphubPages
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-APPHUB-APPHUBGETAPPHUBTEMPLATES:
     prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
     service: apphub
     operationIds:
     - apphubGetApphubTemplates
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_hub.main:app#apphubGetApphubTemplates
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPATCHAPPHUBAPPSCODE:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPatchApphubAppsCode
+    handler: mate_app_hub.main:app#apphubPatchApphubAppsCode
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBAPPS:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubApps
+    handler: mate_app_hub.main:app#apphubPostApphubApps
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBMODULES:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubModules
+    handler: mate_app_hub.main:app#apphubPostApphubModules
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBPAGES:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubPages
+    handler: mate_app_hub.main:app#apphubPostApphubPages
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBPOSTAPPHUBTEMPLATES:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostApphubTemplates
+    handler: mate_app_hub.main:app#apphubPostApphubTemplates
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-RUNTIME-001:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetAppRuntime
+    handler: mate_app_hub.main:app#apphubGetAppRuntime
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-RUNTIME-002:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostAppRuntimeExecute
+    handler: mate_app_hub.main:app#apphubPostAppRuntimeExecute
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-RUNTIME-003:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostAppPublish
+    handler: mate_app_hub.main:app#apphubPostAppPublish
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-RUNTIME-004:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetShortlink
+    handler: mate_app_hub.main:app#apphubGetShortlink
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-RUNTIME-005:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubPostShortlink
+    handler: mate_app_hub.main:app#apphubPostShortlink
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-APPHUB-RUNTIME-006:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubListShortlinks
+    handler: mate_app_hub.main:app#apphubListShortlinks
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHAPPLICATIONS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchApplications
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchApplications
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHBUSINESSPROCESSES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchBusinessProcesses
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchBusinessProcesses
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHCAPABILITIES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchCapabilities
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchCapabilities
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHCAPABILITIESTREE:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchCapabilitiesTree
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchCapabilitiesTree
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchCapabilityMappings
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchCapabilityMappings
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHDATAASSETS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchDataAssets
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchDataAssets
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHDATAASSETSCATALOG:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchDataAssetsCatalog
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchDataAssetsCatalog
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHDATADOMAINS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchDataDomains
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchDataDomains
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHDATAENTITIES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchDataEntities
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchDataEntities
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHDATAFLOWS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchDataFlows
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchDataFlows
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHDATASTANDARDS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchDataStandards
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchDataStandards
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHDEPLOYMENTS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchDeployments
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchDeployments
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLECATEGORIES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchGovernancePrincipleCategories
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchGovernancePrincipleCategories
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchGovernancePrinciples
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchGovernancePrinciples
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTEMPLATES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchGovernanceReviewTemplates
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchGovernanceReviewTemplates
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTICKETS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchGovernanceReviewTickets
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchGovernanceReviewTickets
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHGOVERNANCETECHDEBTS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchGovernanceTechDebts
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchGovernanceTechDebts
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHIMPACTANALYSIS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchImpactAnalysis
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchImpactAnalysis
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHINFRASTRUCTURES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchInfrastructures
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchInfrastructures
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSCHANGES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchOntologyMappingsChanges
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchOntologyMappingsChanges
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSRULES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchOntologyMappingsRules
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchOntologyMappingsRules
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHORGS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchOrgs
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchOrgs
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHORGSTREE:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchOrgsTree
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchOrgsTree
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHROLES:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchRoles
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchRoles
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHTECHNOLOGYCOMPONENTS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchTechnologyComponents
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchTechnologyComponents
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHTECHNOLOGYRADAR:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchTechnologyRadar
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchTechnologyRadar
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHTECHNOLOGYSTACKS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchTechnologyStacks
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchTechnologyStacks
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHTECHSTACKS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchTechStacks
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchTechStacks
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ARCH-ARCHGETARCHVALUESTREAMS:
     prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
     service: arch
     operationIds:
     - archGetArchValueStreams
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_arch.main:app#archGetArchValueStreams
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOT:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilot
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilot
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTA2AEXTERNAL:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotA2aExternal
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotA2aExternal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTACTIONS:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotActions
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotActions
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTANALYSISEXPLAINSQL:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotAnalysisExplainSql
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotAnalysisExplainSql
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTCODE:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotCode
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotCode
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTCONVERSATIONS:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotConversations
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotConversations
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTDATASOURCES:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotDatasources
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotDatasources
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotGenerateProcess
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotGenerateProcess
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTKNOWLEDGEBASES:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotKnowledgeBases
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotKnowledgeBases
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTMODELSMULTIMODAL:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotModelsMultimodal
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotModelsMultimodal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTONTOLOGYCONCEPTSSEARCH:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotOntologyConceptsSearch
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotOntologyConceptsSearch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHEXPAND:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotOntologyGraphExpand
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotOntologyGraphExpand
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHQUERY:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotOntologyGraphQuery
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotOntologyGraphQuery
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTPLANS:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotPlans
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotPlans
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTQUERIESHISTORY:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotQueriesHistory
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotQueriesHistory
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGEMPLOYEESMATCH:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotSchedulingEmployeesMatch
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotSchedulingEmployeesMatch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGINTENTS:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotSchedulingIntents
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotSchedulingIntents
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotSchedulingTemplates
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotSchedulingTemplates
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTSEARCH:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotGetCopilotSearch
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotGetCopilotSearch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTA2ADELEGATE:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotA2aDelegate
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotA2aDelegate
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotActionsExecute
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotActionsExecute
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotActionsMatch
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotActionsMatch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTANALYSISAUDITSQL:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotAnalysisAuditSql
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotAnalysisAuditSql
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTANALYSISEXECUTESQL:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotAnalysisExecuteSql
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotAnalysisExecuteSql
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTANALYSISGENERATESQL:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotAnalysisGenerateSql
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotAnalysisGenerateSql
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTAUTHLOGIN:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotAuthLogin
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotAuthLogin
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTCHATMULTIMODALUPLOAD:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotChatMultimodalUpload
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotChatMultimodalUpload
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTGENERATEDASHBOARD:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotGenerateDashboard
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotGenerateDashboard
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTGENERATEEXPLAINCODE:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotGenerateExplainCode
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotGenerateExplainCode
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTGENERATEFORM:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotGenerateForm
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotGenerateForm
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTGENERATEREVIEWCODE:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotGenerateReviewCode
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotGenerateReviewCode
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTQUERIESEXECUTE:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotQueriesExecute
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotQueriesExecute
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGEXECUTIONSTART:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotSchedulingExecutionStart
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotSchedulingExecutionStart
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGINTENTDETECT:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotSchedulingIntentDetect
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotSchedulingIntentDetect
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGPLANGENERATE:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot
     operationIds:
     - copilotPostCopilotSchedulingPlanGenerate
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_copilot.main:app#copilotPostCopilotSchedulingPlanGenerate
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DASHBOARD-DASHBOARDDELETEDASHBOARDANOMALYRULESRULEID:
     prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
@@ -995,18 +1237,20 @@ requirements:
     service: data
     operationIds:
     - dataDeleteDataCdcTasksId
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataDeleteDataCdcTasksId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATADELETEDATASOURCESID:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataDeleteDataSourcesId
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataDeleteDataSourcesId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATADELETEETLTASKSID:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -1040,54 +1284,60 @@ requirements:
     service: data
     operationIds:
     - dataGetDataCdcTasks
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataGetDataCdcTasks
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAGETDATACDCTASKSID:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataGetDataCdcTasksId
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataGetDataCdcTasksId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAGETDATACDCTASKSIDSTATUS:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataGetDataCdcTasksIdStatus
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataGetDataCdcTasksIdStatus
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAGETDATASOURCES:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataGetDataSources
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataGetDataSources
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAGETDATASOURCESID:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataGetDataSourcesId
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataGetDataSourcesId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAGETDATASOURCESIDSCHEMA:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataGetDataSourcesIdSchema
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataGetDataSourcesIdSchema
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAGETETLTASKS:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -1184,45 +1434,50 @@ requirements:
     service: data
     operationIds:
     - dataPostDataCdcTasks
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataPostDataCdcTasks
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataPostDataCdcTasksIdPause
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataPostDataCdcTasksIdPause
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAPOSTDATACDCTASKSIDRESUME:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataPostDataCdcTasksIdResume
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataPostDataCdcTasksIdResume
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAPOSTDATASOURCES:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataPostDataSources
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataPostDataSources
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAPOSTDATASOURCESIDTEST:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataPostDataSourcesIdTest
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataPostDataSourcesIdTest
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAPOSTETLTASKS:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -1301,18 +1556,20 @@ requirements:
     service: data
     operationIds:
     - dataPutDataCdcTasksId
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataPutDataCdcTasksId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAPUTDATASOURCESID:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: data
     operationIds:
     - dataPutDataSourcesId
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_data.main:app#dataPutDataSourcesId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DATA-DATAPUTETLTASKSID:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -1341,140 +1598,164 @@ requirements:
     tests: []
     implementationStatus: planned
     acceptanceStatus: notAccepted
+  FR-DEEP-RESEARCH-INVOKE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: deep-research
+    operationIds:
+    - deepResearchInvokeDeepResearch
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
   FR-DW-DWGETDWAUTHLOGIN:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwAuthLogin
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwAuthLogin
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWCOLLABORATIONS:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwCollaborations
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwCollaborations
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWCOMMIT:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwCommit
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwCommit
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWDOCUMENTS:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwDocuments
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwDocuments
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWEMPLOYEES:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwEmployees
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwEmployees
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWEMPLOYEESTASKS:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwEmployeesTasks
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwEmployeesTasks
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWEVALUATIONS:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwEvaluations
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwEvaluations
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWEXTRACT:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwExtract
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwExtract
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWKNOWLEDGEBASES:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwKnowledgeBases
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwKnowledgeBases
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWLEARNINGEXTRACT:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwLearningExtract
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwLearningExtract
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWLEARNINGFEEDBACK:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwLearningFeedback
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwLearningFeedback
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWMODELS:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwModels
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwModels
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWTOOLS:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwTools
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwTools
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWGETDWTRACES:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwGetDwTraces
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwGetDwTraces
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-DW-DWPOSTDWDOCUMENTSUPLOAD:
     prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
     service: dw
     operationIds:
     - dwPostDwDocumentsUpload
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_tech_dw.main:app#dwPostDwDocumentsUpload
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-IAM-IAMDELETEADMINORGSORGID:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -1931,6 +2212,16 @@ requirements:
     - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-LLMGW-LLMGWPOSTCHATMULTIMODAL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: llmgw
+    operationIds:
+    - llmgwPostChatMultimodal
+    handler: mate_tech_llmgw.main:app#llmgwPostChatMultimodal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-LLMGW-LLMGWPOSTLLMGWCHAT:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: llmgw
@@ -1959,113 +2250,215 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-MCP-FEDERATION-DELETE:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpDeleteMcpFederationServersServerId
+    handler: mate_tech_mcp.main:app#mcpDeleteMcpFederationServersServerId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-FEDERATION-GET:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpFederationServersServerId
+    handler: mate_tech_mcp.main:app#mcpGetMcpFederationServersServerId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-FEDERATION-INVOKE:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpFederationToolsToolNameInvoke
+    handler: mate_tech_mcp.main:app#mcpPostMcpFederationToolsToolNameInvoke
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-FEDERATION-LIST:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpFederationServers
+    handler: mate_tech_mcp.main:app#mcpGetMcpFederationServers
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-FEDERATION-REGISTER:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpFederationServers
+    handler: mate_tech_mcp.main:app#mcpPostMcpFederationServers
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-FEDERATION-TOOLS:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpFederationTools
+    handler: mate_tech_mcp.main:app#mcpGetMcpFederationTools
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-FEDERATION-UPDATE:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPutMcpFederationServersServerId
+    handler: mate_tech_mcp.main:app#mcpPutMcpFederationServersServerId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPDELETEMCPTOOLCATEGORY:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpDeleteMcpToolCategory
+    handler: mate_tech_mcp.main:app#mcpDeleteMcpToolCategory
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPDELETEMCPTOOLSNAME:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpDeleteMcpToolsName
+    handler: mate_tech_mcp.main:app#mcpDeleteMcpToolsName
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-MCP-MCPGETMCPPROMPTS:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
     - mcpGetMcpPrompts
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    handler: mate_tech_mcp.main:app#mcpGetMcpPrompts
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-MCP-MCPGETMCPRESOURCES:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
     - mcpGetMcpResources
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    handler: mate_tech_mcp.main:app#mcpGetMcpResources
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPGETMCPTOOLCATEGORIES:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpToolCategories
+    handler: mate_tech_mcp.main:app#mcpGetMcpToolCategories
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-MCP-MCPGETMCPTOOLS:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
     - mcpGetMcpTools
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    handler: mate_tech_mcp.main:app#mcpGetMcpTools
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-MCP-MCPPOSTMCPPROMPTSNAME:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
     - mcpPostMcpPromptsName
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    handler: mate_tech_mcp.main:app#mcpPostMcpPromptsName
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPPOSTMCPTOOLCATEGORY:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpToolCategory
+    handler: mate_tech_mcp.main:app#mcpPostMcpToolCategory
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPPOSTMCPTOOLS:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpTools
+    handler: mate_tech_mcp.main:app#mcpPostMcpTools
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-MCP-MCPPOSTMCPTOOLSNAME:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
     - mcpPostMcpToolsName
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    handler: mate_tech_mcp.main:app#mcpPostMcpToolsName
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-MCP-MCPGETMCPFEDERATIONSERVERS:
+  FR-MCP-MCPPUTMCPTOOLCATEGORY:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
-    - mcpGetMcpFederationServers
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    - mcpPutMcpToolCategory
+    handler: mate_tech_mcp.main:app#mcpPutMcpToolCategory
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-MCP-MCPPOSTMCPFEDERATIONSERVERS:
+  FR-MCP-MCPPUTMCPTOOLSNAME:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
-    - mcpPostMcpFederationServers
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    - mcpPutMcpToolsName
+    handler: mate_tech_mcp.main:app#mcpPutMcpToolsName
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-MCP-MCPGETMCPFEDERATIONSERVERSSERVERID:
+  FR-MCP-PROTOCOL-GET:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
-    - mcpGetMcpFederationServersServerId
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    - mcpGetMcpProtocol
+    handler: mate_tech_mcp.main:app#mcpGetMcpProtocol
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-MCP-MCPPUTMCPFEDERATIONSERVERSSERVERID:
+  FR-MCP-PROTOCOL-POST:
     prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
     service: mcp
     operationIds:
-    - mcpPutMcpFederationServersServerId
-    handler: null
-    tests: []
-    implementationStatus: placeholder
-    acceptanceStatus: notAccepted
-  FR-MCP-MCPDELETEMCPFEDERATIONSERVERSSERVERID:
-    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
-    service: mcp
-    operationIds:
-    - mcpDeleteMcpFederationServersServerId
-    handler: null
-    tests: []
-    implementationStatus: placeholder
-    acceptanceStatus: notAccepted
-  FR-MCP-MCPGETMCPFEDERATIONTOOLS:
-    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
-    service: mcp
-    operationIds:
-    - mcpGetMcpFederationTools
-    handler: null
-    tests: []
-    implementationStatus: placeholder
-    acceptanceStatus: notAccepted
-  FR-MCP-MCPPOSTMCPFEDERATIONTOOLSTOOLNAMEINVOKE:
-    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
-    service: mcp
-    operationIds:
-    - mcpPostMcpFederationToolsToolNameInvoke
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    - mcpPostMcpProtocol
+    handler: mate_tech_mcp.main:app#mcpPostMcpProtocol
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-MSG-MSGGETMSGTOPICS:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -2149,6 +2542,246 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-APPENDOBJECTPROPERTY:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontAppendV2ObjectTypeProperty
+    handler: mate_tech_ont.main:app#ontAppendV2ObjectTypeProperty
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-APPLYACTIONTYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontApplyV2ActionType
+    handler: mate_tech_ont.main:app#ontApplyV2ActionType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATEACTIONTYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2ActionType
+    handler: mate_tech_ont.main:app#ontCreateV2ActionType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATEAXIOM:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2Axiom
+    handler: mate_tech_ont.main:app#ontCreateV2Axiom
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATEFUNCTION:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2Function
+    handler: mate_tech_ont.main:app#ontCreateV2Function
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATEINDIVIDUAL:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2Individual
+    handler: mate_tech_ont.main:app#ontCreateV2Individual
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATEINTERFACE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2Interface
+    handler: mate_tech_ont.main:app#ontCreateV2Interface
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATELINKINSTANCE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2LinkInstance
+    handler: mate_tech_ont.main:app#ontCreateV2LinkInstance
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATELINKTYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2LinkType
+    handler: mate_tech_ont.main:app#ontCreateV2LinkType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATEOBJECTTYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2ObjectType
+    handler: mate_tech_ont.main:app#ontCreateV2ObjectType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-CREATEVERSION:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontCreateV2Version
+    handler: mate_tech_ont.main:app#ontCreateV2Version
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-EVALUATEOBJECTSET:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontEvaluateV2ObjectSet
+    handler: mate_tech_ont.main:app#ontEvaluateV2ObjectSet
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-GETINDIVIDUAL:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetV2Individual
+    handler: mate_tech_ont.main:app#ontGetV2Individual
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-GETLINKTYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetV2LinkType
+    handler: mate_tech_ont.main:app#ontGetV2LinkType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-GETOBJECTTYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetV2ObjectType
+    handler: mate_tech_ont.main:app#ontGetV2ObjectType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTACTIONTYPES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2ActionTypes
+    handler: mate_tech_ont.main:app#ontListV2ActionTypes
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTAXIOMS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2Axioms
+    handler: mate_tech_ont.main:app#ontListV2Axioms
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTFUNCTIONS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2Functions
+    handler: mate_tech_ont.main:app#ontListV2Functions
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTINDIVIDUALS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2Individuals
+    handler: mate_tech_ont.main:app#ontListV2Individuals
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTINTERFACES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2Interfaces
+    handler: mate_tech_ont.main:app#ontListV2Interfaces
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTLINKINSTANCES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2LinkInstances
+    handler: mate_tech_ont.main:app#ontListV2LinkInstances
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTLINKTYPES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2LinkTypes
+    handler: mate_tech_ont.main:app#ontListV2LinkTypes
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTOBJECTTYPES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2ObjectTypes
+    handler: mate_tech_ont.main:app#ontListV2ObjectTypes
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-KERNEL01-LISTVERSIONS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2Versions
+    handler: mate_tech_ont.main:app#ontListV2Versions
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-ONT-ONTDELETEONTINSTANCESIID:
     prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
     service: ont
@@ -2157,6 +2790,16 @@ requirements:
     handler: null
     tests: []
     implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTGETFEDERATIONMAPPINGS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetFederationMappings
+    handler: mate_tech_ont.main:app#ontGetFederationMappings
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-ONT-ONTGETONTCLASSESCLASSID:
     prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
@@ -2201,6 +2844,26 @@ requirements:
     operationIds:
     - ontGetOntOntologiesOntologyId
     handler: mate_tech_ont.main:app#ontGetOntOntologiesOntologyId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTFEDERATIONMAPPINGS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostFederationMappings
+    handler: mate_tech_ont.main:app#ontPostFederationMappings
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTFEDERATIONQUERY:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostFederationQuery
+    handler: mate_tech_ont.main:app#ontPostFederationQuery
     tests:
     - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
@@ -2262,6 +2925,146 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-ONT-SAL01-AGENTTOOLS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontListV2AgentTools
+    handler: mate_tech_ont.main:app#ontListV2AgentTools
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL01-INSPECTCLASS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontInspectV2Class
+    handler: mate_tech_ont.main:app#ontInspectV2Class
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL01-OBJECTQUERY:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontExecuteV2ObjectQuery
+    handler: mate_tech_ont.main:app#ontExecuteV2ObjectQuery
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL02-OBJECTSEARCH:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontSearchV2Objects
+    handler: mate_tech_ont.main:app#ontSearchV2Objects
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL02-REINDEX:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontReindexV2ObjectSearch
+    handler: mate_tech_ont.main:app#ontReindexV2ObjectSearch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL04-CONFIRM:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontConfirmV2Proposal
+    handler: mate_tech_ont.main:app#ontConfirmV2Proposal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL04-GETPROPOSAL:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetV2Proposal
+    handler: mate_tech_ont.main:app#ontGetV2Proposal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL04-PROPOSE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontProposeV2ActionType
+    handler: mate_tech_ont.main:app#ontProposeV2ActionType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL04-REJECT:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontRejectV2Proposal
+    handler: mate_tech_ont.main:app#ontRejectV2Proposal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL04B-EXECUTE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontExecuteV2Proposal
+    handler: mate_tech_ont.main:app#ontExecuteV2Proposal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL04B-PROPOSEINSTANCE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontProposeV2Instance
+    handler: mate_tech_ont.main:app#ontProposeV2Instance
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL04B-PROPOSETYPE:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontProposeV2ObjectType
+    handler: mate_tech_ont.main:app#ontProposeV2ObjectType
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL05-GETFLOW:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetV2ActionFlow
+    handler: mate_tech_ont.main:app#ontGetV2ActionFlow
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-SAL05-PUTFLOW:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPutV2ActionFlow
+    handler: mate_tech_ont.main:app#ontPutV2ActionFlow
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-RAG-RAGGETRAGADMINPGSTATS:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: rag
@@ -2285,9 +3088,10 @@ requirements:
     service: rag
     operationIds:
     - ragGetRagStatus
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    handler: mate_tech_rag.api.app:app#ragGetRagStatus
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-RAG-RAGPOSTRAGINGEST:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -2312,9 +3116,10 @@ requirements:
     service: rag
     operationIds:
     - ragPostRagSearch
-    handler: null
-    tests: []
-    implementationStatus: placeholder
+    handler: mate_tech_rag.api.app:app#ragPostRagSearch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-RAG-RAGPOSTRAGUPLOAD:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
@@ -2330,65 +3135,22 @@ requirements:
     service: wfe
     operationIds:
     - wfeGetWfeFlowsValidate
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_wfe.main:app#wfeGetWfeFlowsValidate
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
   FR-WFE-WFEPOSTWFEFLOWSTEST:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: wfe
     operationIds:
     - wfePostWfeFlowsTest
-    handler: null
-    tests: []
-    implementationStatus: planned
+    handler: mate_app_wfe.main:app#wfePostWfeFlowsTest
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-MARKETPLACE-ACTIVATELICENSE:
-    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: marketplace
-    operationIds:
-    - activateLicense
-    handler: null
-    tests: []
-    implementationStatus: planned
-    acceptanceStatus: notAccepted
-  FR-MARKETPLACE-GETINSTALLSTATUS:
-    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: marketplace
-    operationIds:
-    - getInstallStatus
-    handler: null
-    tests: []
-    implementationStatus: planned
-    acceptanceStatus: notAccepted
-  FR-MARKETPLACE-GETMARKETPLACEARTIFACT:
-    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: marketplace
-    operationIds:
-    - getMarketplaceArtifact
-    handler: null
-    tests: []
-    implementationStatus: planned
-    acceptanceStatus: notAccepted
-  FR-MARKETPLACE-INSTALLARTIFACT:
-    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: marketplace
-    operationIds:
-    - installArtifact
-    handler: null
-    tests: []
-    implementationStatus: planned
-    acceptanceStatus: notAccepted
-  FR-MARKETPLACE-LISTINSTALLEDARTIFACTS:
-    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: marketplace
-    operationIds:
-    - listInstalledArtifacts
-    handler: null
-    tests: []
-    implementationStatus: planned
-    acceptanceStatus: notAccepted
-  FR-MARKETPLACE-LISTMARKETPLACEARTIFACTS:
+  MP-CONS-001:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: marketplace
     operationIds:
@@ -2397,7 +3159,63 @@ requirements:
     tests: []
     implementationStatus: planned
     acceptanceStatus: notAccepted
-  FR-MARKETPLACE-LISTSUBSCRIPTIONS:
+  MP-CONS-002:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - getMarketplaceArtifact
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  MP-CONS-003:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - listInstalledArtifacts
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  MP-CONS-004:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - installArtifact
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  MP-CONS-005:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - getInstallStatus
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  MP-CONS-006:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - uninstallArtifact
+    - retryInstall
+    - streamInstallEvents
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  MP-CONS-007:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - activateLicense
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  MP-CONS-008:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: marketplace
     operationIds:
@@ -2406,192 +3224,356 @@ requirements:
     tests: []
     implementationStatus: planned
     acceptanceStatus: notAccepted
-  FR-MARKETPLACE-RETRYINSTALL:
+  MP-CONS-009:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: marketplace
     operationIds:
-    - retryInstall
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - uploadSkill
+    handler: mate_app_copilot.main:app#uploadSkill
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-MARKETPLACE-STREAMINSTALLEVENTS:
+  MP-CONS-010:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: marketplace
     operationIds:
-    - streamInstallEvents
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - listSkills
+    handler: mate_app_copilot.main:app#listSkills
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-MARKETPLACE-UNINSTALLARTIFACT:
+  MP-CONS-011:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: marketplace
     operationIds:
-    - uninstallArtifact
+    - listInstalledSkills
+    handler: mate_app_copilot.main:app#listInstalledSkills
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  MP-CONS-012:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - getSkill
+    handler: mate_app_copilot.main:app#getSkill
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  MP-CONS-013:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - updateSkill
+    handler: mate_app_copilot.main:app#updateSkill
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  MP-CONS-014:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - deleteSkill
+    handler: mate_app_copilot.main:app#deleteSkill
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  MP-CONS-015:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - downloadSkill
+    handler: mate_app_copilot.main:app#downloadSkill
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  MP-CONS-016:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: marketplace
+    operationIds:
+    - installSkill
+    handler: mate_app_copilot.main:app#installSkill
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  MP-CONSUMER:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: analytics
+    operationIds:
+    - analyticsGetOverview
+    - analyticsGetUsage
+    - analyticsGetUsers
+    - analyticsGetServices
+    - analyticsGetTrends
     handler: null
     tests: []
     implementationStatus: planned
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBDELETEAPPHUBAPPSCODE:
+  ORCH-001:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubDeleteApphubAppsCode
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostRoles
+    handler: mate_tech_orchestrator.main:app#orchestratorPostRoles
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBDELETEAPPHUBGROUPSCODE:
+  ORCH-002:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubDeleteApphubGroupsCode
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorGetRoles
+    handler: mate_tech_orchestrator.main:app#orchestratorGetRoles
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBGETAPPRUNTIME:
+  ORCH-003:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubGetAppRuntime
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorDeleteRolesRole
+    handler: mate_tech_orchestrator.main:app#orchestratorDeleteRolesRole
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBGETSHORTLINK:
+  ORCH-004:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubGetShortlink
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostCapabilities
+    handler: mate_tech_orchestrator.main:app#orchestratorPostCapabilities
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBLISTSHORTLINKS:
+  ORCH-005:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubListShortlinks
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorGetCapabilities
+    handler: mate_tech_orchestrator.main:app#orchestratorGetCapabilities
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPATCHAPPHUBAPPSCODE:
+  ORCH-006:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPatchApphubAppsCode
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorDeleteCapabilitiesName
+    handler: mate_tech_orchestrator.main:app#orchestratorDeleteCapabilitiesName
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTAPPPUBLISH:
+  ORCH-007:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostAppPublish
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostDispatch
+    handler: mate_tech_orchestrator.main:app#orchestratorPostDispatch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTAPPRUNTIMEEXECUTE:
+  ORCH-008:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostAppRuntimeExecute
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostPlans
+    handler: mate_tech_orchestrator.main:app#orchestratorPostPlans
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTAPPHUBAPPS:
+  ORCH-009:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostApphubApps
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorGetPlansPlanId
+    handler: mate_tech_orchestrator.main:app#orchestratorGetPlansPlanId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTAPPHUBGROUPS:
+  ORCH-010:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostApphubGroups
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorGetPlansPlanIdGraph
+    handler: mate_tech_orchestrator.main:app#orchestratorGetPlansPlanIdGraph
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTAPPHUBMODULES:
+  ORCH-011:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostApphubModules
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostPlansPlanIdExecute
+    handler: mate_tech_orchestrator.main:app#orchestratorPostPlansPlanIdExecute
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTAPPHUBPAGES:
+  ORCH-012:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostApphubPages
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostPlansPlanIdStepsStepIdReview
+    handler: mate_tech_orchestrator.main:app#orchestratorPostPlansPlanIdStepsStepIdReview
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTAPPHUBTEMPLATES:
+  ORCH-013:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostApphubTemplates
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostSchedulingIntentDetect
+    handler: mate_tech_orchestrator.main:app#orchestratorPostSchedulingIntentDetect
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-APPHUB-APPHUBPOSTSHORTLINK:
+  ORCH-014:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: apphub
+    service: orchestrator
     operationIds:
-    - apphubPostShortlink
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostSchedulingEmployeesMatch
+    handler: mate_tech_orchestrator.main:app#orchestratorPostSchedulingEmployeesMatch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-LLMGW-LLMGWPOSTCHATMULTIMODAL:
+  ORCH-015:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: llmgw
+    service: orchestrator
     operationIds:
-    - llmgwPostChatMultimodal
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostSchedulingPlanGenerate
+    handler: mate_tech_orchestrator.main:app#orchestratorPostSchedulingPlanGenerate
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-ONT-ONTGETFEDERATIONMAPPINGS:
+  ORCH-016:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: ont
+    service: orchestrator
     operationIds:
-    - ontGetFederationMappings
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorPostSchedulingExecutionStart
+    handler: mate_tech_orchestrator.main:app#orchestratorPostSchedulingExecutionStart
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-ONT-ONTPOSTFEDERATIONMAPPINGS:
+  ORCH-017:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: ont
+    service: orchestrator
     operationIds:
-    - ontPostFederationMappings
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorGetSchedulingExecutionReport
+    handler: mate_tech_orchestrator.main:app#orchestratorGetSchedulingExecutionReport
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted
-  FR-ONT-ONTPOSTFEDERATIONQUERY:
+  ORCH-018:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
-    service: ont
+    service: orchestrator
     operationIds:
-    - ontPostFederationQuery
-    handler: null
-    tests: []
-    implementationStatus: planned
+    - orchestratorGetSchedulingIntents
+    handler: mate_tech_orchestrator.main:app#orchestratorGetSchedulingIntents
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORCH-019:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orchestratorGetSchedulingTemplates
+    handler: mate_tech_orchestrator.main:app#orchestratorGetSchedulingTemplates
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORCH-020:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orchestratorPostSchedulingTemplates
+    handler: mate_tech_orchestrator.main:app#orchestratorPostSchedulingTemplates
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORD-001:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orderReviewPostOrders
+    handler: mate_tech_orchestrator.main:app#orderReviewPostOrders
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORD-002:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orderReviewGetHighValueUnpaidOrders
+    handler: mate_tech_orchestrator.main:app#orderReviewGetHighValueUnpaidOrders
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORD-003:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orderReviewPostReviewCases
+    handler: mate_tech_orchestrator.main:app#orderReviewPostReviewCases
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORD-004:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orderReviewGetActionProposal
+    handler: mate_tech_orchestrator.main:app#orderReviewGetActionProposal
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORD-005:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orderReviewPostActionProposalConfirm
+    handler: mate_tech_orchestrator.main:app#orderReviewPostActionProposalConfirm
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  ORD-006:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: orchestrator
+    operationIds:
+    - orderReviewPostActionProposalReject
+    handler: mate_tech_orchestrator.main:app#orderReviewPostActionProposalReject
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
     acceptanceStatus: notAccepted

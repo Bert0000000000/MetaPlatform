@@ -41,7 +41,13 @@ def retrieve_node(state: dict[str, Any]) -> dict[str, Any]:
         return {**state, "error": "no user query found"}
     mode = _detect_mode(query)
     rag = get_rag_tool()
-    chunks = rag.search(query, top_k=5, mode=mode)
+    chunks = rag.search(
+        query,
+        top_k=5,
+        mode=mode,
+        tenant_id=str(state.get("tenant_id", "")),
+        access_token=str(state.get("_access_token", "")),
+    )
     return {
         **state,
         "retrieved_chunks": chunks,
@@ -75,9 +81,17 @@ def worker_node(state: dict[str, Any]) -> dict[str, Any]:
     sub_qs = state.get("sub_questions", [])
     rag = get_rag_tool()
     all_chunks = list(state.get("retrieved_chunks", []))
+    tenant_id = str(state.get("tenant_id", ""))
+    access_token = str(state.get("_access_token", ""))
     for q in sub_qs:
         mode = _detect_mode(q)
-        chunks = rag.search(q, top_k=3, mode=mode)
+        chunks = rag.search(
+            q,
+            top_k=3,
+            mode=mode,
+            tenant_id=tenant_id,
+            access_token=access_token,
+        )
         all_chunks.extend(chunks)
     seen = set()
     unique = []
@@ -115,7 +129,9 @@ def persist_node(state: dict[str, Any]) -> dict[str, Any]:
     tid = state.get("thread_id", "")
     tenant_id = state.get("tenant_id", "")
     if tid and tenant_id:
-        save_state(tenant_id, tid, dict(state))
+        persisted = dict(state)
+        persisted.pop("_access_token", None)
+        save_state(tenant_id, tid, persisted)
     return state
 
 

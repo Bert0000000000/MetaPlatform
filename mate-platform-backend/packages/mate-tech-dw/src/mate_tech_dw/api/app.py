@@ -1238,6 +1238,18 @@ def _gen_employee_code(role_category: str) -> str:
     return f"EMP-{prefix}-{uuid.uuid4().hex[:4].upper()}"
 
 
+def _gen_employee_id(tenant_id: str) -> str:
+    """Generate a tenant-namespaced id for user-created employees.
+
+    Built-in employees use the same ``dw-emp-<tenant>-<n>`` namespace.
+    Keeping custom ids in that namespace lets downstream Ontology/Copilot
+    joins treat all employees uniformly, while the numeric UUID suffix keeps
+    concurrent creates collision-resistant without a process-local counter.
+    """
+    tenant_alias = tenant_id.split("tenant-", 1)[-1]
+    return f"dw-emp-{tenant_alias}-{uuid.uuid4().int}"
+
+
 def _get_employee_by_id_or_code(tenant_id: str, key: str):
     """Resolve employee by id first, then by code. Returns DwEmployee | None.
 
@@ -1281,7 +1293,7 @@ def _capability_field(cap: dict | None, key: str, default):
 @router.post("/employees", status_code=201)
 async def dw_create_employee(request: Request, body: EmployeeCreateBody) -> dict:
     tid = _tenant_id(request)
-    emp_id = f"dw-emp-{uuid.uuid4().hex[:8]}"
+    emp_id = _gen_employee_id(tid)
     code = body.code or _gen_employee_code(body.roleCategory)
     cap = body.capability
     emp = DwEmployee(

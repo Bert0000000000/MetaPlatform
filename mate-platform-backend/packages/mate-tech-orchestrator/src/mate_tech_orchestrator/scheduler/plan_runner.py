@@ -153,7 +153,7 @@ class PlanRunner:
                 tenant_id, plan_id, status=status,
                 current_step=current_step, proposal_id=proposal_id, token=token,
             )
-        except OntologyClientError as e:
+        except Exception as e:
             import structlog
             structlog.get_logger(__name__).warning(
                 "plan.pi_sync_failed", plan_id=plan_id, error=str(e),
@@ -233,8 +233,15 @@ class PlanRunner:
         try:
             await self._ont.ensure_process_type(tenant_id, token)
             self._pi_ensured_for = tenant_id
-        except OntologyClientError:
-            pass  # best-effort：类型已存在或暂不可达都不阻断
+        except Exception as exc:
+            # Process-instance type registration is orchestration metadata, not
+            # the business action itself.  A2A/agent dispatch must remain
+            # usable when the metadata side-channel is unavailable; actual
+            # Ontology action steps still fail closed in _dispatch_step.
+            import structlog
+            structlog.get_logger(__name__).warning(
+                "plan.pi_type_sync_failed", tenant_id=tenant_id, error=str(exc),
+            )
 
     async def review(
         self,

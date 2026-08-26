@@ -1,12 +1,13 @@
-# Mate Platform 技术栈定稿（v3.0 Plan D 配套）
+# Mate Platform 技术栈定稿（v3.x 实施配套）
 
-> **版本**：v1.0 | **日期**：2026-07-27 | **状态**：已定稿
+> **版本**：v1.4 | **日期**：2026-08-25 | **状态**：已定稿；Temporal 目标态已接受、迁移未完成
 >
 > **配套文档**：
-> - 主架构：`2026-07-27-mate-platform-technical-architecture.md`（v3.0 Plan D，THE ONE DOC）
-> - 本文档：v3.0 Plan D 配套的**技术栈确认**，是经过讨论后的最终选型
+> - 主架构：`2026-07-27-mate-platform-architecture-implementation.md`（THE ONE DOC）
+> - Workflow ADR：`../decisions/ADR-0061-temporal-as-workflow-engine.md`
+> - 本文档：v3.x 实施基线配套的**技术栈确认**
 >
-> **适用范围**：Mate Platform 后端 v3.0 重构 + 前端补齐
+> **适用范围**：Mate Platform v3.x 后端、前端及 Workflow 可靠编排目标态。旧 Flowable 小节保留迁移前实现事实，新增开发以 Temporal 小节为准。
 
 ---
 
@@ -19,6 +20,7 @@
 | 灰度切流 | 按租户 v2.1 ↔ v3.0 | **直接全部 v3.0**（无灰度） |
 | Java 服务兜底 | v2.1 Java 作为回滚热备 | **Java 已归档，无兜底**（Python 版本回退） |
 | 部署回滚 | 切回 Java | **Traefik 蓝绿/金丝雀切流到 Python 旧版本** |
+| 业务 Workflow | Flowable / 自研 PlanRunner | **Temporal 可靠执行 + PlanRunner DSL 翻译层**（ADR 已接受，Sprint 1A 待迁移） |
 
 ---
 
@@ -76,6 +78,8 @@ mate-platform-backend/
 | Redis 驱动 | redis-py | latest | asyncio |
 | Kafka 驱动 | aiokafka | latest | |
 | HTTP 客户端 | httpx | latest | **唯一** HTTP 客户端 |
+| 可靠 Workflow 编排 | Temporal Service + Python SDK | 锁定版（Sprint 1A 固化） | Workflow 只做确定性编排；外部 I/O 进 Activity |
+| Workflow DSL | PlanRunner / PlanSpec | 内部协议 | `plan JSON` → Temporal Workflow；不直接暴露 SDK 给 LLM |
 | LLM 编排 | LangChain + LlamaIndex | 1.3+ | |
 | 多 Agent | LangGraph | 1.2.9+ | |
 | MCP | mcp-python-sdk | latest | |
@@ -85,7 +89,8 @@ mate-platform-backend/
 
 **客户端库直接使用，不做 SDK 封装**（单语言栈不需要 SDK 层）：
 - 基础设施（pg/milvus/minio/neo4j/redis/kafka/nacos）：现成库直接接入，封装在 Repository 实现里
-- **外部业务服务**（Keycloak/RAGFlow/LightRAG/Flowable/Drools 等）：必须写 ACL Client
+- **外部业务服务**（Keycloak/RAGFlow/LightRAG/Drools，以及双轨期 Flowable）：必须写 ACL Client
+- **Temporal**：使用官方 SDK + Workflow/Activity port，不以 httpx ACL Client 模拟 Temporal 协议
 
 ---
 
@@ -103,6 +108,7 @@ mate-platform-backend/
 | Knowledge | mate-tech-rag |
 | Ontology | mate-tech-ont |
 | Agent | mate-tech-agent |
+| Workflow | mate-tech-orchestrator + Temporal |
 | Identity | Keycloak（外部） |
 | App | mate-app-kb |
 
@@ -115,9 +121,10 @@ mate-platform-backend/
 - 同服务内可用内存 EventBus
 - 写操作通过 Outbox 表保证 at-least-once
 
-### 3.5 Saga Pattern（Choreography）
-- 智能体编排（S4）、阈值触发（S5b）等长流程
-- 无中心协调器，事件驱动
+### 3.5 Durable Orchestration + Event-Driven
+- 业务 Workflow、审批、HITL、长任务与跨服务恢复由 Temporal 协调
+- Kafka/Outbox 继续承载领域事件；事件 handler 负责启动 Workflow 或发送 Signal
+- AgentLoop、Flink/Airflow、规则引擎和沙箱仍执行各自领域工作，通过 Activity 接入
 
 ### 3.6 弹性模式（Resilience）
 - **Circuit Breaker**：pybreaker 或 polly（用于 Python → Java 外部服务调用）
@@ -136,10 +143,12 @@ mate-platform-backend/
 | `RAGFlowClient` | RAGFlow 文档解析 | REST |
 | `LightRAGClient` | LightRAG 图检索 | REST |
 | `DeerFlowClient` | DeerFlow Multi-Agent | REST（可选） |
-| `FlowableClient` | Flowable BPMN | REST（如使用） |
+| `FlowableClient` | Flowable BPMN legacy | REST（仅双轨迁移/回滚） |
 | `DroolsClient` | Drools 规则 | REST（如使用） |
 
 **作用**：把外部服务的"古怪 API"包装为领域方法，**不让外部概念污染领域模型**。
+
+Temporal 是例外：`TemporalClientPort` 由官方 `temporalio` SDK adapter 实现；Workflow 定义、Activity 定义和 Task Queue 属于编排层契约，不归入通用 HTTP ACL。
 
 ---
 
@@ -227,9 +236,9 @@ metaplatform-frontend/
 
 ---
 
-## 8. 已确认的外部引擎（W3 启动内容）
+## 8. 已确认的外部引擎与可靠编排
 
-> **设计原则**：三个引擎（Keycloak/Flowable/Drools）均为 Java 应用，但作为**第三方成熟产品**独立部署，**不属于 v3.0 主后端的 Java 服务**。Python 主后端通过 ACL Client 接入。
+> **设计原则**：Keycloak/Drools 是外部成熟产品；Temporal 是 ADR-0061 选定的可靠编排控制面；Flowable 仅作为迁移期 legacy。Temporal 编排业务过程，但不替代业务服务、数据计算、消息总线、Agent 推理或沙箱。
 
 ### 8.1 IAM：Keycloak
 
@@ -248,7 +257,23 @@ metaplatform-frontend/
 - W3-1.3：KeycloakClient（JWT 校验 + 租户提取 + 用户查询）
 - W3-1.4：Traefik ↔ Keycloak 路由配置（auth.metaplatform.local）
 
-### 8.2 BPMN：Flowable 8.0
+### 8.2 可靠编排目标态：Temporal
+
+| 项 | 值 |
+|---|---|
+| 形态 | Temporal Service + Worker + UI |
+| SDK | 官方 Python `temporalio` SDK；具体版本由 Sprint 1A 锁定 |
+| 入口 | PlanRunner/PlanSpec DSL 翻译层、API、Outbox/Kafka start/signal bridge |
+| 持久化 | Temporal Event History；plan 镜像表仅供查询与迁移期 reconcile |
+| 核心能力 | retry、timeout、heartbeat、Timer、Signal、Child Workflow、版本灰度、故障恢复 |
+| 执行边界 | HTTP、数据库、LLM、文件、Flink/dbt/RAG 和 K8s 操作全部放入幂等 Activity |
+| 状态 | ADR 已 Accepted；Sprint 1A `Not Started`，不得宣称已完成切流 |
+
+**统一准入规则**：跨服务多步骤、HITL、长等待、需自动恢复/补偿/版本灰度的流程使用 Temporal。单次同步 CRUD、低延迟查询和调用方可安全重试的请求保持直接调用。
+
+### 8.3 Legacy BPMN：Flowable 8.0（双轨期）
+
+> 本节是迁移前实现记录。新业务 Workflow 不再扩展 Flowable；仅用于 `WORKFLOW_ENGINE=legacy` 回滚、存量实例完成和双轨对比。
 
 | 项 | 值 |
 |---|---|
@@ -257,7 +282,7 @@ metaplatform-frontend/
 | 数据库 | PostgreSQL（独立 schema flowable） |
 | 引擎版本 | **Flowable 8.0**（云原生分布式架构） |
 | Python 接入 | FlowableClient（自研 httpx，适配 8.0 REST API） |
-| 调用场景 | S4 智能体编排、工作流定义部署、流程启动、任务查询 |
+| 调用场景 | 存量 BPMN、双轨对比、迁移期回滚 |
 
 **W3 任务**：
 - W3-2.1：Flowable docker-compose 服务编排
@@ -266,7 +291,7 @@ metaplatform-frontend/
 - W3-2.4：BPMN XML 模板库（mate-tech-agent/templates/bpmn/）
 - W3-2.5：Circuit Breaker 包裹（pybreaker，failure_threshold=5）
 
-### 8.3 规则引擎：Drools（KIE Server）
+### 8.4 规则引擎：Drools（KIE Server）
 
 | 项 | 值 |
 |---|---|
@@ -284,7 +309,7 @@ metaplatform-frontend/
 - W3-3.4：规则仓库（mate-tech-msg/rules/*.drl Git 管理）
 - W3-3.5：Circuit Breaker 包裹
 
-### 8.4 W3 整体工期
+### 8.5 W3 整体工期（历史交付记录）
 
 | 子任务 | 工期 | 备注 |
 |---|---|---|
@@ -293,7 +318,7 @@ metaplatform-frontend/
 | Drools 接入 | 7 天 | 含规则仓库 |
 | **W3 总计** | **2.5 周**（并行） | 三个引擎同时启动 |
 
-### 8.5 docker-compose 集成
+### 8.6 docker-compose 集成（当前/legacy）
 
 三个引擎作为新服务追加到 docker-compose.yml：
 
@@ -383,7 +408,7 @@ services:
         condition: service_healthy
 `
 
-### 8.6 Python ACL Client 库选择
+### 8.7 Python ACL Client 库选择
 
 | 引擎 | 推荐库 | 备选 |
 |---|---|---|
@@ -589,6 +614,7 @@ jobs:
 | 2026-07-27 | v1.1 | 拍板 IAM=Keycloak / BPMN=Flowable / Rule=Drools；补充三个引擎的部署细节 |
 | 2026-07-27 | v1.2 | 新增 § 9 API 接口管理（Swagger/OpenAPI 3.1）整节 |
 | 2026-07-28 | v1.3 | 追加附录 A：v3.1 Data-Ready Baseline（Flink / Airflow / Paimon / Iceberg / Trino / StarRocks / 治理栈），不破坏 v3.0 技术栈 |
+| 2026-08-25 | v1.4 | 同步 ADR-0061：新增 Temporal Service/Python SDK/PlanRunner DSL 技术栈与准入边界；Flowable 降为双轨期 legacy；明确 Temporal 不替代计算、消息、Agent 推理和沙箱 |
 
 ---
 
@@ -632,7 +658,8 @@ jobs:
 |---|---|---|
 | Traefik | 边缘网关、路由、TLS、限流 | 追加 `/v1/data/*` 路由表 |
 | Keycloak | IAM/SSO | 追加服务账号与 Ranger 同步 |
-| Flowable 8 | BPMN、人工审批 | 承接 Pipeline 发布审批与数据访问审批 |
+| Temporal | 可靠业务编排、人工审批等待、长任务 | 编排 Pipeline 发布审批与数据访问审批；实际数据作业仍由 Airflow/Flink 执行 |
+| Flowable 8（legacy） | 存量 BPMN | 仅双轨迁移、回滚与存量实例完成 |
 | Nacos | 服务发现 + 配置 | 注册 mate-tech-data 与 Engine Adapter |
 | Kafka | 事件总线 | 扩展为数据接入总线与领域事件 |
 | MinIO | 对象存储 | 兼顾 Landing 与湖表文件存储 |
@@ -651,7 +678,8 @@ jobs:
 
 ## 12. 引用
 
-- 主架构：`2026-07-27-mate-platform-technical-architecture.md`（v3.0 Plan D）
+- 主架构：`2026-07-27-mate-platform-architecture-implementation.md`（v3.x 实施版）
+- Workflow ADR：`../decisions/ADR-0061-temporal-as-workflow-engine.md`
 - Docker Compose：`docker-compose.yml`
 - 前端 monorepo：`metaplatform-frontend/`
 - 启动脚本：`scripts/start-services/`

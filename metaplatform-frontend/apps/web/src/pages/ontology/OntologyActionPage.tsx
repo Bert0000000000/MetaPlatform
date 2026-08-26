@@ -467,28 +467,27 @@ function FlowFullscreenEditor({
     : NODE_TYPE_META[activeType] || NODE_TYPE_META['input'];
   const TypeIcon = meta.icon;
   // v1.5 R1.6：走 FlowGram document 读节点 data，解决之前 nodeConfig[activeNodeId] 对新拖入节点空白的问题
-  const ctx = useClientContext();
   const [, setDocRefresh] = React.useState(0);
   React.useEffect(() => {
-    if (!ctx?.document) return;
-    const disp = ctx.document.onContentChange?.(() => setDocRefresh((x) => x + 1));
+    if (!doc?.onNodeUpdate) return;
+    const disp = doc.onNodeUpdate(() => setDocRefresh((x) => x + 1));
     return () => disp?.dispose?.();
-  }, [ctx]);
+  }, [doc]);
   const activeNodeJson = (() => {
-    if (!activeNodeId || !ctx?.document) return null;
-    return ctx.document.getNode(activeNodeId)?.toJSON?.() || null;
+    if (!activeNodeId || !doc) return null;
+    return doc.getNode(activeNodeId)?.toJSON?.() || null;
   })();
   const fallback = (NODE_DETAIL_PROPS as Record<string, Record<string, { value: string; label: string }>>)[activeType]
-    || (NODE_DETAIL_PROPS as Record<string, Record<string, { value: string; label: string }>>)[activeNodeId] || {};
+    || (activeNodeId ? (NODE_DETAIL_PROPS as Record<string, Record<string, { value: string; label: string }>>)[activeNodeId] : undefined) || {};
   const liveData = (activeNodeJson?.data as Record<string, unknown> | undefined) || {};
   const activeData = {
     ...Object.fromEntries(Object.entries(fallback).map(([k, v]) => [k, v.value])),
     ...liveData,
   };
   const updateField = (key: string, value: string) => {
-    if (!activeNodeId || !ctx?.document) return;
-    const json = ctx.document.toJSON();
-    const curData = (ctx.document.getNode(activeNodeId)?.toJSON()?.data || {}) as Record<string, unknown>;
+    if (!activeNodeId || !doc) return;
+    const json = doc.toJSON();
+    const curData = (doc.getNode(activeNodeId)?.toJSON()?.data || {}) as Record<string, unknown>;
     const nextData = { ...curData, [key]: value };
     const updated = {
       ...json,
@@ -496,7 +495,7 @@ function FlowFullscreenEditor({
         n.id === activeNodeId ? { ...n, data: nextData } : n
       ),
     };
-    ctx.document.fromJSON(updated);
+    doc.fromJSON(updated);
   };
   const deleteActiveNode = () => {
     if (!activeNodeId) return;
@@ -1163,6 +1162,7 @@ function FixedLayoutEditor({
 }) {
   const [doc, setDoc] = React.useState<any>(null);
   const docRef = React.useRef<any>(null);
+  const opRef = React.useRef<{ deleteNode?: (id: string) => void } | null>(null);
   // activeNodeId 用于让 FixedBaseNode 知道哪个被选中（高亮发光）
   const [activeId, setActiveId] = React.useState<string | null>(null);
   // 合并 onSelectNode：点击节点时同时更新 activeId
@@ -1294,6 +1294,7 @@ function FullscreenFlowEditor({
 }) {
   const [doc, setDoc] = useState<any>(null);
   const docRef = React.useRef<any>(null);
+  const opRef = React.useRef<{ deleteNode?: (id: string) => void } | null>(null);
   // 官方插件组合（按 demo-free-layout 顺序）
   const plugins = React.useMemo(() => () => [
     createFreeNodePanelPlugin({
@@ -1921,7 +1922,7 @@ function FullscreenBaseNode({ onSelect }: { onSelect?: (id: string) => void } = 
         fontFamily: 'var(--font-sans)',
         pointerEvents: 'auto',
         userSelect: 'none',
-        opacity: nodeRender.dragging ? 0.4 : 1,
+        opacity: 1,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -2007,7 +2008,7 @@ function CustomBaseNode() {
         fontFamily: 'var(--font-sans)',
         pointerEvents: 'auto',
         userSelect: 'none',
-        opacity: nodeRender.dragging ? 0.4 : 1,
+        opacity: 1,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>

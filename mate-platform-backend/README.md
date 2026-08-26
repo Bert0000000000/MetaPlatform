@@ -4,7 +4,9 @@ Mate Platform - Python 主后端 (v3.0 Plan D - Polyglot Microservice)
 
 ## 架构定位
 
-Python 主后端 + Java 外部引擎 (Keycloak/Flowable/Drools) + Python AI 服务 (RAGFlow/LightRAG) + 多语言基础设施栈。
+Python 主后端 + Temporal 可靠编排控制面 + 专用外部引擎/AI 服务 + 多语言基础设施栈。
+
+> ADR-0061 已接受 Temporal 作为业务 Workflow 引擎，PlanRunner 保留为 DSL 翻译层。Sprint 1A 迁移尚未完成，因此仓库中的 `mate-app-wfe` / `FlowableClient` 仍是双轨期 legacy 实现，不代表新增 Workflow 的目标架构。
 
 详细架构见 [主架构实施版](../docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md)。
 
@@ -14,6 +16,7 @@ Python 主后端 + Java 外部引擎 (Keycloak/Flowable/Drools) + Python AI 服�
 - **Web**: FastAPI 0.115+ + uvicorn + uvloop + granian
 - **ORM**: SQLAlchemy 2.0 + SQLModel + Pydantic v2
 - **HTTP**: httpx (唯一客户端)
+- **可靠编排（目标态）**: Temporal Python SDK + PlanRunner/PlanSpec DSL；外部 I/O 放入幂等 Activity
 - **LLM**: LangChain + LlamaIndex + LangGraph
 - **类型检查**: pyright strict
 - **测试**: pytest + pytest-asyncio + hypothesis
@@ -74,6 +77,7 @@ uv run uvicorn mate_tech_rag.api.app:app --reload
 
 - 主架构: `../docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md`
 - 技术栈定稿: `../docs/active/specs/2026-07-27-mate-platform-tech-stack-confirmed.md`
+- Workflow ADR: `../docs/active/decisions/ADR-0061-temporal-as-workflow-engine.md`
 - 交付计划: `../docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md`
 
 ## API ?????API-GOV-01?

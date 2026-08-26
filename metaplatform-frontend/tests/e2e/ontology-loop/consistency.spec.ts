@@ -22,8 +22,7 @@ GOVERN-12-01 fallback_token 修复已合并。
 */
 
 import { test, expect } from '@playwright/test';
-import { trackApiFailures } from '../helpers/auth';
-import { mintMockToken } from '../helpers/mock-jwt';
+import { loginViaApi, trackApiFailures } from '../helpers/auth';
 
 interface DwEmployee {
   employeeId: string;
@@ -53,8 +52,9 @@ test('cross-module: 3 sources (dw API + superai match + ont individuals) align o
   test.setTimeout(120_000);
   const api = trackApiFailures(page);
 
-  // 用 mock JWT 显式 Authorization（Playwright request 默认不带 storageState header）
-  const { token } = mintMockToken();
+  // Playwright request 默认不带 storageState header；显式使用 Keycloak
+  // 登录得到的真实 token，保证跨模块检查覆盖生产认证链路。
+  const { token } = await loginViaApi(page, request);
   const authHeaders = {
     Authorization: `Bearer ${token}`,
   };

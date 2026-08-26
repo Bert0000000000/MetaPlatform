@@ -21,6 +21,7 @@ export async function loginViaApi(
   }
   const body = await resp.json();
   const token: string = body.accessToken ?? body.token ?? body.data?.accessToken;
+  const refreshToken: string | undefined = body.refreshToken ?? body.data?.refreshToken;
   if (!token) {
     throw new Error(`No accessToken in login response: ${JSON.stringify(body).slice(0, 300)}`);
   }
@@ -32,13 +33,14 @@ export async function loginViaApi(
     roles: ['PLATFORM_SUPER_ADMIN'],
   };
   await page.addInitScript(
-    ({ t, u }) => {
+    ({ t, r, u }) => {
       localStorage.setItem('mate_platform_token', t);
+      if (r) localStorage.setItem('mate_platform_refresh_token', r);
       localStorage.setItem('mate_platform_user', JSON.stringify(u));
     },
-    { t: token, u: user },
+    { t: token, r: refreshToken, u: user },
   );
-  return { token, user };
+  return { token, refreshToken, user };
 }
 
 /** Capture all API responses on the page so tests can assert no 4xx/5xx slipped through. */

@@ -758,6 +758,36 @@ async def publish_flow(request: Request, module_id: str) -> dict:
 # ---------------------------------------------------------------------------
 _VERSIONS: dict[str, list[dict[str, Any]]] = {}
 
+# Tenant-scoped release records used by the AppHub release tab. The local
+# acceptance profile keeps this store in memory; the HTTP contract is shared
+# with the production persistence adapter.
+_RELEASES: dict[str, list[dict[str, Any]]] = {}
+_RELEASE_LOGS: dict[str, list[dict[str, Any]]] = {}
+_RELEASE_TASKS: dict[str, list[dict[str, Any]]] = {}
+
+
+def _release_app(tenant_id: str, app_id: str) -> ApphubApp:
+    """Resolve an AppHub app by public id or code."""
+    for app in list_apps(tenant_id):
+        if app.id == app_id or app.code == app_id:
+            return app
+    raise HTTPException(status_code=404, detail="app not found")
+
+
+def _release_key(tenant_id: str, app_id: str) -> str:
+    app = _release_app(tenant_id, app_id)
+    return f"{tenant_id}:{app.code}"
+
+
+def _find_release(tenant_id: str, release_id: str) -> tuple[str, dict[str, Any]]:
+    for key, records in _RELEASES.items():
+        if not key.startswith(f"{tenant_id}:"):
+            continue
+        for record in records:
+            if record["releaseId"] == release_id:
+                return key, record
+    raise HTTPException(status_code=404, detail="release not found")
+
 
 @router.get("/apps/{app_id}/versions")
 async def list_app_versions(request: Request, app_id: str) -> dict:
@@ -815,6 +845,151 @@ async def delete_app_version(request: Request, app_id: str, version_id: str) -> 
     key = f"{tid}:{app_id}"
     _VERSIONS[key] = [v for v in _VERSIONS.get(key, []) if v["versionId"] != version_id]
     return {"deleted": version_id}
+
+
+# ---------------------------------------------------------------------------
+# App release records and approval tasks
+# ---------------------------------------------------------------------------
+@router.get("/apps/{app_id}/releases")
+async def list_app_releases(
+    request: Request,
+    app_id: str,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    """List tenant-scoped release records for an app."""
+    tid = _tenant_id(request)
+    key = _release_key(tid, app_id)
+    records = _RELEASES.get(key, [])
+    start = (page - 1) * size
+    return {"items": records[start:start + size], "total": len(records)}
+
+
+@router.post("/apps/{app_id}/releases", status_code=201)
+async def create_app_release(request: Request, app_id: str) -> dict:
+    """Create a release request and its two-step approval task list."""
+    tid = _tenant_id(request)
+    key = _release_key(tid, app_id)
+    body = await request.json()
+    version = str(body.get("version", ""))
+    if not _SEMVER_RE.match(version):
+        raise HTTPException(status_code=422, detail="invalid version; expected MAJOR.MINOR.PATCH")
+    strategy = str(body.get("strategy", "FULL")).upper()
+    if strategy not in {"FULL", "GRAYSCALE"}:
+        raise HTTPException(status_code=422, detail="strategy must be FULL or GRAYSCALE")
+
+    now = _now_iso()
+    release_id = f"rel-{uuid.uuid4().hex[:12]}"
+    process_id = f"release-process-{uuid.uuid4().hex[:12]}"
+    record = {
+        "releaseId": release_id,
+        "appId": app_id,
+        "version": version,
+        "releaseNotes": str(body.get("releaseNotes", "")),
+        "strategy": strategy,
+        "grayPercent": int(body.get("grayPercent", 0) or 0),
+        "grayUsers": list(body.get("grayUsers", []) or []),
+        "grayDepts": list(body.get("grayDepts", []) or []),
+        "status": "PENDING_APPROVAL",
+        "approvalStatus": "PENDING",
+        "processInstanceId": process_id,
+        "createdBy": str(getattr(request.state.ctx, "user_id", "")),
+        "createdAt": now,
+    }
+    _RELEASES.setdefault(key, []).insert(0, record)
+    _RELEASE_LOGS[release_id] = [{
+        "logId": f"log-{uuid.uuid4().hex[:12]}",
+        "releaseId": release_id,
+        "action": "提交发布申请",
+        "operator": record["createdBy"],
+        "remark": record["releaseNotes"],
+        "createdAt": now,
+    }]
+    _RELEASE_TASKS[process_id] = [
+        {
+            "id": f"task-{uuid.uuid4().hex[:12]}",
+            "name": "技术负责人审批",
+            "assignee": body.get("techLeadId", ""),
+            "status": "ACTIVE",
+            "createTime": now,
+        },
+        {
+            "id": f"task-{uuid.uuid4().hex[:12]}",
+            "name": "运维审批",
+            "assignee": body.get("opsOwnerId", ""),
+            "status": "ACTIVE",
+            "createTime": now,
+        },
+    ]
+    _emit(request, "apphub.release.created", release_id, {"appId": app_id, "version": version}, tid)
+    return record
+
+
+@router.get("/releases/{release_id}")
+async def get_app_release(request: Request, release_id: str) -> dict:
+    tid = _tenant_id(request)
+    _, record = _find_release(tid, release_id)
+    return record
+
+
+@router.get("/releases/{release_id}/logs")
+async def list_release_logs(request: Request, release_id: str) -> list[dict[str, Any]]:
+    tid = _tenant_id(request)
+    _find_release(tid, release_id)
+    return _RELEASE_LOGS.get(release_id, [])
+
+
+@router.get("/v1/wfe/release-approval/{process_instance_id}/tasks")
+async def list_release_tasks(request: Request, process_instance_id: str) -> list[dict[str, Any]]:
+    _tenant_id(request)
+    return _RELEASE_TASKS.get(process_instance_id, [])
+
+
+@router.post("/v1/wfe/release-approval/{process_instance_id}/tasks/{task_id}/complete")
+async def complete_release_task(
+    request: Request, process_instance_id: str, task_id: str,
+) -> dict[str, Any]:
+    tid = _tenant_id(request)
+    body = await request.json()
+    tasks = _RELEASE_TASKS.get(process_instance_id)
+    if tasks is None:
+        raise HTTPException(status_code=404, detail="approval process not found")
+    task = next((item for item in tasks if item["id"] == task_id), None)
+    if task is None:
+        raise HTTPException(status_code=404, detail="approval task not found")
+    if task["status"] != "ACTIVE":
+        raise HTTPException(status_code=409, detail="approval task already completed")
+    approved = bool(body.get("approved", False))
+    task["status"] = "COMPLETED"
+    task["endTime"] = _now_iso()
+    record = next(
+        (item for records in _RELEASES.values() for item in records
+         if item.get("processInstanceId") == process_instance_id),
+        None,
+    )
+    if record is None:
+        raise HTTPException(status_code=404, detail="release not found")
+    if not approved:
+        record["status"] = "REJECTED"
+        record["approvalStatus"] = "REJECTED"
+        action = "审批驳回"
+    elif all(item["status"] == "COMPLETED" for item in tasks):
+        record["status"] = "PUBLISHED"
+        record["approvalStatus"] = "APPROVED"
+        action = "发布完成"
+    else:
+        action = "审批通过"
+    release_id = record["releaseId"]
+    _RELEASE_LOGS.setdefault(release_id, []).append({
+        "logId": f"log-{uuid.uuid4().hex[:12]}",
+        "releaseId": release_id,
+        "action": action,
+        "operator": str(getattr(request.state.ctx, "user_id", "")),
+        "remark": str(body.get("comment", "")),
+        "createdAt": _now_iso(),
+    })
+    _emit(request, "apphub.release.updated", release_id, {"status": record["status"]}, tid)
+    return {"taskId": task_id, "action": action, "status": task["status"], "message": action}
 
 
 @router.get("/pages/{page_id}")

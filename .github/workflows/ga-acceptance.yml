@@ -217,6 +217,41 @@ jobs:
       - name: GOVERN-07 forbid_legacy_artifacts (Spring-era residue)
         run: python scripts/ci/forbid_legacy_artifacts.py
 
+  # rule 6 + GOVERN-06: PostgreSQL FORCE RLS must execute as a real
+  # non-superuser. The dedicated test database is created inside this job and
+  # is never shared with application data.
+  ga-014-ont-rls:
+    name: ga-014 Ontology PostgreSQL RLS isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: meta
+          POSTGRES_PASSWORD: meta
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meta -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install uv
+        run: python -m pip install uv
+      - name: Install Ontology workspace dependencies
+        run: uv sync --directory mate-platform-backend --package mate-tech-ont --dev --frozen
+      - name: Run non-privileged PostgreSQL RLS acceptance
+        run: bash scripts/ci/verify_ont_rls.sh
+        env:
+          ONT_RLS_ADMIN_DSN: postgresql://meta:meta@localhost:5432/postgres
+          PG_DSN: postgresql://mate_ont_test:mate_ont_test@localhost:5432/metaplatform_ont_test
+
   # rule 7: 契约或集成测试跳过不标记 Accepted（forbid_skip_tests）
   ga-007-skip-tests:
     name: ga-007 forbid_skip_tests (rule 7)

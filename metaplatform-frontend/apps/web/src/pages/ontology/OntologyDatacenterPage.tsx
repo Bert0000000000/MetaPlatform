@@ -10,7 +10,7 @@ import {
   Pause, Server, Calendar, BarChart3, Maximize2,
 } from 'lucide-react';
 import LineageFullView from './components/LineageFullView';
-import { ErrorBoundary, usePageAssistant } from '@mate/shared';
+import { ErrorBoundary } from '@mate/shared';
 import BigDataSourceView from './components/BigDataSourceView';
 import CDCView from './components/CDCView';
 import ETLView from './components/ETLView';
@@ -67,16 +67,6 @@ const PRODUCT_STATUS: Record<string, { label: string; type: string }> = {
 export default function OntologyDatacenterPage({ initialSubTab }: { initialSubTab?: string } = {}) {
     const [activeSubTab, setActiveSubTab] = useState(initialSubTab && DATACENTER_SUBTABS.some((t) => t.id === initialSubTab) ? initialSubTab : 'bigdata');
   const [reloadKey, setReloadKey] = useState(0);
-  const assistant = usePageAssistant({
-    employeeId: 'ontology-data-steward',
-    employeeName: '本体数据管家',
-    employeeDescription: '帮助你把控本体数据质量、数据一致性和数据源同步状态',
-    moduleLabel: 'Ontology 数据中心',
-    welcomeMessage: '你好，我是本体数据管家。可协助你分析数据源、同步状态和数据质量指标。',
-    suggestions: ['分析本体数据质量', '检查数据一致性', '调查数据同步异常'],
-    createReply: (content) => `我会结合数据源连接、同步状态和质量指标来分析「${content}」。当前为数据中心模块的大屏模式。`,
-  });
-
   const renderSubTabContent = () => {
     const sub = (node: React.ReactNode) => (
       <ErrorBoundary key={`${activeSubTab}-${reloadKey}`} fallback={<SubErrorFallback name={activeSubTab} />}>

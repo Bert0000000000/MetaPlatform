@@ -215,6 +215,56 @@ components:
           type: string
           minLength: 1
           description: worker 引用（如 MCP 工具 ref）
+    Order:
+      type: object
+      required: [tenant_id, order_id, amount_cents, payment_status, review_status, version]
+      properties:
+        tenant_id: {type: string}
+        order_id: {type: string}
+        amount_cents: {type: integer, minimum: 1}
+        payment_status: {type: string, enum: [unpaid, paid]}
+        review_status: {type: string, enum: [pending, approved]}
+        version: {type: integer, minimum: 1}
+        updated_at: {type: string, format: date-time}
+    CreateOrderRequest:
+      type: object
+      required: [order_id, amount_cents]
+      properties:
+        order_id: {type: string, minLength: 1}
+        amount_cents: {type: integer, minimum: 1}
+        payment_status: {type: string, enum: [unpaid, paid], default: unpaid}
+    CreateReviewCaseRequest:
+      type: object
+      required: [order_id, suggestion]
+      properties:
+        order_id: {type: string, minLength: 1}
+        suggestion: {type: object, additionalProperties: true}
+        source_refs: {type: array, items: {type: string}}
+    ActionProposal:
+      type: object
+      required: [proposal_id, review_case_id, order_id, action_type, status, expected_order_version]
+      properties:
+        proposal_id: {type: string}
+        review_case_id: {type: string}
+        order_id: {type: string}
+        action_type: {type: string}
+        status: {type: string, enum: [pending, confirmed, rejected, expired]}
+        expected_order_version: {type: integer}
+        suggestion: {type: object, additionalProperties: true}
+        source_refs: {type: array, items: {type: string}}
+        parameters: {type: object, additionalProperties: true}
+        expires_at: {type: string, format: date-time}
+        created_at: {type: string, format: date-time}
+        resolved_at: {type: [string, 'null'], format: date-time}
+    ConfirmActionProposalRequest:
+      type: object
+      properties:
+        actor_id: {type: string, default: system}
+    RejectActionProposalRequest:
+      type: object
+      properties:
+        actor_id: {type: string, default: system}
+        reason: {type: string, default: ""}
 paths:
   /healthz:
     get:
@@ -252,6 +302,9 @@ paths:
         '422':
           description: 未知角色 / worker_kind / 缺 tenant
       operationId: orchestratorPostRoles
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-001]
       x-mate-implementation-status: implemented
     get:
       security:
@@ -275,6 +328,9 @@ paths:
                   total:
                     type: integer
       operationId: orchestratorGetRoles
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements: [ORCH-002]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/roles/{role}:
     delete:
@@ -303,6 +359,9 @@ paths:
         '404':
           description: 角色未注册
       operationId: orchestratorDeleteRolesRole
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-003]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/capabilities:
     post:
@@ -326,6 +385,9 @@ paths:
         '503':
           description: capability runtime 未启动（lifespan 未运行）
       operationId: orchestratorPostCapabilities
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-004]
       x-mate-implementation-status: implemented
     get:
       security:
@@ -340,6 +402,9 @@ paths:
         '503':
           description: capability runtime 未启动
       operationId: orchestratorGetCapabilities
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements: [ORCH-005]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/capabilities/{name}:
     delete:
@@ -363,6 +428,9 @@ paths:
         '503':
           description: capability runtime 未启动
       operationId: orchestratorDeleteCapabilitiesName
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-006]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/dispatch:
     post:
@@ -392,6 +460,9 @@ paths:
         '422':
           description: worker_kind 不支持
       operationId: orchestratorPostDispatch
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-007]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/plans:
     post:
@@ -424,6 +495,9 @@ paths:
         '422':
           description: 计划无 HITL 步
       operationId: orchestratorPostPlans
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-008]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/plans/{plan_id}:
     get:
@@ -449,6 +523,9 @@ paths:
         '404':
           description: 计划不存在
       operationId: orchestratorGetPlansPlanId
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements: [ORCH-009]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/plans/{plan_id}/graph:
     get:
@@ -474,6 +551,9 @@ paths:
         '404':
           description: 计划不存在
       operationId: orchestratorGetPlansPlanIdGraph
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements: [ORCH-010]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/plans/{plan_id}/execute:
     post:
@@ -511,6 +591,9 @@ paths:
         '404':
           description: 计划不存在
       operationId: orchestratorPostPlansPlanIdExecute
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-011]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/plans/{plan_id}/steps/{step_id}/review:
     post:
@@ -557,6 +640,9 @@ paths:
         '404':
           description: 计划不存在
       operationId: orchestratorPostPlansPlanIdStepsStepIdReview
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-012]
       x-mate-implementation-status: implemented
   # ---- scheduling 编排入口（A3 copilot 吸收 phase-1）----
   /api/v1/orchestrator/scheduling/intent/detect:
@@ -575,6 +661,9 @@ paths:
         '200':
           description: 意图
       operationId: orchestratorPostSchedulingIntentDetect
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-013]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/employees/match:
     post:
@@ -592,6 +681,9 @@ paths:
         '200':
           description: 候选员工列表
       operationId: orchestratorPostSchedulingEmployeesMatch
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-014]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/plan/generate:
     post:
@@ -609,6 +701,9 @@ paths:
         '200':
           description: 执行计划
       operationId: orchestratorPostSchedulingPlanGenerate
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-015]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/execution/start:
     post:
@@ -628,6 +723,9 @@ paths:
         '404':
           description: 计划不存在
       operationId: orchestratorPostSchedulingExecutionStart
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-016]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/execution/{execution_id}/report:
     get:
@@ -642,6 +740,9 @@ paths:
         '200':
           description: 报告文本
       operationId: orchestratorGetSchedulingExecutionReport
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements: [ORCH-017]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/intents:
     get:
@@ -651,6 +752,9 @@ paths:
         '200':
           description: 意图列表
       operationId: orchestratorGetSchedulingIntents
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements: [ORCH-018]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/templates:
     get:
@@ -660,6 +764,9 @@ paths:
         '200':
           description: 模板列表
       operationId: orchestratorGetSchedulingTemplates
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.read
+      x-mate-requirements: [ORCH-019]
       x-mate-implementation-status: implemented
     post:
       summary: 创建调度模板
@@ -677,4 +784,185 @@ paths:
         '200':
           description: 模板
       operationId: orchestratorPostSchedulingTemplates
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.write
+      x-mate-requirements: [ORCH-020]
+      x-mate-implementation-status: implemented
+  # ---- v1.0 north-star: order review -> human confirmation -> follow-up ----
+  /api/v1/orders:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 创建参考订单（本地验收入口）
+      tags: [order-review]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409': {description: 订单已存在}
+      operationId: orderReviewPostOrders
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements: [ORD-001]
+      x-mate-implementation-status: implemented
+  /api/v1/orders/high-value-unpaid:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: 查询高价值未支付订单
+      tags: [order-review]
+      parameters:
+      - name: min_amount_cents
+        in: query
+        required: false
+        schema: {type: integer, minimum: 1, default: 100000}
+      responses:
+        '200':
+          description: 订单列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/Order'}}
+                  total: {type: integer}
+      operationId: orderReviewGetHighValueUnpaidOrders
+      x-mate-owner: orchestrator
+      x-mate-permission: order.read
+      x-mate-requirements: [ORD-002]
+      x-mate-implementation-status: implemented
+  /api/v1/review-cases:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 创建订单复核案例和 Action Proposal
+      tags: [order-review]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewCaseRequest'
+      responses:
+        '201':
+          description: Proposal 已创建，等待人工确认
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  review_case_id: {type: string}
+                  proposal_id: {type: string}
+                  status: {type: string, enum: [pending]}
+                  expected_order_version: {type: integer}
+        '404': {description: 订单不存在}
+      operationId: orderReviewPostReviewCases
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements: [ORD-003]
+      x-mate-implementation-status: implemented
+  /api/v1/action-proposals/{proposal_id}:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      summary: 查看 Action Proposal
+      tags: [order-review]
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionProposal'
+        '404': {description: Proposal 不存在或不属于当前租户}
+      operationId: orderReviewGetActionProposal
+      x-mate-owner: orchestrator
+      x-mate-permission: order.read
+      x-mate-requirements: [ORD-004]
+      x-mate-implementation-status: implemented
+  /api/v1/action-proposals/{proposal_id}/confirm:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 确认 Action Proposal 并创建跟进单
+      tags: [order-review]
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema: {type: string}
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: {type: string, minLength: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmActionProposalRequest'
+      responses:
+        '200':
+          description: 已确认，订单、跟进单、幂等记录和 Outbox 同事务提交
+        '409': {description: 版本冲突、重复处理或幂等键冲突}
+      operationId: orderReviewPostActionProposalConfirm
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements: [ORD-005]
+      x-mate-implementation-status: implemented
+  /api/v1/action-proposals/{proposal_id}/reject:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      summary: 拒绝 Action Proposal
+      tags: [order-review]
+      parameters:
+      - name: proposal_id
+        in: path
+        required: true
+        schema: {type: string}
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: {type: string, minLength: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectActionProposalRequest'
+      responses:
+        '200': {description: 已拒绝并写入审计 Outbox}
+        '409': {description: 重复处理或幂等键冲突}
+      operationId: orderReviewPostActionProposalReject
+      x-mate-owner: orchestrator
+      x-mate-permission: order.write
+      x-mate-requirements: [ORD-006]
       x-mate-implementation-status: implemented

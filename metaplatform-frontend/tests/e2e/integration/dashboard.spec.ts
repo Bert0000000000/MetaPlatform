@@ -12,7 +12,7 @@ test.describe('联调-工作台 Dashboard 模块', () => {
     await expect(page.getByText('工作台', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('活跃应用', { exact: true })).toBeVisible();
     await expect(page.getByText('最近任务', { exact: true })).toBeVisible();
-    await expect(page.getByText('系统状态', { exact: true })).toBeVisible();
+    await expect(page.getByText('最近消息', { exact: true })).toBeVisible();
     expect(tracker.failures.length, tracker.report()).toBe(0);
   });
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus } from 'lucide-react';
 import { Button } from '@douyinfe/semi-ui';
-import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
 import OntologyModelingPage from './OntologyModelingPage';
 import OntologyDatacenterPage from './OntologyDatacenterPage';
 import OntologyActionPage from './OntologyActionPage';
@@ -31,6 +31,19 @@ const ALIASES: Record<string, string> = {
   knowledge: 'graph',
 };
 
+/**
+ * 页面级语义标题。SubTabs 负责导航，不应同时承担页面标题语义；
+ * 标题也为系统验收、无障碍导航和浏览器历史提供稳定锚点。
+ */
+const TAB_TITLES: Record<string, string> = {
+  concept: '概念模型',
+  'relationship-types': '关系模型',
+  'action-types': 'Action 模型',
+  datacenter: '数据中心',
+  action: 'Action 编排',
+  graph: '知识图谱',
+};
+
 function resolveTab(raw: string | null): string {
   const k = (raw || 'concept').toLowerCase();
   return ALIASES[k] ?? k;
@@ -54,8 +67,8 @@ export default function OntologyShellPage() {
   const [modelingRefreshKey, setModelingRefreshKey] = useState(0);
 
   const assistant = useOntologyAssistant({
-    employeeId: 'ontology-shell',
-    employeeName: '本体 AI',
+    employeeId: 'ontology-modeler',
+    employeeName: '本体建模数字员工',
     employeeDescription: '统一调度本体引擎各模块的数字员工',
     moduleLabel: 'Ontology 引擎',
     welcomeMessage:
@@ -82,6 +95,18 @@ export default function OntologyShellPage() {
       console.warn('[OntologyAssistant] stream failed:', msg);
     },
   });
+
+  // 数据中心是 Ontology Shell 的一个正式子域，需要保持页面级员工身份，
+  // 避免所有子页都伪装成同一个建模员工。
+  const dataAssistant = usePageAssistant({
+    employeeId: 'ontology-data-steward',
+    employeeName: '本体数据管家',
+    employeeDescription: '帮助你把控本体数据质量、数据一致性和数据源同步状态',
+    moduleLabel: 'Ontology 数据中心',
+    welcomeMessage: '你好，我是本体数据管家。可协助你分析数据源、同步状态和数据质量指标。',
+    suggestions: ['分析本体数据质量', '检查数据一致性', '调查数据同步异常'],
+  });
+  const activeAssistant = activeTab === 'datacenter' ? dataAssistant : assistant;
 
   const subTabs = useMemo(
     () => TABS.map((t) => ({ label: t.label, path: t.path, activePath: activeTab === t.key ? '/ontology' : `${location.pathname}?tab=${t.key}` })),
@@ -118,6 +143,19 @@ export default function OntologyShellPage() {
         flexShrink: 0,
       }}
     >
+      <h1
+        style={{
+          margin: 0,
+          flexShrink: 0,
+          fontSize: 18,
+          lineHeight: '24px',
+          fontWeight: 600,
+          color: 'var(--foreground)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {TAB_TITLES[activeTab] ?? 'Ontology'}
+      </h1>
       <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
         <SubTabs
           items={subTabs}
@@ -135,13 +173,13 @@ export default function OntologyShellPage() {
           <Plus style={{ width: 16, height: 16 }} />新建概念
         </Button>
       )}
-      <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
+      <AIAssistantTrigger open={activeAssistant.isOpen} onClick={activeAssistant.toggle} />
     </div>
   );
 
   return (
     <PageRoot header={stickyHeader}>
-      <AIAssistantWorkspace assistant={assistant}>
+      <AIAssistantWorkspace assistant={activeAssistant}>
         {activeTab === 'concept' && (
           <OntologyModelingPage
             createOpen={createOpen}

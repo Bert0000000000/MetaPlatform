@@ -21,7 +21,7 @@
 import type { BrowserContext, Page, APIRequestContext } from '@playwright/test';
 
 const IAM_LOGIN_URL =
-  process.env.E2E_IAM_LOGIN_URL ?? 'http://localhost:8100/api/v1/iam/auth/login';
+  process.env.E2E_IAM_LOGIN_URL ?? 'http://127.0.0.1:8100/api/v1/iam/auth/login';
 const IAM_USERNAME = process.env.E2E_USERNAME ?? 'admin';
 const IAM_PASSWORD = process.env.E2E_PASSWORD ?? 'admin123';
 

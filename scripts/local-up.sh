@@ -162,7 +162,7 @@ UP_FLAGS=("-d")
 [ "$NO_RECREATE" -eq 1 ] && UP_FLAGS+=("--no-recreate")
 
 [ "$QUIET" -eq 0 ] && echo "==> docker compose up ${UP_FLAGS[*]} $PROFILES"
-docker compose "${UP_FLAGS[@]}" $PROFILES
+docker compose up "${UP_FLAGS[@]}" $PROFILES
 
 # ---- Wait for healthy ----
 if [ "$WAIT_HEALTHY" -eq 1 ]; then

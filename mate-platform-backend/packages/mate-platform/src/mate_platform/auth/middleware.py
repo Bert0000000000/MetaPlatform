@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -85,6 +86,7 @@ def build_service_identity(cfg: AuthConfig | None = None) -> ServiceIdentity:
         token_uri=cfg.token_uri,
         client_id=cfg.service_client_id,
         client_secret=cfg.service_client_secret,
+        scope=os.environ.get("SERVICE_CLIENT_SCOPE", "platform.read"),
     )
 
 

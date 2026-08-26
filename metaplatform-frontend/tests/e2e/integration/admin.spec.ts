@@ -19,8 +19,7 @@ test.describe('联调-后台管理 Admin 模块', () => {
     await page.goto('/admin/users');
     await expect(page.getByText('用户管理', { exact: true }).first()).toBeVisible();
     await expect(page.getByText(/新建用户|批量导入/).first()).toBeVisible();
-    // antd renders a hidden measure row first; wait for a non-hidden body row
-    await expect(page.locator('.ant-table-row').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.semi-table-row').first()).toBeVisible({ timeout: 15000 });
     expect(tracker.failures.length, tracker.report()).toBe(0);
   });
 

@@ -64,6 +64,13 @@ CREATE DATABASE metaplatform_orchestrator
          LC_CTYPE 'en_US.UTF-8'
          TEMPLATE template0;
 
+-- Keycloak identity store. Unlike dev-mem H2, this survives Docker restarts.
+CREATE DATABASE keycloak
+    WITH ENCODING 'UTF8'
+         LC_COLLATE 'en_US.UTF-8'
+         LC_CTYPE 'en_US.UTF-8'
+         TEMPLATE template0;
+
 -- 授权语句：让 meta 用户可以访问这些库
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_kb TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_obs TO meta;
@@ -73,3 +80,4 @@ GRANT ALL PRIVILEGES ON DATABASE metaplatform_action TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_wfe TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_iam TO meta;
 GRANT ALL PRIVILEGES ON DATABASE metaplatform_orchestrator TO meta;
+GRANT ALL PRIVILEGES ON DATABASE keycloak TO meta;

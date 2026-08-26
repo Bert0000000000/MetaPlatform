@@ -73,6 +73,30 @@ from ..repositories.sql_models import ConversationORM, MessageORM
 router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
 
 
+def _llmgw_timeout_seconds() -> float:
+    """Return the bounded LLM Gateway request timeout.
+
+    Production keeps the existing long-running default, while contract and
+    adversarial tests can use a short deterministic timeout when no LLMGW is
+    provisioned.  Invalid configuration fails safe to the production default
+    instead of turning a chat request into a 500 before the stream starts.
+    """
+    raw = os.getenv("MATE_LLMGW_TIMEOUT_SECONDS", "120").strip()
+    try:
+        return max(0.1, float(raw))
+    except ValueError:
+        return 120.0
+
+
+def _copilot_client_timeout_seconds() -> float:
+    """Return the timeout for Copilot's auxiliary service lookups."""
+    raw = os.getenv("MATE_COPILOT_CLIENT_TIMEOUT_SECONDS", "5").strip()
+    try:
+        return max(0.1, float(raw))
+    except ValueError:
+        return 5.0
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -101,6 +125,7 @@ def _now_iso() -> str:
 def _conv_orm_to_dict(orm: Any) -> dict[str, Any]:
     return {
         "id": orm.id,
+        "tenant_id": orm.tenant_id,
         "title": orm.title,
         "mode": getattr(orm, "mode", "chat"),
         "favorite": getattr(orm, "favorite", False),
@@ -128,6 +153,7 @@ def _conv_in_memory_to_dict(conv: Any) -> dict[str, Any]:
     """In-memory Conversation dataclass → 与 ORM 路径一致的响应形状。"""
     return {
         "id": conv.id,
+        "tenant_id": conv.tenant_id,
         "title": conv.title,
         "mode": getattr(conv, "mode", "chat"),
         "favorite": getattr(conv, "favorite", False),
@@ -216,6 +242,7 @@ def _get_client(request: Request) -> AsyncCopilotClient:
             scope="platform.read platform.write",
         ),
         provider=stub_provider,
+        timeout_seconds=_copilot_client_timeout_seconds(),
     )
 
 
@@ -912,6 +939,7 @@ async def chat_completions_stream(
                 scope="platform.read platform.write",
             ),
             tenant_id=tid,
+            timeout_seconds=_llmgw_timeout_seconds(),
             user_token=user_token or None,
         )
         # 后台 AI Provider 配置：按模型 provider 从 IAM 读 base_url + api_key
@@ -1412,25 +1440,22 @@ async def match_employees(
             auth_header = request.headers.get("authorization", "")
             if auth_header.lower().startswith("bearer "):
                 fallback_token = auth_header[7:].strip()
+        # APP-DW caps page size at 100.  Requesting 200 turns a healthy
+        # dependency into a 422 and silently selects the legacy seed below.
         raw_employees = await client.list_dw_employees(
             tenant_id=tenant_id,
             keyword="",
-            size=200,
+            size=100,
             fallback_token=fallback_token or None,
         )
-    except Exception:
-        # dw 不可达：保留旧行为兜底，保证 API 不 500（dev / 灰度期）。
-        raw_employees = [
-            {"employeeId": "emp-1", "name": "Finance Recon Bot",
-             "roleCategory": "FINANCE", "roleIdentity": "analyst",
-             "capability": "finance,reconciliation"},
-            {"employeeId": "emp-2", "name": "CRM Archivist",
-             "roleCategory": "SALES", "roleIdentity": "agent",
-             "capability": "crm,data"},
-            {"employeeId": "emp-3", "name": "KB Curator",
-             "roleCategory": "PLATFORM", "roleIdentity": "agent",
-             "capability": "knowledge,indexing"},
-        ]
+    except Exception as exc:
+        # Never return copilot-owned demo employees when the DW source is
+        # unavailable.  A dependency failure must be visible to callers so
+        # they can retry or present an actionable error.
+        raise HTTPException(
+            status_code=503,
+            detail="Digital Workforce employee directory is unavailable",
+        ) from exc
 
     def _haystack(e: dict[str, Any]) -> str:
         parts = [
@@ -1691,6 +1716,7 @@ async def chat_agent_stream(
         port=llmgw_port,
         auth=bearer,
         tenant_id=tid,
+        timeout_seconds=_llmgw_timeout_seconds(),
         user_token=user_token or None,
     )
     orchestrator_client = OrchestratorClient(auth=bearer)

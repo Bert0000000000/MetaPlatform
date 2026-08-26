@@ -1,21 +1,21 @@
 ﻿# Mate Platform 文档导航
 
-> **最后更新**：2026-07-27（v3.0 文档重构）
+> **最后更新**：2026-08-25（ADR-0061 Temporal Workflow 架构同步）
 >
-> **平台状态**：**未上生产**（v3.0 全新重写中）
+> **平台状态**：v3.0 GA + v3.1/v4 增量；Temporal 目标架构已接受，Sprint 1A 迁移尚未完成
 
 ## 🚀 新成员必读
 
 按顺序阅读这 4 份文档：
 
 1. **项目上下文**：[`CLAUDE.md`](../CLAUDE.md) / [`agent.md`](../agent.md)
-2. **主架构**：[`active/specs/2026-07-27-mate-platform-technical-architecture.md`](active/specs/2026-07-27-mate-platform-technical-architecture.md) ⭐ **THE ONE DOC**
-3. **开发路线图**：[`active/plans/development-roadmap.md`](active/plans/development-roadmap.md)（P0 启动）
+2. **主架构**：[`active/specs/2026-07-27-mate-platform-architecture-implementation.md`](active/specs/2026-07-27-mate-platform-architecture-implementation.md) ⭐ **THE ONE DOC**
+3. **当前发布计划**：[`active/V1.0-RELEASE-PLAN.md`](active/V1.0-RELEASE-PLAN.md)
 4. **PRD 集合**：[`active/prd/`](active/prd/)
 
 ## 📁 目录结构
 
-### 🟢 `active/` — 当前活跃（v3.0）
+### 🟢 `active/` — 当前活跃（v3.x / v4 增量）
 
 | 子目录 | 内容 |
 |---|---|
@@ -36,11 +36,13 @@
 |---|---|
 | [`legacy/specs/`](legacy/specs/) | v1 / v2 历史架构文档（**不要**用做新决策） |
 
-## 🏗️ 核心架构文档（v3.0）
+## 🏗️ 核心架构文档（v3.x）
 
 | 文档 | 说明 |
 |---|---|
-| [主架构 v3.0](active/specs/2026-07-27-mate-platform-technical-architecture.md) | **THE ONE DOC** - Plan D Polyglot Microservice |
+| [主架构实施版](active/specs/2026-07-27-mate-platform-architecture-implementation.md) | **THE ONE DOC** - v3.x 实施基线 + ADR-0061 Temporal 覆盖层 |
+| [技术栈定稿](active/specs/2026-07-27-mate-platform-tech-stack-confirmed.md) | 组件选型、版本线与 Temporal/Flowable 迁移边界 |
+| [v3.0 决策导向架构](active/specs/2026-07-27-mate-platform-technical-architecture.md) | 历史决策追溯；其中 Flowable 主引擎描述已被 ADR-0061 覆盖 |
 | [OpenViking 候选](active/specs/2026-07-27-openviking-future-architecture-candidate.md) | 待评估的候选方案 |
 
 ## 🔑 关键架构决策
@@ -50,6 +52,7 @@
 | v1.2 决策（去 Python） | ❌ 已废止 | 详见 legacy/ |
 | v2 决策（主力 + AI 子域） | ❌ 已演进 | 详见 legacy/ |
 | **v3.0 决策（Polyglot Microservice）** | ✅ **当前** | Python 主后端 + Java 引擎服务化 |
+| **ADR-0061（Temporal 业务 Workflow）** | ✅ **Accepted / 待迁移** | Temporal 为可靠编排控制面；PlanRunner 为 DSL 翻译层；Flowable 为双轨期 legacy |
 | RAGFlow 集成 | ✅ 自我评估通过 | 仅做 DeepDoc 解析 |
 | LightRAG 集成 | ✅ MIT 协议 | GraphRAG 检索 + 实体抽取 |
 
@@ -74,7 +77,7 @@
 | **P1 RAG MVP** | 3-4 周 | 上传 + 检索 | S1, S3, S8 |
 | **P2 知识工程** | 2-3 周 | 抽取 + 审核 | S2 |
 | **P3 高级检索** | 2-3 周 | GraphRAG + Router | S3 增强 |
-| **P4 工作流** | 3-4 周 | Flowable + Drools | S4, S5, S5b |
+| **Sprint 1A 工作流** | 4 周 | Temporal + PlanRunner DSL + HITL Signal；Flowable 双轨迁移 | S4、长审批、跨域流程 |
 | **P5 企业级** | 2-3 周 | 版本/治理/多租户 | S6, S10, S11 |
 | **P6 打磨** | 2 周 | 性能 + 文档 | 全部 |
 
@@ -87,6 +90,8 @@
 > - 提取历史业务需求
 >
 > **所有新工作必须基于 `active/` 目录**。
+>
+> **Workflow 特别规则**：新增可靠业务流程基于 ADR-0061 和主架构 §1.3；旧 Flowable 文档仅用于存量实现、迁移和回滚。Temporal 负责可靠编排，不替代 FastAPI CRUD、Kafka/Outbox、Flink/Airflow、AgentLoop、规则引擎或 K8s 沙箱。
 
 ## 🔒 合规
 
@@ -128,8 +133,8 @@
 ## 📞 给 AI Agent 的提示
 
 > 当你（AI）被问及架构决策时：
-> 1. **第一参考**：`active/specs/2026-07-27-mate-platform-technical-architecture.md`
-> 2. **当前版本**：v3.0（v1.2 / v2 / v2.1 已废止）
-> 3. **关键路径**：Python 主后端 + Java 引擎服务 + Python AI 服务
+> 1. **第一参考**：`active/specs/2026-07-27-mate-platform-architecture-implementation.md`
+> 2. **当前版本**：v3.x 实施基线；Temporal 目标态已接受、迁移未完成
+> 3. **关键路径**：Python 主后端 + Temporal 可靠编排控制面 + 专用执行引擎/AI 服务
 > 4. **14 业务场景**：评估完整性的标准
-> 5. **GoF 23 模式**：必用 Adapter / Builder / Strategy / Observer
+> 5. **Workflow 决策源**：`active/decisions/ADR-0061-temporal-as-workflow-engine.md`

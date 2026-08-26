@@ -239,7 +239,7 @@ def test_match_employees_passes_fallback_token(
     captured: dict = {}
 
     class _StubClient:
-        async def list_dw_employees(self, *, tenant_id, keyword="", size=200, fallback_token=None):
+        async def list_dw_employees(self, *, tenant_id, keyword="", size=100, fallback_token=None):
             captured["tenant_id"] = tenant_id
             captured["keyword"] = keyword
             captured["size"] = size
@@ -279,3 +279,4 @@ def test_match_employees_passes_fallback_token(
     )
     # tenant_id 也必须对位 ctx.tenant_id
     assert captured["tenant_id"] == "tenant-acme"
+    assert captured["size"] <= 100

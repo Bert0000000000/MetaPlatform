@@ -1,23 +1,12 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const portalUrl = process.env.E2E_BASE_URL ?? process.env.PORTAL_E2E_URL ?? 'http://localhost:9200';
 
-async function authenticate(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('mate_platform_token', 'e2e-token');
-    localStorage.setItem('mate_platform_user', JSON.stringify({
-      id: 'e2e-user',
-      username: 'e2e',
-      realName: 'E2E User',
-      tenantId: 'default',
-      roles: ['admin'],
-    }));
-  });
-}
+// The assistant lives inside the authenticated application shell. Reuse the
+// real-auth storage state so shell requests do not invalidate the session.
+test.use({ storageState: 'tests/e2e/.auth/state.json' });
 
 test.describe('page-level AI assistant', () => {
-  test.beforeEach(async ({ page }) => authenticate(page));
-
   test('opens beside business architecture content and preserves messages while closed', async ({ page }) => {
     await page.goto(`${portalUrl}/arch`);
     const content = page.getByTestId('assistant-page-content');

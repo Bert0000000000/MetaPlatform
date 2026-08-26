@@ -127,7 +127,19 @@ def _resolve_scenario(requested: str) -> str:
     return requested
 
 
-def _run_s3_initial(req: ChatRequest, thread_id: str, tenant_id: str) -> dict:
+def _persist(tenant_id: str, thread_id: str, state: dict[str, Any]) -> None:
+    """Persist graph state without retaining a bearer token in memory storage."""
+    persisted = dict(state)
+    persisted.pop("_access_token", None)
+    save_state(tenant_id, thread_id, persisted)
+
+
+def _run_s3_initial(
+    req: ChatRequest,
+    thread_id: str,
+    tenant_id: str,
+    access_token: str,
+) -> dict:
     """S3 first call: retrieve + answer + human_review (paused).
 
     Registers a PENDING review in the tenant-scoped ``_REVIEWS`` table
@@ -138,6 +150,7 @@ def _run_s3_initial(req: ChatRequest, thread_id: str, tenant_id: str) -> dict:
         "thread_id": thread_id,
         "tenant_id": tenant_id,
         "_scenario": "S3",
+        "_access_token": access_token,
     }
     state = retrieve_node(init)
     state = answer_node(state)
@@ -149,7 +162,7 @@ def _run_s3_initial(req: ChatRequest, thread_id: str, tenant_id: str) -> dict:
         status="PENDING",
         created_at=time.time(),
     ))
-    save_state(tenant_id, thread_id, state)
+    _persist(tenant_id, thread_id, state)
     return state
 
 
@@ -213,9 +226,10 @@ def create_app() -> FastAPI:
         if scenario not in _GRAPHS:
             raise HTTPException(status_code=501, detail=f"scenario {req.scenario} not implemented")
         thread_id = req.thread_id or str(uuid.uuid4())
+        access_token = request.headers.get("authorization", "")
         start = time.perf_counter()
         if scenario == "S3":
-            state = _run_s3_initial(req, thread_id, tenant_id)
+            state = _run_s3_initial(req, thread_id, tenant_id, access_token)
             # Hook 3 of 5: emit review-requested event.
             _emit(
                 request,
@@ -233,6 +247,7 @@ def create_app() -> FastAPI:
                 "thread_id": thread_id,
                 "tenant_id": tenant_id,
                 "_scenario": scenario,
+                "_access_token": access_token,
             })
             try:
                 state = graph.invoke(base)
@@ -242,7 +257,7 @@ def create_app() -> FastAPI:
             # graph's persist_node dropped tenant_id during transitions.
             state["tenant_id"] = tenant_id
             state["thread_id"] = thread_id
-            save_state(tenant_id, thread_id, state)
+            _persist(tenant_id, thread_id, state)
         latency_ms = int((time.perf_counter() - start) * 1000)
         # Hook 3 of 5: emit chat-completed event.
         _emit(
@@ -282,6 +297,7 @@ def create_app() -> FastAPI:
                     "thread_id": thread_id,
                     "tenant_id": tenant_id,
                     "_scenario": "S3",
+                    "_access_token": request.headers.get("authorization", ""),
                 }
                 state = retrieve_node(init)
                 rc = state.get("retrieved_chunks", [])
@@ -307,7 +323,7 @@ def create_app() -> FastAPI:
                     {"thread_id": thread_id, "scenario": "S3"},
                     tenant_id,
                 )
-                save_state(tenant_id, thread_id, state)
+                _persist(tenant_id, thread_id, state)
                 yield "event: awaiting_review\ndata: pending=true\n\n"
                 yield "event: done\ndata: paused\n\n"
                 return
@@ -318,6 +334,7 @@ def create_app() -> FastAPI:
                     "thread_id": thread_id,
                     "tenant_id": tenant_id,
                     "_scenario": "S1",
+                    "_access_token": request.headers.get("authorization", ""),
                 }
                 state = retrieve_node(init)
                 rc = state.get("retrieved_chunks", [])
@@ -327,7 +344,7 @@ def create_app() -> FastAPI:
                 for token in stream_answer(llm, req.message, rc):
                     yield f"event: token\ndata: {token}\n\n"
                 yield "event: llm_done\ndata: complete\n\n"
-                save_state(tenant_id, thread_id, state)
+                _persist(tenant_id, thread_id, state)
                 _emit(
                     request,
                     "agent.chat.completed",
@@ -344,6 +361,7 @@ def create_app() -> FastAPI:
                     "thread_id": thread_id,
                     "tenant_id": tenant_id,
                     "_scenario": "S2",
+                    "_access_token": request.headers.get("authorization", ""),
                 }
                 state = planner_node(init)
                 sq = state.get("sub_questions", [])
@@ -357,7 +375,7 @@ def create_app() -> FastAPI:
                 for token in stream_answer(llm, req.message, rc):
                     yield f"event: token\ndata: {token}\n\n"
                 yield "event: llm_done\ndata: complete\n\n"
-                save_state(tenant_id, thread_id, state)
+                _persist(tenant_id, thread_id, state)
                 _emit(
                     request,
                     "agent.chat.completed",
@@ -422,7 +440,7 @@ def create_app() -> FastAPI:
             state = persist_node(state)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
-        save_state(tenant_id, req.thread_id, state)
+        _persist(tenant_id, req.thread_id, state)
 
         # Transition the FSM.
         rs.status = "APPROVED" if req.approved else "REJECTED"

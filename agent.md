@@ -1,13 +1,15 @@
 ﻿# agent.md
 
 > 本文件供 AI Agent（Cursor、Claude Code、Copilot、Codex、Windsurf 等）读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-07-28（v3.1 Data-Ready Baseline 同步）；上一版 2026-07-27（v3.0 Plan D 实施版定稿）
+> **最近更新**：2026-08-25（ADR-0061 Temporal Workflow 架构同步）；上一版 2026-07-28（v3.1 Data-Ready Baseline）
 >
-> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）**，v3.1 Data-Ready Baseline 同步中（详见附录 A）
+> **当前架构版本**：**v3.0 GA + v3.1/v4 增量**；Temporal 目标态已 Accepted，Sprint 1A 迁移未完成；Flowable 为双轨期 legacy
 >
 > **配套文档（实施版）**：
 > - 主架构（实施版）：`docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md` ⭐ THE ONE DOC
 > - 技术栈定稿：`docs/active/specs/2026-07-27-mate-platform-tech-stack-confirmed.md`
+> - Workflow ADR：`docs/active/decisions/ADR-0061-temporal-as-workflow-engine.md`
+> - Workflow 迁移计划：`docs/active/V1.0-RELEASE-PLAN.md` §2.2 Sprint 1A
 > - 交付版本计划：`docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md`
 > - 历史决策（已归档）：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md`
 - v3.1 大数据设计规格：`docs/superpowers/specs/2026-07-28-mate-platform-big-data-etl-design.md`
@@ -18,7 +20,7 @@
 
 ### 核心能力
 - **Ontology 本体引擎**：统一语义建模与推理（Neo4j + Duckling 实体抽取）
-- **低代码应用构建**：BPMN 审批流（Flowable 8.0）+ AI Agent 编排流（LangGraph）
+- **低代码应用构建**：FlowGram/PlanSpec DSL + Temporal 可靠执行；LangGraph/AgentLoop 保留内部推理
 - **数字员工**：AI 驱动的自动化员工
 - **企业级 RAG**：RAGFlow（DeepDoc 解析）+ LightRAG（GraphRAG）+ LangChain/LlamaIndex 编排
 - **MCP / A2A 协议**：对接外部 AI 工具（Cursor/Claude/Codex）与外部 Agent 系统
@@ -31,7 +33,7 @@
 | S1 | 知识库建立（PPT/Word/PDF 上传 + 解析） | W5-6 (tech-rag) |
 | S2 | Ontology 抽象 | W5-4 (tech-ont) |
 | S3 | 知识问答 | W5-6 + W5-7 |
-| S4 | 智能体编排生成（BPMN） | W5-7 + W3-5 (Flowable) |
+| S4 | 智能体编排生成（PlanSpec → Temporal Workflow） | Sprint 1A（Flowable 双轨迁移） |
 | S5 | 智能巡检 | W5-1 (tech-msg) |
 | S5b | 实时阈值触发（数据变化 + 规则命中 + AI 响应） | W3-8 (Drools) + W5-7 |
 | S6 | Ontology 演进与版本 | W5-4 |
@@ -63,10 +65,13 @@
 | Python 主后端 | mate-tech-mcp | Python | `python:3.12` | 8080 | MCP 协议 |
 | Python 主后端 | mate-tech-data | Python | `python:3.12` | 8080 | 数据平台控制面 (v3.1 新增) |
 | Python 主后端 | mate-app-kb | Python | `python:3.12` | 8080 | 知识库业务聚合 |
+| 可靠编排（目标态） | Temporal Service | Go | 锁定版（Sprint 1A 固化） | 7233 | Workflow Event History / Task Queue |
+| 可靠编排（目标态） | Temporal Worker | Python | `temporalio` SDK 锁定版 | 内部 | Workflow + Activities |
+| 可靠编排（目标态） | mate-tech-orchestrator / PlanRunner | Python | `python:3.12` | 8080 | LLM-friendly DSL 翻译层 |
 | 外部引擎 | Keycloak | Java | `quay.io/keycloak/keycloak:25.0` | 8080 | IAM/SSO/OIDC |
-| 外部引擎 | Flowable engine | Java | `flowable/flowable-engine:8.0.0` | 8081 | BPMN 引擎 |
-| 外部引擎 | Flowable task | Java | `flowable/flowable-task:8.0.0` | 8082 | BPMN 任务 |
-| 外部引擎 | Flowable rest | Java | `flowable/flowable-rest:8.0.0` | 8083 | BPMN 接口 |
+| 外部引擎（legacy） | Flowable engine | Java | `flowable/flowable-engine:8.0.0` | 8081 | 存量 BPMN / 双轨回滚 |
+| 外部引擎（legacy） | Flowable task | Java | `flowable/flowable-task:8.0.0` | 8082 | 存量 BPMN 任务 |
+| 外部引擎（legacy） | Flowable rest | Java | `flowable/flowable-rest:8.0.0` | 8083 | 双轨兼容接口 |
 | 外部引擎 | Drools KIE Server | Java | `jboss/kie-server:7.74` | 8180 | 规则引擎 |
 | AI 服务 | RAGFlow | Python | `infiniflow/ragflow:v0.13` | 9621 | DeepDoc 文档解析 |
 | AI 服务 | LightRAG | Python | `hkuds/lightrag:latest` | 9622 | GraphRAG |
@@ -111,9 +116,10 @@
 #### Python 镜像
 - `python:3.12`（完整版，含编译工具链）
 
-#### Java 外部引擎（成熟产品，不计入"Java 服务"）
+#### 可靠编排与外部引擎
+- **Temporal**：业务 Workflow 可靠编排控制面；官方 Python SDK；当前为 Accepted 目标态、尚未完成迁移
 - **Keycloak 25.0**：IAM / SSO / OIDC
-- **Flowable 8.0**：BPMN（云原生分布式：engine + task + rest 三服务）
+- **Flowable 8.0**：双轨期 legacy BPMN（engine + task + rest 三服务）
 - **Drools 8.x**（KIE Server 7.74 镜像）：规则引擎
 
 #### Python AI 服务
@@ -183,7 +189,7 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 ## 架构铁律（v3.0）
 
 1. **Python 主后端**：所有业务代码全 Python（FastAPI + SQLModel + Pydantic v2）
-2. **Java 引擎外部化**：Keycloak/Flowable/Drools 用官方镜像，团队不写 Java
+2. **可靠编排统一**：新增跨服务/HITL/长任务 Workflow 走 Temporal；PlanRunner 只做 DSL 翻译；Flowable 仅限双轨期 legacy
 3. **HTTP 客户端统一用 httpx**：不引入 aiohttp/requests
 4. **类型检查 pyright strict**：CI 必跑
 5. **测试 ≥ 80% 覆盖率**：pytest + pytest-asyncio + hypothesis
@@ -199,7 +205,7 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 |---|---|---|---|
 | **W1** | 项目骨架 + Swagger/OpenAPI | 2 周 | ✓ 关键 |
 | **W2** | 基础设施 facade（pg/milvus/minio/redis/kafka/nacos 现成库接入） | 3 周 | ✓ 关键 |
-| **W3** | ACL Client 集（Keycloak + Flowable 8.0 + Drools） | 2.5 周并行 | ✓ 关键 |
+| **W3（历史）** | ACL Client 集（Keycloak + Flowable 8.0 + Drools） | 2.5 周并行 | 已形成 legacy 基线 |
 | **W4** | Traefik 网关 + AuthService | 2.5 周 | ✓ 关键 |
 | **W5** | 业务域实现（8 模块：tech-msg/obs/mcp/ont/llmgw/rag/agent + app-kb） | 10 周 | ✓ 关键 |
 | **W6** | 前端 9 apps 补齐对接 | 13 周 | 配合 |
@@ -242,14 +248,14 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 
 > **当被问及架构决策时**：
 > 1. **第一参考**：`docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md`（THE ONE DOC）
-> 2. **当前版本**：v3.0（Plan D，Polyglot Microservice）
-> 3. **关键技术栈**：Python 3.12 + FastAPI + SQLModel + LangGraph + httpx + Traefik + Keycloak 25 + Flowable 8.0 + Drools 7.74
+> 2. **当前版本**：v3.0 GA + v3.1/v4 增量；Temporal 目标态已接受、迁移未完成
+> 3. **关键技术栈**：Python 3.12 + FastAPI + SQLModel + Temporal + LangGraph + httpx + Traefik + Keycloak 25 + Drools 7.74
 > 4. **主后端**：Python（团队不写 Java）
-> 5. **外部 Java 引擎**：Keycloak/Flowable/Drools 是成熟产品，二进制部署（不计入"Java 服务"）
+> 5. **Workflow 边界**：Temporal 负责可靠编排；AgentLoop/Flink/Airflow/Drools/K8s 作为 Activity 背后的专用执行面；Flowable 仅 legacy
 > 6. **接口契约**：Swagger/OpenAPI 3.1
 > 7. **开发节奏**：W1-W7 并行（共 22 周），关键路径见上
 > 8. **修改主架构前**：必须同步更新本文件和 agent.md / CLAUDE.md
-9. **数据平台铁律（v3.1）**：Flink 唯一主引擎、Paimon+Iceberg 分层、Airflow 调度 / Flowable 审批、Python mate-tech-data 控制面；旧 Java TECH-DATA 不恢复上线
+9. **数据平台铁律（v3.1）**：Flink 唯一计算主引擎、Paimon+Iceberg 分层、Airflow 负责数据 DAG、Temporal 负责跨域审批/长流程、Python mate-tech-data 为控制面；旧 Java TECH-DATA 不恢复上线
 
 ## v3.1 增量任务（Data Track）
 

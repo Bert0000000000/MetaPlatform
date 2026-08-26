@@ -1,11 +1,15 @@
-# Mate Platform 技术架构 v3.0（实施版）
+# Mate Platform 技术架构 v3.x（实施版）
 
-> **版本**：v3.0-implementation | **日期**：2026-07-27 | **状态**：实施基线
+> **版本**：v3.1-implementation.4 | **日期**：2026-08-25 | **状态**：实施基线 + Temporal 目标态已接受（迁移未完成）
 >
 > **配套文档**：
 > - 技术栈定稿：`2026-07-27-mate-platform-tech-stack-confirmed.md`
 > - 交付版本计划：`2026-07-27-mate-platform-delivery-roadmap.md`
+> - Workflow 决策：`../decisions/ADR-0061-temporal-as-workflow-engine.md`
+> - Workflow 迁移计划：`../V1.0-RELEASE-PLAN.md` §2.2 Sprint 1A
 > - 历史决策归档：`archive/2026-07-27-mate-platform-technical-architecture-v2.1.md`
+>
+> **阅读优先级**：本文件 §1.3 与附录 B 是 ADR-0061 的目标架构覆盖层；正文中的 Flowable 部署细节描述迁移前/双轨期 legacy 运行时。发生冲突时，以 ADR-0061、§1.3 和附录 B 为准。Temporal 已完成架构选型，但 Sprint 1A 当前仍为 `Not Started`，不得把目标态写成已上线事实。
 
 ---
 
@@ -35,11 +39,17 @@ flowchart TB
         P6[mate-tech-obs]
         P7[mate-tech-mcp]
         P8[mate-app-kb]
+        P9[mate-tech-orchestrator<br/>PlanRunner DSL 翻译层]
     end
 
-    subgraph EXT [外部引擎 - Java 产品]
+    subgraph ORCH [可靠编排控制面 - ADR-0061 目标态]
+        TS[Temporal Service + UI]
+        TW[Temporal Worker<br/>Workflow + Activities]
+    end
+
+    subgraph EXT [外部引擎 / 双轨期 legacy]
         K[Keycloak 25.0]
-        FL[Flowable 8.0<br/>engine + task + rest]
+        FL[Flowable 8.0<br/>legacy engine + task + rest]
         DR[Drools KIE Server 7.74]
     end
 
@@ -67,8 +77,12 @@ flowchart TB
 
     P1 -->|ACL Client| RF
     P1 -->|ACL Client| LR
-    P1 -->|ACL Client| FL
-    P2 -->|ACL Client| FL
+    P9 -->|官方 SDK| TS
+    TS -->|Task Queue| TW
+    TW -->|Activity| P2
+    TW -->|Activity| P3
+    TW -->|Activity| P8
+    P9 -. WORKFLOW_ENGINE=legacy .-> FL
     P8 -->|ACL Client| DR
     A -->|OIDC| K
 
@@ -82,6 +96,7 @@ flowchart TB
     PY --> NA
 
     K --> PG
+    TS --> PG
     FL --> PG
     DR --> PG
 ```
@@ -100,10 +115,14 @@ flowchart TB
 |  | mate-tech-obs | Python | `python:3.12` | 8080 |
 |  | mate-tech-mcp | Python | `python:3.12` | 8080 |
 |  | mate-app-kb | Python | `python:3.12` | 8080 |
+| **可靠编排（目标态）** | mate-tech-orchestrator / PlanRunner | Python | `python:3.12` | 8080 |
+|  | Temporal Service | Go | 锁定版（由 Sprint 1A 固化） | 7233 |
+|  | Temporal Worker | Python | `temporalio` SDK 锁定版 | 内部 Task Queue |
+|  | Temporal UI | TypeScript / Go | 与 Temporal Service 同版本线 | 集群内部 |
 | **外部引擎** | Keycloak | Java | `quay.io/keycloak/keycloak:25.0` | 8080 |
-|  | Flowable engine | Java | `flowable/flowable-engine:8.0.0` | 8081 |
-|  | Flowable task | Java | `flowable/flowable-task:8.0.0` | 8082 |
-|  | Flowable rest | Java | `flowable/flowable-rest:8.0.0` | 8083 |
+|  | Flowable engine（legacy） | Java | `flowable/flowable-engine:8.0.0` | 8081 |
+|  | Flowable task（legacy） | Java | `flowable/flowable-task:8.0.0` | 8082 |
+|  | Flowable rest（legacy） | Java | `flowable/flowable-rest:8.0.0` | 8083 |
 |  | Drools KIE Server | Java | `jboss/kie-server:7.74` | 8180 |
 | **AI 服务** | RAGFlow | Python | `infiniflow/ragflow:v0.13` | 9621 |
 |  | LightRAG | Python | `hkuds/lightrag:latest` | 9622 |
@@ -116,6 +135,36 @@ flowchart TB
 |  | RabbitMQ | Erlang | `rabbitmq:3.13-management-alpine` | 5672 |
 |  | Nacos | Java | `nacos/nacos-server:v2.4.3-slim` | 8848 |
 |  | Loki | Go | `grafana/loki:3.3.2` | 3100 |
+
+### 1.3 Workflow 目标架构覆盖层（ADR-0061）
+
+**架构原则**：Temporal 是统一的可靠编排控制面，不是通用计算、数据、消息或业务服务引擎。所有需要持久状态、跨服务步骤、重试/超时、HITL、长时间等待、补偿或版本灰度的流程优先进入 Temporal；单次低延迟 CRUD、纯查询和无恢复要求的同步调用不强制经过 Temporal。
+
+```mermaid
+flowchart LR
+    SRC[FlowGram / Agent / API / Domain Event] --> DSL[PlanSpec / PlanRunner DSL]
+    DSL --> WF[Temporal Workflow]
+    WF --> ACT[Activities / Child Workflows]
+    ACT --> ONT[Ontology Action]
+    ACT --> AGENT[LLM / AgentLoop]
+    ACT --> HITL[HITL / 审批]
+    ACT --> DATA[Flink / dbt / RAG]
+    ACT --> SBX[K8s Sandbox]
+```
+
+| 能力 | Temporal 的职责 | 不由 Temporal 取代的部分 |
+|---|---|---|
+| 业务 Workflow / 审批 / HITL | Workflow 状态、Signal、Timer、retry、timeout、恢复、版本灰度 | 业务规则、审批 UI、第三方审批 API |
+| Agent / LLM | 外层生命周期、步骤可靠执行、长任务恢复 | AgentLoop / LangGraph 的内部推理与工具决策 |
+| Ontology Action | 多步骤或需确认的 Action 编排；Activity 调用 `confirm_then_apply` | Ontology Kernel、ActionType 语义和同步单步执行 |
+| 数据与 AI 作业 | 编排 Flink、dbt、RAG 等作业的提交、等待、重试与补偿 | Flink 计算、Airflow 数据 DAG、查询引擎、模型推理本身 |
+| 沙箱 | 创建、观察和回收 K8s Job 的可靠流程 | K8s / MicroVM 的资源与安全隔离 |
+| 领域事件 | 由 Outbox/Kafka handler 启动 Workflow 或发送 Signal | Kafka/Outbox 的广播、订阅与事件保留 |
+| 可视化编排 | 执行 FlowGram/Agent 产生的 PlanSpec/DSL | FlowGram 画布和业务流程建模体验 |
+
+**确定性边界**：Workflow 代码只做确定性编排；HTTP、数据库、LLM、文件和随机/外部时间等调用必须放入幂等 Activity。Temporal SDK 直接接入，不通过通用 httpx ACL 模拟。
+
+**迁移状态**：ADR-0061 已 `Accepted`；Sprint 1A 尚未完成。迁移期保留 `WORKFLOW_ENGINE=temporal|legacy` 和 plan 镜像表，按 `plan_id` 灰度。Flowable 只作为 legacy BPMN 运行时保留，不再承接新增业务 Workflow；达到 ADR-0061 验收门槛后退出主运行时。
 
 ---
 
@@ -144,7 +193,7 @@ api               -> FastAPI routes + DTO
 | Knowledge | mate-tech-rag | Document, Chunk, KnowledgeBase |
 | Ontology | mate-tech-ont | Concept, Entity, Relation |
 | Agent | mate-tech-agent | AgentRun, Task, Plan |
-| Workflow | Flowable Service | ProcessDefinition, ProcessInstance |
+| Workflow | mate-tech-orchestrator + Temporal | PlanSpec, WorkflowExecution, Activity |
 | Rule | Drools Service | RuleSet, Fact, Trigger |
 | Identity | Keycloak | User, Realm, Role |
 | App | mate-app-kb | Application, Module |
@@ -174,14 +223,14 @@ Outbox Publisher 读取 outbox 表，发送到 Kafka
 消费者 At-least-once 消费，幂等处理
 ```
 
-### 2.5 Saga Pattern（Choreography）
+### 2.5 Durable Orchestration + Event-Driven
 
 **应用场景**：S4 智能体编排、S5b 阈值触发
-**实现**：事件驱动，无中心协调器
+**实现**：Temporal 协调需要持久恢复的业务流程；Kafka/Outbox 继续传递领域事件并触发 Workflow/Signal。
 
 ### 2.6 Anti-Corruption Layer (ACL)
 
-每个外部服务一个 Client：
+每个外部服务一个 Client。以下 Flowable Client 是双轨期 legacy 示例：
 ```python
 # packages/mate-tech-rag/clients/flowable_client.py
 class FlowableClient:
@@ -209,6 +258,8 @@ class FlowableClient:
         response.raise_for_status()
         return response.json()
 ```
+
+Temporal 不使用上述 HTTP ACL 模式；通过官方 SDK 实现 `TemporalClientPort`，并把外部 I/O 封装为 Activity。
 
 ### 2.7 Resilience Patterns
 
@@ -258,7 +309,9 @@ async def call_with_retry(self, url: str) -> dict:
 - Realm / Client / Role / User 管理
 - SSO 单点登录
 
-### 3.2 Flowable 8.0（BPMN）
+### 3.2 Flowable 8.0（Legacy BPMN，双轨期）
+
+> 本节保留当前实现和迁移证据。新业务 Workflow 不再扩展 Flowable；目标运行时见 §1.3 与附录 B。
 
 | 项 | 值 |
 |---|---|
@@ -266,7 +319,7 @@ async def call_with_retry(self, url: str) -> dict:
 | 端口 | engine:8081 / task:8082 / rest:8083 |
 | 数据库 | PostgreSQL schema `flowable` |
 | Python 接入 | `FlowableClient`（自研 httpx，调用 rest:8083） |
-| 调用场景 | S4 智能体编排、BPMN 部署、流程启动、任务查询 |
+| 调用场景 | 迁移前 S4/BPMN 实例兼容、双轨对比与回滚 |
 
 **架构变化**（vs 7.x）：云原生分布式，engine / task / rest 拆分独立部署。
 
@@ -389,7 +442,7 @@ class Document(SQLModel, table=True):
     status: Literal["pending", "processing", "ready", "failed"] = "pending"
 ```
 
-**FastAPI 路由**：
+**FastAPI 路由（legacy Flowable 兼容入口）**：
 ```python
 from fastapi import FastAPI, Depends
 
@@ -411,6 +464,8 @@ async def generate_workflow(
     )
     return {"deploymentId": deployment["id"], "instanceId": instance["id"]}
 ```
+
+新增 Workflow 入口应提交 PlanSpec/DSL 并启动 Temporal Workflow，不再生成并部署新的 Flowable BPMN 实例。
 
 ---
 
@@ -461,8 +516,10 @@ metaplatform-frontend/
 | ParsedDocument | PostgreSQL `rag.*` | Retrieval | Python |
 | Chunk + Embedding | PostgreSQL + Milvus | Retrieval | Python |
 | GraphRAG 图 | Neo4j `lrag-graph` | LightRAG | Python |
-| **BPMN 流程定义** | PostgreSQL `flowable.*` | Flowable Service | Java |
-| **BPMN 流程实例** | PostgreSQL `flowable.*` | Flowable Service | Java |
+| **Workflow Event History（目标态）** | Temporal persistence schema | Temporal Service | Go / Python Worker |
+| **Plan 查询镜像（迁移期）** | PostgreSQL plan mirror | mate-tech-orchestrator | Python |
+| **BPMN 流程定义（legacy）** | PostgreSQL `flowable.*` | Flowable Service | Java |
+| **BPMN 流程实例（legacy）** | PostgreSQL `flowable.*` | Flowable Service | Java |
 | **规则定义** | PostgreSQL `drools.*` | Drools Service | Java |
 | **用户/租户/凭证** | PostgreSQL `keycloak.*` | Keycloak | Java |
 | Ontology | Neo4j `tech-ont` | TECH-ONT | Python |
@@ -488,10 +545,11 @@ flowchart LR
     K --> L[Drools Service]
     L -->|触发| M[AI Agent]
 
-    N[用户请求] --> O[FastAPI]
-    O --> P[Flowable Service]
-    P --> Q[执行 BPMN]
+    N[用户请求 / Domain Event] --> O[PlanRunner DSL 翻译层]
+    O --> P[Temporal Workflow]
+    P --> Q[Activities / Child Workflows]
     Q --> O
+    O -. 双轨期 legacy .-> R[Flowable Service]
 ```
 
 ### 6.3 隔离策略
@@ -550,12 +608,17 @@ Traefik -> rate-limit -> forward-auth (-> AuthService) -> trace-id 透传 -> Pyt
 # 基础设施
 postgres, redis, nacos, minio, milvus, kafka, rabbitmq, loki
 
-# 外部引擎（Java 产品）
+# 外部引擎（Java 产品；Flowable 仅双轨期 legacy）
 keycloak          # :8080
 flowable-engine   # :8081
 flowable-task     # :8082
 flowable-rest     # :8083
 kie-server        # :8180
+
+# 可靠编排目标态（Sprint 1A Helm/K8s；不以当前 Compose 存在作为已上线证据）
+temporal-service  # :7233
+temporal-worker   # internal task queue
+temporal-ui       # cluster internal
 
 # 网关层
 traefik           # :80 / :443
@@ -591,7 +654,8 @@ prism-mock        # :4010
 | 4010 | Prism Mock |
 | 8000 | AuthService |
 | 8080 | Keycloak / 各 Python 服务 |
-| 8081 / 8082 / 8083 | Flowable engine / task / rest |
+| 7233 | Temporal Service（目标态） |
+| 8081 / 8082 / 8083 | Flowable engine / task / rest（legacy） |
 | 8083 | Swagger Editor |
 | 8084 | Swagger UI |
 | 8180 | KIE Server |
@@ -686,6 +750,8 @@ prism-mock        # :4010
 | R6 | 跨语言服务调试困难 | 黄 | 统一 OTel traceId + 标准化日志 + Loki |
 | R7 | 单模块迁移失败（无 Java 兜底） | 红 | 充分预发布验证 + 蓝绿部署 + v_{n-1} 保留 7 天 |
 | R8 | AI 生态继续演化 | 绿 | Python 路线与生态同步 |
+| R13 | Temporal 学习曲线与 Workflow 非确定性 | 黄 | Workflow 只编排；外部 I/O 进 Activity；replay 与 grammar CI |
+| R14 | Temporal/legacy 双轨数据不一致 | 黄 | plan 镜像 reconcile + 按 plan_id 灰度 + 切流冻结 schema |
 
 ---
 
@@ -697,6 +763,7 @@ prism-mock        # :4010
 | 2026-07-27 | v3.0-implementation.1 | Python 镜像：python:3.12-slim -> python:3.12 (完整版) |
 | 2026-07-27 | v3.0-implementation.2 | 服务全景表明确每个组件实际语言（Go/C/Java/Erlang/Python），不再用 - 占位 |
 | 2026-07-28 | v3.0-implementation.3 | 追加附录 A：v3.1 Data-Ready Baseline（mate-tech-data + Flink + Airflow + Paimon + Iceberg + Trino + StarRocks + 治理栈），不破坏 v3.0 主架构 |
+| 2026-08-25 | v3.1-implementation.4 | 同步 ADR-0061：Temporal 成为可靠编排控制面；PlanRunner 退化为 DSL 翻译层；Flowable 标记为双轨期 legacy；明确 Activity、数据引擎、AgentLoop、Kafka/Outbox 与沙箱边界 |
 
 ---
 
@@ -724,7 +791,7 @@ prism-mock        # :4010
 |  | Apache Ranger | Java | apache/ranger:2.4 | 6080 | 行列权限、动态脱敏、审计 |
 |  | OpenBao | Go | openbao/openbao:1.15 | 8200 | 连接器密钥、动态凭证、轮换 |
 
-Flink 为主计算引擎，Airflow 负责调度，Flowable 继续负责人工审批。
+Flink 为主计算引擎，Airflow 保留数据 DAG 调度；Temporal 负责跨域业务流程、人工审批等待与长任务可靠编排。Flowable 仅作为双轨期 legacy 运行时。
 旧 Java `docs/legacy/tech-java-legacy/TECH-DATA` 不恢复上线，只作为 API/模型迁移参考。
 
 ### A.2 增量数据流
@@ -777,6 +844,28 @@ flowchart LR
 
 - 性能新增：Gold 实时端到端 P95 < 5s；Silver 准实时 P95 < 60s；StarRocks P95 1–3s；Trino 交互查询 P95 5–30s；控制面 ≥ 99.9%。
 - 风险新增 R9：Paimon/Iceberg 兼容；R10：500 Pipeline 资源争用；R11：自定义作业越权；R12：双格式治理不统一。
+
+## 附录 B：Temporal Workflow 迁移覆盖层（2026-08-25）
+
+### B.1 决策与状态
+
+- 决策源：`docs/active/decisions/ADR-0061-temporal-as-workflow-engine.md`（Accepted，2026-08-21）。
+- 交付源：`docs/active/V1.0-RELEASE-PLAN.md` §2.2 Sprint 1A（当前 `Not Started`）。
+- 目标：Temporal 接管业务 Workflow 的持久化执行；PlanRunner 保留为 LLM-friendly `plan JSON` → Workflow 的 DSL 翻译层。
+- 非目标：不以 Temporal 替换 FastAPI CRUD、Kafka/Outbox、Flink/Airflow 计算与数据 DAG、LangGraph/AgentLoop 内部推理、Drools 规则求值或 K8s 沙箱。
+
+### B.2 迁移顺序
+
+1. 部署 Temporal Service、Worker、UI、NetworkPolicy 与持久化 schema。
+2. 落地 PlanRunner DSL 翻译层和 5 类 Activity。
+3. 将 HITL approve/reject 改为 Temporal Signal；保持 `confirm_then_apply` 语义。
+4. 接入 Outbox → Temporal start/signal bridge 与只读 plan 镜像。
+5. 通过 `WORKFLOW_ENGINE=temporal|legacy` 按 `plan_id` 灰度并完成双轨对比。
+6. 达到 ADR-0061 验收条件后退出 Flowable 主运行时；legacy 数据按保留策略只读归档。
+
+### B.3 新增流程准入规则
+
+满足下列任一条件时使用 Temporal：跨服务多步骤、需等待人或外部系统、运行时间不可控、必须自动恢复、需要统一 retry/timeout/补偿、需要执行历史与版本灰度。仅包含一次同步读写、严格低延迟且调用方可安全重试的请求，可保留直接服务调用。
 
 ## 引用
 

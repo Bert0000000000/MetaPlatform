@@ -5,48 +5,77 @@
 //
 // 不依赖 vite（前端不在本 Batch 范围），直接 probe 已起的 docker 服务。
 
-import { test, expect, request } from '@playwright/test';
+import { createConnection } from 'node:net';
 
-const BASE_PORTS: Record<string, number> = {
-  apiGateway: 8100,
-  ont: 8007,
-  rag: 8001,
-  agent: 8002,
-  kb: 8003,
-  llmGw: 8008,
-  msg: 8082,
-  mcp: 8081,
-  iam: 8102,
-  data: 8701,
-  dw: 8021,
-  arch: 8321,
-  copilot: 8601,
-  hub: 8301,
-  a2a: 8502,
-  postgres: 5432,
-  redis: 6379,
-  kafka: 9092,
-  minio: 9000,
-  keycloak: 8180,
-};
+import { test, expect } from '@playwright/test';
+
+type HttpProbe = { name: string; port: number; path: string };
+type TcpProbe = { name: string; port: number };
+
+const HTTP_PROBES: HttpProbe[] = [
+  { name: 'apiGateway', port: 8100, path: '/healthz' },
+  { name: 'ont', port: 8007, path: '/healthz' },
+  { name: 'rag', port: 8001, path: '/healthz' },
+  { name: 'agent', port: 8002, path: '/healthz' },
+  { name: 'kb', port: 8003, path: '/healthz' },
+  { name: 'llmGw', port: 8008, path: '/healthz' },
+  { name: 'msg', port: 8082, path: '/healthz' },
+  { name: 'mcp', port: 8081, path: '/healthz' },
+  { name: 'authService', port: 8101, path: '/healthz' },
+  { name: 'data', port: 8701, path: '/api/v1/data/health' },
+  { name: 'dw', port: 8021, path: '/healthz' },
+  { name: 'arch', port: 8321, path: '/healthz' },
+  { name: 'copilot', port: 8601, path: '/healthz' },
+  { name: 'hub', port: 8301, path: '/healthz' },
+  { name: 'a2a', port: 8502, path: '/api/v1/a2a/health' },
+  { name: 'minio', port: 9000, path: '/minio/health/live' },
+  { name: 'keycloak', port: 8180, path: '/realms/metaplatform/.well-known/openid-configuration' },
+];
+
+const TCP_PROBES: TcpProbe[] = [
+  { name: 'postgres', port: 5432 },
+  { name: 'redis', port: 6379 },
+  { name: 'kafka', port: 9092 },
+];
+
+function connectTcp(host: string, port: number, timeoutMs = 5000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const socket = createConnection({ host, port });
+    let settled = false;
+
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      if (error) reject(error);
+      else resolve();
+    };
+
+    socket.setTimeout(timeoutMs, () => {
+      finish(new Error(`TCP probe timed out for ${host}:${port}`));
+    });
+    socket.once('connect', () => finish());
+    socket.once('error', (error) => finish(error));
+    socket.once('close', () => {
+      if (!settled) finish(new Error(`TCP probe closed before connect for ${host}:${port}`));
+    });
+  });
+}
 
 test.describe('RUNTIME-MVP-02 docker backend smoke', () => {
-  // 已知没有 /healthz 的 broker/db 类（connectivity 已由 docker 守护）：跳过
-  const SKIP_NO_HEALTHZ = new Set(['postgres', 'redis', 'kafka', 'minio', 'data', 'dw', 'a2a', 'keycloak']);
-  for (const [name, port] of Object.entries(BASE_PORTS)) {
-    test(`${name} :${port} healthz responds`, async ({ request: ctx }) => {
-      if (SKIP_NO_HEALTHZ.has(name)) {
-        test.skip(true, `${name} broker/db 没有 /healthz 路由；docker daemon 已保活`);
-        return;
-      }
-      const url = `http://localhost:${port}/healthz`;
-      const res = await ctx.get(url, { failOnStatusCode: false, timeout: 5000 }).catch(() => null);
-      if (!res) {
-        test.skip(true, `${name} 不可达`);
-        return;
-      }
-      // 200 / 401 / 403 / 503 都算 healthy（auth guard 正常）
+  for (const { name, port, path } of HTTP_PROBES) {
+    test(`${name} :${port}${path} readiness responds`, async ({ request: ctx }) => {
+      const res = await ctx.get(`http://localhost:${port}${path}`, {
+        failOnStatusCode: false,
+        timeout: 5000,
+      });
       expect([200, 401, 403, 503]).toContain(res.status());
+    });
+  }
+
+  for (const { name, port } of TCP_PROBES) {
+    test(`${name} :${port} accepts TCP connections`, async () => {
+      await expect(connectTcp('localhost', port)).resolves.toBeUndefined();
     });
   }
 });

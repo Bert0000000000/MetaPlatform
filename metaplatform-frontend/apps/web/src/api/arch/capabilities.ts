@@ -14,7 +14,11 @@ export async function listCapabilities(params?: { keyword?: string }): Promise<P
 }
 
 export async function getCapabilityTree(): Promise<Capability[]> {
-  return get<Capability[]>('/capabilities/tree');
+  // ARCH returns the tree as a named payload: { tree: Capability[] }.
+  // Normalize it here so every page consumes the same canonical shape and
+  // never falls back to demo capabilities merely because of the envelope.
+  const payload = await get<Capability[] | { tree?: Capability[] }>('/capabilities/tree');
+  return Array.isArray(payload) ? payload : (payload.tree ?? []);
 }
 
 export async function createCapability(req: CapabilityCreateRequest): Promise<Capability> {

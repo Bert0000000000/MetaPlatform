@@ -37,6 +37,7 @@ dependencies = [
     # LLM 缂栨帓
     "langchain>=1.3.0",
     "langchain-community>=0.3.0",
+    "langchain-openai>=1.0.0",
     "langgraph>=1.2.9",
     "llama-index>=0.12.0",
     "mcp>=1.0.0",
@@ -87,11 +88,10 @@ members = [
 # These service directories are historical or externally provisioned
 # placeholders. They match the `services/*` glob but have no pyproject.toml,
 # which would make uv reject the whole workspace and block every `uv run`/test
-# invocation. Exclude them until they are removed outright or become packages.
+# invocation. Keep only the services that are not yet packages excluded.
 exclude = [
     "services/agent",
     "services/rag",
-    "services/a2a-external-agent",
 ]
 
 [build-system]
@@ -101,7 +101,7 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["packages"]
-pythonpath = ["packages", "packages/mate-common/src", "packages/mate-kernel/src", "packages/mate-platform/src", "packages/mate-clients/src", "packages/mate-tech-db/src", "packages/mate-tech-agent/src", "packages/mate-tech-llmgw/src", "packages/mate-tech-mcp/src", "packages/mate-tech-msg/src", "packages/mate-tech-obs/src", "packages/mate-tech-ont/src", "packages/mate-tech-rag/src", "packages/mate-app-kb/src", "packages/mate-app-hub/src", "packages/mate-app-arch/src", "packages/mate-app-copilot/src", "packages/mate-app-a2a/src", "packages/mate-tech-dw/src", "packages/mate-app-wfe/src", "packages/mate-tech-data/src", "packages/mate-tech-etl/src", "packages/mate-tech-metrics/src", "packages/mate-tech-scheduler/src", "packages/mate-tech-deep-research/src", "packages/mate-tech-orchestrator/src"]
+pythonpath = ["packages", "packages/mate-common/src", "packages/mate-kernel/src", "packages/mate-platform/src", "packages/mate-clients/src", "packages/mate-tech-db/src", "packages/mate-tech-agent/src", "packages/mate-tech-llmgw/src", "packages/mate-tech-mcp/src", "packages/mate-tech-msg/src", "packages/mate-tech-obs/src", "packages/mate-tech-ont/src", "packages/mate-tech-rag/src", "packages/mate-app-kb/src", "packages/mate-app-hub/src", "packages/mate-app-arch/src", "packages/mate-app-copilot/src", "packages/mate-app-a2a/src", "packages/mate-tech-dw/src", "packages/mate-app-wfe/src", "packages/mate-tech-data/src", "packages/mate-tech-etl/src", "packages/mate-tech-metrics/src", "packages/mate-tech-scheduler/src", "packages/mate-tech-deep-research/src", "packages/mate-tech-orchestrator/src", "services/a2a-external-agent/src"]
 # WinError 5 规避：%TEMP%\pytest-of-<user> 曾被损坏（ACL 不可枚举/删除/重置），
 # pytest-asyncio 触碰即抛 PermissionError。将临时目录重定向到仓库内可写路径；
 # 损坏目录留待系统级清理，不影响测试。（pytest 缓存目录固定为 .pytest_cache，

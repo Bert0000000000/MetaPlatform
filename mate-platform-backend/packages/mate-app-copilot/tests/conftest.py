@@ -15,6 +15,14 @@ os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
+# Unit/adversarial tests must not resolve the Docker-only service name and
+# wait for the production streaming timeout on every request.  A caller that
+# deliberately provides a local LLMGW can still override these defaults.
+os.environ.setdefault("MATE_LLMGW_HOST", "127.0.0.1")
+os.environ.setdefault("MATE_LLMGW_PORT", "65534")
+os.environ.setdefault("MATE_LLMGW_TIMEOUT_SECONDS", "0.1")
+os.environ.setdefault("MATE_GATEWAY_URL", "http://127.0.0.1:65534")
+os.environ.setdefault("MATE_COPILOT_CLIENT_TIMEOUT_SECONDS", "0.1")
 
 from mate_app_copilot.main import create_app
 from mate_app_copilot.repositories import in_memory as in_memory_repo

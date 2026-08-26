@@ -1,0 +1,142 @@
+# Task5 local acceptance profile.
+#
+# The normal service Dockerfiles perform a full workspace dependency sync. On
+# Windows/Docker Desktop that sync can block while exporting the image. This
+# profile keeps the backend in Docker, reuses the already verified runtime
+# images, and mounts the current package sources for fast local iteration.
+# It is intentionally local-only; production images continue to use the
+# service Dockerfiles from docker-compose.yml.
+
+services:
+  a2a-external-agent:
+    build:
+      context: ./mate-platform-backend
+      dockerfile: services/a2a-external-agent/Dockerfile
+    image: a2a-external-agent:task5
+    container_name: a2a-external-agent
+    environment:
+      A2A_EXTERNAL_AGENT_HOST: http://a2a-external-agent:8701
+      A2A_EXTERNAL_AGENT_PORT: "8701"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PYTHONPATH: /app/src
+      TZ: Asia/Shanghai
+    ports:
+      - "${A2A_EXTERNAL_AGENT_PORT:-8702}:8701"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8701/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mate-tech-msg:
+    build: null
+    image: mate-tech-rag:dev
+    command: ["uvicorn", "mate_tech_msg.main:app", "--host", "0.0.0.0", "--port", "8082"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      PYTHONPATH: /app/packages/mate-tech-msg/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+    depends_on:
+      kafka:
+        condition: service_started
+
+  mate-tech-dw:
+    build: null
+    image: mate-app-copilot:dev
+    command: ["uvicorn", "mate_tech_dw.main:app", "--host", "0.0.0.0", "--port", "8021"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      DW_STORE: memory
+      MATE_DB_URL: ""
+      DATABASE_URL: ""
+      PYTHONPATH: /app/packages/mate-tech-dw/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+
+  mate-tech-agent:
+    build:
+      context: ./mate-platform-backend
+      dockerfile: Dockerfile.agent
+    image: mate-tech-agent:task5
+    command: ["uvicorn", "mate_tech_agent.api.app:app", "--host", "0.0.0.0", "--port", "8002"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      MATE_DB_URL: ""
+      DATABASE_URL: ""
+      RAG_URL: http://mate-tech-rag:8001
+      AGENT_PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_agent
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: metaplatform
+      KEYCLOAK_AUDIENCE: metaplatform-backend
+      SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      SERVICE_CLIENT_SCOPE: ${AGENT_SERVICE_SCOPE:-openid}
+      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "true"
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY required for agent}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      PYTHONPATH: /app/packages/mate-tech-agent/src:/app/packages/mate-tech-db/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mate-tech-rag:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8002/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mate-app-kb:
+    build: null
+    image: mate-app-copilot:dev
+    command: ["uvicorn", "mate_app_kb.api.app:app", "--host", "0.0.0.0", "--port", "8003"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      KB_STORE: memory
+      MATE_DB_URL: ""
+      DATABASE_URL: ""
+      PYTHONPATH: /app/packages/mate-app-kb/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+
+  mate-app-a2a:
+    build: null
+    image: mate-app-copilot:dev
+    command: ["uvicorn", "mate_app_a2a.main:app", "--host", "0.0.0.0", "--port", "8502"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+      - ./mate-platform-backend/.venv/Lib/site-packages/a2a:/opt/a2a:ro
+      - ./mate-platform-backend/.venv/Lib/site-packages/aiologic:/opt/aiologic:ro
+      - ./mate-platform-backend/.venv/Lib/site-packages/culsans:/opt/culsans:ro
+      - ./mate-platform-backend/.venv/Lib/site-packages/google:/opt/google:ro
+      - ./mate-platform-backend/.venv/Lib/site-packages/jsonrpc:/opt/jsonrpc:ro
+      - ./mate-platform-backend/.venv/Lib/site-packages/proto:/opt/proto:ro
+      - ./mate-platform-backend/.venv/Lib/site-packages/sniffio:/opt/sniffio:ro
+    environment:
+      PYTHONPATH: /opt:/app/packages/mate-app-a2a/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+
+  mate-tech-orchestrator:
+    build: null
+    image: mate-app-copilot:dev
+    command: ["uvicorn", "mate_tech_orchestrator.main:app", "--host", "0.0.0.0", "--port", "8505"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      MATE_PROFILE: dev
+      MATE_DB_URL: ""
+      DATABASE_URL: ""
+      PYTHONPATH: /app/packages/mate-tech-orchestrator/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+
+  mate-tech-data:
+    build: null
+    image: mate-app-copilot:dev
+    command: ["uvicorn", "mate_tech_data.main:app", "--host", "0.0.0.0", "--port", "8701"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      MATE_DB_URL: ""
+      DATABASE_URL: ""
+      PYTHONPATH: /app/packages/mate-tech-data/src:/app/packages/mate-tech-db/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src

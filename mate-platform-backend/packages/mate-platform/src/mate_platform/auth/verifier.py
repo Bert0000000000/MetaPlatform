@@ -47,8 +47,9 @@ class TokenVerifier:
         else:
             claims = self._verify_with_cache(token)
 
-        aud = _coerce_str(claims.get("aud"))
-        if not aud or self._config.audience not in _aud_set(aud):
+        raw_aud = claims.get("aud")
+        aud = _coerce_str(raw_aud)
+        if not aud or self._config.audience not in _aud_set(raw_aud):
             raise TokenError(
                 f"audience mismatch: token has {aud!r}, "
                 f"expected to contain {self._config.audience!r}"

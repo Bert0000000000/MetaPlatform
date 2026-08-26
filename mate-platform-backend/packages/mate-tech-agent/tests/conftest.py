@@ -22,6 +22,26 @@ for _bsl_sub in (
 from mate_tech_agent.scenarios.memory import ShortTermMemory
 
 
+class _EmptyRAGTool:
+    """Deterministic unit-test double for the external RAG service."""
+
+    def search(self, query: str, top_k: int = 5, mode: str = "AUTO", **kwargs):
+        return []
+
+    def close(self) -> None:
+        return None
+
+
 @pytest.fixture
 def short_memory() -> ShortTermMemory:
     return ShortTermMemory(thread_id="test-thread", max_turns=5)
+
+
+@pytest.fixture(autouse=True)
+def isolated_rag_tool():
+    """Keep package tests independent from a live RAG/Keycloak deployment."""
+    from mate_tech_agent.tools import set_rag_tool
+
+    set_rag_tool(_EmptyRAGTool())
+    yield
+    set_rag_tool(None)

@@ -14,6 +14,8 @@ the rebuilt image once the compose stack is up.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 pytest.importorskip(
@@ -102,3 +104,18 @@ def test_healthz() -> None:
     r = client.get("/healthz")
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
+
+
+def test_docker_requirements_cover_runtime_logging_dependency() -> None:
+    """Keep the Docker runtime dependency set aligned with imported modules."""
+    backend_root = Path(__file__).resolve().parents[3]
+    requirements = (
+        backend_root
+        / "services"
+        / "a2a-external-agent"
+        / "requirements.txt"
+    ).read_text(encoding="utf-8")
+    assert any(
+        line.strip().lower().startswith("structlog")
+        for line in requirements.splitlines()
+    ), "Docker requirements must install structlog used by server.py"

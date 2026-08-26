@@ -26,6 +26,12 @@ RUN pip install --no-cache-dir \
         redis pybreaker sse-starlette \
         tiktoken sqlalchemy sqlmodel
 
+# Keep the provider source tied to the final image even when BuildKit reuses
+# the broad workspace COPY layer.  This avoids serving an older provider after
+# a source-only fix (for example the stream() transport correction) without
+# invalidating the expensive dependency-install layer.
+COPY packages/mate-tech-llmgw/src/mate_tech_llmgw/providers/real_openai_provider.py /tmp/llmgw-real-openai_provider.py
+
 # Install llmgw source into the SAME global site-packages the base image uses
 # (api-gateway installs to /usr/local/lib/python3.12/site-packages, NOT a venv)
 # v3.2 W2: mate-clients needed for AIProviderConfigService (BearerAuth + outgoing ACL)
@@ -36,6 +42,7 @@ RUN SITE=/usr/local/lib/python3.12/site-packages && \
     cp -r /tmp/build/packages/mate-common/src/mate_common "$SITE/" && \
     cp -r /tmp/build/packages/mate-platform/src/mate_platform "$SITE/" && \
     cp -r /tmp/build/packages/mate-clients/src/mate_clients "$SITE/" && \
+    cp /tmp/llmgw-real-openai_provider.py "$SITE/mate_tech_llmgw/providers/real_openai_provider.py" && \
     rm -rf /tmp/build
 
 ENV PATH="/usr/local/bin:$PATH" \

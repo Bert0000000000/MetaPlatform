@@ -76,6 +76,13 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/metrics", "metrics"),   # Task12: 裸 /metrics（list 端点无尾斜杠）
     ("/api/v1/a2a/", "a2a"),
     ("/api/v1/orchestrator/", "orchestrator"),
+    # v1.0 order-review public contract is served by the orchestrator.
+    ("/api/v1/action-proposals/", "orchestrator"),
+    ("/api/v1/action-proposals", "orchestrator"),
+    ("/api/v1/review-cases/", "orchestrator"),
+    ("/api/v1/review-cases", "orchestrator"),
+    ("/api/v1/orders/", "orchestrator"),
+    ("/api/v1/orders", "orchestrator"),
 ]
 
 

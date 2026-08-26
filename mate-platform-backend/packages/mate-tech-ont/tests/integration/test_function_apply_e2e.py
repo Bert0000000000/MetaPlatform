@@ -258,6 +258,12 @@ def pg_repo() -> object:
 
 @pytest.fixture(autouse=True)
 def _clean_pg(pg_repo) -> None:
+    # The in-memory cases in this module must remain runnable when the local
+    # integration database is unavailable.  PG-specific cases already carry a
+    # skip marker; the autouse fixture must not turn unrelated in-memory cases
+    # into setup errors.
+    if not _pg_available():
+        return
     pg_repo._ensure_schema()
     import psycopg2  # type: ignore  # noqa: PLC0415
     conn = psycopg2.connect(PG_DSN)

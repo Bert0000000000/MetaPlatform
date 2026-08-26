@@ -6,6 +6,12 @@ from __future__ import annotations
 # test profile (mirrors mate-tech-iam / mate-app-copilot conftest).
 import os
 
+# The streamable-http integration test starts a loopback server.  CI/dev
+# machines may inject an HTTP proxy that turns 127.0.0.1 requests into 502s;
+# MCP protocol tests must always exercise the local server directly.
+os.environ["NO_PROXY"] = "*"
+os.environ["no_proxy"] = "*"
+
 os.environ.setdefault("INSECURE_SKIP_SIGNATURE", "1")
 os.environ.setdefault("KEYCLOAK_URL", "http://localhost:8080")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
