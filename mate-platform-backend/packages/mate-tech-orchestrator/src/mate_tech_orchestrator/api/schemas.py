@@ -1,6 +1,7 @@
 """mate_tech_orchestrator.api.schemas — request/response models."""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -196,7 +197,7 @@ class EvidenceFact(BaseModel):
 class EvidenceSnapshot(BaseModel):
     tenant_id: str
     order_id: str
-    updated_at: str
+    updated_at: datetime
 
 
 class EvidenceData(BaseModel):
@@ -227,7 +228,7 @@ class EvidenceBundle(BaseModel):
     order_id: str
     tenant_id: str
     order_version: int
-    captured_at: str
+    captured_at: datetime
     ontology: OntologyEvidence
     data: EvidenceData
     derivation: list[EvidenceDerivation]
@@ -251,9 +252,9 @@ class ActionProposal(BaseModel):
     status: Literal["pending", "confirmed", "rejected", "expired"]
     expected_order_version: int
     suggestion: dict[str, Any]
-    source_refs: list[str] = Field(default_factory=list)
-    parameters: dict[str, Any] = Field(default_factory=dict)
-    evidence: EvidenceBundle
-    expires_at: str
-    created_at: str
-    resolved_at: str | None = None
+    source_refs: list[str]
+    parameters: dict[str, Any]
+    evidence: EvidenceBundle | None = None
+    expires_at: datetime
+    created_at: datetime
+    resolved_at: datetime | None = None

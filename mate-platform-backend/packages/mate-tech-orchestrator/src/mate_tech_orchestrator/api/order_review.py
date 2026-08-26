@@ -21,12 +21,6 @@ from .schemas import (
 router = APIRouter(prefix="/api/v1/orchestrator", tags=["order-review"])
 public_router = APIRouter(prefix="/api/v1", tags=["order-review"])
 _service = OrderReviewService()
-_EVIDENCE_FACT_METADATA: dict[str, tuple[str, str]] = {
-    "fact.amount_cents": ("amount_cents", "订单金额"),
-    "fact.payment_status": ("payment_status", "支付状态"),
-    "fact.review_status": ("review_status", "复核状态"),
-    "fact.version": ("version", "订单版本"),
-}
 _REVIEW_CASE_RESPONSES = {
     404: {"description": "订单不存在"},
     409: {"description": "订单状态冲突"},
@@ -42,15 +36,6 @@ _REVIEW_CASE_RESPONSES = {
 }
 _ACTION_PROPOSAL_DETAIL_RESPONSES = {
     404: {"description": "Proposal 不存在或不属于当前租户"},
-    409: {
-        "description": "Evidence required",
-        "headers": {
-            "X-Error-Code": {
-                "description": "Application error code.",
-                "schema": {"type": "string", "enum": ["evidence_required"]},
-            }
-        },
-    },
 }
 _ACTION_PROPOSAL_CONFIRM_RESPONSES = {
     400: {"description": "缺少 Idempotency-Key"},
@@ -106,47 +91,8 @@ def _bearer_credential(request: Request) -> str:
     return ""
 
 
-def _fact_metadata(fact_id: str) -> tuple[str, str]:
-    field, label = _EVIDENCE_FACT_METADATA.get(fact_id, ("", ""))
-    if field:
-        return field, label
-    derived = fact_id.removeprefix("fact.").strip() or fact_id.strip()
-    return derived, derived
-
-
-def _response_evidence(
-    *,
-    tenant_id: str,
-    proposal_id: str,
-    order_id: str,
-    captured_at: str,
-    evidence: Any,
-) -> dict[str, Any]:
-    if not isinstance(evidence, dict):
-        raise OrderReviewService.EvidenceRequired("evidence bundle is required before returning the response")
-    bundle = deepcopy(evidence)
-    data = bundle.get("data")
-    if isinstance(data, dict):
-        facts = data.get("facts")
-        if isinstance(facts, list):
-            data["facts"] = [
-                {
-                    **fact,
-                    "field": _fact_metadata(str(fact.get("id", "")))[0],
-                    "label": _fact_metadata(str(fact.get("id", "")))[1],
-                }
-                for fact in facts
-                if isinstance(fact, dict)
-            ]
-    bundle.update(
-        {
-            "proposal_id": proposal_id,
-            "order_id": order_id,
-            "tenant_id": tenant_id,
-            "captured_at": captured_at,
-        }
-    )
-    return bundle
+def _response_evidence(evidence: Any) -> dict[str, Any] | None:
+    return deepcopy(evidence) if isinstance(evidence, dict) else None
 
 
 def _raise_service_error(error: Exception) -> NoReturn:
@@ -214,23 +160,15 @@ async def list_high_value_unpaid(
 )
 async def create_review_case(request: Request, body: CreateReviewCaseRequest) -> CreateReviewCaseResponse:
     try:
-        tenant_id = _tenant_id(request)
         created = _service.create_review_case(
-            tenant_id=tenant_id,
+            tenant_id=_tenant_id(request),
             order_id=body.order_id,
             suggestion=body.suggestion,
             source_refs=body.source_refs,
             auth_token=_bearer_credential(request),
             trace_id=_trace_id(request),
         )
-        proposal = _service.get_proposal(tenant_id=tenant_id, proposal_id=str(created["proposal_id"]))
-        created["evidence"] = _response_evidence(
-            tenant_id=tenant_id,
-            proposal_id=str(created["proposal_id"]),
-            order_id=body.order_id,
-            captured_at=str(proposal["created_at"]),
-            evidence=proposal.get("evidence"),
-        )
+        created["evidence"] = _response_evidence(created.get("evidence"))
         return CreateReviewCaseResponse.model_validate(created)
     except Exception as error:
         _raise_service_error(error)
@@ -294,15 +232,8 @@ async def reject_action_proposal(
 )
 async def get_action_proposal(proposal_id: str, request: Request) -> ActionProposal:
     try:
-        tenant_id = _tenant_id(request)
-        proposal = _service.get_proposal(tenant_id=tenant_id, proposal_id=proposal_id)
-        proposal["evidence"] = _response_evidence(
-            tenant_id=tenant_id,
-            proposal_id=proposal_id,
-            order_id=str(proposal["order_id"]),
-            captured_at=str(proposal["created_at"]),
-            evidence=proposal.get("evidence"),
-        )
+        proposal = _service.get_proposal(tenant_id=_tenant_id(request), proposal_id=proposal_id)
+        proposal["evidence"] = _response_evidence(proposal.get("evidence"))
         return ActionProposal.model_validate(proposal)
     except Exception as error:
         _raise_service_error(error)

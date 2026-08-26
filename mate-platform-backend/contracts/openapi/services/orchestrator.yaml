@@ -413,7 +413,6 @@ components:
       - suggestion
       - source_refs
       - parameters
-      - evidence
       - expires_at
       - created_at
       properties:
@@ -428,10 +427,15 @@ components:
         source_refs: {type: array, items: {type: string}}
         parameters: {type: object, additionalProperties: true}
         evidence:
-          $ref: '#/components/schemas/EvidenceBundle'
+          anyOf:
+          - $ref: '#/components/schemas/EvidenceBundle'
+          - {type: 'null'}
         expires_at: {type: string, format: date-time}
         created_at: {type: string, format: date-time}
-        resolved_at: {type: [string, 'null'], format: date-time}
+        resolved_at:
+          anyOf:
+          - {type: string, format: date-time}
+          - {type: 'null'}
     ConfirmActionProposalRequest:
       type: object
       properties:
@@ -1076,12 +1080,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActionProposal'
         '404': {description: Proposal 不存在或不属于当前租户}
-        '409':
-          description: Evidence required
-          headers:
-            X-Error-Code:
-              description: Application error code.
-              schema: {type: string, enum: [evidence_required]}
       operationId: orderReviewGetActionProposal
       x-mate-owner: orchestrator
       x-mate-permission: order.read

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -87,6 +88,24 @@ def _literal_values(schema: dict[str, object]) -> list[object]:
     if "const" in schema:
         return [schema["const"]]
     raise AssertionError(f"schema does not declare literal values: {schema!r}")
+
+
+def _assert_datetime_schema(schema: dict[str, object]) -> None:
+    if schema.get("type") == "string":
+        assert schema["format"] == "date-time"
+        return
+    if "anyOf" in schema:
+        variants = schema["anyOf"]
+        assert isinstance(variants, list)
+        string_variants = [
+            variant
+            for variant in variants
+            if isinstance(variant, dict) and variant.get("type") == "string"
+        ]
+        assert len(string_variants) == 1
+        assert string_variants[0]["format"] == "date-time"
+        return
+    raise AssertionError(f"schema does not declare a date-time string: {schema!r}")
 
 
 def test_confirm_atomically_updates_order_creates_follow_up_and_outbox(service: OrderReviewService):
@@ -199,12 +218,43 @@ def test_reject_does_not_change_order_but_records_audit(service: OrderReviewServ
 
 
 def test_get_proposal_returns_persisted_evidence_snapshot(service: OrderReviewService) -> None:
-    proposal_id = _seed_proposal(service)
+    service.create_order(
+        tenant_id="tenant-acme",
+        order_id="order-1001",
+        amount_cents=129900,
+        payment_status="unpaid",
+    )
+    created = service.create_review_case(
+        tenant_id="tenant-acme",
+        order_id="order-1001",
+        suggestion={"action": "follow_up_payment", "reason": "high value unpaid"},
+        source_refs=["ontology://Order/order-1001", "rag://payment-policy/2026-01"],
+        auth_token=TEST_AUTH_TOKEN,
+    )
+    proposal_id = str(created["proposal_id"])
 
     proposal = service.get_proposal(tenant_id="tenant-acme", proposal_id=proposal_id)
 
+    assert created["evidence"]["proposal_id"] == proposal_id
+    assert created["evidence"]["order_id"] == "order-1001"
+    assert created["evidence"]["tenant_id"] == "tenant-acme"
+    assert created["evidence"]["captured_at"]
+    assert datetime.fromisoformat(created["evidence"]["captured_at"])
+    assert [fact["field"] for fact in created["evidence"]["data"]["facts"]] == [
+        "amount_cents",
+        "payment_status",
+        "review_status",
+        "version",
+    ]
+    assert [fact["label"] for fact in created["evidence"]["data"]["facts"]] == [
+        "订单金额",
+        "支付状态",
+        "复核状态",
+        "订单版本",
+    ]
     assert proposal["evidence"]["status"] == "complete"
     assert proposal["evidence"]["order_version"] == 1
+    assert proposal["evidence"] == created["evidence"]
     assert proposal["suggestion"]["evidence_bundle"] == proposal["evidence"]
     assert proposal["source_refs"] == proposal["evidence"]["recommendation"]["source_refs"]
 
@@ -427,6 +477,63 @@ def test_confirm_http_returns_409_for_missing_persisted_evidence(
     assert confirm_response.json()["detail"] == "evidence bundle is required before confirmation"
 
 
+def test_historical_proposal_detail_returns_200_without_evidence_bundle(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_headers_acme: dict[str, str],
+) -> None:
+    monkeypatch.setattr(order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog()))
+    client = TestClient(create_app())
+    headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
+
+    order_response = client.post(
+        "/api/v1/orders",
+        headers=headers,
+        json={
+            "order_id": "order-http-history",
+            "amount_cents": 188000,
+            "payment_status": "unpaid",
+        },
+    )
+    assert order_response.status_code == 201, order_response.text
+
+    case_response = client.post(
+        "/api/v1/review-cases",
+        headers=headers,
+        json={
+            "order_id": "order-http-history",
+            "suggestion": {"action": "follow_up_payment", "reason": "unpaid"},
+            "source_refs": ["ontology://Order/order-http-history"],
+        },
+    )
+    assert case_response.status_code == 201, case_response.text
+    proposal_id = case_response.json()["proposal_id"]
+
+    with get_session() as session, session.begin():
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        case = session.get(ReviewCaseORM, ("tenant-acme", proposal.review_case_id))
+        assert case is not None
+        suggestion = json.loads(case.suggestion)
+        suggestion.pop("evidence_bundle", None)
+        case.suggestion = json.dumps(suggestion, ensure_ascii=False, sort_keys=True)
+
+    detail_response = client.get(
+        f"/api/v1/action-proposals/{proposal_id}",
+        headers=headers,
+    )
+
+    assert detail_response.status_code == 200, detail_response.text
+    detail_payload = detail_response.json()
+    assert detail_payload["proposal_id"] == proposal_id
+    assert detail_payload["suggestion"] == {"action": "follow_up_payment", "reason": "unpaid"}
+    assert detail_payload["source_refs"] == [
+        "ontology://object-type/ont.tenant-acme.obj.crm.order.v1",
+        "ontology://action-type/ont.tenant-acme.act.order-review-confirm.v1",
+        "policy://payment-follow-up-policy",
+    ]
+    assert detail_payload["evidence"] is None
+
+
 def test_order_review_openapi_declares_evidence_contract() -> None:
     client = TestClient(create_app())
 
@@ -448,7 +555,24 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
     )
 
     action_proposal_schema = components["ActionProposal"]
-    assert action_proposal_schema["properties"]["evidence"]["$ref"] == "#/components/schemas/EvidenceBundle"
+    assert action_proposal_schema["required"] == [
+        "tenant_id",
+        "proposal_id",
+        "review_case_id",
+        "order_id",
+        "action_type",
+        "status",
+        "expected_order_version",
+        "suggestion",
+        "source_refs",
+        "parameters",
+        "expires_at",
+        "created_at",
+    ]
+    assert action_proposal_schema["properties"]["evidence"]["anyOf"] == [
+        {"$ref": "#/components/schemas/EvidenceBundle"},
+        {"type": "null"},
+    ]
 
     evidence_bundle = components["EvidenceBundle"]
     assert evidence_bundle["required"] == [
@@ -483,6 +607,8 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
     assert data_schema["required"] == ["facts", "snapshot"]
     fact_schema = components["EvidenceFact"]
     assert fact_schema["required"] == ["id", "field", "label", "value", "display_value", "source"]
+    snapshot_schema = components["EvidenceSnapshot"]
+    _assert_datetime_schema(snapshot_schema["properties"]["updated_at"])
 
     derivation_schema = components["EvidenceDerivation"]
     assert derivation_schema["required"] == ["id", "passed", "refs"]
@@ -496,6 +622,10 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
         "derivation_refs",
         "source_refs",
     ]
+    _assert_datetime_schema(evidence_bundle["properties"]["captured_at"])
+    _assert_datetime_schema(action_proposal_schema["properties"]["created_at"])
+    _assert_datetime_schema(action_proposal_schema["properties"]["expires_at"])
+    _assert_datetime_schema(action_proposal_schema["properties"]["resolved_at"])
 
 
 def test_action_command_routes_precede_proposal_detail_route():
