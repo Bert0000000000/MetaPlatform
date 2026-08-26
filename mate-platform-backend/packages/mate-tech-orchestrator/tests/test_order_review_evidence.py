@@ -24,6 +24,7 @@ def _facts(
     review_status: str = "pending",
     version: int = 1,
     tenant_id: str = TENANT_ID,
+    updated_at: datetime | None = None,
 ) -> OrderReviewFacts:
     return OrderReviewFacts(
         tenant_id=tenant_id,
@@ -32,7 +33,7 @@ def _facts(
         payment_status=payment_status,
         review_status=review_status,
         version=version,
-        updated_at=datetime(2026, 8, 26, 12, 0, tzinfo=UTC),
+        updated_at=updated_at or datetime(2026, 8, 26, 12, 0, tzinfo=UTC),
     )
 
 
@@ -91,6 +92,8 @@ def test_build_creates_complete_bundle_for_tenant_default_order() -> None:
     assert bundle["recommendation"]["action"] == "follow_up_payment"
     assert bundle["recommendation"]["title"] == "创建回款跟进单"
     assert "not a persisted Ontology Individual" in bundle["ontology"]["legend"]
+    assert bundle["data"]["snapshot"]["updated_at"] == _facts().updated_at.isoformat()
+    assert bundle["derivation"][-1]["refs"] == ["threshold", "unpaid"]
 
 
 @pytest.mark.parametrize(
@@ -129,7 +132,7 @@ def test_amount_threshold_is_inclusive(amount_cents: int, should_pass: bool) -> 
     [
         ("unpaid", "pending", True),
         ("paid", "pending", False),
-        ("unpaid", "approved", False),
+        ("unpaid", "approved", True),
         ("paid", "approved", False),
     ],
 )
@@ -159,6 +162,19 @@ def test_payment_and_review_state_gate_eligibility(
         )
 
 
+def test_action_contract_can_bind_additional_rids_when_it_includes_canonical_rid() -> None:
+    builder = OrderReviewEvidenceBuilder()
+
+    bundle = builder.build(
+        facts=_facts(),
+        contract=_contract(action_on=[OBJECT_RID, "ont.tenant-default.obj.crm.invoice.v1"]),
+        requested_suggestion={},
+        now=datetime(2026, 8, 26, 12, 30, tzinfo=UTC),
+    )
+
+    assert bundle["recommendation"]["action"] == "follow_up_payment"
+
+
 @pytest.mark.parametrize(
     "contract",
     [
@@ -182,9 +198,10 @@ def test_builder_rejects_mismatched_contract_metadata(contract: OntologyContract
 
 def test_version_seven_snapshot_is_preserved() -> None:
     builder = OrderReviewEvidenceBuilder()
+    updated_at = datetime(2026, 8, 25, 23, 45, tzinfo=UTC)
 
     bundle = builder.build(
-        facts=_facts(version=7),
+        facts=_facts(version=7, review_status="approved", payment_status="unpaid", updated_at=updated_at),
         contract=_contract(),
         requested_suggestion={"action": "something-else", "confidence": 0.42},
         now=datetime(2026, 8, 26, 12, 30, tzinfo=UTC),
@@ -193,3 +210,4 @@ def test_version_seven_snapshot_is_preserved() -> None:
     assert {fact["id"]: fact["value"] for fact in bundle["data"]["facts"]}["fact.version"] == 7
     assert bundle["recommendation"]["action"] == "follow_up_payment"
     assert bundle["recommendation"]["confidence"] == 0.42
+    assert bundle["data"]["snapshot"]["updated_at"] == updated_at.isoformat()

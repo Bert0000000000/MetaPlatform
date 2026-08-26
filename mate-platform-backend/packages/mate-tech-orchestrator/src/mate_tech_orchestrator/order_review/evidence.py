@@ -101,7 +101,7 @@ def _validate_contract(
         raise EvidenceUnavailable("action type RID does not match the tenant-scoped order review action")
     if not isinstance(action_title, str) or not action_title.strip():
         raise EvidenceUnavailable("action title is required")
-    if not isinstance(action_on, list) or action_on != [expected_object_rid]:
+    if not isinstance(action_on, list) or expected_object_rid not in action_on:
         raise EvidenceUnavailable("action must be scoped to the order object type RID")
 
     return expected_object_rid, expected_action_rid
@@ -122,8 +122,7 @@ class OrderReviewEvidenceBuilder:
 
         threshold_passed = facts.amount_cents >= _THRESHOLD_CENTS
         unpaid_passed = facts.payment_status == "unpaid"
-        review_pending_passed = facts.review_status == "pending"
-        eligible_passed = threshold_passed and unpaid_passed and review_pending_passed
+        eligible_passed = threshold_passed and unpaid_passed
 
         if not eligible_passed:
             raise EvidenceUnavailable("order review evidence is unavailable for the supplied facts")
@@ -218,7 +217,7 @@ class OrderReviewEvidenceBuilder:
                 "snapshot": {
                     "tenant_id": facts.tenant_id,
                     "order_id": facts.order_id,
-                    "updated_at": now.isoformat(),
+                    "updated_at": facts.updated_at.isoformat(),
                 },
             },
             "derivation": derivation,
