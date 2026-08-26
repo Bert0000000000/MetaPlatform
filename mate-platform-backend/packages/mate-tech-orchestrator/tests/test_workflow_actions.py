@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from mate_tech_orchestrator.order_review import OntologyContract
 from mate_tech_orchestrator.repositories.order_review import OrderReviewService
 from mate_tech_orchestrator.workflow_actions import OrderReviewActionExecutor
 
@@ -22,7 +23,17 @@ def _sqlite(tmp_path: Path) -> Iterator[None]:
 
 @pytest.fixture
 def service() -> OrderReviewService:
-    return OrderReviewService()
+    return OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
+
+
+class _FakeOntologyCatalog:
+    def get_contract(self, *, tenant_id: str, token: str) -> OntologyContract:
+        object_rid = f"ont.{tenant_id}.obj.crm.order.v1"
+        action_rid = f"ont.{tenant_id}.act.order-review-confirm.v1"
+        return OntologyContract(
+            object_type={"rid": object_rid, "title": "订单"},
+            action_type={"rid": action_rid, "title": "订单复核确认", "on": [object_rid]},
+        )
 
 
 def _seed_proposal(service: OrderReviewService, *, tenant_id: str = "tenant-acme") -> str:

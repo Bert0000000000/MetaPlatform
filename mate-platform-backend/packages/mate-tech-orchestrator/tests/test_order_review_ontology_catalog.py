@@ -76,3 +76,17 @@ def test_get_contract_rejects_mismatched_rid_in_response_body() -> None:
             catalog.get_contract(tenant_id=TENANT_ID, token=AUTH_TOKEN)
     finally:
         catalog.close()
+
+
+def test_get_contract_wraps_transport_failures_as_catalog_errors() -> None:
+    def _raise_connect_error(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connect boom", request=request)
+
+    client = httpx.Client(
+        base_url=ONT_BASE,
+        transport=httpx.MockTransport(_raise_connect_error),
+    )
+    catalog = OrderReviewOntologyCatalog(base_url=ONT_BASE, client=client)
+
+    with pytest.raises(OntologyCatalogError):
+        catalog.get_contract(tenant_id=TENANT_ID, token=AUTH_TOKEN)

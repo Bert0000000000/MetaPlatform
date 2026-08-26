@@ -38,7 +38,10 @@ class OrderReviewOntologyCatalog:
         return headers
 
     def _get_json(self, *, tenant_id: str, token: str, path: str) -> dict[str, Any]:
-        response = self._client.get(path, headers=self._headers(tenant_id=tenant_id, token=token))
+        try:
+            response = self._client.get(path, headers=self._headers(tenant_id=tenant_id, token=token))
+        except httpx.TransportError as error:
+            raise OntologyCatalogError(f"tech-ont GET {path} transport failed: {error}") from error
         if response.status_code < 200 or response.status_code >= 300:
             raise OntologyCatalogError(
                 f"tech-ont GET {path} -> {response.status_code}: {response.text[:300]}"
