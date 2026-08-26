@@ -42,10 +42,16 @@ TEMPORAL_NAMESPACE=default
 TEMPORAL_TASK_QUEUE=mate-platform
 ```
 
+`PlanWorkflow` and `build_temporal_worker()` now provide the real Temporal
+worker boundary. A workflow with a confirmation step pauses at
+`waiting_approval`; `mate.workflow.confirm` and `mate.workflow.reject` are
+the only approval signals. The worker requires an injected real
+`ActionExecutor` and fails closed when it is absent. The action registry,
+ActionProposal persistence, and order-domain write path are the next slice.
+
 The current WFE endpoints still expose the existing flow-definition and BPMN
-validation surface. Wiring `/workflows/{definition_id}/runs`, approval
-signals, and the real worker is the next implementation slice; no production
-request is allowed to silently use the current in-memory path.
+validation surface in addition to `/workflows/{definition_id}/runs`; no
+production request is allowed to silently use the current in-memory path.
 
 ## P2-W5 scope
 

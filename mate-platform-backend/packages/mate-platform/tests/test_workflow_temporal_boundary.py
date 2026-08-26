@@ -10,6 +10,7 @@ from mate_platform.workflow import (
     PlanStep,
     TemporalWorkflowExecutor,
     WorkflowBackend,
+    WorkflowRun,
     WorkflowRunStatus,
     WorkflowSettings,
     build_workflow_executor,
@@ -154,7 +155,9 @@ async def test_temporal_adapter_sends_only_stable_plan_payload() -> None:
     assert run.run_id == run_again.run_id
     assert calls[0]["workflow"] == "mate.workflow.execute"
     assert calls[0]["task_queue"] == "mate-workflows"
-    assert calls[0]["arg"] == _plan().to_dict()
+    assert calls[0]["arg"]["plan"] == _plan().to_dict()
+    assert calls[0]["arg"]["idempotency_key"] == "idem-1"
+    assert calls[0]["arg"]["run_id"] == run.run_id
     assert str(calls[0]["id"]).startswith("mate-workflow-run-")
 
 
@@ -194,3 +197,39 @@ async def test_temporal_adapter_recovers_duplicate_idempotent_start() -> None:
     recovered = await executor.start(_plan(), idempotency_key="idem-2")
 
     assert recovered == existing
+
+
+@pytest.mark.asyncio
+async def test_temporal_adapter_forwards_approval_signals() -> None:
+    run = WorkflowRun.new(_plan(), idempotency_key="idem-signal", run_id="run-signal")
+    signals: list[tuple[str, str]] = []
+
+    class _Handle:
+        async def signal(self, name, step_id):
+            signals.append((name, step_id))
+
+        async def query(self, name):
+            assert name == "mate.workflow.run_state"
+            return run.to_dict()
+
+    class _Client:
+        def get_workflow_handle(self, workflow_id):
+            assert workflow_id == "mate-workflow-run-signal"
+            return _Handle()
+
+    settings = WorkflowSettings(
+        profile="staging",
+        backend=WorkflowBackend.TEMPORAL,
+        temporal_address="temporal:7233",
+        namespace="default",
+        task_queue="mate-platform",
+    )
+    executor = TemporalWorkflowExecutor(_Client(), settings)
+
+    await executor.confirm("run-signal", "review")
+    await executor.reject("run-signal", "review")
+
+    assert signals == [
+        ("mate.workflow.confirm", "review"),
+        ("mate.workflow.reject", "review"),
+    ]

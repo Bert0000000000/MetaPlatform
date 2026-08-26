@@ -24,6 +24,12 @@ class WorkflowExecutor(Protocol):
     async def cancel(self, run_id: str) -> WorkflowRun:
         """Request cancellation and return the latest public state."""
 
+    async def confirm(self, run_id: str, step_id: str) -> WorkflowRun:
+        """Confirm a pending human approval gate."""
+
+    async def reject(self, run_id: str, step_id: str) -> WorkflowRun:
+        """Reject a pending human approval gate."""
+
 
 class TemporalClient(Protocol):
     """Small subset of the Temporal client used by this adapter."""
@@ -83,6 +89,12 @@ class InMemoryWorkflowExecutor:
         self._runs[run_id] = updated
         return updated
 
+    async def confirm(self, run_id: str, step_id: str) -> WorkflowRun:
+        raise RuntimeError("approval signals require the Temporal backend")
+
+    async def reject(self, run_id: str, step_id: str) -> WorkflowRun:
+        raise RuntimeError("approval signals require the Temporal backend")
+
 
 @dataclass
 class TemporalWorkflowExecutor:
@@ -92,11 +104,17 @@ class TemporalWorkflowExecutor:
     settings: WorkflowSettings
 
     async def start(self, plan: Plan, *, idempotency_key: str) -> WorkflowRun:
-        run_id = _stable_run_id(plan, idempotency_key)
+        normalized_key = idempotency_key.strip()
+        run_id = _stable_run_id(plan, normalized_key)
+        workflow_input = {
+            "run_id": run_id,
+            "idempotency_key": normalized_key,
+            "plan": plan.to_dict(),
+        }
         try:
             await self.client.start_workflow(
                 "mate.workflow.execute",
-                plan.to_dict(),
+                workflow_input,
                 id=_temporal_workflow_id(run_id),
                 task_queue=self.settings.task_queue,
             )
@@ -106,7 +124,7 @@ class TemporalWorkflowExecutor:
             return await self.get(run_id)
         return WorkflowRun.new(
             plan,
-            idempotency_key=idempotency_key,
+            idempotency_key=normalized_key,
             run_id=run_id,
         )
 
@@ -118,6 +136,20 @@ class TemporalWorkflowExecutor:
     async def cancel(self, run_id: str) -> WorkflowRun:
         handle = self.client.get_workflow_handle(_temporal_workflow_id(run_id))
         await handle.cancel()
+        return await self.get(run_id)
+
+    async def confirm(self, run_id: str, step_id: str) -> WorkflowRun:
+        if not step_id.strip():
+            raise ValueError("step_id is required")
+        handle = self.client.get_workflow_handle(_temporal_workflow_id(run_id))
+        await handle.signal("mate.workflow.confirm", step_id.strip())
+        return await self.get(run_id)
+
+    async def reject(self, run_id: str, step_id: str) -> WorkflowRun:
+        if not step_id.strip():
+            raise ValueError("step_id is required")
+        handle = self.client.get_workflow_handle(_temporal_workflow_id(run_id))
+        await handle.signal("mate.workflow.reject", step_id.strip())
         return await self.get(run_id)
 
 
