@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -27,7 +28,9 @@ from mate_tech_orchestrator.repositories.order_review import (
     IdempotencyRecordORM,
     ReviewCaseORM,
 )
-from sqlalchemy import select
+from sqlalchemy import event, select
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import Session
 
 from mate_tech_db.base import create_all, get_session, init_engine, reset_engine
 
@@ -84,6 +87,34 @@ def _seed_proposal(service: OrderReviewService, *, tenant_id: str = "tenant-acme
         auth_token=TEST_AUTH_TOKEN,
     )
     return str(result["proposal_id"])
+
+
+def _set_persisted_evidence_value(
+    proposal_id: str,
+    path: tuple[str, ...],
+    value: Any,
+) -> None:
+    with get_session() as session, session.begin():
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        case = session.get(ReviewCaseORM, ("tenant-acme", proposal.review_case_id))
+        assert case is not None
+        suggestion = json.loads(case.suggestion)
+        evidence = suggestion["evidence_bundle"]
+        if path[0] == "transaction_anchor":
+            target = next(
+                node
+                for node in evidence["ontology"]["graph"]["nodes"]
+                if node["type"] == "transaction_anchor"
+            )["properties"]
+            nested_path = path[1:]
+        else:
+            target = evidence
+            nested_path = path
+        for key in nested_path[:-1]:
+            target = target[key]
+        target[nested_path[-1]] = value
+        case.suggestion = json.dumps(suggestion, ensure_ascii=False, sort_keys=True)
 
 
 def _literal_values(schema: dict[str, object]) -> list[object]:
@@ -173,6 +204,104 @@ def test_duplicate_confirmation_is_idempotent_and_does_not_duplicate_side_effect
     assert second == first
     assert len(service.list_follow_up_tasks(tenant_id="tenant-acme")) == 1
     assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 3
+
+
+@pytest.mark.parametrize("operation", ["confirm", "reject"])
+def test_resolution_locks_tenant_scoped_proposal_before_idempotency_check(
+    service: OrderReviewService,
+    operation: str,
+) -> None:
+    proposal_id = _seed_proposal(service)
+    statements: list[str] = []
+
+    def capture_statement(orm_execute_state: Any) -> None:
+        if orm_execute_state.is_select:
+            statements.append(
+                str(orm_execute_state.statement.compile(dialect=postgresql.dialect()))
+            )
+
+    event.listen(Session, "do_orm_execute", capture_statement)
+    try:
+        if operation == "confirm":
+            service.confirm_proposal(
+                tenant_id="tenant-acme",
+                proposal_id=proposal_id,
+                idempotency_key="lock-before-confirm-idempotency",
+                actor_id="u-reviewer",
+            )
+        else:
+            service.reject_proposal(
+                tenant_id="tenant-acme",
+                proposal_id=proposal_id,
+                idempotency_key="lock-before-reject-idempotency",
+                actor_id="u-reviewer",
+            )
+    finally:
+        event.remove(Session, "do_orm_execute", capture_statement)
+
+    proposal_lock_index = next(
+        index
+        for index, statement in enumerate(statements)
+        if "FROM order_review_action_proposals" in statement and "FOR UPDATE" in statement
+    )
+    idempotency_index = next(
+        index
+        for index, statement in enumerate(statements)
+        if "FROM order_review_idempotency_records" in statement
+    )
+    proposal_lock_statement = statements[proposal_lock_index]
+    assert "order_review_action_proposals.tenant_id =" in proposal_lock_statement
+    assert "order_review_action_proposals.proposal_id =" in proposal_lock_statement
+    assert proposal_lock_index < idempotency_index
+
+
+def test_expired_confirmation_persists_expired_status_before_conflict(
+    service: OrderReviewService,
+) -> None:
+    proposal_id = _seed_proposal(service)
+    with get_session() as session, session.begin():
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        proposal.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+
+    with pytest.raises(OrderReviewService.Conflict, match="action proposal expired"):
+        service.confirm_proposal(
+            tenant_id="tenant-acme",
+            proposal_id=proposal_id,
+            idempotency_key="confirm-expired",
+            actor_id="u-reviewer",
+        )
+
+    proposal = service.get_proposal(tenant_id="tenant-acme", proposal_id=proposal_id)
+    assert proposal["status"] == "expired"
+    assert proposal["resolved_at"] is not None
+    assert service.get_order(tenant_id="tenant-acme", order_id="order-1001")["version"] == 1
+    assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
+
+
+def test_expired_rejection_persists_expired_status_before_conflict(
+    service: OrderReviewService,
+) -> None:
+    proposal_id = _seed_proposal(service)
+    with get_session() as session, session.begin():
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        proposal.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+
+    with pytest.raises(OrderReviewService.Conflict, match="action proposal expired"):
+        service.reject_proposal(
+            tenant_id="tenant-acme",
+            proposal_id=proposal_id,
+            idempotency_key="reject-expired",
+            actor_id="u-reviewer",
+            reason="too late",
+        )
+
+    proposal = service.get_proposal(tenant_id="tenant-acme", proposal_id=proposal_id)
+    assert proposal["status"] == "expired"
+    assert proposal["resolved_at"] is not None
+    assert service.get_order(tenant_id="tenant-acme", order_id="order-1001")["version"] == 1
+    assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
 
 
 def test_approved_order_cannot_create_second_review_case(service: OrderReviewService) -> None:
@@ -396,6 +525,82 @@ def test_confirmation_requires_persisted_evidence_and_does_not_create_side_effec
     assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 1
 
 
+@pytest.mark.parametrize(
+    ("path", "invalid_value", "expected_error"),
+    [
+        (("tenant_id",), "tenant-globex", OrderReviewService.EvidenceRequired),
+        (("proposal_id",), "proposal-other", OrderReviewService.EvidenceRequired),
+        (("order_id",), "order-other", OrderReviewService.EvidenceRequired),
+        (("order_version",), 2, OrderReviewService.VersionConflict),
+        (("ontology", "source"), "legacy_catalog", OrderReviewService.EvidenceRequired),
+        (
+            ("ontology", "model_rid"),
+            "ont.tenant-globex.obj.crm.order.v1",
+            OrderReviewService.EvidenceRequired,
+        ),
+        (
+            ("ontology", "action_rid"),
+            "ont.tenant-globex.act.order-review-confirm.v1",
+            OrderReviewService.EvidenceRequired,
+        ),
+        (("transaction_anchor", "order_id"), "order-other", OrderReviewService.EvidenceRequired),
+        (("transaction_anchor", "source"), "legacy_orders", OrderReviewService.EvidenceRequired),
+        (("transaction_anchor", "version"), 2, OrderReviewService.EvidenceRequired),
+        (
+            ("recommendation", "action"),
+            "cancel_order",
+            OrderReviewService.EvidenceRequired,
+        ),
+        (
+            ("recommendation", "requires_confirmation"),
+            False,
+            OrderReviewService.EvidenceRequired,
+        ),
+    ],
+    ids=[
+        "tenant",
+        "proposal",
+        "order",
+        "order-version",
+        "ontology-source",
+        "model-rid",
+        "action-rid",
+        "anchor-order",
+        "anchor-source",
+        "anchor-version",
+        "recommendation-action",
+        "confirmation-not-allowed",
+    ],
+)
+def test_confirmation_rejects_mismatched_evidence_without_side_effects(
+    service: OrderReviewService,
+    path: tuple[str, ...],
+    invalid_value: Any,
+    expected_error: type[Exception],
+) -> None:
+    proposal_id = _seed_proposal(service)
+    _set_persisted_evidence_value(proposal_id, path, invalid_value)
+
+    with pytest.raises(expected_error):
+        service.confirm_proposal(
+            tenant_id="tenant-acme",
+            proposal_id=proposal_id,
+            idempotency_key=f"confirm-mismatched-{'-'.join(path)}",
+            actor_id="u-reviewer",
+        )
+
+    order = service.get_order(tenant_id="tenant-acme", order_id="order-1001")
+    assert order["review_status"] == "pending"
+    assert order["version"] == 1
+    assert service.list_follow_up_tasks(tenant_id="tenant-acme") == []
+    assert len(service.list_outbox_events(tenant_id="tenant-acme")) == 1
+    with get_session() as session:
+        assert session.execute(select(IdempotencyRecordORM)).scalars().all() == []
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        assert proposal.status == "pending"
+
+
 def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     monkeypatch: pytest.MonkeyPatch,
     auth_headers_acme: dict[str, str],
@@ -433,9 +638,7 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     assert catalog.calls == [{"tenant_id": "tenant-acme", "token": expected_token}]
     assert case_payload["evidence"]["status"] == "complete"
     assert case_payload["evidence"]["ontology"]["source"] == "ontology_kernel"
-    assert case_payload["evidence"]["ontology"]["model_rid"] == (
-        "ont.tenant-acme.obj.crm.order.v1"
-    )
+    assert case_payload["evidence"]["ontology"]["model_rid"] == ("ont.tenant-acme.obj.crm.order.v1")
     assert case_payload["evidence"]["ontology"]["action_rid"] == (
         "ont.tenant-acme.act.order-review-confirm.v1"
     )
@@ -446,9 +649,9 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     )
     assert case_payload["evidence"]["data"]["facts"]
     assert case_payload["evidence"]["data"]["source"] == "order_review_orders"
-    assert case_payload["evidence"]["data"]["captured_at"] == case_payload["evidence"][
-        "captured_at"
-    ]
+    assert (
+        case_payload["evidence"]["data"]["captured_at"] == case_payload["evidence"]["captured_at"]
+    )
     assert [fact["source"] for fact in case_payload["evidence"]["data"]["facts"]] == [
         "order_review_orders.amount_cents",
         "order_review_orders.payment_status",
@@ -734,7 +937,11 @@ def test_alternate_historical_evidence_returns_detail_and_blocks_confirm_without
         evidence["ontology"] = {
             "graph": {
                 "nodes": [
-                    {"id": "order-fact-anchor:legacy", "type": "transaction_anchor", "label": "legacy"},
+                    {
+                        "id": "order-fact-anchor:legacy",
+                        "type": "transaction_anchor",
+                        "label": "legacy",
+                    },
                     {
                         "id": "object-type:legacy",
                         "type": "object_type",
@@ -937,11 +1144,7 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
 
     static_document = yaml.safe_load(
         (
-            Path(__file__).parents[3]
-            / "contracts"
-            / "openapi"
-            / "services"
-            / "orchestrator.yaml"
+            Path(__file__).parents[3] / "contracts" / "openapi" / "services" / "orchestrator.yaml"
         ).read_text(encoding="utf-8")
     )
     static_components = static_document["components"]["schemas"]

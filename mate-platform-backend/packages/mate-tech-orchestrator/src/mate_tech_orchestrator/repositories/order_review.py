@@ -305,20 +305,53 @@ class OrderReviewService:
         self,
         *,
         case: ReviewCaseORM | None,
-        current_order_version: int,
+        tenant_id: str,
+        proposal: ActionProposalORM,
+        order: OrderORM,
     ) -> dict[str, Any]:
         evidence = self._evidence_from_case(case)
         if evidence is None or validate_evidence_bundle(evidence) is None:
             raise self.EvidenceRequired("evidence bundle is required before confirmation")
         if evidence.get("status") != "complete":
             raise self.EvidenceUnavailable("evidence bundle must be complete before confirmation")
-        if evidence.get("order_version") != current_order_version:
+        if (
+            evidence.get("tenant_id") != tenant_id
+            or evidence.get("proposal_id") != proposal.proposal_id
+            or evidence.get("order_id") != order.order_id
+        ):
+            raise self.EvidenceRequired("evidence bundle does not match the action proposal")
+        if evidence.get("order_version") != order.version:
             raise self.VersionConflict(
-                f"order version changed: expected evidence {evidence.get('order_version')}, got {current_order_version}"
+                f"order version changed: expected evidence {evidence.get('order_version')}, got {order.version}"
             )
+        ontology = evidence.get("ontology")
+        expected_model_rid = f"ont.{tenant_id}.obj.crm.order.v1"
+        expected_action_rid = f"ont.{tenant_id}.act.order-review-confirm.v1"
+        if (
+            not isinstance(ontology, dict)
+            or ontology.get("source") != "ontology_kernel"
+            or ontology.get("model_rid") != expected_model_rid
+            or ontology.get("action_rid") != expected_action_rid
+        ):
+            raise self.EvidenceRequired("evidence bundle does not match the tenant ontology")
+        nodes = ontology.get("graph", {}).get("nodes", [])
+        anchors = [
+            node
+            for node in nodes
+            if isinstance(node, dict) and node.get("type") == "transaction_anchor"
+        ]
+        anchor_properties = anchors[0].get("properties") if len(anchors) == 1 else None
+        if (
+            not isinstance(anchor_properties, dict)
+            or anchor_properties.get("order_id") != order.order_id
+            or anchor_properties.get("source") != "order_review_orders"
+            or anchor_properties.get("version") != order.version
+        ):
+            raise self.EvidenceRequired("evidence transaction anchor does not match the order")
         recommendation = evidence.get("recommendation")
         if (
             not isinstance(recommendation, dict)
+            or recommendation.get("action") != "follow_up_payment"
             or recommendation.get("requires_confirmation") is not True
         ):
             raise self.EvidenceRequired("evidence bundle does not permit confirmation")
@@ -531,6 +564,22 @@ class OrderReviewService:
             case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
             return self._proposal_dict(proposal, case)
 
+    @staticmethod
+    def _locked_proposal(
+        session: Any,
+        *,
+        tenant_id: str,
+        proposal_id: str,
+    ) -> ActionProposalORM | None:
+        return session.execute(
+            select(ActionProposalORM)
+            .where(
+                ActionProposalORM.tenant_id == tenant_id,
+                ActionProposalORM.proposal_id == proposal_id,
+            )
+            .with_for_update()
+        ).scalar_one_or_none()
+
     def _existing_idempotency(
         self,
         session: Any,
@@ -559,7 +608,16 @@ class OrderReviewService:
         if not idempotency_key.strip():
             raise ValueError("idempotency key is required")
         self._ensure_schema()
+        expiration_error: Exception | None = None
+        response: dict[str, Any] | None = None
         with get_session() as session, session.begin():
+            proposal = self._locked_proposal(
+                session,
+                tenant_id=tenant_id,
+                proposal_id=proposal_id,
+            )
+            if proposal is None:
+                raise self.NotFound(f"action proposal not found: {proposal_id}")
             previous = self._existing_idempotency(
                 session,
                 tenant_id=tenant_id,
@@ -569,106 +627,114 @@ class OrderReviewService:
             )
             if previous is not None:
                 return previous
-            proposal = session.get(ActionProposalORM, (tenant_id, proposal_id))
-            if proposal is None:
-                raise self.NotFound(f"action proposal not found: {proposal_id}")
             if proposal.status != "pending":
                 raise self.AlreadyResolved(f"action proposal is {proposal.status}: {proposal_id}")
-            if _aware(proposal.expires_at) <= _now():
-                proposal.status = "expired"
-                proposal.resolved_at = _now()
-                raise self.Conflict(f"action proposal expired: {proposal_id}")
-            order = session.execute(
-                select(OrderORM)
-                .where(
-                    OrderORM.tenant_id == tenant_id,
-                    OrderORM.order_id == proposal.order_id,
-                )
-                .with_for_update()
-            ).scalar_one_or_none()
-            if order is None:
-                raise self.NotFound(f"order not found: {proposal.order_id}")
-            case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
-            evidence = self._require_confirmation_evidence(
-                case=case,
-                current_order_version=order.version,
-            )
-            if order.version != proposal.expected_order_version:
-                raise self.VersionConflict(
-                    f"order version changed: expected {proposal.expected_order_version}, got {order.version}"
-                )
             now = _now()
-            next_version = proposal.expected_order_version + 1
-            updated = session.execute(
-                update(OrderORM)
-                .where(
-                    OrderORM.tenant_id == tenant_id,
-                    OrderORM.order_id == order.order_id,
-                    OrderORM.version == proposal.expected_order_version,
-                )
-                .values(review_status="approved", version=next_version, updated_at=now)
-            )
-            if updated.rowcount != 1:
-                raise self.VersionConflict("order version changed during confirmation")
-            if case is not None:
-                case.status = "approved"
-            task_id = f"task_{uuid.uuid4().hex}"
-            task = FollowUpTaskORM(
-                tenant_id=tenant_id,
-                task_id=task_id,
-                order_id=order.order_id,
-                review_case_id=proposal.review_case_id,
-                proposal_id=proposal.proposal_id,
-                status="open",
-                title=f"Follow up payment for {order.order_id}",
-                created_at=now,
-            )
-            proposal.status = "confirmed"
-            proposal.resolved_at = now
-            response = {
-                "proposal_id": proposal.proposal_id,
-                "order_id": order.order_id,
-                "status": "confirmed",
-                "order_version": next_version,
-                "follow_up_task_id": task_id,
-            }
-            session.add(task)
-            session.add(
-                IdempotencyRecordORM(
+            if _aware(proposal.expires_at) <= now:
+                proposal.status = "expired"
+                proposal.resolved_at = now
+                expiration_error = self.Conflict(f"action proposal expired: {proposal_id}")
+            else:
+                order = session.execute(
+                    select(OrderORM)
+                    .where(
+                        OrderORM.tenant_id == tenant_id,
+                        OrderORM.order_id == proposal.order_id,
+                    )
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if order is None:
+                    raise self.NotFound(f"order not found: {proposal.order_id}")
+                case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
+                evidence = self._require_confirmation_evidence(
+                    case=case,
                     tenant_id=tenant_id,
-                    idempotency_key=idempotency_key,
-                    operation="confirm",
-                    proposal_id=proposal_id,
-                    response=_json(response),
+                    proposal=proposal,
+                    order=order,
                 )
-            )
-            session.add(
-                self._event(
+                if order.version != proposal.expected_order_version:
+                    raise self.VersionConflict(
+                        f"order version changed: expected {proposal.expected_order_version}, got {order.version}"
+                    )
+                next_version = proposal.expected_order_version + 1
+                updated = session.execute(
+                    update(OrderORM)
+                    .where(
+                        OrderORM.tenant_id == tenant_id,
+                        OrderORM.order_id == order.order_id,
+                        OrderORM.version == proposal.expected_order_version,
+                    )
+                    .values(review_status="approved", version=next_version, updated_at=now)
+                )
+                if updated.rowcount != 1:
+                    raise self.VersionConflict("order version changed during confirmation")
+                if case is not None:
+                    case.status = "approved"
+                task_id = f"task_{uuid.uuid4().hex}"
+                task = FollowUpTaskORM(
                     tenant_id=tenant_id,
-                    event_type="order.review.confirmed",
-                    aggregate_type="order",
-                    aggregate_id=order.order_id,
-                    payload={**response, "actor_id": actor_id, **self._evidence_refs(evidence)},
-                    trace_id=trace_id,
-                    correlation_id=proposal_id,
+                    task_id=task_id,
+                    order_id=order.order_id,
+                    review_case_id=proposal.review_case_id,
+                    proposal_id=proposal.proposal_id,
+                    status="open",
+                    title=f"Follow up payment for {order.order_id}",
+                    created_at=now,
                 )
-            )
-            session.add(
-                self._event(
-                    tenant_id=tenant_id,
-                    event_type="audit.action_proposal.confirmed",
-                    aggregate_type="action_proposal",
-                    aggregate_id=proposal_id,
-                    payload={
-                        "actor_id": actor_id,
-                        "order_id": order.order_id,
-                        "idempotency_key": idempotency_key,
-                        **self._evidence_refs(evidence),
-                    },
-                    trace_id=trace_id,
-                    correlation_id=proposal_id,
+                proposal.status = "confirmed"
+                proposal.resolved_at = now
+                response = {
+                    "proposal_id": proposal.proposal_id,
+                    "order_id": order.order_id,
+                    "status": "confirmed",
+                    "order_version": next_version,
+                    "follow_up_task_id": task_id,
+                }
+                session.add(task)
+                session.add(
+                    IdempotencyRecordORM(
+                        tenant_id=tenant_id,
+                        idempotency_key=idempotency_key,
+                        operation="confirm",
+                        proposal_id=proposal_id,
+                        response=_json(response),
+                    )
                 )
-            )
+                session.add(
+                    self._event(
+                        tenant_id=tenant_id,
+                        event_type="order.review.confirmed",
+                        aggregate_type="order",
+                        aggregate_id=order.order_id,
+                        payload={
+                            **response,
+                            "actor_id": actor_id,
+                            **self._evidence_refs(evidence),
+                        },
+                        trace_id=trace_id,
+                        correlation_id=proposal_id,
+                    )
+                )
+                session.add(
+                    self._event(
+                        tenant_id=tenant_id,
+                        event_type="audit.action_proposal.confirmed",
+                        aggregate_type="action_proposal",
+                        aggregate_id=proposal_id,
+                        payload={
+                            "actor_id": actor_id,
+                            "order_id": order.order_id,
+                            "idempotency_key": idempotency_key,
+                            **self._evidence_refs(evidence),
+                        },
+                        trace_id=trace_id,
+                        correlation_id=proposal_id,
+                    )
+                )
+        if expiration_error is not None:
+            raise expiration_error
+        if response is None:
+            raise RuntimeError("confirmation transaction produced no response")
         return response
 
     def reject_proposal(
@@ -684,7 +750,16 @@ class OrderReviewService:
         if not idempotency_key.strip():
             raise ValueError("idempotency key is required")
         self._ensure_schema()
+        expiration_error: Exception | None = None
+        response: dict[str, Any] | None = None
         with get_session() as session, session.begin():
+            proposal = self._locked_proposal(
+                session,
+                tenant_id=tenant_id,
+                proposal_id=proposal_id,
+            )
+            if proposal is None:
+                raise self.NotFound(f"action proposal not found: {proposal_id}")
             previous = self._existing_idempotency(
                 session,
                 tenant_id=tenant_id,
@@ -694,50 +769,49 @@ class OrderReviewService:
             )
             if previous is not None:
                 return previous
-            proposal = session.execute(
-                select(ActionProposalORM)
-                .where(
-                    ActionProposalORM.tenant_id == tenant_id,
-                    ActionProposalORM.proposal_id == proposal_id,
-                )
-                .with_for_update()
-            ).scalar_one_or_none()
-            if proposal is None:
-                raise self.NotFound(f"action proposal not found: {proposal_id}")
             if proposal.status != "pending":
                 raise self.AlreadyResolved(f"action proposal is {proposal.status}: {proposal_id}")
             now = _now()
-            proposal.status = "rejected"
-            proposal.resolved_at = now
-            case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
-            if case is not None:
-                case.status = "rejected"
-            evidence = self._evidence_from_case(case)
-            response = {"proposal_id": proposal_id, "status": "rejected", "reason": reason}
-            session.add(
-                IdempotencyRecordORM(
-                    tenant_id=tenant_id,
-                    idempotency_key=idempotency_key,
-                    operation="reject",
-                    proposal_id=proposal_id,
-                    response=_json(response),
+            if _aware(proposal.expires_at) <= now:
+                proposal.status = "expired"
+                proposal.resolved_at = now
+                expiration_error = self.Conflict(f"action proposal expired: {proposal_id}")
+            else:
+                proposal.status = "rejected"
+                proposal.resolved_at = now
+                case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
+                if case is not None:
+                    case.status = "rejected"
+                evidence = self._evidence_from_case(case)
+                response = {"proposal_id": proposal_id, "status": "rejected", "reason": reason}
+                session.add(
+                    IdempotencyRecordORM(
+                        tenant_id=tenant_id,
+                        idempotency_key=idempotency_key,
+                        operation="reject",
+                        proposal_id=proposal_id,
+                        response=_json(response),
+                    )
                 )
-            )
-            session.add(
-                self._event(
-                    tenant_id=tenant_id,
-                    event_type="audit.action_proposal.rejected",
-                    aggregate_type="action_proposal",
-                    aggregate_id=proposal_id,
-                    payload={
-                        "actor_id": actor_id,
-                        "reason": reason,
-                        **(self._evidence_refs(evidence) if evidence is not None else {}),
-                    },
-                    trace_id=trace_id,
-                    correlation_id=proposal_id,
+                session.add(
+                    self._event(
+                        tenant_id=tenant_id,
+                        event_type="audit.action_proposal.rejected",
+                        aggregate_type="action_proposal",
+                        aggregate_id=proposal_id,
+                        payload={
+                            "actor_id": actor_id,
+                            "reason": reason,
+                            **(self._evidence_refs(evidence) if evidence is not None else {}),
+                        },
+                        trace_id=trace_id,
+                        correlation_id=proposal_id,
+                    )
                 )
-            )
+        if expiration_error is not None:
+            raise expiration_error
+        if response is None:
+            raise RuntimeError("rejection transaction produced no response")
         return response
 
     def list_follow_up_tasks(self, *, tenant_id: str) -> list[dict[str, Any]]:
