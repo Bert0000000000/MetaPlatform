@@ -12,6 +12,12 @@ _FOLLOW_UP_ACTION = "follow_up_payment"
 _FOLLOW_UP_TITLE = "创建回款跟进单"
 _FOLLOW_UP_POLICY_REF = "policy://payment-follow-up-policy"
 _THRESHOLD_CENTS = 100_000
+_DISPLAY_VALUE_MAPPINGS = {
+    "fact.payment_status": {
+        "unpaid": "未支付",
+        "paid": "已支付",
+    },
+}
 
 
 @dataclass(frozen=True)
@@ -66,6 +72,8 @@ def _confidence_metadata(requested_suggestion: dict[str, Any]) -> dict[str, Any]
 def _fact_entry(*, fact_id: str, value: Any) -> dict[str, Any]:
     if isinstance(value, int):
         display_value = _format_amount(value) if fact_id == "fact.amount_cents" else str(value)
+    elif isinstance(value, str):
+        display_value = _DISPLAY_VALUE_MAPPINGS.get(fact_id, {}).get(value, value)
     else:
         display_value = str(value)
     return {

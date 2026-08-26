@@ -91,6 +91,12 @@ def test_build_creates_complete_bundle_for_tenant_default_order() -> None:
     assert all(item["passed"] for item in bundle["derivation"])
     assert bundle["recommendation"]["action"] == "follow_up_payment"
     assert bundle["recommendation"]["title"] == "创建回款跟进单"
+    assert {fact["id"]: fact["value"] for fact in bundle["data"]["facts"]}[
+        "fact.payment_status"
+    ] == "unpaid"
+    assert {fact["id"]: fact["display_value"] for fact in bundle["data"]["facts"]}[
+        "fact.payment_status"
+    ] == "未支付"
     assert {fact["id"]: fact["display_value"] for fact in bundle["data"]["facts"]}[
         "fact.amount_cents"
     ] == "¥2,500.00"
