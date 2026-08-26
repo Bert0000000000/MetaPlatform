@@ -12,6 +12,7 @@ dependencies = [
     "mate-platform",
     "mate-clients",
     "mate-kernel",
+    "mate-tech-db",
 ]
 
 [dependency-groups]
@@ -35,3 +36,4 @@ packages = ["src/mate_tech_orchestrator"]
 mate-platform = { workspace = true }
 mate-clients = { workspace = true }
 mate-kernel = { workspace = true }
+mate-tech-db = { workspace = true }

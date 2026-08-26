@@ -46,8 +46,23 @@ TEMPORAL_TASK_QUEUE=mate-platform
 worker boundary. A workflow with a confirmation step pauses at
 `waiting_approval`; `mate.workflow.confirm` and `mate.workflow.reject` are
 the only approval signals. The worker requires an injected real
-`ActionExecutor` and fails closed when it is absent. The action registry,
-ActionProposal persistence, and order-domain write path are the next slice.
+`ActionExecutor` and fails closed when it is absent.
+
+The production worker composition root is
+`mate_app_wfe.worker_main:run_worker`. It initializes the configured database,
+constructs the order-review `ActionExecutor`, connects to Temporal, and runs
+until shutdown. Start it as a separate worker process:
+
+```bash
+python -m mate_app_wfe.worker_main
+```
+
+The current supported action is `order_review_confirm`. Its Temporal activity
+payload must contain the tenant in the envelope and a `proposal_id` in the
+step input. When no explicit idempotency key is provided, the adapter derives
+one from the Temporal `run_id` and step id, so activity replay cannot create a
+second follow-up task or duplicate Outbox events. The adapter uses the
+transactional order-review service and never returns a synthetic success.
 
 The current WFE endpoints still expose the existing flow-definition and BPMN
 validation surface in addition to `/workflows/{definition_id}/runs`; no

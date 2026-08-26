@@ -2332,7 +2332,10 @@ dependencies = [
     { name = "fastapi" },
     { name = "mate-clients" },
     { name = "mate-platform" },
+    { name = "mate-tech-db" },
+    { name = "mate-tech-orchestrator" },
     { name = "pydantic" },
+    { name = "temporalio" },
 ]
 
 [package.dev-dependencies]
@@ -2351,7 +2354,10 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "mate-tech-db", editable = "packages/mate-tech-db" },
+    { name = "mate-tech-orchestrator", editable = "packages/mate-tech-orchestrator" },
     { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "temporalio", specifier = ">=1.16.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -3242,6 +3248,7 @@ dependencies = [
     { name = "mate-clients" },
     { name = "mate-kernel" },
     { name = "mate-platform" },
+    { name = "mate-tech-db" },
     { name = "pydantic" },
 ]
 
@@ -3261,6 +3268,7 @@ requires-dist = [
     { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-kernel", editable = "packages/mate-kernel" },
     { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "mate-tech-db", editable = "packages/mate-tech-db" },
     { name = "pydantic", specifier = ">=2.0.0" },
 ]
 
