@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +27,7 @@ from mate_tech_orchestrator.repositories.order_review import (
     ActionProposalORM,
     IdempotencyRecordORM,
     ReviewCaseORM,
+    _iso,
 )
 from sqlalchemy import event, select
 from sqlalchemy.dialects import postgresql
@@ -50,6 +51,18 @@ def service() -> OrderReviewService:
 
 
 TEST_AUTH_TOKEN = "test-auth-token"  # noqa: S105 - test token only
+
+
+def test_iso_normalizes_aware_datetimes_to_utc() -> None:
+    captured_at = datetime(2026, 8, 26, 12, 30, tzinfo=timezone(timedelta(hours=8)))
+
+    assert _iso(captured_at) == "2026-08-26T04:30:00+00:00"
+
+
+def test_iso_preserves_sqlite_naive_datetime_as_utc() -> None:
+    captured_at = datetime(2026, 8, 26, 4, 30)
+
+    assert _iso(captured_at) == "2026-08-26T04:30:00+00:00"
 
 
 class _FakeOntologyCatalog:

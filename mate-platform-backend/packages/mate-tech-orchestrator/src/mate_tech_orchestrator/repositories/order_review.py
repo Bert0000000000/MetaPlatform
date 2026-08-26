@@ -53,7 +53,7 @@ def _aware(value: datetime) -> datetime:
 
 
 def _iso(value: datetime) -> str:
-    return _aware(value).isoformat()
+    return _aware(value).astimezone(UTC).isoformat()
 
 
 class OrderORM(Base):
