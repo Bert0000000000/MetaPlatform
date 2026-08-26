@@ -128,7 +128,11 @@ services:
       MATE_PROFILE: dev
       MATE_DB_URL: ""
       DATABASE_URL: ""
+      ONT_HTTP_BASE: http://mate-tech-ont:8007
       PYTHONPATH: /app/packages/mate-tech-orchestrator/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
+    depends_on:
+      mate-tech-ont:
+        condition: service_healthy
 
   mate-tech-data:
     build: null

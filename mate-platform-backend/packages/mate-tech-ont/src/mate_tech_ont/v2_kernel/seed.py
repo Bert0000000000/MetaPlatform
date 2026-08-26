@@ -178,10 +178,21 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
         title="关闭工单",
         description="填写处理结论并关闭客户工单，自动通知工单提交人",
     ))
+    repo.upsert_action_type(ActionType(
+        rid=ClassRef(f"ont.{t}.act.order-review-confirm.v1"),
+        parameters=(_prop(f"ont.{t}.prop.decision.v1", "string", "decision"),),
+        submission_criteria=("decision in (confirm, reject)",),
+        side_effects=("update_order", "create_follow_up_task", "audit_log"),
+        function_ref=ClassRef(f"ont.{t}.fn.order-review-confirm.v1"),
+        on=(ClassRef(f"ont.{t}.obj.crm.order.v1"),),
+        title="订单复核确认",
+        description="人工确认订单复核建议，更新订单并创建回款跟进单",
+    ))
 
     # ── Function / LinkType / LinkInstance ──
     repo.upsert_function(_function_placeholder(t, "approve-leave.v1"))
     repo.upsert_function(_function_placeholder(t, "close-ticket.v1"))
+    repo.upsert_function(_function_placeholder(t, "order-review-confirm.v1"))
     repo.upsert_link_type(LinkType(
         rid=ClassRef(f"ont.{t}.link.employee-leave.v1"),
         src=ClassRef(f"ont.{t}.obj.employee.v1"),
@@ -207,7 +218,7 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
     # 一级本体列表，领域内 ObjectType 即二级本体/概念。
     _seed_enterprise_ontology(repo, t, now)
 
-    return 3 + 5 + 2 + 2 + 1 + 3  # obj types + individuals + action types + functions + link type + link instances
+    return 3 + 5 + 3 + 3 + 1 + 3  # obj types + individuals + action types + functions + link type + link instances
 
 
 def _seed_enterprise_ontology(

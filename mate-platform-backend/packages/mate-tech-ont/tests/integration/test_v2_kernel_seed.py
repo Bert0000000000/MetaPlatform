@@ -62,13 +62,15 @@ class TestSeedDemo:
     def test_seed_populates_scenario(self, client_with_ctx):
         c = client_with_ctx
         created = seed_demo(app.state.kernel_repo, TENANT)
-        assert created == 16
+        assert created == 18
 
         r = c.get("/api/v1/ont/v2/object-types")
-        rids = {x["rid"] for x in r.json()}
-        assert "ont.tenant-default.obj.leave-request.v1" in rids
-        assert "ont.tenant-default.obj.ticket.v1" in rids
-        assert "ont.tenant-default.obj.employee.v1" in rids
+        object_types = {item["rid"]: item for item in r.json()}
+        order_rid = "ont.tenant-default.obj.crm.order.v1"
+        assert order_rid in object_types
+        assert "ont.tenant-default.obj.leave-request.v1" in object_types
+        assert "ont.tenant-default.obj.ticket.v1" in object_types
+        assert "ont.tenant-default.obj.employee.v1" in object_types
 
         r = c.get("/api/v1/ont/v2/individuals", params={
             "class_rid": "ont.tenant-default.obj.leave-request.v1",
@@ -84,12 +86,19 @@ class TestSeedDemo:
         )
 
         r = c.get("/api/v1/ont/v2/action-types")
-        acts = {x["rid"]: x for x in r.json()}
+        acts = {item["rid"]: item for item in r.json()}
         assert "ont.tenant-default.act.approve-leave.v1" in acts
         assert acts["ont.tenant-default.act.approve-leave.v1"]["side_effects"] == [
             "notify_email", "audit_log",
         ]
         assert "ont.tenant-default.act.close-ticket.v1" in acts
+        action_rid = "ont.tenant-default.act.order-review-confirm.v1"
+        assert action_rid in acts
+        assert acts[action_rid]["on"] == [order_rid]
+        assert acts[action_rid]["title"] == "订单复核确认"
+        assert acts[action_rid]["side_effects"] == [
+            "update_order", "create_follow_up_task", "audit_log",
+        ]
 
         r = c.get("/api/v1/ont/v2/link-types")
         links = {x["rid"] for x in r.json()}

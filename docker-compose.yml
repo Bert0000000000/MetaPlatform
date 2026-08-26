@@ -758,6 +758,7 @@ services:
       INSECURE_SKIP_SIGNATURE: "true"
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: metaplatform
+      ONT_HTTP_BASE: http://mate-tech-ont:8007
       SERVICE_CLIENT_ID: ${SERVICE_CLIENT_ID:-metaplatform-backend}
       SERVICE_CLIENT_SECRET: ${SERVICE_CLIENT_SECRET:-}
       MCP_URL: http://mate-tech-mcp:8081
@@ -781,6 +782,8 @@ services:
         condition: service_started
       mate-app-a2a:
         condition: service_started
+      mate-tech-ont:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8505/healthz || exit 1"]
       interval: 15s
