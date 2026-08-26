@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any, NoReturn
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request, status
@@ -94,9 +93,10 @@ def _bearer_credential(request: Request) -> str:
 
 
 def _response_evidence(evidence: Any) -> dict[str, Any] | None:
-    if validate_evidence_bundle(evidence) is None:
+    validated = validate_evidence_bundle(evidence)
+    if validated is None:
         return None
-    return deepcopy(evidence)
+    return validated.model_dump(mode="json", exclude_none=True)
 
 
 def _require_response_evidence(evidence: Any) -> dict[str, Any]:

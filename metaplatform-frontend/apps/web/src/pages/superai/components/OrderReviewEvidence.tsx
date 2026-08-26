@@ -67,8 +67,8 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
     const edges = evidence.ontology.graph.edges
       .map((item) => ({
         id: item.id,
-        source: item.from,
-        target: item.to,
+        source: item.source,
+        target: item.target,
         label: item.label,
         width: 1.5,
       } satisfies GraphEdgeSpec));
@@ -116,6 +116,11 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
         }}
       >
         <Card title="Ontology 关系图" bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Space wrap spacing="tight">
+            <Tag color="grey">source: {evidence.ontology.source}</Tag>
+            <Tag color="blue">model_rid: {evidence.ontology.model_rid}</Tag>
+            <Tag color="green">action_rid: {evidence.ontology.action_rid}</Tag>
+          </Space>
           <SemiGraphCanvas
             nodes={graph.nodes}
             edges={graph.edges}
@@ -140,11 +145,13 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
               {graph.edges.map((item) => item.label).join(' / ')}
             </Tag>
           </Space>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div data-testid="ontology-legend" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <Typography.Text strong>Legend</Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {evidence.ontology.legend}
-            </Typography.Text>
+            {Object.entries(evidence.ontology.legend).map(([type, description]) => (
+              <Typography.Text key={type} type="secondary" style={{ fontSize: 12 }}>
+                {type}: {description}
+              </Typography.Text>
+            ))}
           </div>
         </Card>
 
@@ -186,15 +193,24 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
               borderBottom: '1px solid var(--semi-color-border)',
             }}
           >
-            <Typography.Text>{item.id}</Typography.Text>
+            <Typography.Text>{item.label}</Typography.Text>
             <Tag color={item.passed ? 'green' : 'red'}>{item.passed ? '通过' : '未通过'}</Tag>
-            <Space wrap spacing="tight">
-              {item.refs.map((ref) => (
-                <Tag key={ref} color="white">
-                  {ref}
-                </Tag>
-              ))}
-            </Space>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <Space wrap spacing="tight">
+                {item.fact_refs.map((ref) => (
+                  <Tag key={ref} color="white">
+                    {ref}
+                  </Tag>
+                ))}
+              </Space>
+              {item.details && (
+                <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                  {Object.entries(item.details)
+                    .map(([key, value]) => `${key}: ${String(value)}`)
+                    .join(' · ')}
+                </Typography.Text>
+              )}
+            </div>
           </div>
         ))}
       </Card>

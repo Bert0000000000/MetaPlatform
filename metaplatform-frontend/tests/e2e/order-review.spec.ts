@@ -16,38 +16,80 @@ function mockEvidence(status: 'complete' | 'unavailable' = 'complete') {
     order_version: 7,
     captured_at: '2026-08-26T12:00:00Z',
     ontology: {
+      source: 'ontology_kernel',
+      model_rid: 'ont.tenant-default.obj.crm.order.v1',
+      action_rid: 'ont.tenant-default.act.order-review-confirm.v1',
       graph: {
         nodes: [
-          { id: `order-fact-anchor:${MOCK_ORDER_ID}`, type: 'transaction_anchor', label: MOCK_ORDER_ID, rid: null },
-          { id: 'object-type:ont.order.v1', type: 'object_type', label: 'ont.order.v1', rid: 'ont.order.v1' },
-          { id: 'action-type:ont.follow-up.v1', type: 'action_type', label: 'ont.follow-up.v1', rid: 'ont.follow-up.v1' },
+          {
+            id: `order-fact-anchor:${MOCK_ORDER_ID}`,
+            type: 'transaction_anchor',
+            label: `订单 ${MOCK_ORDER_ID}`,
+            properties: { order_id: MOCK_ORDER_ID, source: 'order_review_orders', version: 7 },
+          },
+          {
+            id: 'object-type:ont.tenant-default.obj.crm.order.v1',
+            type: 'object_type',
+            label: '订单',
+            properties: { rid: 'ont.tenant-default.obj.crm.order.v1', version: 'v1' },
+          },
+          {
+            id: 'action-type:ont.tenant-default.act.order-review-confirm.v1',
+            type: 'action_type',
+            label: '订单复核确认',
+            properties: {
+              rid: 'ont.tenant-default.act.order-review-confirm.v1',
+              action_type: 'order_review_confirm',
+            },
+          },
         ],
         edges: [
-          { id: 'order-instance-of-model', from: `order-fact-anchor:${MOCK_ORDER_ID}`, to: 'object-type:ont.order.v1', label: '符合对象模型' },
-          { id: 'model-supports-action', from: 'object-type:ont.order.v1', to: 'action-type:ont.follow-up.v1', label: '支持动作' },
+          {
+            id: 'order-instance-of-model',
+            source: `order-fact-anchor:${MOCK_ORDER_ID}`,
+            target: 'object-type:ont.tenant-default.obj.crm.order.v1',
+            label: '符合对象模型',
+          },
+          {
+            id: 'model-supports-action',
+            source: 'object-type:ont.tenant-default.obj.crm.order.v1',
+            target: 'action-type:ont.tenant-default.act.order-review-confirm.v1',
+            label: '支持动作',
+          },
         ],
       },
-      legend: 'The transaction_anchor is not a persisted Ontology Individual.',
-      contract: {
-        object_type: { rid: 'ont.order.v1', title: 'Order' },
-        action_type: { rid: 'ont.follow-up.v1', title: 'Follow up payment', on: ['ont.order.v1'] },
+      legend: {
+        transaction_anchor: '订单交易事实的语义锚点，不是已持久化的 Ontology Individual',
+        object_type: '来自 Ontology Kernel 的正式对象模型',
+        action_type: '来自 Ontology Kernel 的订单复核动作定义',
       },
     },
     data: {
+      source: 'order_review_orders',
+      captured_at: '2026-08-26T12:00:00Z',
       facts: [
-        { id: 'fact.amount_cents', field: 'amount_cents', label: '订单金额', value: 250_000, display_value: '¥2,500.00', source: 'order_review_orders' },
-        { id: 'fact.payment_status', field: 'payment_status', label: '支付状态', value: 'unpaid', display_value: '未支付', source: 'order_review_orders' },
+        { id: 'fact.amount_cents', field: 'amount_cents', label: '订单金额', value: 250_000, display_value: '¥2,500.00', source: 'order_review_orders.amount_cents' },
+        { id: 'fact.payment_status', field: 'payment_status', label: '支付状态', value: 'unpaid', display_value: '未支付', source: 'order_review_orders.payment_status' },
+        { id: 'fact.review_status', field: 'review_status', label: '复核状态', value: 'pending', display_value: '待复核', source: 'order_review_orders.review_status' },
+        { id: 'fact.version', field: 'version', label: '订单版本', value: 7, display_value: 'v7', source: 'order_review_orders.version' },
       ],
-      snapshot: {
-        tenant_id: 'tenant-default',
-        order_id: MOCK_ORDER_ID,
-        updated_at: '2026-08-26T11:30:00Z',
-      },
     },
     derivation: [
-      { id: 'threshold', passed: true, refs: ['fact.amount_cents'] },
-      { id: 'unpaid', passed: true, refs: ['fact.payment_status'] },
-      { id: 'eligible', passed: true, refs: ['threshold', 'unpaid'] },
+      {
+        id: 'threshold',
+        label: '订单金额 ≥ ¥1,000.00',
+        passed: true,
+        fact_refs: ['fact.amount_cents'],
+        details: { operator: '>=', expected_cents: 100_000 },
+      },
+      {
+        id: 'unpaid',
+        label: '支付状态 = 未支付',
+        passed: true,
+        fact_refs: ['fact.payment_status'],
+        details: { operator: '=', expected: 'unpaid' },
+      },
+      { id: 'eligible', label: '满足订单复核条件', passed: true, fact_refs: ['threshold', 'unpaid'] },
     ],
     recommendation: {
       action: 'follow_up_payment',
@@ -55,7 +97,11 @@ function mockEvidence(status: 'complete' | 'unavailable' = 'complete') {
       reason: '订单金额 ¥2,500.00 且当前未支付，建议人工确认后创建回款跟进单。',
       requires_confirmation: true,
       derivation_refs: ['eligible'],
-      source_refs: ['ontology://object-type/ont.order.v1'],
+      source_refs: [
+        'ontology://object-type/ont.tenant-default.obj.crm.order.v1',
+        'ontology://action-type/ont.tenant-default.act.order-review-confirm.v1',
+        'policy://payment-follow-up-policy',
+      ],
       confidence: null,
     },
   };
@@ -230,12 +276,19 @@ test('SuperAI 订单复核黄金路径：建议、人工确认、Action 写回�
   await expect(page.getByTestId('review-proposal')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId('review-evidence')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId('ontology-node-order-model')).toBeVisible();
+  await expect(page.getByTestId('ontology-node-order-model')).toContainText('订单');
   await expect(page.getByTestId('ontology-node-review-action')).toBeVisible();
+  await expect(page.getByTestId('ontology-node-review-action')).toContainText('订单复核确认');
   await expect(page.getByTestId('ontology-edge-order-model')).toContainText('支持动作');
+  await expect(page.getByTestId('ontology-legend')).toContainText('正式对象模型');
   await expect(page.getByTestId('review-fact-amount')).toContainText('¥2,500.00');
+  await expect(page.getByTestId('review-fact-amount')).toContainText('order_review_orders.amount_cents');
   await expect(page.getByTestId('review-fact-payment-status')).toContainText('未支付');
-  await expect(page.getByTestId('review-derivation-threshold')).toContainText('threshold');
-  await expect(page.getByTestId('review-derivation-eligible')).toContainText('eligible');
+  await expect(page.getByTestId('review-fact-payment-status')).toContainText('order_review_orders.payment_status');
+  await expect(page.getByTestId('review-derivation-threshold')).toContainText('订单金额 ≥ ¥1,000.00');
+  await expect(page.getByTestId('review-derivation-threshold')).toContainText('fact.amount_cents');
+  await expect(page.getByTestId('review-derivation-threshold')).toContainText('expected_cents: 100000');
+  await expect(page.getByTestId('review-derivation-eligible')).toContainText('满足订单复核条件');
   await expect(page.getByTestId('review-recommendation')).toContainText('创建回款跟进单');
   await page.getByRole('button', { name: '确认执行' }).click();
 
@@ -255,7 +308,7 @@ test('创建响应 evidence 在 proposal detail 暂缺时仍驱动复核 UI', as
 
   await expect(page.getByTestId('review-evidence')).toContainText('captured_at: 2026-08-26T12:00:00Z');
   await expect(page.getByTestId('review-fact-amount')).toContainText('¥2,500.00');
-  await expect(page.getByTestId('review-fact-amount')).toContainText('order_review_orders');
+  await expect(page.getByTestId('review-fact-amount')).toContainText('order_review_orders.amount_cents');
   await expect(page.getByTestId('review-fact-payment-status')).toContainText('未支付');
   await expect(page.getByRole('button', { name: '确认执行' })).toBeEnabled();
   expect(token).toBeTruthy();

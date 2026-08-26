@@ -28,13 +28,6 @@ from mate_tech_orchestrator.order_review.evidence import (
 )
 from mate_tech_orchestrator.order_review.ontology_catalog import OrderReviewOntologyCatalog
 
-_EVIDENCE_FACT_METADATA: dict[str, tuple[str, str]] = {
-    "fact.amount_cents": ("amount_cents", "订单金额"),
-    "fact.payment_status": ("payment_status", "支付状态"),
-    "fact.review_status": ("review_status", "复核状态"),
-    "fact.version": ("version", "订单版本"),
-}
-
 
 def _now() -> datetime:
     return datetime.now(UTC)
@@ -248,16 +241,7 @@ class OrderReviewService:
         )
 
     @staticmethod
-    def _fact_metadata(fact_id: str) -> tuple[str, str]:
-        field, label = _EVIDENCE_FACT_METADATA.get(fact_id, ("", ""))
-        if field:
-            return field, label
-        derived = fact_id.removeprefix("fact.").strip() or fact_id.strip()
-        return derived, derived
-
-    @classmethod
     def _persisted_evidence(
-        cls,
         bundle: dict[str, Any],
         *,
         proposal_id: str,
@@ -267,19 +251,6 @@ class OrderReviewService:
         captured_at: datetime,
     ) -> dict[str, Any]:
         evidence = deepcopy(bundle)
-        data = evidence.get("data")
-        if isinstance(data, dict):
-            facts = data.get("facts")
-            if isinstance(facts, list):
-                data["facts"] = [
-                    {
-                        **fact,
-                        "field": cls._fact_metadata(str(fact.get("id", "")))[0],
-                        "label": cls._fact_metadata(str(fact.get("id", "")))[1],
-                    }
-                    for fact in facts
-                    if isinstance(fact, dict)
-                ]
         evidence.update(
             {
                 "proposal_id": proposal_id,

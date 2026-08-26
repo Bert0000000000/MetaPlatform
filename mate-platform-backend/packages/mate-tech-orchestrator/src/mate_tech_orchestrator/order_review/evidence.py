@@ -17,6 +17,21 @@ _DISPLAY_VALUE_MAPPINGS = {
         "unpaid": "未支付",
         "paid": "已支付",
     },
+    "fact.review_status": {
+        "pending": "待复核",
+        "approved": "已批准",
+    },
+}
+_FACT_METADATA = {
+    "fact.amount_cents": ("amount_cents", "订单金额"),
+    "fact.payment_status": ("payment_status", "支付状态"),
+    "fact.review_status": ("review_status", "复核状态"),
+    "fact.version": ("version", "订单版本"),
+}
+_ONTOLOGY_LEGEND = {
+    "transaction_anchor": "订单交易事实的语义锚点，不是已持久化的 Ontology Individual",
+    "object_type": "来自 Ontology Kernel 的正式对象模型",
+    "action_type": "来自 Ontology Kernel 的订单复核动作定义",
 }
 
 
@@ -56,10 +71,6 @@ def _format_amount(amount_cents: int) -> str:
     return f"{sign}¥{yuan:,}.{cents:02d}"
 
 
-def _copy_contract_item(item: dict[str, Any]) -> dict[str, Any]:
-    return dict(item)
-
-
 def _confidence_metadata(requested_suggestion: dict[str, Any]) -> dict[str, Any]:
     confidence = requested_suggestion.get("confidence")
     if isinstance(confidence, bool):
@@ -70,17 +81,22 @@ def _confidence_metadata(requested_suggestion: dict[str, Any]) -> dict[str, Any]
 
 
 def _fact_entry(*, fact_id: str, value: Any) -> dict[str, Any]:
-    if isinstance(value, int):
-        display_value = _format_amount(value) if fact_id == "fact.amount_cents" else str(value)
+    field, label = _FACT_METADATA[fact_id]
+    if fact_id == "fact.amount_cents" and isinstance(value, int):
+        display_value = _format_amount(value)
+    elif fact_id == "fact.version" and isinstance(value, int):
+        display_value = f"v{value}"
     elif isinstance(value, str):
         display_value = _DISPLAY_VALUE_MAPPINGS.get(fact_id, {}).get(value, value)
     else:
         display_value = str(value)
     return {
         "id": fact_id,
+        "field": field,
+        "label": label,
         "value": value,
         "display_value": display_value,
-        "source": "database",
+        "source": f"order_review_orders.{field}",
     }
 
 
@@ -94,7 +110,7 @@ def _validate_contract(
     *,
     facts: OrderReviewFacts,
     contract: OntologyContract,
-) -> tuple[str, str]:
+) -> tuple[str, str, str, str]:
     object_type = _require_contract_item("object_type", contract.object_type)
     action_type = _require_contract_item("action_type", contract.action_type)
 
@@ -102,22 +118,31 @@ def _validate_contract(
     expected_action_rid = _expected_action_rid(facts.tenant_id)
 
     object_rid = object_type.get("rid")
+    object_title = object_type.get("title")
     action_rid = action_type.get("rid")
     action_title = action_type.get("title")
     action_on = action_type.get("on")
 
     if object_rid != expected_object_rid:
         raise EvidenceUnavailable("object type RID does not match the tenant-scoped order model")
+    if not isinstance(object_title, str) or not object_title.strip():
+        raise EvidenceUnavailable("object title is required")
+    object_title = object_title.strip()
+    if object_title == object_rid:
+        raise EvidenceUnavailable("object title must be a business label, not the object RID")
     if action_rid != expected_action_rid:
         raise EvidenceUnavailable(
             "action type RID does not match the tenant-scoped order review action"
         )
     if not isinstance(action_title, str) or not action_title.strip():
         raise EvidenceUnavailable("action title is required")
+    action_title = action_title.strip()
+    if action_title == action_rid:
+        raise EvidenceUnavailable("action title must be a business label, not the action RID")
     if not isinstance(action_on, list) or expected_object_rid not in action_on:
         raise EvidenceUnavailable("action must be scoped to the order object type RID")
 
-    return expected_object_rid, expected_action_rid
+    return expected_object_rid, expected_action_rid, object_title, action_title
 
 
 class OrderReviewEvidenceBuilder:
@@ -131,7 +156,9 @@ class OrderReviewEvidenceBuilder:
         requested_suggestion: dict[str, Any],
         now: datetime,
     ) -> dict[str, Any]:
-        object_rid, action_rid = _validate_contract(facts=facts, contract=contract)
+        object_rid, action_rid, object_title, action_title = _validate_contract(
+            facts=facts, contract=contract
+        )
 
         threshold_passed = facts.amount_cents >= _THRESHOLD_CENTS
         unpaid_passed = facts.payment_status == "unpaid"
@@ -143,18 +170,23 @@ class OrderReviewEvidenceBuilder:
         derivation = [
             {
                 "id": "threshold",
+                "label": "订单金额 ≥ ¥1,000.00",
                 "passed": threshold_passed,
-                "refs": ["fact.amount_cents"],
+                "fact_refs": ["fact.amount_cents"],
+                "details": {"operator": ">=", "expected_cents": _THRESHOLD_CENTS},
             },
             {
                 "id": "unpaid",
+                "label": "支付状态 = 未支付",
                 "passed": unpaid_passed,
-                "refs": ["fact.payment_status"],
+                "fact_refs": ["fact.payment_status"],
+                "details": {"operator": "=", "expected": "unpaid"},
             },
             {
                 "id": "eligible",
+                "label": "满足订单复核条件",
                 "passed": eligible_passed,
-                "refs": ["threshold", "unpaid"],
+                "fact_refs": ["threshold", "unpaid"],
             },
         ]
 
@@ -179,59 +211,63 @@ class OrderReviewEvidenceBuilder:
             "schema_version": EVIDENCE_SCHEMA_VERSION,
             "status": "complete",
             "ontology": {
+                "source": "ontology_kernel",
+                "model_rid": object_rid,
+                "action_rid": action_rid,
                 "graph": {
                     "nodes": [
                         {
                             "id": f"order-fact-anchor:{facts.order_id}",
                             "type": "transaction_anchor",
-                            "label": facts.order_id,
+                            "label": f"订单 {facts.order_id}",
+                            "properties": {
+                                "order_id": facts.order_id,
+                                "source": "order_review_orders",
+                                "version": facts.version,
+                            },
                         },
                         {
                             "id": f"object-type:{object_rid}",
                             "type": "object_type",
-                            "label": object_rid,
-                            "rid": object_rid,
+                            "label": object_title,
+                            "properties": {"rid": object_rid, "version": "v1"},
                         },
                         {
                             "id": f"action-type:{action_rid}",
                             "type": "action_type",
-                            "label": action_rid,
-                            "rid": action_rid,
+                            "label": action_title,
+                            "properties": {
+                                "rid": action_rid,
+                                "action_type": "order_review_confirm",
+                            },
                         },
                     ],
                     "edges": [
                         {
                             "id": "order-instance-of-model",
-                            "from": f"order-fact-anchor:{facts.order_id}",
-                            "to": f"object-type:{object_rid}",
+                            "source": f"order-fact-anchor:{facts.order_id}",
+                            "target": f"object-type:{object_rid}",
                             "label": "符合对象模型",
                         },
                         {
                             "id": "model-supports-action",
-                            "from": f"object-type:{object_rid}",
-                            "to": f"action-type:{action_rid}",
+                            "source": f"object-type:{object_rid}",
+                            "target": f"action-type:{action_rid}",
                             "label": "支持动作",
                         },
                     ],
                 },
-                "legend": "The transaction_anchor is not a persisted Ontology Individual.",
-                "contract": {
-                    "object_type": _copy_contract_item(contract.object_type),
-                    "action_type": _copy_contract_item(contract.action_type),
-                },
+                "legend": dict(_ONTOLOGY_LEGEND),
             },
             "data": {
+                "source": "order_review_orders",
+                "captured_at": now.isoformat(),
                 "facts": [
                     _fact_entry(fact_id="fact.amount_cents", value=facts.amount_cents),
                     _fact_entry(fact_id="fact.payment_status", value=facts.payment_status),
                     _fact_entry(fact_id="fact.review_status", value=facts.review_status),
                     _fact_entry(fact_id="fact.version", value=facts.version),
                 ],
-                "snapshot": {
-                    "tenant_id": facts.tenant_id,
-                    "order_id": facts.order_id,
-                    "updated_at": facts.updated_at.isoformat(),
-                },
             },
             "derivation": derivation,
             "recommendation": recommendation,

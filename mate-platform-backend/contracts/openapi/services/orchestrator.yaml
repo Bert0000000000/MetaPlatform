@@ -250,48 +250,27 @@ components:
         expected_order_version: {type: integer}
         evidence:
           $ref: '#/components/schemas/EvidenceBundle'
-    EvidenceObjectType:
-      type: object
-      required: [rid, title]
-      properties:
-        rid: {type: string}
-        title: {type: string}
-    EvidenceActionType:
-      type: object
-      required: [rid, title, on]
-      properties:
-        rid: {type: string}
-        title: {type: string}
-        on:
-          type: array
-          minItems: 1
-          items: {type: string}
-    EvidenceOntologyContract:
-      type: object
-      required: [object_type, action_type]
-      properties:
-        object_type:
-          $ref: '#/components/schemas/EvidenceObjectType'
-        action_type:
-          $ref: '#/components/schemas/EvidenceActionType'
     EvidenceGraphNode:
       type: object
-      required: [id, type, label]
+      additionalProperties: false
+      required: [id, label, type, properties]
       properties:
         id: {type: string}
-        type: {type: string, enum: [transaction_anchor, object_type, action_type]}
         label: {type: string}
-        rid: {type: [string, 'null']}
+        type: {type: string, enum: [transaction_anchor, object_type, action_type]}
+        properties: {type: object, additionalProperties: true}
     EvidenceGraphEdge:
       type: object
-      required: [id, from, to, label]
+      additionalProperties: false
+      required: [id, source, target, label]
       properties:
         id: {type: string}
-        from: {type: string}
-        to: {type: string}
+        source: {type: string}
+        target: {type: string}
         label: {type: string}
     EvidenceGraph:
       type: object
+      additionalProperties: false
       required: [nodes, edges]
       properties:
         nodes:
@@ -302,17 +281,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvidenceGraphEdge'
+    EvidenceLegend:
+      type: object
+      additionalProperties: false
+      required: [transaction_anchor, object_type, action_type]
+      properties:
+        transaction_anchor: {type: string}
+        object_type: {type: string}
+        action_type: {type: string}
     OntologyEvidence:
       type: object
-      required: [graph, legend, contract]
+      additionalProperties: false
+      required: [source, model_rid, action_rid, graph, legend]
       properties:
+        source: {type: string, enum: [ontology_kernel]}
+        model_rid: {type: string}
+        action_rid: {type: string}
         graph:
           $ref: '#/components/schemas/EvidenceGraph'
-        legend: {type: string}
-        contract:
-          $ref: '#/components/schemas/EvidenceOntologyContract'
+        legend:
+          $ref: '#/components/schemas/EvidenceLegend'
     EvidenceFact:
       type: object
+      additionalProperties: false
       required: [id, field, label, value, display_value, source]
       properties:
         id: {type: string}
@@ -321,34 +312,35 @@ components:
         value: {}
         display_value: {type: string}
         source: {type: string}
-    EvidenceSnapshot:
-      type: object
-      required: [tenant_id, order_id, updated_at]
-      properties:
-        tenant_id: {type: string}
-        order_id: {type: string}
-        updated_at: {type: string, format: date-time}
     EvidenceData:
       type: object
-      required: [facts, snapshot]
+      additionalProperties: false
+      required: [source, captured_at, facts]
       properties:
+        source: {type: string, enum: [order_review_orders]}
+        captured_at: {type: string, format: date-time}
         facts:
           type: array
           items:
             $ref: '#/components/schemas/EvidenceFact'
-        snapshot:
-          $ref: '#/components/schemas/EvidenceSnapshot'
     EvidenceDerivation:
       type: object
-      required: [id, passed, refs]
+      additionalProperties: false
+      required: [id, label, passed, fact_refs]
       properties:
         id: {type: string}
+        label: {type: string}
         passed: {type: boolean}
-        refs:
+        fact_refs:
           type: array
           items: {type: string}
+        details:
+          anyOf:
+          - {type: object, additionalProperties: true}
+          - {type: 'null'}
     EvidenceRecommendation:
       type: object
+      additionalProperties: false
       required:
       - action
       - title
@@ -370,6 +362,7 @@ components:
         confidence: {type: [number, 'null']}
     EvidenceBundle:
       type: object
+      additionalProperties: false
       required:
       - schema_version
       - status

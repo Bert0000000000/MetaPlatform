@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 from mate_tech_orchestrator.api import order_review as order_review_api
 from mate_tech_orchestrator.api.order_review import OrderReviewService
@@ -431,11 +432,40 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
 
     assert catalog.calls == [{"tenant_id": "tenant-acme", "token": expected_token}]
     assert case_payload["evidence"]["status"] == "complete"
+    assert case_payload["evidence"]["ontology"]["source"] == "ontology_kernel"
+    assert case_payload["evidence"]["ontology"]["model_rid"] == (
+        "ont.tenant-acme.obj.crm.order.v1"
+    )
+    assert case_payload["evidence"]["ontology"]["action_rid"] == (
+        "ont.tenant-acme.act.order-review-confirm.v1"
+    )
     assert case_payload["evidence"]["ontology"]["graph"]["nodes"]
     assert case_payload["evidence"]["ontology"]["graph"]["edges"]
+    assert case_payload["evidence"]["ontology"]["legend"]["object_type"] == (
+        "来自 Ontology Kernel 的正式对象模型"
+    )
     assert case_payload["evidence"]["data"]["facts"]
+    assert case_payload["evidence"]["data"]["source"] == "order_review_orders"
+    assert case_payload["evidence"]["data"]["captured_at"] == case_payload["evidence"][
+        "captured_at"
+    ]
+    assert [fact["source"] for fact in case_payload["evidence"]["data"]["facts"]] == [
+        "order_review_orders.amount_cents",
+        "order_review_orders.payment_status",
+        "order_review_orders.review_status",
+        "order_review_orders.version",
+    ]
     assert case_payload["evidence"]["derivation"]
+    assert case_payload["evidence"]["derivation"][0] == {
+        "id": "threshold",
+        "label": "订单金额 ≥ ¥1,000.00",
+        "passed": True,
+        "fact_refs": ["fact.amount_cents"],
+        "details": {"operator": ">=", "expected_cents": 100_000},
+    }
     assert case_payload["evidence"]["recommendation"]["requires_confirmation"] is True
+    assert "contract" not in case_payload["evidence"]["ontology"]
+    assert "snapshot" not in case_payload["evidence"]["data"]
 
     legacy_confirm_response = client.post(
         f"/api/v1/action-proposals/{proposal_id}/confirm",
@@ -661,7 +691,7 @@ def test_historical_proposal_detail_returns_200_without_evidence_bundle(
     assert detail_payload["evidence"] is None
 
 
-def test_incomplete_historical_evidence_returns_detail_and_blocks_confirm_without_side_effects(
+def test_alternate_historical_evidence_returns_detail_and_blocks_confirm_without_side_effects(
     monkeypatch: pytest.MonkeyPatch,
     auth_headers_acme: dict[str, str],
 ) -> None:
@@ -701,10 +731,56 @@ def test_incomplete_historical_evidence_returns_detail_and_blocks_confirm_withou
         assert case is not None
         suggestion = json.loads(case.suggestion)
         evidence = suggestion["evidence_bundle"]
-        for field in ("proposal_id", "order_id", "tenant_id", "captured_at"):
-            evidence.pop(field)
-        evidence["data"]["facts"][0].pop("field")
-        evidence["data"]["facts"][0].pop("label")
+        evidence["ontology"] = {
+            "graph": {
+                "nodes": [
+                    {"id": "order-fact-anchor:legacy", "type": "transaction_anchor", "label": "legacy"},
+                    {
+                        "id": "object-type:legacy",
+                        "type": "object_type",
+                        "label": "ont.legacy.order.v1",
+                        "rid": "ont.legacy.order.v1",
+                    },
+                ],
+                "edges": [
+                    {
+                        "id": "legacy-edge",
+                        "from": "order-fact-anchor:legacy",
+                        "to": "object-type:legacy",
+                        "label": "旧关系",
+                    }
+                ],
+            },
+            "legend": "legacy string legend",
+            "contract": {
+                "object_type": {"rid": "ont.legacy.order.v1", "title": "订单"},
+                "action_type": {
+                    "rid": "ont.legacy.action.v1",
+                    "title": "订单复核确认",
+                    "on": ["ont.legacy.order.v1"],
+                },
+            },
+        }
+        evidence["data"] = {
+            "facts": [
+                {
+                    "id": "fact.amount_cents",
+                    "field": "amount_cents",
+                    "label": "订单金额",
+                    "value": 188000,
+                    "display_value": "¥1,880.00",
+                    "source": "database",
+                }
+            ],
+            "snapshot": {
+                "tenant_id": "tenant-acme",
+                "order_id": "order-http-incomplete-evidence",
+                "updated_at": evidence["captured_at"],
+            },
+        }
+        evidence["derivation"] = [
+            {"id": "threshold", "passed": True, "refs": ["fact.amount_cents"]}
+        ]
         case.suggestion = json.dumps(suggestion, ensure_ascii=False, sort_keys=True)
 
     before_task_count = len(service.list_follow_up_tasks(tenant_id="tenant-acme"))
@@ -729,7 +805,7 @@ def test_incomplete_historical_evidence_returns_detail_and_blocks_confirm_withou
 
     confirm_response = client.post(
         f"/api/v1/action-proposals/{proposal_id}:confirm",
-        headers={**headers, "Idempotency-Key": "http-confirm-incomplete-evidence"},
+        headers={**headers, "Idempotency-Key": "http-confirm-alternate-evidence"},
         json={"actor_id": "u-reviewer"},
     )
 
@@ -806,26 +882,44 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
     assert _literal_values(evidence_bundle["properties"]["status"]) == ["complete", "unavailable"]
 
     ontology_schema = components["OntologyEvidence"]
-    assert ontology_schema["required"] == ["graph", "legend", "contract"]
+    assert ontology_schema["required"] == [
+        "source",
+        "model_rid",
+        "action_rid",
+        "graph",
+        "legend",
+    ]
+    assert _literal_values(ontology_schema["properties"]["source"]) == ["ontology_kernel"]
+    assert "contract" not in ontology_schema["properties"]
 
     graph_schema = components["EvidenceGraph"]
     assert graph_schema["required"] == ["nodes", "edges"]
     node_schema = components["EvidenceGraphNode"]
+    assert node_schema["required"] == ["id", "label", "type", "properties"]
     assert _literal_values(node_schema["properties"]["type"]) == [
         "transaction_anchor",
         "object_type",
         "action_type",
     ]
+    edge_schema = components["EvidenceGraphEdge"]
+    assert edge_schema["required"] == ["id", "source", "target", "label"]
+    assert "from" not in edge_schema["properties"]
+    assert "to" not in edge_schema["properties"]
+
+    legend_schema = components["EvidenceLegend"]
+    assert legend_schema["required"] == ["transaction_anchor", "object_type", "action_type"]
 
     data_schema = components["EvidenceData"]
-    assert data_schema["required"] == ["facts", "snapshot"]
+    assert data_schema["required"] == ["source", "captured_at", "facts"]
+    assert _literal_values(data_schema["properties"]["source"]) == ["order_review_orders"]
+    assert "snapshot" not in data_schema["properties"]
     fact_schema = components["EvidenceFact"]
     assert fact_schema["required"] == ["id", "field", "label", "value", "display_value", "source"]
-    snapshot_schema = components["EvidenceSnapshot"]
-    _assert_datetime_schema(snapshot_schema["properties"]["updated_at"])
+    _assert_datetime_schema(data_schema["properties"]["captured_at"])
 
     derivation_schema = components["EvidenceDerivation"]
-    assert derivation_schema["required"] == ["id", "passed", "refs"]
+    assert derivation_schema["required"] == ["id", "label", "passed", "fact_refs"]
+    assert "refs" not in derivation_schema["properties"]
 
     recommendation_schema = components["EvidenceRecommendation"]
     assert recommendation_schema["required"] == [
@@ -840,6 +934,29 @@ def test_order_review_openapi_declares_evidence_contract() -> None:
     _assert_datetime_schema(action_proposal_schema["properties"]["created_at"])
     _assert_datetime_schema(action_proposal_schema["properties"]["expires_at"])
     _assert_datetime_schema(action_proposal_schema["properties"]["resolved_at"])
+
+    static_document = yaml.safe_load(
+        (
+            Path(__file__).parents[3]
+            / "contracts"
+            / "openapi"
+            / "services"
+            / "orchestrator.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    static_components = static_document["components"]["schemas"]
+    for schema_name in (
+        "EvidenceGraphNode",
+        "EvidenceGraphEdge",
+        "EvidenceLegend",
+        "OntologyEvidence",
+        "EvidenceFact",
+        "EvidenceData",
+        "EvidenceDerivation",
+        "EvidenceRecommendation",
+        "EvidenceBundle",
+    ):
+        assert static_components[schema_name]["required"] == components[schema_name]["required"]
 
 
 def test_action_command_routes_precede_proposal_detail_route():

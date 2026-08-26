@@ -142,50 +142,44 @@ class RejectActionProposalRequest(BaseModel):
     reason: str = Field(default="")
 
 
-class EvidenceObjectType(BaseModel):
-    rid: str
-    title: str
+class _EvidenceModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
-class EvidenceActionType(BaseModel):
-    rid: str
-    title: str
-    on: list[str] = Field(min_length=1)
-
-
-class EvidenceOntologyContract(BaseModel):
-    object_type: EvidenceObjectType
-    action_type: EvidenceActionType
-
-
-class EvidenceGraphNode(BaseModel):
+class EvidenceGraphNode(_EvidenceModel):
     id: str
+    label: str
     type: Literal["transaction_anchor", "object_type", "action_type"]
-    label: str
-    rid: str | None = None
+    properties: dict[str, Any]
 
 
-class EvidenceGraphEdge(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
+class EvidenceGraphEdge(_EvidenceModel):
     id: str
-    from_node: str = Field(alias="from")
-    to: str
+    source: str
+    target: str
     label: str
 
 
-class EvidenceGraph(BaseModel):
+class EvidenceGraph(_EvidenceModel):
     nodes: list[EvidenceGraphNode]
     edges: list[EvidenceGraphEdge]
 
 
-class OntologyEvidence(BaseModel):
+class EvidenceLegend(_EvidenceModel):
+    transaction_anchor: str
+    object_type: str
+    action_type: str
+
+
+class OntologyEvidence(_EvidenceModel):
+    source: Literal["ontology_kernel"]
+    model_rid: str
+    action_rid: str
     graph: EvidenceGraph
-    legend: str
-    contract: EvidenceOntologyContract
+    legend: EvidenceLegend
 
 
-class EvidenceFact(BaseModel):
+class EvidenceFact(_EvidenceModel):
     id: str
     field: str
     label: str
@@ -194,24 +188,21 @@ class EvidenceFact(BaseModel):
     source: str
 
 
-class EvidenceSnapshot(BaseModel):
-    tenant_id: str
-    order_id: str
-    updated_at: datetime
-
-
-class EvidenceData(BaseModel):
+class EvidenceData(_EvidenceModel):
+    source: Literal["order_review_orders"]
+    captured_at: datetime
     facts: list[EvidenceFact]
-    snapshot: EvidenceSnapshot
 
 
-class EvidenceDerivation(BaseModel):
+class EvidenceDerivation(_EvidenceModel):
     id: str
+    label: str
     passed: bool
-    refs: list[str]
+    fact_refs: list[str]
+    details: dict[str, Any] | None = None
 
 
-class EvidenceRecommendation(BaseModel):
+class EvidenceRecommendation(_EvidenceModel):
     action: str
     title: str
     reason: str
@@ -221,7 +212,7 @@ class EvidenceRecommendation(BaseModel):
     confidence: float | None = None
 
 
-class EvidenceBundle(BaseModel):
+class EvidenceBundle(_EvidenceModel):
     schema_version: Literal["order-review-evidence.v1"]
     status: Literal["complete", "unavailable"]
     proposal_id: str

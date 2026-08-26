@@ -21,34 +21,30 @@ export interface EvidenceFact {
 
 export interface EvidenceGraphNode {
   id: string;
-  type: 'transaction_anchor' | 'object_type' | 'action_type';
   label: string;
-  rid?: string | null;
+  type: 'transaction_anchor' | 'object_type' | 'action_type';
+  properties: Record<string, string | number>;
 }
 
 export interface EvidenceGraphEdge {
   id: string;
-  from: string;
-  to: string;
+  source: string;
+  target: string;
   label: string;
 }
 
 export interface EvidenceDerivation {
   id: string;
+  label: string;
   passed: boolean;
-  refs: string[];
+  fact_refs: string[];
+  details?: Record<string, string | number> | null;
 }
 
-export interface EvidenceOntologyContract {
-  object_type: {
-    rid: string;
-    title: string;
-  };
-  action_type: {
-    rid: string;
-    title: string;
-    on: string[];
-  };
+export interface EvidenceLegend {
+  transaction_anchor: string;
+  object_type: string;
+  action_type: string;
 }
 
 export interface EvidenceBundle {
@@ -60,20 +56,19 @@ export interface EvidenceBundle {
   order_version: number;
   captured_at: string;
   ontology: {
+    source: 'ontology_kernel';
+    model_rid: string;
+    action_rid: string;
     graph: {
       nodes: EvidenceGraphNode[];
       edges: EvidenceGraphEdge[];
     };
-    legend: string;
-    contract: EvidenceOntologyContract;
+    legend: EvidenceLegend;
   };
   data: {
+    source: 'order_review_orders';
+    captured_at: string;
     facts: EvidenceFact[];
-    snapshot: {
-      tenant_id: string;
-      order_id: string;
-      updated_at: string;
-    };
   };
   derivation: EvidenceDerivation[];
   recommendation: {

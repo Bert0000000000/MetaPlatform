@@ -41,8 +41,9 @@ def _contract(
     *,
     tenant_id: str = TENANT_ID,
     object_rid: str | None = None,
+    object_title: str = "订单",
     action_rid: str | None = None,
-    action_title: str = "创建回款跟进单",
+    action_title: str = "订单复核确认",
     action_on: list[str] | None = None,
 ) -> OntologyContract:
     object_rid = object_rid or f"ont.{tenant_id}.obj.crm.order.v1"
@@ -50,7 +51,7 @@ def _contract(
     return OntologyContract(
         object_type={
             "rid": object_rid,
-            "title": "订单",
+            "title": object_title,
         },
         action_type={
             "rid": action_rid,
@@ -73,22 +74,119 @@ def test_build_creates_complete_bundle_for_tenant_default_order() -> None:
 
     assert bundle["schema_version"] == EVIDENCE_SCHEMA_VERSION
     assert bundle["status"] == "complete"
-    assert {node["type"] for node in bundle["ontology"]["graph"]["nodes"]} == {
-        "transaction_anchor",
-        "object_type",
-        "action_type",
+    assert bundle["ontology"] == {
+        "source": "ontology_kernel",
+        "model_rid": OBJECT_RID,
+        "action_rid": ACTION_RID,
+        "graph": {
+            "nodes": [
+                {
+                    "id": f"order-fact-anchor:{ORDER_ID}",
+                    "label": f"订单 {ORDER_ID}",
+                    "type": "transaction_anchor",
+                    "properties": {
+                        "order_id": ORDER_ID,
+                        "source": "order_review_orders",
+                        "version": 1,
+                    },
+                },
+                {
+                    "id": f"object-type:{OBJECT_RID}",
+                    "label": "订单",
+                    "type": "object_type",
+                    "properties": {"rid": OBJECT_RID, "version": "v1"},
+                },
+                {
+                    "id": f"action-type:{ACTION_RID}",
+                    "label": "订单复核确认",
+                    "type": "action_type",
+                    "properties": {
+                        "rid": ACTION_RID,
+                        "action_type": "order_review_confirm",
+                    },
+                },
+            ],
+            "edges": [
+                {
+                    "id": "order-instance-of-model",
+                    "source": f"order-fact-anchor:{ORDER_ID}",
+                    "target": f"object-type:{OBJECT_RID}",
+                    "label": "符合对象模型",
+                },
+                {
+                    "id": "model-supports-action",
+                    "source": f"object-type:{OBJECT_RID}",
+                    "target": f"action-type:{ACTION_RID}",
+                    "label": "支持动作",
+                },
+            ],
+        },
+        "legend": {
+            "transaction_anchor": "订单交易事实的语义锚点，不是已持久化的 Ontology Individual",
+            "object_type": "来自 Ontology Kernel 的正式对象模型",
+            "action_type": "来自 Ontology Kernel 的订单复核动作定义",
+        },
     }
-    assert {edge["label"] for edge in bundle["ontology"]["graph"]["edges"]} == {
-        "符合对象模型",
-        "支持动作",
+    assert bundle["data"] == {
+        "source": "order_review_orders",
+        "captured_at": now.isoformat(),
+        "facts": [
+            {
+                "id": "fact.amount_cents",
+                "field": "amount_cents",
+                "label": "订单金额",
+                "value": 250_000,
+                "display_value": "¥2,500.00",
+                "source": "order_review_orders.amount_cents",
+            },
+            {
+                "id": "fact.payment_status",
+                "field": "payment_status",
+                "label": "支付状态",
+                "value": "unpaid",
+                "display_value": "未支付",
+                "source": "order_review_orders.payment_status",
+            },
+            {
+                "id": "fact.review_status",
+                "field": "review_status",
+                "label": "复核状态",
+                "value": "pending",
+                "display_value": "待复核",
+                "source": "order_review_orders.review_status",
+            },
+            {
+                "id": "fact.version",
+                "field": "version",
+                "label": "订单版本",
+                "value": 1,
+                "display_value": "v1",
+                "source": "order_review_orders.version",
+            },
+        ],
     }
-    assert {fact["id"] for fact in bundle["data"]["facts"]} == {
-        "fact.amount_cents",
-        "fact.payment_status",
-        "fact.review_status",
-        "fact.version",
-    }
-    assert all(item["passed"] for item in bundle["derivation"])
+    assert bundle["derivation"] == [
+        {
+            "id": "threshold",
+            "label": "订单金额 ≥ ¥1,000.00",
+            "passed": True,
+            "fact_refs": ["fact.amount_cents"],
+            "details": {"operator": ">=", "expected_cents": 100_000},
+        },
+        {
+            "id": "unpaid",
+            "label": "支付状态 = 未支付",
+            "passed": True,
+            "fact_refs": ["fact.payment_status"],
+            "details": {"operator": "=", "expected": "unpaid"},
+        },
+        {
+            "id": "eligible",
+            "label": "满足订单复核条件",
+            "passed": True,
+            "fact_refs": ["threshold", "unpaid"],
+        },
+    ]
     assert bundle["recommendation"]["action"] == "follow_up_payment"
     assert bundle["recommendation"]["title"] == "创建回款跟进单"
     assert {fact["id"]: fact["value"] for fact in bundle["data"]["facts"]}[
@@ -101,9 +199,10 @@ def test_build_creates_complete_bundle_for_tenant_default_order() -> None:
         "fact.amount_cents"
     ] == "¥2,500.00"
     assert "¥2,500.00" in bundle["recommendation"]["reason"]
-    assert "not a persisted Ontology Individual" in bundle["ontology"]["legend"]
-    assert bundle["data"]["snapshot"]["updated_at"] == _facts().updated_at.isoformat()
-    assert bundle["derivation"][-1]["refs"] == ["threshold", "unpaid"]
+    assert "contract" not in bundle["ontology"]
+    assert "snapshot" not in bundle["data"]
+    assert all("from" not in edge and "to" not in edge for edge in bundle["ontology"]["graph"]["edges"])
+    assert all("refs" not in item for item in bundle["derivation"])
 
 
 @pytest.mark.parametrize(
@@ -191,6 +290,8 @@ def test_action_contract_can_bind_additional_rids_when_it_includes_canonical_rid
         _contract(object_rid="ont.other-tenant.obj.crm.order.v1"),
         _contract(action_rid="ont.other-tenant.act.order-review-confirm.v1"),
         _contract(action_on=["ont.other-tenant.obj.crm.order.v1"]),
+        _contract(object_title=OBJECT_RID),
+        _contract(action_title=ACTION_RID),
         _contract(action_title=""),
     ],
 )
@@ -220,6 +321,12 @@ def test_version_seven_snapshot_is_preserved() -> None:
     )
 
     assert {fact["id"]: fact["value"] for fact in bundle["data"]["facts"]}["fact.version"] == 7
+    assert {fact["id"]: fact["display_value"] for fact in bundle["data"]["facts"]}[
+        "fact.version"
+    ] == "v7"
+    assert {fact["id"]: fact["display_value"] for fact in bundle["data"]["facts"]}[
+        "fact.review_status"
+    ] == "已批准"
     assert bundle["recommendation"]["action"] == "follow_up_payment"
     assert bundle["recommendation"]["confidence"] == 0.42
-    assert bundle["data"]["snapshot"]["updated_at"] == updated_at.isoformat()
+    assert bundle["ontology"]["graph"]["nodes"][0]["properties"]["version"] == 7
