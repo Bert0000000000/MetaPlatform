@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -16,6 +17,14 @@ from sqlalchemy import DateTime, Integer, String, Text, select, update
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base, create_all, get_session
+from mate_tech_orchestrator.order_review.evidence import (
+    EvidenceUnavailable as OrderReviewEvidenceUnavailable,
+)
+from mate_tech_orchestrator.order_review.evidence import (
+    OrderReviewEvidenceBuilder,
+    OrderReviewFacts,
+)
+from mate_tech_orchestrator.order_review.ontology_catalog import OrderReviewOntologyCatalog
 
 
 def _now() -> datetime:
@@ -139,6 +148,9 @@ class OrderReviewService:
     class IdempotencyConflictError(ConflictError):
         pass
 
+    class EvidenceRequiredError(ConflictError):
+        pass
+
     # Short aliases keep the service call sites readable and preserve the
     # domain names used by the API adapter/tests.
     NotFound = NotFoundError
@@ -146,9 +158,19 @@ class OrderReviewService:
     VersionConflict = VersionConflictError
     AlreadyResolved = AlreadyResolvedError
     IdempotencyConflict = IdempotencyConflictError
+    EvidenceUnavailable = OrderReviewEvidenceUnavailable
+    EvidenceRequired = EvidenceRequiredError
 
-    def __init__(self, *, proposal_ttl: timedelta = timedelta(hours=24)) -> None:
+    def __init__(
+        self,
+        *,
+        proposal_ttl: timedelta = timedelta(hours=24),
+        evidence_builder: OrderReviewEvidenceBuilder | None = None,
+        ontology_catalog: OrderReviewOntologyCatalog | None = None,
+    ) -> None:
         self._proposal_ttl = proposal_ttl
+        self._evidence_builder = evidence_builder or OrderReviewEvidenceBuilder()
+        self._ontology_catalog = ontology_catalog or OrderReviewOntologyCatalog()
 
     @staticmethod
     def _ensure_schema() -> None:
@@ -182,9 +204,88 @@ class OrderReviewService:
             "resolved_at": _iso(row.resolved_at) if row.resolved_at else None,
         }
         if case is not None:
-            result["suggestion"] = _load(case.suggestion, {})
+            suggestion = _load(case.suggestion, {})
+            result["suggestion"] = suggestion
             result["source_refs"] = _load(case.source_refs, [])
+            result["evidence"] = suggestion.get("evidence_bundle") if isinstance(suggestion, dict) else None
         return result
+
+    @staticmethod
+    def _order_facts(row: OrderORM) -> OrderReviewFacts:
+        return OrderReviewFacts(
+            tenant_id=row.tenant_id,
+            order_id=row.order_id,
+            amount_cents=row.amount_cents,
+            payment_status=row.payment_status,
+            review_status=row.review_status,
+            version=row.version,
+            updated_at=_aware(row.updated_at),
+        )
+
+    @staticmethod
+    def _persisted_evidence(bundle: dict[str, Any], *, order_version: int) -> dict[str, Any]:
+        evidence = deepcopy(bundle)
+        evidence["order_version"] = order_version
+        return evidence
+
+    @staticmethod
+    def _evidence_source_refs(evidence: dict[str, Any]) -> list[str]:
+        recommendation = evidence.get("recommendation")
+        if not isinstance(recommendation, dict):
+            return []
+        source_refs = recommendation.get("source_refs")
+        if not isinstance(source_refs, list):
+            return []
+        return [str(item) for item in source_refs if isinstance(item, str)]
+
+    @staticmethod
+    def _evidence_refs(evidence: dict[str, Any]) -> dict[str, Any]:
+        facts = evidence.get("data", {}).get("facts", [])
+        nodes = evidence.get("ontology", {}).get("graph", {}).get("nodes", [])
+        return {
+            "evidence_schema_version": evidence.get("schema_version"),
+            "evidence_order_version": evidence.get("order_version"),
+            "evidence_fact_ids": [
+                str(fact.get("id"))
+                for fact in facts
+                if isinstance(fact, dict) and isinstance(fact.get("id"), str)
+            ],
+            "evidence_graph_node_ids": [
+                str(node.get("id"))
+                for node in nodes
+                if isinstance(node, dict) and isinstance(node.get("id"), str)
+            ],
+        }
+
+    @staticmethod
+    def _evidence_from_case(case: ReviewCaseORM | None) -> dict[str, Any] | None:
+        if case is None:
+            return None
+        suggestion = _load(case.suggestion, {})
+        if not isinstance(suggestion, dict):
+            return None
+        evidence = suggestion.get("evidence_bundle")
+        return evidence if isinstance(evidence, dict) else None
+
+    def _require_confirmation_evidence(
+        self,
+        *,
+        case: ReviewCaseORM | None,
+        current_order_version: int,
+    ) -> dict[str, Any]:
+        evidence = self._evidence_from_case(case)
+        if evidence is None:
+            raise self.EvidenceRequired("evidence bundle is required before confirmation")
+        if evidence.get("status") != "complete":
+            raise self.EvidenceUnavailable("evidence bundle must be complete before confirmation")
+        if evidence.get("order_version") != current_order_version:
+            raise self.VersionConflict(
+                f"order version changed: expected evidence {evidence.get('order_version')}, got {current_order_version}"
+            )
+        recommendation = evidence.get("recommendation")
+        if not isinstance(recommendation, dict) or recommendation.get("requires_confirmation") is not True:
+            raise self.EvidenceRequired("evidence bundle does not permit confirmation")
+        return evidence
 
     @staticmethod
     def _event(
@@ -275,12 +376,33 @@ class OrderReviewService:
         order_id: str,
         suggestion: dict[str, Any],
         source_refs: list[str],
+        auth_token: str = "",
         trace_id: str = "",
     ) -> dict[str, Any]:
         self._ensure_schema()
         case_id = f"case_{uuid.uuid4().hex}"
         proposal_id = f"proposal_{uuid.uuid4().hex}"
         now = _now()
+        with get_session() as session:
+            order_snapshot = session.get(OrderORM, (tenant_id, order_id))
+            if order_snapshot is None:
+                raise self.NotFound(f"order not found: {order_id}")
+            if order_snapshot.payment_status != "unpaid":
+                raise self.Conflict(f"order is not unpaid: {order_id}")
+            facts = self._order_facts(order_snapshot)
+        contract = self._ontology_catalog.get_contract(tenant_id=tenant_id, token=auth_token)
+        evidence = self._persisted_evidence(
+            self._evidence_builder.build(
+                facts=facts,
+                contract=contract,
+                requested_suggestion=suggestion,
+                now=now,
+            ),
+            order_version=facts.version,
+        )
+        normalized_source_refs = self._evidence_source_refs(evidence)
+        stored_suggestion = dict(suggestion)
+        stored_suggestion["evidence_bundle"] = evidence
         with get_session() as session, session.begin():
             order = session.execute(
                 select(OrderORM)
@@ -289,15 +411,20 @@ class OrderReviewService:
             ).scalar_one_or_none()
             if order is None:
                 raise self.NotFound(f"order not found: {order_id}")
-            if order.payment_status != "unpaid":
-                raise self.Conflict(f"order is not unpaid: {order_id}")
+            if (
+                order.amount_cents != facts.amount_cents
+                or order.payment_status != facts.payment_status
+                or order.review_status != facts.review_status
+                or order.version != facts.version
+            ):
+                raise self.VersionConflict("order facts changed before proposal creation")
             case = ReviewCaseORM(
                 tenant_id=tenant_id,
                 review_case_id=case_id,
                 order_id=order_id,
                 status="open",
-                suggestion=_json(suggestion),
-                source_refs=_json(source_refs),
+                suggestion=_json(stored_suggestion),
+                source_refs=_json(normalized_source_refs),
                 created_at=now,
             )
             proposal = ActionProposalORM(
@@ -318,7 +445,12 @@ class OrderReviewService:
                 event_type="order.review.proposal_created",
                 aggregate_type="action_proposal",
                 aggregate_id=proposal_id,
-                payload={"order_id": order_id, "review_case_id": case_id, "source_refs": source_refs},
+                payload={
+                    "order_id": order_id,
+                    "review_case_id": case_id,
+                    "source_refs": normalized_source_refs,
+                    **self._evidence_refs(evidence),
+                },
                 trace_id=trace_id,
             ))
         return {
@@ -326,6 +458,7 @@ class OrderReviewService:
             "proposal_id": proposal_id,
             "status": "pending",
             "expected_order_version": order.version,
+            "evidence": evidence,
         }
 
     def get_proposal(self, *, tenant_id: str, proposal_id: str) -> dict[str, Any]:
@@ -395,6 +528,11 @@ class OrderReviewService:
             ).scalar_one_or_none()
             if order is None:
                 raise self.NotFound(f"order not found: {proposal.order_id}")
+            case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
+            evidence = self._require_confirmation_evidence(
+                case=case,
+                current_order_version=order.version,
+            )
             if order.version != proposal.expected_order_version:
                 raise self.VersionConflict(
                     f"order version changed: expected {proposal.expected_order_version}, got {order.version}"
@@ -412,7 +550,6 @@ class OrderReviewService:
             )
             if updated.rowcount != 1:
                 raise self.VersionConflict("order version changed during confirmation")
-            case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
             if case is not None:
                 case.status = "approved"
             task_id = f"task_{uuid.uuid4().hex}"
@@ -448,7 +585,7 @@ class OrderReviewService:
                 event_type="order.review.confirmed",
                 aggregate_type="order",
                 aggregate_id=order.order_id,
-                payload={**response, "actor_id": actor_id},
+                payload={**response, "actor_id": actor_id, **self._evidence_refs(evidence)},
                 trace_id=trace_id,
                 correlation_id=proposal_id,
             ))
@@ -457,7 +594,12 @@ class OrderReviewService:
                 event_type="audit.action_proposal.confirmed",
                 aggregate_type="action_proposal",
                 aggregate_id=proposal_id,
-                payload={"actor_id": actor_id, "order_id": order.order_id, "idempotency_key": idempotency_key},
+                payload={
+                    "actor_id": actor_id,
+                    "order_id": order.order_id,
+                    "idempotency_key": idempotency_key,
+                    **self._evidence_refs(evidence),
+                },
                 trace_id=trace_id,
                 correlation_id=proposal_id,
             ))
@@ -504,6 +646,7 @@ class OrderReviewService:
             case = session.get(ReviewCaseORM, (tenant_id, proposal.review_case_id))
             if case is not None:
                 case.status = "rejected"
+            evidence = self._evidence_from_case(case)
             response = {"proposal_id": proposal_id, "status": "rejected", "reason": reason}
             session.add(IdempotencyRecordORM(
                 tenant_id=tenant_id,
@@ -517,7 +660,11 @@ class OrderReviewService:
                 event_type="audit.action_proposal.rejected",
                 aggregate_type="action_proposal",
                 aggregate_id=proposal_id,
-                payload={"actor_id": actor_id, "reason": reason},
+                payload={
+                    "actor_id": actor_id,
+                    "reason": reason,
+                    **(self._evidence_refs(evidence) if evidence is not None else {}),
+                },
                 trace_id=trace_id,
                 correlation_id=proposal_id,
             ))
