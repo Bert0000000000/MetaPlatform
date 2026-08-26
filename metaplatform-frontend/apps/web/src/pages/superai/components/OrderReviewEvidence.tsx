@@ -3,9 +3,6 @@ import { Card, Space, Tag, Typography } from '@douyinfe/semi-ui';
 import SemiGraphCanvas, { type GraphEdgeSpec, type GraphNodeSpec } from '@/components/SemiGraphCanvas';
 import type {
   EvidenceBundle,
-  EvidenceDerivation,
-  EvidenceFact,
-  EvidenceGraphEdge,
   EvidenceGraphNode,
 } from '@/api/superai/orderReview';
 
@@ -16,7 +13,7 @@ interface OrderReviewEvidenceProps {
 const GRAPH_WORLD_WIDTH = 520;
 const GRAPH_WORLD_HEIGHT = 240;
 
-const GRAPH_POSITIONS: Record<string, { x: number; y: number; color: string; solid?: boolean }> = {
+const GRAPH_POSITIONS: Record<EvidenceGraphNode['type'], { x: number; y: number; color: string; solid?: boolean }> = {
   transaction_anchor: { x: 100, y: 120, color: '#fa8c16' },
   object_type: { x: 260, y: 120, color: '#1677ff', solid: true },
   action_type: { x: 420, y: 120, color: '#52c41a', solid: true },
@@ -34,64 +31,6 @@ const DERIVATION_TEST_IDS: Record<string, string> = {
   eligible: 'review-derivation-eligible',
 };
 
-function stringifyValue(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return JSON.stringify(value);
-}
-
-function formatAmount(amountCents: number): string {
-  return `¥${(amountCents / 100).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-function formatPaymentStatus(value: unknown): string {
-  if (value === 'paid') return '已支付';
-  if (value === 'unpaid') return '未支付';
-  return stringifyValue(value);
-}
-
-function factLabel(fact: EvidenceFact): string {
-  return fact.label?.trim() || fact.field?.trim() || fact.id;
-}
-
-function factValue(fact: EvidenceFact): string {
-  const key = fact.field ?? fact.id;
-  if (key === 'amount_cents' || fact.id === 'fact.amount_cents') {
-    if (typeof fact.value === 'number') return formatAmount(fact.value);
-  }
-  if (key === 'payment_status' || fact.id === 'fact.payment_status') {
-    return formatPaymentStatus(fact.value);
-  }
-  if (fact.display_value?.trim()) return fact.display_value;
-  return stringifyValue(fact.value);
-}
-
-function derivationLabel(item: EvidenceDerivation): string {
-  return item.label?.trim() || item.id;
-}
-
-function derivationRefs(item: EvidenceDerivation): string[] {
-  return item.fact_refs?.length ? item.fact_refs : (item.refs ?? []);
-}
-
-function legendEntries(legend: EvidenceBundle['ontology']['legend']): Array<{ key: string; value: string }> {
-  if (typeof legend === 'string') {
-    return [{ key: 'legend', value: legend }];
-  }
-  return Object.entries(legend).map(([key, value]) => ({ key, value }));
-}
-
-function edgeSource(edge: EvidenceGraphEdge): string | undefined {
-  return typeof edge.from === 'string' ? edge.from : edge.source;
-}
-
-function edgeTarget(edge: EvidenceGraphEdge): string | undefined {
-  return typeof edge.to === 'string' ? edge.to : edge.target;
-}
-
 function statusTitle(evidence?: EvidenceBundle | null): string {
   if (!evidence) return '历史提案无证据快照';
   if (evidence.status === 'unavailable') return '证据链暂不可用';
@@ -108,36 +47,31 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
   const graph = useMemo(() => {
     if (!evidence || evidence.status !== 'complete') return null;
 
-    const orderedNodes = evidence.ontology.graph.nodes
-      .filter((item): item is EvidenceGraphNode => typeof item?.id === 'string' && typeof item?.label === 'string')
-      .filter((item) => typeof item.type === 'string' && item.type in GRAPH_POSITIONS);
+    const orderedNodes = evidence.ontology.graph.nodes;
 
     const nodes = orderedNodes.map((item) => {
-        const position = GRAPH_POSITIONS[item.type as keyof typeof GRAPH_POSITIONS];
-        return {
-          id: item.id,
-          label: item.label,
-          title: item.id,
-          x: position.x,
-          y: position.y,
-          w: item.type === 'transaction_anchor' ? 148 : 164,
-          h: 56,
-          color: position.color,
-          solid: position.solid,
-        } satisfies GraphNodeSpec;
-      });
+      const position = GRAPH_POSITIONS[item.type];
+      return {
+        id: item.id,
+        label: item.label,
+        title: item.id,
+        x: position.x,
+        y: position.y,
+        w: item.type === 'transaction_anchor' ? 148 : 164,
+        h: 56,
+        color: position.color,
+        solid: position.solid,
+      } satisfies GraphNodeSpec;
+    });
 
-    const nodeIds = new Set(nodes.map((item) => item.id));
     const edges = evidence.ontology.graph.edges
-      .filter((item): item is EvidenceGraphEdge => Boolean(edgeSource(item) && edgeTarget(item)))
       .map((item) => ({
         id: item.id,
-        source: edgeSource(item)!,
-        target: edgeTarget(item)!,
+        source: item.from,
+        target: item.to,
         label: item.label,
         width: 1.5,
-      } satisfies GraphEdgeSpec))
-      .filter((item) => nodeIds.has(item.source) && nodeIds.has(item.target));
+      } satisfies GraphEdgeSpec));
 
     return {
       nodes,
@@ -147,7 +81,7 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
     };
   }, [evidence]);
 
-  if (!evidence || evidence.status !== 'complete' || !graph || graph.nodes.length !== 3 || graph.edges.length !== 2) {
+  if (!evidence || evidence.status !== 'complete' || !graph) {
     return (
       <div data-testid="review-evidence" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Space wrap>
@@ -203,36 +137,35 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
               </Tag>
             )}
             <Tag color="grey" data-testid="ontology-edge-order-model">
-              {graph.edges.map((item) => item.label ?? item.id ?? `${item.source}->${item.target}`).join(' / ')}
+              {graph.edges.map((item) => item.label).join(' / ')}
             </Tag>
           </Space>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <Typography.Text strong>Legend</Typography.Text>
-            {legendEntries(evidence.ontology.legend).map((entry) => (
-              <Typography.Text key={entry.key} type="secondary" style={{ fontSize: 12 }}>
-                {entry.value}
-              </Typography.Text>
-            ))}
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {evidence.ontology.legend}
+            </Typography.Text>
           </div>
         </Card>
 
         <Card title="订单事实证据" bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {evidence.data.facts.map((fact) => {
-            const testId = FACT_TEST_IDS[fact.id] ?? FACT_TEST_IDS[fact.field ?? ''];
+            const testId = FACT_TEST_IDS[fact.id] ?? FACT_TEST_IDS[fact.field];
             return (
               <div
                 key={fact.id}
                 data-testid={testId}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(120px, 1fr) minmax(0, 1fr)',
+                  gridTemplateColumns: 'minmax(120px, 1fr) minmax(0, 1fr) minmax(120px, 1fr)',
                   gap: 12,
                   paddingBottom: 10,
                   borderBottom: '1px solid var(--semi-color-border)',
                 }}
               >
-                <Typography.Text type="secondary">{factLabel(fact)}</Typography.Text>
-                <Typography.Text>{factValue(fact)}</Typography.Text>
+                <Typography.Text type="secondary">{fact.label}</Typography.Text>
+                <Typography.Text>{fact.display_value}</Typography.Text>
+                <Typography.Text type="tertiary">来源：{fact.source}</Typography.Text>
               </div>
             );
           })}
@@ -253,10 +186,10 @@ export default function OrderReviewEvidence({ evidence }: OrderReviewEvidencePro
               borderBottom: '1px solid var(--semi-color-border)',
             }}
           >
-            <Typography.Text>{derivationLabel(item)}</Typography.Text>
+            <Typography.Text>{item.id}</Typography.Text>
             <Tag color={item.passed ? 'green' : 'red'}>{item.passed ? '通过' : '未通过'}</Tag>
             <Space wrap spacing="tight">
-              {derivationRefs(item).map((ref) => (
+              {item.refs.map((ref) => (
                 <Tag key={ref} color="white">
                   {ref}
                 </Tag>

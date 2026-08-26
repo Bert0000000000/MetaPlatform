@@ -6,6 +6,61 @@ test.use({ storageState: 'tests/e2e/.auth/state.json' });
 const MOCK_ORDER_ID = 'mock-order-review-1001';
 const MOCK_PROPOSAL_ID = 'proposal-mock-order-review-1001';
 
+function mockEvidence(status: 'complete' | 'unavailable' = 'complete') {
+  return {
+    schema_version: 'order-review-evidence.v1',
+    status,
+    proposal_id: MOCK_PROPOSAL_ID,
+    order_id: MOCK_ORDER_ID,
+    tenant_id: 'tenant-default',
+    order_version: 7,
+    captured_at: '2026-08-26T12:00:00Z',
+    ontology: {
+      graph: {
+        nodes: [
+          { id: `order-fact-anchor:${MOCK_ORDER_ID}`, type: 'transaction_anchor', label: MOCK_ORDER_ID, rid: null },
+          { id: 'object-type:ont.order.v1', type: 'object_type', label: 'ont.order.v1', rid: 'ont.order.v1' },
+          { id: 'action-type:ont.follow-up.v1', type: 'action_type', label: 'ont.follow-up.v1', rid: 'ont.follow-up.v1' },
+        ],
+        edges: [
+          { id: 'order-instance-of-model', from: `order-fact-anchor:${MOCK_ORDER_ID}`, to: 'object-type:ont.order.v1', label: '符合对象模型' },
+          { id: 'model-supports-action', from: 'object-type:ont.order.v1', to: 'action-type:ont.follow-up.v1', label: '支持动作' },
+        ],
+      },
+      legend: 'The transaction_anchor is not a persisted Ontology Individual.',
+      contract: {
+        object_type: { rid: 'ont.order.v1', title: 'Order' },
+        action_type: { rid: 'ont.follow-up.v1', title: 'Follow up payment', on: ['ont.order.v1'] },
+      },
+    },
+    data: {
+      facts: [
+        { id: 'fact.amount_cents', field: 'amount_cents', label: '订单金额', value: 250_000, display_value: '¥2,500.00', source: 'order_review_orders' },
+        { id: 'fact.payment_status', field: 'payment_status', label: '支付状态', value: 'unpaid', display_value: '未支付', source: 'order_review_orders' },
+      ],
+      snapshot: {
+        tenant_id: 'tenant-default',
+        order_id: MOCK_ORDER_ID,
+        updated_at: '2026-08-26T11:30:00Z',
+      },
+    },
+    derivation: [
+      { id: 'threshold', passed: true, refs: ['fact.amount_cents'] },
+      { id: 'unpaid', passed: true, refs: ['fact.payment_status'] },
+      { id: 'eligible', passed: true, refs: ['threshold', 'unpaid'] },
+    ],
+    recommendation: {
+      action: 'follow_up_payment',
+      title: '创建回款跟进单',
+      reason: '订单金额 ¥2,500.00 且当前未支付，建议人工确认后创建回款跟进单。',
+      requires_confirmation: true,
+      derivation_refs: ['eligible'],
+      source_refs: ['ontology://object-type/ont.order.v1'],
+      confidence: null,
+    },
+  };
+}
+
 function mockProposalPayload(overrides?: Record<string, unknown>) {
   return {
     tenant_id: 'tenant-default',
@@ -59,6 +114,44 @@ async function mockNegativeOrderReviewProposal(page: Page, proposalOverrides?: R
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(mockProposalPayload(proposalOverrides)),
+    });
+  });
+}
+
+async function mockCreatedEvidenceWithDetailMissing(page: Page) {
+  await page.route('**/api/v1/orders/high-value-unpaid**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{
+        tenant_id: 'tenant-default',
+        order_id: MOCK_ORDER_ID,
+        amount_cents: 250_000,
+        payment_status: 'unpaid',
+        review_status: 'pending',
+        version: 7,
+        updated_at: '2026-08-26T11:30:00Z',
+      }]),
+    });
+  });
+  await page.route('**/api/v1/review-cases', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        review_case_id: 'review-case-mock-order-review-1001',
+        proposal_id: MOCK_PROPOSAL_ID,
+        status: 'pending',
+        expected_order_version: 7,
+        evidence: mockEvidence(),
+      }),
+    });
+  });
+  await page.route(`**/api/v1/action-proposals/${MOCK_PROPOSAL_ID}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockProposalPayload()),
     });
   });
 }
@@ -118,6 +211,23 @@ test('SuperAI 订单复核黄金路径：建议、人工确认、Action 写回�
   expect(tracker.failures.length, tracker.report()).toBe(0);
 });
 
+test('创建响应 evidence 在 proposal detail 暂缺时仍驱动复核 UI', async ({ page, request }) => {
+  const { token } = await loginViaApi(page, request);
+  await mockCreatedEvidenceWithDetailMissing(page);
+
+  const tracker = trackApiFailures(page, 'created-evidence');
+  await page.goto('/superai/order-review');
+  await page.getByTestId(`review-order-${MOCK_ORDER_ID}`).click();
+
+  await expect(page.getByTestId('review-evidence')).toContainText('captured_at: 2026-08-26T12:00:00Z');
+  await expect(page.getByTestId('review-fact-amount')).toContainText('¥2,500.00');
+  await expect(page.getByTestId('review-fact-amount')).toContainText('order_review_orders');
+  await expect(page.getByTestId('review-fact-payment-status')).toContainText('未支付');
+  await expect(page.getByRole('button', { name: '确认执行' })).toBeEnabled();
+  expect(token).toBeTruthy();
+  expect(tracker.failures.length, tracker.report()).toBe(0);
+});
+
 test('历史提案缺少 evidence 快照时展示结构化不可用状态且禁止确认', async ({ page, request }) => {
   const { token } = await loginViaApi(page, request);
   await mockNegativeOrderReviewProposal(page);
@@ -142,36 +252,7 @@ test('历史提案缺少 evidence 快照时展示结构化不可用状态且禁�
 test('evidence status unavailable 时展示结构化不可用状态且禁止确认', async ({ page, request }) => {
   const { token } = await loginViaApi(page, request);
   await mockNegativeOrderReviewProposal(page, {
-    evidence: {
-      schema_version: 'order-review-evidence.v1',
-      status: 'unavailable',
-      proposal_id: MOCK_PROPOSAL_ID,
-      order_id: MOCK_ORDER_ID,
-      tenant_id: 'tenant-default',
-      order_version: 7,
-      captured_at: '2026-08-26T12:00:00Z',
-      ontology: {
-        source: 'ontology_kernel',
-        model_rid: 'ont.tenant-default.obj.crm.order.v1',
-        action_rid: 'ont.tenant-default.act.order-review-confirm.v1',
-        graph: { nodes: [], edges: [] },
-        legend: { unavailable: 'evidence status unavailable' },
-      },
-      data: {
-        source: 'order_review_orders',
-        captured_at: '2026-08-26T12:00:00Z',
-        facts: [],
-      },
-      derivation: [],
-      recommendation: {
-        action: 'follow_up_payment',
-        title: '创建回款跟进单',
-        reason: '证据状态 unavailable',
-        requires_confirmation: true,
-        derivation_refs: [],
-        source_refs: [],
-      },
-    },
+    evidence: mockEvidence('unavailable'),
   });
 
   const tracker = trackApiFailures(page, 'unavailable-evidence');

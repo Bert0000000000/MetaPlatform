@@ -6,6 +6,7 @@ import {
   confirmActionProposal,
   createReviewCase,
   getActionProposal,
+  getActionProposalWithCreatedEvidence,
   listHighValueUnpaid,
   rejectActionProposal,
   type ActionProposal,
@@ -81,7 +82,7 @@ export default function OrderReviewPage() {
         },
         sourceRefs: [],
       });
-      setProposal(await getActionProposal(created.proposal_id));
+      setProposal(await getActionProposalWithCreatedEvidence(created.proposal_id, created.evidence));
       Toast.success('复核建议已生成，等待人工确认');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '复核建议生成失败');

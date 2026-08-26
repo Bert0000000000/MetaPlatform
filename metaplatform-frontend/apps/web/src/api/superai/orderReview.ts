@@ -12,35 +12,43 @@ export interface ReviewOrder {
 
 export interface EvidenceFact {
   id: string;
-  field?: string;
-  label?: string;
-  value: unknown;
-  display_value?: string;
-  source?: string;
-}
-
-export interface EvidenceGraphNode extends Record<string, unknown> {
-  id: string;
+  field: string;
   label: string;
-  type?: string;
+  value: unknown;
+  display_value: string;
+  source: string;
 }
 
-export interface EvidenceGraphEdge extends Record<string, unknown> {
-  id?: string;
-  label?: string;
-  from?: string;
-  to?: string;
-  source?: string;
-  target?: string;
+export interface EvidenceGraphNode {
+  id: string;
+  type: 'transaction_anchor' | 'object_type' | 'action_type';
+  label: string;
+  rid?: string | null;
+}
+
+export interface EvidenceGraphEdge {
+  id: string;
+  from: string;
+  to: string;
+  label: string;
 }
 
 export interface EvidenceDerivation {
   id: string;
-  label?: string;
   passed: boolean;
-  fact_refs?: string[];
-  details?: Record<string, unknown>;
-  refs?: string[];
+  refs: string[];
+}
+
+export interface EvidenceOntologyContract {
+  object_type: {
+    rid: string;
+    title: string;
+  };
+  action_type: {
+    rid: string;
+    title: string;
+    on: string[];
+  };
 }
 
 export interface EvidenceBundle {
@@ -52,21 +60,20 @@ export interface EvidenceBundle {
   order_version: number;
   captured_at: string;
   ontology: {
-    source?: string;
-    model_rid?: string;
-    action_rid?: string;
     graph: {
       nodes: EvidenceGraphNode[];
       edges: EvidenceGraphEdge[];
     };
-    legend: Record<string, string> | string;
-    contract?: Record<string, unknown>;
+    legend: string;
+    contract: EvidenceOntologyContract;
   };
   data: {
-    source?: string;
-    captured_at?: string;
     facts: EvidenceFact[];
-    snapshot?: Record<string, unknown>;
+    snapshot: {
+      tenant_id: string;
+      order_id: string;
+      updated_at: string;
+    };
   };
   derivation: EvidenceDerivation[];
   recommendation: {
@@ -89,8 +96,8 @@ export interface ActionProposal {
   status: 'pending' | 'confirmed' | 'rejected' | 'expired';
   expected_order_version: number;
   parameters: Record<string, unknown>;
-  suggestion?: Record<string, unknown>;
-  source_refs?: string[];
+  suggestion: Record<string, unknown>;
+  source_refs: string[];
   evidence?: EvidenceBundle | null;
   expires_at: string;
   created_at: string;
@@ -102,6 +109,7 @@ export interface ReviewCaseCreated {
   proposal_id: string;
   status: 'pending';
   expected_order_version: number;
+  evidence: EvidenceBundle;
 }
 
 export interface ActionResult {
@@ -135,6 +143,14 @@ export async function createReviewCase(input: {
 export async function getActionProposal(proposalId: string): Promise<ActionProposal> {
   return apiClient.get<ActionProposal>(`/action-proposals/${encodeURIComponent(proposalId)}`)
     .then((response) => response.data as ActionProposal);
+}
+
+export async function getActionProposalWithCreatedEvidence(
+  proposalId: string,
+  evidence: EvidenceBundle | null | undefined,
+): Promise<ActionProposal> {
+  const proposal = await getActionProposal(proposalId);
+  return evidence ? { ...proposal, evidence } : proposal;
 }
 
 export async function confirmActionProposal(proposalId: string, idempotencyKey: string, actorId: string): Promise<ActionResult> {
