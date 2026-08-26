@@ -95,21 +95,21 @@ async def get_action_proposal(proposal_id: str, request: Request) -> dict[str, A
         _raise_service_error(error)
 
 
-@public_router.post("/action-proposals/{proposal_id}/confirm", include_in_schema=False)
-@router.post("/action-proposals/{proposal_id}/confirm")
+@public_router.post("/action-proposals/{proposal_id}:confirm", include_in_schema=False)
+@router.post("/action-proposals/{proposal_id}:confirm")
 async def confirm_action_proposal(
     proposal_id: str,
     request: Request,
     body: ConfirmActionProposalRequest,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> dict[str, Any]:
-    if not idempotency_key:
+    if not idempotency_key or not idempotency_key.strip():
         raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
     try:
         return _service.confirm_proposal(
             tenant_id=_tenant_id(request),
             proposal_id=proposal_id,
-            idempotency_key=idempotency_key,
+            idempotency_key=idempotency_key.strip(),
             actor_id=body.actor_id,
             trace_id=_trace_id(request),
         )
@@ -117,21 +117,21 @@ async def confirm_action_proposal(
         _raise_service_error(error)
 
 
-@public_router.post("/action-proposals/{proposal_id}/reject", include_in_schema=False)
-@router.post("/action-proposals/{proposal_id}/reject")
+@public_router.post("/action-proposals/{proposal_id}:reject", include_in_schema=False)
+@router.post("/action-proposals/{proposal_id}:reject")
 async def reject_action_proposal(
     proposal_id: str,
     request: Request,
     body: RejectActionProposalRequest,
     idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> dict[str, Any]:
-    if not idempotency_key:
+    if not idempotency_key or not idempotency_key.strip():
         raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
     try:
         return _service.reject_proposal(
             tenant_id=_tenant_id(request),
             proposal_id=proposal_id,
-            idempotency_key=idempotency_key,
+            idempotency_key=idempotency_key.strip(),
             actor_id=body.actor_id,
             reason=body.reason,
             trace_id=_trace_id(request),

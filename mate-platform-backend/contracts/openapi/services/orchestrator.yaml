@@ -903,7 +903,7 @@ paths:
       x-mate-permission: order.read
       x-mate-requirements: [ORD-004]
       x-mate-implementation-status: implemented
-  /api/v1/action-proposals/{proposal_id}/confirm:
+  /api/v1/action-proposals/{proposal_id}:confirm:
     post:
       security:
       - bearerAuth: []
@@ -935,7 +935,7 @@ paths:
       x-mate-permission: order.write
       x-mate-requirements: [ORD-005]
       x-mate-implementation-status: implemented
-  /api/v1/action-proposals/{proposal_id}/reject:
+  /api/v1/action-proposals/{proposal_id}:reject:
     post:
       security:
       - bearerAuth: []

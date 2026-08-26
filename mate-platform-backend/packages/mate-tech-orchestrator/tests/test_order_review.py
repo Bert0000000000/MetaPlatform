@@ -170,8 +170,15 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(auth_head
     assert case_response.status_code == 201, case_response.text
     proposal_id = case_response.json()["proposal_id"]
 
-    confirm_response = client.post(
+    legacy_confirm_response = client.post(
         f"/api/v1/action-proposals/{proposal_id}/confirm",
+        headers={**headers, "Idempotency-Key": "legacy-confirm-1"},
+        json={"actor_id": "u-reviewer"},
+    )
+    assert legacy_confirm_response.status_code == 404, legacy_confirm_response.text
+
+    confirm_response = client.post(
+        f"/api/v1/action-proposals/{proposal_id}:confirm",
         headers={**headers, "Idempotency-Key": "http-confirm-1"},
         json={"actor_id": "u-reviewer"},
     )
@@ -179,7 +186,7 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(auth_head
     assert confirm_response.json()["status"] == "confirmed"
 
     duplicate_response = client.post(
-        f"/api/v1/action-proposals/{proposal_id}/confirm",
+        f"/api/v1/action-proposals/{proposal_id}:confirm",
         headers={**headers, "Idempotency-Key": "http-confirm-1"},
         json={"actor_id": "u-reviewer"},
     )

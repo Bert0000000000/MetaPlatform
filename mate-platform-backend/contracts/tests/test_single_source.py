@@ -2,13 +2,13 @@ from pathlib import Path
 
 WORKSPACE=Path(__file__).parents[3]
 CANONICAL=(WORKSPACE/"mate-platform-backend/contracts/openapi").resolve()
-GENERATED_WORKSPACE_ROOTS={".claude", ".tmp-build-context", ".worktrees"}
+GENERATED_WORKSPACE_ROOTS={".claude", ".tmp-build-context", ".worktrees", ".venv", "node_modules", "dist", "build"}
 
 def test_only_canonical_editable_openapi_sources_exist() -> None:
  offenders=[]
  for path in WORKSPACE.rglob("*.yaml"):
   relative=path.relative_to(WORKSPACE)
-  if relative.parts and relative.parts[0] in GENERATED_WORKSPACE_ROOTS: continue
+  if any(part in GENERATED_WORKSPACE_ROOTS for part in relative.parts): continue
   resolved=path.resolve(); text=path.as_posix()
   if CANONICAL in resolved.parents or resolved==CANONICAL: continue
   if "/legacy/" in text: continue

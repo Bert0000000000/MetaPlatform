@@ -68,7 +68,7 @@ export async function getActionProposal(proposalId: string): Promise<ActionPropo
 
 export async function confirmActionProposal(proposalId: string, idempotencyKey: string, actorId: string): Promise<ActionResult> {
   return apiClient.post<ActionResult>(
-    `/action-proposals/${encodeURIComponent(proposalId)}/confirm`,
+    `/action-proposals/${encodeURIComponent(proposalId)}:confirm`,
     { actor_id: actorId },
     { headers: { 'Idempotency-Key': idempotencyKey } },
   ).then((response) => response.data as ActionResult);
@@ -81,7 +81,7 @@ export async function rejectActionProposal(
   reason: string,
 ): Promise<ActionResult> {
   return apiClient.post<ActionResult>(
-    `/action-proposals/${encodeURIComponent(proposalId)}/reject`,
+    `/action-proposals/${encodeURIComponent(proposalId)}:reject`,
     { actor_id: actorId, reason },
     { headers: { 'Idempotency-Key': idempotencyKey } },
   ).then((response) => response.data as ActionResult);
