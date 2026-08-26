@@ -118,7 +118,7 @@ async function mockNegativeOrderReviewProposal(page: Page, proposalOverrides?: R
   });
 }
 
-async function mockCreatedEvidenceWithDetailMissing(page: Page) {
+async function mockCreatedEvidenceWithDetailMissing(page: Page, action?: 'confirm' | 'reject') {
   await page.route('**/api/v1/orders/high-value-unpaid**', async (route) => {
     await route.fulfill({
       status: 200,
@@ -147,13 +147,47 @@ async function mockCreatedEvidenceWithDetailMissing(page: Page) {
       }),
     });
   });
+  let proposalReads = 0;
   await page.route(`**/api/v1/action-proposals/${MOCK_PROPOSAL_ID}`, async (route) => {
+    proposalReads += 1;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(mockProposalPayload()),
+      body: JSON.stringify(mockProposalPayload(
+        proposalReads > 1 && action
+          ? { status: action === 'confirm' ? 'confirmed' : 'rejected' }
+          : undefined,
+      )),
     });
   });
+  if (action === 'confirm') {
+    await page.route(`**/api/v1/action-proposals/${MOCK_PROPOSAL_ID}:confirm`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          proposal_id: MOCK_PROPOSAL_ID,
+          order_id: MOCK_ORDER_ID,
+          status: 'confirmed',
+          order_version: 8,
+          follow_up_task_id: 'task_mock_order_review_1001',
+        }),
+      });
+    });
+  }
+  if (action === 'reject') {
+    await page.route(`**/api/v1/action-proposals/${MOCK_PROPOSAL_ID}:reject`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          proposal_id: MOCK_PROPOSAL_ID,
+          order_id: MOCK_ORDER_ID,
+          status: 'rejected',
+        }),
+      });
+    });
+  }
 }
 
 test('应用中心提供订单复核业务入口', async ({ page, request }) => {
@@ -226,6 +260,27 @@ test('创建响应 evidence 在 proposal detail 暂缺时仍驱动复核 UI', as
   await expect(page.getByRole('button', { name: '确认执行' })).toBeEnabled();
   expect(token).toBeTruthy();
   expect(tracker.failures.length, tracker.report()).toBe(0);
+});
+
+test('确认后 proposal detail 缺少 evidence 时保留当前证据链', async ({ page }) => {
+  await mockCreatedEvidenceWithDetailMissing(page, 'confirm');
+  await page.goto('/superai/order-review');
+  await page.getByTestId(`review-order-${MOCK_ORDER_ID}`).click();
+  await page.getByRole('button', { name: '确认执行' }).click();
+
+  await expect(page.getByTestId('review-result')).toBeVisible();
+  await expect(page.getByTestId('review-evidence')).toContainText('captured_at: 2026-08-26T12:00:00Z');
+  await expect(page.getByTestId('review-fact-amount')).toContainText('¥2,500.00');
+});
+
+test('拒绝后 proposal detail 缺少 evidence 时保留当前证据链', async ({ page }) => {
+  await mockCreatedEvidenceWithDetailMissing(page, 'reject');
+  await page.goto('/superai/order-review');
+  await page.getByTestId(`review-order-${MOCK_ORDER_ID}`).click();
+  await page.getByRole('button', { name: '拒绝建议' }).click();
+
+  await expect(page.getByTestId('review-evidence')).toContainText('captured_at: 2026-08-26T12:00:00Z');
+  await expect(page.getByTestId('review-fact-payment-status')).toContainText('未支付');
 });
 
 test('历史提案缺少 evidence 快照时展示结构化不可用状态且禁止确认', async ({ page, request }) => {

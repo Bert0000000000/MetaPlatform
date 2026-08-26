@@ -153,6 +153,14 @@ export async function getActionProposalWithCreatedEvidence(
   return evidence ? { ...proposal, evidence } : proposal;
 }
 
+export async function getActionProposalWithExistingEvidence(
+  proposalId: string,
+  evidence: EvidenceBundle | null | undefined,
+): Promise<ActionProposal> {
+  const proposal = await getActionProposal(proposalId);
+  return proposal.evidence ? proposal : { ...proposal, evidence };
+}
+
 export async function confirmActionProposal(proposalId: string, idempotencyKey: string, actorId: string): Promise<ActionResult> {
   return apiClient.post<ActionResult>(
     `/action-proposals/${encodeURIComponent(proposalId)}:confirm`,

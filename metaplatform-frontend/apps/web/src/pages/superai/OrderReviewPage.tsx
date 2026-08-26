@@ -5,8 +5,8 @@ import { PageRoot } from '@mate/shared';
 import {
   confirmActionProposal,
   createReviewCase,
-  getActionProposal,
   getActionProposalWithCreatedEvidence,
+  getActionProposalWithExistingEvidence,
   listHighValueUnpaid,
   rejectActionProposal,
   type ActionProposal,
@@ -102,7 +102,7 @@ export default function OrderReviewPage() {
         'current-user',
       );
       setResult(actionResult);
-      setProposal(await getActionProposal(proposal.proposal_id));
+      setProposal(await getActionProposalWithExistingEvidence(proposal.proposal_id, proposal.evidence));
       await loadOrders();
       Toast.success('已确认并创建跟进单');
     } catch (cause) {
@@ -124,7 +124,7 @@ export default function OrderReviewPage() {
         '人工复核后暂不执行',
       );
       setResult(actionResult);
-      setProposal(await getActionProposal(proposal.proposal_id));
+      setProposal(await getActionProposalWithExistingEvidence(proposal.proposal_id, proposal.evidence));
       Toast.success('已拒绝复核建议');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '拒绝操作失败');
