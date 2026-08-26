@@ -2,7 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-const proxyHost = process.env.VITE_PROXY_HOST ?? 'localhost';
+// Use the IPv4 loopback by default for the local browser-to-Docker gateway
+// path. On Windows, `localhost` may resolve to IPv6 while Docker publishes
+// the gateway on IPv4, leaving page API calls hanging until they time out.
+const proxyHost = process.env.VITE_PROXY_HOST ?? '127.0.0.1';
 const proxyTarget = (port: number) => `http://${proxyHost}:${port}`;
 // v3.2 unified backend port (all app packages mounted on one server)
 const BACKEND_PORT = Number(process.env.VITE_BACKEND_PORT ?? 8100);

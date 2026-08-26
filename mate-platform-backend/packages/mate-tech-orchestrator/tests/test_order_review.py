@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from mate_tech_orchestrator.api.order_review import OrderReviewService
+from mate_tech_orchestrator.api.order_review import public_router as order_review_public_router
 from mate_tech_orchestrator.main import create_app
 
 from mate_tech_db.base import create_all, init_engine, reset_engine
@@ -192,3 +193,14 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(auth_head
     )
     assert duplicate_response.status_code == 200
     assert duplicate_response.json() == confirm_response.json()
+
+
+def test_action_command_routes_precede_proposal_detail_route():
+    paths = [route.path for route in order_review_public_router.routes]
+
+    detail_index = paths.index("/api/v1/action-proposals/{proposal_id}")
+    confirm_index = paths.index("/api/v1/action-proposals/{proposal_id}:confirm")
+    reject_index = paths.index("/api/v1/action-proposals/{proposal_id}:reject")
+
+    assert confirm_index < detail_index
+    assert reject_index < detail_index

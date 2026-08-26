@@ -190,6 +190,23 @@ async def rate_limit_middleware(request: Request, call_next):
 PROXY_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
 
 
+def _build_target_url(target_base: str, path: str) -> httpx.URL:
+    """Build an upstream URL while preserving colon command separators.
+
+    Some ASGI servers expose an encoded colon in ``request.url.path`` even
+    though the public command contract uses paths such as ``:confirm``.  If
+    that value is passed to HTTPX as a string, it remains ``%3A`` on the wire
+    and Starlette does not match the command route in the upstream service.
+    Decode only this reserved character; decoding other escapes could change
+    path-segment boundaries or alter the route's security semantics.
+    """
+    target_url = httpx.URL(f"{target_base}{path}")
+    raw_path = target_url.raw_path.replace(b"%3A", b":").replace(b"%3a", b":")
+    if raw_path == target_url.raw_path:
+        return target_url
+    return target_url.copy_with(raw_path=raw_path)
+
+
 @app.api_route("/api/v1/{path:path}", methods=PROXY_METHODS)
 async def proxy(path: str, request: Request) -> Response:
     """Match longest prefix in ROUTE_MAP and forward to upstream.
@@ -213,7 +230,7 @@ async def proxy(path: str, request: Request) -> Response:
         )
 
     target_base = SERVICES[matched_service]
-    target_url = f"{target_base}{request.url.path}"
+    target_url = _build_target_url(target_base, request.url.path)
 
     # Forward headers, drop hop-by-hop
     skip = {"host", "content-length", "connection", "keep-alive",

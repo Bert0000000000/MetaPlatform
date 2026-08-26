@@ -3,6 +3,19 @@ import { GATEWAY, loginViaApi, trackApiFailures } from './helpers/auth';
 
 test.use({ storageState: 'tests/e2e/.auth/state.json' });
 
+test('应用中心提供订单复核业务入口', async ({ page, request }) => {
+  const { token } = await loginViaApi(page, request);
+  const tracker = trackApiFailures(page);
+  await page.goto('/apps');
+
+  await expect(page.getByTestId('apphub-order-review')).toBeVisible();
+  await page.getByTestId('apphub-open-order-review').click();
+  await expect(page).toHaveURL(/\/superai\/order-review$/);
+  await expect(page.getByRole('heading', { name: '订单复核' })).toBeVisible();
+  expect(token).toBeTruthy();
+  expect(tracker.failures.length, tracker.report()).toBe(0);
+});
+
 test('SuperAI 订单复核黄金路径：建议、人工确认、Action 写回与跟进单', async ({ page, request }) => {
   test.setTimeout(120_000);
   const { token } = await loginViaApi(page, request);

@@ -86,15 +86,6 @@ async def create_review_case(request: Request, body: CreateReviewCaseRequest) ->
         _raise_service_error(error)
 
 
-@public_router.get("/action-proposals/{proposal_id}", include_in_schema=False)
-@router.get("/action-proposals/{proposal_id}")
-async def get_action_proposal(proposal_id: str, request: Request) -> dict[str, Any]:
-    try:
-        return _service.get_proposal(tenant_id=_tenant_id(request), proposal_id=proposal_id)
-    except Exception as error:
-        _raise_service_error(error)
-
-
 @public_router.post("/action-proposals/{proposal_id}:confirm", include_in_schema=False)
 @router.post("/action-proposals/{proposal_id}:confirm")
 async def confirm_action_proposal(
@@ -136,5 +127,14 @@ async def reject_action_proposal(
             reason=body.reason,
             trace_id=_trace_id(request),
         )
+    except Exception as error:
+        _raise_service_error(error)
+
+
+@public_router.get("/action-proposals/{proposal_id}", include_in_schema=False)
+@router.get("/action-proposals/{proposal_id}")
+async def get_action_proposal(proposal_id: str, request: Request) -> dict[str, Any]:
+    try:
+        return _service.get_proposal(tenant_id=_tenant_id(request), proposal_id=proposal_id)
     except Exception as error:
         _raise_service_error(error)

@@ -39,6 +39,7 @@ import {
   FileTextOutlined,
   SearchOutlined,
   FilterOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import { listApps, deleteApp, listGroups } from '@/api/apphub/apps';
 import AppDesignSheet from './DesignFlowPage';
@@ -185,6 +186,55 @@ export default function AppListPage() {
           </div>
         </Card>
       </div>
+
+      {/* 核心业务场景：入口复用平台内置能力，不伪装成可卸载的 AppHub 应用 */}
+      <Card title="核心业务场景" style={{ marginBottom: 20 }}>
+        <Card
+          data-testid="apphub-order-review"
+          shadows="hover"
+          style={{ maxWidth: 520, cursor: 'pointer' }}
+          title={
+            <Space>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 6,
+                  background: 'var(--semi-color-success-light-default)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CheckCircleOutlined style={{ color: 'var(--semi-color-success)' }} />
+              </div>
+              <div>
+                <Typography.Text strong>订单复核</Typography.Text>
+                <div>
+                  <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
+                    SuperAI · Ontology/RAG · 人工确认 · Action 写回
+                  </Typography.Text>
+                </div>
+              </div>
+            </Space>
+          }
+        >
+          <Typography.Text type="tertiary">
+            处理高价值未支付订单，生成复核建议并在确认后创建跟进单。
+          </Typography.Text>
+          <div style={{ marginTop: 12 }}>
+            <Button
+              data-testid="apphub-open-order-review"
+              theme="solid"
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => navigate('/superai/order-review')}
+            >
+              打开订单复核
+            </Button>
+          </div>
+        </Card>
+      </Card>
 
       {/* 筛选 */}
       <div
