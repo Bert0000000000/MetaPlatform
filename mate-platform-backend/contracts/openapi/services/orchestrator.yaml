@@ -240,19 +240,195 @@ components:
         order_id: {type: string, minLength: 1}
         suggestion: {type: object, additionalProperties: true}
         source_refs: {type: array, items: {type: string}}
+    CreateReviewCaseResponse:
+      type: object
+      required: [review_case_id, proposal_id, status, expected_order_version, evidence]
+      properties:
+        review_case_id: {type: string}
+        proposal_id: {type: string}
+        status: {type: string, enum: [pending]}
+        expected_order_version: {type: integer}
+        evidence:
+          $ref: '#/components/schemas/EvidenceBundle'
+    EvidenceObjectType:
+      type: object
+      required: [rid, title]
+      properties:
+        rid: {type: string}
+        title: {type: string}
+    EvidenceActionType:
+      type: object
+      required: [rid, title, on]
+      properties:
+        rid: {type: string}
+        title: {type: string}
+        on:
+          type: array
+          minItems: 1
+          items: {type: string}
+    EvidenceOntologyContract:
+      type: object
+      required: [object_type, action_type]
+      properties:
+        object_type:
+          $ref: '#/components/schemas/EvidenceObjectType'
+        action_type:
+          $ref: '#/components/schemas/EvidenceActionType'
+    EvidenceGraphNode:
+      type: object
+      required: [id, type, label]
+      properties:
+        id: {type: string}
+        type: {type: string, enum: [transaction_anchor, object_type, action_type]}
+        label: {type: string}
+        rid: {type: [string, 'null']}
+    EvidenceGraphEdge:
+      type: object
+      required: [id, from, to, label]
+      properties:
+        id: {type: string}
+        from: {type: string}
+        to: {type: string}
+        label: {type: string}
+    EvidenceGraph:
+      type: object
+      required: [nodes, edges]
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceGraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceGraphEdge'
+    OntologyEvidence:
+      type: object
+      required: [graph, legend, contract]
+      properties:
+        graph:
+          $ref: '#/components/schemas/EvidenceGraph'
+        legend: {type: string}
+        contract:
+          $ref: '#/components/schemas/EvidenceOntologyContract'
+    EvidenceFact:
+      type: object
+      required: [id, field, label, value, display_value, source]
+      properties:
+        id: {type: string}
+        field: {type: string}
+        label: {type: string}
+        value: {}
+        display_value: {type: string}
+        source: {type: string}
+    EvidenceSnapshot:
+      type: object
+      required: [tenant_id, order_id, updated_at]
+      properties:
+        tenant_id: {type: string}
+        order_id: {type: string}
+        updated_at: {type: string, format: date-time}
+    EvidenceData:
+      type: object
+      required: [facts, snapshot]
+      properties:
+        facts:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceFact'
+        snapshot:
+          $ref: '#/components/schemas/EvidenceSnapshot'
+    EvidenceDerivation:
+      type: object
+      required: [id, passed, refs]
+      properties:
+        id: {type: string}
+        passed: {type: boolean}
+        refs:
+          type: array
+          items: {type: string}
+    EvidenceRecommendation:
+      type: object
+      required:
+      - action
+      - title
+      - reason
+      - requires_confirmation
+      - derivation_refs
+      - source_refs
+      properties:
+        action: {type: string}
+        title: {type: string}
+        reason: {type: string}
+        requires_confirmation: {type: boolean}
+        derivation_refs:
+          type: array
+          items: {type: string}
+        source_refs:
+          type: array
+          items: {type: string}
+        confidence: {type: [number, 'null']}
+    EvidenceBundle:
+      type: object
+      required:
+      - schema_version
+      - status
+      - proposal_id
+      - order_id
+      - tenant_id
+      - order_version
+      - captured_at
+      - ontology
+      - data
+      - derivation
+      - recommendation
+      properties:
+        schema_version: {type: string, enum: [order-review-evidence.v1]}
+        status: {type: string, enum: [complete, unavailable]}
+        proposal_id: {type: string}
+        order_id: {type: string}
+        tenant_id: {type: string}
+        order_version: {type: integer}
+        captured_at: {type: string, format: date-time}
+        ontology:
+          $ref: '#/components/schemas/OntologyEvidence'
+        data:
+          $ref: '#/components/schemas/EvidenceData'
+        derivation:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceDerivation'
+        recommendation:
+          $ref: '#/components/schemas/EvidenceRecommendation'
     ActionProposal:
       type: object
-      required: [proposal_id, review_case_id, order_id, action_type, status, expected_order_version]
+      required:
+      - tenant_id
+      - proposal_id
+      - review_case_id
+      - order_id
+      - action_type
+      - status
+      - expected_order_version
+      - suggestion
+      - source_refs
+      - parameters
+      - evidence
+      - expires_at
+      - created_at
       properties:
+        tenant_id: {type: string}
         proposal_id: {type: string}
         review_case_id: {type: string}
         order_id: {type: string}
-        action_type: {type: string}
+        action_type: {type: string, enum: [order_review_confirm]}
         status: {type: string, enum: [pending, confirmed, rejected, expired]}
         expected_order_version: {type: integer}
         suggestion: {type: object, additionalProperties: true}
         source_refs: {type: array, items: {type: string}}
         parameters: {type: object, additionalProperties: true}
+        evidence:
+          $ref: '#/components/schemas/EvidenceBundle'
         expires_at: {type: string, format: date-time}
         created_at: {type: string, format: date-time}
         resolved_at: {type: [string, 'null'], format: date-time}
@@ -865,13 +1041,15 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  review_case_id: {type: string}
-                  proposal_id: {type: string}
-                  status: {type: string, enum: [pending]}
-                  expected_order_version: {type: integer}
+                $ref: '#/components/schemas/CreateReviewCaseResponse'
         '404': {description: 订单不存在}
+        '409': {description: 订单状态冲突}
+        '503':
+          description: Evidence unavailable
+          headers:
+            X-Error-Code:
+              description: Application error code.
+              schema: {type: string, enum: [evidence_unavailable]}
       operationId: orderReviewPostReviewCases
       x-mate-owner: orchestrator
       x-mate-permission: order.write
@@ -898,6 +1076,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ActionProposal'
         '404': {description: Proposal 不存在或不属于当前租户}
+        '409':
+          description: Evidence required
+          headers:
+            X-Error-Code:
+              description: Application error code.
+              schema: {type: string, enum: [evidence_required]}
       operationId: orderReviewGetActionProposal
       x-mate-owner: orchestrator
       x-mate-permission: order.read
@@ -929,7 +1113,20 @@ paths:
       responses:
         '200':
           description: 已确认，订单、跟进单、幂等记录和 Outbox 同事务提交
-        '409': {description: 版本冲突、重复处理或幂等键冲突}
+        '409':
+          description: 版本冲突、重复处理、幂等键冲突或 evidence required
+          headers:
+            X-Error-Code:
+              description: Application error code.
+              schema:
+                type: string
+                enum: [version_conflict, idempotency_conflict, already_resolved, evidence_required]
+        '503':
+          description: Evidence unavailable
+          headers:
+            X-Error-Code:
+              description: Application error code.
+              schema: {type: string, enum: [evidence_unavailable]}
       operationId: orderReviewPostActionProposalConfirm
       x-mate-owner: orchestrator
       x-mate-permission: order.write

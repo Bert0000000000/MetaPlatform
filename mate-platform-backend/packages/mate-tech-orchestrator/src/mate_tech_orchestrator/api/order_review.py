@@ -1,6 +1,7 @@
 """HTTP API for the transactional order-review vertical slice."""
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, NoReturn
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request, status
@@ -9,15 +10,78 @@ from mate_platform.tenancy.guards import require_tenant
 
 from ..repositories.order_review import OrderReviewService
 from .schemas import (
+    ActionProposal,
     ConfirmActionProposalRequest,
     CreateOrderRequest,
     CreateReviewCaseRequest,
+    CreateReviewCaseResponse,
     RejectActionProposalRequest,
 )
 
 router = APIRouter(prefix="/api/v1/orchestrator", tags=["order-review"])
 public_router = APIRouter(prefix="/api/v1", tags=["order-review"])
 _service = OrderReviewService()
+_EVIDENCE_FACT_METADATA: dict[str, tuple[str, str]] = {
+    "fact.amount_cents": ("amount_cents", "订单金额"),
+    "fact.payment_status": ("payment_status", "支付状态"),
+    "fact.review_status": ("review_status", "复核状态"),
+    "fact.version": ("version", "订单版本"),
+}
+_REVIEW_CASE_RESPONSES = {
+    404: {"description": "订单不存在"},
+    409: {"description": "订单状态冲突"},
+    503: {
+        "description": "Evidence unavailable",
+        "headers": {
+            "X-Error-Code": {
+                "description": "Application error code.",
+                "schema": {"type": "string", "enum": ["evidence_unavailable"]},
+            }
+        },
+    },
+}
+_ACTION_PROPOSAL_DETAIL_RESPONSES = {
+    404: {"description": "Proposal 不存在或不属于当前租户"},
+    409: {
+        "description": "Evidence required",
+        "headers": {
+            "X-Error-Code": {
+                "description": "Application error code.",
+                "schema": {"type": "string", "enum": ["evidence_required"]},
+            }
+        },
+    },
+}
+_ACTION_PROPOSAL_CONFIRM_RESPONSES = {
+    400: {"description": "缺少 Idempotency-Key"},
+    404: {"description": "Proposal 不存在或不属于当前租户"},
+    409: {
+        "description": "版本冲突、重复处理、幂等键冲突或 evidence required",
+        "headers": {
+            "X-Error-Code": {
+                "description": "Application error code.",
+                "schema": {
+                    "type": "string",
+                    "enum": [
+                        "version_conflict",
+                        "idempotency_conflict",
+                        "already_resolved",
+                        "evidence_required",
+                    ],
+                },
+            }
+        },
+    },
+    503: {
+        "description": "Evidence unavailable",
+        "headers": {
+            "X-Error-Code": {
+                "description": "Application error code.",
+                "schema": {"type": "string", "enum": ["evidence_unavailable"]},
+            }
+        },
+    },
+}
 
 
 def _tenant_id(request: Request) -> str:
@@ -29,15 +93,79 @@ def _trace_id(request: Request) -> str:
     return str(getattr(ctx, "trace_id", "") or request.headers.get("X-Trace-Id", ""))
 
 
+def _bearer_credential(request: Request) -> str:
+    ctx = getattr(request.state, "ctx", None)
+    token = str(getattr(ctx, "authorization", "") or "").strip()
+    if token.lower().startswith("bearer "):
+        return token.split(None, 1)[1].strip()
+    if token:
+        return token
+    raw = request.headers.get("Authorization", "")
+    if raw.lower().startswith("bearer "):
+        return raw.split(None, 1)[1].strip()
+    return ""
+
+
+def _fact_metadata(fact_id: str) -> tuple[str, str]:
+    field, label = _EVIDENCE_FACT_METADATA.get(fact_id, ("", ""))
+    if field:
+        return field, label
+    derived = fact_id.removeprefix("fact.").strip() or fact_id.strip()
+    return derived, derived
+
+
+def _response_evidence(
+    *,
+    tenant_id: str,
+    proposal_id: str,
+    order_id: str,
+    captured_at: str,
+    evidence: Any,
+) -> dict[str, Any]:
+    if not isinstance(evidence, dict):
+        raise OrderReviewService.EvidenceRequired("evidence bundle is required before returning the response")
+    bundle = deepcopy(evidence)
+    data = bundle.get("data")
+    if isinstance(data, dict):
+        facts = data.get("facts")
+        if isinstance(facts, list):
+            data["facts"] = [
+                {
+                    **fact,
+                    "field": _fact_metadata(str(fact.get("id", "")))[0],
+                    "label": _fact_metadata(str(fact.get("id", "")))[1],
+                }
+                for fact in facts
+                if isinstance(fact, dict)
+            ]
+    bundle.update(
+        {
+            "proposal_id": proposal_id,
+            "order_id": order_id,
+            "tenant_id": tenant_id,
+            "captured_at": captured_at,
+        }
+    )
+    return bundle
+
+
 def _raise_service_error(error: Exception) -> NoReturn:
     if isinstance(error, OrderReviewService.NotFound):
         raise HTTPException(status_code=404, detail=str(error)) from error
+    if isinstance(error, OrderReviewService.EvidenceUnavailable):
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
+            headers={"X-Error-Code": "evidence_unavailable"},
+        ) from error
     if isinstance(error, OrderReviewService.VersionConflict):
         raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "version_conflict"}) from error
     if isinstance(error, OrderReviewService.IdempotencyConflict):
         raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "idempotency_conflict"}) from error
     if isinstance(error, OrderReviewService.AlreadyResolved):
         raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "already_resolved"}) from error
+    if isinstance(error, OrderReviewService.EvidenceRequired):
+        raise HTTPException(status_code=409, detail=str(error), headers={"X-Error-Code": "evidence_required"}) from error
     if isinstance(error, OrderReviewService.Conflict):
         raise HTTPException(status_code=409, detail=str(error)) from error
     if isinstance(error, ValueError):
@@ -45,8 +173,8 @@ def _raise_service_error(error: Exception) -> NoReturn:
     raise error
 
 
-@public_router.post("/orders", status_code=status.HTTP_201_CREATED, include_in_schema=False)
-@router.post("/orders", status_code=status.HTTP_201_CREATED)
+@public_router.post("/orders", status_code=status.HTTP_201_CREATED)
+@router.post("/orders", status_code=status.HTTP_201_CREATED, include_in_schema=False)
 async def create_order(request: Request, body: CreateOrderRequest) -> dict[str, Any]:
     try:
         return _service.create_order(
@@ -59,8 +187,8 @@ async def create_order(request: Request, body: CreateOrderRequest) -> dict[str, 
         _raise_service_error(error)
 
 
-@public_router.get("/orders/high-value-unpaid", include_in_schema=False)
-@router.get("/orders/high-value-unpaid")
+@public_router.get("/orders/high-value-unpaid")
+@router.get("/orders/high-value-unpaid", include_in_schema=False)
 async def list_high_value_unpaid(
     request: Request,
     min_amount_cents: int = Query(default=100_000, ge=1),
@@ -71,23 +199,45 @@ async def list_high_value_unpaid(
     return {"items": items, "total": len(items)}
 
 
-@public_router.post("/review-cases", status_code=status.HTTP_201_CREATED, include_in_schema=False)
-@router.post("/review-cases", status_code=status.HTTP_201_CREATED)
-async def create_review_case(request: Request, body: CreateReviewCaseRequest) -> dict[str, Any]:
+@public_router.post(
+    "/review-cases",
+    status_code=status.HTTP_201_CREATED,
+    response_model=CreateReviewCaseResponse,
+    responses=_REVIEW_CASE_RESPONSES,
+)
+@router.post(
+    "/review-cases",
+    status_code=status.HTTP_201_CREATED,
+    response_model=CreateReviewCaseResponse,
+    responses=_REVIEW_CASE_RESPONSES,
+    include_in_schema=False,
+)
+async def create_review_case(request: Request, body: CreateReviewCaseRequest) -> CreateReviewCaseResponse:
     try:
-        return _service.create_review_case(
-            tenant_id=_tenant_id(request),
+        tenant_id = _tenant_id(request)
+        created = _service.create_review_case(
+            tenant_id=tenant_id,
             order_id=body.order_id,
             suggestion=body.suggestion,
             source_refs=body.source_refs,
+            auth_token=_bearer_credential(request),
             trace_id=_trace_id(request),
         )
+        proposal = _service.get_proposal(tenant_id=tenant_id, proposal_id=str(created["proposal_id"]))
+        created["evidence"] = _response_evidence(
+            tenant_id=tenant_id,
+            proposal_id=str(created["proposal_id"]),
+            order_id=body.order_id,
+            captured_at=str(proposal["created_at"]),
+            evidence=proposal.get("evidence"),
+        )
+        return CreateReviewCaseResponse.model_validate(created)
     except Exception as error:
         _raise_service_error(error)
 
 
-@public_router.post("/action-proposals/{proposal_id}:confirm", include_in_schema=False)
-@router.post("/action-proposals/{proposal_id}:confirm")
+@public_router.post("/action-proposals/{proposal_id}:confirm", responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES)
+@router.post("/action-proposals/{proposal_id}:confirm", responses=_ACTION_PROPOSAL_CONFIRM_RESPONSES, include_in_schema=False)
 async def confirm_action_proposal(
     proposal_id: str,
     request: Request,
@@ -108,8 +258,8 @@ async def confirm_action_proposal(
         _raise_service_error(error)
 
 
-@public_router.post("/action-proposals/{proposal_id}:reject", include_in_schema=False)
-@router.post("/action-proposals/{proposal_id}:reject")
+@public_router.post("/action-proposals/{proposal_id}:reject")
+@router.post("/action-proposals/{proposal_id}:reject", include_in_schema=False)
 async def reject_action_proposal(
     proposal_id: str,
     request: Request,
@@ -131,10 +281,28 @@ async def reject_action_proposal(
         _raise_service_error(error)
 
 
-@public_router.get("/action-proposals/{proposal_id}", include_in_schema=False)
-@router.get("/action-proposals/{proposal_id}")
-async def get_action_proposal(proposal_id: str, request: Request) -> dict[str, Any]:
+@public_router.get(
+    "/action-proposals/{proposal_id}",
+    response_model=ActionProposal,
+    responses=_ACTION_PROPOSAL_DETAIL_RESPONSES,
+)
+@router.get(
+    "/action-proposals/{proposal_id}",
+    response_model=ActionProposal,
+    responses=_ACTION_PROPOSAL_DETAIL_RESPONSES,
+    include_in_schema=False,
+)
+async def get_action_proposal(proposal_id: str, request: Request) -> ActionProposal:
     try:
-        return _service.get_proposal(tenant_id=_tenant_id(request), proposal_id=proposal_id)
+        tenant_id = _tenant_id(request)
+        proposal = _service.get_proposal(tenant_id=tenant_id, proposal_id=proposal_id)
+        proposal["evidence"] = _response_evidence(
+            tenant_id=tenant_id,
+            proposal_id=proposal_id,
+            order_id=str(proposal["order_id"]),
+            captured_at=str(proposal["created_at"]),
+            evidence=proposal.get("evidence"),
+        )
+        return ActionProposal.model_validate(proposal)
     except Exception as error:
         _raise_service_error(error)

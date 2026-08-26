@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CapabilityBindingRequest(BaseModel):
@@ -139,3 +139,121 @@ class ConfirmActionProposalRequest(BaseModel):
 class RejectActionProposalRequest(BaseModel):
     actor_id: str = Field(default="system", min_length=1)
     reason: str = Field(default="")
+
+
+class EvidenceObjectType(BaseModel):
+    rid: str
+    title: str
+
+
+class EvidenceActionType(BaseModel):
+    rid: str
+    title: str
+    on: list[str] = Field(min_length=1)
+
+
+class EvidenceOntologyContract(BaseModel):
+    object_type: EvidenceObjectType
+    action_type: EvidenceActionType
+
+
+class EvidenceGraphNode(BaseModel):
+    id: str
+    type: Literal["transaction_anchor", "object_type", "action_type"]
+    label: str
+    rid: str | None = None
+
+
+class EvidenceGraphEdge(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    from_node: str = Field(alias="from")
+    to: str
+    label: str
+
+
+class EvidenceGraph(BaseModel):
+    nodes: list[EvidenceGraphNode]
+    edges: list[EvidenceGraphEdge]
+
+
+class OntologyEvidence(BaseModel):
+    graph: EvidenceGraph
+    legend: str
+    contract: EvidenceOntologyContract
+
+
+class EvidenceFact(BaseModel):
+    id: str
+    field: str
+    label: str
+    value: Any
+    display_value: str
+    source: str
+
+
+class EvidenceSnapshot(BaseModel):
+    tenant_id: str
+    order_id: str
+    updated_at: str
+
+
+class EvidenceData(BaseModel):
+    facts: list[EvidenceFact]
+    snapshot: EvidenceSnapshot
+
+
+class EvidenceDerivation(BaseModel):
+    id: str
+    passed: bool
+    refs: list[str]
+
+
+class EvidenceRecommendation(BaseModel):
+    action: str
+    title: str
+    reason: str
+    requires_confirmation: bool
+    derivation_refs: list[str]
+    source_refs: list[str]
+    confidence: float | None = None
+
+
+class EvidenceBundle(BaseModel):
+    schema_version: Literal["order-review-evidence.v1"]
+    status: Literal["complete", "unavailable"]
+    proposal_id: str
+    order_id: str
+    tenant_id: str
+    order_version: int
+    captured_at: str
+    ontology: OntologyEvidence
+    data: EvidenceData
+    derivation: list[EvidenceDerivation]
+    recommendation: EvidenceRecommendation
+
+
+class CreateReviewCaseResponse(BaseModel):
+    review_case_id: str
+    proposal_id: str
+    status: Literal["pending"]
+    expected_order_version: int
+    evidence: EvidenceBundle
+
+
+class ActionProposal(BaseModel):
+    tenant_id: str
+    proposal_id: str
+    review_case_id: str
+    order_id: str
+    action_type: Literal["order_review_confirm"]
+    status: Literal["pending", "confirmed", "rejected", "expired"]
+    expected_order_version: int
+    suggestion: dict[str, Any]
+    source_refs: list[str] = Field(default_factory=list)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    evidence: EvidenceBundle
+    expires_at: str
+    created_at: str
+    resolved_at: str | None = None

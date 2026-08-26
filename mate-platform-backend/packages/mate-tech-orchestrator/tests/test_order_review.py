@@ -79,6 +79,16 @@ def _seed_proposal(service: OrderReviewService, *, tenant_id: str = "tenant-acme
     return str(result["proposal_id"])
 
 
+def _literal_values(schema: dict[str, object]) -> list[object]:
+    if "enum" in schema:
+        values = schema["enum"]
+        assert isinstance(values, list)
+        return values
+    if "const" in schema:
+        return [schema["const"]]
+    raise AssertionError(f"schema does not declare literal values: {schema!r}")
+
+
 def test_confirm_atomically_updates_order_creates_follow_up_and_outbox(service: OrderReviewService):
     proposal_id = _seed_proposal(service)
 
@@ -253,7 +263,8 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     monkeypatch: pytest.MonkeyPatch,
     auth_headers_acme: dict[str, str],
 ):
-    monkeypatch.setattr(order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog()))
+    catalog = _FakeOntologyCatalog()
+    monkeypatch.setattr(order_review_api, "_service", OrderReviewService(ontology_catalog=catalog))
     client = TestClient(create_app())
     headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
 
@@ -278,7 +289,17 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
         },
     )
     assert case_response.status_code == 201, case_response.text
-    proposal_id = case_response.json()["proposal_id"]
+    case_payload = case_response.json()
+    proposal_id = case_payload["proposal_id"]
+    expected_token = headers["Authorization"].split(" ", 1)[1]
+
+    assert catalog.calls == [{"tenant_id": "tenant-acme", "token": expected_token}]
+    assert case_payload["evidence"]["status"] == "complete"
+    assert case_payload["evidence"]["ontology"]["graph"]["nodes"]
+    assert case_payload["evidence"]["ontology"]["graph"]["edges"]
+    assert case_payload["evidence"]["data"]["facts"]
+    assert case_payload["evidence"]["derivation"]
+    assert case_payload["evidence"]["recommendation"]["requires_confirmation"] is True
 
     legacy_confirm_response = client.post(
         f"/api/v1/action-proposals/{proposal_id}/confirm",
@@ -300,7 +321,13 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
         headers=headers,
     )
     assert detail_response.status_code == 200, detail_response.text
-    assert detail_response.json()["evidence"]["status"] == "complete"
+    detail_payload = detail_response.json()
+    assert detail_payload["evidence"] == case_payload["evidence"]
+    assert detail_payload["evidence"]["status"] == "complete"
+    assert detail_payload["evidence"]["ontology"]["graph"]["nodes"]
+    assert detail_payload["evidence"]["data"]["facts"]
+    assert detail_payload["evidence"]["derivation"]
+    assert detail_payload["evidence"]["recommendation"]["source_refs"]
 
     duplicate_response = client.post(
         f"/api/v1/action-proposals/{proposal_id}:confirm",
@@ -309,6 +336,166 @@ def test_order_review_http_flow_uses_tenant_from_authenticated_context(
     )
     assert duplicate_response.status_code == 200
     assert duplicate_response.json() == confirm_response.json()
+
+
+def test_create_review_case_http_returns_503_for_evidence_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_headers_acme: dict[str, str],
+) -> None:
+    monkeypatch.setattr(
+        order_review_api,
+        "_service",
+        OrderReviewService(ontology_catalog=_FakeOntologyCatalog(should_fail=True)),
+    )
+    client = TestClient(create_app())
+    headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
+
+    order_response = client.post(
+        "/api/v1/orders",
+        headers=headers,
+        json={
+            "order_id": "order-http-503",
+            "amount_cents": 188000,
+            "payment_status": "unpaid",
+        },
+    )
+    assert order_response.status_code == 201, order_response.text
+
+    case_response = client.post(
+        "/api/v1/review-cases",
+        headers=headers,
+        json={
+            "order_id": "order-http-503",
+            "suggestion": {"action": "follow_up_payment", "reason": "unpaid"},
+            "source_refs": ["ontology://Order/order-http-503"],
+        },
+    )
+
+    assert case_response.status_code == 503
+    assert case_response.headers["x-error-code"] == "evidence_unavailable"
+    assert case_response.json()["detail"] == "tech-ont unavailable"
+
+
+def test_confirm_http_returns_409_for_missing_persisted_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_headers_acme: dict[str, str],
+) -> None:
+    monkeypatch.setattr(order_review_api, "_service", OrderReviewService(ontology_catalog=_FakeOntologyCatalog()))
+    client = TestClient(create_app())
+    headers = {**auth_headers_acme, "X-Tenant-Id": "tenant-acme"}
+
+    order_response = client.post(
+        "/api/v1/orders",
+        headers=headers,
+        json={
+            "order_id": "order-http-409",
+            "amount_cents": 188000,
+            "payment_status": "unpaid",
+        },
+    )
+    assert order_response.status_code == 201, order_response.text
+
+    case_response = client.post(
+        "/api/v1/review-cases",
+        headers=headers,
+        json={
+            "order_id": "order-http-409",
+            "suggestion": {"action": "follow_up_payment", "reason": "unpaid"},
+            "source_refs": ["ontology://Order/order-http-409"],
+        },
+    )
+    assert case_response.status_code == 201, case_response.text
+    proposal_id = case_response.json()["proposal_id"]
+
+    with get_session() as session, session.begin():
+        proposal = session.get(ActionProposalORM, ("tenant-acme", proposal_id))
+        assert proposal is not None
+        case = session.get(ReviewCaseORM, ("tenant-acme", proposal.review_case_id))
+        assert case is not None
+        suggestion = json.loads(case.suggestion)
+        suggestion.pop("evidence_bundle", None)
+        case.suggestion = json.dumps(suggestion, ensure_ascii=False, sort_keys=True)
+
+    confirm_response = client.post(
+        f"/api/v1/action-proposals/{proposal_id}:confirm",
+        headers={**headers, "Idempotency-Key": "http-confirm-missing-evidence"},
+        json={"actor_id": "u-reviewer"},
+    )
+
+    assert confirm_response.status_code == 409
+    assert confirm_response.headers["x-error-code"] == "evidence_required"
+    assert confirm_response.json()["detail"] == "evidence bundle is required before confirmation"
+
+
+def test_order_review_openapi_declares_evidence_contract() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200, response.text
+    document = response.json()
+    components = document["components"]["schemas"]
+
+    create_response_schema = (
+        document["paths"]["/api/v1/review-cases"]["post"]["responses"]["201"]["content"]["application/json"]["schema"]
+    )
+    assert create_response_schema["$ref"] == "#/components/schemas/CreateReviewCaseResponse"
+    assert (
+        document["paths"]["/api/v1/review-cases"]["post"]["responses"]["503"]["description"]
+    )
+    assert (
+        document["paths"]["/api/v1/action-proposals/{proposal_id}:confirm"]["post"]["responses"]["409"]["description"]
+    )
+
+    action_proposal_schema = components["ActionProposal"]
+    assert action_proposal_schema["properties"]["evidence"]["$ref"] == "#/components/schemas/EvidenceBundle"
+
+    evidence_bundle = components["EvidenceBundle"]
+    assert evidence_bundle["required"] == [
+        "schema_version",
+        "status",
+        "proposal_id",
+        "order_id",
+        "tenant_id",
+        "order_version",
+        "captured_at",
+        "ontology",
+        "data",
+        "derivation",
+        "recommendation",
+    ]
+    assert _literal_values(evidence_bundle["properties"]["schema_version"]) == ["order-review-evidence.v1"]
+    assert _literal_values(evidence_bundle["properties"]["status"]) == ["complete", "unavailable"]
+
+    ontology_schema = components["OntologyEvidence"]
+    assert ontology_schema["required"] == ["graph", "legend", "contract"]
+
+    graph_schema = components["EvidenceGraph"]
+    assert graph_schema["required"] == ["nodes", "edges"]
+    node_schema = components["EvidenceGraphNode"]
+    assert _literal_values(node_schema["properties"]["type"]) == [
+        "transaction_anchor",
+        "object_type",
+        "action_type",
+    ]
+
+    data_schema = components["EvidenceData"]
+    assert data_schema["required"] == ["facts", "snapshot"]
+    fact_schema = components["EvidenceFact"]
+    assert fact_schema["required"] == ["id", "field", "label", "value", "display_value", "source"]
+
+    derivation_schema = components["EvidenceDerivation"]
+    assert derivation_schema["required"] == ["id", "passed", "refs"]
+
+    recommendation_schema = components["EvidenceRecommendation"]
+    assert recommendation_schema["required"] == [
+        "action",
+        "title",
+        "reason",
+        "requires_confirmation",
+        "derivation_refs",
+        "source_refs",
+    ]
 
 
 def test_action_command_routes_precede_proposal_detail_route():
