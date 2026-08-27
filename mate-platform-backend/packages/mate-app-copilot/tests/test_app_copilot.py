@@ -143,6 +143,95 @@ def test_execute_sql_rejects_cross_tenant_multi_statement_and_skips_downstream(
 
 
 @pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT * FROM tenant_acme_orders DROP TABLE tenant_acme_users",
+        "SELECT * FROM tenant_acme_orders ALTER TABLE tenant_acme_users",
+        "SELECT * FROM tenant_acme_orders TRUNCATE TABLE tenant_acme_users",
+    ],
+)
+def test_execute_sql_rejects_embedded_destructive_tokens_before_downstream(
+    client, auth_headers_acme, monkeypatch, *, sql: str
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    called = {"count": 0}
+
+    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+        called["count"] += 1
+        return {"rows": [], "columns": []}
+
+    monkeypatch.setattr(
+        copilot_app_module,
+        "_execute_read_only_sql",
+        _fake_execute_read_only_sql,
+        raising=False,
+    )
+
+    r = client.post(
+        "/api/v1/copilot/analysis/execute-sql",
+        json={"sql": sql},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 403, r.text
+    assert called["count"] == 0
+
+
+def test_execute_sql_rejects_malformed_select_before_downstream(
+    client, auth_headers_acme, monkeypatch
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    called = {"count": 0}
+
+    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+        called["count"] += 1
+        return {"rows": [], "columns": []}
+
+    monkeypatch.setattr(
+        copilot_app_module,
+        "_execute_read_only_sql",
+        _fake_execute_read_only_sql,
+        raising=False,
+    )
+
+    r = client.post(
+        "/api/v1/copilot/analysis/execute-sql",
+        json={"sql": "SELECT FROM tenant_acme_orders"},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 400, r.text
+    assert called["count"] == 0
+
+
+def test_execute_sql_rejects_quoted_cross_tenant_identifier_before_downstream(
+    client, auth_headers_acme, monkeypatch
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    called = {"count": 0}
+
+    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+        called["count"] += 1
+        return {"rows": [], "columns": []}
+
+    monkeypatch.setattr(
+        copilot_app_module,
+        "_execute_read_only_sql",
+        _fake_execute_read_only_sql,
+        raising=False,
+    )
+
+    r = client.post(
+        "/api/v1/copilot/analysis/execute-sql",
+        json={"sql": 'SELECT * FROM "tenant-globex".secrets'},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 403, r.text
+    assert called["count"] == 0
+
+
+@pytest.mark.parametrize(
     ("path", "payload", "expected_status"),
     [
         ("/api/v1/copilot/analysis/execute-sql", {}, 400),
@@ -205,7 +294,7 @@ def test_queries_execute_allows_same_tenant_select_and_calls_downstream(
     r = client.post(
         "/api/v1/copilot/queries/execute",
         json={
-            "sql": "SELECT id FROM tenant_acme_orders",
+            "sql": "SELECT tenant_id FROM tenant_acme_orders",
             "datasource_id": "ds-safe",
         },
         headers=auth_headers_acme,
@@ -214,7 +303,7 @@ def test_queries_execute_allows_same_tenant_select_and_calls_downstream(
     body = r.json()
     assert body["rows"] == [{"id": 7, "tenant": "tenant-acme"}], body
     assert captured == {
-        "sql": "SELECT id FROM tenant_acme_orders",
+        "sql": "SELECT tenant_id FROM tenant_acme_orders",
         "tenant_id": "tenant-acme",
         "datasource_id": "ds-safe",
     }

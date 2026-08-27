@@ -28,6 +28,8 @@ from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports
     list_data_flows,
 )
 from sqlalchemy import select
+from sqlparse.sql import Identifier, IdentifierList
+from sqlparse.tokens import DDL, DML, Comment
 
 from mate_clients.security.bearer import BearerAuth
 from mate_platform.messaging.events import Event
@@ -122,9 +124,129 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+_FORBIDDEN_SQL_KEYWORDS = frozenset(
+    {
+        "ALTER",
+        "ANALYZE",
+        "CALL",
+        "COMMENT",
+        "COPY",
+        "CREATE",
+        "DELETE",
+        "DROP",
+        "EXECUTE",
+        "GRANT",
+        "INSERT",
+        "INTO",
+        "MERGE",
+        "REINDEX",
+        "REPLACE",
+        "REVOKE",
+        "SET",
+        "TRUNCATE",
+        "UPDATE",
+        "VACUUM",
+    }
+)
+_SELECT_CLAUSE_STARTERS = frozenset(
+    {
+        "FROM",
+        "GROUP",
+        "HAVING",
+        "LIMIT",
+        "OFFSET",
+        "ORDER",
+        "UNION",
+        "WHERE",
+    }
+)
+
+
 def _tenant_sql_token(tenant_id: str) -> str:
-    normalized = re.sub(r"[^a-z0-9]+", "_", tenant_id.lower()).strip("_")
-    return normalized
+    return re.sub(r"[^a-z0-9]+", "_", tenant_id.lower()).strip("_")
+
+
+def _unquote_sql_identifier(value: str) -> str:
+    value = value.strip()
+    quoted_pair = (value[:1], value[-1:])
+    if len(value) >= 2 and quoted_pair in {('"', '"'), ("`", "`"), ("[", "]")}:
+        closing = quoted_pair[1]
+        value = value[1:-1]
+        value = value.replace(closing * 2, closing)
+    return value
+
+
+def _normalize_sql_identifier(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", _unquote_sql_identifier(value).lower()).strip("_")
+
+
+def _iter_sql_table_identifiers(statement):
+    expect_relation = False
+    for token in statement.tokens:
+        if token.is_whitespace or token.ttype in Comment:
+            continue
+        keyword = token.normalized.upper()
+        if keyword in {"FROM", "JOIN"} or keyword.endswith(" JOIN"):
+            expect_relation = True
+            continue
+        if not expect_relation:
+            continue
+        if keyword == "LATERAL":
+            continue
+        if isinstance(token, Identifier):
+            yield token
+        elif isinstance(token, IdentifierList):
+            yield from token.get_identifiers()
+        expect_relation = False
+
+
+def _raise_malformed_sql() -> None:
+    raise HTTPException(status_code=400, detail="Malformed SELECT statement")
+
+
+def _validate_select_shape(sql_text: str, statement) -> None:
+    meaningful = [
+        token
+        for token in statement.tokens
+        if not token.is_whitespace and token.ttype not in Comment
+    ]
+    if len(meaningful) < 2:
+        _raise_malformed_sql()
+
+    first = meaningful[0]
+    if first.normalized.upper() != "SELECT":
+        _raise_malformed_sql()
+
+    projection = meaningful[1].normalized.upper()
+    if projection in _SELECT_CLAUSE_STARTERS:
+        _raise_malformed_sql()
+
+    if sum(1 for token in statement.flatten() if token.value == "(") != sum(
+        1 for token in statement.flatten() if token.value == ")"
+    ):
+        _raise_malformed_sql()
+
+    normalized_sql = re.sub(r"\s+", " ", sql_text).strip().rstrip(";").rstrip()
+    if re.search(
+        r"\b(?:FROM|WHERE|GROUP\s+BY|HAVING|ORDER\s+BY|LIMIT|OFFSET|UNION|INTERSECT|EXCEPT)\s*$",
+        normalized_sql,
+        re.IGNORECASE,
+    ):
+        _raise_malformed_sql()
+
+
+def _reject_forbidden_sql_tokens(statement) -> None:
+    for token in statement.flatten():
+        keyword = token.normalized.upper()
+        if token.ttype in DDL or token.ttype in DML:
+            forbidden = keyword != "SELECT"
+        else:
+            forbidden = keyword in _FORBIDDEN_SQL_KEYWORDS
+        if forbidden:
+            raise HTTPException(
+                status_code=403,
+                detail="Only SELECT statements are allowed in dry-run mode",
+            )
 
 
 def _validate_read_only_sql(sql: str, tenant_id: str) -> str:
@@ -132,7 +254,10 @@ def _validate_read_only_sql(sql: str, tenant_id: str) -> str:
     if not sql_text:
         raise HTTPException(status_code=400, detail="sql is required")
 
-    parsed = tuple(stmt for stmt in sqlparse.parse(sql_text) if str(stmt).strip())
+    try:
+        parsed = tuple(stmt for stmt in sqlparse.parse(sql_text) if str(stmt).strip())
+    except (TypeError, ValueError):
+        _raise_malformed_sql()
     if len(parsed) != 1:
         raise HTTPException(
             status_code=403,
@@ -140,21 +265,35 @@ def _validate_read_only_sql(sql: str, tenant_id: str) -> str:
         )
 
     statement = parsed[0]
+    _reject_forbidden_sql_tokens(statement)
     if statement.get_type().upper() != "SELECT":
         raise HTTPException(
             status_code=403,
             detail="Only SELECT statements are allowed in dry-run mode",
         )
+    _validate_select_shape(sql_text, statement)
 
+    tenant_raw = _unquote_sql_identifier(tenant_id).lower()
     tenant_token = _tenant_sql_token(tenant_id)
     if tenant_token:
-        for matched in re.findall(r"\btenant_[a-z0-9_]+\b", sql_text, re.IGNORECASE):
-            token = matched.lower()
-            if token != tenant_token and not token.startswith(f"{tenant_token}_"):
-                raise HTTPException(
-                    status_code=403,
-                    detail="Cross-tenant SQL references are not allowed",
+        for identifier in _iter_sql_table_identifiers(statement):
+            names = (identifier.get_real_name(), identifier.get_parent_name())
+            for name in names:
+                if not name:
+                    continue
+                raw_name = _unquote_sql_identifier(name).lower()
+                normalized_name = _normalize_sql_identifier(name)
+                same_tenant = (
+                    raw_name == tenant_raw
+                    or normalized_name == tenant_token
+                    or normalized_name.startswith(f"{tenant_token}_")
                 )
+                references_tenant_namespace = normalized_name.startswith("tenant_")
+                if references_tenant_namespace and not same_tenant:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Cross-tenant SQL references are not allowed",
+                    )
 
     return sql_text
 

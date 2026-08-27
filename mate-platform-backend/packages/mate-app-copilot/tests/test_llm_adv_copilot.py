@@ -169,6 +169,8 @@ def test_case4_rapid_chat_triggers_quota_429(
         "DELETE FROM tenant_acme_secrets WHERE 1=1",
         "INSERT INTO tenant_acme_admin VALUES (1)",
         "UPDATE tenant_acme_users SET role='admin'",
+        "ALTER TABLE tenant_acme_users ADD COLUMN is_admin BOOLEAN",
+        "TRUNCATE TABLE tenant_acme_users",
     ],
 )
 def test_case5_nl2sql_destructive_statements_rejected(
