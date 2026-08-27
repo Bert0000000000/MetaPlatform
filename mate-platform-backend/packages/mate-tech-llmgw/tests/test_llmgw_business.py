@@ -256,12 +256,17 @@ def management_client():
     @app.middleware("http")
     async def _inject_tenant_context(request, call_next):
         tenant_id = request.headers.get("x-test-tenant-id", "")
+        roles = frozenset(
+            role.strip()
+            for role in request.headers.get("x-test-roles", "").split(",")
+            if role.strip()
+        )
         request.state.ctx = RequestContext(
             request_id="req-test",
             trace_id="trace-test",
             tenant_id=TenantId(tenant_id),
             user_id=UserId("user-test"),
-            roles=frozenset(),
+            roles=roles,
             permissions=frozenset(),
             auth_method=AuthMethod.USER,
         )
@@ -461,3 +466,45 @@ def test_management_routes_allow_same_tenant_lookup(
 
     assert response.status_code == 200
     getattr(target, attr_name).assert_called_once_with("acme")
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/v1/llmgw/quota/acme"),
+        ("get", "/api/v1/llmgw/usage/acme"),
+        ("delete", "/api/v1/llmgw/cache/acme"),
+    ],
+)
+def test_management_routes_deny_cross_tenant_admin_before_lookup(
+    management_client: TestClient, method: str, path: str,
+) -> None:
+    """cross_tenant_admin must still be denied on these Task 4 routes."""
+    bucket = SimpleNamespace(status=AsyncMock(return_value={"tenant_id": "acme"}))
+    recorder = SimpleNamespace(summary=MagicMock(return_value={"tenant_id": "acme"}))
+    cache = SimpleNamespace(clear_tenant=AsyncMock(return_value=1))
+    router_mod.set_quota_bucket(bucket)
+    router_mod.set_cost_recorder(recorder)
+    router_mod.set_cache(cache)
+
+    response = getattr(management_client, method)(
+        path,
+        headers={
+            "x-test-tenant-id": "globex",
+            "x-test-roles": "cross_tenant_admin",
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "tenant access denied"}
+    bucket.status.assert_not_called()
+    recorder.summary.assert_not_called()
+    cache.clear_tenant.assert_not_called()
+
+
+def test_main_app_installs_auth_middleware() -> None:
+    """The production app keeps auth middleware installed above these routes."""
+    from mate_tech_llmgw.main import app
+
+    middleware_classes = [middleware.cls.__name__ for middleware in app.user_middleware]
+    assert "AuthMiddleware" in middleware_classes

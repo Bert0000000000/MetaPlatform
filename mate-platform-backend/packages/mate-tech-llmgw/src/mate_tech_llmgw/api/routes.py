@@ -22,7 +22,6 @@ from mate_platform.runtime import is_production_profile
 from mate_platform.tenancy import (
     RequestContext,
     TenantAccessError,
-    assert_same_tenant,
     require_tenant,
 )
 from pydantic import BaseModel, Field
@@ -596,8 +595,11 @@ def _require_same_tenant_management_access(request: Request, tenant_id: str) -> 
     if not isinstance(ctx, RequestContext):
         raise HTTPException(status_code=403, detail="tenant access denied")
     try:
-        require_tenant(ctx)
-        assert_same_tenant(tenant_id, ctx)
+        request_tenant_id = require_tenant(ctx)
+        if tenant_id != request_tenant_id:
+            raise TenantAccessError(
+                f"path tenant {tenant_id!r} does not match request tenant {request_tenant_id!r}"
+            )
     except TenantAccessError as exc:
         logger.warning(
             "llmgw.management.cross_tenant_denied",
