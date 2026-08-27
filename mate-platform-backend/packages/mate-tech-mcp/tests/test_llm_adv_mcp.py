@@ -12,6 +12,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -26,6 +28,24 @@ def client() -> TestClient:
     # test, and later tests hit "RuntimeError: Event loop is closed".
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture(scope="module", autouse=True)
+def no_external_redis() -> None:
+    """Keep MCP adversarial tests deterministic without a Redis service.
+
+    Redis-backed rate limiting is exercised by the dedicated rate-limit tests;
+    this suite verifies authorization and tool behavior.  The application
+    state is restored after the module so other tests retain the real limiter.
+    """
+    original = app.state.rate_limiter
+    limiter = MagicMock()
+    limiter.check = AsyncMock(return_value=None)
+    app.state.rate_limiter = limiter
+    try:
+        yield
+    finally:
+        app.state.rate_limiter = original
 
 
 # ---------------------------------------------------------------------------

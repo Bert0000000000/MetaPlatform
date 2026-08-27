@@ -13,7 +13,8 @@ Path alignment (P0 close-out, 2026-07-30):
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from collections.abc import Mapping
+from dataclasses import asdict, is_dataclass
 from typing import Any
 
 import structlog
@@ -134,6 +135,34 @@ class ChatResponseAPI(BaseModel):
     usage: dict[str, int] = {}
 
 
+def _chat_response_payload(response: Any) -> dict[str, Any]:
+    """Normalize provider responses before validating the public API model.
+
+    The production router returns the frozen, slotted ``ChatResponse``
+    dataclass. Tests and third-party adapters may return a mapping or a small
+    compatibility object instead, so serialization must not depend on either
+    ``__dict__`` or dataclass-only behavior.
+    """
+    if is_dataclass(response) and not isinstance(response, type):
+        return asdict(response)
+    if isinstance(response, Mapping):
+        return dict(response)
+    model_dump = getattr(response, "model_dump", None)
+    if callable(model_dump):
+        payload = model_dump()
+        if isinstance(payload, dict):
+            return payload
+    to_dict = getattr(response, "to_dict", None)
+    if callable(to_dict):
+        payload = to_dict()
+        if isinstance(payload, dict):
+            return payload
+    attributes = getattr(response, "__dict__", None)
+    if isinstance(attributes, dict):
+        return dict(attributes)
+    raise TypeError("unsupported chat response type")
+
+
 @router.post("/chat", response_model=ChatResponseAPI)
 async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
     """非流式 chat 端点."""
@@ -152,7 +181,7 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
                 tools=req.tools,
                 tenant_id=req.tenant_id,
             )
-            return ChatResponseAPI(**asdict(resp))
+            return ChatResponseAPI(**_chat_response_payload(resp))
         except HTTPException:
             raise
         except (NotImplementedError, ValueError) as e:
@@ -714,7 +743,7 @@ async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
         logger.error("llmgw.chat.error.legacy", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) from e
     response.headers.update(_deprecation_header())
-    return ChatResponseAPI(**asdict(resp))
+    return ChatResponseAPI(**_chat_response_payload(resp))
 
 
 @legacy_router.post(
