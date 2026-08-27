@@ -128,7 +128,9 @@ app.include_router(federation_router_routes)
 # W4: real MCP protocol surface (streamable-http) for external MCP clients.
 from .protocol.streamable import build_streamable_http_app  # noqa: E402
 
-app.mount("/mcp-protocol", build_streamable_http_app(mcp_server))
+# Keep the protocol endpoint inside the canonical /api/v1/mcp namespace so
+# direct service callers and the API gateway expose the same contract.
+app.mount("/api/v1/mcp/protocol", build_streamable_http_app(mcp_server))
 
 
 @app.get("/healthz")

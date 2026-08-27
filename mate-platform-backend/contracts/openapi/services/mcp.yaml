@@ -666,7 +666,7 @@ paths:
       x-mate-requirements:
       - FR-MCP-FEDERATION-INVOKE
       x-mate-implementation-status: implemented
-  /mcp-protocol:
+  /api/v1/mcp/protocol:
     get:
       security:
       - bearerAuth: []

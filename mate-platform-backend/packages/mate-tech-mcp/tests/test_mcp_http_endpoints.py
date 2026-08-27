@@ -139,7 +139,15 @@ class TestMcpMainIsImportable:
             for m in list(sys.modules):
                 if m == "mate_tech_mcp.main" or m.startswith("mate_tech_mcp."):
                     sys.modules.pop(m, None)
-            import mate_tech_mcp.main  # noqa: F401
+            from mate_tech_mcp import main as main_mod
+
+            mounted_paths = {
+                route.path
+                for route in main_mod.app.routes
+                if hasattr(route, "path")
+            }
+            assert "/api/v1/mcp/protocol" in mounted_paths
+            assert "/mcp-protocol" not in mounted_paths
 
 
 # ---------------------------------------------------------------------------
