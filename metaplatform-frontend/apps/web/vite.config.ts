@@ -17,8 +17,6 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
       '@mate/shared$': path.resolve(import.meta.dirname, '../../packages/shared/src/index.ts'),
       '@ant-design/icons$': path.resolve(import.meta.dirname, '../../packages/shared/src/icons/index.tsx'),
-      // react-syntax-highlighter 异步语言注册表动态 import 的 highlight.js 语言文件解析
-      'highlight.js/lib/languages/sql_more': path.resolve(import.meta.dirname, '../../node_modules/.pnpm/highlight.js@10.7.3/node_modules/highlight.js/lib/languages/sql_more.js'),
     },
   },
   server: {

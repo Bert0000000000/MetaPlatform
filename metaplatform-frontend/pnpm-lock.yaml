@@ -135,6 +135,9 @@ importers:
       dayjs:
         specifier: ^1.11.21
         version: 1.11.21
+      highlight.js:
+        specifier: ~10.7.0
+        version: 10.7.0
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.7)
@@ -1767,9 +1770,6 @@ packages:
 
   hastscript@6.0.0:
     resolution: {integrity: sha512-nDM6bvd7lIqDUiYEiu5Sl/+6ReP0BMk/2f4U/Rooccxkj0P5nm+acM5PrGJ/t5I8qPGiqZSE6hVAwZEdZIvP4w==}
-
-  highlight.js@10.4.1:
-    resolution: {integrity: sha512-yR5lWvNz7c85OhVAEAeFhVCc/GV4C30Fjzc/rCP0aCWzc1UUOPUk55dK/qdwTZHBvMZo+eZ2jpk62ndX/xMFlg==}
 
   highlight.js@10.7.0:
     resolution: {integrity: sha512-2omq9bKvr0BkwZRLhyjoDd1muuuMsacFY2qoIt/Eu8JoZyJaGm8oQKviiOC/QbJqEeZp9c0BikDr0Jz4kWd8Ag==}
@@ -4540,8 +4540,6 @@ snapshots:
       property-information: 5.0.0
       space-separated-tokens: 1.1.5
 
-  highlight.js@10.4.1: {}
-
   highlight.js@10.7.0: {}
 
   highlightjs-vue@1.0.0: {}
@@ -5428,7 +5426,7 @@ snapshots:
   react-syntax-highlighter@15.6.1(react@19.2.7):
     dependencies:
       '@babel/runtime': 7.29.7
-      highlight.js: 10.4.1
+      highlight.js: 10.7.0
       highlightjs-vue: 1.0.0
       lowlight: 1.20.0
       prismjs: 1.30.0
