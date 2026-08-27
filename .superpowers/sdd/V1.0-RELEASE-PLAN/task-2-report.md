@@ -110,4 +110,4 @@ Effect:
 
 ## Commit Hash
 
-Pending at report-write time; filled after commit.
+- Implementation commit: `05825861a4243f6d8af0d6317c9b0d877f34b154`
