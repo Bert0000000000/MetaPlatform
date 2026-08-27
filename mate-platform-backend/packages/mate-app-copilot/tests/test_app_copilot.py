@@ -231,6 +231,35 @@ def test_execute_sql_rejects_quoted_cross_tenant_identifier_before_downstream(
     assert called["count"] == 0
 
 
+def test_execute_sql_rejects_nested_quoted_cross_tenant_identifier_before_downstream(
+    client, auth_headers_acme, monkeypatch
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    called = {"count": 0}
+
+    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+        called["count"] += 1
+        return {"rows": [], "columns": []}
+
+    monkeypatch.setattr(
+        copilot_app_module,
+        "_execute_read_only_sql",
+        _fake_execute_read_only_sql,
+        raising=False,
+    )
+
+    r = client.post(
+        "/api/v1/copilot/analysis/execute-sql",
+        json={
+            "sql": 'SELECT * FROM (SELECT * FROM "tenant-globex".secrets) AS s',
+        },
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 403, r.text
+    assert called["count"] == 0
+
+
 @pytest.mark.parametrize(
     ("path", "payload", "expected_status"),
     [

@@ -28,7 +28,7 @@ from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports
     list_data_flows,
 )
 from sqlalchemy import select
-from sqlparse.sql import Identifier, IdentifierList
+from sqlparse.sql import Identifier, IdentifierList, TokenList
 from sqlparse.tokens import DDL, DML, Comment
 
 from mate_clients.security.bearer import BearerAuth
@@ -180,7 +180,7 @@ def _normalize_sql_identifier(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", _unquote_sql_identifier(value).lower()).strip("_")
 
 
-def _iter_sql_table_identifiers(statement):
+def _iter_sql_table_identifiers(statement: TokenList):
     expect_relation = False
     for token in statement.tokens:
         if token.is_whitespace or token.ttype in Comment:
@@ -190,13 +190,20 @@ def _iter_sql_table_identifiers(statement):
             expect_relation = True
             continue
         if not expect_relation:
+            if isinstance(token, TokenList):
+                yield from _iter_sql_table_identifiers(token)
             continue
         if keyword == "LATERAL":
             continue
         if isinstance(token, Identifier):
             yield token
+            yield from _iter_sql_table_identifiers(token)
         elif isinstance(token, IdentifierList):
-            yield from token.get_identifiers()
+            for identifier in token.get_identifiers():
+                yield identifier
+                yield from _iter_sql_table_identifiers(identifier)
+        elif isinstance(token, TokenList):
+            yield from _iter_sql_table_identifiers(token)
         expect_relation = False
 
 
