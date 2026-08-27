@@ -29,6 +29,7 @@ for _sub in (
     "mate-platform",
     "mate-clients",
     "mate-common",
+    "mate-tech-db",
 ):
     _p = str(_MONOREPO / "packages" / _sub / "src")
     if _p not in _sys.path:
@@ -50,6 +51,7 @@ for _bsl_sub in (
     "mate-platform",
     "mate-clients",
     "mate-common",
+    "mate-tech-db",
 ):
     _bsl_p = str(_BSL_MONOREPO / "packages" / _bsl_sub / "src")
     if _bsl_p not in _bsl_sys.path:
@@ -65,6 +67,7 @@ for _bsl_sub in (
     "mate-platform",
     "mate-clients",
     "mate-common",
+    "mate-tech-db",
 ):
     _bsl_p = str(_BSL_MONOREPO / "packages" / _bsl_sub / "src")
     if _bsl_p not in _bsl_sys.path:
