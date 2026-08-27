@@ -28,6 +28,8 @@ tags:
 security:
 - bearerAuth: []
   tenantHeader: []
+  oidcScopes:
+  - platform.read
 paths:
   /api/v1/marketplace/browse:
     get:
@@ -140,18 +142,16 @@ paths:
       summary: 平台级安装清单
       description: '跨租户可见 — 不参与 SEC-TENANT-01 db_filter 强过滤,范围由 OAuth scope 决定:
 
-        - `platform.marketplace.read` — 管理员可见全平台
-
-        - `platform.marketplace.read.tenant` — 租户管理员仅见本租户发起
+        - `platform.read` — 已认证调用可见清单
 
         '
       tags:
       - marketplace
       security:
       - bearerAuth: []
+        tenantHeader: []
         oidcScopes:
-        - platform.marketplace.read
-        - platform.marketplace.read.tenant
+        - platform.read
       parameters:
       - in: query
         name: kind
@@ -196,7 +196,7 @@ paths:
       - bearerAuth: []
         tenantHeader: []
         oidcScopes:
-        - platform.marketplace.write
+        - platform.write
       requestBody:
         required: true
         content:
@@ -261,7 +261,7 @@ paths:
       - bearerAuth: []
         tenantHeader: []
         oidcScopes:
-        - platform.marketplace.write
+        - platform.write
       parameters:
       - in: path
         name: install_id
@@ -299,7 +299,7 @@ paths:
       - bearerAuth: []
         tenantHeader: []
         oidcScopes:
-        - platform.marketplace.write
+        - platform.write
       parameters:
       - in: path
         name: install_id
@@ -352,7 +352,7 @@ paths:
       - bearerAuth: []
         tenantHeader: []
         oidcScopes:
-        - platform.marketplace.write
+        - platform.write
       requestBody:
         required: true
         content:
@@ -398,6 +398,11 @@ paths:
       summary: 上传 SKILL（SKILL HUB）
       description: 上传一个公开或私有 SKILL 到 SkillHub。
       tags: [marketplace]
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
       requestBody:
         required: true
         content:
@@ -504,6 +509,11 @@ paths:
       operationId: updateSkill
       summary: 更新自有 SKILL（仅作者）
       tags: [marketplace]
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
       parameters:
       - name: skill_id
         in: path
@@ -536,6 +546,11 @@ paths:
       operationId: deleteSkill
       summary: 删除自有 SKILL
       tags: [marketplace]
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
       parameters:
       - name: skill_id
         in: path
@@ -585,6 +600,11 @@ paths:
       operationId: installSkill
       summary: 安装 SKILL
       tags: [marketplace]
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
       parameters:
       - name: skill_id
         in: path
@@ -611,11 +631,23 @@ paths:
 components:
   securitySchemes:
     bearerAuth:
-      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     tenantHeader:
-      $ref: ./common/security.yaml#/components/securitySchemes/tenantHeader
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
     oidcScopes:
-      $ref: ./common/security.yaml#/components/securitySchemes/oidcScopes
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     Skill:
       type: object

@@ -475,6 +475,7 @@ paths:
       - bearerAuth: []
         tenantHeader: []
         oidcScopes: [platform.read]
+      x-required-scopes: [platform.read]
       summary: Cross-ontology federation query
       tags:
       - ont
@@ -1052,6 +1053,7 @@ paths:
   /api/v1/ont/v2/object-sets/query:
     post:
       security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      x-required-scopes: [platform.read]
       tags: [ont]
       summary: Evaluate ObjectSet → bindings
       operationId: ontEvaluateV2ObjectSet
@@ -1075,6 +1077,7 @@ paths:
   /api/v1/ont/v2/object-query:
     post:
       security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      x-required-scopes: [platform.read]
       tags: [ont]
       summary: Execute structured ObjectSet IR query (SAL-01)
       description: >-
@@ -1163,6 +1166,7 @@ paths:
   /api/v1/ont/v2/object-search:
     post:
       security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.read]}]
+      x-required-scopes: [platform.read]
       tags: [ont]
       summary: Semantic object search - OAG retrieval context (SAL-02)
       description: >-

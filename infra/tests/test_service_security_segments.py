@@ -1,4 +1,4 @@
-"""G5 — per-service OpenAPI ``security`` segment compliance.
+"""G5 — per-service OpenAPI ``security`` segment compliance for 21 services.
 
 Every domain service contract under
 ``mate-platform-backend/contracts/openapi/services/`` must declare the
@@ -90,17 +90,12 @@ class TestServiceSecuritySegments:
         )
 
 
-def test_all_eighteen_domains_covered() -> None:
-    """Guard against silent contract drift: exactly the 18 known domains.
-
-    deep-research added in v3.1 by commit ``3e739c0451cb`` PR-1+2
-    (mate-tech-deep-research 包). To add a new domain, append to
-    ``expected`` AND update the umbrella helm chart accordingly.
-    """
+def test_all_twenty_one_services_covered() -> None:
+    """Guard against silent contract drift in the canonical 21-service set."""
     names = {p.stem for p in SERVICE_FILES}
     expected = {
-        "a2a", "agent", "apphub", "arch", "copilot", "dashboard", "data",
-        "deep-research",
-        "dw", "iam", "kb", "llmgw", "mcp", "msg", "obs", "ont", "rag", "wfe",
+        "a2a", "agent", "analytics", "apphub", "arch", "copilot", "dashboard",
+        "data", "deep-research", "dw", "iam", "kb", "llmgw", "marketplace",
+        "mcp", "msg", "obs", "ont", "orchestrator", "rag", "wfe",
     }
     assert names == expected, f"service contract set drifted: {names ^ expected}"

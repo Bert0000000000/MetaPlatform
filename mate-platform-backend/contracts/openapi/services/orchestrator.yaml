@@ -6,6 +6,10 @@ info:
   description: Canonical contract for the orchestrator — multi-role digital-employee dynamic scheduling over the MCP / A2A service centers.
   contact:
     name: Mate Platform Team
+security:
+- bearerAuth: []
+  tenantHeader: []
+  oidcScopes: [platform.read]
 components:
   securitySchemes:
     bearerAuth:
@@ -24,6 +28,7 @@ components:
           scopes:
             platform.read: read access
             platform.write: write access
+            platform.admin: admin access
   schemas:
     CapabilityBinding:
       type: object
@@ -477,6 +482,9 @@ paths:
         '200':
           description: OK
       operationId: orchestratorGetHealthz
+      x-mate-owner: orchestrator
+      x-mate-permission: orchestrator.health
+      x-mate-requirements: [ORCH-HEALTH]
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/roles:
     post:
@@ -849,6 +857,10 @@ paths:
   # ---- scheduling 编排入口（A3 copilot 吸收 phase-1）----
   /api/v1/orchestrator/scheduling/intent/detect:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 意图识别（text → intent）
       tags: [orchestrator]
       requestBody:
@@ -869,6 +881,10 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/employees/match:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 数字员工匹配（intent → candidates）
       tags: [orchestrator]
       requestBody:
@@ -889,6 +905,10 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/plan/generate:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 计划生成（intent_id → ExecutionPlan）
       tags: [orchestrator]
       requestBody:
@@ -909,6 +929,10 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/orchestrator/scheduling/execution/start:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 执行计划（plan_id → execution）
       tags: [orchestrator]
       requestBody:
@@ -971,6 +995,10 @@ paths:
       x-mate-requirements: [ORCH-019]
       x-mate-implementation-status: implemented
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 创建调度模板
       tags: [orchestrator]
       requestBody:

@@ -688,7 +688,8 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
-        oidcScopes: [platform.read]
+        oidcScopes: [platform.write]
+      x-required-scopes: [platform.write]
       summary: MCP streamable-http JSON-RPC 端点（W4）
       description: MCP 协议标准端点 — 外部 MCP 客户端（Claude Desktop / Cursor 等）经此发现与调用服务中心工具。
       tags: [mcp]
@@ -699,7 +700,7 @@ paths:
           description: 缺少或无效 JWT
       operationId: mcpPostMcpProtocol
       x-mate-owner: ai-protocols
-      x-mate-permission: mcp.read
+      x-mate-permission: mcp.write
       x-mate-requirements:
       - FR-MCP-PROTOCOL-POST
       x-mate-implementation-status: implemented
