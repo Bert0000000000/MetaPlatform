@@ -1,6 +1,6 @@
 """Streamable-http MCP protocol surface (W4).
 
-Mounts a real MCP protocol endpoint (``/api/v1/mcp/protocol``) alongside the
+Mounts a real MCP protocol endpoint (``/api/v1/mcp/protocol/mcp``) alongside the
 REST bridge so external MCP clients (Claude Desktop, Cursor, …) can
 discover and call the center's tools over the standard streamable-http
 transport.

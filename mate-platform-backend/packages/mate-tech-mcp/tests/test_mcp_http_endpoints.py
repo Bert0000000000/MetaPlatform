@@ -148,6 +148,15 @@ class TestMcpMainIsImportable:
             }
             assert "/api/v1/mcp/protocol" in mounted_paths
             assert "/mcp-protocol" not in mounted_paths
+            protocol_mount = next(
+                route
+                for route in main_mod.app.routes
+                if getattr(route, "path", None) == "/api/v1/mcp/protocol"
+            )
+            assert any(
+                getattr(route, "path", None) == "/mcp"
+                for route in protocol_mount.app.routes
+            )
 
 
 # ---------------------------------------------------------------------------
