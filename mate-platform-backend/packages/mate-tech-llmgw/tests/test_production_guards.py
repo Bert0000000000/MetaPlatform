@@ -295,6 +295,42 @@ def test_staging_lifespan_wires_owned_quota_bucket_and_closes_it(
     assert get_quota_bucket() is None
 
 
+def test_redis_url_without_profile_enables_owned_quota_bucket_and_closes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mate_tech_llmgw import main as main_mod
+
+    monkeypatch.delenv("MATE_PROFILE", raising=False)
+    monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")
+    monkeypatch.delenv("MATE_LLMGW_ENABLE_REDIS_QUOTA", raising=False)
+
+    created: list[_FakeQuotaBucket] = []
+
+    class _FakeQuotaBucket:
+        def __init__(self) -> None:
+            self.closed = False
+            created.append(self)
+
+        async def close(self) -> None:
+            self.closed = True
+
+    monkeypatch.setattr(main_mod, "RedisTokenBucket", _FakeQuotaBucket, raising=False)
+    set_quota_bucket(None)
+
+    async def _exercise_lifespan() -> None:
+        async with main_mod.lifespan(main_mod.app):
+            bucket = get_quota_bucket()
+            assert isinstance(bucket, _FakeQuotaBucket)
+            assert len(created) == 1
+            assert created[0].closed is False
+
+    asyncio.run(_exercise_lifespan())
+
+    assert len(created) == 1
+    assert created[0].closed is True
+    assert get_quota_bucket() is None
+
+
 def test_staging_lifespan_respects_explicit_quota_disable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

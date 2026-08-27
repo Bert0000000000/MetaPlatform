@@ -35,7 +35,9 @@ def _env_flag(name: str, default: bool) -> bool:
 
 
 def _redis_quota_enabled_by_default() -> bool:
-    return runtime_profile() in {"staging", "production", "prod"}
+    return runtime_profile() in {"staging", "production", "prod"} or bool(
+        os.getenv("REDIS_URL", "").strip()
+    )
 
 
 def _redis_quota_enabled() -> bool:

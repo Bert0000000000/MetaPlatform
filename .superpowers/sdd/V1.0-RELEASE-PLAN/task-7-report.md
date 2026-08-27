@@ -8,7 +8,7 @@ Implemented Task 7 in the isolated worktree `D:\Hermes\Workspace\10_Projects\202
 
 1. Wired the existing `RedisTokenBucket` into `mate_tech_llmgw.main.lifespan`.
    - Added explicit env switch `MATE_LLMGW_ENABLE_REDIS_QUOTA`.
-   - Default behavior is profile-based: enabled by default for `staging` / `production` / `prod`, disabled by default otherwise.
+   - Default behavior is enabled for `staging` / `production` / `prod`, or whenever `REDIS_URL` is non-empty. This enables the checked-in local Docker service even when `MATE_PROFILE` is absent; development/profile-less runs with no `REDIS_URL` remain disabled.
    - Startup only creates a bucket when no bucket is already injected.
    - Shutdown closes the bucket only when the app created and owns it.
    - Redis init failures degrade by logging a warning and leaving quota inactive.
@@ -22,6 +22,7 @@ Implemented Task 7 in the isolated worktree `D:\Hermes\Workspace\10_Projects\202
    - `test_chat_http_returns_429_with_retry_after_before_provider_call`
    - `test_chat_http_same_tenant_under_quota_returns_200`
    - `test_staging_lifespan_wires_owned_quota_bucket_and_closes_it`
+   - `test_redis_url_without_profile_enables_owned_quota_bucket_and_closes_it`
    - `test_staging_lifespan_respects_explicit_quota_disable`
    - `test_lifespan_preserves_external_quota_bucket_without_closing_it`
 
@@ -58,7 +59,7 @@ Focused post-change runs:
 
 ```powershell
 $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'
-pytest -q mate-platform-backend/packages/mate-tech-llmgw/tests/test_production_guards.py -k lifespan -o addopts=''
+pytest -q mate-platform-backend/packages/mate-tech-llmgw/tests/test_production_guards.py -k "lifespan or redis_url_without_profile" -o addopts=''
 pytest -q mate-platform-backend/packages/mate-tech-llmgw/tests/test_llmgw_business.py -k "chat_http_returns_429_with_retry_after_before_provider_call or chat_http_same_tenant_under_quota_returns_200" -o addopts=''
 pytest -q mate-platform-backend/packages/mate-app-copilot/tests/test_llm_adv_copilot.py -k case4 -o addopts=''
 pytest -q mate-platform-backend/packages/mate-tech-llmgw/tests/test_llm_adv_llmgw.py -o addopts=''
@@ -66,7 +67,7 @@ pytest -q mate-platform-backend/packages/mate-tech-llmgw/tests/test_llm_adv_llmg
 
 Observed results:
 
-- lifecycle slice: `3 passed`
+- lifecycle slice: `4 passed`
 - focused HTTP quota slice: `2 passed`
 - Copilot case 4: `1 passed`
 - LLMGW adversarial suite: `7 passed`
