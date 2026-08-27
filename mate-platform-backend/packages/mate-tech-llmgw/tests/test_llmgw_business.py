@@ -12,19 +12,19 @@ Tests:
 """
 from __future__ import annotations
 
-import json
-from unittest.mock import AsyncMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from mate_platform.tenancy import AuthMethod, RequestContext, TenantId, UserId
 
+from mate_tech_llmgw import router as router_mod
 from mate_tech_llmgw.cache.llm_cache import LLMCache
 from mate_tech_llmgw.chat import ChatMessage, ChatResponse
 from mate_tech_llmgw.cost.recorder import CostRecorder
-from mate_tech_llmgw.providers.openai import OpenAIChatProvider
 from mate_tech_llmgw.quota.bucket import QuotaConfig, QuotaExceededError, RedisTokenBucket
-from mate_tech_llmgw import router as router_mod
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +239,7 @@ async def test_cache_miss_when_different_tenant() -> None:
     assert stub._call_count["n"] == 2  # provider called again for tenant B
 
     # Tenant A calls again → should hit cache
-    resp_a2 = await router_mod.chat("gpt-4o", msgs, temperature=0.0, tenant_id="tenantA")
+    await router_mod.chat("gpt-4o", msgs, temperature=0.0, tenant_id="tenantA")
     assert stub._call_count["n"] == 2  # no new provider call for tenant A
 
 
@@ -248,10 +248,25 @@ async def test_cache_miss_when_different_tenant() -> None:
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def management_client():
-    """Build a minimal FastAPI app with only the llmgw router (no auth)."""
+    """Build a minimal FastAPI app with the llmgw router and test tenant context."""
     from mate_tech_llmgw.api.routes import router as llm_router
 
     app = FastAPI(title="llmgw-mgmt-test")
+
+    @app.middleware("http")
+    async def _inject_tenant_context(request, call_next):
+        tenant_id = request.headers.get("x-test-tenant-id", "")
+        request.state.ctx = RequestContext(
+            request_id="req-test",
+            trace_id="trace-test",
+            tenant_id=TenantId(tenant_id),
+            user_id=UserId("user-test"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
+        )
+        return await call_next(request)
+
     app.include_router(llm_router)
     return TestClient(app)
 
@@ -291,7 +306,9 @@ def test_cache_clear_endpoint(management_client: TestClient) -> None:
     cache._stored["llmgw:cache:other:xyz"] = "{}"
     router_mod.set_cache(cache)
 
-    r = management_client.delete("/api/v1/llmgw/cache/acme")
+    r = management_client.delete(
+        "/api/v1/llmgw/cache/acme", headers={"x-test-tenant-id": "acme"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["cleared"] == 2
@@ -305,7 +322,9 @@ def test_quota_status_endpoint(management_client: TestClient) -> None:
     bucket = _make_mock_quota_bucket()
     router_mod.set_quota_bucket(bucket)
 
-    r = management_client.get("/api/v1/llmgw/quota/acme")
+    r = management_client.get(
+        "/api/v1/llmgw/quota/acme", headers={"x-test-tenant-id": "acme"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["tenant_id"] == "acme"
@@ -317,7 +336,9 @@ def test_quota_status_endpoint(management_client: TestClient) -> None:
 
 def test_quota_status_endpoint_no_bucket(management_client: TestClient) -> None:
     """GET /quota/{tenant_id} 无 bucket 时返回默认值."""
-    r = management_client.get("/api/v1/llmgw/quota/acme")
+    r = management_client.get(
+        "/api/v1/llmgw/quota/acme", headers={"x-test-tenant-id": "acme"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["enabled"] is False
@@ -339,7 +360,9 @@ def test_usage_endpoint(management_client: TestClient) -> None:
         )
     )
 
-    r = management_client.get("/api/v1/llmgw/usage/acme")
+    r = management_client.get(
+        "/api/v1/llmgw/usage/acme", headers={"x-test-tenant-id": "acme"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["tenant_id"] == "acme"
@@ -350,8 +373,91 @@ def test_usage_endpoint(management_client: TestClient) -> None:
 
 def test_usage_endpoint_no_recorder(management_client: TestClient) -> None:
     """GET /usage/{tenant_id} 无 recorder 时返回默认值."""
-    r = management_client.get("/api/v1/llmgw/usage/acme")
+    r = management_client.get(
+        "/api/v1/llmgw/usage/acme", headers={"x-test-tenant-id": "acme"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["total_tokens"] == 0
     assert body["total_cost"] == 0.0
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/v1/llmgw/quota/acme"),
+        ("get", "/api/v1/llmgw/usage/acme"),
+        ("delete", "/api/v1/llmgw/cache/acme"),
+    ],
+)
+def test_management_routes_reject_cross_tenant_before_lookup(
+    management_client: TestClient, method: str, path: str,
+) -> None:
+    """Cross-tenant management calls fail before quota/usage/cache lookups run."""
+    bucket = SimpleNamespace(status=AsyncMock(return_value={"tenant_id": "acme"}))
+    recorder = SimpleNamespace(summary=MagicMock(return_value={"tenant_id": "acme"}))
+    cache = SimpleNamespace(clear_tenant=AsyncMock(return_value=1))
+    router_mod.set_quota_bucket(bucket)
+    router_mod.set_cost_recorder(recorder)
+    router_mod.set_cache(cache)
+
+    response = getattr(management_client, method)(
+        path, headers={"x-test-tenant-id": "globex"}
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "tenant access denied"}
+    bucket.status.assert_not_called()
+    recorder.summary.assert_not_called()
+    cache.clear_tenant.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "setter", "attr_name"),
+    [
+        ("get", "/api/v1/llmgw/quota/acme", router_mod.set_quota_bucket, "status"),
+        ("get", "/api/v1/llmgw/usage/acme", router_mod.set_cost_recorder, "summary"),
+        ("delete", "/api/v1/llmgw/cache/acme", router_mod.set_cache, "clear_tenant"),
+    ],
+)
+def test_management_routes_allow_same_tenant_lookup(
+    management_client: TestClient,
+    method: str,
+    path: str,
+    setter,
+    attr_name: str,
+) -> None:
+    """Same-tenant management calls retain the existing successful path."""
+    if attr_name == "clear_tenant":
+        target = SimpleNamespace(clear_tenant=AsyncMock(return_value=2))
+    elif attr_name == "status":
+        target = SimpleNamespace(
+            status=AsyncMock(
+                return_value={
+                    "tenant_id": "acme",
+                    "rpm_used": 5,
+                    "rpm_limit": 100,
+                    "tpm_used": 500,
+                    "tpm_limit": 100_000,
+                }
+            )
+        )
+    else:
+        target = SimpleNamespace(
+            summary=MagicMock(
+                return_value={
+                    "tenant_id": "acme",
+                    "total_tokens": 150,
+                    "total_cost": 1.25,
+                    "by_model": {},
+                }
+            )
+        )
+    setter(target)
+
+    response = getattr(management_client, method)(
+        path, headers={"x-test-tenant-id": "acme"}
+    )
+
+    assert response.status_code == 200
+    getattr(target, attr_name).assert_called_once_with("acme")

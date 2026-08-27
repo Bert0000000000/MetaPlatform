@@ -19,6 +19,12 @@ import structlog
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from mate_platform.runtime import is_production_profile
+from mate_platform.tenancy import (
+    RequestContext,
+    TenantAccessError,
+    assert_same_tenant,
+    require_tenant,
+)
 from pydantic import BaseModel, Field
 
 from ..stream.sse import make_streaming_response
@@ -585,6 +591,24 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
 # ---------------------------------------------------------------------------
 # P3-W9: Management API — cache / quota / cost 运维端点
 # ---------------------------------------------------------------------------
+def _require_same_tenant_management_access(request: Request, tenant_id: str) -> str:
+    ctx = getattr(request.state, "ctx", None)
+    if not isinstance(ctx, RequestContext):
+        raise HTTPException(status_code=403, detail="tenant access denied")
+    try:
+        require_tenant(ctx)
+        assert_same_tenant(tenant_id, ctx)
+    except TenantAccessError as exc:
+        logger.warning(
+            "llmgw.management.cross_tenant_denied",
+            requested_tenant_id=tenant_id,
+            request_tenant_id=ctx.tenant_id,
+            reason=str(exc),
+        )
+        raise HTTPException(status_code=403, detail="tenant access denied") from exc
+    return tenant_id
+
+
 @router.get("/providers")
 async def list_providers_endpoint() -> dict[str, Any]:
     """列出所有支持的 LLM provider (name → description)."""
@@ -603,8 +627,9 @@ async def cache_stats_endpoint() -> dict[str, Any]:
 
 
 @router.delete("/cache/{tenant_id}")
-async def cache_clear_endpoint(tenant_id: str) -> dict[str, Any]:
+async def cache_clear_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
     """清除某租户的缓存."""
+    tenant_id = _require_same_tenant_management_access(request, tenant_id)
     cache = get_cache()
     if cache is None:
         return {"cleared": 0, "tenant_id": tenant_id, "enabled": False}
@@ -617,8 +642,9 @@ async def cache_clear_endpoint(tenant_id: str) -> dict[str, Any]:
 
 
 @router.get("/quota/{tenant_id}")
-async def quota_status_endpoint(tenant_id: str) -> dict[str, Any]:
+async def quota_status_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
     """返回某租户配额状态(RPM/TPM used/limit)."""
+    tenant_id = _require_same_tenant_management_access(request, tenant_id)
     bucket = get_quota_bucket()
     if bucket is None:
         return {
@@ -637,8 +663,9 @@ async def quota_status_endpoint(tenant_id: str) -> dict[str, Any]:
 
 
 @router.get("/usage/{tenant_id}")
-async def usage_endpoint(tenant_id: str) -> dict[str, Any]:
+async def usage_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
     """返回某租户成本用量摘要(total_tokens / total_cost / by_model)."""
+    tenant_id = _require_same_tenant_management_access(request, tenant_id)
     recorder = get_cost_recorder()
     if recorder is None:
         return {
