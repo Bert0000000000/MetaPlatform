@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import time
 from collections.abc import Iterator
+from contextlib import suppress
+from pathlib import Path
 
 import jwt as pyjwt
 import pytest
@@ -28,6 +31,7 @@ from mate_app_copilot.main import create_app
 from mate_app_copilot.repositories import in_memory as in_memory_repo
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_tech_db.base import Base, _state, create_all, init_engine, reset_engine
 
 JWT_SECRET = "test-secret"
 
@@ -68,11 +72,25 @@ def outbox() -> InMemoryOutboxWriter:
 
 @pytest.fixture
 def client(outbox: InMemoryOutboxWriter) -> Iterator[TestClient]:
+    reset_engine()
+    fd, db_path = tempfile.mkstemp(suffix=".sqlite", prefix="copilot-client-")
+    os.close(fd)
+    os.environ["MATE_DB_URL"] = f"sqlite:///{db_path}"
+    init_engine(os.environ["MATE_DB_URL"])
+    create_all()
     in_memory_repo.reset_store()
     app = create_app()
     app.state.outbox_writer = outbox
-    yield TestClient(app)
-    in_memory_repo.reset_store()
+    try:
+        yield TestClient(app)
+    finally:
+        if _state.engine is not None:
+            Base.metadata.drop_all(_state.engine)
+        reset_engine()
+        os.environ.pop("MATE_DB_URL", None)
+        in_memory_repo.reset_store()
+        with suppress(OSError):
+            Path(db_path).unlink()
 
 
 @pytest.fixture

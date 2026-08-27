@@ -10,6 +10,7 @@ from __future__ import annotations
 import time
 
 import jwt as pyjwt
+import pytest
 
 
 def _keycloak_token(
@@ -109,6 +110,114 @@ def test_execute_sql_rejects_delete(client, auth_headers_acme) -> None:
         headers=auth_headers_acme,
     )
     assert r.status_code == 403, r.text
+
+
+def test_execute_sql_rejects_cross_tenant_multi_statement_and_skips_downstream(
+    client, auth_headers_acme, monkeypatch
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    called: dict[str, object] = {}
+
+    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+        called["sql"] = sql
+        called["tenant_id"] = tenant_id
+        called["datasource_id"] = datasource_id
+        return {"rows": [{"id": 1}], "columns": ["id"]}
+
+    monkeypatch.setattr(
+        copilot_app_module,
+        "_execute_read_only_sql",
+        _fake_execute_read_only_sql,
+        raising=False,
+    )
+
+    r = client.post(
+        "/api/v1/copilot/analysis/execute-sql",
+        json={"sql": "SELECT * FROM tenant_acme_orders; DROP TABLE tenant_globex_secrets;"},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 403, r.text
+    assert "detail" in r.json(), r.text
+    assert called == {}, "dangerous SQL must be rejected before downstream execution"
+
+
+@pytest.mark.parametrize(
+    ("path", "payload", "expected_status"),
+    [
+        ("/api/v1/copilot/analysis/execute-sql", {}, 400),
+        ("/api/v1/copilot/queries/execute", {}, 400),
+    ],
+)
+def test_sql_execution_routes_require_sql_input(
+    client,
+    auth_headers_acme,
+    monkeypatch,
+    *,
+    path: str,
+    payload: dict[str, object],
+    expected_status: int,
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    called = {"count": 0}
+
+    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+        called["count"] += 1
+        return {"rows": [], "columns": []}
+
+    monkeypatch.setattr(
+        copilot_app_module,
+        "_execute_read_only_sql",
+        _fake_execute_read_only_sql,
+        raising=False,
+    )
+
+    r = client.post(path, json=payload, headers=auth_headers_acme)
+    assert r.status_code == expected_status, r.text
+    assert "detail" in r.json(), r.text
+    assert called["count"] == 0
+
+
+def test_queries_execute_allows_same_tenant_select_and_calls_downstream(
+    client, auth_headers_acme, monkeypatch
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    captured: dict[str, object] = {}
+
+    def _fake_execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, object]:
+        captured["sql"] = sql
+        captured["tenant_id"] = tenant_id
+        captured["datasource_id"] = datasource_id
+        return {
+            "rows": [{"id": 7, "tenant": tenant_id}],
+            "columns": ["id", "tenant"],
+        }
+
+    monkeypatch.setattr(
+        copilot_app_module,
+        "_execute_read_only_sql",
+        _fake_execute_read_only_sql,
+        raising=False,
+    )
+
+    r = client.post(
+        "/api/v1/copilot/queries/execute",
+        json={
+            "sql": "SELECT id FROM tenant_acme_orders",
+            "datasource_id": "ds-safe",
+        },
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["rows"] == [{"id": 7, "tenant": "tenant-acme"}], body
+    assert captured == {
+        "sql": "SELECT id FROM tenant_acme_orders",
+        "tenant_id": "tenant-acme",
+        "datasource_id": "ds-safe",
+    }
 
 
 def test_multimodal_upload_returns_embedding(client, auth_headers_acme) -> None:

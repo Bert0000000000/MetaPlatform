@@ -122,6 +122,56 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _tenant_sql_token(tenant_id: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "_", tenant_id.lower()).strip("_")
+    return normalized
+
+
+def _validate_read_only_sql(sql: str, tenant_id: str) -> str:
+    sql_text = sql.strip()
+    if not sql_text:
+        raise HTTPException(status_code=400, detail="sql is required")
+
+    parsed = tuple(stmt for stmt in sqlparse.parse(sql_text) if str(stmt).strip())
+    if len(parsed) != 1:
+        raise HTTPException(
+            status_code=403,
+            detail="Only single-statement SELECT queries are allowed",
+        )
+
+    statement = parsed[0]
+    if statement.get_type().upper() != "SELECT":
+        raise HTTPException(
+            status_code=403,
+            detail="Only SELECT statements are allowed in dry-run mode",
+        )
+
+    tenant_token = _tenant_sql_token(tenant_id)
+    if tenant_token:
+        for matched in re.findall(r"\btenant_[a-z0-9_]+\b", sql_text, re.IGNORECASE):
+            token = matched.lower()
+            if token != tenant_token and not token.startswith(f"{tenant_token}_"):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cross-tenant SQL references are not allowed",
+                )
+
+    return sql_text
+
+
+def _execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, Any]:
+    parsed = sqlparse.parse(sql)
+    columns: list[str] = []
+    if parsed:
+        sel = re.search(r"SELECT\s+(.*?)\s+FROM", sql, re.IGNORECASE | re.DOTALL)
+        if sel:
+            for raw in sel.group(1).split(","):
+                name = raw.strip().split()[-1].strip("`\"'")
+                if name != "*":
+                    columns.append(name)
+    return {"rows": [], "columns": columns}
+
+
 def _conv_orm_to_dict(orm: Any) -> dict[str, Any]:
     return {
         "id": orm.id,
@@ -590,30 +640,16 @@ async def audit_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
 @router.post("/analysis/execute-sql")
 async def execute_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     tid = _tid(request)
-    sql = str(body.get("sql", ""))
-    sql_stripped = sql.strip()
-    if not sql_stripped.upper().startswith("SELECT"):
-        raise HTTPException(
-            status_code=403,
-            detail="Only SELECT statements are allowed in dry-run mode",
-        )
-    parsed = sqlparse.parse(sql)
-    columns: list[str] = []
-    if parsed:
-        sel = re.search(r"SELECT\s+(.*?)\s+FROM", sql, re.IGNORECASE | re.DOTALL)
-        if sel:
-            for raw in sel.group(1).split(","):
-                name = raw.strip().split()[-1].strip("`\"'")
-                if name != "*":
-                    columns.append(name)
+    sql = _validate_read_only_sql(str(body.get("sql", "")), tid)
+    result = _execute_read_only_sql(sql=sql, tenant_id=tid, datasource_id="")
     _emit(
         request,
         "copilot.query.executed",
         "dry-run",
-        {"sql": sql, "columns": columns},
+        {"sql": sql, "columns": result["columns"]},
         tid,
     )
-    return {"rows": 0, "columns": columns}
+    return result
 
 
 @router.post("/analysis/generate-sql")
@@ -690,20 +726,15 @@ async def get_code(request: Request) -> dict[str, Any]:
 async def get_conversations(request: Request) -> dict[str, Any]:
     tid = _tid(request)
     uid = _uid(request)
-    # Read from PostgreSQL (merge with in-memory fallback)
+    session = get_session()
     try:
-        session = get_session()
-        try:
-            orms = session.query(ConversationORM).filter_by(tenant_id=tid, user_id=uid).order_by(ConversationORM.created_at.desc()).all()
-            db_items = [_conv_orm_to_dict(o) for o in orms]
-            return {"items": db_items, "total": len(db_items)}
-        finally:
-            session.close()
-    except Exception:
-        # Fallback to in-memory if DB unavailable
-        rows = list_conversations(tid, user_id=uid)
-        items = [_conv_in_memory_to_dict(c) for c in rows]
-        return {"items": items, "total": len(items)}
+        orms = session.query(ConversationORM).filter_by(
+            tenant_id=tid, user_id=uid,
+        ).order_by(ConversationORM.created_at.desc()).all()
+        db_items = [_conv_orm_to_dict(o) for o in orms]
+        return {"items": db_items, "total": len(db_items)}
+    finally:
+        session.close()
 
 
 @router.post("/conversations")
@@ -1397,9 +1428,14 @@ async def get_plans(request: Request) -> dict[str, Any]:
 @router.post("/queries/execute")
 async def execute_query(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     tid = _tid(request)
-    sql = str(body.get("sql", ""))
+    sql = _validate_read_only_sql(str(body.get("sql", "")), tid)
     datasource_id = str(body.get("datasource_id", "ds-1"))
     query_id = f"q-{uuid.uuid4().hex[:8]}"
+    result = _execute_read_only_sql(
+        sql=sql,
+        tenant_id=tid,
+        datasource_id=datasource_id,
+    )
     _emit(
         request,
         "copilot.query.executed",
@@ -1407,7 +1443,7 @@ async def execute_query(request: Request, body: dict[str, Any]) -> dict[str, Any
         {"sql": sql, "datasource_id": datasource_id},
         tid,
     )
-    return {"query_id": query_id, "rows": [{"id": 1, "result": "dry-run"}]}
+    return {"query_id": query_id, **result}
 
 
 @router.get("/queries/history")
