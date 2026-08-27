@@ -55,7 +55,10 @@ class TestDataD3GEExpansion:
         assert "storagePerTenant: true" in text
 
     def test_ge_has_airflow_dag_template(self) -> None:
-        path = CHARTS / "ge" / "templates" / "dag-template.py"
+        # The DAG is a chart file, not a Helm template.  Keeping it under
+        # files/ prevents Helm from evaluating the Airflow/Jinja placeholders
+        # while still allowing the chart to mount the canonical DAG.
+        path = CHARTS / "ge" / "files" / "dag-template.py"
         assert path.is_file()
         text = path.read_text(encoding="utf-8")
         assert "from airflow import DAG" in text
