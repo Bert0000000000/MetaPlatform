@@ -138,6 +138,7 @@ def _stub_provider(resp_content: str = "hello") -> None:
 
     class _StubProvider:
         model = "gpt-4o"
+        _call_count = call_count
 
         async def chat(self, messages, *, temperature=1.0, max_tokens=None, tools=None, **kw):
             call_count["n"] += 1
@@ -272,6 +273,16 @@ def management_client():
         )
         return await call_next(request)
 
+    app.include_router(llm_router)
+    return TestClient(app)
+
+
+@pytest.fixture
+def chat_client() -> TestClient:
+    """Build a minimal FastAPI app with the llmgw chat HTTP boundary."""
+    from mate_tech_llmgw.api.routes import router as llm_router
+
+    app = FastAPI(title="llmgw-chat-test")
     app.include_router(llm_router)
     return TestClient(app)
 
@@ -508,3 +519,51 @@ def test_main_app_installs_auth_middleware() -> None:
 
     middleware_classes = [middleware.cls.__name__ for middleware in app.user_middleware]
     assert "AuthMiddleware" in middleware_classes
+
+
+def test_chat_http_returns_429_with_retry_after_before_provider_call(
+    chat_client: TestClient,
+) -> None:
+    """HTTP chat requests surface quota 429 before the provider path runs."""
+    bucket = _make_mock_quota_bucket(exceed=True)
+    router_mod.set_quota_bucket(bucket)
+    stub = _stub_provider()
+
+    response = chat_client.post(
+        "/api/v1/llmgw/chat",
+        json={
+            "model": "gpt-4o",
+            "messages": [{"role": "user", "content": "hi"}],
+            "tenant_id": "tenant-acme",
+        },
+    )
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "60"
+    assert "Quota exceeded" in response.json()["detail"]
+    assert stub._call_count["n"] == 0
+
+
+def test_chat_http_same_tenant_under_quota_returns_200(
+    chat_client: TestClient,
+) -> None:
+    """Same-tenant chat requests within quota retain the existing 200 path."""
+    bucket = _make_mock_quota_bucket(exceed=False)
+    router_mod.set_quota_bucket(bucket)
+    stub = _stub_provider(resp_content="tenant-ok")
+
+    response = chat_client.post(
+        "/api/v1/llmgw/chat",
+        json={
+            "model": "gpt-4o",
+            "messages": [{"role": "user", "content": "still under limit"}],
+            "tenant_id": "tenant-acme",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["content"] == "tenant-ok"
+    bucket.acquire.assert_awaited_once_with(
+        tenant_id="tenant-acme", estimated_tokens=4
+    )
+    assert stub._call_count["n"] == 1

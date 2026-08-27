@@ -17,11 +17,32 @@ from fastapi import FastAPI
 
 # BUSINESS-SLICES P1 wave 2: hook 1 (auth).
 from mate_platform.auth import install_auth
+from mate_platform.runtime import runtime_profile
 
 from .api.routes import legacy_router as legacy_llm_router
 from .api.routes import router as llm_router
+from .quota.bucket import RedisTokenBucket
+from .router import get_quota_bucket, set_quota_bucket
 
 logger = structlog.get_logger(__name__)
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _redis_quota_enabled_by_default() -> bool:
+    return runtime_profile() in {"staging", "production", "prod"}
+
+
+def _redis_quota_enabled() -> bool:
+    return _env_flag(
+        "MATE_LLMGW_ENABLE_REDIS_QUOTA",
+        default=_redis_quota_enabled_by_default(),
+    )
 
 
 @asynccontextmanager
@@ -38,8 +59,31 @@ async def lifespan(app: FastAPI):
             getattr(__import__("logging"), log_level)
         ),
     )
+    owned_quota_bucket: RedisTokenBucket | None = None
+    existing_quota_bucket = get_quota_bucket()
+    if existing_quota_bucket is None and _redis_quota_enabled():
+        try:
+            owned_quota_bucket = RedisTokenBucket()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "mate-tech-llmgw.quota.degraded",
+                profile=runtime_profile(),
+                error=str(exc),
+            )
+        else:
+            set_quota_bucket(owned_quota_bucket)
+            logger.info(
+                "mate-tech-llmgw.quota.enabled",
+                profile=runtime_profile(),
+                backend="redis",
+            )
     logger.info("mate-tech-llmgw.startup", version=app.version)
-    yield
+    try:
+        yield
+    finally:
+        if owned_quota_bucket is not None:
+            set_quota_bucket(None)
+            await owned_quota_bucket.close()
 
 
 app = FastAPI(

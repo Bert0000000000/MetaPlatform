@@ -13,6 +13,7 @@ Path alignment (P0 close-out, 2026-07-30):
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from typing import Any
 
 import structlog
@@ -151,7 +152,7 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
                 tools=req.tools,
                 tenant_id=req.tenant_id,
             )
-            return ChatResponseAPI(**resp.__dict__)
+            return ChatResponseAPI(**asdict(resp))
         except HTTPException:
             raise
         except (NotImplementedError, ValueError) as e:
@@ -713,7 +714,7 @@ async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
         logger.error("llmgw.chat.error.legacy", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) from e
     response.headers.update(_deprecation_header())
-    return ChatResponseAPI(**resp.__dict__)
+    return ChatResponseAPI(**asdict(resp))
 
 
 @legacy_router.post(

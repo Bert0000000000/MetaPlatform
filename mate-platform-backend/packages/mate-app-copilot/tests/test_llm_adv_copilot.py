@@ -157,28 +157,57 @@ def test_case3_system_prompt_injection_does_not_exfiltrate(
 # ---------------------------------------------------------------------------
 # Case 4 — P0: 高频调用撞 cost ceiling
 # ---------------------------------------------------------------------------
-def test_case4_rapid_chat_triggers_quota_429(
-    client: TestClient, auth_headers_acme: dict[str, str]
-) -> None:
-    """短时高频 chat（> RPM 上限）至少出现一次 429.
+def test_case4_llmgw_boundary_chat_quota_returns_429_deterministically() -> None:
+    """Copilot's quota contract is enforced at the downstream LLMGW boundary.
 
-    Guard 契约：copilot → llmgw 链路复用 RedisTokenBucket；超限 → 429
-    + Retry-After 头。
+    Guard 契约：当 RedisTokenBucket 判定超限时，LLMGW `/api/v1/llmgw/chat`
+    必须直接返回 429 + Retry-After，且不进入 provider。
     """
-    last_status = 0
-    for i in range(120):  # RPM 上限 100，至少触发 1 次
-        r = client.post(
-            "/api/v1/copilot/chat/completions/stream",
-            json={"messages": [{"role": "user", "content": f"hi {i}"}]},
-            headers=auth_headers_acme,
+    from fastapi import FastAPI
+    from mate_tech_llmgw import router as llmgw_router_mod
+    from mate_tech_llmgw.api.routes import router as llmgw_router
+    from mate_tech_llmgw.chat import ChatResponse
+    from mate_tech_llmgw.quota.bucket import QuotaExceededError
+
+    class _QuotaExceededBucket:
+        async def acquire(self, *, tenant_id: str, estimated_tokens: int = 0) -> None:
+            raise QuotaExceededError(f"req:{tenant_id}:0", retry_after=17)
+
+    class _UnexpectedProvider:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def chat(self, *args, **kwargs):
+            self.calls += 1
+            return ChatResponse(
+                content="should-not-run",
+                model="gpt-4o",
+                finish_reason="stop",
+                usage={"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+            )
+
+    app = FastAPI()
+    app.include_router(llmgw_router)
+    provider = _UnexpectedProvider()
+    llmgw_router_mod.set_quota_bucket(_QuotaExceededBucket())
+    llmgw_router_mod._providers["openai"] = provider  # type: ignore[assignment]
+
+    try:
+        response = TestClient(app).post(
+            "/api/v1/llmgw/chat",
+            json={
+                "model": "gpt-4o",
+                "messages": [{"role": "user", "content": "hi"}],
+                "tenant_id": "tenant-acme",
+            },
         )
-        last_status = r.status_code
-        if r.status_code == 429:
-            assert "retry-after" in {k.lower() for k in r.headers}
-            return
-    # 未触发 429 在 dev 环境也可接受（in-memory 无真实限流）；
-    # 但 200 状态码必须非 5xx 集群失败。
-    assert last_status < 500
+    finally:
+        llmgw_router_mod.set_quota_bucket(None)
+        llmgw_router_mod.reset_providers()
+
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "17"
+    assert provider.calls == 0
 
 
 # ---------------------------------------------------------------------------

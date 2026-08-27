@@ -16,7 +16,7 @@ from mate_tech_llmgw.providers.embeddings import (
 from mate_tech_llmgw.providers.local import LocalStubProvider
 from mate_tech_llmgw.providers.real_anthropic_provider import RealAnthropicProvider
 from mate_tech_llmgw.providers.real_openai_provider import RealOpenAIProvider
-from mate_tech_llmgw.router import get_provider, reset_providers
+from mate_tech_llmgw.router import get_provider, get_quota_bucket, reset_providers, set_quota_bucket
 
 
 def test_production_rejects_local_provider(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -258,3 +258,90 @@ def test_production_real_stream_fails_before_sending_200(
     )
 
     assert response.status_code == 503
+
+
+def test_staging_lifespan_wires_owned_quota_bucket_and_closes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mate_tech_llmgw import main as main_mod
+
+    monkeypatch.setenv("MATE_PROFILE", "staging")
+    monkeypatch.delenv("MATE_LLMGW_ENABLE_REDIS_QUOTA", raising=False)
+
+    created: list[_FakeQuotaBucket] = []
+
+    class _FakeQuotaBucket:
+        def __init__(self) -> None:
+            self.closed = False
+            created.append(self)
+
+        async def close(self) -> None:
+            self.closed = True
+
+    monkeypatch.setattr(main_mod, "RedisTokenBucket", _FakeQuotaBucket, raising=False)
+    set_quota_bucket(None)
+
+    async def _exercise_lifespan() -> None:
+        async with main_mod.lifespan(main_mod.app):
+            bucket = get_quota_bucket()
+            assert isinstance(bucket, _FakeQuotaBucket)
+            assert len(created) == 1
+            assert created[0].closed is False
+
+    asyncio.run(_exercise_lifespan())
+
+    assert len(created) == 1
+    assert created[0].closed is True
+    assert get_quota_bucket() is None
+
+
+def test_staging_lifespan_respects_explicit_quota_disable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mate_tech_llmgw import main as main_mod
+
+    monkeypatch.setenv("MATE_PROFILE", "staging")
+    monkeypatch.setenv("MATE_LLMGW_ENABLE_REDIS_QUOTA", "0")
+
+    def _unexpected_bucket() -> None:
+        raise AssertionError("quota bucket should stay disabled")
+
+    monkeypatch.setattr(main_mod, "RedisTokenBucket", _unexpected_bucket, raising=False)
+    set_quota_bucket(None)
+
+    async def _exercise_lifespan() -> None:
+        async with main_mod.lifespan(main_mod.app):
+            assert get_quota_bucket() is None
+
+    asyncio.run(_exercise_lifespan())
+    assert get_quota_bucket() is None
+
+
+def test_lifespan_preserves_external_quota_bucket_without_closing_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from mate_tech_llmgw import main as main_mod
+
+    monkeypatch.setenv("MATE_PROFILE", "staging")
+    monkeypatch.delenv("MATE_LLMGW_ENABLE_REDIS_QUOTA", raising=False)
+
+    class _ExternalBucket:
+        def __init__(self) -> None:
+            self.closed = False
+
+        async def close(self) -> None:
+            self.closed = True
+
+    external_bucket = _ExternalBucket()
+    set_quota_bucket(external_bucket)
+
+    async def _exercise_lifespan() -> None:
+        async with main_mod.lifespan(main_mod.app):
+            assert get_quota_bucket() is external_bucket
+
+    try:
+        asyncio.run(_exercise_lifespan())
+    finally:
+        set_quota_bucket(None)
+
+    assert external_bucket.closed is False
