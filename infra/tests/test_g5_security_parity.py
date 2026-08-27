@@ -262,12 +262,36 @@ def test_health_endpoints_exempt_from_oidc(
             )
 
 
-READ_POST_ENDPOINTS = [
-    (fname, method, path, op, service_security)
-    for fname, method, path, op, service_security in SECURED_ENDPOINTS
-    if method.lower() == "post"
-    and _effective_security(op, service_security)[0].get("oidcScopes") == ["platform.read"]
+REQUIRED_READ_POST_ENDPOINT_IDS = {
+    "copilot.yaml::POST /api/v1/copilot/analysis/explain-sql",
+    "copilot.yaml::POST /api/v1/copilot/generate/process",
+    "copilot.yaml::POST /api/v1/copilot/ontology/graph/query",
+    "copilot.yaml::POST /api/v1/copilot/scheduling/employees/match",
+    "copilot.yaml::POST /api/v1/copilot/search",
+    "ont.yaml::POST /api/v1/ont/federation/query",
+    "ont.yaml::POST /api/v1/ont/v2/object-sets/query",
+    "ont.yaml::POST /api/v1/ont/v2/object-query",
+    "ont.yaml::POST /api/v1/ont/v2/object-search",
+}
+
+
+def _endpoints_by_id() -> dict[str, tuple[str, str, str, dict[str, Any], list[dict[str, Any]]]]:
+    return {_ep_id(*endpoint): endpoint for endpoint in ALL_ENDPOINTS}
+
+
+REQUIRED_READ_POST_ENDPOINTS_DATA = [
+    _endpoints_by_id()[endpoint_id]
+    for endpoint_id in sorted(REQUIRED_READ_POST_ENDPOINT_IDS)
 ]
+
+
+def test_required_read_post_endpoint_inventory_is_pinned() -> None:
+    """The known read-shaped POST endpoints must stay covered explicitly."""
+    actual = {_ep_id(*endpoint) for endpoint in REQUIRED_READ_POST_ENDPOINTS_DATA}
+    assert actual == REQUIRED_READ_POST_ENDPOINT_IDS
+
+
+READ_POST_ENDPOINTS = REQUIRED_READ_POST_ENDPOINTS_DATA
 
 
 @pytest.mark.parametrize(
@@ -282,6 +306,9 @@ def test_read_post_endpoints_declare_x_required_scopes(
     assert service_security is not None
     assert op.get("x-required-scopes") == ["platform.read"], (
         f"{fname} {method} {path} must declare x-required-scopes: [platform.read]"
+    )
+    assert _effective_security(op, service_security)[0]["oidcScopes"] == ["platform.read"], (
+        f"{fname} {method} {path} must remain read-scoped in effective security"
     )
 
 
