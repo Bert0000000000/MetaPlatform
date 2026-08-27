@@ -119,6 +119,28 @@ def _tid(request: Request) -> str:
     return str(require_tenant(ctx))
 
 
+def _authorize_a2a_target(
+    *, tenant_id: str, target_agent_id: str, client: Any
+) -> None:
+    """Authorize delegation against the current tenant's registry entries.
+
+    Copilot's current allowlist source is the tenant-scoped
+    ``AgentCardRegistry`` attached to the local A2A client. The
+    authenticated request tenant is authoritative; request bodies do
+    not get to override tenant selection for delegation.
+    """
+    registry = getattr(client, "registry", None)
+    if registry is None or registry.get(tenant_id, target_agent_id) is None:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "A2A_TARGET_NOT_ALLOWED",
+                "message": "target agent is not allowed for this tenant",
+                "target_agent_id": target_agent_id,
+            },
+        )
+
+
 def _mark_deprecated(response: Response) -> None:
     """A3 吸收标记：scheduling 编排入口已迁移到 mate-tech-orchestrator。"""
     response.headers["Deprecation"] = "true"
@@ -729,6 +751,11 @@ async def a2a_delegate(request: Request) -> dict[str, Any]:
     trace_id = getattr(request.state.ctx, "trace_id", "")
 
     client = get_default_a2a_client()
+    _authorize_a2a_target(
+        tenant_id=tid,
+        target_agent_id=target_agent_id,
+        client=client,
+    )
     result = await client.delegate(
         DelegationRequest(
             target_agent_id=target_agent_id,

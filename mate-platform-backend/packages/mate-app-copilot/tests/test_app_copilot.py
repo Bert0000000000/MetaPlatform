@@ -14,6 +14,8 @@ from typing import Any
 
 import jwt as pyjwt
 import pytest
+from mate_app_copilot.a2a.client import get_default_client
+from mate_app_copilot.a2a.models import AgentCard
 
 
 def _keycloak_token(
@@ -261,6 +263,54 @@ def test_execute_sql_rejects_nested_quoted_cross_tenant_identifier_before_downst
     )
     assert r.status_code == 403, r.text
     assert called["count"] == 0
+
+
+def test_a2a_delegate_same_tenant_registered_agent_keeps_lineage_and_outbox(
+    client, auth_headers_acme, outbox
+) -> None:
+    a2a_client = get_default_client()
+    a2a_client.registry.reset()
+    a2a_client.registry.register(
+        AgentCard(
+            id="agent-rag",
+            tenant_id="tenant-acme",
+            name="RAG Agent",
+            description="Internal RAG retrieval agent",
+            endpoint="http://mate-tech-rag:8080/api/v1/rag/search",
+            capabilities=("retrieval", "summarization"),
+        )
+    )
+    outbox._records.clear()
+
+    try:
+        r = client.post(
+            "/api/v1/copilot/a2a/delegate",
+            json={
+                "target_agent_id": "agent-rag",
+                "message": "summarize document",
+                "context": {"doc_id": "doc-1"},
+            },
+            headers=auth_headers_acme,
+        )
+    finally:
+        a2a_client.registry.reset()
+
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "completed", body
+    assert body["target_agent_id"] == "agent-rag"
+    assert body["lineage_hints"]["tenant_id"] == "tenant-acme"
+    assert body["lineage_hints"]["target_agent_id"] == "agent-rag"
+
+    events = [rec.event for rec in outbox.all_records()]
+    assert len(events) == 1
+    assert events[0].type == "copilot.a2a.delegated"
+    assert str(events[0].tenant_id) == "tenant-acme"
+    assert events[0].payload == {
+        "task_id": body["task_id"],
+        "target_agent_id": "agent-rag",
+        "status": "completed",
+    }
 
 
 @pytest.mark.parametrize(

@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from mate_app_copilot.a2a.models import AgentCard, DelegationResult
 from mate_app_copilot.main import create_app
 from mate_app_copilot.repositories import in_memory as in_memory_repo
 from mate_tech_db.base import Base, _state, create_all, init_engine, reset_engine
@@ -231,20 +232,70 @@ def test_case5_nl2sql_destructive_statements_rejected(
 def test_case6_a2a_call_to_unauthorized_agent_rejected(
     client: TestClient, auth_headers_acme: dict[str, str]
 ) -> None:
-    """调用未在白名单的 remote agent id → 403.
+    """调用其他租户注册的 agent → 403，且不会触发 delegate().
 
-    Guard 契约：a2a router 在转发前校验 target_agent_id ∈ ctx.allowed_agents;
-    不在白名单 → A2AAccessDenied → 403.
+    Guard 契约：Copilot a2a router 使用认证上下文 tenant 对
+    ``AgentCardRegistry`` 做授权，不接受 body 覆盖 tenant，
+    未授权目标必须在转发前被拒绝。
     """
-    resp = client.post(
-        "/api/v1/copilot/a2a/invoke",
-        json={
-            "target_agent_id": "agent-belonging-to-other-tenant",
-            "payload": {"action": "list_secrets"},
-        },
-        headers=auth_headers_acme,
+    from mate_app_copilot.api import app as copilot_app_module
+
+    registry = copilot_app_module.get_default_a2a_client().registry
+    registry.reset()
+    registry.register(
+        AgentCard(
+            id="agent-belonging-to-other-tenant",
+            tenant_id="tenant-globex",
+            name="Globex Agent",
+            description="Other tenant agent",
+            endpoint="https://globex.example.invalid/a2a",
+            capabilities=("retrieval",),
+        )
     )
-    assert resp.status_code in (200, 400, 403, 404), resp.text
+    called = {"count": 0}
+
+    async def _unexpected_delegate(_request) -> DelegationResult:
+        called["count"] += 1
+        return DelegationResult(
+            task_id="task-unexpected",
+            tenant_id="tenant-acme",
+            target_agent_id="agent-belonging-to-other-tenant",
+            status="completed",
+            result={"unexpected": True},
+            lineage_hints={"tenant_id": "tenant-acme"},
+        )
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(
+        copilot_app_module.get_default_a2a_client(),
+        "delegate",
+        _unexpected_delegate,
+    )
+    try:
+        resp = client.post(
+            "/api/v1/copilot/a2a/delegate",
+            json={
+                "target_agent_id": "agent-belonging-to-other-tenant",
+                "message": "list secrets",
+                "tenant_id": "tenant-globex",
+                "context": {"action": "list_secrets"},
+            },
+            headers=auth_headers_acme,
+        )
+    finally:
+        monkeypatch.undo()
+        registry.reset()
+
+    assert resp.status_code == 403, resp.text
+    assert called["count"] == 0
+    body = resp.json()
+    assert body == {
+        "detail": {
+            "code": "A2A_TARGET_NOT_ALLOWED",
+            "message": "target agent is not allowed for this tenant",
+            "target_agent_id": "agent-belonging-to-other-tenant",
+        }
+    }
 
 
 # ---------------------------------------------------------------------------
