@@ -70,10 +70,19 @@ def test_forbid_and_evidence_scripts_exist() -> None:
         "forbid_legacy_fallback.py",
         "forbid_skip_tests.py",
         "require_evidence.py",
+        "validate_requirement_coverage.py",
     ]:
         assert (REPO / "scripts" / "ci" / script).is_file(), (
             f"{script} missing"
         )
+
+
+def test_requirement_coverage_job_uses_canonical_manifest() -> None:
+    content = GA_WF.read_text(encoding="utf-8")
+
+    assert "ga-002-requirement-ids" in content
+    assert "validate_requirement_coverage.py" in content
+    assert "17 service contracts" not in content
 
 
 def test_networkpolicy_job_runs_inventory_and_rendered_coverage_guard() -> None:

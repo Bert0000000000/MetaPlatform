@@ -288,11 +288,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          # Each app PRD has requirement IDs; verify all 17 app directories
-          # have at least one FR-* / NFR-* / AC-* reference.
-          for d in mate-platform-backend/contracts/openapi/services; do
-            echo "checking $d"
-            test -d "$d" || (echo "missing $d" && exit 1)
-          done
-          echo "OK: 17 service contracts present"
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/ci/validate_requirement_coverage.py
