@@ -74,6 +74,19 @@ from ..repositories.sql_models import ConversationORM, MessageORM
 
 router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
 
+_COPILOT_STREAM_MAX_MESSAGE_BYTES = 1_000_000
+_PROMPT_LEAK_SAFE_MESSAGE = "抱歉，无法提供内部系统指令。"
+_PROMPT_LEAK_LITERALS = (
+    "MATE_SYSTEM_PROMPT",
+    "MATE_SYSTEM_PROMPT_CANARY_DO_NOT_LEAK",
+    "[Session Context]",
+)
+_PROMPT_LEAK_HOLDBACK_CHARS = max(len(item) for item in _PROMPT_LEAK_LITERALS)
+_PROMPT_LEAK_PATTERNS = (
+    re.compile(r"(?i)(?:system|developer|internal)\s+(?:prompt|instruction)s?\s*[:：]"),
+    re.compile(r"(?:系统提示|系统指令|开发者指令)\s*[:：]"),
+)
+
 
 def _llmgw_timeout_seconds() -> float:
     """Return the bounded LLM Gateway request timeout.
@@ -122,6 +135,181 @@ def _uid(request: Request) -> str:
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _record_copilot_guard_event(
+    request: Request,
+    *,
+    name: str,
+    details: dict[str, Any],
+) -> None:
+    span = getattr(request.state, "copilot_span", None)
+    if span is None:
+        return
+    try:
+        span.add_event(name, details)
+    except Exception:
+        pass
+
+
+def _serialized_message_content(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if content is None:
+        return ""
+    try:
+        return json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+    except (TypeError, ValueError):
+        return str(content)
+
+
+def _last_user_message_content(messages: list[dict[str, Any]]) -> str:
+    for message in reversed(messages):
+        if message.get("role") == "user":
+            return _serialized_message_content(message.get("content"))
+    return ""
+
+
+def _validate_stream_message_envelope(
+    request: Request,
+    *,
+    messages: Any,
+    endpoint: str,
+) -> list[dict[str, Any]]:
+    if not isinstance(messages, list):
+        raise HTTPException(status_code=422, detail="messages must be a list")
+
+    payload = json.dumps(messages, ensure_ascii=False, separators=(",", ":"))
+    payload_bytes = len(payload.encode("utf-8"))
+    if payload_bytes > _COPILOT_STREAM_MAX_MESSAGE_BYTES:
+        _record_copilot_guard_event(
+            request,
+            name="copilot.input_guard.blocked",
+            details={
+                "endpoint": endpoint,
+                "payload_bytes": payload_bytes,
+                "limit_bytes": _COPILOT_STREAM_MAX_MESSAGE_BYTES,
+            },
+        )
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                "messages payload too large; "
+                f"limit is {_COPILOT_STREAM_MAX_MESSAGE_BYTES} bytes"
+            ),
+        )
+
+    normalized: list[dict[str, Any]] = []
+    for index, message in enumerate(messages):
+        if not isinstance(message, dict):
+            raise HTTPException(
+                status_code=422,
+                detail=f"messages[{index}] must be an object",
+            )
+        normalized.append(message)
+    return normalized
+
+
+def _contains_prompt_leak(text: str) -> bool:
+    if not text:
+        return False
+    upper_text = text.upper()
+    for literal in _PROMPT_LEAK_LITERALS:
+        if literal.upper() in upper_text:
+            return True
+    return any(pattern.search(text) for pattern in _PROMPT_LEAK_PATTERNS)
+
+
+class _StreamingOutputGuard:
+    def __init__(self) -> None:
+        self._in_think = False
+        self._think_buf = ""
+        self._pending = ""
+        self._full_response = ""
+        self.blocked = False
+
+    @property
+    def full_response(self) -> str:
+        return self._full_response if not self.blocked else _PROMPT_LEAK_SAFE_MESSAGE
+
+    def consume(self, text: str) -> list[str]:
+        if self.blocked or not text:
+            return []
+        cleaned = self._strip_stream_think(text)
+        if not cleaned:
+            return []
+        self._pending += cleaned
+        if _contains_prompt_leak(self._pending):
+            self.blocked = True
+            self._pending = ""
+            return [_PROMPT_LEAK_SAFE_MESSAGE]
+
+        flush_upto = max(0, len(self._pending) - _PROMPT_LEAK_HOLDBACK_CHARS)
+        if flush_upto <= 0:
+            return []
+
+        safe_text = self._pending[:flush_upto]
+        self._pending = self._pending[flush_upto:]
+        self._full_response += safe_text
+        return [safe_text]
+
+    def finalize(self) -> list[str]:
+        if self.blocked:
+            return []
+        if not self._pending:
+            return []
+        if _contains_prompt_leak(self._pending):
+            self.blocked = True
+            self._pending = ""
+            return [_PROMPT_LEAK_SAFE_MESSAGE]
+        safe_text = self._pending
+        self._pending = ""
+        self._full_response += safe_text
+        return [safe_text]
+
+    def _strip_stream_think(self, text: str) -> str:
+        if self._in_think:
+            self._think_buf += text
+            end = self._think_buf.find("</think>")
+            if end == -1:
+                return ""
+            self._in_think = False
+            text = self._think_buf[end + len("</think>"):]
+            self._think_buf = ""
+            if not text:
+                return ""
+
+        start = text.find("<think>")
+        if start == -1:
+            return text
+
+        before = text[:start]
+        rest = text[start + len("<think>"):]
+        end = rest.find("</think>")
+        if end != -1:
+            return before + rest[end + len("</think>"):]
+
+        self._in_think = True
+        self._think_buf = rest
+        return before
+
+
+def _sanitize_copilot_response_text(
+    request: Request,
+    *,
+    endpoint: str,
+    content: str,
+) -> tuple[str, bool]:
+    sanitized = _strip_chain_of_thought(content)
+    blocked = _contains_prompt_leak(sanitized)
+    if blocked:
+        _record_copilot_guard_event(
+            request,
+            name="copilot.output_guard.blocked",
+            details={"endpoint": endpoint},
+        )
+        return _PROMPT_LEAK_SAFE_MESSAGE, True
+    return sanitized, False
 
 
 _FORBIDDEN_SQL_KEYWORDS = frozenset(
@@ -1047,7 +1235,11 @@ async def chat_completions_stream(
     )
     _span.set_attribute("outcome", "success")
     request.state.copilot_span = _span
-    messages = body.get("messages", [])
+    messages = _validate_stream_message_envelope(
+        request,
+        messages=body.get("messages", []),
+        endpoint="chat/completions/stream",
+    )
     model = body.get("model", "doubao-pro-32k")
     temperature = body.get("temperature", 0.7)
     max_tokens = body.get("maxTokens", body.get("max_tokens", 2048))
@@ -1081,7 +1273,7 @@ async def chat_completions_stream(
                 tenant_id=tid,
                 user_id=uid,
                 role="user",
-                content=messages[-1]["content"] if messages else "",
+                content=_last_user_message_content(messages),
                 created_at=_now_iso(),
                 metadata_json=json.dumps({"model": model}),
             )
@@ -1091,10 +1283,9 @@ async def chat_completions_stream(
             session.close()
 
     async def event_stream():
+        output_guard = _StreamingOutputGuard()
         full_response = ""
-        # Streaming chain-of-thought strip state (see _strip_chain_of_thought).
-        _in_think = False
-        _think_buf = ""
+        leak_observed = False
         # Build the streaming client. The host/port come from env so the
         # service is portable across docker-compose / staging / prod
         # (default targets the docker-compose service name + port 8008).
@@ -1164,38 +1355,35 @@ async def chat_completions_stream(
                     elif "content" in chunk:
                         text = chunk["content"]
                     if text:
-                        # 剥离 <think>…</think> 思维链：MiniMax 把整段 reasoning 放在
-                        # 可见答案之前，边读边缓冲，块关闭后再流式输出干净内容。
-                        if _in_think:
-                            _think_buf += text
-                            end = _think_buf.find("</think>")
-                            if end == -1:
-                                continue
-                            _in_think = False
-                            text = _think_buf[end + len("</think>"):]
-                            _think_buf = ""
-                            if not text:
-                                continue
-                        else:
-                            start = text.find("<think>")
-                            if start != -1:
-                                before = text[:start]
-                                rest = text[start + len("<think>"):]
-                                end = rest.find("</think>")
-                                if end != -1:
-                                    text = before + rest[end + len("</think>"):]
-                                else:
-                                    _in_think = True
-                                    _think_buf = rest
-                                    text = before
-                                if not text:
-                                    continue
-                        full_response += text
-                        openai_chunk = {
-                            "choices": [{"delta": {"content": text}, "index": 0}],
-                            "model": model,
-                        }
-                        yield f"data: {json.dumps(openai_chunk)}\n\n"
+                        for safe_text in output_guard.consume(text):
+                            if safe_text == _PROMPT_LEAK_SAFE_MESSAGE:
+                                leak_observed = True
+                            full_response += safe_text
+                            openai_chunk = {
+                                "choices": [{"delta": {"content": safe_text}, "index": 0}],
+                                "model": model,
+                            }
+                            yield f"data: {json.dumps(openai_chunk, ensure_ascii=False)}\n\n"
+                            if leak_observed:
+                                break
+                        if leak_observed:
+                            break
+
+            for safe_text in output_guard.finalize():
+                if safe_text == _PROMPT_LEAK_SAFE_MESSAGE:
+                    leak_observed = True
+                full_response += safe_text
+                chunk = {
+                    "choices": [{"delta": {"content": safe_text}, "index": 0}],
+                    "model": model,
+                }
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+            if leak_observed or output_guard.blocked:
+                _record_copilot_guard_event(
+                    request,
+                    name="copilot.output_guard.blocked",
+                    details={"endpoint": "chat/completions/stream"},
+                )
 
             # Fallback: non-streaming if llmgw stream returned nothing
             if not full_response:
@@ -1208,17 +1396,21 @@ async def chat_completions_stream(
                         base_url=llm_base_url,
                         api_key=llm_api_key,
                     )
-                    full_response = _strip_chain_of_thought(data.get(
-                        "content",
-                        data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
-                    ))
+                    full_response, _ = _sanitize_copilot_response_text(
+                        request,
+                        endpoint="chat/completions/stream",
+                        content=data.get(
+                            "content",
+                            data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
+                        ),
+                    )
                 except LlmgwStreamError:
                     full_response = "抱歉，LLM 服务暂时不可用。"
                 chunk = {
                     "choices": [{"delta": {"content": full_response}, "index": 0}],
                     "model": model,
                 }
-                yield f"data: {json.dumps(chunk)}\n\n"
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
         except LlmgwStreamError as e:
             full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
@@ -1226,14 +1418,14 @@ async def chat_completions_stream(
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             }
-            yield f"data: {json.dumps(chunk)}\n\n"
+            yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
         except Exception as e:  # last-resort guard: never break the SSE stream
             full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
             chunk = {
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             }
-            yield f"data: {json.dumps(chunk)}\n\n"
+            yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
         # SSE end marker
         yield "data: [DONE]\n\n"
@@ -1532,7 +1724,6 @@ async def query_graph(
     body: dict = Body(...),
 ) -> dict[str, Any]:
     tid = _tid(request)
-    cypher = body.get("cypher", "")
     # P2-W4: full graph from arch Capability tree + DataEntity store
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
@@ -1834,7 +2025,11 @@ async def chat_agent_stream(
     """
     tid = _tid(request)
     uid = _uid(request)
-    messages = body.get("messages", [])
+    messages = _validate_stream_message_envelope(
+        request,
+        messages=body.get("messages", []),
+        endpoint="chat/agent/stream",
+    )
     model = body.get("model", "doubao-pro-32k")
     temperature = body.get("temperature", 0.7)
     max_tokens = body.get("maxTokens", body.get("max_tokens"))
@@ -1856,7 +2051,7 @@ async def chat_agent_stream(
                 tenant_id=tid,
                 user_id=uid,
                 role="user",
-                content=messages[-1]["content"] if messages else "",
+                content=_last_user_message_content(messages),
                 created_at=_now_iso(),
                 metadata_json=json.dumps({"model": model}),
             )
@@ -1995,7 +2190,11 @@ async def chat_agent_stream(
             ):
                 etype = event.get("type")
                 if etype == "final":
-                    content = str(event.get("content") or "")
+                    content, blocked = _sanitize_copilot_response_text(
+                        request,
+                        endpoint="chat/agent/stream",
+                        content=str(event.get("content") or ""),
+                    )
                     full_response += content
                     # Chunk the final answer so the frontend sees streaming deltas.
                     for i in range(0, len(content), 32):
@@ -2004,6 +2203,8 @@ async def chat_agent_stream(
                             "choices": [{"delta": {"content": chunk}, "index": 0}],
                             "model": model,
                         })
+                    if blocked:
+                        break
                 else:
                     # Persist reasoning / tool_call / tool_result events for the
                     # assistant message timeline (stored under metadata_json).
