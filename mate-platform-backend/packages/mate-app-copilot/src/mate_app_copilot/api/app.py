@@ -81,7 +81,6 @@ _PROMPT_LEAK_LITERALS = (
     "MATE_SYSTEM_PROMPT_CANARY_DO_NOT_LEAK",
     "[Session Context]",
 )
-_PROMPT_LEAK_HOLDBACK_CHARS = max(len(item) for item in _PROMPT_LEAK_LITERALS)
 _PROMPT_LEAK_PATTERNS = (
     re.compile(r"(?i)(?:system|developer|internal)\s+(?:prompt|instruction)s?\s*[:：]"),
     re.compile(r"(?:系统提示|系统指令|开发者指令)\s*[:：]"),
@@ -221,10 +220,17 @@ def _contains_prompt_leak(text: str) -> bool:
 
 
 class _StreamingOutputGuard:
+    """Stage provider output until the complete response passes leak checks.
+
+    SSE cannot retract bytes already sent to a client, so a safe-looking prefix
+    must not be emitted before a later provider chunk has been checked.
+    """
+
     def __init__(self) -> None:
         self._in_think = False
         self._think_buf = ""
-        self._pending = ""
+        self._candidate = ""
+        self._buffered_chunks: list[str] = []
         self._full_response = ""
         self.blocked = False
 
@@ -238,34 +244,30 @@ class _StreamingOutputGuard:
         cleaned = self._strip_stream_think(text)
         if not cleaned:
             return []
-        self._pending += cleaned
-        if _contains_prompt_leak(self._pending):
+        self._candidate += cleaned
+        if _contains_prompt_leak(self._candidate):
             self.blocked = True
-            self._pending = ""
-            return [_PROMPT_LEAK_SAFE_MESSAGE]
-
-        flush_upto = max(0, len(self._pending) - _PROMPT_LEAK_HOLDBACK_CHARS)
-        if flush_upto <= 0:
+            self._candidate = ""
+            self._buffered_chunks.clear()
             return []
-
-        safe_text = self._pending[:flush_upto]
-        self._pending = self._pending[flush_upto:]
-        self._full_response += safe_text
-        return [safe_text]
+        self._buffered_chunks.append(cleaned)
+        return []
 
     def finalize(self) -> list[str]:
         if self.blocked:
-            return []
-        if not self._pending:
-            return []
-        if _contains_prompt_leak(self._pending):
-            self.blocked = True
-            self._pending = ""
             return [_PROMPT_LEAK_SAFE_MESSAGE]
-        safe_text = self._pending
-        self._pending = ""
-        self._full_response += safe_text
-        return [safe_text]
+        if _contains_prompt_leak(self._candidate):
+            self.blocked = True
+            self._candidate = ""
+            self._buffered_chunks.clear()
+            return [_PROMPT_LEAK_SAFE_MESSAGE]
+        if not self._buffered_chunks:
+            return []
+        chunks = self._buffered_chunks
+        self._buffered_chunks = []
+        self._candidate = ""
+        self._full_response = "".join(chunks)
+        return chunks
 
     def _strip_stream_think(self, text: str) -> str:
         if self._in_think:
@@ -1355,18 +1357,9 @@ async def chat_completions_stream(
                     elif "content" in chunk:
                         text = chunk["content"]
                     if text:
-                        for safe_text in output_guard.consume(text):
-                            if safe_text == _PROMPT_LEAK_SAFE_MESSAGE:
-                                leak_observed = True
-                            full_response += safe_text
-                            openai_chunk = {
-                                "choices": [{"delta": {"content": safe_text}, "index": 0}],
-                                "model": model,
-                            }
-                            yield f"data: {json.dumps(openai_chunk, ensure_ascii=False)}\n\n"
-                            if leak_observed:
-                                break
-                        if leak_observed:
+                        output_guard.consume(text)
+                        if output_guard.blocked:
+                            leak_observed = True
                             break
 
             for safe_text in output_guard.finalize():
@@ -1413,14 +1406,20 @@ async def chat_completions_stream(
                 yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
         except LlmgwStreamError as e:
-            full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
+            if output_guard.blocked:
+                full_response = _PROMPT_LEAK_SAFE_MESSAGE
+            else:
+                full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
             chunk = {
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             }
             yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
         except Exception as e:  # last-resort guard: never break the SSE stream
-            full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
+            if output_guard.blocked:
+                full_response = _PROMPT_LEAK_SAFE_MESSAGE
+            else:
+                full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
             chunk = {
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
@@ -1724,6 +1723,7 @@ async def query_graph(
     body: dict = Body(...),
 ) -> dict[str, Any]:
     tid = _tid(request)
+    cypher = body.get("cypher", "")  # noqa: F841 - retained for API compatibility
     # P2-W4: full graph from arch Capability tree + DataEntity store
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
@@ -2114,6 +2114,7 @@ async def chat_agent_stream(
 
     async def event_stream():
         agent_steps: list[dict[str, Any]] = []
+        final_parts: list[str] = []
         full_response = ""
         try:
             roles = await orchestrator_client.list_roles(
@@ -2190,21 +2191,7 @@ async def chat_agent_stream(
             ):
                 etype = event.get("type")
                 if etype == "final":
-                    content, blocked = _sanitize_copilot_response_text(
-                        request,
-                        endpoint="chat/agent/stream",
-                        content=str(event.get("content") or ""),
-                    )
-                    full_response += content
-                    # Chunk the final answer so the frontend sees streaming deltas.
-                    for i in range(0, len(content), 32):
-                        chunk = content[i:i + 32]
-                        yield _agent_event({
-                            "choices": [{"delta": {"content": chunk}, "index": 0}],
-                            "model": model,
-                        })
-                    if blocked:
-                        break
+                    final_parts.append(str(event.get("content") or ""))
                 else:
                     # Persist reasoning / tool_call / tool_result events for the
                     # assistant message timeline (stored under metadata_json).
@@ -2212,17 +2199,32 @@ async def chat_agent_stream(
                         agent_steps.append(event)
                     yield _agent_event(event)
         except LlmgwStreamError as exc:
+            final_parts.clear()
             full_response = f"LLM 决策失败：{exc}"
             yield _agent_event({
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             })
         except OrchestratorClientError as exc:
+            final_parts.clear()
             full_response = f"调度失败：{exc}"
             yield _agent_event({
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             })
+        if final_parts:
+            full_response, _ = _sanitize_copilot_response_text(
+                request,
+                endpoint="chat/agent/stream",
+                content="".join(final_parts),
+            )
+            # Chunk the final answer so the frontend still receives streaming deltas.
+            for i in range(0, len(full_response), 32):
+                chunk = full_response[i:i + 32]
+                yield _agent_event({
+                    "choices": [{"delta": {"content": chunk}, "index": 0}],
+                    "model": model,
+                })
         yield "data: [DONE]\n\n"
 
         # Persist assistant message + update conversation.
