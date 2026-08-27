@@ -111,3 +111,83 @@ Effect:
 ## Commit Hash
 
 - Implementation commit: `05825861a4243f6d8af0d6317c9b0d877f34b154`
+
+---
+
+## Fix Round 1 — scope narrowing for SQLite SQL-store bootstrap
+
+Reviewer finding addressed:
+
+- The previous fix widened package-global MCP test bootstrap by adding `mate-tech-db` to shared `tests/conftest.py`.
+- This round removes that shared-path expansion and keeps the extra import-path setup local to `test_mcp_sql_store.py`.
+
+### Root cause for this round
+
+`test_mcp_sql_store.py` depends on `mate_tech_db`, but that dependency only exists to support the SQLite verification target. Putting `mate-tech-db/src` into the package-level `conftest.py` altered the import environment for every MCP test module, which was broader than the task allowed.
+
+### RED
+
+After removing the shared `mate-tech-db` path entries from `tests/conftest.py`, I re-ran the focused checks before adding any local replacement:
+
+```powershell
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'
+pytest -q packages/mate-tech-mcp/tests/test_mcp_sql_store.py -o addopts=''
+pytest -q packages/mate-tech-mcp/tests/test_tool_categories.py -o addopts=''
+```
+
+Observed output:
+
+```text
+=================================== ERRORS ====================================
+________________ ERROR collecting tests/test_mcp_sql_store.py _________________
+...
+from mate_tech_db.base import create_all, init_engine, reset_engine
+E   ModuleNotFoundError: No module named 'mate_tech_db'
+...
+1 error in 0.17s
+
+15 passed, 494 warnings in 0.85s
+```
+
+This confirmed the scope issue precisely:
+
+- `test_tool_categories.py` stayed green without the shared `mate-tech-db` path
+- only the SQLite verification target needed the extra path setup
+
+### Fix
+
+Files changed in this round:
+
+- `mate-platform-backend/packages/mate-tech-mcp/tests/conftest.py`
+- `mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_sql_store.py`
+
+Changes:
+
+- removed `mate-tech-db` from all shared MCP test bootstrap loops in `tests/conftest.py`
+- added a file-local `sys.path` insertion in `test_mcp_sql_store.py` that prepends `packages/mate-tech-db/src` before importing `mate_tech_db`
+- kept the management CRUD test assembly unchanged
+
+### GREEN
+
+Verification commands:
+
+```powershell
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'
+pytest -q packages/mate-tech-mcp/tests/test_tool_categories.py -o addopts=''
+pytest -q packages/mate-tech-mcp/tests/test_mcp_sql_store.py -o addopts=''
+git diff --check
+ruff check D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/.worktrees/ga-v1-followups/mate-platform-backend/packages/mate-tech-mcp/tests/conftest.py D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/.worktrees/ga-v1-followups/mate-platform-backend/packages/mate-tech-mcp/tests/test_mcp_sql_store.py D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/.worktrees/ga-v1-followups/mate-platform-backend/packages/mate-tech-mcp/tests/test_tool_categories.py
+```
+
+Observed output:
+
+```text
+15 passed, 494 warnings in 0.91s
+14 passed in 0.35s
+git diff --check: no whitespace errors (Git emitted an LF->CRLF warning for test_mcp_sql_store.py only)
+ruff: All checks passed!
+```
+
+### Commit hash
+
+- Code fix commit: `8658e34df3a2484932b5da85f9193e1d3702945e`
