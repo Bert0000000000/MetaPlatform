@@ -197,6 +197,32 @@ service-templates:
       capabilities:
         drop: [ALL]
 
+# Canonical application runtime inventory.  Keep this list in declaration
+# order with contracts/openapi/manifest.yaml.  The CI rule-13 check rejects
+# additions, removals, and duplicates until both sources are reconciled.
+applicationServices:
+  - iam
+  - dashboard
+  - msg
+  - obs
+  - mcp
+  - llmgw
+  - ont
+  - rag
+  - agent
+  - data
+  - kb
+  - copilot
+  - dw
+  - apphub
+  - arch
+  - wfe
+  - a2a
+  - analytics
+  - deep-research
+  - orchestrator
+  - marketplace
+
 # -----------------------------------------------------------------------------
 # External chart switches (placeholders; Bitnami/Confluent charts to be added
 # as umbrella dependencies once finalized).

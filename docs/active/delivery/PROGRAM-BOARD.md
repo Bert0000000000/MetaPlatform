@@ -11,7 +11,7 @@
 | **mp-ont-bugfix-01** | 3 bug 修复（repo.evaluate_object_set 接入编译器 / FilterCompiler 识别连字符 slug / ResourceLimits 上下限）+ 27 e2e 固化 | ✅ Accepted | `evidence/V3.1-FINAL-STATUS.md` |
 | **v4 RUNTIME-MVP-01**（ADR-0022） | RUNTIME-HTTP-01 + RUNTIME-PG-03 合并提速：FastAPI 5 endpoint + PgOntologyRepository + 7 e2e + curl 脚本 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-01-ACCEPTANCE.md` |
 | **v4 RUNTIME-MVP-02**（ADR-0023） | RUNTIME-OPT + RUNTIME-K8S-02 + IAM-COPILOT-04 + MARKETPLACE-05 合并提速：SQLCompiler PG filter + SubprocessExecutor + 5 PG e2e + Playwright 17/17 | ✅ Accepted 2026-08-06 | `evidence/RUNTIME-MVP-02-ACCEPTANCE.md` |
-| **Dockerfile 修复** | auth-service 加 structlog+httpx+aliyun mirror；ont 加 mate_kernel+psycopg2-binary | ✅ Accepted | commit `677a8697` |
+| **Dockerfile 修复** | auth-service 加 structlog+httpx+aliyun mirror；ont 加 mate_kernel+psycopg2-binary | ✅ Accepted | `evidence/DOCKERFILE-FIX-ACCEPTANCE.md`（commit `677a8697`） |
 | **BUSINESS-SLICES-WFE-P0**（ADR-0024） | FlowableClient 升级 BearerAuth + OutgoingAuthMiddleware（13 硬规则 #4 闭环）+ 47/47 tests | ✅ Accepted 2026-08-06 | `evidence/BUSINESS-SLICES-WFE-P0-ACCEPTANCE.md` |
 | **MP-MCP-REGISTER-01**（ADR-0025） | McpMarketplaceClient 调 mate-tech-mcp `/api/v1/mcp/federation/servers` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ McpInstaller 去 blocked-on + 8/8 tests | ✅ Accepted 2026-08-06 | `evidence/MP-MCP-REGISTER-ACCEPTANCE.md` |
 | **MP-AGENT-REGISTER-01**（ADR-0026） | AgentMarketplaceClient 调 mate-tech-agent `/api/v1/agent/registry/agents` + BearerAuth + tenant middleware（13 硬规则 #4 闭环）+ AgentInstaller 去 blocked-on + 9/9 tests | ✅ Accepted 2026-08-06 | `evidence/MP-AGENT-REGISTER-ACCEPTANCE.md` |
@@ -32,7 +32,7 @@
 | TECH-SERVICES | **Accepted** | ✓ | ✓ | 1/17 ✓ | ⏳ 16/17 P0/P1/P2 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
 | GA-ACCEPTANCE | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/GA-ACCEPTANCE.md` |
 | BUSINESS-SLICES | **Accepted (P1 W1)** | ✓ | ✓ | 2/17 ✓ | ⏳ 15/17 P2 | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
-| **DATA-D0-D8** | **D0-D8 Accepted** ✓ | ✓ | ✓ | 45/45 ✓ | ✓ | `evidence/DATA-D0-D8-D{0..8}-ACCEPTANCE.md` |
+| **DATA-D0-D8** | **D0-D8 Accepted** ✓ | ✓ | ✓ | 45/45 ✓ | ✓ | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` + `evidence/DATA-D0-D8-D1-ACCEPTANCE.md` + `evidence/DATA-D0-D8-D2-D3-ACCEPTANCE.md` + `evidence/DATA-D0-D8-D4-D5-ACCEPTANCE.md` + `evidence/DATA-D0-D8-D6-D7-D8-ACCEPTANCE.md` |
 
 **说明**：TECH-SERVICES 与 BUSINESS-SLICES 是 v3.0 GA 收口的"模式就位 + 部分接入"状态，剩余域的接入属于 v3.1 sub-batch。
 
@@ -45,8 +45,8 @@
 | **GOVERN-01** | 文档与治理收口（ADR 签字 + HARD-RULES-MATRIX + 状态机单一权威） | **Accepted** ✅ | ADR-0021/0040/0041 升 v1.0；PENDING-DECISIONS 签字追踪 | `docs/active/governance/HARD-RULES-MATRIX.md` |
 | **GOVERN-02** | mate-tech-iam DEPRECATED 落地 | **In Progress** | ADR-0011 / SEC-IAM-01 | `docs/active/specs/2026-08-07-iam-deprecation-finalize.md` |
 | **GOVERN-03** | mate-tech-ont v1 router 退役 + sparql tenant guard | **Accepted** ✅ | ADR-0021 / ADR-0027 | `evidence/GOVERN-03-SUBSPEC.md` + `evidence/MP-ONT-V1-SUNSET-NOTICE.md` |
-| **GOVERN-04** | KERNEL-01 12 基元 PG 持久化补齐 | **Accepted** ✅ | ADR-0021 / MP-ONT-KERNEL-01-ACCEPTANCE | `evidence/GOVERN-04-SUBSPEC.md` |
-| **GOVERN-05** | Function 基元执行器接通 | **Accepted** ✅ | ADR-0021 / ADR-0040 §2.5.1 | `evidence/GOVERN-05-SUBSPEC.md` |
+| **GOVERN-04** | KERNEL-01 12 基元 PG 持久化补齐 | **Accepted** ✅ | ADR-0021 / MP-ONT-KERNEL-01-ACCEPTANCE | `evidence/MP-ONT-KERNEL-01-ACCEPTANCE.md` |
+| **GOVERN-05** | Function 基元执行器接通 | **Accepted** ✅ | ADR-0021 / ADR-0040 §2.5.1 | `evidence/MP-SAL-03-ACCEPTANCE.md` |
 | GOVERN-06 | tenant 隔离硬化（PG RLS） | **Accepted** ✅ | ADR-0012 / SEC-TENANT-01-ACCEPTANCE | `evidence/GOVERN-06-SUBSPEC.md` |
 | GOVERN-07 | 死模块清理 | Planned | G8-FULL-ACCEPTANCE | (待 GOVERN-07 ACCEPTANCE) |
 | GOVERN-08 | 前端路由与契约闭环 | Accepted ✅ | API-GOV-01 | [evidence/GOVERN-08-SUBSPEC.md](evidence/GOVERN-08-SUBSPEC.md) (commit 1aa8b2c1) |
@@ -68,13 +68,13 @@
 
 ### In Progress — 业务域 P2 wave
 
-| sub-batch | 域 | 接力分支 | 依赖 | 状态 |
-|---|---|---|---|---|
-| BUSINESS-SLICES P1 W2 | msg / obs（已含 W1 完整接入 + 5 步模式）| `codex/business-slices-w2` | TECH-SERVICES | ✅ Accepted |
-| BUSINESS-SLICES P1 W3 | rag / mcp | `codex/p1-wave3` | TECH-SERVICES | ✅ Accepted |
-| BUSINESS-SLICES P2 W1 | ont（带代码） | `codex/p2-wave` | P1 W3 | ✅ Accepted |
-| **BUSINESS-SLICES P2 W2** | dashboard / apphub / arch / copilot（4 域，99 endpoints / 93 tests）| `codex/p2-wave-2` → PR #12 | P2 W1 | ✅ Accepted（2026-07-31，PR #12 合入 main，commit `833a809d`） |
-| **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | ✅ Accepted（dw / a2a / wfe / ont / data 已全部接入） |
+| sub-batch | 域 | 接力分支 | 依赖 | 状态 | 证据 |
+|---|---|---|---|---|---|
+| BUSINESS-SLICES P1 W2 | msg / obs（已含 W1 完整接入 + 5 步模式）| `codex/business-slices-w2` | TECH-SERVICES | ✅ Accepted | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` + `evidence/P3-W9-MSG-ACCEPTANCE.md` |
+| BUSINESS-SLICES P1 W3 | rag / mcp | `codex/p1-wave3` | TECH-SERVICES | ✅ Accepted | `evidence/P3-W6-W7-ACCEPTANCE.md` + `evidence/P3-W10-MCP-ACCEPTANCE.md` |
+| BUSINESS-SLICES P2 W1 | ont（带代码） | `codex/p2-wave` | P1 W3 | ✅ Accepted | `evidence/P3-W9-ONT-ACCEPTANCE.md` |
+| **BUSINESS-SLICES P2 W2** | dashboard / apphub / arch / copilot（4 域，99 endpoints / 93 tests）| `codex/p2-wave-2` → PR #12 | P2 W1 | ✅ Accepted（2026-07-31，PR #12 合入 main，commit `833a809d`） | `evidence/P2-W2-ACCEPTANCE.md` |
+| **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | ✅ Accepted（dw / a2a / wfe / ont / data 已全部接入） | `evidence/P2-W3-ACCEPTANCE.md` + `evidence/P2-W3-PR15-DW-ACCEPTANCE.md` |
 
 ### Accepted — 云服务市场（MARKETPLACE-CONSUMER-01）
 
@@ -104,16 +104,16 @@
 
 ### Pending — GA 硬规则收口（pre-GA）
 
-| # | 项 | 接力 | 来源 | 状态 |
-|---|---|---|---|---|
-| G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 | **Accepted** ✅（KRaft 3-broker sub-chart + persistence 50Gi + tenantIsolation + networkpolicy + umbrella 集成 + 6 tests，证据 `G1-ACCEPTANCE.md`） |
-| G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 | **Accepted** ✅（commit 待补，pre-commit 加固 + gitleaks 自定义规则 + 3 forbid 脚本 + 20 tests） |
-| **G3** | **Outbox DDL 迁移（`CREATE TABLE outbox_event`）** | TECH-SERVICES 接力 | §13 硬规则 9 | **Accepted** ✅（commit `85f4df75`，Alembic 0007 + 6 tests） |
-| G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 | **Accepted** ✅（证据 `G4-ACCEPTANCE.md`，kind CI workflow + 本地 smoke 脚本） |
-| G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 | **Accepted** ✅（commit 已合，17 域 security 三段式补齐，证据 `G5-ACCEPTANCE.md`） |
-| G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 | **Accepted** ✅（commit 已合，Alembic 0008，58 张表 + FORCE ROW LEVEL SECURITY，证据 `G6-ACCEPTANCE.md`） |
-| **G7** | **SealedSecrets 主私钥异地备份 runbook** | SEC-IAM-01 | ADR-0010 §4.3 | **Accepted** ✅（commit `85f4df75`，2 runbook 文档） |
-| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 | **Accepted** ✅（3 目录 + 2 空目录全部清理完成，docker-compose + PROFILES.md 引用清除，证据 `G8-FULL-ACCEPTANCE.md`） |
+| # | 项 | 接力 | 来源 | 状态 | 证据 |
+|---|---|---|---|---|---|
+| G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 | **Accepted** ✅（KRaft 3-broker sub-chart + persistence 50Gi + tenantIsolation + networkpolicy + umbrella 集成 + 6 tests） | `evidence/G1-ACCEPTANCE.md` |
+| G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 | **Accepted** ✅（pre-commit 加固 + gitleaks 自定义规则 + 3 forbid 脚本 + 20 tests） | `evidence/G2-ACCEPTANCE.md` |
+| **G3** | **Outbox DDL 迁移（`CREATE TABLE outbox_event`）** | TECH-SERVICES 接力 | §13 硬规则 9 | **Accepted** ✅（commit `85f4df75`，Alembic 0007 + 6 tests） | `evidence/G3-G7-ACCEPTANCE.md` |
+| G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 | **Accepted** ✅（kind CI workflow + 本地 smoke 脚本） | `evidence/G4-ACCEPTANCE.md` |
+| G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 | **Accepted** ✅（17 域 security 三段式补齐） | `evidence/G5-ACCEPTANCE.md` |
+| G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 | **Accepted** ✅（Alembic 0008，58 张表 + FORCE ROW LEVEL SECURITY） | `evidence/G6-ACCEPTANCE.md` |
+| **G7** | **SealedSecrets 主私钥异地备份 runbook** | SEC-IAM-01 | ADR-0010 §4.3 | **Accepted** ✅（commit `85f4df75`，2 runbook 文档） | `evidence/G3-G7-ACCEPTANCE.md` |
+| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 | **Accepted** ✅（3 目录 + 2 空目录全部清理完成，docker-compose + PROFILES.md 引用清除） | `evidence/G8-FULL-ACCEPTANCE.md` |
 
 ### P3-W6/W7 v3.1 增量 wave（2026-08-01）
 
@@ -133,9 +133,9 @@
 
 ### APPHUB-RUNTIME-01 收口（2026-08-02）
 
-| sub-batch | 内容 | 状态 | 日期 | 备注 |
-|---|---|---|---|---|
-| K2 | APPHUB-RUNTIME-01 收口 | **Accepted** ✅ | 2026-08-02 | 治理收口 5 件 + 阶段 D 收尾 |
+| sub-batch | 内容 | 状态 | 日期 | 备注 | 证据 |
+|---|---|---|---|---|---|
+| K2 | APPHUB-RUNTIME-01 收口 | **Accepted** ✅ | 2026-08-02 | 治理收口 5 件 + 阶段 D 收尾 | `evidence/APPHUB-RUNTIME-01-ACCEPTANCE.md` |
 
 ## 数据平台（DATA-D0-D8）—— v3.0 GA 硬前置已闭环
 

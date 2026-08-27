@@ -1,11 +1,11 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-25（ADR-0061 Temporal Workflow 架构同步）；上一版 2026-08-17（MP-COMP-01 + ADR-0043 战略升格）
+> **最近更新**：2026-08-27（Sprint 0 FOLLOW-UP A-D + Hard Rule #10/#13 门禁复核）；上一版 2026-08-25（ADR-0061 Temporal Workflow 架构同步）
 >
 > **当前架构版本**：**v3.0 GA + v3.1/v4 增量**；ADR-0061 已接受 **Temporal 作为业务 Workflow 可靠编排控制面**，PlanRunner 为 DSL 翻译层；Sprint 1A 迁移尚未完成，Flowable 仅作为双轨期 legacy
 >
-> **架构治理路线（2026-08-10 GOVERN-10 完结）**：`docs/active/governance/HARD-RULES-MATRIX.md` + `docs/active/governance/FOLLOW-UP-BOARD.md` + 计划文件 `cozy-orbiting-wombat.md`。**10/10 治理批次（GOVERN-01~10）全部完结**，13 硬规则状态 9 ✅ / 2 🟡 / 0 ⏳ / 0 🔧。67 个未收口测试失败入 FOLLOW-UP-BOARD（A: OpenAPI parity 40 / B: MCP PG 15 / C: copilot 10 / D: llmgw 3）。详见 §"13 硬规则 × CI 矩阵"。
+> **架构治理路线（2026-08-27 复核）**：`docs/active/governance/HARD-RULES-MATRIX.md` + `docs/active/governance/FOLLOW-UP-BOARD.md` + `docs/active/V1.0-RELEASE-PLAN.md`。13 条硬规则均已有可执行门禁（13 ✅ / 0 🟡）；这表示 CI/渲染验证闭环，不表示 staging/prod 已完成部署演练。FOLLOW-UP-A/B/C/D 已完成各自 focused gate，历史登记明细合计 68（原摘要为 67），详见 FOLLOW-UP-BOARD。
 
 ## v3.0 GA 状态
 
@@ -127,17 +127,17 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 |---|---|---|---|---|
 | 1 | Swagger 没有接口，不写 route | oasdiff | `ga-001-openapi` CI job | ✅ |
 | 2 | PRD 没有 Requirement ID | 17 service contracts | `ga-002-requirement-ids` | ✅ |
-| 3 | **没有 tenant 上下文，不访问 repository** | `forbid_raw_sql` | `mate-platform/tenancy/db_filter.py` + 19 tests | 🟡 GOVERN-06 硬化 |
+| 3 | **没有 tenant 上下文，不访问 repository** | `forbid_raw_sql` | `mate-platform/tenancy/db_filter.py` + 19 tests | ✅ |
 | 4 | **外部系统没有 ACL Client** | `forbid_bare_httpx` | `mate-clients/{kafka,redis,minio}` + BearerAuth | ✅ |
 | 5 | **Production profile 禁止 fallback** | `forbid_legacy_fallback` | SEC-IAM-01 startup guard | ✅ |
 | 6 | **静态检查失败不合并** | `pyright-strict` | ruff + pyright in `ga-006-static` | ✅ |
-| 7 | **契约或集成测试跳过不标记 Accepted** | `forbid_skip_tests` | 251 tests pass | 🟡 GOVERN-10 拆 job |
+| 7 | **契约或集成测试跳过不标记 Accepted** | `forbid_skip_tests` | `ga-007-skip-tests` | ✅ |
 | 8 | **没有 K8s readiness + 回滚** | helm/kubeconform | `ga-008-helm` + default-deny NetworkPolicy | ✅ |
-| 9 | **没有审计、指标、trace** | OTel collector | tenant.id 注入 + 17 OTel tests | 🟡 GOVERN-09 compose≠Helm |
-| 10 | **所有状态以验收证据为准** | `require_evidence` | 8 ACCEPTANCE.md + 1 GA-ACCEPTANCE.md | 🟡 GOVERN-01/-10 收口 |
+| 9 | **没有审计、指标、trace** | OTel collector | tenant.id 注入 + 17 OTel tests | ✅ |
+| 10 | **所有状态以验收证据为准** | `require_evidence` | Program Board evidence column + `ga-010-evidence` | ✅ |
 | 11 | **helm-docs 同步每个子 chart 的 README** | `helm-docs-sync` | `ga-011-helm-docs` | ✅ |
 | 12 | **Secret 不进 git** | gitleaks | `ga-012-secret-scan` + SealedSecret/ExternalSecret | ✅ |
-| 13 | **NetworkPolicy 缺失 = prod 不通过** | default-deny | `ga-013-networkpolicy` | 🟡 GOVERN-09 21 Python 服务未覆盖 |
+| 13 | **NetworkPolicy 缺失 = prod 不通过** | namespace + per-service default-deny | `ga-013-networkpolicy` inventory/rendered coverage | ✅ |
 
 ## 新 Codex / AI 会话接力
 

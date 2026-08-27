@@ -13,18 +13,18 @@
 | ① | Swagger 没有接口，不写 route | `ga-001-openapi` | `.github/workflows/ga-acceptance.yml` | API-GOV | ✅ | GOVERN-08 |
 | ② | PRD 没有 Requirement ID | `ga-002-requirement-ids` | `.github/workflows/ga-acceptance.yml` | ARCH-CORE | ✅ | GOVERN-08 |
 | ③ | **没有 tenant 上下文，不访问 repository** | `ga-003-tenant`（`forbid_raw_sql`） | `.github/workflows/ga-acceptance.yml` | SEC-TENANT | ✅ | GOVERN-06 + -10 |
-| ④ | **外部系统没有 ACL Client** | `ga-hooks-and-tests`（`forbid_bare_httpx`） | `.github/workflows/ga-acceptance.yml` | SEC-IAM | ✅ | — |
-| ⑤ | **Production profile 禁止 fallback** | `ga-hooks-and-tests`（`forbid_legacy_fallback`） | `.github/workflows/ga-acceptance.yml` | SEC-IAM | ✅ | GOVERN-09 |
+| ④ | **外部系统没有 ACL Client** | `ga-004-acl`（`forbid_bare_httpx`） | `.github/workflows/ga-acceptance.yml` | SEC-IAM | ✅ | — |
+| ⑤ | **Production profile 禁止 fallback** | `ga-005-fallback`（`forbid_legacy_fallback`） | `.github/workflows/ga-acceptance.yml` | SEC-IAM | ✅ | GOVERN-09 |
 | ⑥ | **静态检查失败不合并** | `ga-006-static` | `.github/workflows/ga-acceptance.yml` + `python-ci.yml`（lint/typecheck） | ARCH-CORE | ✅ | — |
-| ⑦ | **契约或集成测试跳过不标记 Accepted** | `forbid_skip_tests`（`ga-hooks-and-tests`） | `.github/workflows/ga-acceptance.yml` | ARCH-CORE | 🟡 → 待 GOVERN-10 | GOVERN-10 |
+| ⑦ | **契约或集成测试跳过不标记 Accepted** | `ga-007-skip-tests`（`forbid_skip_tests`） | `.github/workflows/ga-acceptance.yml` | ARCH-CORE | ✅ | GOVERN-10 |
 | ⑧ | **没有 K8s readiness + 回滚** | `ga-008-helm` | `.github/workflows/ga-acceptance.yml` + `platform-k8s-ci.yml`（`helm-template`/`helm-unittest`） | PLATFORM-K8S | ✅ | GOVERN-09 |
 | ⑨ | **没有审计、指标、trace** | `ga-009-observability` | `.github/workflows/ga-acceptance.yml` | PLATFORM-OBS | ✅ | GOVERN-09 + -10 |
-| ⑩ | **所有状态以验收证据为准** | `ga-hooks-and-tests`（`require_evidence`） | `.github/workflows/ga-acceptance.yml` | ARCH-CORE | 🟡 → 收口进行 | GOVERN-01 / -10 |
+| ⑩ | **所有状态以验收证据为准** | `ga-010-evidence`（`require_evidence`） | `.github/workflows/ga-acceptance.yml` | ARCH-CORE | ✅ | GOVERN-01 / -10 |
 | ⑪ | **helm-docs 同步每个子 chart 的 README** | `ga-011-helm-docs` | `.github/workflows/ga-acceptance.yml` + `platform-k8s-ci.yml`（`helm-docs`） | PLATFORM-K8S | ✅ | GOVERN-09 |
 | ⑫ | **Secret 不进 git** | `ga-012-secret-scan`（gitleaks） | `.github/workflows/ga-acceptance.yml` | SEC-IAM | ✅ | — |
-| ⑬ | **NetworkPolicy 缺失 = prod 不通过** | `ga-013-networkpolicy` | `.github/workflows/ga-acceptance.yml` | PLATFORM-K8S | 🟡 → 21 Python 服务未覆盖 | GOVERN-09 |
+| ⑬ | **NetworkPolicy 缺失 = prod 不通过** | `ga-013-networkpolicy`（inventory + rendered coverage） | `.github/workflows/ga-acceptance.yml` | PLATFORM-K8S | ✅ | GOVERN-09 |
 
-> **统计**：13 条中 **9 条 ✅**、**2 条 🟡**（⑩/⑬）、**0 条 ⏳**、**0 条 🔧**。`ga-001~013` 全部 13 个独立 job 已拆分（GOVERN-10）：`ga-003-tenant` / `ga-004-acl` / `ga-005-fallback` / `ga-007-skip-tests` / `ga-010-evidence` 5 个原 `ga-hooks-and-tests` 复合 job 拆为独立守门，由 `tests/governance/test_hard_rules_ci.py` 机检 13 job 命中。
+> **统计**：13 条中 **13 条 ✅**、**0 条 🟡**、**0 条 ⏳**、**0 条 🔧**。这里的 ✅ 表示规则已有可执行的 CI/测试门禁；不等同于 staging/prod 已完成部署与演练。`ga-001~013` 全部 13 个独立 job 已拆分（GOVERN-10）：`ga-003-tenant` / `ga-004-acl` / `ga-005-fallback` / `ga-007-skip-tests` / `ga-010-evidence` 5 个原 `ga-hooks-and-tests` 复合 job 拆为独立守门，由 `tests/governance/test_hard_rules_ci.py` 机检 13 job 命中。
 
 ## 1. CI Workflow × Job 名索引
 
@@ -78,7 +78,7 @@
 |---|---|---|---|---|
 | G1 | `ga-hooks-and-tests` 复合 job 难追溯到单条硬规则 | 拆为 `ga-003-tenant` / `ga-004-acl` / `ga-005-fallback` / `ga-007-skip-tests` / `ga-010-evidence` 5 个独立 job | GOVERN-10 | ✅ 已拆分 |
 | G2 | 13 × 8 matrix 无机器断言 | `tests/governance/test_hard_rules_ci.py`：枚举 13 硬规则 × 期望触发 job；CI 在 `ci.yml` 新增 `gov-hard-rules-matrix` job | GOVERN-10 | ✅ 已落地 |
-| G3 | 5 条 🟡 硬规则的真实缺口（③/⑦/⑨/⑩/⑬） | ③/⑨ 由 GOVERN-06 / -09 翻牌 ✅；⑩/⑬ 仍 🟡 | GOVERN-06 / -09 / -10 | 🟡 部分 |
+| G3 | 历史上 5 条 🟡 硬规则的真实缺口（③/⑦/⑨/⑩/⑬） | ③/⑦/⑨/⑩/⑬ 已分别具备可执行的租户、skip、OTel、evidence、NetworkPolicy 门禁 | GOVERN-06 / -09 / -10 | ✅ |
 | G4 | 矩阵本身无 owner 验收 | 每月 1 号由 ARCH-CORE 复核，纳入 PROGRAM-BOARD 治理 row | GOVERN-01 | ⏳ 待办 |
 
 ## 3. 验收标准
@@ -86,9 +86,9 @@
 - `pytest tests/governance/test_hard_rules_ci.py -v` 全绿 ✅
 - `grep -RE 'ga-00[1-9]|ga-01[0-3]' .github/workflows/ga-acceptance.yml` ≥ 13 个 job 名出现（当前 13 个）✅
 - HARD-RULES-MATRIX.md 表格 117 格（13 硬规则 × 9 workflow）中 ≥90% 为非 `N/A` 命中 ✅
-- 13 硬规则状态分布：9 ✅ / 2 🟡（⑩/⑬ 仍 🟡）/ 0 ⏳ / 0 🔧
-- 73 pre-existing 测试失败 → 6 本批修（3 named race + 2 GBK + 1 NP）+ 67 入 FOLLOW-UP-BOARD
+- 13 硬规则状态分布：13 ✅ / 0 🟡 / 0 ⏳ / 0 🔧（表示门禁已可执行，不表示生产集群演练已完成）
+- 73 pre-existing 测试失败 → 6 个治理基础项已修复；FOLLOW-UP-A/B/C/D 的 focused gate 已分别留存证据，剩余全仓基线仍按主计划验证
 
 ---
 
-**关联**：GOVERN-01（创建）/ GOVERN-10（机检 + 拆 job）/ ADR-0015 GA 收口 / `docs/active/governance/FOLLOW-UP-BOARD.md`（67 个未收口失败跟踪）。
+**关联**：GOVERN-01（创建）/ GOVERN-10（机检 + 拆 job）/ ADR-0015 GA 收口 / `docs/active/governance/FOLLOW-UP-BOARD.md`（历史失败明细与 focused gate 证据）。

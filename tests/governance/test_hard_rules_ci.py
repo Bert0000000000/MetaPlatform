@@ -76,6 +76,16 @@ def test_forbid_and_evidence_scripts_exist() -> None:
         )
 
 
+def test_networkpolicy_job_runs_inventory_and_rendered_coverage_guard() -> None:
+    content = GA_WF.read_text(encoding="utf-8")
+
+    assert "ga-013-networkpolicy" in content
+    assert "values-$env.yaml" in content
+    assert "validate_networkpolicy_coverage.py" in content
+    assert "applicationServices" in content or "--rendered" in content
+    assert (REPO / "scripts" / "ci" / "validate_networkpolicy_coverage.py").is_file()
+
+
 def test_ga_jobs_count_is_at_least_13() -> None:
     content = GA_WF.read_text(encoding="utf-8")
     job_count = 0

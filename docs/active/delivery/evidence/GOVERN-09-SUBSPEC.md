@@ -17,7 +17,7 @@
 |---|---|---|
 | D1 "12 sub-charts 无 templates/，helm install 失败" | 17 sub-charts **全部** 已含 `templates/`（最少 2 个，最多的 9 个） | 不再"补 12 chart templates"。Chart.yaml `dependencies` 块亦已含 17 个 entry，与磁盘一致 |
 | D2 "6 套 values，实际 4 套" | 5 套：`values.yaml`（默认）+ `values-local.yaml` + `values-staging.yaml` + `values-production.yaml` + `.helmignore` | 修订为「5 套 values」，CLAUDE.md "6 套" 表述删 |
-| D3 "NP 仅覆盖 4 类" | NP 已覆盖 6 类：default-deny (ingress+egress) / allow-keycloak / allow-otel / allow-dataplane / allow-dns / allow-ingress | 不再"补 21 服务 NP"。`service-templates` 是 library chart，无独立 deployment；per-service NP 需 app chart 改造，超出本批次范围 |
+| D3 "NP 仅覆盖 4 类" | NP 已覆盖 6 类：default-deny (ingress+egress) / allow-keycloak / allow-otel / allow-dataplane / allow-dns / allow-ingress；v1 follow-up 新增 21 个 application runtime 定向 default-deny | `service-templates` 仍是 library chart，无独立 deployment；本批次用 umbrella shared policy + rendered inventory gate 覆盖服务级治理，真实 workload label/allow 规则仍需部署演练确认 |
 | D4 "OTel compose ≠ Helm" | `service-templates/values.yaml` 已有 `otel.sidecar.enabled=true`，但 `_helpers.tpl` **无 OTel env block** | 改为 `_helpers.tpl` 加 `service-templates.otelEnv` 块 |
 
 > 修订理由：先把"事实是什么"对齐到代码，再讨论"做什么"。下文动作
@@ -191,7 +191,19 @@ docs(governance): GOVERN-09-04 CLAUDE.md values 数量 + Board 标 Accepted
 
 ## 6. 不在本批次
 
-- 21 服务 per-app chart NP（需新建 app-* chart，超出范围）
+- 真实 app chart/workload label 与 dependency allow 规则的集群演练（rendered gate 不替代 staging/prod 部署）
 - 真实 OTLP 数据流验证（需 docker daemon + otel-collector 跑）
 - helm-docs 同步（GOVERN-01 已收口）
 - helm unittest（CI 范畴，GOVERN-10 处理）
+
+---
+
+## 7. 2026-08-27 NetworkPolicy coverage closure
+
+The original GOVERN-09 evidence covered the namespace baseline and the
+sub-chart policies. The v1.0 follow-up adds the missing application-runtime
+reconciliation: the canonical 21 non-null `runtimeModule` services in the
+OpenAPI manifest are mirrored in Helm `applicationServices`, and the rendered
+local, staging, and production manifests each contain one targeted
+ingress+egress default-deny policy per service. The executable evidence and
+limitations are recorded in `GOVERN-13-SUBSPEC.md`.
