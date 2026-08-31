@@ -597,12 +597,28 @@ def _emit(
     )
 
 
+class RoutingAuditPersistenceError(RuntimeError):
+    """Raised when a final routing decision cannot be durably audited."""
+
+
+def _routing_selected_rid(event: dict[str, Any]) -> str | None:
+    """Extract the selected role RID without persisting legacy event objects."""
+    selected = event.get("selected")
+    if isinstance(selected, str):
+        return selected or None
+    if isinstance(selected, dict):
+        role_slug = selected.get("role_slug")
+        return str(role_slug) if role_slug else None
+    return None
+
+
 def _audit_routing_decision(
     request: Request,
     *,
     event: dict[str, Any],
     tenant_id: str,
     actor_id: str,
+    role_snapshot_digest: str,
     capability_version: str,
     correlation_id: str,
 ) -> None:
@@ -611,20 +627,37 @@ def _audit_routing_decision(
         return
     outcome = str(event.get("outcome") or "denied")
     event_type = "copilot.routing.decided" if outcome == "selected" else "copilot.routing.denied"
-    _emit(
-        request,
-        event_type,
-        correlation_id or str(getattr(request.state.ctx, "trace_id", "")),
-        {
-            "actor_id": actor_id,
-            "capability_version": capability_version,
-            "selected_role": event.get("selected"),
-            "reason_code": str(event.get("reason_code") or "routing_denied"),
-            "candidate_count": len(event.get("candidates") or []),
-            "correlation_id": correlation_id,
-        },
-        tenant_id,
+    trace_id = str(
+        event.get("trace_id") or getattr(request.state.ctx, "trace_id", "") or uuid.uuid4().hex
     )
+    resolved_correlation_id = str(event.get("correlation_id") or correlation_id or trace_id)
+    writer = getattr(request.app.state, "outbox_writer", None)
+    if writer is None:
+        raise RoutingAuditPersistenceError("routing audit writer is unavailable")
+    try:
+        writer.append(
+            Event.create(
+                type=event_type,
+                tenant_id=TenantId(tenant_id),
+                aggregate_id=resolved_correlation_id,
+                trace_id=trace_id,
+                payload={
+                    "tenant_id": tenant_id,
+                    "actor_id": actor_id,
+                    "role_snapshot_digest": role_snapshot_digest,
+                    "policy_version": str(
+                        event.get("policy_version") or "semantic-router-v1"
+                    ),
+                    "capability_version": capability_version,
+                    "selected_rid": _routing_selected_rid(event),
+                    "reason_code": str(event.get("reason_code") or "routing_denied"),
+                    "trace_id": trace_id,
+                    "correlation_id": resolved_correlation_id,
+                },
+            )
+        )
+    except Exception as exc:
+        raise RoutingAuditPersistenceError("routing audit append failed") from exc
 def _serialize(rows: list[Any]) -> list[dict[str, Any]]:
     return [asdict(r) for r in rows]
 
@@ -2180,14 +2213,34 @@ async def chat_agent_stream(
             roles = role_snapshot["items"]
             capability_version = str(role_snapshot["capability_version"])
             actor_roles_digest = str(role_snapshot["actor_roles_digest"])
-        except OrchestratorClientError as exc:
-            yield _agent_event({
+        except OrchestratorClientError:
+            trace_id = str(getattr(request.state.ctx, "trace_id", "") or uuid.uuid4().hex)
+            denied_event = {
                 "type": "routing_decision",
                 "stage": "final",
                 "outcome": "denied",
                 "reason_code": "role_snapshot_unavailable",
-                "reason": str(exc),
-            })
+                "candidates": [],
+                "candidate_count": 0,
+                "selected": None,
+                "policy_version": "semantic-router-v1",
+                "trace_id": trace_id,
+                "correlation_id": session_id or trace_id,
+            }
+            try:
+                _audit_routing_decision(
+                    request,
+                    event=denied_event,
+                    tenant_id=tid,
+                    actor_id=uid,
+                    role_snapshot_digest="unavailable",
+                    capability_version="unavailable",
+                    correlation_id=session_id,
+                )
+            except RoutingAuditPersistenceError:
+                yield _agent_event({"type": "error", "code": "routing_audit_unavailable"})
+                return
+            yield _agent_event(denied_event)
             return
 
         # MP-SAL 接线：本体工具面 + OAG 卡片（best-effort——tech-ont 不可达时
@@ -2265,6 +2318,7 @@ async def chat_agent_stream(
                         event=event,
                         tenant_id=tid,
                         actor_id=uid,
+                        role_snapshot_digest=actor_roles_digest,
                         capability_version=capability_version,
                         correlation_id=session_id,
                     )
@@ -2276,6 +2330,9 @@ async def chat_agent_stream(
                     if etype in ("reasoning", "tool_call", "tool_result"):
                         agent_steps.append(event)
                     yield _agent_event(event)
+        except RoutingAuditPersistenceError:
+            yield _agent_event({"type": "error", "code": "routing_audit_unavailable"})
+            return
         except LlmgwStreamError as exc:
             final_parts.clear()
             full_response = f"LLM 决策失败：{exc}"
