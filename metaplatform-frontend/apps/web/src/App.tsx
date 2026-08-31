@@ -37,7 +37,7 @@ const SuperaiResultSummaryPage = lazy(() => import('./pages/superai/ResultSummar
 const SuperaiScheduleExecutionPage = lazy(() => import('./pages/superai/ScheduleExecutionPage'));
 const SuperaiScheduleIntentPage = lazy(() => import('./pages/superai/ScheduleIntentPage'));
 const SuperaiSchedulePlanCardPage = lazy(() => import('./pages/superai/SchedulePlanCardPage'));
-const SuperaiTaskOrchestrationPage = lazy(() => import('./pages/superai/TaskOrchestrationPage'));
+const ActionOrchestrationPage = lazy(() => import('./pages/wfe/ActionOrchestrationPage'));
 const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
 const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
 
@@ -244,9 +244,10 @@ function AppRoutes() {
           <Route path="superai/schedule" element={<SuperaiScheduleIntentPage />} />
           <Route path="superai/schedule/execute" element={<SuperaiScheduleExecutionPage />} />
           <Route path="superai/schedule/plan" element={<SuperaiSchedulePlanCardPage />} />
-          <Route path="superai/tasks" element={<SuperaiTaskOrchestrationPage />} />
+          <Route path="superai/tasks" element={<Navigate to="/wfe/action-orchestration/order-review" replace />} />
           <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
           <Route path="superai/order-review" element={<Navigate to="/apps/order-review" replace />} />
+          <Route path="wfe/action-orchestration/:definitionId" element={<ActionOrchestrationPage />} />
           {/* 閺嬭埖鐎稉顓炵妇(Phase 4: from apps/arch) */}
           <Route path="arch" element={<Navigate to="/arch/business" replace />} />
           <Route path="arch/business" element={<ArchLayout><ArchBusinessArchPage /></ArchLayout>} />
