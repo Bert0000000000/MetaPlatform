@@ -17,6 +17,8 @@ touching a repository, and write handlers emit
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -146,6 +148,29 @@ async def list_roles(request: Request) -> dict[str, Any]:
         for r in get_role_registry().list(tid)
     ]
     return {"items": roles, "total": len(roles)}
+
+
+@router.get("/roles/authorized-snapshot")
+async def authorized_role_snapshot(request: Request) -> dict[str, Any]:
+    """Return the current caller's tenant-scoped, authorized role snapshot."""
+    tid = _tid(request)
+    actor_roles = getattr(request.state.ctx, "roles", frozenset())
+    roles = get_role_registry().authorized_snapshot(tid, actor_roles=actor_roles)
+    items = [
+        {
+            "role": role.role,
+            "name": role.name,
+            "capabilities": [binding_to_dict(capability) for capability in role.capabilities],
+            "enabled": role.enabled,
+        }
+        for role in roles
+    ]
+    version_payload = json.dumps(items, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {
+        "items": items,
+        "total": len(items),
+        "capability_version": hashlib.sha256(version_payload.encode("utf-8")).hexdigest(),
+    }
 
 
 @router.delete("/roles/{role}")
