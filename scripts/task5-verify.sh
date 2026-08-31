@@ -47,6 +47,20 @@ else
   failures=$((failures + 1))
 fi
 
+printf '  %-25s ... ' "human token tenant"
+if docker compose "${COMPOSE[@]}" exec -T mate-app-wfe sh -eu -c '
+  response=$(curl -fsS -X POST "http://mate-api-gateway:8100/api/v1/iam/auth/login" \
+    -H "Content-Type: application/json" \
+    --data-raw "{\"username\":\"admin\",\"password\":\"admin123\",\"tenantId\":\"tenant-default\"}")
+  token=$(printf "%s" "$response" | python -c "import json,sys; payload=json.load(sys.stdin); print(payload.get(\"access_token\") or payload.get(\"accessToken\") or (payload.get(\"data\") or {})[\"access_token\"])")
+  TOKEN="$token" python -c "import os,json,base64; part=os.environ[\"TOKEN\"].split(\".\")[1]; part += \"=\" * (-len(part)%4); assert json.loads(base64.urlsafe_b64decode(part))[\"tenant_id\"] == \"tenant-default\""
+' >/dev/null 2>&1; then
+  echo "OK"
+else
+  echo "FAIL (human token tenant claim is incorrect)"
+  failures=$((failures + 1))
+fi
+
 printf '  %-25s ... ' "service token tenant"
 if docker compose "${COMPOSE[@]}" exec -T mate-app-wfe sh -eu -c '
   response=$(curl -fsS -X POST "http://keycloak:8080/realms/metaplatform/protocol/openid-connect/token" \

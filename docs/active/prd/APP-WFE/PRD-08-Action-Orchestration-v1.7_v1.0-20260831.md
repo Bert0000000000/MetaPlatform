@@ -2,7 +2,7 @@
 
 > 关联批次：action-orchestration v1.7 · 所属 Sprint：0
 > 状态：`[~] Product Approved — local Docker system journey passed; production hardening remains` · 2026-08-31
-> 事实基线：`docs/active/delivery/evidence/ACTION-ORCHESTRATION-V1.7-ACCEPTANCE.md`
+> 事实基线：`docs/active/delivery/evidence/PRD-05-08-LOCAL-DOCKER-ACCEPTANCE-20260831.md`
 
 ## 1. 目标与边界
 
@@ -40,7 +40,7 @@ Plan 定义包含节点、边、节点类型、schema 值和版本信息。保�
 
 当前代码级验证覆盖版本化 Plan 存储、发布校验、发布 revision 执行、跨租户隐藏、网关路由，以及前端 typecheck/build。`scripts/ci/prd08_action_orchestration_smoke.ps1` 可使用真实、带 tenant claim 的 OIDC token 验证 Gateway→WFE 的保存、发布、运行与回读。
 
-本地 Docker 已验证 Keycloak、WFE 与 Gateway 健康，且未认证请求被拒绝；tenant-bound service token 已完成保存、发布、运行和状态回读。Playwright 已覆盖该用户旅程的刷新持久化，以及两个标签页的陈旧保存冲突与重新加载恢复。服务重启后的 production Temporal 持久运行、Outbox 事务证据和 staging/prod 发布演练仍是正式 GA 前置条件，状态保持 `[~]`。
+本地 Docker 已验证 Keycloak、WFE 与 Gateway 健康，且未认证请求被拒绝；tenant-bound service token 已完成保存、发布、运行和状态回读。Playwright 已覆盖该用户旅程的刷新持久化，以及两个标签页的陈旧保存冲突与重新加载恢复。该 Playwright 证据当前运行于本地 Vite 验收服务器；生产构建静态站点、服务重启后的 Temporal 持久运行、Outbox 事务证据和 staging/prod 发布演练仍是正式 GA 前置条件，状态保持 `[~]`。
 
 ## 6. 产品评审项
 

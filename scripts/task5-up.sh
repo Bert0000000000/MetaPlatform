@@ -93,14 +93,39 @@ if [ "$keycloak_db" = "dev-mem" ]; then
     keycloak mate-auth-service mate-api-gateway
 fi
 
-# Recreate Agent explicitly so an older placeholder container cannot survive
-# the overlay change with the wrong image/command.
-docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate mate-tech-agent
-docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate a2a-external-agent
-# The local WFE owns the versioned Plan tables. Recreate it after PostgreSQL
-# is confirmed ready so its development bootstrap creates the tables when a
-# local database container has been replaced.
-docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate mate-app-wfe
+# These services mount the backend source tree. Recreate them so Task5 runs
+# the current worktree (rather than retaining an earlier checkout), and so
+# their PostgreSQL bootstrap reconnects after a local database replacement.
+# Start producer services first: mate-tech-ont can take time to apply durable
+# DDL on Docker Desktop volumes, while the orchestrator and gateway depend on
+# its health. Starting them as a single compose graph leaves an opaque wait.
+docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate \
+  mate-app-copilot mate-tech-ont mate-tech-agent a2a-external-agent mate-app-wfe
+
+wait_for_healthy() {
+  local service="$1"
+  local timeout_seconds="$2"
+  local deadline=$((SECONDS + timeout_seconds))
+  local state=""
+  echo "==> Waiting up to ${timeout_seconds}s for ${service}..."
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    state=$(docker inspect "$service" --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' 2>/dev/null || true)
+    case "$state" in
+      running\|healthy|running\|none) return 0 ;;
+    esac
+    sleep 3
+  done
+  echo "FAIL: ${service} did not become healthy (state=${state:-missing})" >&2
+  return 1
+}
+
+# Ontology creates the durable semantic tables before downstream services are
+# allowed to restore their state. The longer bound is intentional: local
+# Docker Desktop volume sync can make first-time DDL materially slower.
+wait_for_healthy mate-tech-ont 300
+docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate mate-tech-orchestrator
+wait_for_healthy mate-tech-orchestrator 180
+docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate mate-api-gateway
 # Metrics is part of the platform-governance acceptance surface. Start it
 # explicitly because older local stacks may have been created before the
 # service was included in the Task5 verification set.
@@ -130,30 +155,72 @@ case "$keycloak_state" in
     ;;
 esac
 
-docker exec mate-keycloak sh -eu -c '
+if docker exec mate-keycloak sh -eu -c '
   /opt/keycloak/bin/kcadm.sh config credentials \
     --server http://localhost:8080 --realm master \
     --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
-'
-service_user_id=$(docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh get users \
-  -r metaplatform -q username=service-account-metaplatform-backend --fields id \
-  | sed -n 's/.*"id" : "\([^"]*\)".*/\1/p')
-if [ -z "$service_user_id" ]; then
-  echo "FAIL: Keycloak service account for metaplatform-backend is unavailable" >&2
-  exit 1
+'; then
+  client_id=$(docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh get clients \
+    -r metaplatform -q clientId=metaplatform-backend --fields id \
+    | sed -n 's/.*"id" : "\([^"]*\)".*/\1/p')
+  service_user_id=$(docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh get users \
+    -r metaplatform -q username=service-account-metaplatform-backend --fields id \
+    | sed -n 's/.*"id" : "\([^"]*\)".*/\1/p')
+  if [ -z "$client_id" ] || [ -z "$service_user_id" ]; then
+    echo "FAIL: Keycloak client or service account for metaplatform-backend is unavailable" >&2
+    exit 1
+  fi
+  # A short-lived local workaround once put this claim mapper on the client.
+  # Remove it from existing Keycloak databases: the generic user-attribute
+  # mapper must be the only source of tenant_id, otherwise every human token
+  # could be overwritten as tenant-default.
+  legacy_mapper_id=$(docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh get \
+    "clients/$client_id/protocol-mappers/models" -r metaplatform --fields id,name \
+    | awk -F '"' '$2 == "id" { id = $4 } $2 == "name" && $4 == "service-account-tenant-default" { print id; exit }')
+  if [ -n "$legacy_mapper_id" ]; then
+    echo "==> Removing legacy fixed-tenant claim mapper"
+    docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh delete \
+      "clients/$client_id/protocol-mappers/models/$legacy_mapper_id" -r metaplatform >/dev/null
+  fi
+  docker cp infra/keycloak/service-account-tenant-default-user.json \
+    mate-keycloak:/tmp/service-account-tenant-default-user.json >/dev/null
+  docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh update \
+    "users/$service_user_id" -r metaplatform \
+    -f /tmp/service-account-tenant-default-user.json >/dev/null
+else
+  # An existing local Keycloak database can retain bootstrap credentials from
+  # a former compose override. Do not reset identity data just to reapply an
+  # already-safe configuration. Verify the two security invariants instead.
+  echo "==> Keycloak bootstrap credentials differ; verifying existing tenant binding"
+  legacy_mapper_exists=$(docker exec mate-postgres sh -eu -c '
+    PGPASSWORD="$POSTGRES_PASSWORD" psql -w -U "$POSTGRES_USER" -d keycloak -tAc \
+      "SELECT 1 FROM protocol_mapper WHERE name = '\''service-account-tenant-default'\'' LIMIT 1"
+  ')
+  if [ "$legacy_mapper_exists" = "1" ]; then
+    echo "FAIL: legacy fixed-tenant mapper exists but Keycloak admin credentials are unavailable" >&2
+    exit 1
+  fi
+  if docker compose "${COMPOSE[@]}" exec -T mate-app-wfe sh -eu -c '
+    response=$(curl -fsS -X POST "http://keycloak:8080/realms/metaplatform/protocol/openid-connect/token" \
+      -d "grant_type=client_credentials" \
+      -d "client_id=$SERVICE_CLIENT_ID" \
+      -d "client_secret=$SERVICE_CLIENT_SECRET")
+    token=$(printf "%s" "$response" | python -c "import json,sys; print(json.load(sys.stdin)[\"access_token\"])")
+    TOKEN="$token" python -c "import os,json,base64; part=os.environ[\"TOKEN\"].split(\".\")[1]; part += \"=\" * (-len(part)%4); assert json.loads(base64.urlsafe_b64decode(part))[\"tenant_id\"] == \"tenant-default\""
+  ' >/dev/null 2>&1; then
+    echo "==> Existing service account tenant binding verified"
+  else
+    echo "FAIL: service account is not tenant-bound and Keycloak admin credentials are unavailable" >&2
+    exit 1
+  fi
 fi
-docker cp infra/keycloak/service-account-tenant-default-user.json \
-  mate-keycloak:/tmp/service-account-tenant-default-user.json >/dev/null
-docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh update \
-  "users/$service_user_id" -r metaplatform \
-  -f /tmp/service-account-tenant-default-user.json >/dev/null
 
 if [ "$WAIT_HEALTHY" -eq 1 ]; then
   echo "==> Waiting up to 180s for Task5 services..."
   deadline=$((SECONDS + 180))
   while [ "$SECONDS" -lt "$deadline" ]; do
     pending=0
-    for service in mate-tech-msg mate-tech-dw mate-tech-agent a2a-external-agent mate-app-kb mate-app-a2a mate-tech-orchestrator mate-tech-data mate-tech-metrics; do
+    for service in mate-api-gateway mate-app-copilot mate-tech-ont mate-app-wfe mate-tech-msg mate-tech-dw mate-tech-agent a2a-external-agent mate-app-kb mate-app-a2a mate-tech-orchestrator mate-tech-data mate-tech-metrics; do
       state=$(docker inspect "$service" --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' 2>/dev/null || true)
       case "$state" in
         running\|healthy|running\|none) ;;

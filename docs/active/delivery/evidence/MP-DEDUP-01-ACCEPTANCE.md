@@ -24,3 +24,11 @@ merge proposal、HTTP precheck/merge/propose-merge，以及前端合并抽屉。
 
 离线/HTTP 代码证据已归档；真实 PG/RLS 和性能验收完成前保持 `[~]`，不标记
 为 v1.0 GA Accepted。
+
+## 2026-08-31 本地 Docker 验证补充
+
+- 通过真实 OIDC/Gateway/PostgreSQL 创建两个 ObjectType，预检命中候选，并完成
+  `merge_suggestion` 的 `pending → confirmed → executed` 与终态回读。
+- 这补齐了此前仅因主机到 PostgreSQL 测试端口不可达而跳过的本地系统路径；详情见
+  `PRD-05-08-LOCAL-DOCKER-ACCEPTANCE-20260831.md`。
+- 并发、生产 RLS、真实 embedding provider、规模和补偿证据仍未完成，状态保持 `[~]`。

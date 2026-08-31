@@ -25,3 +25,11 @@ kernel role → embedding → keyword 的 dispatcher 链路，以及
 
 离线行为与前端构建通过，进入真实 provider/staging 验收队列；在外部依赖证据
 补齐前保持 `[~]`。
+
+## 2026-08-31 本地验证补充
+
+- 当前 Sprint 0 工作树的 Semantic Router、dispatcher、授权快照与流式路由测试
+  `105 passed`。
+- 本地 Task5 Docker 验收验证 OIDC 人类/服务令牌的 tenant claim、Copilot 与 Gateway
+  健康；完整细节见 `PRD-05-08-LOCAL-DOCKER-ACCEPTANCE-20260831.md`。
+- 本补充不替代两个真实 provider、熔断/配额和 staging SSE 验收，状态仍为 `[~]`。
