@@ -79,20 +79,25 @@ async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
 
 
 class _StubOrchestratorClient:
-    """Minimal stub for OrchestratorClient.list_roles."""
+    """Minimal stub for the authorized role-snapshot contract."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Mirror real OrchestratorClient(auth=...) signature
         self.auth = kwargs.get("auth")
 
-    async def list_roles(self, *, tenant_id: str, fallback_token: str | None = None) -> list[dict[str, Any]]:
-        return [
-            {
+    async def authorized_role_snapshot(
+        self, *, tenant_id: str, fallback_token: str | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "items": [{
                 "role": "workflow",
                 "name": "Workflow Employee",
-                "capabilities": [{"name": "delegate_run", "worker_kind": "a2a", "ref": "agent-recon"}],
-            },
-        ]
+                "capabilities": [
+                    {"name": "delegate_run", "worker_kind": "a2a", "ref": "agent-recon"},
+                ],
+            }],
+            "capability_version": "snapshot-v1",
+        }
 
 
 def test_agent_stream_persists_user_and_assistant(

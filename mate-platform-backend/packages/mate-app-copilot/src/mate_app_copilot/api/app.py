@@ -2144,14 +2144,21 @@ async def chat_agent_stream(
         final_parts: list[str] = []
         full_response = ""
         try:
-            roles = await orchestrator_client.list_roles(
+            role_snapshot = await orchestrator_client.authorized_role_snapshot(
                 tenant_id=tid,
                 fallback_token=user_token or None,
             )
+            roles = role_snapshot["items"]
+            capability_version = str(role_snapshot["capability_version"])
         except OrchestratorClientError as exc:
-            agent_steps.append({"type": "reasoning", "text": f"无法获取数字员工列表：{exc}"})
-            yield _agent_event({"type": "reasoning", "text": f"无法获取数字员工列表：{exc}"})
-            roles = []
+            yield _agent_event({
+                "type": "routing_decision",
+                "stage": "final",
+                "outcome": "denied",
+                "reason_code": "role_snapshot_unavailable",
+                "reason": str(exc),
+            })
+            return
 
         # MP-SAL 接线：本体工具面 + OAG 卡片（best-effort——tech-ont 不可达时
         # 降级为纯调度模式，不阻断聊天）。
@@ -2205,6 +2212,7 @@ async def chat_agent_stream(
                 model=model,
                 roles=roles,
                 tenant_id=tid,
+                capability_version=capability_version,
                 fallback_token=user_token or None,
                 llm_provider=llm_provider,
                 llm_base_url=llm_base_url,

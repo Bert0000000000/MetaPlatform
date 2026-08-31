@@ -28,7 +28,7 @@ from typing import Any
 
 from .clients.llmgw_stream import LlmgwStreamError
 from .clients.orchestrator_client import OrchestratorClientError
-from .dispatcher import DispatchResult, dispatch_by_routing
+from .dispatcher import DispatchResult
 from .semantic_router import CandidateRole, SemanticRouter
 
 MAX_TOOL_ITERATIONS = 5
@@ -308,6 +308,7 @@ async def run_agent_loop(
     model: str,
     roles: list[dict[str, Any]],
     tenant_id: str,
+    capability_version: str = "legacy",
     fallback_token: str = "",
     max_iterations: int = MAX_TOOL_ITERATIONS,
     llm_provider: str = "openai",
@@ -355,7 +356,13 @@ async def run_agent_loop(
     router = semantic_router or SemanticRouter()
     candidate_roles: list[CandidateRole] = []
     if last_user_msg and roles:
-        candidate_roles = router.route(last_user_msg, roles, top_k=candidate_top_k)
+        candidate_roles = router.route(
+            last_user_msg,
+            roles,
+            top_k=candidate_top_k,
+            tenant_id=tenant_id,
+            capability_version=capability_version,
+        )
 
     # Emit routing_decision（在 reasoning 前，让前端先看到候选）
     yield {
