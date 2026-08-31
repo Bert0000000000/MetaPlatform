@@ -1,10 +1,9 @@
-"""orchestrator bootstrap — seed default digital-employee roles with skill capabilities.
+"""Orchestrator bootstrap for the four built-in, fail-closed digital roles.
 
-为 App 数字员工角色预注册 skill 检索能力（search_skill / read_skill，
-worker_kind=mcp），使 agent 经 dispatch 时可按能力检索 skillhub 的
-SKILL.md 作为搭应用上下文。
-
-幂等：角色已注册则跳过，不覆盖既有能力。
+New App, Ontology, Workflow and Data Product roles receive their capability
+bindings but no actor authorization by default.  A local profile may explicitly
+backfill only an existing empty authorization mapping; it never replaces role
+metadata, capabilities, enabled state, or a non-empty tenant mapping.
 """
 from __future__ import annotations
 

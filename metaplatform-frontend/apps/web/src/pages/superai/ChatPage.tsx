@@ -42,6 +42,7 @@ import {
   streamAgentChat,
   listMultimodalModels,
   multimodalUploadChat,
+  parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
 import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
 import {
@@ -231,6 +232,21 @@ function conversationToSession(
   };
 }
 
+function restoreHistoryMetadata(
+  metadata: Record<string, unknown> | undefined,
+): ChatMessage['metadata'] {
+  if (!metadata) return undefined;
+  const routingDecisions = Array.isArray(metadata.routingDecisions)
+    ? metadata.routingDecisions
+      .map(parseRoutingDecisionEvent)
+      .filter((decision): decision is RoutingDecision => decision !== null)
+    : undefined;
+  return {
+    ...(metadata as ChatMessage['metadata']),
+    ...(routingDecisions ? { routingDecisions } : {}),
+  };
+}
+
 // ============ 组件 ============
 
 const { Configure } = AIChatInput;
@@ -394,6 +410,7 @@ export default function ChatPage() {
           content: m.content ?? '',
           status: 'success',
           createdAt: m.createdAt ?? now(),
+          metadata: restoreHistoryMetadata(m.metadata),
         }));
         setSessions((prev) =>
           prev.map((s) => (s.id === activeId ? { ...s, messages } : s)),
@@ -805,6 +822,10 @@ export default function ChatPage() {
   const handleNewConversation = useCallback(async () => {
     try {
       const conv = await apiCreateConversation({ title: '新对话', mode: 'chat' });
+      // The freshly created conversation is known to have no remote messages.
+      // Mark it loaded before switching activeId so its empty-history request
+      // cannot race with the user's first live stream and overwrite it.
+      loadedHistoryRef.current.add(conv.id);
       setSessions((prev) => [conversationToSession(conv), ...prev]);
       setActiveId(conv.id);
     } catch {

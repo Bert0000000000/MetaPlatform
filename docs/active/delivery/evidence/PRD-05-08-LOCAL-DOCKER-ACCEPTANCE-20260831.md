@@ -14,7 +14,8 @@
 - PRD-05：Semantic Router/dispatcher/授权路由测试 `105 passed`。Task5 compose 明确
   仅为本地验收配置 `PLATFORM_ADMIN` 默认授权与旧内置角色空授权回填；Gateway→Copilot→
   Orchestrator 的真实 SSE 验收 `2 passed`，其中正式 `/superai/chat` 在开启“Agent 调度”后
-  发送订单查询，可展示并展开本轮 `routing_decision` 的候选与最终选择。
+  创建真实会话并发送订单查询，可展示并展开本轮 `routing_decision` 的候选、最终选择和命中路径；
+  助手消息将路由事件持久化到 PostgreSQL，刷新后仍能恢复同一最终选择与路径。
 - PRD-06：Ontology preview 测试 `13 passed`；通过 Gateway 和 OIDC 完成
   `pending → preview → confirmed → executed` 的真实 PostgreSQL proposal 生命周期；重建
   `mate-tech-ont` 后仍可通过 Gateway 回读 proposal 的 `executed` 终态和 OIDC actor。

@@ -333,7 +333,7 @@ function isCitationEvent(value: unknown): value is CitationEvent {
   );
 }
 
-function parseRoutingDecisionEvent(value: unknown): RoutingDecision | null {
+export function parseRoutingDecisionEvent(value: unknown): RoutingDecision | null {
   if (!isObjectRecord(value) || value.type !== 'routing_decision') return null;
 
   const rawCandidates = Array.isArray(value.candidates) ? value.candidates : [];

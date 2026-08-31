@@ -20,8 +20,17 @@
 import { test, expect, type Page, type ConsoleMessage, type APIRequestContext } from '@playwright/test';
 import { injectAuth, fetchAccessToken, decodeJwtPayload } from './helpers/auth';
 
-const SCREENSHOT_DIR = 'tests/e2e/screenshots';
 const GATEWAY = process.env.E2E_GATEWAY_URL ?? 'http://127.0.0.1:8100/api/v1';
+
+function expectNoUnmountedInputUpdate(consoleErrors: string[]): void {
+  const lifecycleErrors = consoleErrors.filter((error) =>
+    /state update on a component that hasn't mounted|state update before mount/i.test(error),
+  );
+  expect(
+    lifecycleErrors,
+    'AIChatInput must not update state before it has mounted',
+  ).toEqual([]);
+}
 
 interface RoutingCandidate {
   role_slug: string;
@@ -111,8 +120,6 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
     // 1. 进入正式 SuperAI 用户入口，而不是语义路由诊断页。
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/superai-routing-01-chat-loaded.png`, fullPage: true });
-
     // 2. 验证正式 ChatPage 已 mount：会话历史、后端会话入口和 AI 输入框
     // 都是产品页的稳定语义标记；简化的 routing diagnostics 页不具备这些能力。
     await expect(page.getByText('会话历史', { exact: true })).toBeVisible({ timeout: 10_000 });
@@ -144,8 +151,6 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
     })();
     expect(r1Selected, '第一轮应至少选中一个 role_slug').not.toBeNull();
 
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/superai-routing-02-after-ontology-prompt.png`, fullPage: true });
-
     // 6. 第二轮 prompt —— 数据查询场景
     const r2 = await collectRouting(request, '运行一个数据查询', token, tenantId);
     console.log('[r2] decisions:', JSON.stringify(r2.decisions, null, 2));
@@ -167,8 +172,6 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
     })();
     expect(r2Selected, '第二轮应至少选中一个 role_slug').not.toBeNull();
 
-    await page.screenshot({ path: `${SCREENSHOT_DIR}/superai-routing-03-after-data-prompt.png`, fullPage: true });
-
     // 7. 真链路断言：两轮 selectedRole 应不同（语义路由器能区分两类场景）
     // 注：embedding-based 选 top-1 by cosine，可能因为 hash embedder 简单而 selected 相同；
     // 我们退一步断言"两轮 candidates top-1 应有差异（即便 selected 偶同）"
@@ -189,15 +192,27 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
       selectedSlug(lastDecision) ?? '(no selected)',
       '第二轮最后一张 routing_decision 应有 selected（不是 pre-screen null）',
     ).not.toBe('(no selected)');
+    expectNoUnmountedInputUpdate(consoleErrors);
 
     if (consoleErrors.length) {
       console.warn('--- Console errors ---\n' + consoleErrors.join('\n'));
     }
   });
 
-  test('Agent 调度会在正式聊天页展示本轮路由决策', async ({ page }) => {
+  test('Agent 调度会在正式聊天页展示并恢复本轮路由决策', async ({ page, request }) => {
     await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('会话历史', { exact: true })).toBeVisible({ timeout: 10_000 });
+
+    // The seeded welcome card is intentionally local. Create a real product
+    // conversation first so this test exercises the persisted-history path.
+    const createdResponse = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/copilot/conversations')
+        && response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: '新建会话', exact: true }).click();
+    const createdConversation = await (await createdResponse).json() as { data: { id: string } };
+    const conversationId = createdConversation.data.id;
+    expect(conversationId).toMatch(/^conv-/);
 
     await page.getByRole('button', { name: 'Agent 调度', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Agent 调度中', exact: true })).toBeVisible();
@@ -214,7 +229,41 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
 
     await panel.getByTestId('routing-decision-toggle').click();
     await expect(panel.getByTestId('routing-decision-body')).toBeVisible();
-    await expect(panel.locator('[data-testid^="routing-candidate-"]').first()).toBeVisible();
+    const selectedCandidate = panel
+      .locator('[data-testid^="routing-candidate-"]')
+      .filter({ hasText: 'SELECTED' });
+    await expect(selectedCandidate).toHaveCount(1, { timeout: 35_000 });
+    const selectedCandidateTestId = await selectedCandidate.getAttribute('data-testid');
+    expect(selectedCandidateTestId).toMatch(/^routing-candidate-/);
+    await expect(panel).toContainText(/LLM FC|Semantic Router|Dispatcher|Keyword Fallback/);
+
+    // Wait for the real backend persistence boundary before reloading. This
+    // prevents a client-side timing race from standing in for the contract.
+    await expect(page.getByText('运行中', { exact: true })).toBeHidden({ timeout: 35_000 });
+    const token = await fetchAccessToken(request);
+    const claims = decodeJwtPayload(token);
+    const tenantId = claims.tenant_id ?? 'tenant-default';
+    await expect.poll(async () => {
+      const history = await request.get(`${GATEWAY}/copilot/conversations/${conversationId}/messages`, {
+        headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': tenantId },
+      });
+      if (!history.ok()) return false;
+      const payload = await history.json() as { data?: { items?: Array<{ role?: string; metadata?: { routingDecisions?: unknown[] } }> } };
+      return payload.data?.items?.some(
+        (message) => message.role === 'assistant' && (message.metadata?.routingDecisions?.length ?? 0) > 0,
+      ) ?? false;
+    }, { timeout: 35_000 }).toBe(true);
+
+    // A persisted assistant message must rebuild the same semantic evidence
+    // after a page reload, not only while this SSE connection is alive.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    const reloadedPanel = page.getByTestId('routing-decision-panel');
+    await expect(reloadedPanel).toBeVisible({ timeout: 35_000 });
+    await reloadedPanel.getByTestId('routing-decision-toggle').click();
+    await expect(reloadedPanel.getByTestId('routing-decision-body')).toBeVisible();
+    await expect(reloadedPanel.getByTestId(selectedCandidateTestId!)).toContainText('SELECTED');
+    await expect(reloadedPanel).toContainText(/LLM FC|Semantic Router|Dispatcher|Keyword Fallback/);
+    expectNoUnmountedInputUpdate(consoleErrors);
     if (consoleErrors.length) {
       console.warn('--- Console errors ---\n' + consoleErrors.join('\n'));
     }

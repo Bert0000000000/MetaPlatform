@@ -62,6 +62,15 @@ async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
     Avoids touching llmgw / orchestrator; the persistence path under test
     just consumes the event stream.
     """
+    yield {
+        "type": "routing_decision",
+        "stage": "pre_screen",
+        "outcome": None,
+        "candidates": [{"role_slug": "workflow", "similarity": 0.82}],
+        "selected": None,
+        "taken_path": "semantic_router",
+        "reason": "semantic pre-screen",
+    }
     yield {"type": "reasoning", "text": "正在分析任务并选择数字员工…"}
     yield {
         "type": "tool_call",
@@ -74,6 +83,15 @@ async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
         "callId": "call-test-1",
         "status": "success",
         "result": {"task_id": "orch-workflow-1", "status": "completed"},
+    }
+    yield {
+        "type": "routing_decision",
+        "stage": "final",
+        "outcome": "selected",
+        "candidates": [{"role_slug": "workflow", "similarity": 0.82}],
+        "selected": {"role_slug": "workflow"},
+        "taken_path": "dispatcher",
+        "reason": "final dispatch selected workflow",
     }
     yield {"type": "final", "content": "调度完成。已提交 workflow 任务。"}
 
@@ -168,6 +186,15 @@ def test_agent_stream_persists_user_and_assistant(
     # the final assistant text itself should NOT be in agentSteps
     # (it's the parent message.content, not part of the timeline).
     assert "final" not in types, types
+
+    # Routing evidence is part of the assistant message lifetime, not only
+    # the transient SSE response: history reload must preserve both the
+    # pre-screen and the final selected path.
+    routing_decisions = ai_meta.get("routingDecisions")
+    assert isinstance(routing_decisions, list), ai_meta
+    assert [decision["stage"] for decision in routing_decisions] == ["pre_screen", "final"]
+    assert routing_decisions[-1]["selected"] == {"role_slug": "workflow"}
+    assert routing_decisions[-1]["taken_path"] == "dispatcher"
 
     # 4) conversation aggregate was updated
     convs = sql_client.get(

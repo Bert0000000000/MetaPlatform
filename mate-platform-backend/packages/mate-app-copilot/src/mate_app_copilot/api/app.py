@@ -2169,6 +2169,7 @@ async def chat_agent_stream(
 
     async def event_stream():
         agent_steps: list[dict[str, Any]] = []
+        routing_decisions: list[dict[str, Any]] = []
         final_parts: list[str] = []
         full_response = ""
         try:
@@ -2256,6 +2257,9 @@ async def chat_agent_stream(
             ):
                 etype = event.get("type")
                 if etype == "routing_decision":
+                    # Routing evidence must survive the stream so a reopened
+                    # conversation can render the same decision trace.
+                    routing_decisions.append(event)
                     _audit_routing_decision(
                         request,
                         event=event,
@@ -2319,6 +2323,7 @@ async def chat_agent_stream(
                         metadata_json=json.dumps({
                             "model": model,
                             "agentSteps": agent_steps,
+                            "routingDecisions": routing_decisions,
                         }),
                     )
                     session.add(ai_msg)

@@ -248,6 +248,7 @@ async def test_candidate_outside_authorized_snapshot_is_denied_without_dispatch(
         "type": "routing_decision",
         "stage": "final",
         "outcome": "denied",
+        "taken_path": "llm_fc",
         "reason_code": "target_not_authorized",
         "candidates": [],
         "selected": None,
@@ -323,6 +324,8 @@ async def test_llm_down_falls_back_via_dispatcher_chain() -> None:
     assert len(rd_events[0]["candidates"]) >= 1
     # Second rd: selected = workflow
     assert any(e["selected"] == "workflow" for e in rd_events)
+    selected = next(e for e in rd_events if e["selected"] == "workflow")
+    assert selected["taken_path"] == "keyword_fallback"
 
     tc = next(e for e in events if e["type"] == "tool_call")
     assert tc["args"]["target_rid"] == "workflow"
@@ -455,6 +458,11 @@ async def test_full_happy_path_with_semantic_routing_enabled() -> None:
     assert "tool_result" in types
     assert types[-1] == "final"
     assert orch.calls and orch.calls[0]["target_rid"] == "workflow"
+    final_selection = next(
+        event for event in events
+        if event["type"] == "routing_decision" and event.get("selected") == "workflow"
+    )
+    assert final_selection["taken_path"] == "llm_fc"
 
 
 # ---------------------------------------------------------------------------

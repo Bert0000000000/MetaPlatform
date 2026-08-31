@@ -381,6 +381,7 @@ async def run_agent_loop(
     yield {
         "type": "routing_decision",
         "stage": "pre_screen",
+        "taken_path": "semantic_router",
         "reason_code": "semantic_pre_screen",
         "policy_version": router.policy.version,
         "candidates": [c.to_dict() for c in candidate_roles],
@@ -583,6 +584,7 @@ async def run_agent_loop(
                 "type": "routing_decision",
                 "stage": "final",
                 "outcome": "denied",
+                "taken_path": "llm_fc",
                 "reason_code": "target_not_authorized",
                 "candidates": [],
                 "selected": None,
@@ -597,6 +599,7 @@ async def run_agent_loop(
                 "type": "routing_decision",
                 "stage": "final",
                 "outcome": "selected",
+                "taken_path": "llm_fc",
                 "reason_code": "model_selected",
                 "candidates": [candidate.to_dict() for candidate in candidate_roles],
                 "selected": str(call["args"].get("target_rid", "")),
@@ -761,6 +764,11 @@ def _routing_decision_event(
         "type": "routing_decision",
         "stage": "final",
         "outcome": "selected",
+        "taken_path": (
+            "keyword_fallback"
+            if fallback_result.source == "keyword_substring"
+            else "dispatcher"
+        ),
         "reason_code": f"fallback_{fallback_result.source}",
         "candidates": [c.to_dict() for c in fallback_result.candidates],
         "selected": fallback_result.target_rid,
