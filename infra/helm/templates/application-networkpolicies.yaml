@@ -1,0 +1,26 @@
+{{/*
+  One targeted default-deny policy per canonical application runtime service.
+  The namespace-wide policies in the network-policies sub-chart remain the
+  baseline; these selectors make Hard Rule #13 auditable at service level.
+*/}}
+{{- range .Values.applicationServices }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-%s-default-deny" $.Release.Name . | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "metaplatform.labels" $ | nindent 4 }}
+    metaplatform.io/protected-service: {{ . | quote }}
+  annotations:
+    policy.description: >-
+      Default-deny ingress and egress for the {{ . }} application runtime.
+      Explicit allow policies remain required for every dependency.
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ . | quote }}
+  policyTypes:
+    - Ingress
+    - Egress
+{{- end }}

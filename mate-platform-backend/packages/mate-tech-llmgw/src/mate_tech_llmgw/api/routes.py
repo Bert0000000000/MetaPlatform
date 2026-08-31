@@ -13,12 +13,19 @@ Path alignment (P0 close-out, 2026-07-30):
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
+from dataclasses import asdict, is_dataclass
 from typing import Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from mate_platform.runtime import is_production_profile
+from mate_platform.tenancy import (
+    RequestContext,
+    TenantAccessError,
+    require_tenant,
+)
 from pydantic import BaseModel, Field
 
 from ..stream.sse import make_streaming_response
@@ -128,6 +135,34 @@ class ChatResponseAPI(BaseModel):
     usage: dict[str, int] = {}
 
 
+def _chat_response_payload(response: Any) -> dict[str, Any]:
+    """Normalize provider responses before validating the public API model.
+
+    The production router returns the frozen, slotted ``ChatResponse``
+    dataclass. Tests and third-party adapters may return a mapping or a small
+    compatibility object instead, so serialization must not depend on either
+    ``__dict__`` or dataclass-only behavior.
+    """
+    if is_dataclass(response) and not isinstance(response, type):
+        return asdict(response)
+    if isinstance(response, Mapping):
+        return dict(response)
+    model_dump = getattr(response, "model_dump", None)
+    if callable(model_dump):
+        payload = model_dump()
+        if isinstance(payload, dict):
+            return payload
+    to_dict = getattr(response, "to_dict", None)
+    if callable(to_dict):
+        payload = to_dict()
+        if isinstance(payload, dict):
+            return payload
+    attributes = getattr(response, "__dict__", None)
+    if isinstance(attributes, dict):
+        return dict(attributes)
+    raise TypeError("unsupported chat response type")
+
+
 @router.post("/chat", response_model=ChatResponseAPI)
 async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
     """非流式 chat 端点."""
@@ -146,7 +181,7 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
                 tools=req.tools,
                 tenant_id=req.tenant_id,
             )
-            return ChatResponseAPI(**resp.__dict__)
+            return ChatResponseAPI(**_chat_response_payload(resp))
         except HTTPException:
             raise
         except (NotImplementedError, ValueError) as e:
@@ -585,6 +620,27 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
 # ---------------------------------------------------------------------------
 # P3-W9: Management API — cache / quota / cost 运维端点
 # ---------------------------------------------------------------------------
+def _require_same_tenant_management_access(request: Request, tenant_id: str) -> str:
+    ctx = getattr(request.state, "ctx", None)
+    if not isinstance(ctx, RequestContext):
+        raise HTTPException(status_code=403, detail="tenant access denied")
+    try:
+        request_tenant_id = require_tenant(ctx)
+        if tenant_id != request_tenant_id:
+            raise TenantAccessError(
+                f"path tenant {tenant_id!r} does not match request tenant {request_tenant_id!r}"
+            )
+    except TenantAccessError as exc:
+        logger.warning(
+            "llmgw.management.cross_tenant_denied",
+            requested_tenant_id=tenant_id,
+            request_tenant_id=ctx.tenant_id,
+            reason=str(exc),
+        )
+        raise HTTPException(status_code=403, detail="tenant access denied") from exc
+    return tenant_id
+
+
 @router.get("/providers")
 async def list_providers_endpoint() -> dict[str, Any]:
     """列出所有支持的 LLM provider (name → description)."""
@@ -603,8 +659,9 @@ async def cache_stats_endpoint() -> dict[str, Any]:
 
 
 @router.delete("/cache/{tenant_id}")
-async def cache_clear_endpoint(tenant_id: str) -> dict[str, Any]:
+async def cache_clear_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
     """清除某租户的缓存."""
+    tenant_id = _require_same_tenant_management_access(request, tenant_id)
     cache = get_cache()
     if cache is None:
         return {"cleared": 0, "tenant_id": tenant_id, "enabled": False}
@@ -617,8 +674,9 @@ async def cache_clear_endpoint(tenant_id: str) -> dict[str, Any]:
 
 
 @router.get("/quota/{tenant_id}")
-async def quota_status_endpoint(tenant_id: str) -> dict[str, Any]:
+async def quota_status_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
     """返回某租户配额状态(RPM/TPM used/limit)."""
+    tenant_id = _require_same_tenant_management_access(request, tenant_id)
     bucket = get_quota_bucket()
     if bucket is None:
         return {
@@ -637,8 +695,9 @@ async def quota_status_endpoint(tenant_id: str) -> dict[str, Any]:
 
 
 @router.get("/usage/{tenant_id}")
-async def usage_endpoint(tenant_id: str) -> dict[str, Any]:
+async def usage_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
     """返回某租户成本用量摘要(total_tokens / total_cost / by_model)."""
+    tenant_id = _require_same_tenant_management_access(request, tenant_id)
     recorder = get_cost_recorder()
     if recorder is None:
         return {
@@ -684,7 +743,7 @@ async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
         logger.error("llmgw.chat.error.legacy", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) from e
     response.headers.update(_deprecation_header())
-    return ChatResponseAPI(**resp.__dict__)
+    return ChatResponseAPI(**_chat_response_payload(resp))
 
 
 @legacy_router.post(

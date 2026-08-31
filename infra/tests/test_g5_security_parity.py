@@ -1,4 +1,4 @@
-"""G5 — three-part security parity across all 17 domain contracts.
+"""G5 — three-part security parity across the canonical 21 service contracts.
 
 Every HTTP operation in every ``services/*.yaml`` must carry the full
 SEC-IAM-01 three-part security contract:
@@ -13,6 +13,9 @@ Scope assignment rules (verified by this test):
 * GET / HEAD / OPTIONS  → ``platform.read``
 * POST / PUT / DELETE / PATCH → ``platform.write``
 * paths containing ``/admin/`` → ``platform.admin``
+* query-shaped POST operations may override the method default with
+  ``x-required-scopes``; the operation contract must declare the effective
+  scope explicitly instead of relying on heuristics
 
 Exemptions (``security: []`` or health probes):
 
@@ -51,11 +54,12 @@ def _load(path: Path) -> dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
-def _collect_endpoints() -> list[tuple[str, str, str, dict]]:
-    """Return ``(filename, method, path, op_dict)`` for every HTTP operation."""
-    endpoints: list[tuple[str, str, str, dict]] = []
+def _collect_endpoints() -> list[tuple[str, str, str, dict[str, Any], list[dict[str, Any]]]]:
+    """Return ``(filename, method, path, op_dict, service_security)`` for each operation."""
+    endpoints: list[tuple[str, str, str, dict[str, Any], list[dict[str, Any]]]] = []
     for svc_file in sorted(SERVICES_DIR.glob("*.yaml")):
         doc = _load(svc_file)
+        service_security = doc.get("security") or []
         for path, path_item in doc.get("paths", {}).items():
             if not isinstance(path_item, dict):
                 continue
@@ -64,7 +68,7 @@ def _collect_endpoints() -> list[tuple[str, str, str, dict]]:
                     continue
                 if not isinstance(op, dict):
                     continue
-                endpoints.append((svc_file.name, method.upper(), path, op))
+                endpoints.append((svc_file.name, method.upper(), path, op, service_security))
     return endpoints
 
 
@@ -72,12 +76,19 @@ def _is_exempt(path: str) -> bool:
     return path in EXEMPT_EXACT_PATHS
 
 
-def _expected_scope(method: str, path: str) -> str:
+def _effective_security(op: dict[str, Any], service_security: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return op.get("security", service_security)
+
+
+def _expected_scopes(method: str, path: str, op: dict[str, Any]) -> list[str]:
+    declared = op.get("x-required-scopes")
+    if declared is not None:
+        return declared
     if ADMIN_MARKER in path:
-        return "platform.admin"
+        return ["platform.admin"]
     if method.lower() in WRITE_METHODS:
-        return "platform.write"
-    return "platform.read"
+        return ["platform.write"]
+    return ["platform.read"]
 
 
 def _ep_id(fname: str, method: str, path: str, *_: Any) -> str:
@@ -89,11 +100,10 @@ ALL_ENDPOINTS = _collect_endpoints()
 # Endpoints that carry a non-empty explicit ``security:`` block and are NOT
 # exempt health/metrics probes — these must have full three-part security.
 SECURED_ENDPOINTS = [
-    (fname, method, path, op)
-    for fname, method, path, op in ALL_ENDPOINTS
+    (fname, method, path, op, service_security)
+    for fname, method, path, op, service_security in ALL_ENDPOINTS
     if not _is_exempt(path)
-    and "security" in op
-    and op["security"]  # non-empty (not intentionally public)
+    and _effective_security(op, service_security)  # non-empty (not intentionally public)
 ]
 
 
@@ -101,16 +111,16 @@ SECURED_ENDPOINTS = [
 # 1. Every secured endpoint has the full three-part security
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize(
-    "fname, method, path, op",
+    "fname, method, path, op, service_security",
     SECURED_ENDPOINTS,
     ids=[_ep_id(*e) for e in SECURED_ENDPOINTS],
 )
 def test_secured_endpoints_have_three_part_security(
-    fname: str, method: str, path: str, op: dict,
+    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
 ) -> None:
     """Each non-exempt operation with explicit ``security:`` must declare all
     three schemes: ``bearerAuth``, ``tenantHeader``, ``oidcScopes``."""
-    sec = op["security"]
+    sec = _effective_security(op, service_security)
     assert sec, f"{fname} {method} {path} has empty security — expected three-part"
     req = sec[0]
     assert isinstance(req, dict), (
@@ -131,15 +141,15 @@ def test_secured_endpoints_have_three_part_security(
 # 2. oidcScopes values are valid and method-appropriate
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize(
-    "fname, method, path, op",
+    "fname, method, path, op, service_security",
     SECURED_ENDPOINTS,
     ids=[_ep_id(*e) for e in SECURED_ENDPOINTS],
 )
 def test_oidc_scopes_valid_and_appropriate(
-    fname: str, method: str, path: str, op: dict,
+    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
 ) -> None:
-    """``oidcScopes`` must use valid scope names and match the HTTP method."""
-    req = op["security"][0]
+    """``oidcScopes`` must use canonical scope names and match effective scope."""
+    req = _effective_security(op, service_security)[0]
     scopes = req["oidcScopes"]
     assert isinstance(scopes, list), (
         f"{fname} {method} {path} oidcScopes is not a list"
@@ -149,33 +159,49 @@ def test_oidc_scopes_valid_and_appropriate(
             f"{fname} {method} {path} has invalid scope '{s}'"
         )
 
-    expected = _expected_scope(method, path)
-    assert expected in scopes, (
-        f"{fname} {method} {path} oidcScopes={scopes} "
-        f"but method={method} path={path} requires '{expected}'"
-    )
+    declared = op.get("x-required-scopes")
+    if declared is not None:
+        assert isinstance(declared, list), (
+            f"{fname} {method} {path} x-required-scopes is not a list"
+        )
+        for scope in declared:
+            assert scope in VALID_SCOPES, (
+                f"{fname} {method} {path} has invalid x-required-scopes entry '{scope}'"
+            )
+
+    expected = _expected_scopes(method, path, op)
+    if declared is not None:
+        assert scopes == expected, (
+            f"{fname} {method} {path} oidcScopes={scopes} "
+            f"but effective required scopes are {expected}"
+        )
+    else:
+        assert expected[0] in scopes, (
+            f"{fname} {method} {path} oidcScopes={scopes} "
+            f"but method={method} path={path} requires '{expected[0]}'"
+        )
 
 
 # ---------------------------------------------------------------------------
 # 3. Write endpoints never declare only platform.read
 # ---------------------------------------------------------------------------
 WRITE_SECURED = [
-    (fname, method, path, op)
-    for fname, method, path, op in SECURED_ENDPOINTS
-    if method.lower() in WRITE_METHODS and ADMIN_MARKER not in path
+    (fname, method, path, op, service_security)
+    for fname, method, path, op, service_security in SECURED_ENDPOINTS
+    if _expected_scopes(method, path, op) == ["platform.write"]
 ]
 
 
 @pytest.mark.parametrize(
-    "fname, method, path, op",
+    "fname, method, path, op, service_security",
     WRITE_SECURED,
     ids=[_ep_id(*e) for e in WRITE_SECURED],
 )
 def test_write_endpoints_not_read_only(
-    fname: str, method: str, path: str, op: dict,
+    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
 ) -> None:
     """Mutating (non-admin) operations must include ``platform.write``."""
-    scopes = op["security"][0]["oidcScopes"]
+    scopes = _effective_security(op, service_security)[0]["oidcScopes"]
     assert "platform.write" in scopes, (
         f"{fname} {method} {path} is a write operation but "
         f"oidcScopes={scopes} lacks platform.write"
@@ -186,22 +212,22 @@ def test_write_endpoints_not_read_only(
 # 4. Admin endpoints use platform.admin
 # ---------------------------------------------------------------------------
 ADMIN_SECURED = [
-    (fname, method, path, op)
-    for fname, method, path, op in SECURED_ENDPOINTS
-    if ADMIN_MARKER in path
+    (fname, method, path, op, service_security)
+    for fname, method, path, op, service_security in SECURED_ENDPOINTS
+    if _expected_scopes(method, path, op) == ["platform.admin"]
 ]
 
 
 @pytest.mark.parametrize(
-    "fname, method, path, op",
+    "fname, method, path, op, service_security",
     ADMIN_SECURED,
     ids=[_ep_id(*e) for e in ADMIN_SECURED],
 )
 def test_admin_endpoints_use_admin_scope(
-    fname: str, method: str, path: str, op: dict,
+    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
 ) -> None:
     """Paths under ``/admin/`` must require ``platform.admin``."""
-    scopes = op["security"][0]["oidcScopes"]
+    scopes = _effective_security(op, service_security)[0]["oidcScopes"]
     assert "platform.admin" in scopes, (
         f"{fname} {method} {path} is an admin endpoint but "
         f"oidcScopes={scopes} lacks platform.admin"
@@ -213,7 +239,7 @@ def test_admin_endpoints_use_admin_scope(
 # ---------------------------------------------------------------------------
 HEALTH_ENDPOINTS = [
     (fname, method, path, op)
-    for fname, method, path, op in ALL_ENDPOINTS
+    for fname, method, path, op, _service_security in ALL_ENDPOINTS
     if _is_exempt(path) and "security" in op and op["security"]
 ]
 
@@ -236,6 +262,56 @@ def test_health_endpoints_exempt_from_oidc(
             )
 
 
+REQUIRED_READ_POST_ENDPOINT_IDS = {
+    "copilot.yaml::POST /api/v1/copilot/analysis/explain-sql",
+    "copilot.yaml::POST /api/v1/copilot/generate/process",
+    "copilot.yaml::POST /api/v1/copilot/ontology/graph/query",
+    "copilot.yaml::POST /api/v1/copilot/scheduling/employees/match",
+    "copilot.yaml::POST /api/v1/copilot/search",
+    "ont.yaml::POST /api/v1/ont/federation/query",
+    "ont.yaml::POST /api/v1/ont/v2/object-sets/query",
+    "ont.yaml::POST /api/v1/ont/v2/object-query",
+    "ont.yaml::POST /api/v1/ont/v2/object-search",
+}
+
+
+def _endpoints_by_id() -> dict[str, tuple[str, str, str, dict[str, Any], list[dict[str, Any]]]]:
+    return {_ep_id(*endpoint): endpoint for endpoint in ALL_ENDPOINTS}
+
+
+REQUIRED_READ_POST_ENDPOINTS_DATA = [
+    _endpoints_by_id()[endpoint_id]
+    for endpoint_id in sorted(REQUIRED_READ_POST_ENDPOINT_IDS)
+]
+
+
+def test_required_read_post_endpoint_inventory_is_pinned() -> None:
+    """The known read-shaped POST endpoints must stay covered explicitly."""
+    actual = {_ep_id(*endpoint) for endpoint in REQUIRED_READ_POST_ENDPOINTS_DATA}
+    assert actual == REQUIRED_READ_POST_ENDPOINT_IDS
+
+
+READ_POST_ENDPOINTS = REQUIRED_READ_POST_ENDPOINTS_DATA
+
+
+@pytest.mark.parametrize(
+    "fname, method, path, op, service_security",
+    READ_POST_ENDPOINTS,
+    ids=[_ep_id(*e) for e in READ_POST_ENDPOINTS],
+)
+def test_read_post_endpoints_declare_x_required_scopes(
+    fname: str, method: str, path: str, op: dict[str, Any], service_security: list[dict[str, Any]],
+) -> None:
+    """POST reads must opt into ``platform.read`` via ``x-required-scopes``."""
+    assert service_security is not None
+    assert op.get("x-required-scopes") == ["platform.read"], (
+        f"{fname} {method} {path} must declare x-required-scopes: [platform.read]"
+    )
+    assert _effective_security(op, service_security)[0]["oidcScopes"] == ["platform.read"], (
+        f"{fname} {method} {path} must remain read-scoped in effective security"
+    )
+
+
 # ---------------------------------------------------------------------------
 # 6. Inventory guards
 # ---------------------------------------------------------------------------
@@ -246,20 +322,12 @@ def test_secured_endpoint_inventory_non_empty() -> None:
     )
 
 
-def test_all_eighteen_domains_present() -> None:
-    """All known domains must be in the contract set.
-
-    As of v3.1+v3.2 the platform has 18 spec files (deep-research added
-    by ``3e739c0451cb`` PR-1+2). This test guards against drift in either
-    direction: missing spec files (regression) and unexpected new files
-    (untracked extension). To add a new domain, append to ``expected``
-    here AND run ``infra/tests/test_chart_structure.py`` so the umbrella
-    chart picks it up.
-    """
+def test_all_twenty_one_services_present() -> None:
+    """The gate inventory is the canonical 21-service OpenAPI contract set."""
     names = {p.stem for p in SERVICES_DIR.glob("*.yaml")}
     expected = {
-        "a2a", "agent", "apphub", "arch", "copilot", "dashboard", "data",
-        "deep-research",
-        "dw", "iam", "kb", "llmgw", "mcp", "msg", "obs", "ont", "rag", "wfe",
+        "a2a", "agent", "analytics", "apphub", "arch", "copilot", "dashboard",
+        "data", "deep-research", "dw", "iam", "kb", "llmgw", "marketplace",
+        "mcp", "msg", "obs", "ont", "orchestrator", "rag", "wfe",
     }
     assert names == expected, f"service contract set drifted: {names ^ expected}"

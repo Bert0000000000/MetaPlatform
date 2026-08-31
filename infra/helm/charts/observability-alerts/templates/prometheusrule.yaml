@@ -32,7 +32,7 @@ spec:
         annotations:
           summary: "RAG TTFT p95 (local) 越线 > 1.5s"
           description: |
-            当前租户 {{ $labels.tenant_id }} RAG 本地检索 p95 > 1.5s 持续 3 分钟。
+            当前租户 {{ "{{ $labels.tenant_id }}" }} RAG 本地检索 p95 > 1.5s 持续 3 分钟。
             看 rag.retrieve span + retrieval cache 命中率 + vector store 延迟。
           runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/llmgw.html#rag-ttft-%E8%B6%8A%E7%BA%BF
 
@@ -56,7 +56,7 @@ spec:
         annotations:
           summary: "Copilot chat 错误率 > 5%"
           description: |
-            租户 {{ $labels.tenant_id }} Copilot 5min 错误率越线；检查 llmgw 上游 + tool execute span。
+            租户 {{ "{{ $labels.tenant_id }}" }} Copilot 5min 错误率越线；检查 llmgw 上游 + tool execute span。
           runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/llmgw.html#copilot-%E9%94%99%E8%AF%AF%E7%8E%87%E8%B6%8A%E7%BA%BF
 
       # 3. MCP 工具未授权调用 > 1 次/5min
@@ -73,7 +73,7 @@ spec:
         annotations:
           summary: "MCP 工具未授权调用"
           description: |
-            租户 {{ $labels.tenant_id }} 触发了 MCP tool 拒绝（hard rule 3 触发）。
+            租户 {{ "{{ $labels.tenant_id }}" }} 触发了 MCP tool 拒绝（hard rule 3 触发）。
             看 mate_platform_tenancy_cross_tenant_attempt_total 同期 counter。
           runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/mcp.html#tool-deny-spike
 
@@ -91,7 +91,7 @@ spec:
         annotations:
           summary: "LLMGW 月度 token 上限触发"
           description: |
-            租户 {{ $labels.tenant_id }} 当月累计 token 撞月度上限。
+            租户 {{ "{{ $labels.tenant_id }}" }} 当月累计 token 撞月度上限。
             429 + Retry-After 已下发；考虑月度 cap 调高或引导用户清理缓存。
           runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/llmgw.html#monthly-quota
 
@@ -109,6 +109,6 @@ spec:
         annotations:
           summary: "P0 跨租户越权告警"
           description: |
-            tenant_guard 在 5min 内捕获 reason={{ $labels.reason }} 越权尝试。
+            tenant_guard 在 5min 内捕获 reason={{ "{{ $labels.reason }}" }} 越权尝试。
             立即查调用方 IP / JWT claim / 越权路径，确认是否为攻击。
           runbook_url: https://runbooks.metaplatform.local/docs/active/runbooks/secrets-tenancy.html#cross-tenant-p0

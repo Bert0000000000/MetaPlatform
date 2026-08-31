@@ -5,13 +5,18 @@ tenant-isolation ok, a2a delegate proxies to mate-app-a2a.
 """
 from __future__ import annotations
 
+import os
+import tempfile
 import time
+from contextlib import suppress
+from pathlib import Path
 
 import jwt as pyjwt
 import pytest
 from fastapi.testclient import TestClient
 from mate_app_copilot.main import create_app
 from mate_app_copilot.repositories import in_memory as in_memory_repo
+from mate_tech_db.base import Base, _state, create_all, init_engine, reset_engine
 
 JWT_SECRET = "test-secret"
 
@@ -40,8 +45,24 @@ def _token(*, tenant_id: str, scopes: str = "platform.read platform.write") -> s
 
 @pytest.fixture
 def fresh_app() -> TestClient:
+    reset_engine()
+    fd, db_path = tempfile.mkstemp(suffix=".sqlite", prefix="copilot-tenant-")
+    os.close(fd)
+    os.environ["MATE_DB_URL"] = f"sqlite:///{db_path}"
+    init_engine(os.environ["MATE_DB_URL"])
+    create_all()
     in_memory_repo.reset_store()
-    return TestClient(create_app(), raise_server_exceptions=False)
+    app = create_app()
+    try:
+        yield TestClient(app, raise_server_exceptions=False)
+    finally:
+        if _state.engine is not None:
+            Base.metadata.drop_all(_state.engine)
+        reset_engine()
+        os.environ.pop("MATE_DB_URL", None)
+        in_memory_repo.reset_store()
+        with suppress(OSError):
+            Path(db_path).unlink()
 
 
 def test_wrong_tenant_403(fresh_app: TestClient) -> None:
@@ -95,6 +116,53 @@ def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
     assert all(c["tenant_id"] == "tenant-globex" for c in r2.json()["items"])
 
 
+def test_cross_tenant_conversation_detail_404(fresh_app: TestClient) -> None:
+    token_acme = _token(tenant_id="tenant-acme")
+    token_globex = _token(tenant_id="tenant-globex")
+
+    created = fresh_app.post(
+        "/api/v1/copilot/conversations",
+        json={"title": "globex secret"},
+        headers={"Authorization": f"Bearer {token_globex}"},
+    )
+    assert created.status_code == 200, created.text
+    conv_id = created.json()["data"]["id"]
+
+    denied = fresh_app.get(
+        f"/api/v1/copilot/conversations/{conv_id}",
+        headers={"Authorization": f"Bearer {token_acme}"},
+    )
+    assert denied.status_code == 404, denied.text
+    assert "globex secret" not in denied.text
+    assert "tenant-globex" not in denied.text
+
+
+def test_conversation_list_fails_closed_when_db_unavailable(
+    fresh_app: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    fallback_called = {"value": False}
+
+    def _fail_session():
+        raise RuntimeError("db unavailable")
+
+    def _unexpected_fallback(*args, **kwargs):
+        fallback_called["value"] = True
+        return []
+
+    monkeypatch.setattr(copilot_app_module, "get_session", _fail_session)
+    monkeypatch.setattr(copilot_app_module, "list_conversations", _unexpected_fallback)
+
+    token = _token(tenant_id="tenant-acme")
+    resp = fresh_app.get(
+        "/api/v1/copilot/conversations",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 500, resp.text
+    assert fallback_called["value"] is False
+
+
 def test_a2a_delegate_proxies_to_a2a(fresh_app: TestClient) -> None:
     """POST /a2a/delegate dispatches via local InMemoryA2AClient (not 501).
 
@@ -105,7 +173,6 @@ def test_a2a_delegate_proxies_to_a2a(fresh_app: TestClient) -> None:
     ``E_AGENT_NOT_FOUND`` (the documented contract).
     """
     from mate_app_copilot.a2a.client import get_default_client
-    from mate_app_copilot.a2a.registry import AgentCardRegistry
     from mate_app_copilot.a2a.models import AgentCard
 
     # Reset the default client's registry and register agent-rag

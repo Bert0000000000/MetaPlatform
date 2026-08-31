@@ -41,10 +41,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Tell `mate_platform.auth` to accept the dev-mode short-circuit token format.
-ENV LEGACY_LOGIN_COMPAT=true \
-    INSECURE_SKIP_SIGNATURE=true
-
 COPY --from=builder /app /app
 
 WORKDIR /app

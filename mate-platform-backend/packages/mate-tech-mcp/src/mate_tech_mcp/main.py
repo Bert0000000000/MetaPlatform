@@ -57,11 +57,11 @@ mcp_server: MCPServer = create_server()
 # Register the kb_search tool (ST-5.3.2.1).
 mcp_server.register_tool(build_kb_search_tool())
 
-# skill 检索工具（agent 按能力检索 skillhub → 读 SKILL.md 搭应用）。
+# skill 检索工具 (agent 按能力检索 skillhub -> 读 SKILL.md 搭应用).
 mcp_server.register_tool(build_search_skill_tool())
 mcp_server.register_tool(build_read_skill_tool())
 
-# MP-SAL-01: ontology 三件套代理工具（tech-ont v2，ADR-0043 §2.3 消费者）。
+# MP-SAL-01: ontology 三件套代理工具 (tech-ont v2, ADR-0043 §2.3 消费者).
 for _tool in build_ontology_proxy_tools():
     mcp_server.register_tool(_tool)
 
@@ -128,7 +128,9 @@ app.include_router(federation_router_routes)
 # W4: real MCP protocol surface (streamable-http) for external MCP clients.
 from .protocol.streamable import build_streamable_http_app  # noqa: E402
 
-app.mount("/mcp-protocol", build_streamable_http_app(mcp_server))
+# Keep the protocol endpoint inside the canonical /api/v1/mcp namespace so
+# direct service callers and the API gateway expose the same contract.
+app.mount("/api/v1/mcp/protocol", build_streamable_http_app(mcp_server))
 
 
 @app.get("/healthz")

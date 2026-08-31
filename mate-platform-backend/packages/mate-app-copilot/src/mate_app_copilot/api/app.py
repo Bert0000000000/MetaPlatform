@@ -28,6 +28,8 @@ from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports
     list_data_flows,
 )
 from sqlalchemy import select
+from sqlparse.sql import Identifier, IdentifierList, TokenList
+from sqlparse.tokens import DDL, DML, Comment
 
 from mate_clients.security.bearer import BearerAuth
 from mate_platform.messaging.events import Event
@@ -72,6 +74,18 @@ from ..repositories.sql_models import ConversationORM, MessageORM
 
 router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
 
+_COPILOT_STREAM_MAX_MESSAGE_BYTES = 1_000_000
+_PROMPT_LEAK_SAFE_MESSAGE = "抱歉，无法提供内部系统指令。"
+_PROMPT_LEAK_LITERALS = (
+    "MATE_SYSTEM_PROMPT",
+    "MATE_SYSTEM_PROMPT_CANARY_DO_NOT_LEAK",
+    "[Session Context]",
+)
+_PROMPT_LEAK_PATTERNS = (
+    re.compile(r"(?i)(?:system|developer|internal)\s+(?:prompt|instruction)s?\s*[:：]"),
+    re.compile(r"(?:系统提示|系统指令|开发者指令)\s*[:：]"),
+)
+
 
 def _llmgw_timeout_seconds() -> float:
     """Return the bounded LLM Gateway request timeout.
@@ -105,6 +119,28 @@ def _tid(request: Request) -> str:
     return str(require_tenant(ctx))
 
 
+def _authorize_a2a_target(
+    *, tenant_id: str, target_agent_id: str, client: Any
+) -> None:
+    """Authorize delegation against the current tenant's registry entries.
+
+    Copilot's current allowlist source is the tenant-scoped
+    ``AgentCardRegistry`` attached to the local A2A client. The
+    authenticated request tenant is authoritative; request bodies do
+    not get to override tenant selection for delegation.
+    """
+    registry = getattr(client, "registry", None)
+    if registry is None or registry.get(tenant_id, target_agent_id) is None:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "A2A_TARGET_NOT_ALLOWED",
+                "message": "target agent is not allowed for this tenant",
+                "target_agent_id": target_agent_id,
+            },
+        )
+
+
 def _mark_deprecated(response: Response) -> None:
     """A3 吸收标记：scheduling 编排入口已迁移到 mate-tech-orchestrator。"""
     response.headers["Deprecation"] = "true"
@@ -120,6 +156,378 @@ def _uid(request: Request) -> str:
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _record_copilot_guard_event(
+    request: Request,
+    *,
+    name: str,
+    details: dict[str, Any],
+) -> None:
+    span = getattr(request.state, "copilot_span", None)
+    if span is None:
+        return
+    try:
+        span.add_event(name, details)
+    except Exception:
+        pass
+
+
+def _serialized_message_content(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if content is None:
+        return ""
+    try:
+        return json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+    except (TypeError, ValueError):
+        return str(content)
+
+
+def _last_user_message_content(messages: list[dict[str, Any]]) -> str:
+    for message in reversed(messages):
+        if message.get("role") == "user":
+            return _serialized_message_content(message.get("content"))
+    return ""
+
+
+def _validate_stream_message_envelope(
+    request: Request,
+    *,
+    messages: Any,
+    endpoint: str,
+) -> list[dict[str, Any]]:
+    if not isinstance(messages, list):
+        raise HTTPException(status_code=422, detail="messages must be a list")
+
+    payload = json.dumps(messages, ensure_ascii=False, separators=(",", ":"))
+    payload_bytes = len(payload.encode("utf-8"))
+    if payload_bytes > _COPILOT_STREAM_MAX_MESSAGE_BYTES:
+        _record_copilot_guard_event(
+            request,
+            name="copilot.input_guard.blocked",
+            details={
+                "endpoint": endpoint,
+                "payload_bytes": payload_bytes,
+                "limit_bytes": _COPILOT_STREAM_MAX_MESSAGE_BYTES,
+            },
+        )
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                "messages payload too large; "
+                f"limit is {_COPILOT_STREAM_MAX_MESSAGE_BYTES} bytes"
+            ),
+        )
+
+    normalized: list[dict[str, Any]] = []
+    for index, message in enumerate(messages):
+        if not isinstance(message, dict):
+            raise HTTPException(
+                status_code=422,
+                detail=f"messages[{index}] must be an object",
+            )
+        normalized.append(message)
+    return normalized
+
+
+def _contains_prompt_leak(text: str) -> bool:
+    if not text:
+        return False
+    upper_text = text.upper()
+    for literal in _PROMPT_LEAK_LITERALS:
+        if literal.upper() in upper_text:
+            return True
+    return any(pattern.search(text) for pattern in _PROMPT_LEAK_PATTERNS)
+
+
+class _StreamingOutputGuard:
+    """Stage provider output until the complete response passes leak checks.
+
+    SSE cannot retract bytes already sent to a client, so a safe-looking prefix
+    must not be emitted before a later provider chunk has been checked.
+    """
+
+    def __init__(self) -> None:
+        self._in_think = False
+        self._think_buf = ""
+        self._candidate = ""
+        self._buffered_chunks: list[str] = []
+        self._full_response = ""
+        self.blocked = False
+
+    @property
+    def full_response(self) -> str:
+        return self._full_response if not self.blocked else _PROMPT_LEAK_SAFE_MESSAGE
+
+    def consume(self, text: str) -> list[str]:
+        if self.blocked or not text:
+            return []
+        cleaned = self._strip_stream_think(text)
+        if not cleaned:
+            return []
+        self._candidate += cleaned
+        if _contains_prompt_leak(self._candidate):
+            self.blocked = True
+            self._candidate = ""
+            self._buffered_chunks.clear()
+            return []
+        self._buffered_chunks.append(cleaned)
+        return []
+
+    def finalize(self) -> list[str]:
+        if self.blocked:
+            return [_PROMPT_LEAK_SAFE_MESSAGE]
+        if _contains_prompt_leak(self._candidate):
+            self.blocked = True
+            self._candidate = ""
+            self._buffered_chunks.clear()
+            return [_PROMPT_LEAK_SAFE_MESSAGE]
+        if not self._buffered_chunks:
+            return []
+        chunks = self._buffered_chunks
+        self._buffered_chunks = []
+        self._candidate = ""
+        self._full_response = "".join(chunks)
+        return chunks
+
+    def _strip_stream_think(self, text: str) -> str:
+        if self._in_think:
+            self._think_buf += text
+            end = self._think_buf.find("</think>")
+            if end == -1:
+                return ""
+            self._in_think = False
+            text = self._think_buf[end + len("</think>"):]
+            self._think_buf = ""
+            if not text:
+                return ""
+
+        start = text.find("<think>")
+        if start == -1:
+            return text
+
+        before = text[:start]
+        rest = text[start + len("<think>"):]
+        end = rest.find("</think>")
+        if end != -1:
+            return before + rest[end + len("</think>"):]
+
+        self._in_think = True
+        self._think_buf = rest
+        return before
+
+
+def _sanitize_copilot_response_text(
+    request: Request,
+    *,
+    endpoint: str,
+    content: str,
+) -> tuple[str, bool]:
+    sanitized = _strip_chain_of_thought(content)
+    blocked = _contains_prompt_leak(sanitized)
+    if blocked:
+        _record_copilot_guard_event(
+            request,
+            name="copilot.output_guard.blocked",
+            details={"endpoint": endpoint},
+        )
+        return _PROMPT_LEAK_SAFE_MESSAGE, True
+    return sanitized, False
+
+
+_FORBIDDEN_SQL_KEYWORDS = frozenset(
+    {
+        "ALTER",
+        "ANALYZE",
+        "CALL",
+        "COMMENT",
+        "COPY",
+        "CREATE",
+        "DELETE",
+        "DROP",
+        "EXECUTE",
+        "GRANT",
+        "INSERT",
+        "INTO",
+        "MERGE",
+        "REINDEX",
+        "REPLACE",
+        "REVOKE",
+        "SET",
+        "TRUNCATE",
+        "UPDATE",
+        "VACUUM",
+    }
+)
+_SELECT_CLAUSE_STARTERS = frozenset(
+    {
+        "FROM",
+        "GROUP",
+        "HAVING",
+        "LIMIT",
+        "OFFSET",
+        "ORDER",
+        "UNION",
+        "WHERE",
+    }
+)
+
+
+def _tenant_sql_token(tenant_id: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", tenant_id.lower()).strip("_")
+
+
+def _unquote_sql_identifier(value: str) -> str:
+    value = value.strip()
+    quoted_pair = (value[:1], value[-1:])
+    if len(value) >= 2 and quoted_pair in {('"', '"'), ("`", "`"), ("[", "]")}:
+        closing = quoted_pair[1]
+        value = value[1:-1]
+        value = value.replace(closing * 2, closing)
+    return value
+
+
+def _normalize_sql_identifier(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", _unquote_sql_identifier(value).lower()).strip("_")
+
+
+def _iter_sql_table_identifiers(statement: TokenList):
+    expect_relation = False
+    for token in statement.tokens:
+        if token.is_whitespace or token.ttype in Comment:
+            continue
+        keyword = token.normalized.upper()
+        if keyword in {"FROM", "JOIN"} or keyword.endswith(" JOIN"):
+            expect_relation = True
+            continue
+        if not expect_relation:
+            if isinstance(token, TokenList):
+                yield from _iter_sql_table_identifiers(token)
+            continue
+        if keyword == "LATERAL":
+            continue
+        if isinstance(token, Identifier):
+            yield token
+            yield from _iter_sql_table_identifiers(token)
+        elif isinstance(token, IdentifierList):
+            for identifier in token.get_identifiers():
+                yield identifier
+                yield from _iter_sql_table_identifiers(identifier)
+        elif isinstance(token, TokenList):
+            yield from _iter_sql_table_identifiers(token)
+        expect_relation = False
+
+
+def _raise_malformed_sql() -> None:
+    raise HTTPException(status_code=400, detail="Malformed SELECT statement")
+
+
+def _validate_select_shape(sql_text: str, statement) -> None:
+    meaningful = [
+        token
+        for token in statement.tokens
+        if not token.is_whitespace and token.ttype not in Comment
+    ]
+    if len(meaningful) < 2:
+        _raise_malformed_sql()
+
+    first = meaningful[0]
+    if first.normalized.upper() != "SELECT":
+        _raise_malformed_sql()
+
+    projection = meaningful[1].normalized.upper()
+    if projection in _SELECT_CLAUSE_STARTERS:
+        _raise_malformed_sql()
+
+    if sum(1 for token in statement.flatten() if token.value == "(") != sum(
+        1 for token in statement.flatten() if token.value == ")"
+    ):
+        _raise_malformed_sql()
+
+    normalized_sql = re.sub(r"\s+", " ", sql_text).strip().rstrip(";").rstrip()
+    if re.search(
+        r"\b(?:FROM|WHERE|GROUP\s+BY|HAVING|ORDER\s+BY|LIMIT|OFFSET|UNION|INTERSECT|EXCEPT)\s*$",
+        normalized_sql,
+        re.IGNORECASE,
+    ):
+        _raise_malformed_sql()
+
+
+def _reject_forbidden_sql_tokens(statement) -> None:
+    for token in statement.flatten():
+        keyword = token.normalized.upper()
+        if token.ttype in DDL or token.ttype in DML:
+            forbidden = keyword != "SELECT"
+        else:
+            forbidden = keyword in _FORBIDDEN_SQL_KEYWORDS
+        if forbidden:
+            raise HTTPException(
+                status_code=403,
+                detail="Only SELECT statements are allowed in dry-run mode",
+            )
+
+
+def _validate_read_only_sql(sql: str, tenant_id: str) -> str:
+    sql_text = sql.strip()
+    if not sql_text:
+        raise HTTPException(status_code=400, detail="sql is required")
+
+    try:
+        parsed = tuple(stmt for stmt in sqlparse.parse(sql_text) if str(stmt).strip())
+    except (TypeError, ValueError):
+        _raise_malformed_sql()
+    if len(parsed) != 1:
+        raise HTTPException(
+            status_code=403,
+            detail="Only single-statement SELECT queries are allowed",
+        )
+
+    statement = parsed[0]
+    _reject_forbidden_sql_tokens(statement)
+    if statement.get_type().upper() != "SELECT":
+        raise HTTPException(
+            status_code=403,
+            detail="Only SELECT statements are allowed in dry-run mode",
+        )
+    _validate_select_shape(sql_text, statement)
+
+    tenant_raw = _unquote_sql_identifier(tenant_id).lower()
+    tenant_token = _tenant_sql_token(tenant_id)
+    if tenant_token:
+        for identifier in _iter_sql_table_identifiers(statement):
+            names = (identifier.get_real_name(), identifier.get_parent_name())
+            for name in names:
+                if not name:
+                    continue
+                raw_name = _unquote_sql_identifier(name).lower()
+                normalized_name = _normalize_sql_identifier(name)
+                same_tenant = (
+                    raw_name == tenant_raw
+                    or normalized_name == tenant_token
+                    or normalized_name.startswith(f"{tenant_token}_")
+                )
+                references_tenant_namespace = normalized_name.startswith("tenant_")
+                if references_tenant_namespace and not same_tenant:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Cross-tenant SQL references are not allowed",
+                    )
+
+    return sql_text
+
+
+def _execute_read_only_sql(*, sql: str, tenant_id: str, datasource_id: str) -> dict[str, Any]:
+    parsed = sqlparse.parse(sql)
+    columns: list[str] = []
+    if parsed:
+        sel = re.search(r"SELECT\s+(.*?)\s+FROM", sql, re.IGNORECASE | re.DOTALL)
+        if sel:
+            for raw in sel.group(1).split(","):
+                name = raw.strip().split()[-1].strip("`\"'")
+                if name != "*":
+                    columns.append(name)
+    return {"rows": [], "columns": columns}
 
 
 def _conv_orm_to_dict(orm: Any) -> dict[str, Any]:
@@ -343,6 +751,11 @@ async def a2a_delegate(request: Request) -> dict[str, Any]:
     trace_id = getattr(request.state.ctx, "trace_id", "")
 
     client = get_default_a2a_client()
+    _authorize_a2a_target(
+        tenant_id=tid,
+        target_agent_id=target_agent_id,
+        client=client,
+    )
     result = await client.delegate(
         DelegationRequest(
             target_agent_id=target_agent_id,
@@ -590,30 +1003,16 @@ async def audit_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
 @router.post("/analysis/execute-sql")
 async def execute_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     tid = _tid(request)
-    sql = str(body.get("sql", ""))
-    sql_stripped = sql.strip()
-    if not sql_stripped.upper().startswith("SELECT"):
-        raise HTTPException(
-            status_code=403,
-            detail="Only SELECT statements are allowed in dry-run mode",
-        )
-    parsed = sqlparse.parse(sql)
-    columns: list[str] = []
-    if parsed:
-        sel = re.search(r"SELECT\s+(.*?)\s+FROM", sql, re.IGNORECASE | re.DOTALL)
-        if sel:
-            for raw in sel.group(1).split(","):
-                name = raw.strip().split()[-1].strip("`\"'")
-                if name != "*":
-                    columns.append(name)
+    sql = _validate_read_only_sql(str(body.get("sql", "")), tid)
+    result = _execute_read_only_sql(sql=sql, tenant_id=tid, datasource_id="")
     _emit(
         request,
         "copilot.query.executed",
         "dry-run",
-        {"sql": sql, "columns": columns},
+        {"sql": sql, "columns": result["columns"]},
         tid,
     )
-    return {"rows": 0, "columns": columns}
+    return result
 
 
 @router.post("/analysis/generate-sql")
@@ -690,20 +1089,15 @@ async def get_code(request: Request) -> dict[str, Any]:
 async def get_conversations(request: Request) -> dict[str, Any]:
     tid = _tid(request)
     uid = _uid(request)
-    # Read from PostgreSQL (merge with in-memory fallback)
+    session = get_session()
     try:
-        session = get_session()
-        try:
-            orms = session.query(ConversationORM).filter_by(tenant_id=tid, user_id=uid).order_by(ConversationORM.created_at.desc()).all()
-            db_items = [_conv_orm_to_dict(o) for o in orms]
-            return {"items": db_items, "total": len(db_items)}
-        finally:
-            session.close()
-    except Exception:
-        # Fallback to in-memory if DB unavailable
-        rows = list_conversations(tid, user_id=uid)
-        items = [_conv_in_memory_to_dict(c) for c in rows]
-        return {"items": items, "total": len(items)}
+        orms = session.query(ConversationORM).filter_by(
+            tenant_id=tid, user_id=uid,
+        ).order_by(ConversationORM.created_at.desc()).all()
+        db_items = [_conv_orm_to_dict(o) for o in orms]
+        return {"items": db_items, "total": len(db_items)}
+    finally:
+        session.close()
 
 
 @router.post("/conversations")
@@ -870,7 +1264,11 @@ async def chat_completions_stream(
     )
     _span.set_attribute("outcome", "success")
     request.state.copilot_span = _span
-    messages = body.get("messages", [])
+    messages = _validate_stream_message_envelope(
+        request,
+        messages=body.get("messages", []),
+        endpoint="chat/completions/stream",
+    )
     model = body.get("model", "doubao-pro-32k")
     temperature = body.get("temperature", 0.7)
     max_tokens = body.get("maxTokens", body.get("max_tokens", 2048))
@@ -904,7 +1302,7 @@ async def chat_completions_stream(
                 tenant_id=tid,
                 user_id=uid,
                 role="user",
-                content=messages[-1]["content"] if messages else "",
+                content=_last_user_message_content(messages),
                 created_at=_now_iso(),
                 metadata_json=json.dumps({"model": model}),
             )
@@ -914,10 +1312,9 @@ async def chat_completions_stream(
             session.close()
 
     async def event_stream():
+        output_guard = _StreamingOutputGuard()
         full_response = ""
-        # Streaming chain-of-thought strip state (see _strip_chain_of_thought).
-        _in_think = False
-        _think_buf = ""
+        leak_observed = False
         # Build the streaming client. The host/port come from env so the
         # service is portable across docker-compose / staging / prod
         # (default targets the docker-compose service name + port 8008).
@@ -987,38 +1384,26 @@ async def chat_completions_stream(
                     elif "content" in chunk:
                         text = chunk["content"]
                     if text:
-                        # 剥离 <think>…</think> 思维链：MiniMax 把整段 reasoning 放在
-                        # 可见答案之前，边读边缓冲，块关闭后再流式输出干净内容。
-                        if _in_think:
-                            _think_buf += text
-                            end = _think_buf.find("</think>")
-                            if end == -1:
-                                continue
-                            _in_think = False
-                            text = _think_buf[end + len("</think>"):]
-                            _think_buf = ""
-                            if not text:
-                                continue
-                        else:
-                            start = text.find("<think>")
-                            if start != -1:
-                                before = text[:start]
-                                rest = text[start + len("<think>"):]
-                                end = rest.find("</think>")
-                                if end != -1:
-                                    text = before + rest[end + len("</think>"):]
-                                else:
-                                    _in_think = True
-                                    _think_buf = rest
-                                    text = before
-                                if not text:
-                                    continue
-                        full_response += text
-                        openai_chunk = {
-                            "choices": [{"delta": {"content": text}, "index": 0}],
-                            "model": model,
-                        }
-                        yield f"data: {json.dumps(openai_chunk)}\n\n"
+                        output_guard.consume(text)
+                        if output_guard.blocked:
+                            leak_observed = True
+                            break
+
+            for safe_text in output_guard.finalize():
+                if safe_text == _PROMPT_LEAK_SAFE_MESSAGE:
+                    leak_observed = True
+                full_response += safe_text
+                chunk = {
+                    "choices": [{"delta": {"content": safe_text}, "index": 0}],
+                    "model": model,
+                }
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+            if leak_observed or output_guard.blocked:
+                _record_copilot_guard_event(
+                    request,
+                    name="copilot.output_guard.blocked",
+                    details={"endpoint": "chat/completions/stream"},
+                )
 
             # Fallback: non-streaming if llmgw stream returned nothing
             if not full_response:
@@ -1031,32 +1416,42 @@ async def chat_completions_stream(
                         base_url=llm_base_url,
                         api_key=llm_api_key,
                     )
-                    full_response = _strip_chain_of_thought(data.get(
-                        "content",
-                        data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
-                    ))
+                    full_response, _ = _sanitize_copilot_response_text(
+                        request,
+                        endpoint="chat/completions/stream",
+                        content=data.get(
+                            "content",
+                            data.get("data", {}).get("content", "抱歉，我暂时无法回答。"),
+                        ),
+                    )
                 except LlmgwStreamError:
                     full_response = "抱歉，LLM 服务暂时不可用。"
                 chunk = {
                     "choices": [{"delta": {"content": full_response}, "index": 0}],
                     "model": model,
                 }
-                yield f"data: {json.dumps(chunk)}\n\n"
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
         except LlmgwStreamError as e:
-            full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
+            if output_guard.blocked:
+                full_response = _PROMPT_LEAK_SAFE_MESSAGE
+            else:
+                full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
             chunk = {
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             }
-            yield f"data: {json.dumps(chunk)}\n\n"
+            yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
         except Exception as e:  # last-resort guard: never break the SSE stream
-            full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
+            if output_guard.blocked:
+                full_response = _PROMPT_LEAK_SAFE_MESSAGE
+            else:
+                full_response = f"（LLM 服务暂时不可用：{str(e)[:100]}）"
             chunk = {
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             }
-            yield f"data: {json.dumps(chunk)}\n\n"
+            yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
         # SSE end marker
         yield "data: [DONE]\n\n"
@@ -1355,7 +1750,7 @@ async def query_graph(
     body: dict = Body(...),
 ) -> dict[str, Any]:
     tid = _tid(request)
-    cypher = body.get("cypher", "")
+    cypher = body.get("cypher", "")  # noqa: F841 - retained for API compatibility
     # P2-W4: full graph from arch Capability tree + DataEntity store
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
@@ -1397,9 +1792,14 @@ async def get_plans(request: Request) -> dict[str, Any]:
 @router.post("/queries/execute")
 async def execute_query(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     tid = _tid(request)
-    sql = str(body.get("sql", ""))
+    sql = _validate_read_only_sql(str(body.get("sql", "")), tid)
     datasource_id = str(body.get("datasource_id", "ds-1"))
     query_id = f"q-{uuid.uuid4().hex[:8]}"
+    result = _execute_read_only_sql(
+        sql=sql,
+        tenant_id=tid,
+        datasource_id=datasource_id,
+    )
     _emit(
         request,
         "copilot.query.executed",
@@ -1407,7 +1807,7 @@ async def execute_query(request: Request, body: dict[str, Any]) -> dict[str, Any
         {"sql": sql, "datasource_id": datasource_id},
         tid,
     )
-    return {"query_id": query_id, "rows": [{"id": 1, "result": "dry-run"}]}
+    return {"query_id": query_id, **result}
 
 
 @router.get("/queries/history")
@@ -1652,7 +2052,11 @@ async def chat_agent_stream(
     """
     tid = _tid(request)
     uid = _uid(request)
-    messages = body.get("messages", [])
+    messages = _validate_stream_message_envelope(
+        request,
+        messages=body.get("messages", []),
+        endpoint="chat/agent/stream",
+    )
     model = body.get("model", "doubao-pro-32k")
     temperature = body.get("temperature", 0.7)
     max_tokens = body.get("maxTokens", body.get("max_tokens"))
@@ -1674,7 +2078,7 @@ async def chat_agent_stream(
                 tenant_id=tid,
                 user_id=uid,
                 role="user",
-                content=messages[-1]["content"] if messages else "",
+                content=_last_user_message_content(messages),
                 created_at=_now_iso(),
                 metadata_json=json.dumps({"model": model}),
             )
@@ -1737,6 +2141,7 @@ async def chat_agent_stream(
 
     async def event_stream():
         agent_steps: list[dict[str, Any]] = []
+        final_parts: list[str] = []
         full_response = ""
         try:
             roles = await orchestrator_client.list_roles(
@@ -1813,15 +2218,7 @@ async def chat_agent_stream(
             ):
                 etype = event.get("type")
                 if etype == "final":
-                    content = str(event.get("content") or "")
-                    full_response += content
-                    # Chunk the final answer so the frontend sees streaming deltas.
-                    for i in range(0, len(content), 32):
-                        chunk = content[i:i + 32]
-                        yield _agent_event({
-                            "choices": [{"delta": {"content": chunk}, "index": 0}],
-                            "model": model,
-                        })
+                    final_parts.append(str(event.get("content") or ""))
                 else:
                     # Persist reasoning / tool_call / tool_result events for the
                     # assistant message timeline (stored under metadata_json).
@@ -1829,17 +2226,32 @@ async def chat_agent_stream(
                         agent_steps.append(event)
                     yield _agent_event(event)
         except LlmgwStreamError as exc:
+            final_parts.clear()
             full_response = f"LLM 决策失败：{exc}"
             yield _agent_event({
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             })
         except OrchestratorClientError as exc:
+            final_parts.clear()
             full_response = f"调度失败：{exc}"
             yield _agent_event({
                 "choices": [{"delta": {"content": full_response}, "index": 0}],
                 "model": model,
             })
+        if final_parts:
+            full_response, _ = _sanitize_copilot_response_text(
+                request,
+                endpoint="chat/agent/stream",
+                content="".join(final_parts),
+            )
+            # Chunk the final answer so the frontend still receives streaming deltas.
+            for i in range(0, len(full_response), 32):
+                chunk = full_response[i:i + 32]
+                yield _agent_event({
+                    "choices": [{"delta": {"content": chunk}, "index": 0}],
+                    "model": model,
+                })
         yield "data: [DONE]\n\n"
 
         # Persist assistant message + update conversation.

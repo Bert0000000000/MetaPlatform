@@ -16,14 +16,19 @@ camelCase bodies and expects camelCase responses.
 from __future__ import annotations
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from mate_platform.auth import install_auth
 
-from mate_tech_mcp.main import app
+from mate_tech_mcp.api.management_routes import router as management_router
 from mate_tech_mcp.management_repo import reset_management_store
 
 
 @pytest.fixture
 def client() -> TestClient:
+    app = FastAPI()
+    install_auth(app)
+    app.include_router(management_router)
     return TestClient(app)
 
 

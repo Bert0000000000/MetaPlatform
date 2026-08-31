@@ -140,19 +140,24 @@ jobs:
 
   # rule 13: NetworkPolicy 完整 (default-deny + 显式 allow)
   ga-013-networkpolicy:
-    name: ga-013 NetworkPolicy default-deny
+    name: ga-013 NetworkPolicy service coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
         with: { version: v3.14.4 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml
       - run: |
-          helm template metaplatform infra/helm -f infra/helm/values-local.yaml > /tmp/rendered.yaml
-          # NetworkPolicy must include DefaultDeny ingress + egress
-          grep -q "name: .*-default-deny-ingress" /tmp/rendered.yaml
-          grep -q "name: .*-default-deny-egress" /tmp/rendered.yaml
-          echo "OK: default-deny ingress + egress present"
+          for env in local staging production; do
+            echo "=== $env ==="
+            helm template metaplatform infra/helm \
+              -f infra/helm/values-$env.yaml > /tmp/rendered-$env.yaml
+            python scripts/ci/validate_networkpolicy_coverage.py \
+              --rendered /tmp/rendered-$env.yaml
+          done
 
   # rule 3: 没有 tenant 上下文，不访问 repository（forbid_raw_sql）
   ga-003-tenant:
@@ -283,11 +288,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          # Each app PRD has requirement IDs; verify all 17 app directories
-          # have at least one FR-* / NFR-* / AC-* reference.
-          for d in mate-platform-backend/contracts/openapi/services; do
-            echo "checking $d"
-            test -d "$d" || (echo "missing $d" && exit 1)
-          done
-          echo "OK: 17 service contracts present"
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/ci/validate_requirement_coverage.py

@@ -318,3 +318,23 @@ def test_forbid_scripts_exist():
 ---
 
 **关联**：GOVERN-04 / -06（前置修复）/ HARD-RULES-MATRIX §0 / ADR-0015 GA 收口。
+
+---
+
+## 7. 2026-08-27 current governance closure
+
+The historical snapshot above records the state at the original GOVERN-10
+closeout. The current v1.0 Sprint 0 follow-up run has since completed the
+focused A/B/C/D gates and strengthened rule 10 itself:
+
+- `require_evidence.py` now reads the explicit Program Board evidence column,
+  supports multiple Markdown references and brace/range expansion, rejects
+  missing/empty evidence, and emits ASCII-only diagnostics on Windows.
+- The real current Program Board passes the evidence guard.
+- Focused evidence is recorded in `FOLLOW-UP-A-ACCEPTANCE.md` through
+  `FOLLOW-UP-D-ACCEPTANCE.md`.
+- Hard Rule #13 is recorded separately in `GOVERN-13-SUBSPEC.md`; it is not
+  counted as a historical GOVERN-10 implementation item.
+
+These results close the governance checks at CI/manifest level. They do not
+replace the main plan's staging/prod, capacity, recovery, or release gates.

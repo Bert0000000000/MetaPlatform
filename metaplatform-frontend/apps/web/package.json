@@ -39,6 +39,7 @@
     "@monaco-editor/react": "^4.6.0",
     "axios": "^1.18.1",
     "dayjs": "^1.11.21",
+    "highlight.js": "~10.7.0",
     "lucide-react": "^0.468.0",
     "monaco-editor": "^0.45.0",
     "nanoid": "^6.0.0",

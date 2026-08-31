@@ -15,8 +15,6 @@ import time
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from mate_tech_llmgw.cost.recorder import CostRecorder
 from mate_tech_llmgw.quota.bucket import QuotaExceededError
 
@@ -90,17 +88,34 @@ def test_case2_cross_tenant_quota_lookup_blocked() -> None:
     Guard 契约：tenant 上下文由 install_auth 注入；若 handler 内手动
     接受 path 参数 tenant_id 覆盖 ctx.tenant_id，必须拒绝（403）。
     """
-    # 假设 quota_status endpoint 接受 ?tenant_id=... query；
-    # 该 endpoint 行为应为：ctx.tenant_id 与 query tenant_id 不一致 → 403.
-    # 当前 mate_platform.tenancy.context 仅 export current_tenant_context()，
-    # 这里 contact 暂以 no-op 占位；guard 实际接入后改用 ctx.tenant_id 比较。
-    token_tenant = "tenant-a"
-    query_tenant = "tenant-b"
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from mate_platform.tenancy import AuthMethod, RequestContext, TenantId, UserId
 
-    # 占位 contract：guard 函数签名 export 即可视为 SLO 闭环起点。
-    assert token_tenant != query_tenant
-    # 该断言会在 guard 未实现时通过；在 guard 实现后需替换为
-    # 实际 403 行为测试。
+    from mate_tech_llmgw.api.routes import router as llmgw_router
+
+    app = FastAPI()
+
+    @app.middleware("http")
+    async def _inject_tenant_context(request, call_next):
+        request.state.ctx = RequestContext(
+            request_id="req-1",
+            trace_id="trace-1",
+            tenant_id=TenantId("tenant-a"),
+            user_id=UserId("user-a"),
+            roles=frozenset(),
+            permissions=frozenset(),
+            auth_method=AuthMethod.USER,
+        )
+        return await call_next(request)
+
+    app.include_router(llmgw_router)
+    client = TestClient(app)
+
+    resp = client.get("/api/v1/llmgw/quota/tenant-b")
+
+    assert resp.status_code == 403
+    assert resp.json() == {"detail": "tenant access denied"}
 
 
 # ---------------------------------------------------------------------------
@@ -166,8 +181,9 @@ def test_case5_prompt_injection_in_messages_does_not_bypass_tenant() -> None:
     若 messages 中出现 'tenant_id=...' 字样用于 LLM，仅作为检索 key，不能
     覆盖 ctx.tenant_id.
     """
-    from mate_tech_llmgw.main import app
     from fastapi.testclient import TestClient
+
+    from mate_tech_llmgw.main import app
 
     client = TestClient(app)
     resp = client.post(
@@ -198,8 +214,9 @@ def test_case6_unauthorized_tool_name_in_request_rejected() -> None:
     Guard 契约：tool registry（来自 mate-tech-mcp）作为单一来源；未注册
     工具直接抛 400 ToolNotRegisteredError.
     """
-    from mate_tech_llmgw.main import app
     from fastapi.testclient import TestClient
+
+    from mate_tech_llmgw.main import app
 
     client = TestClient(app)
     resp = client.post(

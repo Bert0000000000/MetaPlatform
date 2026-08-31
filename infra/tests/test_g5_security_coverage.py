@@ -16,8 +16,10 @@ Three assertions
 2. **test_write_endpoints_use_write_scope** — mutating operations
    (POST / PUT / DELETE / PATCH) that declare ``oidcScopes`` at the
    operation level must require ``platform.write`` (never
-   ``platform.read``).  Operations that omit ``oidcScopes`` (relying on
-   global security) are skipped — this is a forward-looking guard.
+   ``platform.read``).  The explicitly pinned query-shaped POST inventory
+   is excluded because those operations are read-scoped by contract and is
+   verified by ``test_g5_security_parity.py``.  Operations that omit
+   ``oidcScopes`` (relying on global security) are skipped.
 
 3. **test_healthz_exempt_from_oidc** — ``/healthz`` probes that carry
    an explicit ``security:`` block must NOT require ``oidcScopes``;
@@ -39,6 +41,23 @@ SERVICES_DIR = REPO_ROOT / "mate-platform-backend" / "contracts" / "openapi" / "
 
 HTTP_METHODS = frozenset({"get", "post", "put", "delete", "patch", "head", "options"})
 WRITE_METHODS = frozenset({"post", "put", "delete", "patch"})
+
+# Query-shaped POST operations are an intentional exception to the HTTP-method
+# default.  Keep the identities pinned so a new read-scoped POST cannot evade
+# this guard merely by adding ``x-required-scopes`` to itself.
+READ_POST_ENDPOINT_IDS = frozenset(
+    {
+        "copilot.yaml::POST /api/v1/copilot/analysis/explain-sql",
+        "copilot.yaml::POST /api/v1/copilot/generate/process",
+        "copilot.yaml::POST /api/v1/copilot/ontology/graph/query",
+        "copilot.yaml::POST /api/v1/copilot/scheduling/employees/match",
+        "copilot.yaml::POST /api/v1/copilot/search",
+        "ont.yaml::POST /api/v1/ont/federation/query",
+        "ont.yaml::POST /api/v1/ont/v2/object-sets/query",
+        "ont.yaml::POST /api/v1/ont/v2/object-query",
+        "ont.yaml::POST /api/v1/ont/v2/object-search",
+    }
+)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -63,13 +82,17 @@ def _collect_endpoints() -> list[tuple[str, str, str, dict, Any]]:
     return endpoints
 
 
-ALL_ENDPOINTS = _collect_endpoints()
-WRITE_ENDPOINTS = [e for e in ALL_ENDPOINTS if e[1].lower() in WRITE_METHODS]
-HEALTHZ_ENDPOINTS = [e for e in ALL_ENDPOINTS if "/healthz" in e[2]]
-
-
 def _ep_id(fname: str, method: str, path: str, *_: Any) -> str:
     return f"{fname}::{method} {path}"
+
+
+ALL_ENDPOINTS = _collect_endpoints()
+WRITE_ENDPOINTS = [
+    e
+    for e in ALL_ENDPOINTS
+    if e[1].lower() in WRITE_METHODS and _ep_id(*e) not in READ_POST_ENDPOINT_IDS
+]
+HEALTHZ_ENDPOINTS = [e for e in ALL_ENDPOINTS if "/healthz" in e[2]]
 
 
 # ---------------------------------------------------------------------------

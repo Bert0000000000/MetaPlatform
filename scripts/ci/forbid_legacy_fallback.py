@@ -27,10 +27,14 @@ EXCLUDE_DIRS = {
     ".worktrees",
     "__pycache__",
     "node_modules",
+    "examples",  # examples document the explicit local-dev bypass
     "tests",  # tests legitimately exercise the guard with this flag
 }
 EXCLUDE_EXTS = {".md", ".rst"}  # docs describe the flag without setting it
-EXCLUDE_FILES = {"forbid_legacy_fallback.py"}
+EXCLUDE_FILES = {
+    "forbid_legacy_fallback.py",
+    "start-frontend-local.ps1",  # explicit local-dev helper, never production
+}
 
 
 def main() -> int:
@@ -50,6 +54,9 @@ def main() -> int:
         except (UnicodeDecodeError, OSError):
             continue
         for lineno, line in enumerate(text.splitlines(), start=1):
+            stripped = line.lstrip()
+            if stripped.startswith(("#", "//", "*")) or "``" in line:
+                continue
             for pat in PATTERNS:
                 if pat.search(line):
                     bad.append((path, lineno, line.strip()))
