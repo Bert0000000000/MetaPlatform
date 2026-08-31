@@ -8,6 +8,7 @@ dependencies = [
     "pydantic-settings>=2.0",
     "fastapi>=0.115.0",
     "httpx>=0.28.0",
+    "sqlalchemy>=2.0.0",
     "redis>=5.2.0",
     "aiokafka>=0.12.0",
     "tenacity>=9.0.0",
