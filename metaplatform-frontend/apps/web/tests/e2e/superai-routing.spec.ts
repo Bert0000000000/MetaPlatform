@@ -194,4 +194,29 @@ test.describe('SuperAI 语义路由 e2e (MP-SR-01 task 2)', () => {
       console.warn('--- Console errors ---\n' + consoleErrors.join('\n'));
     }
   });
+
+  test('Agent 调度会在正式聊天页展示本轮路由决策', async ({ page }) => {
+    await page.goto('/superai/chat', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('会话历史', { exact: true })).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole('button', { name: 'Agent 调度', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Agent 调度中', exact: true })).toBeVisible();
+
+    const composer = page.locator('[contenteditable="true"]').first();
+    await expect(composer).toBeVisible();
+    await composer.fill('帮我看看有哪些销售订单');
+    await composer.press('Enter');
+
+    const panel = page.getByTestId('routing-decision-panel');
+    await expect(panel).toBeVisible({ timeout: 35_000 });
+    await expect(panel).toContainText('路由决策');
+    await expect(panel).toContainText(/candidates/);
+
+    await panel.getByTestId('routing-decision-toggle').click();
+    await expect(panel.getByTestId('routing-decision-body')).toBeVisible();
+    await expect(panel.locator('[data-testid^="routing-candidate-"]').first()).toBeVisible();
+    if (consoleErrors.length) {
+      console.warn('--- Console errors ---\n' + consoleErrors.join('\n'));
+    }
+  });
 });

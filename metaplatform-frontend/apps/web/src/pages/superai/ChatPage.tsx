@@ -43,6 +43,7 @@ import {
   listMultimodalModels,
   multimodalUploadChat,
 } from '@/api/superai/chat';
+import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
 import {
   listConversations,
   createConversation as apiCreateConversation,
@@ -61,6 +62,7 @@ import type {
   Evidence,
   GraphData,
   MultimodalModel,
+  RoutingDecision,
 } from '@/api/superai/types';
 
 // ============ 常量 ============
@@ -636,6 +638,15 @@ export default function ChatPage() {
                 return { ...prev, [assistantId]: steps };
               });
             },
+            onRoutingDecision: ({ decision }) => {
+              updateMessage(sessionId, assistantId, (m) => ({
+                ...m,
+                metadata: {
+                  ...(m.metadata || {}),
+                  routingDecisions: [...(m.metadata?.routingDecisions ?? []), decision],
+                },
+              }));
+            },
             onDelta: (delta) => {
               setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
             },
@@ -872,6 +883,10 @@ export default function ChatPage() {
           if (steps && steps.length > 0) {
             contentItems.push({ type: 'steps', steps });
           }
+          const routingDecisions = msg.metadata?.routingDecisions as RoutingDecision[] | undefined;
+          if (routingDecisions && routingDecisions.length > 0) {
+            contentItems.push({ type: 'routing_decision', routingDecisions });
+          }
         }
         if (text) {
           const annotations: Array<{ title: string; detail?: string; url?: string }> = [];
@@ -1063,6 +1078,10 @@ export default function ChatPage() {
                 </div>
               );
             },
+            routing_decision: (item: { routingDecisions?: RoutingDecision[] }) => {
+              const decisions = item.routingDecisions ?? [];
+              return decisions.length > 0 ? <RoutingDecisionPanel decision={decisions} /> : null;
+            },
           }}
           chats={semiMessages}
           topSlot={
@@ -1088,6 +1107,7 @@ export default function ChatPage() {
         {/* 输入框（官方 Configure：模型 / 深度思考 / 思考模式 / 附件） */}
         <AIChatInput
           ref={aiInputRef}
+          immediatelyRender={false}
           placeholder="输入消息，Shift + Enter 换行..."
           sendHotKey="enter"
           round={false}

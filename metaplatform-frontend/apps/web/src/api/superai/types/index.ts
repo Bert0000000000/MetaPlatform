@@ -170,6 +170,7 @@ export interface ChatMessageMetadata {
   plan?: Plan;
   thinking?: string;
   thinkingDuration?: string;
+  routingDecisions?: RoutingDecision[];
 }
 
 export interface ChatSession {

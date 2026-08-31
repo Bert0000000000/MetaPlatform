@@ -30,27 +30,54 @@ _DEFAULT_ROLE_CAPABILITIES: dict[AgentRole, tuple[CapabilityBinding, ...]] = {
         CapabilityBinding(name="inspect_class", worker_kind="mcp", ref="ont_inspect_class"),
         CapabilityBinding(name="object_query", worker_kind="mcp", ref="ont_object_query"),
     ),
+    AgentRole.WORKFLOW: (
+        CapabilityBinding(name="delegate_run", worker_kind="a2a", ref="agent-recon"),
+    ),
+    AgentRole.DATA_PRODUCT: (
+        CapabilityBinding(name="query", worker_kind="a2a", ref="agent-analyst"),
+    ),
+}
+
+_DEFAULT_ROLE_NAMES: dict[AgentRole, str] = {
+    AgentRole.APP: "app",
+    AgentRole.ONTOLOGY: "ontology",
+    AgentRole.WORKFLOW: "Workflow Employee",
+    AgentRole.DATA_PRODUCT: "Data Analyst",
 }
 
 
-def seed_default_roles(*, tenant_id: str = "tenant-default") -> int:
-    """Seed skill capabilities for default roles. Returns count seeded.
+def seed_default_roles(
+    *,
+    tenant_id: str = "tenant-default",
+    default_allowed_actor_roles: tuple[str, ...] = (),
+    backfill_empty_authorization: bool = False,
+) -> int:
+    """Seed default roles and optionally repair empty mappings in an explicit local profile.
 
-    Idempotent: an already-registered role is left untouched (its
-    capabilities are preserved), so re-runs don't clobber tenant config.
+    Without ``default_allowed_actor_roles``, new roles remain denied by default.
+    A non-empty mapping can be supplied by a local profile.  Existing roles are
+    only changed when ``backfill_empty_authorization`` is explicitly enabled;
+    their name, capabilities, enabled state and non-empty tenant mappings are
+    then preserved.
     """
     registry = get_role_registry()
-    seeded = 0
+    changed = 0
+    allowed = tuple(dict.fromkeys(value.strip() for value in default_allowed_actor_roles if value.strip()))
     for role, caps in _DEFAULT_ROLE_CAPABILITIES.items():
         existing = registry.get(tenant_id, role.value)
         if existing is not None:
-            continue  # preserve tenant-configured capabilities
+            if backfill_empty_authorization and allowed and not existing.allowed_actor_roles:
+                registry.set_allowed_actor_roles(tenant_id, role.value, allowed)
+                changed += 1
+                logger.info("orchestrator.seed.role_authorization_backfilled", tenant=tenant_id, role=role.value)
+            continue
         registry.register(
             tenant_id=tenant_id,
             role=role.value,
-            name=role.value,
+            name=_DEFAULT_ROLE_NAMES[role],
             capabilities=list(caps),
+            allowed_actor_roles=allowed,
         )
-        seeded += 1
+        changed += 1
         logger.info("orchestrator.seed.role", tenant=tenant_id, role=role.value)
-    return seeded
+    return changed

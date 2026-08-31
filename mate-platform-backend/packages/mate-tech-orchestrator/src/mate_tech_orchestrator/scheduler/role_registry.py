@@ -15,7 +15,7 @@ vocabulary; unknown slugs are rejected at registration time.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -131,6 +131,27 @@ class RoleRegistry:
 
     def get(self, tenant_id: str, role: str) -> DigitalEmployeeRole | None:
         return self._roles.get((tenant_id, role))
+
+    def set_allowed_actor_roles(
+        self,
+        tenant_id: str,
+        role: str,
+        allowed_actor_roles: list[str] | tuple[str, ...],
+    ) -> DigitalEmployeeRole | None:
+        """Persist a replacement actor-role mapping without changing role metadata."""
+        existing = self.get(tenant_id, role)
+        if existing is None:
+            return None
+        allowed = tuple(
+            dict.fromkeys(value.strip() for value in allowed_actor_roles if value.strip())
+        )
+        updated = replace(existing, allowed_actor_roles=allowed)
+        self._roles[(tenant_id, role)] = updated
+        try:
+            self._store.save(updated)
+        except Exception as e:
+            logger.warning("orchestrator.role.persist_failed", role=role, error=str(e))
+        return updated
 
     def list(self, tenant_id: str) -> list[DigitalEmployeeRole]:
         return [r for (tid, _), r in self._roles.items() if tid == tenant_id]

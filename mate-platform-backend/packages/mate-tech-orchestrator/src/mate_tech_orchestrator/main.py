@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI
 
@@ -50,6 +51,17 @@ async def _healthz() -> dict[str, str]:
     return {"status": "ok", "service": "mate-tech-orchestrator"}
 
 
+def _configured_default_actor_roles() -> tuple[str, ...]:
+    raw = os.environ.get("ORCHESTRATOR_DEFAULT_ALLOWED_ACTOR_ROLES", "")
+    return tuple(role.strip() for role in raw.split(",") if role.strip())
+
+
+def _local_authorization_backfill_enabled() -> bool:
+    return os.environ.get("ORCHESTRATOR_BACKFILL_EMPTY_DEFAULT_AUTH", "").lower() in {
+        "1", "true", "yes", "on",
+    }
+
+
 def create_app() -> FastAPI:
     """Build the orchestrator FastAPI application."""
     app = FastAPI(
@@ -63,8 +75,12 @@ def create_app() -> FastAPI:
     # Wire the scheduler singletons (DI seam for tests via set_* / app.state).
     registry = get_role_registry()
     registry.restore()  # reload persisted roles (cross-restart survival)
-    # Seed default skill capabilities (idempotent) so App role can search/read skills.
-    seed_default_roles()
+    # Local acceptance can explicitly map built-in employees to its platform
+    # administrator.  Production leaves both settings empty and fails closed.
+    seed_default_roles(
+        default_allowed_actor_roles=_configured_default_actor_roles(),
+        backfill_empty_authorization=_local_authorization_backfill_enabled(),
+    )
     app.state.role_registry = registry
     app.state.dispatcher = get_dispatcher()
     # MP-SAL-05：plan runner 注入 ontology client（action 步骤执行器；
