@@ -550,7 +550,9 @@ async def run_agent_loop(
             if not target or (slug_enum and target not in slug_enum):
                 calls.append({
                     "call_id": call_id, "fn": fn, "args": args,
-                    "valid": False, "error": f"未知或缺失 target_rid: {target!r}",
+                    "valid": False,
+                    "error": f"未知或缺失 target_rid: {target!r}",
+                    "reason_code": "target_not_authorized",
                 })
             elif not message:
                 calls.append({
@@ -565,6 +567,16 @@ async def run_agent_loop(
 
         if not calls:
             yield {"type": "final", "content": _strip_chain_of_thought(content)}
+            return
+        if any(call.get("reason_code") == "target_not_authorized" for call in calls):
+            yield {
+                "type": "routing_decision",
+                "stage": "final",
+                "outcome": "denied",
+                "reason_code": "target_not_authorized",
+                "candidates": [],
+                "selected": None,
+            }
             return
 
         # Emit all tool_call events first so the frontend renders all steps.

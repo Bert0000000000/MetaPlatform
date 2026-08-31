@@ -194,6 +194,32 @@ async def test_empty_authorized_snapshot_is_denied_without_model_or_dispatch() -
     assert orch.calls == []
 
 
+@pytest.mark.asyncio
+async def test_candidate_outside_authorized_snapshot_is_denied_without_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("forbidden-role", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+        )
+    ]
+
+    assert events[-1] == {
+        "type": "routing_decision",
+        "stage": "final",
+        "outcome": "denied",
+        "reason_code": "target_not_authorized",
+        "candidates": [],
+        "selected": None,
+    }
+    assert orch.calls == []
+
+
 # ---------------------------------------------------------------------------
 # candidate_roles narrows system prompt
 # ---------------------------------------------------------------------------
