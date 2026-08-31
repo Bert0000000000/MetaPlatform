@@ -53,6 +53,7 @@ class DigitalEmployeeRole:
     tenant_id: str
     name: str = ""
     capabilities: tuple[CapabilityBinding, ...] = ()
+    allowed_actor_roles: tuple[str, ...] = ()
     enabled: bool = True
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
@@ -98,6 +99,7 @@ class RoleRegistry:
         role: str,
         name: str = "",
         capabilities: list[CapabilityBinding] | tuple[CapabilityBinding, ...] = (),
+        allowed_actor_roles: list[str] | tuple[str, ...] = (),
     ) -> DigitalEmployeeRole:
         if not tenant_id:
             raise RoleRegistryError("tenant_id is required")
@@ -110,11 +112,15 @@ class RoleRegistry:
             ) from e
         for cap in capabilities:
             validate_worker_kind(cap.worker_kind)
+        allowed = tuple(
+            dict.fromkeys(value.strip() for value in allowed_actor_roles if value.strip())
+        )
         entry = DigitalEmployeeRole(
             role=role,
             tenant_id=tenant_id,
             name=name or role,
             capabilities=tuple(capabilities),
+            allowed_actor_roles=allowed,
         )
         self._roles[(tenant_id, role)] = entry
         try:
@@ -128,6 +134,20 @@ class RoleRegistry:
 
     def list(self, tenant_id: str) -> list[DigitalEmployeeRole]:
         return [r for (tid, _), r in self._roles.items() if tid == tenant_id]
+
+    def authorized_snapshot(
+        self, tenant_id: str, *, actor_roles: set[str] | frozenset[str],
+    ) -> list[DigitalEmployeeRole]:
+        """Return only enabled roles explicitly permitted to the actor.
+
+        A missing role mapping is intentionally not treated as public access.
+        """
+        actor = set(actor_roles)
+        return [
+            role for role in self.list(tenant_id)
+            if role.enabled
+            and bool(actor.intersection(role.allowed_actor_roles))
+        ]
 
     def iter_all(self) -> list[DigitalEmployeeRole]:
         """All registered roles across tenants (startup wiring)."""

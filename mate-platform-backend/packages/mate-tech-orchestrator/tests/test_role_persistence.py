@@ -40,6 +40,7 @@ def test_role_roundtrip_persists(_sqlite) -> None:
         role="knowledge",
         name="知识库员工",
         capabilities=_caps(),
+        allowed_actor_roles=["knowledge_user", "PLATFORM_SUPER_ADMIN"],
     )
 
     # A fresh registry over the same store restores the persisted role.
@@ -51,6 +52,34 @@ def test_role_roundtrip_persists(_sqlite) -> None:
     assert role.name == "知识库员工"
     assert role.capabilities[0].name == "kb_search"
     assert role.capabilities[0].worker_kind == "mcp"
+    assert role.allowed_actor_roles == ("knowledge_user", "PLATFORM_SUPER_ADMIN")
+
+
+def test_authorized_snapshot_filters_roles_and_fails_closed(_sqlite) -> None:
+    store = SqlRoleStore(always_persist=True)
+    reg = RoleRegistry(store=store)
+    reg.register(
+        tenant_id="tenant-acme",
+        role="knowledge",
+        capabilities=_caps(),
+        allowed_actor_roles=["knowledge_user"],
+    )
+    reg.register(
+        tenant_id="tenant-acme",
+        role="workflow",
+        capabilities=_caps(),
+        allowed_actor_roles=["workflow_operator"],
+    )
+    reg.register(
+        tenant_id="tenant-acme",
+        role="ontology",
+        capabilities=_caps(),
+    )
+
+    assert [role.role for role in reg.authorized_snapshot(
+        "tenant-acme", actor_roles={"knowledge_user"},
+    )] == ["knowledge"]
+    assert reg.authorized_snapshot("tenant-acme", actor_roles=set()) == []
 
 
 def test_role_unregister_persists(_sqlite) -> None:

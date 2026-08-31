@@ -111,6 +111,7 @@ async def register_role(request: Request, body: RegisterRoleRequest) -> dict[str
                 CapabilityBinding(name=c.name, worker_kind=c.worker_kind, ref=c.ref)
                 for c in body.capabilities
             ],
+            allowed_actor_roles=body.allowed_actor_roles,
         )
     except (RoleRegistryError, ValueError) as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
@@ -128,6 +129,7 @@ async def register_role(request: Request, body: RegisterRoleRequest) -> dict[str
         "role": role.role,
         "name": role.name,
         "capabilities": [binding_to_dict(c) for c in role.capabilities],
+        "allowed_actor_roles": list(role.allowed_actor_roles),
     }
 
 

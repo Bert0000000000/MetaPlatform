@@ -46,6 +46,18 @@ def _capabilities_from_json(raw: str) -> tuple[CapabilityBinding, ...]:
     )
 
 
+def _roles_to_json(roles: tuple[str, ...]) -> str:
+    return json.dumps(list(roles), sort_keys=True)
+
+
+def _roles_from_json(raw: str) -> tuple[str, ...]:
+    try:
+        values = json.loads(raw or "[]")
+    except ValueError:
+        values = []
+    return tuple(str(value) for value in values if isinstance(value, str) and value)
+
+
 class SqlRoleStore:
     """Persist digital-employee roles to SQL when a DSN is configured."""
 
@@ -70,6 +82,7 @@ class SqlRoleStore:
                 orm = models.RoleORM(tenant_id=role.tenant_id, role=role.role)
             orm.name = role.name
             orm.capabilities = _capabilities_to_json(role.capabilities)
+            orm.allowed_actor_roles = _roles_to_json(role.allowed_actor_roles)
             orm.enabled = role.enabled
             orm.created_at = role.created_at
             session.merge(orm)
@@ -98,6 +111,7 @@ class SqlRoleStore:
                 tenant_id=r.tenant_id,
                 name=r.name or r.role,
                 capabilities=_capabilities_from_json(r.capabilities),
+                allowed_actor_roles=_roles_from_json(r.allowed_actor_roles),
                 enabled=r.enabled,
                 created_at=r.created_at,
             )
