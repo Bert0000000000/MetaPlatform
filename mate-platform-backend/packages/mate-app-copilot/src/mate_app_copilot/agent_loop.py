@@ -28,7 +28,6 @@ from typing import Any
 
 from .clients.llmgw_stream import LlmgwStreamError
 from .clients.orchestrator_client import OrchestratorClientError
-from .dispatcher import DispatchResult
 from .semantic_router import CandidateRole, SemanticRouter
 
 MAX_TOOL_ITERATIONS = 5
@@ -316,10 +315,8 @@ async def run_agent_loop(
     MP-SR-01（任务2）：
       - ``semantic_router`` 给定时，第一轮 decision_turn 前用其预筛 top_k
         候选；候选注入 system prompt（LLM 决策面收窄）。
-      - ``dispatch_by_routing_fn`` 给定时，LLM 决策不可用 / 不返回
-        ``dispatch_employee`` 时走 4 级 fallback 链（a2a → kernel_role →
-        embedding_match → keyword_substring），命中即派发。每轮都打
-        ``routing_decision`` SSE event 供前端 trace。
+      - 无授权候选、LLM 决策不可用或决策缺失时，输出 final denied
+        ``routing_decision``；这些不确定状态不会触发自动派发。
     """
     # Pre-screen: 算 candidate_roles（仅取最后一条 user message 算语义）
     last_user_msg = next(
@@ -372,6 +369,15 @@ async def run_agent_loop(
             if candidate_roles else "no candidates (empty roles or query)"
         ),
     }
+    if not candidate_roles:
+        yield _denied_routing_decision(
+            reason_code="no_authorized_candidates",
+            candidate_roles=[],
+            policy_version=router.policy.version,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+        )
+        return
 
     system_prompt = build_system_prompt(
         roles,
@@ -421,15 +427,8 @@ async def run_agent_loop(
                 llm_down = True
 
         if llm_down:
-            reason_code = "llm_unavailable"
-            if dispatch_by_routing_fn is not None:
-                _, reason_code = await _dispatch_fallback(
-                    user_message=last_user_msg,
-                    roles=roles,
-                    dispatch_by_routing_fn=dispatch_by_routing_fn,
-                )
             yield _denied_routing_decision(
-                reason_code=reason_code,
+                reason_code="llm_unavailable",
                 candidate_roles=candidate_roles,
                 policy_version=router.policy.version,
                 trace_id=trace_id,
@@ -437,13 +436,22 @@ async def run_agent_loop(
             )
             return
         if decision is None:
-            yield {"type": "final", "content": "LLM 决策服务不可用。"}
+            yield _denied_routing_decision(
+                reason_code="llm_decision_missing",
+                candidate_roles=candidate_roles,
+                policy_version=router.policy.version,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
             return
 
         tool_calls = decision.get("tool_calls") or []
         content = str(decision.get("content") or "")
 
         if not tool_calls:
+            if dispatched:
+                yield {"type": "final", "content": _strip_chain_of_thought(content)}
+                return
             yield _denied_routing_decision(
                 reason_code="missing_dispatch_tool_call",
                 candidate_roles=candidate_roles,
@@ -654,31 +662,6 @@ async def run_agent_loop(
 
 
 # ────────────────── MP-SR-01 helpers ──────────────────
-
-
-async def _dispatch_fallback(
-    *,
-    user_message: str,
-    roles: list[dict[str, Any]],
-    dispatch_by_routing_fn: Any,
-) -> tuple[DispatchResult | None, str]:
-    """Wrap ``dispatch_by_routing_fn`` for the agent loop.
-
-    Returns a result only for an authorized A2A target; callers receive a
-    stable reason code for no-match and handler failure.
-    """
-    try:
-        result = await dispatch_by_routing_fn(
-            user_message=user_message,
-            available_roles=roles,
-        )
-    except Exception:
-        return None, "dispatcher_failed"
-    if result is None or getattr(result, "source", None) in (None, "none"):
-        return None, "dispatcher_no_authorized_target"
-    if not getattr(result, "target_rid", None):
-        return None, "dispatcher_no_authorized_target"
-    return result, "authorized_a2a_selected"
 
 
 def _denied_routing_decision(

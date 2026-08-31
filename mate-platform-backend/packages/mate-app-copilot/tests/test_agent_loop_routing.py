@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from mate_app_copilot import agent_loop
 from mate_app_copilot.agent_loop import (
     build_system_prompt,
     run_agent_loop,
@@ -92,6 +93,27 @@ def _tool_call_decision(target: str, message: str, call_id: str = "call-1") -> d
 
 def _plain_decision(text: str) -> dict:
     return {"content": text, "tool_calls": []}
+
+
+def _assert_denied(event: dict, *, reason_code: str) -> None:
+    assert event["type"] == "routing_decision"
+    assert event["stage"] == "final"
+    assert event["outcome"] == "denied"
+    assert event["reason_code"] == reason_code
+    assert event["selected"] is None
+    assert isinstance(event["candidates"], list)
+    assert event["candidate_count"] == len(event["candidates"])
+    assert event["policy_version"] == "semantic-router-v1"
+    assert event["trace_id"]
+    assert event["trace_id"] == event["correlation_id"]
+    assert "content" not in event
+
+
+class _NoCandidateRouter:
+    policy = SemanticRouter().policy
+
+    def route(self, *args, **kwargs) -> list[CandidateRole]:
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -215,16 +237,7 @@ async def test_empty_authorized_snapshot_is_denied_without_model_or_dispatch() -
         )
     ]
 
-    assert events[0].items() >= {
-        "type": "routing_decision",
-        "stage": "final",
-        "outcome": "denied",
-        "reason_code": "no_authorized_roles",
-        "candidates": [],
-        "candidate_count": 0,
-        "selected": None,
-        "policy_version": "semantic-router-v1",
-    }.items()
+    _assert_denied(events[0], reason_code="no_authorized_roles")
     assert llm._decisions
     assert orch.calls == []
 
@@ -244,17 +257,30 @@ async def test_candidate_outside_authorized_snapshot_is_denied_without_dispatch(
         )
     ]
 
-    assert events[-1].items() >= {
-        "type": "routing_decision",
-        "stage": "final",
-        "outcome": "denied",
-        "taken_path": "llm_fc",
-        "reason_code": "target_not_authorized",
-        "candidates": [],
-        "selected": None,
-        "policy_version": "semantic-router-v1",
-        "candidate_count": 0,
-    }.items()
+    _assert_denied(events[-1], reason_code="target_not_authorized")
+    assert events[-1]["taken_path"] == "llm_fc"
+    assert orch.calls == []
+
+
+@pytest.mark.asyncio
+async def test_empty_authorized_candidates_are_denied_before_model_or_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("workflow", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+            semantic_router=_NoCandidateRouter(),
+        )
+    ]
+
+    _assert_denied(events[-1], reason_code="no_authorized_candidates")
+    assert llm._decisions
+    assert not any(event["type"] == "tool_call" for event in events)
     assert orch.calls == []
 
 
@@ -304,14 +330,7 @@ async def test_llm_down_is_denied_before_any_tool_call() -> None:
             tenant_id="tenant-acme",
         )
     ]
-    final = events[-1]
-    assert final["type"] == "routing_decision"
-    assert final["stage"] == "final"
-    assert final["outcome"] == "denied"
-    assert final["reason_code"] == "llm_unavailable"
-    assert final["selected"] is None
-    assert final["candidate_count"] == len(final["candidates"])
-    assert final["trace_id"] == final["correlation_id"]
+    _assert_denied(events[-1], reason_code="llm_unavailable")
     assert not any(event["type"] == "tool_call" for event in events)
     assert orch.calls == []
 
@@ -340,23 +359,21 @@ async def test_missing_dispatch_tool_call_is_denied_before_any_tool_call() -> No
             dispatch_by_routing_fn=_dispatch_by_routing,
         )
     ]
-    final = events[-1]
-    assert final["type"] == "routing_decision"
-    assert final["stage"] == "final"
-    assert final["outcome"] == "denied"
-    assert final["reason_code"] == "missing_dispatch_tool_call"
-    assert final["selected"] is None
+    _assert_denied(events[-1], reason_code="missing_dispatch_tool_call")
     assert not any(event["type"] == "tool_call" for event in events)
     assert orch.calls == []
 
 
 @pytest.mark.asyncio
-async def test_dispatcher_exception_is_denied_before_any_tool_call() -> None:
-    """A dispatcher failure must not fall through to any automatic selector."""
+async def test_llm_down_is_denied_without_calling_dispatcher() -> None:
+    """All LLM outages deny; dispatcher is not an outage fallback."""
     orch = _FakeOrch()
+    dispatcher_called = False
 
     async def _dispatch_by_routing(**_):
-        raise RuntimeError("unavailable")
+        nonlocal dispatcher_called
+        dispatcher_called = True
+        return DispatchResult(source="a2a", target_rid="workflow", reason="authorized")
 
     events = [
         e async for e in run_agent_loop(
@@ -369,12 +386,32 @@ async def test_dispatcher_exception_is_denied_before_any_tool_call() -> None:
             dispatch_by_routing_fn=_dispatch_by_routing,
         )
     ]
-    final = events[-1]
-    assert final["type"] == "routing_decision"
-    assert final["stage"] == "final"
-    assert final["outcome"] == "denied"
-    assert final["reason_code"] == "dispatcher_failed"
-    assert final["selected"] is None
+    _assert_denied(events[-1], reason_code="llm_unavailable")
+    assert dispatcher_called is False
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
+
+
+@pytest.mark.asyncio
+async def test_missing_llm_decision_is_denied_before_any_tool_call(monkeypatch) -> None:
+    async def _empty_decision_turn(*args, **kwargs):
+        if False:
+            yield {}
+
+    monkeypatch.setattr(agent_loop, "_decision_turn", _empty_decision_turn)
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=_FakeLlm([]),
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+        )
+    ]
+
+    _assert_denied(events[-1], reason_code="llm_decision_missing")
     assert not any(event["type"] == "tool_call" for event in events)
     assert orch.calls == []
 
@@ -422,21 +459,20 @@ async def test_full_happy_path_with_semantic_routing_enabled() -> None:
             tenant_id="tenant-acme",
         )
     ]
-    # First iteration dispatches; the second has no dispatch tool call and denies.
+    # First iteration dispatches; the follow-up text is the ordinary user answer.
     types = [e["type"] for e in events]
     assert types[0] == "routing_decision"
     assert "routing_decision" in types
     assert "tool_call" in types
     assert "tool_result" in types
-    assert types[-1] == "routing_decision"
+    assert types[-1] == "final"
     assert orch.calls and orch.calls[0]["target_rid"] == "workflow"
     final_selection = next(
         event for event in events
         if event["type"] == "routing_decision" and event.get("selected") == "workflow"
     )
     assert final_selection["taken_path"] == "llm_fc"
-    assert events[-1]["outcome"] == "denied"
-    assert events[-1]["reason_code"] == "missing_dispatch_tool_call"
+    assert events[-1]["content"] == "完成"
 
 
 # ---------------------------------------------------------------------------
