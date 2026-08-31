@@ -29,14 +29,31 @@ const defaultPlan = (): PlanDraft => ({
 });
 
 function errorMessage(error: unknown): string {
-  const candidate = error as { response?: { data?: { detail?: unknown } }; message?: string };
-  const detail = candidate.response?.data?.detail;
+  const candidate = error as {
+    response?: { data?: { detail?: unknown } };
+    payload?: { detail?: unknown };
+    message?: string;
+  };
+  const detail = candidate.response?.data?.detail ?? candidate.payload?.detail;
   if (typeof detail === 'string') return detail;
+  if (detail && typeof detail === 'object' && 'code' in detail
+    && (detail as { code?: string }).code === 'version_conflict') {
+    return '草稿已在另一处更新，请重新加载后再保存。';
+  }
   if (detail && typeof detail === 'object' && 'issues' in detail) {
     const issues = (detail as { issues?: PlanValidationIssue[] }).issues || [];
     return issues.map((issue) => issue.message).join('；') || '工作流校验失败';
   }
   return candidate.message || '请求失败，请稍后重试。';
+}
+
+function isVersionConflict(error: unknown): boolean {
+  const candidate = error as {
+    response?: { data?: { detail?: { code?: string } } };
+    payload?: { detail?: { code?: string } };
+  };
+  const detail = candidate.response?.data?.detail ?? candidate.payload?.detail;
+  return detail?.code === 'version_conflict';
 }
 
 export default function ActionOrchestrationPage() {
@@ -50,6 +67,7 @@ export default function ActionOrchestrationPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsReload, setNeedsReload] = useState(false);
   const [issues, setIssues] = useState<PlanValidationIssue[]>([]);
 
   const selectedNode = useMemo(
@@ -60,6 +78,7 @@ export default function ActionOrchestrationPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setNeedsReload(false);
     try {
       const [loaded, registry] = await Promise.all([getWorkflowDefinition(definitionId), getNodeRegistry()]);
       setDefinition(loaded);
@@ -98,9 +117,11 @@ export default function ActionOrchestrationPage() {
       setDefinition(saved);
       setPlan(saved.draft_plan);
       setIssues(saved.validation?.issues || []);
+      setNeedsReload(false);
       Toast.success('草稿已保存');
     } catch (saveError) {
       setError(errorMessage(saveError));
+      setNeedsReload(isVersionConflict(saveError));
     } finally {
       setSaving(false);
     }
@@ -172,7 +193,14 @@ export default function ActionOrchestrationPage() {
           </Space>
         </div>
         {definition && <Space><Tag color="blue">草稿 v{definition.version}</Tag>{definition.published_version && <Tag color="green">已发布 v{definition.published_version}</Tag>}</Space>}
-        {error && <Card style={{ width: '100%', borderColor: 'var(--semi-color-danger)' }}><Typography.Text type="danger">{error}</Typography.Text></Card>}
+        {error && (
+          <Card style={{ width: '100%', borderColor: 'var(--semi-color-danger)' }}>
+            <Space>
+              <Typography.Text type="danger">{error}</Typography.Text>
+              {needsReload && <Button size="small" onClick={() => void load()}>重新加载</Button>}
+            </Space>
+          </Card>
+        )}
         {issues.length > 0 && (
           <Card title="发布前需要处理" style={{ width: '100%' }}>
             {issues.map((issue, index) => <Typography.Paragraph key={`${issue.code}-${index}`} type="danger" style={{ margin: '4px 0' }}>{issue.node_id ? `${issue.node_id}：` : ''}{issue.message}</Typography.Paragraph>)}
