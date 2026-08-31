@@ -284,6 +284,31 @@ async def test_empty_authorized_candidates_are_denied_before_model_or_dispatch()
     assert orch.calls == []
 
 
+@pytest.mark.asyncio
+async def test_empty_candidates_with_ontology_tools_still_reject_employee_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("workflow", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "查本体后帮我派发"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+            semantic_router=_NoCandidateRouter(),
+            ontology_tools=[
+                {"type": "function", "function": {"name": "list_classes", "parameters": {}}}
+            ],
+            ontology_tool_exec=lambda _name, _args: {},
+        )
+    ]
+
+    _assert_denied(events[-1], reason_code="no_authorized_candidates")
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
+
+
 # ---------------------------------------------------------------------------
 # candidate_roles narrows system prompt
 # ---------------------------------------------------------------------------

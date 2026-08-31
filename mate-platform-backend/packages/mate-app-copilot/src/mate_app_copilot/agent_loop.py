@@ -383,14 +383,15 @@ async def run_agent_loop(
         )
         return
 
+    dispatch_roles = roles if candidate_roles else []
     system_prompt = build_system_prompt(
-        roles,
+        dispatch_roles,
         object_cards=object_cards,
         ontology_hint=bool(ontology_tools),
         candidate_roles=candidate_roles or None,
     )
-    tools = build_tools(roles, ontology_tools=ontology_tools)
-    slug_enum = {str(r.get("role")) for r in roles if r.get("role")}
+    tools = build_tools(dispatch_roles, ontology_tools=ontology_tools)
+    slug_enum = {str(r.get("role")) for r in dispatch_roles if r.get("role")}
     onto_names = {
         t["function"]["name"] for t in (ontology_tools or ())
         if isinstance(t, dict) and "function" in t
@@ -525,12 +526,16 @@ async def run_agent_loop(
                 args = {}
             target = str(args.get("target_rid", "") or "")
             message = str(args.get("message", "") or "")
-            if not target or (slug_enum and target not in slug_enum):
+            if not target or target not in slug_enum:
                 calls.append({
                     "call_id": call_id, "fn": fn, "args": args,
                     "valid": False,
                     "error": f"未知或缺失 target_rid: {target!r}",
-                    "reason_code": "target_not_authorized",
+                    "reason_code": (
+                        "no_authorized_candidates"
+                        if not candidate_roles
+                        else "target_not_authorized"
+                    ),
                 })
             elif not message:
                 calls.append({
@@ -546,13 +551,24 @@ async def run_agent_loop(
         if not calls:
             yield {"type": "final", "content": _strip_chain_of_thought(content)}
             return
-        if any(call.get("reason_code") == "target_not_authorized" for call in calls):
+        denied_reason = next(
+            (
+                str(call["reason_code"])
+                for call in calls
+                if call.get("reason_code") in {
+                    "target_not_authorized",
+                    "no_authorized_candidates",
+                }
+            ),
+            None,
+        )
+        if denied_reason:
             yield {
                 "type": "routing_decision",
                 "stage": "final",
                 "outcome": "denied",
                 "taken_path": "llm_fc",
-                "reason_code": "target_not_authorized",
+                "reason_code": denied_reason,
                 "candidates": [],
                 "selected": None,
                 "policy_version": router.policy.version,
