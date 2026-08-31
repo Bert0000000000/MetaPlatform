@@ -353,6 +353,16 @@ async def run_agent_loop(
          if m.get("role") == "user"),
         "",
     )
+    if not roles:
+        yield {
+            "type": "routing_decision",
+            "stage": "final",
+            "outcome": "denied",
+            "reason_code": "no_authorized_roles",
+            "candidates": [],
+            "selected": None,
+        }
+        return
     router = semantic_router or SemanticRouter()
     candidate_roles: list[CandidateRole] = []
     if last_user_msg and roles:

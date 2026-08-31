@@ -166,6 +166,34 @@ async def test_routing_decision_empty_when_no_user_message() -> None:
     assert rd["candidates"] == []
 
 
+@pytest.mark.asyncio
+async def test_empty_authorized_snapshot_is_denied_without_model_or_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("workflow", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
+            model="doubao-pro-32k",
+            roles=[],
+            tenant_id="tenant-acme",
+            capability_version="snapshot-empty",
+        )
+    ]
+
+    assert events == [{
+        "type": "routing_decision",
+        "stage": "final",
+        "outcome": "denied",
+        "reason_code": "no_authorized_roles",
+        "candidates": [],
+        "selected": None,
+    }]
+    assert llm._decisions
+    assert orch.calls == []
+
+
 # ---------------------------------------------------------------------------
 # candidate_roles narrows system prompt
 # ---------------------------------------------------------------------------
