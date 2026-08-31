@@ -251,6 +251,6 @@ class TestDedupHttpE2E:
         assert body["source_rid"] == "ont.acme.obj.crm.customer.v1"
         assert body["affected_individuals"] == 1
 
-        # 4) final proposal status = applied
+        # 4) final proposal status = executed
         r = client_with_ctx.get(f"/api/v1/ont/v2/proposals/{pid}")
-        assert r.json()["status"] == "applied"
+        assert r.json()["status"] == "executed"

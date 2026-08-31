@@ -2024,7 +2024,7 @@ class PgOntologyRepository(OntologyRepository):
                     """
                     UPDATE ont_proposal
                     SET status = %s, confirmed_by = %s, confirmed_at = %s,
-                        applied_at = CASE WHEN %s = 'applied' THEN now() ELSE applied_at END
+                        applied_at = CASE WHEN %s = 'executed' THEN now() ELSE applied_at END
                     WHERE proposal_id = %s
                     """,
                     (
@@ -2097,7 +2097,7 @@ class PgOntologyRepository(OntologyRepository):
             )
             created = self.create_individual(ind)
             self._persist_proposal_transition(
-                self._action_service.mark_applied(proposal_id),
+                self._action_service.mark_executed(proposal_id),
             )
             return created
         if p.kind == "model_type":
@@ -2121,7 +2121,7 @@ class PgOntologyRepository(OntologyRepository):
             )
             saved = self.upsert_object_type(ot)
             self._persist_proposal_transition(
-                self._action_service.mark_applied(proposal_id),
+                self._action_service.mark_executed(proposal_id),
             )
             return saved
         if p.kind == "merge_suggestion":
@@ -2135,7 +2135,7 @@ class PgOntologyRepository(OntologyRepository):
             mapping = p.parameters.get("mapping") or {}
             result = self.merge_object_types(source_rid, target_rid, mapping)
             self._persist_proposal_transition(
-                self._action_service.mark_applied(proposal_id),
+                self._action_service.mark_executed(proposal_id),
             )
             return result
         raise ValueError(f"unknown proposal kind: {p.kind!r}")

@@ -1238,10 +1238,10 @@ class ProposalPreviewResponse(BaseModel):
     confirmed_at: str | None = None
 
 
-_PREVIEW_LOCK_STATES = {"confirmed", "applied", "rejected"}
+_PREVIEW_LOCK_STATES = {"confirmed", "executed", "rejected"}
 _PREVIEW_LOCK_MESSAGES = {
     "confirmed": "proposal already confirmed; further preview not allowed",
-    "applied": "proposal already applied; preview not available (look at audit)",
+    "executed": "proposal already executed; preview not available (look at audit)",
     "rejected": "proposal already rejected; cannot preview",
 }
 

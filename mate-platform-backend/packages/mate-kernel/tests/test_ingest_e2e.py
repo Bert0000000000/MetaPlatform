@@ -76,7 +76,7 @@ class TestCreateInstance:
         got = repo.get_individual(created.rid)
         assert dict(got.props)[ClassRef(f"ont.{_T}.prop.name.v1")] == "华信科技"
         assert got.tenant_id == _T
-        assert repo.get_proposal(prop.proposal_id).status.value == "applied"
+        assert repo.get_proposal(prop.proposal_id).status.value == "executed"
 
     def test_unconfirmed_execute_never_creates(self) -> None:
         repo = _repo()
@@ -116,7 +116,7 @@ class TestModelType:
         repo.confirm_proposal(prop.proposal_id, confirmed_by="rouge")
         ot = repo.execute_proposal(prop.proposal_id)
         assert ot.rid.rid == f"ont.{_T}.obj.warehouse.v1"
-        assert repo.get_proposal(prop.proposal_id).status.value == "applied"
+        assert repo.get_proposal(prop.proposal_id).status.value == "executed"
 
 
 class TestActionKindGuards:

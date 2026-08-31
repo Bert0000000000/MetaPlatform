@@ -258,7 +258,7 @@ def _propose_object_type_payload(
     }
     impact = (
         f"将创建 ObjectType {rid}，含 {len(prop_dicts)} 个属性，主键 {pk_rid}；"
-        f"随后进 proposal 状态机（pending → 用户确认 → applied）。"
+        f"随后进 proposal 状态机（pending → 用户确认 → executed）。"
     )
     return type_def, impact
 

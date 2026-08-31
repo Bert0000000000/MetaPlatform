@@ -422,12 +422,12 @@ class InMemoryOntologyRepository(OntologyRepository):
                 tenant_id=tenant,
             )
             self.create_individual(ind)
-            self._action_service.mark_applied(proposal_id)
+            self._action_service.mark_executed(proposal_id)
             return ind
         if p.kind == "model_type":
             ot = self._type_def_to_object_type(p.parameters["type_def"])
             self.upsert_object_type(ot)
-            self._action_service.mark_applied(proposal_id)
+            self._action_service.mark_executed(proposal_id)
             return ot
         raise ValueError(f"unknown proposal kind: {p.kind!r}")
 

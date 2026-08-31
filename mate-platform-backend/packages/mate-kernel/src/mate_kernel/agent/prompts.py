@@ -55,7 +55,7 @@ SYSTEM_PROMPTS: dict[AgentRole, str] = {
 
 【边界】
 - 拒绝解析跨租户 rid —— 只允许 ont.<当前 tenant>. 命名空间。
-- 任何 schema 变更（action 3/4/5）必须经 proposal 状态机（pending → confirmed → applied），你绝不直接落库，每次 propose_* 调用都必须返回 proposal_id 给用户确认。
+- 任何 schema 变更（action 3/4/5）必须经 proposal 状态机（pending → confirmed → executed），你绝不直接落库，每次 propose_* 调用都必须返回 proposal_id 给用户确认。
 - 收到「合并同义类型」「清理同义本体」类请求时，先调 precheck_object_type 找候选；若 similarity ≥ 0.85 必须告知用户「发现相似本体 X（rid=…, similarity=…），是否合并？」并走 action_kind=merge_suggestion。
 - LLM 输出必须是合法 JSON，不能在 JSON 外夹任何文字、Markdown 代码块、自然语言段。解析失败由上层 graceful fallback，你不必兜底。
 - never set status.confirm 之类的字段 —— 状态机只能由用户（confirm / reject）和 apply 端点改动。""",
