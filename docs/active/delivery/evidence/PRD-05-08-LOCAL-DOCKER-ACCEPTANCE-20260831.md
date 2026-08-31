@@ -17,8 +17,9 @@
   并完成终态回读。
 - PRD-07：通过 Gateway 和 OIDC 创建两个 ObjectType，预检命中候选，再完成
   `merge_suggestion` 的 `pending → confirmed → executed` 与终态回读。
-- PRD-08：版本化 Plan/WFE 测试 `25 passed`；前端 typecheck 通过；Playwright
-  保存、发布、运行、刷新持久化及两标签页版本冲突恢复 `2 passed`。
+- PRD-08：版本化 Plan/WFE 测试 `25 passed`；前端生产构建
+  `pnpm --filter @mate/web build` 通过；生产静态预览（独立 `vite preview` 端口）
+  的 Playwright 覆盖保存、发布、运行、刷新持久化及两标签页版本冲突恢复，`2 passed`。
 - Orchestrator 旧表兼容测试和授权角色测试 `13 passed`；本地 PostgreSQL 已实测自动
   补齐 `orchestrator_roles.allowed_actor_roles`，Orchestrator 与 Gateway 均恢复健康。
 
@@ -27,8 +28,7 @@
 - PRD-05 的两个真实 OpenAI-compatible provider、配额/熔断/故障切换和 staging SSE
   断线恢复。
 - PRD-06/07 的生产 PostgreSQL/RLS 角色、并发/补偿/回滚与真实 embedding 性能证据。
-- PRD-08 的生产构建静态站点 Playwright、Temporal 持久运行、Outbox 事务和
-  staging/prod 发布演练。
+- PRD-08 的 Temporal 持久运行、Outbox 事务和 staging/prod 发布演练。
 
 ## 结论
 

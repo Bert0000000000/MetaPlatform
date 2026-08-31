@@ -19,12 +19,12 @@
 
 - WFE 版本化 Plan 测试 `25 passed`；本地 Docker 已验证 Keycloak、Gateway 与 WFE 的
   tenant-bound 保存、发布、运行和状态回读。
-- Playwright 刷新持久化、保存/发布/运行和两标签页陈旧保存恢复 `2 passed`；前端
-  TypeScript typecheck 通过。
+- 前端生产构建 `pnpm --filter @mate/web build` 通过；使用独立 `vite preview`
+  生产静态站点（端口 `9251`）运行 Playwright，保存、发布、运行、刷新持久化和
+  两标签页陈旧保存恢复 `2 passed`。该验证不依赖开发服务器。
 
 ## 未闭环项
 
-- 当前 Playwright 运行于本地 Vite 验收服务器，尚未在生产构建静态站点完成同等系统验收。
 - Temporal 持久运行、Outbox 事务和 staging/prod 发布演练仍未完成。
 
 ## 结论
