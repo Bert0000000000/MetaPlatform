@@ -118,6 +118,11 @@ services:
     environment:
       PYTHONPATH: /opt:/app/packages/mate-app-a2a/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
 
+  mate-tech-ont:
+    environment:
+      KERNEL_BACKEND: pg
+      KERNEL_PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_ont
+
   mate-tech-orchestrator:
     build: null
     image: mate-app-copilot:dev
