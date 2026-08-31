@@ -23,6 +23,7 @@ _PREPEND = [
     "packages/mate-app-arch/src",
     "packages/mate-app-copilot/src",
     "packages/mate-app-a2a/src",
+    "packages/mate-app-wfe/src",
     "packages/mate-platform/src",
 ]
 for _p in _PREPEND:
@@ -46,6 +47,11 @@ except ImportError:
 
 try:
     from mate_app_a2a.repositories import sql_models as _a2a_models  # noqa: F401
+except ImportError:
+    pass
+
+try:
+    from mate_app_wfe.repositories import sql_models as _wfe_models  # noqa: F401
 except ImportError:
     pass
 
