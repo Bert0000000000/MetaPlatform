@@ -88,3 +88,4 @@ def test_authorized_snapshot_returns_only_actor_authorized_roles(
     body = snapshot.json()
     assert [item["role"] for item in body["items"]] == ["knowledge"]
     assert body["capability_version"]
+    assert body["actor_roles_digest"]

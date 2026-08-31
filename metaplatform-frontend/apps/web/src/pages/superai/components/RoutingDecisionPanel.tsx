@@ -47,6 +47,7 @@ export function RoutingDecisionPanel({ decision, defaultExpanded = false }: Rout
   const selectedRoleSlug = primary.selected?.role_slug;
   const takenPath = primary.taken_path;
   const totalCandidates = primary.candidates.length;
+  const denied = primary.outcome === 'denied';
 
   return (
     <Card
@@ -86,6 +87,7 @@ export function RoutingDecisionPanel({ decision, defaultExpanded = false }: Rout
           {selectedRoleSlug && (
             <Tag color="blue" size="small">→ {selectedRoleSlug}</Tag>
           )}
+          {denied && <Tag color="red" size="small">已拒绝</Tag>}
           {takenPath && (
             <Tag color={takenPathColor(takenPath)} size="small">{takenPathLabel(takenPath)}</Tag>
           )}
@@ -172,6 +174,16 @@ export function RoutingDecisionPanel({ decision, defaultExpanded = false }: Rout
                 >
                   {primary.reason}
                 </Paragraph>
+              )}
+              {primary.reason_code && (
+                <Text type="tertiary" style={{ fontSize: 11 }}>
+                  原因码: {primary.reason_code}
+                </Text>
+              )}
+              {primary.policy_version && (
+                <Text type="tertiary" style={{ fontSize: 11 }}>
+                  策略版本: {primary.policy_version}
+                </Text>
               )}
             </div>
           )}

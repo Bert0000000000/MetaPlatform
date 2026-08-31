@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getToken, getUser } from '@mate/shared';
+import type { RoutingCandidate, RoutingDecision, RoutingSelected, RoutingTakenPath } from '@/api/superai/types';
 
 
 /**
@@ -65,27 +66,9 @@ export interface Evidence {
  * 一轮 run 可能收到多张 routing_decision（pre-screen 在 reasoning 之前，selected
  * 在 dispatch 之前），按事件顺序累加。</p>
  */
-export type RoutingTakenPath =
-  | 'llm_fc'
-  | 'semantic_router'
-  | 'dispatcher'
-  | 'keyword_fallback';
+export type { RoutingCandidate, RoutingDecision, RoutingSelected, RoutingTakenPath } from '@/api/superai/types';
 
-export interface RoutingCandidate {
-  role_slug: string;
-  role_rid?: string;
-  display_name: string;
-  capability_tags?: string[];
-  similarity: number;
-  reason?: string;
-}
-
-export interface RoutingSelected {
-  role_slug: string;
-  reason?: string;
-}
-
-export interface RoutingDecision {
+interface ParsedRoutingDecision extends RoutingDecision {
   /** semantic_router top-k 候选（按相似度降序） */
   candidates: RoutingCandidate[];
   /** 最终选中的角色（selected=null 表示 pre-screen 尚未决策） */
@@ -212,11 +195,17 @@ function parseRoutingDecision(ev: RunEvent): RoutingDecision | null {
     ? p.reason
     : selected?.reason ?? (candidates.length === 0 ? 'no candidates' : 'semantic_router pre-screen');
 
+  const stage = p.stage === 'pre_screen' || p.stage === 'final' ? p.stage : 'pre_screen';
+  const outcome = p.outcome === 'selected' || p.outcome === 'denied' ? p.outcome : null;
   return {
     candidates,
     selected,
     taken_path,
     reason,
+    stage,
+    outcome,
+    reason_code: typeof p.reason_code === 'string' ? p.reason_code : null,
+    policy_version: typeof p.policy_version === 'string' ? p.policy_version : null,
     seq: ev.seq,
     ts: ev.ts,
   };

@@ -5,6 +5,37 @@ export interface ApiResponse<T> {
   traceId?: string;
 }
 
+export type RoutingTakenPath = 'llm_fc' | 'semantic_router' | 'dispatcher' | 'keyword_fallback';
+export type RoutingStage = 'pre_screen' | 'final';
+export type RoutingOutcome = 'selected' | 'denied';
+
+export interface RoutingCandidate {
+  role_slug: string;
+  role_rid?: string;
+  display_name: string;
+  capability_tags?: string[];
+  similarity: number;
+  reason?: string;
+}
+
+export interface RoutingSelected {
+  role_slug: string;
+  reason?: string;
+}
+
+export interface RoutingDecision {
+  candidates: RoutingCandidate[];
+  selected: RoutingSelected | null;
+  taken_path: RoutingTakenPath | null;
+  reason: string;
+  stage: RoutingStage;
+  outcome: RoutingOutcome | null;
+  reason_code: string | null;
+  policy_version: string | null;
+  seq: number;
+  ts: string;
+}
+
 export interface PageResponse<T> {
   items: T[];
   total: number;

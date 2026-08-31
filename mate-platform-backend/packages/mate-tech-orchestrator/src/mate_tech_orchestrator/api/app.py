@@ -155,6 +155,7 @@ async def authorized_role_snapshot(request: Request) -> dict[str, Any]:
     """Return the current caller's tenant-scoped, authorized role snapshot."""
     tid = _tid(request)
     actor_roles = getattr(request.state.ctx, "roles", frozenset())
+    actor_role_values = sorted(str(role) for role in actor_roles)
     roles = get_role_registry().authorized_snapshot(tid, actor_roles=actor_roles)
     items = [
         {
@@ -166,10 +167,12 @@ async def authorized_role_snapshot(request: Request) -> dict[str, Any]:
         for role in roles
     ]
     version_payload = json.dumps(items, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    actor_roles_payload = json.dumps(actor_role_values, separators=(",", ":"))
     return {
         "items": items,
         "total": len(items),
         "capability_version": hashlib.sha256(version_payload.encode("utf-8")).hexdigest(),
+        "actor_roles_digest": hashlib.sha256(actor_roles_payload.encode("utf-8")).hexdigest(),
     }
 
 

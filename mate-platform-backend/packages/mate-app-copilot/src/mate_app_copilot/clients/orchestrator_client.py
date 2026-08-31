@@ -110,7 +110,14 @@ class OrchestratorClient:
         version = str(body.get("capability_version") or "").strip()
         if not version:
             raise OrchestratorClientError("authorized role snapshot missing capability_version")
-        return {"items": [dict(item) for item in body["items"]], "capability_version": version}
+        actor_roles_digest = str(body.get("actor_roles_digest") or "").strip()
+        if not actor_roles_digest:
+            raise OrchestratorClientError("authorized role snapshot missing actor_roles_digest")
+        return {
+            "items": [dict(item) for item in body["items"]],
+            "capability_version": version,
+            "actor_roles_digest": actor_roles_digest,
+        }
 
     async def dispatch(
         self,

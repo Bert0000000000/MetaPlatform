@@ -127,6 +127,40 @@ async def test_routing_decision_event_emitted_before_reasoning() -> None:
 
 
 @pytest.mark.asyncio
+async def test_model_selected_role_emits_final_decision_before_dispatch() -> None:
+    llm = _FakeLlm([
+        _tool_call_decision("workflow", "发起审批", "c-1"),
+        _plain_decision("done"),
+    ])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请发起审批"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+        )
+    ]
+
+    selected_index = next(
+        index for index, event in enumerate(events)
+        if event.get("type") == "routing_decision"
+        and event.get("stage") == "final"
+        and event.get("outcome") == "selected"
+    )
+    tool_call_index = next(
+        index for index, event in enumerate(events)
+        if event.get("type") == "tool_call"
+    )
+    selected = events[selected_index]
+    assert selected["selected"] == "workflow"
+    assert selected["reason_code"] == "model_selected"
+    assert selected_index < tool_call_index
+
+
+@pytest.mark.asyncio
 async def test_routing_decision_candidates_are_top_k() -> None:
     llm = _FakeLlm([_tool_call_decision("workflow", "任务", "c-1"),
                     _plain_decision("done")])
@@ -189,6 +223,7 @@ async def test_empty_authorized_snapshot_is_denied_without_model_or_dispatch() -
         "reason_code": "no_authorized_roles",
         "candidates": [],
         "selected": None,
+        "policy_version": "semantic-router-v1",
     }]
     assert llm._decisions
     assert orch.calls == []
@@ -216,6 +251,7 @@ async def test_candidate_outside_authorized_snapshot_is_denied_without_dispatch(
         "reason_code": "target_not_authorized",
         "candidates": [],
         "selected": None,
+        "policy_version": "semantic-router-v1",
     }
     assert orch.calls == []
 

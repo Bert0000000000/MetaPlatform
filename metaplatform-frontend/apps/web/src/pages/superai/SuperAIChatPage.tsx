@@ -236,12 +236,18 @@ function parseRoutingDecisionFromEvent(
   const reason = typeof p.reason === 'string'
     ? p.reason
     : selected?.reason ?? (candidates.length === 0 ? 'no candidates' : 'semantic_router pre-screen');
+  const stage = p.stage === 'pre_screen' || p.stage === 'final' ? p.stage : 'pre_screen';
+  const outcome = p.outcome === 'selected' || p.outcome === 'denied' ? p.outcome : null;
 
   return {
     candidates,
     selected,
     taken_path,
     reason,
+    stage,
+    outcome,
+    reason_code: typeof p.reason_code === 'string' ? p.reason_code : null,
+    policy_version: typeof p.policy_version === 'string' ? p.policy_version : null,
     seq: ev.seq ?? 0,
     ts: ev.ts ?? new Date().toISOString(),
   };

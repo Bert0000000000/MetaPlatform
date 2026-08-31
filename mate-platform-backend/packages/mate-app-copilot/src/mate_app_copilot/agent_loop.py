@@ -309,6 +309,7 @@ async def run_agent_loop(
     roles: list[dict[str, Any]],
     tenant_id: str,
     capability_version: str = "legacy",
+    actor_roles_digest: str = "legacy",
     fallback_token: str = "",
     max_iterations: int = MAX_TOOL_ITERATIONS,
     llm_provider: str = "openai",
@@ -353,6 +354,7 @@ async def run_agent_loop(
          if m.get("role") == "user"),
         "",
     )
+    router = semantic_router or SemanticRouter()
     if not roles:
         yield {
             "type": "routing_decision",
@@ -361,9 +363,9 @@ async def run_agent_loop(
             "reason_code": "no_authorized_roles",
             "candidates": [],
             "selected": None,
+            "policy_version": router.policy.version,
         }
         return
-    router = semantic_router or SemanticRouter()
     candidate_roles: list[CandidateRole] = []
     if last_user_msg and roles:
         candidate_roles = router.route(
@@ -371,12 +373,16 @@ async def run_agent_loop(
             roles,
             top_k=candidate_top_k,
             tenant_id=tenant_id,
+            actor_roles_digest=actor_roles_digest,
             capability_version=capability_version,
         )
 
     # Emit routing_decision（在 reasoning 前，让前端先看到候选）
     yield {
         "type": "routing_decision",
+        "stage": "pre_screen",
+        "reason_code": "semantic_pre_screen",
+        "policy_version": router.policy.version,
         "candidates": [c.to_dict() for c in candidate_roles],
         "selected": None,
         "reason": (
@@ -444,7 +450,9 @@ async def run_agent_loop(
                 if fallback_result is not None:
                     decision = _synthesize_dispatch_decision(fallback_result, last_user_msg)
                     degraded = True
-                    yield _routing_decision_event(fallback_result)
+                    yield _routing_decision_event(
+                        fallback_result, policy_version=router.policy.version,
+                    )
                 else:
                     yield {
                         "type": "final",
@@ -478,7 +486,9 @@ async def run_agent_loop(
                 if fallback_result is not None:
                     decision = _synthesize_dispatch_decision(fallback_result, last_user_msg)
                     degraded = True
-                    yield _routing_decision_event(fallback_result)
+                    yield _routing_decision_event(
+                        fallback_result, policy_version=router.policy.version,
+                    )
                     tool_calls = decision.get("tool_calls") or []
                     content = str(decision.get("content") or "")
                     # fall through to dispatch below
@@ -576,8 +586,22 @@ async def run_agent_loop(
                 "reason_code": "target_not_authorized",
                 "candidates": [],
                 "selected": None,
+                "policy_version": router.policy.version,
             }
             return
+
+        for call in calls:
+            if not call["valid"]:
+                continue
+            yield {
+                "type": "routing_decision",
+                "stage": "final",
+                "outcome": "selected",
+                "reason_code": "model_selected",
+                "candidates": [candidate.to_dict() for candidate in candidate_roles],
+                "selected": str(call["args"].get("target_rid", "")),
+                "policy_version": router.policy.version,
+            }
 
         # Emit all tool_call events first so the frontend renders all steps.
         for c in calls:
@@ -729,11 +753,17 @@ def _synthesize_dispatch_decision(
     }
 
 
-def _routing_decision_event(fallback_result: DispatchResult) -> dict[str, Any]:
+def _routing_decision_event(
+    fallback_result: DispatchResult, *, policy_version: str,
+) -> dict[str, Any]:
     """Build a ``routing_decision`` SSE event from a fallback result."""
     return {
         "type": "routing_decision",
+        "stage": "final",
+        "outcome": "selected",
+        "reason_code": f"fallback_{fallback_result.source}",
         "candidates": [c.to_dict() for c in fallback_result.candidates],
         "selected": fallback_result.target_rid,
         "reason": fallback_result.reason,
+        "policy_version": policy_version,
     }

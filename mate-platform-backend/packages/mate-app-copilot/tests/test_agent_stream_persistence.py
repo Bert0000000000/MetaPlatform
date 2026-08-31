@@ -97,6 +97,7 @@ class _StubOrchestratorClient:
                 ],
             }],
             "capability_version": "snapshot-v1",
+            "actor_roles_digest": "actor-roles-v1",
         }
 
 

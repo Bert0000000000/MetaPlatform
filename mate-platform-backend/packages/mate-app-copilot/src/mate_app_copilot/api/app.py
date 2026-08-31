@@ -2178,6 +2178,7 @@ async def chat_agent_stream(
             )
             roles = role_snapshot["items"]
             capability_version = str(role_snapshot["capability_version"])
+            actor_roles_digest = str(role_snapshot["actor_roles_digest"])
         except OrchestratorClientError as exc:
             yield _agent_event({
                 "type": "routing_decision",
@@ -2241,6 +2242,7 @@ async def chat_agent_stream(
                 roles=roles,
                 tenant_id=tid,
                 capability_version=capability_version,
+                actor_roles_digest=actor_roles_digest,
                 fallback_token=user_token or None,
                 llm_provider=llm_provider,
                 llm_base_url=llm_base_url,
