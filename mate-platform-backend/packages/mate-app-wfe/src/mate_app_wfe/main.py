@@ -23,7 +23,7 @@ from mate_platform.workflow import (
     build_workflow_executor,
     connect_workflow_executor,
 )
-from mate_tech_db.base import init_engine
+from mate_tech_db.base import create_all, init_engine
 
 from .api import router as wfe_router
 from .api import workflow_router
@@ -56,10 +56,14 @@ def create_app() -> FastAPI:
         ),
         lifespan=lifespan,
     )
-    if workflow_settings.is_deployed_profile and not (
-        os.getenv("MATE_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip()
-    ):
+    has_database = bool(os.getenv("MATE_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip())
+    if workflow_settings.is_deployed_profile and not has_database:
         raise RuntimeError("PostgreSQL MATE_DB_URL is required for deployed WFE")
+    if has_database and not workflow_settings.is_deployed_profile:
+        # Local Docker acceptance persists definitions in PostgreSQL while it
+        # intentionally uses the deterministic local executor.
+        init_engine()
+        create_all()
     app.state.workflow_settings = workflow_settings
     app.state.workflow_executor = (
         None if workflow_settings.is_deployed_profile else build_workflow_executor(workflow_settings)
@@ -70,6 +74,11 @@ def create_app() -> FastAPI:
     install_auth(app)
     app.include_router(wfe_router)
     app.include_router(workflow_router)
+
+    @app.get("/healthz", tags=["health"])
+    async def healthz() -> dict[str, str]:
+        return {"status": "ok"}
+
     return app
 
 

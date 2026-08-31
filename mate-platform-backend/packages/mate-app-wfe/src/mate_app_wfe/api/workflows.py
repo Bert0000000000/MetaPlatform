@@ -1,6 +1,7 @@
 """Versioned Plan definition and durable workflow-run HTTP contract."""
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Path, Request
@@ -56,7 +57,8 @@ def _executor(request: Request) -> WorkflowExecutor:
 def _definitions(request: Request):
     """Use SQL storage in deployed profiles; tests retain explicit memory storage."""
     settings = getattr(request.app.state, "workflow_settings", None)
-    return sql_store if settings is not None and settings.is_deployed_profile else memory_repository
+    has_database = bool(os.getenv("MATE_DB_URL", "").strip() or os.getenv("DATABASE_URL", "").strip())
+    return sql_store if has_database or (settings is not None and settings.is_deployed_profile) else memory_repository
 
 
 def _status_url(run_id: str) -> str:

@@ -6,7 +6,7 @@ from collections.abc import Iterator
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from mate_api_gateway.main import _build_target_url, app
+from mate_api_gateway.main import ROUTE_MAP, _build_target_url, app
 
 
 @pytest.fixture
@@ -50,3 +50,11 @@ def test_proxy_decodes_encoded_colon_before_forwarding():
     )
 
     assert target.raw_path == b"/api/v1/action-proposals/proposal-1:confirm"
+
+
+def test_workflow_definition_and_run_routes_are_owned_by_wfe():
+    routes = dict(ROUTE_MAP)
+
+    assert routes["/api/v1/workflow-definitions/"] == "wfe"
+    assert routes["/api/v1/workflows/"] == "wfe"
+    assert routes["/api/v1/workflow-runs/"] == "wfe"

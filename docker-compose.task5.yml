@@ -8,6 +8,41 @@
 # service Dockerfiles from docker-compose.yml.
 
 services:
+  mate-app-wfe:
+    image: mate-app-copilot:dev
+    command: ["uvicorn", "mate_app_wfe.main:app", "--host", "0.0.0.0", "--port", "8510"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      MATE_PROFILE: development
+      MATE_WORKFLOW_BACKEND: local
+      MATE_DB_URL: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: metaplatform
+      KEYCLOAK_AUDIENCE: metaplatform-backend
+      SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      INSECURE_SKIP_SIGNATURE: "true"
+      PYTHONPATH: /app/packages/mate-app-wfe/src:/app/packages/mate-tech-db/src:/app/packages/mate-platform/src:/app/packages/mate-common/src:/app/packages/mate-kernel/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${WFE_PORT:-8510}:8510"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8510/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mate-api-gateway:
+    environment:
+      WFE_URL: http://mate-app-wfe:8510
+    depends_on:
+      mate-app-wfe:
+        condition: service_healthy
+
   a2a-external-agent:
     build:
       context: ./mate-platform-backend

@@ -1,14 +1,14 @@
 # PRD-08：Action Orchestration v1.7
 
 > 关联批次：action-orchestration v1.7 · 所属 Sprint：0
-> 状态：`[x] Product Approved — implementation pending` · 2026-08-31
+> 状态：`[~] Product Approved — code complete; local Docker journey awaiting tenant-bound OIDC token` · 2026-08-31
 > 事实基线：`docs/active/delivery/evidence/ACTION-ORCHESTRATION-V1.7-ACCEPTANCE.md`
 
 ## 1. 目标与边界
 
 为业务建模人员提供稳定的可视化 Action 编排体验：从节点库拖放节点，按节点类型编辑动态字段，安全删除节点和关联线，并在全屏编辑状态下完成同样操作。
 
-本 PRD 仅定义 v1.7 编辑器交互和结构化编辑数据。运行时调度、Plan JSON 到 Temporal 的翻译、长任务、HITL signal 与 outbox→Temporal 桥由 Sprint 1A（ADR-0061）负责，不能因本编辑器验收而宣称已交付。
+本 PRD 定义 v1.7 编辑器交互和结构化编辑数据。运行请求只允许引用后端已发布的 Plan revision；Temporal 的具体 workflow ID、task queue、activity 与凭据不暴露给浏览器。本地 Docker 使用显式 local executor 进行接口验收，staging/prod 仍要求 Temporal 连接成功；因此本地验证不能替代长任务、HITL signal 与 outbox→Temporal 生产演练。
 
 ## 2. 用户旅程
 
@@ -38,7 +38,9 @@ Plan 定义包含节点、边、节点类型、schema 值和版本信息。保�
 
 代码级验收覆盖动态 Inspector、拖放节点标题、删除节点时清理边、全屏入口和主要键盘/鼠标路径。Playwright 必须在生产构建产物与 Docker 全栈中稳定通过，不能依赖已有开发服务器或任意等待时间。
 
-正式 GA 验收还需验证页面从真实持久化 Plan 读取与保存、授权/跨租户拒绝、网络失败提示、发布后的运行状态回显和与 Sprint 1A Temporal DSL 契约的兼容性。当前已知全屏 click 偶发问题未被真实系统验收消除前，状态保持 `[~]`。
+当前代码级验证覆盖版本化 Plan 存储、发布校验、发布 revision 执行、跨租户隐藏、网关路由，以及前端 typecheck/build。`scripts/ci/prd08_action_orchestration_smoke.ps1` 可使用真实、带 tenant claim 的 OIDC token 验证 Gateway→WFE 的保存、发布、运行与回读。
+
+本地 Docker 已验证 WFE 和 Gateway 均健康，且未认证请求被拒绝。全写路径尚待本地 Keycloak service account 获得 tenant claim 或使用租户用户 token 后执行；其结果、浏览器 Playwright 双标签冲突场景、服务重启后的 production Temporal 持久运行，以及 Outbox 事务证据，均仍是正式 GA 前置条件。状态保持 `[~]`。
 
 ## 6. 产品评审项
 

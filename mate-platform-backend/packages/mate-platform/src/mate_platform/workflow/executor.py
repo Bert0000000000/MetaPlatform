@@ -6,7 +6,15 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-from temporalio.exceptions import WorkflowAlreadyStartedError
+try:
+    # The local executor is a supported development path and must not require
+    # the optional Temporal SDK just to import the workflow package.  The SDK
+    # is still required, and checked explicitly, when the Temporal backend is
+    # selected in ``connect_workflow_executor``.
+    from temporalio.exceptions import WorkflowAlreadyStartedError
+except ImportError:  # pragma: no cover - exercised by the slim runtime image
+    class WorkflowAlreadyStartedError(Exception):
+        """Fallback sentinel when the optional Temporal SDK is unavailable."""
 
 from .config import WorkflowBackend, WorkflowSettings
 from .contracts import Plan, WorkflowRun, WorkflowRunStatus
