@@ -57,6 +57,7 @@ from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 from mate_kernel.tooling import schema_gen
 from mate_kernel.tooling.schema_gen import agent_tool_schemas
 from mate_platform.tenancy.guards import require_tenant
+
 from .pg_repo import SlugConflictError  # MP-DEDUP-01: 409 翻译
 from .similarity import search_similar_object_types  # MP-DEDUP-01: precheck 相似扫描
 
@@ -286,6 +287,14 @@ def _ctx(request: Request) -> Any:
         raise HTTPException(status_code=401, detail="no auth context")
     require_tenant(ctx)
     return ctx
+
+
+def _require_idempotency_key(request: Request) -> str:
+    """Return the command idempotency key or reject an unsafe mutation."""
+    key = (request.headers.get("Idempotency-Key") or "").strip()
+    if not key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key is required")
+    return key
 
 
 def _prop_to_dto(p: Property) -> PropertyDTO:
@@ -761,7 +770,11 @@ class ProposalCreateDTO(BaseModel):
 
 
 class ProposalConfirmDTO(BaseModel):
-    confirmed_by: str = ""
+    """Confirmation payload reserved for future user-provided rationale.
+
+    The confirming principal is deliberately excluded: it is always read from
+    the authenticated request context, never from client supplied JSON.
+    """
 
 
 class ProposalResponse(BaseModel):
@@ -1146,10 +1159,16 @@ async def confirm_proposal(
     proposal_id: str, payload: ProposalConfirmDTO, request: Request,
 ) -> ProposalResponse:
     """用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。"""
-    _ctx(request)
+    del payload  # identity comes exclusively from the authenticated context
+    ctx = _ctx(request)
+    idempotency_key = _require_idempotency_key(request)
     try:
         prop = await _call_scoped(
-            request, "confirm_proposal", proposal_id, payload.confirmed_by,
+            request,
+            "confirm_proposal",
+            proposal_id,
+            str(ctx.user_id),
+            idempotency_key=idempotency_key,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -1166,10 +1185,16 @@ async def confirm_proposal(
 async def reject_proposal(
     proposal_id: str, payload: ProposalConfirmDTO, request: Request,
 ) -> ProposalResponse:
-    _ctx(request)
+    del payload  # identity comes exclusively from the authenticated context
+    ctx = _ctx(request)
+    idempotency_key = _require_idempotency_key(request)
     try:
         prop = await _call_scoped(
-            request, "reject_proposal", proposal_id, payload.confirmed_by,
+            request,
+            "reject_proposal",
+            proposal_id,
+            str(ctx.user_id),
+            idempotency_key=idempotency_key,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

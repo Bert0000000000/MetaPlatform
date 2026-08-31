@@ -238,10 +238,12 @@ class TestDedupHttpE2E:
         # 2) confirm
         r = client_with_ctx.post(
             f"/api/v1/ont/v2/proposals/{pid}/confirm",
-            json={"confirmed_by": "alice"},
+            json={"confirmed_by": "untrusted-client-identity"},
+            headers={"Idempotency-Key": "dedup-lifecycle-confirm-1"},
         )
         assert r.status_code == 200, f"got {r.status_code}: {r.text}"
         assert r.json()["status"] == "confirmed"
+        assert r.json()["confirmed_by"] == "alice"
 
         # 3) execute
         r = client_with_ctx.post(f"/api/v1/ont/v2/proposals/{pid}/execute")
@@ -254,3 +256,43 @@ class TestDedupHttpE2E:
         # 4) final proposal status = executed
         r = client_with_ctx.get(f"/api/v1/ont/v2/proposals/{pid}")
         assert r.json()["status"] == "executed"
+
+    def test_confirm_requires_idempotency_key_and_replays_for_authenticated_actor(
+        self, client_with_ctx, pg_repo,
+    ):
+        pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.customer.v1", "Customer"))
+        pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.client.v1", "Client"))
+        proposal = pg_repo.propose_merge(
+            "ont.acme.obj.crm.customer.v1",
+            "ont.acme.obj.crm.client.v1",
+            similarity=0.92,
+            impact_summary="test proposal",
+        )
+
+        missing_key = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal.proposal_id}/confirm",
+            json={"confirmed_by": "spoofed-user"},
+        )
+        assert missing_key.status_code == 400
+
+        headers = {"Idempotency-Key": "authenticated-confirm-1"}
+        confirmed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal.proposal_id}/confirm",
+            json={"confirmed_by": "spoofed-user"},
+            headers=headers,
+        )
+        assert confirmed.status_code == 200, confirmed.text
+        assert confirmed.json()["confirmed_by"] == "alice"
+
+        replayed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal.proposal_id}/confirm",
+            json={"confirmed_by": "different-spoofed-user"},
+            headers=headers,
+        )
+        assert replayed.status_code == 200, replayed.text
+        assert replayed.json()["proposal_id"] == confirmed.json()["proposal_id"]
+        assert replayed.json()["status"] == "confirmed"
+        assert replayed.json()["confirmed_by"] == "alice"
+        assert [event["to_status"] for event in pg_repo.list_proposal_events(proposal.proposal_id)] == [
+            "pending", "confirmed",
+        ]
