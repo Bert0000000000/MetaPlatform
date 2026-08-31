@@ -246,7 +246,7 @@ function AppRoutes() {
           <Route path="superai/schedule/plan" element={<SuperaiSchedulePlanCardPage />} />
           <Route path="superai/tasks" element={<SuperaiTaskOrchestrationPage />} />
           <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
-          <Route path="superai/order-review" element={<SuperaiOrderReviewPage />} />
+          <Route path="superai/order-review" element={<Navigate to="/apps/order-review" replace />} />
           {/* 閺嬭埖鐎稉顓炵妇(Phase 4: from apps/arch) */}
           <Route path="arch" element={<Navigate to="/arch/business" replace />} />
           <Route path="arch/business" element={<ArchLayout><ArchBusinessArchPage /></ArchLayout>} />
@@ -273,6 +273,7 @@ function AppRoutes() {
 
           {/* 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换 */}
           <Route path="apps" element={<ApphubShellPage />} />
+          <Route path="apps/order-review" element={<SuperaiOrderReviewPage />} />
           {/* 旧子路由重定向到合并页（带 tab + app/tid 参数保留用户上下文） */}
           <Route path="apps/:appId" element={<LegacyAppRoute tab="detail" />} />
           <Route path="apps/:appId/lifecycle" element={<LegacyAppRoute tab="lifecycle" />} />

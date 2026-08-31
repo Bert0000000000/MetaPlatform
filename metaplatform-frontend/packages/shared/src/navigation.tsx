@@ -72,7 +72,6 @@ export const MODULE_MENU: ModuleMenuItem[] = [
       { key: 'cost', label: '成本优化', path: '/superai/cost', hidden: true },
       { key: 'data', label: '数据分析', path: '/superai/data', hidden: true },
       { key: 'employee-match', label: '员工匹配', path: '/superai/employee-match', hidden: true },
-      { key: 'order-review', label: '订单复核', path: '/superai/order-review', hidden: true },
     ],
   },
   {
@@ -112,6 +111,7 @@ export const MODULE_MENU: ModuleMenuItem[] = [
     // 子内容在 ApphubShellPage 内用 SubTabs 切换；左导航只显示单条目。
     children: [
       { key: 'apps-home', label: '应用中心', path: '/apps' },
+      { key: 'order-review', label: '订单复核', path: '/apps/order-review', hidden: true },
     ],
   },
   {

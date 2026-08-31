@@ -252,10 +252,18 @@ test('应用中心提供订单复核业务入口', async ({ page, request }) => 
 
   await expect(page.getByTestId('apphub-order-review')).toBeVisible();
   await page.getByTestId('apphub-open-order-review').click();
-  await expect(page).toHaveURL(/\/superai\/order-review$/);
+  await expect(page).toHaveURL(/\/apps\/order-review$/);
+  const breadcrumb = page.locator('header').first();
+  await expect(breadcrumb).toContainText('应用中心');
+  await expect(breadcrumb).toContainText('订单复核');
   await expect(page.getByRole('heading', { name: '订单复核' })).toBeVisible();
   expect(token).toBeTruthy();
   expect(tracker.failures.length, tracker.report()).toBe(0);
+});
+
+test('旧 SuperAI 订单复核地址重定向到业务应用', async ({ page }) => {
+  await page.goto('/superai/order-review');
+  await expect(page).toHaveURL(/\/apps\/order-review$/);
 });
 
 test('SuperAI 订单复核黄金路径：建议、人工确认、Action 写回与跟进单', async ({ page, request }) => {

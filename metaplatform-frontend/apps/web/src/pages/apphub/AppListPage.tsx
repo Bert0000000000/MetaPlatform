@@ -212,7 +212,7 @@ export default function AppListPage() {
                 <Typography.Text strong>订单复核</Typography.Text>
                 <div>
                   <Typography.Text type="tertiary" style={{ fontSize: 12 }}>
-                    SuperAI · Ontology/RAG · 人工确认 · Action 写回
+                    业务应用 · Ontology/RAG · 人工确认 · Action 写回
                   </Typography.Text>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function AppListPage() {
               theme="solid"
               type="primary"
               icon={<CheckCircleOutlined />}
-              onClick={() => navigate('/superai/order-review')}
+              onClick={() => navigate('/apps/order-review')}
             >
               打开订单复核
             </Button>

@@ -126,8 +126,6 @@ services:
       - ./mate-platform-backend/packages:/app/packages:rw
     environment:
       MATE_PROFILE: dev
-      MATE_DB_URL: ""
-      DATABASE_URL: ""
       ONT_HTTP_BASE: http://mate-tech-ont:8007
       ORDER_REVIEW_THRESHOLD_CENTS: ${ORDER_REVIEW_THRESHOLD_CENTS:-100000}
       PYTHONPATH: /app/packages/mate-tech-orchestrator/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src

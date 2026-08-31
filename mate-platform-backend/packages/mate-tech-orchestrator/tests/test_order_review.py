@@ -1605,6 +1605,18 @@ def test_order_review_threshold_is_deployed_to_orchestrator(compose_name: str) -
     )
 
 
+def test_task5_orchestrator_inherits_postgresql_order_review_store() -> None:
+    """Task5 may tailor the runtime image, but must retain the base SQL store."""
+    workspace_root = Path(__file__).parents[4]
+    task5_compose = yaml.safe_load(
+        (workspace_root / "docker-compose.task5.yml").read_text(encoding="utf-8")
+    )
+    environment = task5_compose["services"]["mate-tech-orchestrator"]["environment"]
+
+    assert "MATE_DB_URL" not in environment
+    assert "DATABASE_URL" not in environment
+
+
 def test_action_command_routes_precede_proposal_detail_route():
     paths = [route.path for route in order_review_public_router.routes]
 
