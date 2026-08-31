@@ -57,7 +57,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `E2E_GATEWAY_URL=http://localhost:8100/api/v1 pnpm --filter @mate/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,
+    command: `pnpm --filter @mate/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,
+    env: {
+      ...process.env,
+      E2E_GATEWAY_URL: process.env.E2E_GATEWAY_URL ?? 'http://localhost:8100/api/v1',
+    },
     url: webBaseUrl,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
