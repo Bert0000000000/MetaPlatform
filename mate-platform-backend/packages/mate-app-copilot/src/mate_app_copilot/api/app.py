@@ -612,6 +612,22 @@ def _routing_selected_rid(event: dict[str, Any]) -> str | None:
     return None
 
 
+def _validated_role_snapshot(snapshot: Any) -> tuple[list[dict[str, Any]], str, str]:
+    """Return the authorized snapshot fields or fail before routing starts."""
+    if not isinstance(snapshot, dict):
+        raise ValueError("authorized role snapshot must be an object")
+    roles = snapshot.get("items")
+    capability_version = snapshot.get("capability_version")
+    actor_roles_digest = snapshot.get("actor_roles_digest")
+    if not isinstance(roles, list) or not all(isinstance(role, dict) for role in roles):
+        raise ValueError("authorized role snapshot items must be role objects")
+    if not isinstance(capability_version, str) or not capability_version:
+        raise ValueError("authorized role snapshot capability version is required")
+    if not isinstance(actor_roles_digest, str) or not actor_roles_digest:
+        raise ValueError("authorized role snapshot actor roles digest is required")
+    return roles, capability_version, actor_roles_digest
+
+
 def _audit_routing_decision(
     request: Request,
     *,
@@ -658,6 +674,8 @@ def _audit_routing_decision(
         )
     except Exception as exc:
         raise RoutingAuditPersistenceError("routing audit append failed") from exc
+
+
 def _serialize(rows: list[Any]) -> list[dict[str, Any]]:
     return [asdict(r) for r in rows]
 
@@ -2210,10 +2228,10 @@ async def chat_agent_stream(
                 tenant_id=tid,
                 fallback_token=user_token or None,
             )
-            roles = role_snapshot["items"]
-            capability_version = str(role_snapshot["capability_version"])
-            actor_roles_digest = str(role_snapshot["actor_roles_digest"])
-        except OrchestratorClientError:
+            roles, capability_version, actor_roles_digest = _validated_role_snapshot(
+                role_snapshot
+            )
+        except Exception:
             trace_id = str(getattr(request.state.ctx, "trace_id", "") or uuid.uuid4().hex)
             denied_event = {
                 "type": "routing_decision",

@@ -804,6 +804,9 @@ def test_agent_stream_audits_final_routing_decision_without_message_content(
             "selected": "workflow",
             "reason_code": "model_selected",
             "candidates": [{"role_slug": "workflow"}],
+            "policy_version": "semantic-router-v1",
+            "trace_id": "trace-app-selected",
+            "correlation_id": "correlation-app-selected",
         }
         yield {"type": "final", "content": "已提交。"}
 
@@ -820,10 +823,17 @@ def test_agent_stream_audits_final_routing_decision_without_message_content(
     events = [record.event for record in outbox.all_records() if record.event.type == "copilot.routing.decided"]
     assert len(events) == 1
     payload = events[0].payload
-    assert payload["actor_id"] == "u-1"
-    assert payload["capability_version"] == "snapshot-v1"
-    assert payload["selected_role"] == "workflow"
-    assert payload["reason_code"] == "model_selected"
+    assert payload == {
+        "tenant_id": "tenant-acme",
+        "actor_id": "u-1",
+        "role_snapshot_digest": "actor-roles-v1",
+        "policy_version": "semantic-router-v1",
+        "capability_version": "snapshot-v1",
+        "selected_rid": "workflow",
+        "reason_code": "model_selected",
+        "trace_id": "trace-app-selected",
+        "correlation_id": "correlation-app-selected",
+    }
     assert secret not in json.dumps(payload)
 
 
@@ -851,6 +861,9 @@ def test_agent_stream_audits_final_denial_without_message_content(
             "selected": None,
             "reason_code": "target_not_authorized",
             "candidates": [{"role_slug": "workflow"}],
+            "policy_version": "semantic-router-v1",
+            "trace_id": "trace-app-denied",
+            "correlation_id": "correlation-app-denied",
         }
 
     monkeypatch.setattr(copilot_app_module, "OrchestratorClient", _StubOrchestratorClient)
@@ -869,8 +882,17 @@ def test_agent_stream_audits_final_denial_without_message_content(
     ]
     assert len(events) == 1
     payload = events[0].payload
-    assert payload["selected_role"] is None
-    assert payload["reason_code"] == "target_not_authorized"
+    assert payload == {
+        "tenant_id": "tenant-acme",
+        "actor_id": "u-1",
+        "role_snapshot_digest": "actor-roles-v1",
+        "policy_version": "semantic-router-v1",
+        "capability_version": "snapshot-v1",
+        "selected_rid": None,
+        "reason_code": "target_not_authorized",
+        "trace_id": "trace-app-denied",
+        "correlation_id": "correlation-app-denied",
+    }
     assert secret not in json.dumps(payload)
 
 

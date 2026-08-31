@@ -7,7 +7,6 @@ import pytest
 
 from mate_app_copilot.agent_loop import (
     _await_task_result,
-    _fallback_decision,
     build_system_prompt,
     build_tools,
     run_agent_loop,
@@ -233,7 +232,7 @@ async def test_loop_parallel_dispatch() -> None:
 
 @pytest.mark.asyncio
 async def test_loop_invalid_target_rid_no_network() -> None:
-    """A dispatch_employee call with an unknown target_rid → error, no network call."""
+    """An unknown target must become a final denial before any dispatch."""
     decision = {
         "content": "调度一个不存在的员工。",
         "tool_calls": [{
@@ -254,9 +253,17 @@ async def test_loop_invalid_target_rid_no_network() -> None:
             tenant_id="tenant-acme",
         )
     ])
-    tr = next(e for e in events if e["type"] == "tool_result")
-    assert tr["status"] == "error"
-    assert "ghost" in tr["result"]["error"]
+    denied = next(
+        event
+        for event in events
+        if event.get("type") == "routing_decision"
+        and event.get("stage") == "final"
+    )
+    assert denied["outcome"] == "denied"
+    assert denied["reason_code"] == "target_not_authorized"
+    assert denied["selected"] is None
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert not any(event["type"] == "tool_result" for event in events)
     assert orch.calls == []
 
 
@@ -395,7 +402,7 @@ async def test_loop_cap_structured_summary() -> None:
 
 @pytest.mark.asyncio
 async def test_loop_plain_text_no_dispatch() -> None:
-    """No tool call → final text only, no dispatch."""
+    """Plain LLM text cannot become an implicit routing decision."""
     llm = FakeLlm([_plain_decision("好的，还有什么可以帮你？")])
     orch = FakeOrch()
     events = _collect([
@@ -408,14 +415,19 @@ async def test_loop_plain_text_no_dispatch() -> None:
             tenant_id="tenant-acme",
         )
     ])
-    assert [e["type"] for e in events] == ["routing_decision", "reasoning", "final"]
-    assert events[-1]["content"] == "好的，还有什么可以帮你？"
+    denied = events[-1]
+    assert denied["type"] == "routing_decision"
+    assert denied["stage"] == "final"
+    assert denied["outcome"] == "denied"
+    assert denied["reason_code"] == "missing_dispatch_tool_call"
+    assert denied["selected"] is None
+    assert not any(event["type"] == "tool_call" for event in events)
     assert orch.calls == []
 
 
 @pytest.mark.asyncio
 async def test_loop_no_roles_no_tools() -> None:
-    """No registered roles → tools empty → plain chat."""
+    """An empty authorized snapshot must deny before the model is called."""
 
     class NoToolLlm(FakeLlm):
         async def chat_with_tools(self, *, messages, model, tools, **kwargs):
@@ -434,7 +446,43 @@ async def test_loop_no_roles_no_tools() -> None:
             tenant_id="tenant-acme",
         )
     ])
-    assert events[-1] == {"type": "final", "content": "没有可用的数字员工。"}
+    denied = events[-1]
+    assert denied["type"] == "routing_decision"
+    assert denied["stage"] == "final"
+    assert denied["outcome"] == "denied"
+    assert denied["reason_code"] == "no_authorized_roles"
+    assert denied["selected"] is None
+    assert llm2.calls == []
+
+
+@pytest.mark.asyncio
+async def test_loop_llm_down_denies_without_keyword_dispatch() -> None:
+    """An unavailable LLM must not revive the removed keyword fallback."""
+
+    class DownLlm(FakeLlm):
+        async def chat_with_tools(self, **kwargs):
+            raise LlmgwStreamError("provider unavailable")
+
+    orch = FakeOrch()
+    events = _collect([
+        event async for event in run_agent_loop(
+            llmgw_client=DownLlm([]),
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请调度 workflow 处理对账单"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+        )
+    ])
+
+    denied = events[-1]
+    assert denied["type"] == "routing_decision"
+    assert denied["stage"] == "final"
+    assert denied["outcome"] == "denied"
+    assert denied["reason_code"] == "llm_unavailable"
+    assert denied["selected"] is None
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
 
 
 @pytest.mark.asyncio
@@ -476,64 +524,6 @@ def test_build_tools_enum_slugs() -> None:
     enum = tools[0]["function"]["parameters"]["properties"]["target_rid"]["enum"]
     assert enum == ["workflow", "knowledge"]
     assert build_tools([]) == []
-
-
-@pytest.mark.asyncio
-async def test_loop_llm_down_falls_back_to_keyword_dispatch() -> None:
-    """LLM FC unavailable → keyword match triggers dispatch (degraded mode)."""
-
-    class DownLlm(FakeLlm):
-        async def chat_with_tools(self, **kwargs):
-            raise LlmgwStreamError("provider unavailable")
-
-    orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=DownLlm([]),
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "请调度 workflow 处理对账单"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
-    assert [e["type"] for e in _drop_reasoning(events)] == ["tool_call", "tool_result", "final"]
-    tc = next(e for e in events if e["type"] == "tool_call")
-    assert tc["args"]["target_rid"] == "workflow"
-    assert orch.calls[0]["target_rid"] == "workflow"
-
-
-@pytest.mark.asyncio
-async def test_loop_llm_down_no_match_final_note() -> None:
-    """LLM down + no keyword match → graceful final note, no dispatch."""
-
-    class DownLlm(FakeLlm):
-        async def chat_with_tools(self, **kwargs):
-            raise LlmgwStreamError("provider unavailable")
-
-    orch = FakeOrch()
-    events = _collect([
-        e async for e in run_agent_loop(
-            llmgw_client=DownLlm([]),
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "今天天气怎么样"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-        )
-    ])
-    assert events[-1] == {"type": "final", "content": "LLM 决策服务不可用，且未匹配到可调度的数字员工。"}
-    assert orch.calls == []
-
-
-def test_fallback_decision_keyword_match() -> None:
-    d = _fallback_decision(
-        [{"role": "user", "content": "调度 knowledge 员工做检索"}], ROLES,
-    )
-    assert d is not None
-    assert d["tool_calls"][0]["function"]["name"] == "dispatch_employee"
-    assert d["tool_calls"][0]["function"]["arguments"].find("knowledge") != -1
-    assert _fallback_decision([{"role": "user", "content": "你好"}], ROLES) is None
 
 
 @pytest.mark.asyncio

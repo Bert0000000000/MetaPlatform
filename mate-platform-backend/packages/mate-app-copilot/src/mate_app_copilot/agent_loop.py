@@ -327,7 +327,11 @@ async def run_agent_loop(
     router = semantic_router or SemanticRouter()
     trace_id = uuid.uuid4().hex
     correlation_id = trace_id
-    if not roles:
+    # Ontology tools are direct, read-only capability calls: they do not need a
+    # digital-worker candidate and never create a dispatch. Keep that safe
+    # direct-query path available even when the authorized role snapshot is
+    # empty; all dispatch-capable turns remain fail-closed below.
+    if not roles and not ontology_tools:
         yield {
             "type": "routing_decision",
             "stage": "final",
@@ -369,7 +373,7 @@ async def run_agent_loop(
             if candidate_roles else "no candidates (empty roles or query)"
         ),
     }
-    if not candidate_roles:
+    if not candidate_roles and not ontology_tools:
         yield _denied_routing_decision(
             reason_code="no_authorized_candidates",
             candidate_roles=[],
@@ -402,6 +406,7 @@ async def run_agent_loop(
         history.insert(0, {"role": "system", "content": system_prompt})
 
     dispatched: list[dict[str, Any]] = []
+    ontology_tool_executed = False
     for _ in range(max_iterations):
         yield {"type": "reasoning", "text": "正在分析任务并选择数字员工…"}
 
@@ -449,7 +454,7 @@ async def run_agent_loop(
         content = str(decision.get("content") or "")
 
         if not tool_calls:
-            if dispatched:
+            if dispatched or ontology_tool_executed:
                 yield {"type": "final", "content": _strip_chain_of_thought(content)}
                 return
             yield _denied_routing_decision(
@@ -479,6 +484,7 @@ async def run_agent_loop(
                 onto_calls.append({"call_id": call_id, "name": name, "args": args})
 
         if onto_calls:
+            ontology_tool_executed = True
             assistant_tc = [
                 {"id": c["call_id"], "type": "function",
                  "function": {"name": c["name"], "arguments": json.dumps(c["args"], ensure_ascii=False)}}
