@@ -8,9 +8,15 @@ cd "$(dirname "$0")/.."
 
 COMPOSE=(
   -f docker-compose.yml
-  -f docker-compose.override.yml
-  -f docker-compose.task5.yml
 )
+if [ "${TASK5_USE_OVERRIDE:-0}" = "1" ]; then
+  if [ ! -f docker-compose.override.yml ]; then
+    echo "FAIL: TASK5_USE_OVERRIDE=1 but docker-compose.override.yml is missing" >&2
+    exit 1
+  fi
+  COMPOSE+=(-f docker-compose.override.yml)
+fi
+COMPOSE+=(-f docker-compose.task5.yml)
 
 WAIT_HEALTHY=0
 for arg in "$@"; do
@@ -91,11 +97,56 @@ fi
 # the overlay change with the wrong image/command.
 docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate mate-tech-agent
 docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate a2a-external-agent
+# The local WFE owns the versioned Plan tables. Recreate it after PostgreSQL
+# is confirmed ready so its development bootstrap creates the tables when a
+# local database container has been replaced.
+docker compose "${COMPOSE[@]}" up -d --no-build --force-recreate mate-app-wfe
 # Metrics is part of the platform-governance acceptance surface. Start it
 # explicitly because older local stacks may have been created before the
 # service was included in the Task5 verification set.
 docker compose "${COMPOSE[@]}" up -d --no-build --no-recreate mate-tech-metrics
 docker compose "${COMPOSE[@]}" up -d --no-build --no-recreate
+
+# The service account is a first-class tenant principal, not a wildcard
+# caller. Keycloak creates it dynamically, so its tenant attribute must be
+# applied after the imported realm is ready. The regular user-attribute
+# mapper then includes this value in service tokens without overriding the
+# tenant claim of ordinary users.
+echo "==> Binding the Task5 service account to tenant-default"
+keycloak_deadline=$((SECONDS + 120))
+keycloak_state=""
+while [ "$SECONDS" -lt "$keycloak_deadline" ]; do
+  keycloak_state=$(docker inspect mate-keycloak --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' 2>/dev/null || true)
+  case "$keycloak_state" in
+    running\|healthy|running\|none) break ;;
+  esac
+  sleep 3
+done
+case "$keycloak_state" in
+  running\|healthy|running\|none) ;;
+  *)
+    echo "FAIL: Keycloak did not become ready before tenant binding" >&2
+    exit 1
+    ;;
+esac
+
+docker exec mate-keycloak sh -eu -c '
+  /opt/keycloak/bin/kcadm.sh config credentials \
+    --server http://localhost:8080 --realm master \
+    --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
+'
+service_user_id=$(docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh get users \
+  -r metaplatform -q username=service-account-metaplatform-backend --fields id \
+  | sed -n 's/.*"id" : "\([^"]*\)".*/\1/p')
+if [ -z "$service_user_id" ]; then
+  echo "FAIL: Keycloak service account for metaplatform-backend is unavailable" >&2
+  exit 1
+fi
+docker cp infra/keycloak/service-account-tenant-default-user.json \
+  mate-keycloak:/tmp/service-account-tenant-default-user.json >/dev/null
+docker exec mate-keycloak /opt/keycloak/bin/kcadm.sh update \
+  "users/$service_user_id" -r metaplatform \
+  -f /tmp/service-account-tenant-default-user.json >/dev/null
 
 if [ "$WAIT_HEALTHY" -eq 1 ]; then
   echo "==> Waiting up to 180s for Task5 services..."

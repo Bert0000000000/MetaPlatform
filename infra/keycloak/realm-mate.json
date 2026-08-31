@@ -95,20 +95,6 @@
             "jsonType.label": "String",
             "multivalued": "false"
           }
-        },
-        {
-          "name": "service-account-tenant-default",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-hardcoded-claim-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "tenant_id",
-            "claim.value": "tenant-default",
-            "jsonType.label": "String",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "userinfo.token.claim": "true"
-          }
         }
       ]
     }
