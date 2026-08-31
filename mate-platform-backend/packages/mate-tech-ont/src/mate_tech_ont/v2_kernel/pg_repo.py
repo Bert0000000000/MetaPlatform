@@ -269,6 +269,15 @@ DDL: tuple[str, ...] = (
         PRIMARY KEY (tenant_id, operation, idempotency_key)
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS ont_proposal_execution (
+        proposal_id TEXT PRIMARY KEY REFERENCES ont_proposal(proposal_id) ON DELETE CASCADE,
+        tenant_id   TEXT NOT NULL,
+        result      JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_prop_execution_tenant ON ont_proposal_execution (tenant_id)",
     # MP-SAL-04b: proposal kind（action / create_instance / model_type）
     "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'action'",
     """
@@ -2114,6 +2123,24 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
         return [dict(row) for row in rows]
 
+    def get_proposal_execution(self, proposal_id: str) -> dict[str, Any]:
+        """Return the durable result emitted by a completed proposal execution."""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT result FROM ont_proposal_execution WHERE proposal_id = %s",
+                    (proposal_id,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            raise KeyError(f"proposal execution not found: {proposal_id}")
+        result = row["result"]
+        return dict(result if isinstance(result, dict) else json.loads(result))
+
     def _hydrate_proposal(self, row: dict[str, Any]) -> Any:
         """PG 行 → ActionProposal（并回填引擎镜像，apply 校验用）。"""
         from mate_kernel.action.engine import ActionProposal, ProposalStatus
@@ -2149,6 +2176,7 @@ class PgOntologyRepository(OntologyRepository):
         operation: str | None = None,
         idempotency_key: str | None = None,
         request_fingerprint: str | None = None,
+        execution_result: dict[str, Any] | None = None,
     ) -> None:
         conn, _ = self._connect()
         try:
@@ -2183,6 +2211,19 @@ class PgOntologyRepository(OntologyRepository):
                         (
                             self._proposal_tenant_id(prop.action_rid), operation,
                             idempotency_key, prop.proposal_id, request_fingerprint,
+                        ),
+                    )
+                if execution_result is not None:
+                    cur.execute(
+                        """
+                        INSERT INTO ont_proposal_execution (proposal_id, tenant_id, result)
+                        VALUES (%s, %s, %s::jsonb)
+                        ON CONFLICT (proposal_id) DO UPDATE SET result = EXCLUDED.result
+                        """,
+                        (
+                            prop.proposal_id,
+                            self._proposal_tenant_id(prop.action_rid),
+                            json.dumps(execution_result, default=str),
                         ),
                     )
             conn.commit()
@@ -2245,7 +2286,12 @@ class PgOntologyRepository(OntologyRepository):
         )
         return prop
 
-    def execute_proposal(self, proposal_id: str) -> Any:
+    def execute_proposal(
+        self,
+        proposal_id: str,
+        actor_id: str = "",
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
         """MP-SAL-04b：confirmed proposal 落库执行（create_instance / model_type）。"""
         from datetime import UTC as _UTC
         from datetime import datetime as _dt
@@ -2255,7 +2301,20 @@ class PgOntologyRepository(OntologyRepository):
             ProposalStatus,
         )
 
+        key = (idempotency_key or "").strip() or None
         p = self.get_proposal(proposal_id)  # 行存在 + 镜像回填
+        fingerprint = self._proposal_request_fingerprint(
+            operation="execute", proposal_id=proposal_id, actor_id=actor_id or None,
+        )
+        replayed = self._replay_idempotent_proposal(
+            tenant_id=self._proposal_tenant_id(p.action_rid),
+            operation="execute",
+            idempotency_key=key,
+            proposal_id=proposal_id,
+            request_fingerprint=fingerprint,
+        )
+        if replayed is not None:
+            return self.get_proposal_execution(proposal_id)
         if p.status is not ProposalStatus.CONFIRMED:
             raise ProposalNotConfirmed(
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
@@ -2293,12 +2352,17 @@ class PgOntologyRepository(OntologyRepository):
                 tenant_id=tenant,
             )
             created = self.create_individual(ind)
+            result = {"kind": "create_instance", "individual_rid": created.rid}
             self._persist_proposal_transition(
                 self._action_service.mark_executed(proposal_id),
                 from_status="confirmed",
-                actor_id=None,
+                actor_id=actor_id or None,
+                operation="execute",
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
+                execution_result=result,
             )
-            return created
+            return result
         if p.kind == "model_type":
             type_def = p.parameters["type_def"]
             ot = ObjectType(
@@ -2319,12 +2383,17 @@ class PgOntologyRepository(OntologyRepository):
                 marking=tuple(type_def.get("marking", ())),
             )
             saved = self.upsert_object_type(ot)
+            result = {"kind": "model_type", "type_rid": saved.rid.rid}
             self._persist_proposal_transition(
                 self._action_service.mark_executed(proposal_id),
                 from_status="confirmed",
-                actor_id=None,
+                actor_id=actor_id or None,
+                operation="execute",
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
+                execution_result=result,
             )
-            return saved
+            return result
         if p.kind == "merge_suggestion":
             # MP-DEDUP-01：user confirm → 自动触发 merge_object_types
             source_rid = p.parameters.get("source_rid")
@@ -2334,11 +2403,16 @@ class PgOntologyRepository(OntologyRepository):
                     "merge_suggestion proposal requires source_rid + target_rid"
                 )
             mapping = p.parameters.get("mapping") or {}
-            result = self.merge_object_types(source_rid, target_rid, mapping)
+            result = dict(self.merge_object_types(source_rid, target_rid, mapping))
+            result["kind"] = "merge_suggestion"
             self._persist_proposal_transition(
                 self._action_service.mark_executed(proposal_id),
                 from_status="confirmed",
-                actor_id=None,
+                actor_id=actor_id or None,
+                operation="execute",
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
+                execution_result=result,
             )
             return result
         raise ValueError(f"unknown proposal kind: {p.kind!r}")

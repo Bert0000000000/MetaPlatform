@@ -245,8 +245,16 @@ class TestDedupHttpE2E:
         assert r.json()["status"] == "confirmed"
         assert r.json()["confirmed_by"] == "alice"
 
-        # 3) execute
-        r = client_with_ctx.post(f"/api/v1/ont/v2/proposals/{pid}/execute")
+        # 3) execute requires an idempotency key as well
+        missing_execute_key = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/execute",
+        )
+        assert missing_execute_key.status_code == 400
+
+        r = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/execute",
+            headers={"Idempotency-Key": "dedup-lifecycle-execute-1"},
+        )
         assert r.status_code == 200, f"got {r.status_code}: {r.text}"
         body = r.json()
         assert body["kind"] == "merge_suggestion"

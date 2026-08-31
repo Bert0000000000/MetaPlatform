@@ -117,3 +117,51 @@ def test_repository_migrates_legacy_applied_status_to_executed(repo) -> None:
     restarted = PgOntologyRepository(dsn=PG_DSN)
 
     assert restarted.get_proposal("prop-legacy-applied").status is ProposalStatus.EXECUTED
+
+
+def test_execute_idempotency_replays_persisted_result_without_duplicate_event(repo) -> None:
+    proposal = repo.propose_model_type(
+        type_def={
+            "rid": "ont.acme.obj.execution-receipt.v1",
+            "primary_key": ["ont.acme.prop.execution-receipt-id.v1"],
+            "properties": [
+                {
+                    "rid": "ont.acme.prop.execution-receipt-id.v1",
+                    "type_id": "string",
+                    "nullable": False,
+                    "primary_key": True,
+                    "title": "id",
+                    "format": "string",
+                },
+            ],
+            "display_name": "Execution receipt",
+            "interfaces": [],
+            "marking": [],
+        },
+        impact_summary="persist an execution receipt",
+    )
+    repo.confirm_proposal(
+        proposal.proposal_id, confirmed_by="reviewer-1", idempotency_key="confirm-execute-1",
+    )
+
+    first = repo.execute_proposal(
+        proposal.proposal_id, actor_id="executor-1", idempotency_key="execute-1",
+    )
+    replayed = repo.execute_proposal(
+        proposal.proposal_id, actor_id="executor-1", idempotency_key="execute-1",
+    )
+
+    assert first == {
+        "kind": "model_type",
+        "type_rid": "ont.acme.obj.execution-receipt.v1",
+    }
+    assert replayed == first
+    assert repo.get_proposal_execution(proposal.proposal_id) == first
+    assert [
+        (event["from_status"], event["to_status"], event["actor_id"])
+        for event in repo.list_proposal_events(proposal.proposal_id)
+    ] == [
+        (None, "pending", None),
+        ("pending", "confirmed", "reviewer-1"),
+        ("confirmed", "executed", "executor-1"),
+    ]

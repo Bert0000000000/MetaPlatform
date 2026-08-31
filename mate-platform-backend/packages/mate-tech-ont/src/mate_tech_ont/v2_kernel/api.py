@@ -889,27 +889,23 @@ async def execute_proposal(
     - merge_suggestion → 自动触发 merge_object_types，archived source
     - action → 409 指引走 /apply
     """
-    _ctx(request)
+    ctx = _ctx(request)
+    idempotency_key = _require_idempotency_key(request)
     try:
-        out = await _call_scoped(request, "execute_proposal", proposal_id)
+        out = await _call_scoped(
+            request,
+            "execute_proposal",
+            proposal_id,
+            actor_id=str(ctx.user_id),
+            idempotency_key=idempotency_key,
+        )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ProposalNotConfirmed as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
-    if isinstance(out, dict) and out.get("source_rid") and out.get("target_rid"):
-        # MP-DEDUP-01：merge_suggestion 落库
-        return ProposalExecuteResultDTO(
-            kind="merge_suggestion",
-            source_rid=out["source_rid"],
-            target_rid=out["target_rid"],
-            affected_individuals=out.get("affected_individuals", 0),
-            affected_links=out.get("affected_links", 0),
-        )
-    if hasattr(out, "class_rid"):  # Individual
-        return ProposalExecuteResultDTO(kind="create_instance", individual_rid=out.rid)
-    return ProposalExecuteResultDTO(kind="model_type", type_rid=out.rid.rid)
+    return ProposalExecuteResultDTO(**out)
 
 
 @router.post(
