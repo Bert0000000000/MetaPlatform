@@ -733,8 +733,10 @@ def test_chat_agent_stream_filters_prompt_leak_and_persists_safe_reply(
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             pass
 
-        async def list_roles(self, *, tenant_id: str, fallback_token: str | None = None) -> list[dict[str, Any]]:
-            return []
+        async def authorized_role_snapshot(
+            self, *, tenant_id: str, fallback_token: str | None = None,
+        ) -> dict[str, Any]:
+            return {"items": [], "capability_version": "snapshot-test"}
 
     async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
         yield {"type": "reasoning", "text": "正在分析"}
