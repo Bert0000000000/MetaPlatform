@@ -38,11 +38,15 @@ export interface AgentResultEvent {
 export interface RoutingDecisionEvent {
   decision: RoutingDecision;
 }
+export interface RoutingDecisionErrorEvent {
+  message: string;
+}
 export interface StreamAgentCallbacks {
   onReasoning?: (text: string) => void;
   onToolCall?: (call: AgentCallEvent) => void;
   onToolResult?: (result: AgentResultEvent) => void;
   onRoutingDecision?: (event: RoutingDecisionEvent) => void;
+  onRoutingDecisionError?: (event: RoutingDecisionErrorEvent) => void;
   onDelta: (text: string) => void;
   onDone: (content: string, citations: Citation[]) => void;
   onError: (message: string) => void;
@@ -249,9 +253,13 @@ export async function streamAgentChat(
       if (!data || data === '[DONE]') continue;
       try {
         const parsed = JSON.parse(data) as unknown;
-        const routingDecision = parseRoutingDecisionEvent(parsed);
-        if (routingDecision) {
-          callbacks.onRoutingDecision?.({ decision: routingDecision });
+        const routingEvent = parseRoutingDecisionStreamEvent(parsed);
+        if (routingEvent.kind === 'valid') {
+          callbacks.onRoutingDecision?.({ decision: routingEvent.decision });
+          continue;
+        }
+        if (routingEvent.kind === 'invalid') {
+          callbacks.onRoutingDecisionError?.({ message: routingEvent.message });
           continue;
         }
         if (!isObjectRecord(parsed)) continue;
@@ -334,30 +342,57 @@ function isCitationEvent(value: unknown): value is CitationEvent {
 }
 
 export function parseRoutingDecisionEvent(value: unknown): RoutingDecision | null {
-  if (!isObjectRecord(value) || value.type !== 'routing_decision') return null;
+  const result = parseRoutingDecisionStreamEvent(value);
+  return result.kind === 'valid' ? result.decision : null;
+}
 
-  const rawCandidates = Array.isArray(value.candidates) ? value.candidates : [];
-  const candidates: RoutingCandidate[] = rawCandidates
-    .filter(isObjectRecord)
-    .map((candidate) => ({
-      role_slug: typeof candidate.role_slug === 'string' ? candidate.role_slug : '',
-      role_rid: typeof candidate.role_rid === 'string' ? candidate.role_rid : undefined,
-      display_name:
-        typeof candidate.display_name === 'string'
-          ? candidate.display_name
-          : typeof candidate.role_slug === 'string'
-            ? candidate.role_slug
-            : '',
-      capability_tags: Array.isArray(candidate.capability_tags)
-        ? candidate.capability_tags.filter((tag): tag is string => typeof tag === 'string')
-        : undefined,
-      similarity: typeof candidate.similarity === 'number' ? candidate.similarity : 0,
-      reason: typeof candidate.reason === 'string' ? candidate.reason : undefined,
-    }));
+type RoutingDecisionParseResult =
+  | { kind: 'not_routing' }
+  | { kind: 'invalid'; message: string }
+  | { kind: 'valid'; decision: RoutingDecision };
+
+function parseRoutingDecisionStreamEvent(value: unknown): RoutingDecisionParseResult {
+  if (!isObjectRecord(value) || value.type !== 'routing_decision') return { kind: 'not_routing' };
+
+  if (value.stage !== 'pre_screen' && value.stage !== 'final') {
+    return invalidRoutingDecision();
+  }
+  if (!Array.isArray(value.candidates) || !value.candidates.every(isRoutingCandidate)) {
+    return invalidRoutingDecision();
+  }
+  if (value.stage === 'pre_screen' && value.outcome != null) {
+    return invalidRoutingDecision();
+  }
+  if (value.stage === 'final' && value.outcome !== 'selected' && value.outcome !== 'denied') {
+    return invalidRoutingDecision();
+  }
 
   const selected = parseRoutingSelected(value.selected);
+  if (value.stage === 'final' && value.outcome === 'selected' && !selected) {
+    return invalidRoutingDecision();
+  }
+  if (value.stage === 'final' && value.outcome === 'denied' && selected) {
+    return invalidRoutingDecision();
+  }
+
+  const candidates = value.candidates.map((candidate) => ({
+    role_slug: candidate.role_slug,
+    role_rid: typeof candidate.role_rid === 'string' ? candidate.role_rid : undefined,
+    display_name: candidate.display_name,
+    capability_tags: Array.isArray(candidate.capability_tags)
+      ? candidate.capability_tags.filter((tag): tag is string => typeof tag === 'string')
+      : undefined,
+    similarity: candidate.similarity,
+    reason: typeof candidate.reason === 'string' ? candidate.reason : undefined,
+  }));
+
   const takenPath = parseTakenPath(value.taken_path);
-  return {
+  const outcome = value.stage === 'final'
+    ? value.outcome === 'selected' || value.outcome === 'denied'
+      ? value.outcome
+      : null
+    : null;
+  return { kind: 'valid', decision: {
     candidates,
     selected,
     taken_path: takenPath,
@@ -365,12 +400,30 @@ export function parseRoutingDecisionEvent(value: unknown): RoutingDecision | nul
       typeof value.reason === 'string'
         ? value.reason
         : selected?.reason ?? (candidates.length === 0 ? 'no candidates' : 'semantic_router pre-screen'),
-    stage: value.stage === 'final' ? 'final' : 'pre_screen',
-    outcome: value.outcome === 'selected' || value.outcome === 'denied' ? value.outcome : null,
+    stage: value.stage,
+    outcome,
     reason_code: typeof value.reason_code === 'string' ? value.reason_code : null,
     policy_version: typeof value.policy_version === 'string' ? value.policy_version : null,
     seq: typeof value.seq === 'number' ? value.seq : 0,
     ts: typeof value.ts === 'string' ? value.ts : new Date().toISOString(),
+  } };
+}
+
+function isRoutingCandidate(value: unknown): value is Record<string, unknown> & {
+  role_slug: string;
+  display_name: string;
+  similarity: number;
+} {
+  return isObjectRecord(value) &&
+    typeof value.role_slug === 'string' && value.role_slug.length > 0 &&
+    typeof value.display_name === 'string' && value.display_name.length > 0 &&
+    typeof value.similarity === 'number' && Number.isFinite(value.similarity);
+}
+
+function invalidRoutingDecision(): RoutingDecisionParseResult {
+  return {
+    kind: 'invalid',
+    message: '路由决策事件格式错误，无法安全展示本次路由结果。',
   };
 }
 

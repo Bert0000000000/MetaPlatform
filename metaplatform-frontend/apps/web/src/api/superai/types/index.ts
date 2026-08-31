@@ -171,6 +171,8 @@ export interface ChatMessageMetadata {
   thinking?: string;
   thinkingDuration?: string;
   routingDecisions?: RoutingDecision[];
+  /** The live stream emitted a routing event that failed contract validation. */
+  routingDecisionError?: string;
 }
 
 export interface ChatSession {

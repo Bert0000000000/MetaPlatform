@@ -45,6 +45,7 @@ import {
   parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
 import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
+import { clearRoutingDecisionForStreamError } from './routingDecisionState';
 import {
   listConversations,
   createConversation as apiCreateConversation,
@@ -664,6 +665,12 @@ export default function ChatPage() {
                 },
               }));
             },
+            onRoutingDecisionError: ({ message }) => {
+              updateMessage(sessionId, assistantId, (m) => ({
+                ...m,
+                metadata: clearRoutingDecisionForStreamError(m.metadata, message),
+              }));
+            },
             onDelta: (delta) => {
               setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
             },
@@ -905,8 +912,9 @@ export default function ChatPage() {
             contentItems.push({ type: 'steps', steps });
           }
           const routingDecisions = msg.metadata?.routingDecisions as RoutingDecision[] | undefined;
-          if (routingDecisions && routingDecisions.length > 0) {
-            contentItems.push({ type: 'routing_decision', routingDecisions });
+          const routingDecisionError = msg.metadata?.routingDecisionError;
+          if ((routingDecisions && routingDecisions.length > 0) || routingDecisionError) {
+            contentItems.push({ type: 'routing_decision', routingDecisions, routingDecisionError });
           }
         }
         if (text) {
@@ -1099,9 +1107,11 @@ export default function ChatPage() {
                 </div>
               );
             },
-            routing_decision: (item: { routingDecisions?: RoutingDecision[] }) => {
+            routing_decision: (item: { routingDecisions?: RoutingDecision[]; routingDecisionError?: string }) => {
               const decisions = item.routingDecisions ?? [];
-              return decisions.length > 0 ? <RoutingDecisionPanel decision={decisions} /> : null;
+              return decisions.length > 0 || item.routingDecisionError
+                ? <RoutingDecisionPanel decision={decisions} streamError={item.routingDecisionError} />
+                : null;
             },
           }}
           chats={semiMessages}
