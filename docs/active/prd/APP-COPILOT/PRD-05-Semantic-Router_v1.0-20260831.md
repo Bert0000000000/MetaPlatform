@@ -1,7 +1,7 @@
 # PRD-05：Semantic Router
 
 > 关联批次：MP-SR-01 · 所属 Sprint：0
-> 状态：`[~] Draft — 待产品评审` · 2026-08-31
+> 状态：`[x] Product Approved — implementation pending` · 2026-08-31
 > 事实基线：`docs/active/delivery/evidence/MP-SR-01-ACCEPTANCE.md`
 
 ## 1. 目标与边界

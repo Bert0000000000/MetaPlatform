@@ -1,7 +1,7 @@
 # PRD-08：Action Orchestration v1.7
 
 > 关联批次：action-orchestration v1.7 · 所属 Sprint：0
-> 状态：`[~] Draft — 待产品评审` · 2026-08-31
+> 状态：`[x] Product Approved — implementation pending` · 2026-08-31
 > 事实基线：`docs/active/delivery/evidence/ACTION-ORCHESTRATION-V1.7-ACCEPTANCE.md`
 
 ## 1. 目标与边界

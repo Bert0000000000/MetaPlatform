@@ -1,7 +1,7 @@
 # PRD-06：Ontology Proposal
 
 > 关联批次：MP-ONT-PROPOSAL-01 · 所属 Sprint：0
-> 状态：`[~] Draft — 待产品评审` · 2026-08-31
+> 状态：`[x] Product Approved — implementation pending` · 2026-08-31
 > 事实基线：`docs/active/delivery/evidence/MP-ONT-PROPOSAL-01-ACCEPTANCE.md`
 
 ## 1. 目标与边界
