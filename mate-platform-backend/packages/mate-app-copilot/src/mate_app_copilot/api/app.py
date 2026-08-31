@@ -597,6 +597,34 @@ def _emit(
     )
 
 
+def _audit_routing_decision(
+    request: Request,
+    *,
+    event: dict[str, Any],
+    tenant_id: str,
+    actor_id: str,
+    capability_version: str,
+    correlation_id: str,
+) -> None:
+    """Write a final routing decision without retaining user prompt content."""
+    if event.get("stage") != "final":
+        return
+    outcome = str(event.get("outcome") or "denied")
+    event_type = "copilot.routing.decided" if outcome == "selected" else "copilot.routing.denied"
+    _emit(
+        request,
+        event_type,
+        correlation_id or str(getattr(request.state.ctx, "trace_id", "")),
+        {
+            "actor_id": actor_id,
+            "capability_version": capability_version,
+            "selected_role": event.get("selected"),
+            "reason_code": str(event.get("reason_code") or "routing_denied"),
+            "candidate_count": len(event.get("candidates") or []),
+            "correlation_id": correlation_id,
+        },
+        tenant_id,
+    )
 def _serialize(rows: list[Any]) -> list[dict[str, Any]]:
     return [asdict(r) for r in rows]
 
@@ -2225,6 +2253,15 @@ async def chat_agent_stream(
                 dispatch_by_routing_fn=_dispatch_by_routing_fn,
             ):
                 etype = event.get("type")
+                if etype == "routing_decision":
+                    _audit_routing_decision(
+                        request,
+                        event=event,
+                        tenant_id=tid,
+                        actor_id=uid,
+                        capability_version=capability_version,
+                        correlation_id=session_id,
+                    )
                 if etype == "final":
                     final_parts.append(str(event.get("content") or ""))
                 else:

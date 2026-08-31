@@ -770,6 +770,55 @@ def test_chat_agent_stream_filters_prompt_leak_and_persists_safe_reply(
     assert canary not in by_role["assistant"]["content"]
 
 
+def test_agent_stream_audits_final_routing_decision_without_message_content(
+    client, auth_headers_acme, outbox, monkeypatch,
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    class _StubOrchestratorClient:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        async def authorized_role_snapshot(self, **kwargs: Any) -> dict[str, Any]:
+            return {"items": [{"role": "workflow"}], "capability_version": "snapshot-v1"}
+
+    async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {
+            "type": "routing_decision",
+            "stage": "pre_screen",
+            "candidates": [{"role_slug": "workflow"}],
+            "selected": None,
+        }
+        yield {
+            "type": "routing_decision",
+            "stage": "final",
+            "outcome": "selected",
+            "selected": "workflow",
+            "reason_code": "model_selected",
+            "candidates": [{"role_slug": "workflow"}],
+        }
+        yield {"type": "final", "content": "已提交。"}
+
+    monkeypatch.setattr(copilot_app_module, "OrchestratorClient", _StubOrchestratorClient)
+    monkeypatch.setattr(copilot_app_module, "run_agent_loop", _fake_run_agent_loop)
+    secret = "do-not-store-this-user-message"
+    response = client.post(
+        "/api/v1/copilot/chat/agent/stream",
+        json={"messages": [{"role": "user", "content": secret}]},
+        headers=auth_headers_acme,
+    )
+    assert response.status_code == 200, response.text
+
+    events = [record.event for record in outbox.all_records() if record.event.type == "copilot.routing.decided"]
+    assert len(events) == 1
+    payload = events[0].payload
+    assert payload["actor_id"] == "u-1"
+    assert payload["capability_version"] == "snapshot-v1"
+    assert payload["selected_role"] == "workflow"
+    assert payload["reason_code"] == "model_selected"
+    assert secret not in json.dumps(payload)
+
+
 def test_generate_process_paginated(client, auth_headers_acme) -> None:
     """POST /generate/process lists generation processes (FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS)."""
     r = client.post(
