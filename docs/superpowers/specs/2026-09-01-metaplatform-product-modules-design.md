@@ -326,6 +326,11 @@ mindmap
       查询持有者 epoch
       续期释放
       过期或撤销
+    能力可用性
+      汇聚故障与依赖状态
+      查询用户可见范围
+      暂停恢复通知
+      记录降级决策
     运行运维
       时间线与检查点
       Inbox Outbox
@@ -343,6 +348,7 @@ mindmap
 | ExecutionLease | 对可执行 Run 原子获取 | 查询 lease holder、epoch、TTL 和历史 | 续期；epoch 只能单调增加 | 释放、过期、撤销 | 所有副作用校验当前 Lease；迟到调用必须被 fencing 拒绝 |
 | RunCheckpoint | 长任务按策略生成 | 查询恢复点和固定对象 Digest | 追加新检查点，不修改旧检查点 | 按保留策略清理未引用检查点 | 不保存 bearer token；只保存可恢复的非敏感状态引用 |
 | RuntimeCommand | 创建 pause、resume、cancel、retry 等命令 | 查询命令状态、幂等键和执行者 | 不能修改已提交命令 | 未执行草稿可撤销 | 命令与 Run CAS 在同一事务登记；重复幂等键返回既有结果 |
+| CapabilityAvailabilityProjection | 由 Runtime 汇聚服务、数据、身份、策略和对象依赖状态 | 按用户、租户、Run、应用和能力查询可用性与降级说明 | 仅由受权运行控制面追加状态或恢复通知 | 过期投影自动失效；历史状态归档 | 状态仅为 AVAILABLE、READ_ONLY、WAITING_RECOVERY、ACTIONS_PAUSED、UNAVAILABLE；不暴露底层秘密或私有错误，不能自行改写上游权威故障状态 |
 | Inbox/Outbox/DLQ View | 由系统写入 | 查询事件、因果链、重试和毒消息 | 标记分析结果或重放计划 | 按策略归档 | 重放仍需校验 Run、Lease、授权和幂等，不能直接改业务状态 |
 
 ### 6.3 产物与审批中心
@@ -509,6 +515,12 @@ mindmap
       查询宿主兼容性
       撤销投影
       A2A Card 更新
+    按需员工组装
+      创建组装计划
+      查询能力知识权限快照
+      生成临时实例
+      任务结束回收
+      生成组装回执
     质量与发布
       测试评测
       权限依赖检查
@@ -522,6 +534,9 @@ mindmap
 | EmployeeVersion | 创建新版本并绑定技能、能力、模型、知识、记忆、输出和审批策略 | 查询差异、依赖、评测和兼容性 | 草稿可改；已发布版本不可变 | 删除无引用草稿、废弃或撤销版本 | 运行中的 Run 固定版本 Digest；升级不改变既有 Run |
 | EmployeePackage/Release | 打包并提交评审 | 查询 Manifest、签名、SBOM、渠道和发布证据 | 发布事实不可修改 | 撤销、归档 | 权限清单、宿主要求、技能和服务依赖必须完整且可解析 |
 | EmployeeInstance | 在租户创建员工实例 | 查询健康、活动版本、配置和运行量 | 修改允许的实例参数或切换批准版本 | 停用、退役 | 运行实例不保存长期业务会话；Run 属于任务运行中心 |
+| EmployeeAssemblyPlan | 基于用户任务创建临时员工组装草稿 | 查询任务意图、候选模板、能力、知识、策略和风险 | 在未执行前调整候选并重新预检 | 撤回草稿、过期 | 只从已发布 EmployeeVersion、Skill/Capability、知识快照和策略版本选择；不得把模型建议直接变成可执行员工 |
+| EphemeralEmployeeInstance | 由批准的组装计划在固定 Run 下创建 | 查询生效范围、固定依赖 Digest、TTL 和运行状态 | 仅允许缩小范围、暂停或提前回收 | Run 结束、TTL 到期或管理员撤销即回收 | 不产生长期默认分配、角色或凭据；实际权限取人类主体、临时员工和资源策略的最小交集 |
+| AssemblyReceipt | 在临时实例创建、变更或回收时追加 | 查询所用员工、能力、知识、模型、策略和权限证据 | 不可修改；更正创建新回执 | 不可删除；按审计策略封存 | 绑定 Run、AssemblyPlan、依赖 Digest、授权决策和回收结果，使跨宿主续接可复验 |
 | EmployeeAssignment | 向用户、组织、岗位或应用分配员工 | 查询范围、来源、期限和状态 | 修改范围、有效期、默认关系 | 撤销、到期 | 分配只决定候选可见性，实际调用仍取双主体权限交集 |
 | EmployeeTeam | 新建团队、成员角色和协作目标 | 查询拓扑、能力覆盖、委托规则和预算 | 修改未发布团队版本 | 解散、归档 | 团队定义不直接创建 SubRun；每次实际委托仍进入 Runtime |
 | Capability/Skill/Service Binding | 为员工版本选择能力、技能和 MCP 服务 | 查询依赖、权限和兼容性 | 新版本中替换或调整策略 | 从草稿解绑；发布后废弃版本 | 不复制技能和服务定义；绑定固定 Release/Digest 或兼容范围 |
@@ -568,6 +583,12 @@ mindmap
       修改候选
       拒绝撤回
       合并评审
+    AI 自动演化
+      订阅材料数据 Schema 变化
+      抽取实体关系约束
+      语义对齐冲突检测
+      质量影响评估
+      生成维护提案
     版本与发布
       创建 Version Package
       查询 Diff Impact
@@ -588,6 +609,8 @@ mindmap
 | OntologyMapping | 新增到数据字段、数据产品、MCP Capability 或外部词表的映射 | 查询方向、转换、授权和血缘 | 修改草稿 | 撤销失效映射 | 映射不能绕过源端权限；查询计划仍由数据与授权服务校验 |
 | ProvenanceReference | 从对话、材料、数据或知识切片创建来源引用 | 查询 Digest、跨度、权限水位和撤回状态 | 追加风险标记，不能改写原来源 | 撤回传播到候选和维护提案 | 已发布历史保持不可变，但必须标记当前来源风险并触发修复 |
 | OntologyProposal | 从人工、对话、材料或维护任务创建候选 | 查询差异、冲突、来源、评审和影响 | 在草稿阶段修改、合并、拆分 | 拒绝、撤回、归档 | 模型只能生成候选；提取、评审和发布职责分离 |
+| OntologyEvolutionPipeline | 从受权文档、知识切片、数据产品 Schema/血缘变化或巡检任务创建 | 查询输入水位、抽取版本、运行、失败和候选 | 修改草稿规则、阈值或允许来源；生效配置创建新版本 | 停用、归档、撤销订阅 | AI 自动抽取实体、关系、约束和语义映射；数据变化只生成维护提案，不能直接改写本体或映射 |
+| OntologyQualityAssessment | 对固定 OntologyProposal 或 Release 创建完整性、一致性、覆盖率、冲突和影响评估 | 查询指标、样本、模型回执、确定性校验和建议 | 追加人工复核或新评估版本 | 不可删除；归档 | AI 评分是发布输入，不是唯一发布门；SHACL、兼容性、影响分析和人工评审仍为强制条件 |
 | OntologyVersion/Package | 从批准提案创建版本并打包签名 | 查询 Diff、依赖、SHACL、回归、签名和 Digest | 不修改；变更创建新版本 | 废弃、撤销、归档 | 每个 Digest 对应不可变包和图投影；旧 Run 保留原 Digest |
 | OntologyRelease | 创建 STAGED 发布记录 | 查询状态、步骤、失败、当前/历史版本 | 只能通过状态命令推进 | FAILED 可恢复；ACTIVE 可回滚/废弃 | PostgreSQL Release Ledger 是唯一发布状态权威 |
 | RDF/GraphProjection | 发布后创建 Jena Named Graph 投影 | SPARQL 查询、健康、同步和引用检查 | 通过新版本或恢复器重建 | 引用期结束后回收旧投影 | 投影可重建；`current` 只是便利别名，不能参与既有 Run 正确性 |
@@ -701,7 +724,7 @@ mindmap
 
 ### 6.9 Action 与工作流中心
 
-**产品职责：** 管理“如何把语义 Action 安全执行”为产品能力。Ontology SemanticAction 定义业务含义；ActionDefinition 定义执行契约；ActionBinding 选择受治理实现；Workflow 编排多个 Action 的条件、审批、等待、重试和补偿。
+**产品职责：** 管理“如何把语义 Action 安全执行”为产品能力。上层智能编排负责自然语言任务分解、动态路径规划、分支判断、多员工 SubRun 调度和异常适配；下层可靠工作流负责持久等待、重试、补偿、定时、审批和幂等。Ontology SemanticAction 定义业务含义；ActionDefinition 定义执行契约；ActionBinding 选择受治理实现；Workflow 编排多个 Action 的条件、审批、等待、重试和补偿。
 
 ```mermaid
 mindmap
@@ -728,6 +751,12 @@ mindmap
       修改节点边条件
       删除草稿废弃版本
       校验发布
+    智能编排
+      新增任务分解策略
+      查询计划与分支依据
+      生成多员工子任务
+      异常重规划
+      移交可靠工作流
     Trigger Schedule
       新增触发器计划
       查询下次运行
@@ -749,6 +778,8 @@ mindmap
 | ActionRiskPolicy | 创建风险计算、Approval 和职责分离规则 | 查询适用动作、版本和命中解释 | 修改草稿 | 停用、归档 | 模型只能提出风险候选；服务端策略决定 R1-R4，降低风险需明确策略证据 |
 | Pre/PostCondition | 创建数据、本体、权限和业务条件 | 查询表达式、来源、覆盖和失败历史 | 修改草稿 | 删除草稿、废弃版本 | 执行前重新读取当前业务条件；不能只依赖生成计划时的快照 |
 | CompensationDefinition | 创建反向动作、Saga 或人工对账规则 | 查询适用失败、限制和验证结果 | 修改草稿 | 停用、归档 | 不可逆动作必须明确标记，不允许伪造可补偿性 |
+| IntelligentOrchestrationDefinition/Version | 新建任务分解、路由、分支、委托和异常适配策略 | 查询输入边界、候选路径、模型/规则版本、风险和评测 | 修改草稿；发布后创建新版本 | 删除无引用草稿；废弃或撤销版本 | 可由 LangGraph 或兼容开源引擎执行；其计划状态不是业务或副作用权威，不能直接修改领域数据 |
+| OrchestrationPlan | 对固定用户请求、Run 和策略版本生成 | 查询任务树、选择依据、预算、SubRun、失败和重规划记录 | 仅可追加重规划版本、人工约束或取消命令 | 终止、归档；不可改写已执行步骤 | 每项委托必须创建受衰减权限约束的 SubRun；涉及等待、审批、重试、补偿或外部动作时必须移交 Runtime/Temporal 并记录边界 Digest |
 | WorkflowDefinition/Version | 新建模板、复制版本、导入受支持定义 | 查询节点、边、条件、依赖、Diff 和历史 | 修改草稿图 | 删除草稿、废弃或撤销版本 | 普通短请求不强制进入 Temporal；仅可靠等待、重试和补偿使用持久流程 |
 | WorkflowNode/Edge | 在草稿 Workflow 新增 Action、审批、等待、分支和人工任务 | 查询输入输出、条件和映射 | 修改草稿 | 删除草稿节点/边 | 发布校验不可达节点、循环、权限提升、缺失补偿和非确定性逻辑 |
 | Trigger/Schedule | 创建事件、时间、API 或人工触发器 | 查询状态、过滤、下次触发和执行历史 | 修改、暂停 | 停用、删除未引用触发器 | 事件身份、tenant、Run 关联和权限水位必须验证，字段不能自证身份 |
@@ -1156,6 +1187,26 @@ mindmap
 | RestoreDrill | 对固定备份和独立目标环境创建演练 | 查询步骤、RPO/RTO、校验、失败和签字 | 追加对账和复核 | 不可删除；归档 | 生产 Gate 要求真实恢复和故障注入；单宿主模拟不能证明独立故障域 |
 | DLQ/ReplayPlan | 从失败事件创建有界重放计划 | 查询事件、因果链、生产者、错误和影响 | 调整过滤、批次和窗口 | 取消、归档 | 重放需审批、授权、Run/Lease/幂等复核和业务对账，不能一键全量盲放 |
 
+### 6.16 跨模块 AI 原生运行态（不新增一级模块）
+
+本节定义跨领域装配规则，不创建新的业务权威。对象仍由其所属中心持有：本体自动演化属于本体中心，智能编排属于 Action 与工作流中心，临时员工属于数字员工中心，Run/SubRun 与能力可用性投影属于任务与运行中心，指标/告警/通知属于运营中心。
+
+| 跨模块能力 | 输入与产出 | 强制边界 |
+|---|---|---|
+| AI 本体自动构建与演化 | 受权文档、知识切片、DataProduct Schema/血缘事件 → OntologyProposal、OntologyQualityAssessment | 只产生候选；来源 Digest、抽取版本、模型回执、SHACL、影响分析和人工评审齐备后才能发布 |
+| 智能任务编排 | 用户意图、EmployeeProjection、CapabilityCatalog、Ontology/Policy/Data 快照 → OrchestrationPlan、SubRun 树 | 智能层不拥有 Run、Approval、Lease、WorkflowExecution 或副作用；任何持久等待和执行都移交 Runtime/Temporal |
+| 按需动态员工 | 任务意图和受治理资产目录 → EmployeeAssemblyPlan、EphemeralEmployeeInstance、AssemblyReceipt | 固定全部依赖 Digest；权限只能衰减；任务结束、TTL 到期或撤销后回收，不遗留默认角色、分配或凭据 |
+| 用户可见能力降级 | 故障域、授权水位、数据/知识可用性、Run 状态 → CapabilityAvailabilityProjection、恢复通知 | 按能力而非基础设施名称展示；只读、等待、暂停动作和不可用状态均须给出可继续路径与审计关联 |
+
+首发端到端验收至少覆盖以下四条跨模块链路：
+
+1. 订单洞察与可逆跟进：数据产品/本体/员工/MCP/Artifact/Approval/Action/Receipt。
+2. 合同审查：受治理文档/RAG/本体/模型回执/报告/人工 DecisionRecord；禁止伪造副作用回执。
+3. AI 本体构建：材料或对话/抽取/语义对齐/冲突与质量评估/人工评审/发布/Jena 投影。
+4. 数据与知识变更驱动的本体巡检：Schema 或切片变化/维护提案/影响分析/审批/回滚或恢复。
+
+任何场景均须证明：业务对象只有一个权威写入点；跨模块权限在每次读取、提案、审批和执行时重新校验；失败、降级、恢复和回滚形成可追溯闭环。
+
 ---
 
 ## 7. 应用装配模型
@@ -1372,9 +1423,11 @@ JSON Artifact 始终是权威；Markdown、HTML、PDF、DOCX 和 MCP Apps 是表
 ### 12.4 宿主与运行
 
 - 宿主能取得最小 UserContextProjection、EmployeeProjection 和 CapabilityCatalog。
+- 宿主还能取得最小 CapabilityAvailabilityProjection，并以 AVAILABLE、READ_ONLY、WAITING_RECOVERY、ACTIONS_PAUSED、UNAVAILABLE 展示用户可见能力范围、继续路径和恢复通知；不得泄露基础设施秘密或私有错误。
 - 客户端可以查看 Run/SubRun 状态、任务、工具、证据、产物和错误，但看不到私有思维链和秘密。
 - 宿主 A 创建的业务任务可由宿主 B 从同一 BusinessSession/WorkItem 继续。
 - 重复调用、并发确认、迟到 Lease、Workflow Replay 和事件重放不会产生重复业务效果。
+- 临时员工实例固定 AssemblyReceipt 和依赖 Digest，任务结束、TTL 到期或撤销后不保留角色、分配、凭据或隐式权限。
 
 ### 12.5 标准输出和应用
 
@@ -1387,13 +1440,16 @@ JSON Artifact 始终是权威；Markdown、HTML、PDF、DOCX 和 MCP Apps 是表
 
 - 业务结论可追溯到数据快照、知识跨度、本体版本、模型回执、授权决定和 Run。
 - 本体候选经来源、冲突、SHACL、影响和评审后才可发布。
+- AI 本体自动构建和数据驱动演化能从受权材料、知识切片、Schema 与血缘变化生成候选、质量评估和维护提案；AI 评分不能取代确定性校验或人工发布。
 - 知识图谱和 Jena 投影可从权威版本重建，不成为唯一事实源。
 - 记忆候选未经确认/策略审核不进入长期记忆；冲突、撤销和删除能传播到索引与副本。
+- 智能编排可生成可审计任务树、路径选择和受衰减 SubRun；对审批、等待、重试、补偿或副作用的处理必须进入 Employee Runtime 与 Temporal 边界。
 
 ### 12.7 运营和恢复
 
 - 关键读取、写入、授权、发布、审批、执行、删除和运维动作均产生审计。
 - 指标健康不能替代真实登录、数据正确性、权限、备份恢复和业务验收。
+- 四条跨模块端到端链路必须分别验证正常、拒绝、依赖故障、只读/暂停降级、恢复和回滚；模块局部测试不能替代此项验收。
 - 每个生产 Gate 只有 `PASSED`、`FAILED`、`NOT_EXERCISED`，未执行不得记为通过。
 - 备份必须通过真实恢复和对账；应用、数据、对象、事件、工作流、配置和信任材料均有恢复边界。
 
