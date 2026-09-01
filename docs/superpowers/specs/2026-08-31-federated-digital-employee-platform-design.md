@@ -1,4 +1,4 @@
-# MetaPlatform 联邦式数字员工平台目标总体架构
+# MetaPlatform 目标总体架构
 
 > 初版日期：2026-08-31
 >

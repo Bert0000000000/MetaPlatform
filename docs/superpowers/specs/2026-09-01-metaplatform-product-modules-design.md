@@ -1,4 +1,4 @@
-# MetaPlatform 数字员工平台产品功能模块设计
+# MetaPlatform 产品功能模块设计
 
 > 日期：2026-09-01
 >
@@ -12,7 +12,7 @@
 
 ## 1. 产品定位
 
-MetaPlatform 是数字员工的身份、能力、语义、任务、记忆、产物和治理平台。Codex、Claude Code、DeepSeek Harness、Hermes 等宿主承担对话、意图理解、原生 Agent Loop 和 SubAgent 交互展示；MetaPlatform 不重复建设通用聊天客户端。
+MetaPlatform 是基于 Ontology 本体、数字员工和可治理业务行动的企业级决策与运营提效平台。平台统一管理身份、能力、语义、任务、记忆、产物和治理状态。Codex、Claude Code、DeepSeek Harness、Hermes 等宿主承担对话、意图理解、原生 Agent Loop 和 SubAgent 交互展示；MetaPlatform 不重复建设通用聊天客户端。
 
 平台产品采用“**领域能力中心 + 动态角色工作台**”结构：底层只有一套权威领域对象，上层根据用户、租户、角色、关系和数据范围动态生成菜单、工作台和操作权限。产品模块不按 RAGFlow、Temporal、Jena、NATS 等技术组件划分；技术组件只是领域能力的实现。
 
@@ -36,7 +36,7 @@ MetaPlatform 是数字员工的身份、能力、语义、任务、记忆、产�
 
 ```mermaid
 mindmap
-  root((MetaPlatform 数字员工平台))
+  root((MetaPlatform))
     业务交互面
       个人中心
         我是谁

@@ -1,8 +1,8 @@
-# MetaPlatform 数字员工平台业务 MVP 实施路线图
+# MetaPlatform 业务 MVP 实施路线图
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 用四个可独立验收的业务 MVP 逐步交付数字员工平台，同时通过独立的架构收敛门把现有实现迁移到已验证的目标组件。
+**Goal:** 用四个可独立验收的业务 MVP 逐步交付 MetaPlatform 的数字员工、本体、知识和业务行动能力，同时通过独立的架构收敛门把现有实现迁移到已验证的目标组件。
 
 **Architecture:** 实施采用“业务闭环轨 + 架构收敛轨”双轨制。业务 MVP 只引入完成本场景所必需的能力；目标组件通过锁版、兼容、许可证、迁移和恢复门后才进入生产路径，不能把整个平台底座隐藏在 MVP1 中。
 
