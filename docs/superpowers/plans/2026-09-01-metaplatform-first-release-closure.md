@@ -4,7 +4,7 @@
 
 **Goal:** 将现有业务 MVP、产品模块和生产收敛 Gate 收口为一套可追踪、可执行、可证明的首发计划，使全部首发承诺完成后 MetaPlatform 能在选定生产拓扑中安全上线、回退和持续运营。
 
-**Architecture:** 本计划是发布控制面，不替代四个业务 MVP 或组件 Gate。它先冻结首发能力、部署形态和责任人；再将产品主规格要求的六组独立子计划补齐；最后以一个不可伪造的 platform-ga 父 Gate 汇聚需求追踪、组件 Gate、真实业务验收、恢复演练和生产推广证据。业务 MVP 仍按业务闭环交付，平台能力仍按首次进入生产路径时执行对应 Gate。
+**Architecture:** 本计划是发布控制面，不替代四个业务 MVP 或组件 Gate。它先冻结首发对象、生命周期操作、全部交付接口、部署形态和责任人；再完成六组产品子计划、数据库升级安全计划和 GA 切换计划；最后以一个不可伪造的 platform-ga 父 Gate 汇聚需求追踪、接口消费者契约、组件 Gate、真实业务验收、恢复演练和生产推广证据。业务 MVP 仍按业务闭环交付，平台能力仍按首次进入生产路径时执行对应 Gate。
 
 **Tech Stack:** Python 3.12、JSON Schema、YAML、PowerShell、GitHub Actions、Helm、Kustomize、Flux CD、Kubernetes/RKE2、OpenTelemetry、Prometheus、Perses、Alertmanager、OpenSearch、CloudNativePG/Barman Cloud Plugin、OpenBao、Cosign、Trivy。
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - MetaPlatform 是平台名称；数字员工是其核心能力之一，不能把本计划表述为独立的“数字员工平台”上线。
-- 首发必须提供产品主规格定义的 15 个模块的最小、可用、可审计闭环；明确不在运行时的能力必须逐项记录为 NOT_IN_RUNTIME，不能静默遗漏。
+- 首发必须提供产品主规格定义的 15 个模块的最小、可用、可审计闭环；已承诺对象、生命周期操作和接口不能用 NOT_IN_RUNTIME 绕过。只有产品主规格明确列为首发后的 MCP Apps、任意可执行插件、商业市场能力和未纳入 profile 的完全断网 Cell 可以登记为 OUT_OF_SCOPE，并绑定批准人、风险和后续 Release。
 - 首发拓扑为混合部署：托管 Kubernetes 生产环境与连接型私有部署都使用同一 TenantRuntime Helm Package；完全断网 Cell 只有在 disconnected-cell-hosts Gate 为 PASSED 时才可进入首发范围。
 - PASSED、FAILED、NOT_EXERCISED 是 Gate 的唯一状态。文档评审、mock、本地单机测试、健康检查和 helm template 不能产生 PASSED。
 - 每个实际启用组件必须在不可变 production-profile.yaml 中绑定版本、镜像 Digest、配置 Digest、责任人、Gate、RPO/RTO 和回退策略。
@@ -29,13 +29,13 @@
 
 ### 首发范围
 
-首发承诺不是“4 个演示场景”，而是产品主规格的 15 个模块各有最小产品闭环。每个模块至少具备：权威对象、生命周期动作、角色/租户授权、审计、API 或管理页面、真实 E2E 与恢复/回退归属。
+首发承诺不是“4 个演示场景”，而是产品主规格的 15 个模块各有最小产品闭环。每个对象/操作必须具有适用的 REST/MCP/A2A/Event 契约；用户、管理员或宿主可见能力另具 UI 或 Host Surface；全部登记 Interface Registry，并具备角色/租户授权、审计、真实 E2E 与恢复/回退归属。
 
 | 模块组 | 首发最小闭环 | 不计入首发的扩展能力 |
 |---|---|---|
 | 个人、组织、身份、租户 | UserProfile、Preference、Consent、DynamicRole、SoD、AccessReview、Tenant、ConfigRelease、Quota 与 FeatureFlag | 商业订阅计费 |
 | Runtime、员工、宿主 | Employee Definition/Version/Assignment、Session、WorkItem、Run、Lease、Host/Connector 状态与退役 | 未经验证的新宿主类型 |
-| Artifact、审批、应用 | ArtifactSchema、OutputProfile、Markdown/HTML 渲染、模板包、装配型应用、安装/升级/回滚 | 未通过 Gate 的可执行插件 |
+| Artifact、审批、应用 | ArtifactSchema、OutputProfile、Markdown/HTML/PDF/DOCX 渲染、模板包、装配型应用、安装/升级/回滚 | 未通过 Gate 的可执行插件 |
 | 本体、技能、MCP | 本体建模/发布、Skill/Capability 生命周期、MCP Server/Tool Catalog、凭据与路由治理 | 未通过宿主和沙箱 Gate 的 MCP App UI 扩展 |
 | Action、数据、知识、记忆 | Action/Workflow 定义与审批、DataProduct/Pipeline/质量/血缘、RAG/图谱、本体运维、受治理跨宿主记忆 | 未经受控评审的自动记忆晋升 |
 | 环境、运营、质量 | Connected Runtime 部署、审计、SLO、告警、事件、评测、预算、备份恢复、发布与回退 | 完全断网 Cell，除非相应 Gate 通过并写入 profile |
@@ -44,12 +44,14 @@
 
 platform-ga 只能在下列全部条件同时成立时写入 PASSED：
 
-1. 发布追踪矩阵中每个首发 Requirement 为 IMPLEMENTED，并具有 E2E、审计、恢复和责任人签字证据。
-2. 选定 production-profile.yaml 的每个启用组件及其祖先 Gate 均为当前 Digest 的 PASSED。
-3. 四个业务 MVP 均通过真实数据/材料验收；有副作用的 MVP 证明一次确认只产生一次 Receipt，无副作用的 MVP 以 DecisionRecord 结束。
-4. 生产与连接型私有部署分别完成预生产回放、灰度、观察期和回退；若首发启用断网 Cell，断网与重连 Gate 同样通过。
-5. 业务、身份、策略、Run Ledger、Artifact/Object、事件、工作流、审计与配置在独立故障域完成恢复和业务对账，满足写入 profile 的 RPO/RTO。
-6. 值班、发布、安全、数据与业务责任人完成签字；告警路由和 Runbook 已在演练中触发并执行。
+1. 对象/操作级发布追踪矩阵中每个首发 Requirement 为 IMPLEMENTED，并具有 API/UI、E2E、审计、恢复和责任人签字证据。
+2. Interface Registry 中每个启用 REST/OpenAPI、MCP、A2A、Event、UI/Host Surface 均为 RELEASED，且所有声明的 provider/consumer 契约测试通过。
+3. 选定 production-profile.yaml 的每个启用组件及其祖先 Gate 均为当前 final-candidate Digest 的 PASSED。
+4. 四个业务 MVP 均通过真实数据/材料验收；有副作用的 MVP 证明一次确认只产生一次 Receipt，无副作用的 MVP 以 DecisionRecord 结束。
+5. Codex、Claude Code、DSH、Hermes 各自独立的 HostCapabilityContract 和消费者测试均通过；一宿主证据不得替代另一宿主。
+6. 生产与连接型私有部署分别完成预生产回放、灰度、观察期和回退；若首发启用断网 Cell，断网与重连 Gate 同样通过。
+7. 业务、身份、策略、Run Ledger、Artifact/Object、事件、工作流、审计、记忆与配置在独立故障域完成恢复和业务对账，满足写入 profile 的 RPO/RTO。
+8. 值班、发布、安全、数据与业务责任人完成签字；告警路由和 Runbook 已在演练中触发并执行。
 
 任何一项为 FAILED、NOT_EXERCISED、证据 Digest 不匹配、签字过期或未登记例外时，platform-ga=NO-GO。
 
@@ -58,6 +60,10 @@ platform-ga 只能在下列全部条件同时成立时写入 PASSED：
 - docs/superpowers/specs/2026-09-01-metaplatform-first-release-scope.md: 首发范围、15 模块最低交付、责任人和受控例外的权威规格。
 - acceptance/release/v1/requirements.schema.json: Requirement、覆盖状态、证据引用和签字的 JSON Schema。
 - acceptance/release/v1/requirements.yaml: 15 模块及首发需求的逐项追踪矩阵。
+- acceptance/release/v1/interface-registry.schema.json: REST/OpenAPI、MCP、A2A、Event、UI/Host Surface 的接口交付 Schema。
+- acceptance/release/v1/interface-registry.yaml: 接口版本/Digest、提供方、消费者、授权、兼容、契约/E2E、回退和发布状态。
+- acceptance/release/v1/ownership-matrix.yaml: 权威对象、迁移、接口、事件、前端和 Gate 的唯一 DRI/审批人。
+- acceptance/release/v1/migration-chain.yaml: 单一 Alembic revision DAG、表/接口 owner、expand/contract 阶段、执行 PI 和回退测试。
 - acceptance/release/v1/production-profile.schema.json: 启用组件、Gate、Digest、RPO/RTO、容量和回退对象的 Schema。
 - acceptance/release/v1/production-profile.yaml: 唯一可部署的首发混合拓扑 profile。
 - acceptance/release/v1/platform-ga.schema.json: 最终 GA 聚合 Gate 的 Schema。
@@ -101,7 +107,7 @@ def test_enabled_requirement_rejects_missing_e2e_or_recovery_evidence() -> None:
 
 - [ ] **Step 2: Implement the Schema and matrix entries**
 
-Create one requirement record for every minimum capability in the Release Definition table. Restrict release_status to PLANNED, IMPLEMENTED, NOT_IN_RUNTIME, RETIRED; require NOT_IN_RUNTIME records to include an approved reason, risk statement and replacement release. Require IMPLEMENTED records to contain immutable evidence references, responsible owner, independent approver and all required Gate IDs.
+Create Requirement records at Requirement × management object × lifecycle operation × interaction surface granularity. Restrict release_status to PLANNED, IMPLEMENTED, OUT_OF_SCOPE, RETIRED; permit OUT_OF_SCOPE only for the explicitly post-release capabilities named in Global Constraints and require approved reason, risk statement and replacement release. Require IMPLEMENTED records to contain immutable interface, E2E, recovery and Gate evidence, responsible owner and independent approver.
 
 - [ ] **Step 3: Validate the matrix in CI**
 
@@ -116,7 +122,7 @@ git add docs/superpowers/specs/2026-09-01-metaplatform-first-release-scope.md ac
 git commit -m "docs(release): lock first release scope and traceability"
 ~~~
 
-### Task 2: 补齐六组产品实施计划并建立覆盖关系
+### Task 2: 完成六组产品计划与两组上线安全计划并建立覆盖关系
 
 **Files:**
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-control-plane-v1.md
@@ -125,20 +131,22 @@ git commit -m "docs(release): lock first release scope and traceability"
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-ontology-skill-mcp-v1.md
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-action-data-knowledge-memory-v1.md
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-tenant-deployment-operations-v1.md
+- Create: docs/superpowers/plans/2026-09-01-metaplatform-database-release-and-upgrade-safety.md
+- Create: docs/superpowers/plans/2026-09-01-metaplatform-ga-release-and-cutover.md
 - Modify: docs/superpowers/plans/2026-09-01-digital-employee-platform-mvp-roadmap.md
 - Modify: acceptance/release/v1/requirements.yaml
 
 **Interfaces:**
 - Consumes: each product module's authority, lifecycle CRUD and acceptance requirements.
-- Produces: six independently executable plans; each Requirement maps to exactly one primary plan and may name dependencies on MVP1–MVP4.
+- Produces: eight independently executable plans; each object/operation/interface Requirement maps to exactly one primary plan and may name dependencies on MVP1–MVP4.
 
 - [ ] **Step 1: Specify plan boundaries without duplicating authority**
 
-Write plans in the product-spec order: control plane; runtime/employee/host; artifact/application/output; ontology/skill/MCP; action/data/knowledge/memory; tenant/deployment/operations. Each plan must declare its authority boundaries and consume existing UserProfile, EmployeeVersion, RunContext, ArtifactEnvelope, OntologyPackage and ActionPlan contracts instead of recreating them.
+Write plans in the product-spec order: control plane; runtime/employee/host; artifact/application/output; ontology/skill/MCP; action/data/knowledge/memory; tenant/deployment/operations; database release/upgrade safety; GA release/cutover. Complete and cross-review all eight in PI-0 before PI-1 commitment. Each plan must declare its authority boundaries and consume existing UserProfile, EmployeeVersion, RunContext, ArtifactEnvelope, OntologyPackage and ActionPlan contracts instead of recreating them.
 
 - [ ] **Step 2: Give every plan executable tasks**
 
-Each child plan must follow the repository plan format: exact files, stable interfaces, failing tests, live test commands, rollback tests and commit boundaries. It must include CRUD lifecycle behavior, RBAC/ABAC checks, tenant isolation, append-only audit and a real E2E flow for every first-release Requirement it owns.
+Each child plan must follow the repository plan format: exact files, stable REST/MCP/A2A/Event/UI interfaces, failing tests, live test commands, rollback tests and commit boundaries. It must include CRUD plus review/release/execute/revoke/recover behavior, RBAC/ABAC checks, tenant isolation, append-only audit and a real E2E flow for every first-release Requirement it owns.
 
 - [ ] **Step 3: Bind existing MVP work rather than copying it**
 
@@ -189,7 +197,7 @@ Require every enabled component to reference one exact matrix row and matching i
 
 - [ ] **Step 3: Plan and implement safe migration/identity convergence**
 
-The database-safety plan must create a dedicated, signed, least-privilege Alembic Job; require pre-migration snapshot, 0015 → 0020 upgrade/restart regression, schema expand-contract compatibility, PITR recovery and post-migration reconciliation. It must remove legacy IAM from runtime routes, OpenAPI manifests and authorization facts after the approved compatibility window, while retaining a tested rollback route that does not create a second identity authority.
+The database-safety plan must create a dedicated, signed, least-privilege Alembic Job. In W0/PI-0 it implements and applies the complete 0016–0026 backward-compatible schema-only foundation, proves 0015 → 0026 → bounded rollback → 0026 in both production-equivalent topologies, and proves later-PI services/routes/Feature Flags remain disabled. It requires PITR recovery and post-migration reconciliation. The destructive 0027 contract is created/executed only in PI-6 after N/N-1 retirement and the approved compatibility window; it removes legacy IAM from runtime routes, OpenAPI manifests and authorization facts while retaining a tested rollback route that does not create a second identity authority.
 
 - [ ] **Step 4: Run validation**
 
@@ -221,7 +229,7 @@ git commit -m "feat(release): lock production profile and migration authority"
 
 - [ ] **Step 1: Define numeric service objectives**
 
-Create SLO entries for login/token exchange, authorized read, Run transition, Artifact read/write, approval consumption, action execution, MCP discovery/call, RAG retrieval and deployment reconciliation. Each entry states measurement query, rolling window, availability/latency/error objective, alert threshold, error-budget action and capacity owner.
+Create the minimum correlation/log/metric/error-alert and login/Run/Artifact/identity restore baseline in PI-0/PI-1, then expand it into SLO entries for login/token exchange, authorized read, Run transition, Artifact read/write, approval consumption, action execution, MCP discovery/call, RAG retrieval and deployment reconciliation. Each entry states measurement query, rolling window, availability/latency/error objective, alert threshold, error-budget action and capacity owner.
 
 - [ ] **Step 2: Define accountable operations**
 
@@ -249,15 +257,18 @@ git commit -m "docs(operations): define SLO incident and recovery readiness"
 **Files:**
 - Create: acceptance/release/v1/platform-ga.schema.json
 - Create: acceptance/release/v1/platform-ga.yaml
+- Create: acceptance/release/v1/final-candidate.yaml
+- Create: acceptance/release/v1/promotion-plan.yaml
+- Create: acceptance/release/v1/promotion-evidence.yaml
+- Create: scripts/verify-platform-ga.py
 - Create: scripts/test-production-release-promotion.ps1
 - Create: mate-platform-backend/tests/architecture/test_platform_ga_evidence.py
 - Create: docs/superpowers/plans/2026-09-01-metaplatform-ga-release-and-cutover.md
-- Modify: scripts/test-production-gate.ps1
 - Modify: .github/workflows/ga-acceptance.yml
 
 **Interfaces:**
-- Produces: PlatformGA { release_id, production_profile_digest, requirement_matrix_digest, parent_gates, business_e2e, recovery_drill, promotion, signatures, status }.
-- Consumes: all release traceability, component Gate and production profile evidence.
+- Produces: PlatformGA { release_id, final_candidate_digest, production_profile_digest, requirement_matrix_digest, interface_registry_digest, parent_gates, business_e2e, host_evidence, recovery_drill, promotion, signatures, status }.
+- Consumes: all object/operation traceability, Interface Registry provider/consumer tests, four-host evidence, component Gate and production profile evidence.
 
 - [ ] **Step 1: Write failing aggregate-Gate tests**
 
@@ -273,11 +284,13 @@ def test_platform_ga_rejects_mocked_business_e2e() -> None:
 
 - [ ] **Step 2: Implement the platform-ga evidence schema**
 
-Require exact profile, requirement-matrix and toolchain Digests; every enabled component Gate; all business E2E identities; independent recovery drill; pre-production data replay provenance; change approval; promotion window; observation window; explicit auto/manual rollback threshold; and named signatures for business, security, data, operations and release owners.
+Require one signed final-candidate manifest containing code, database schema, OpenAPI/MCP/A2A/Event/UI registry, image, chart, policy and configuration Digests. Require exact profile, requirement-matrix, interface-registry and toolchain Digests; every enabled component Gate; four MVP and four-host E2E identities; independent recovery drill; pre-production data replay provenance; change approval; promotion window; observation window; explicit auto/manual rollback threshold; and named signatures for business, security, data, operations and release owners.
+
+Before promotion, run all 15 modules' object/operation tests, all Interface Registry provider/consumer contracts, four MVP E2E, four host jobs, tenant/security/idempotency, migration/N/N-1/recovery/rollback and all enabled parent Gates again against the same final candidate. Evidence from an older Digest is invalid.
 
 - [ ] **Step 3: Implement the only production promotion runner**
 
-test-production-release-promotion.ps1 must create no production resources before verifying the signed Release Manifest. It runs against an approved pre-production target using de-identified data, deploys an allowlisted first tenant or traffic slice, waits through the locked observation window, evaluates SLO/error budget/alert state, then either records promotion or executes the declared rollback. It always exports manifests, logs, metrics, audit correlation IDs and rollback result; it never changes platform-ga to PASSED on a mocked endpoint or a local Compose environment.
+test-production-release-promotion.ps1 must create no production resources before verifying the signed final-candidate.yaml. It runs against an approved pre-production target using de-identified data, deploys an allowlisted first tenant or traffic slice, waits through the locked observation window, evaluates SLO/error budget/alert state, then either records promotion or executes the declared rollback. It appends promotion-evidence.yaml with the frozen candidate Digest and never modifies final-candidate.yaml or sets platform-ga itself. It always exports manifests, logs, metrics, audit correlation IDs and rollback result; it never passes on a mocked endpoint or a local Compose environment.
 
 - [ ] **Step 4: Run GA evidence tests**
 
@@ -288,7 +301,7 @@ Expected: missing stakeholder signature, failed child Gate, stale Digest, mock E
 - [ ] **Step 5: Commit GA release controls**
 
 ~~~bash
-git add acceptance/release/v1/platform-ga.schema.json acceptance/release/v1/platform-ga.yaml scripts/test-production-release-promotion.ps1 mate-platform-backend/tests/architecture/test_platform_ga_evidence.py docs/superpowers/plans/2026-09-01-metaplatform-ga-release-and-cutover.md scripts/test-production-gate.ps1 .github/workflows/ga-acceptance.yml
+git add acceptance/release/v1/platform-ga.schema.json acceptance/release/v1/platform-ga.yaml acceptance/release/v1/final-candidate.yaml acceptance/release/v1/promotion-plan.yaml acceptance/release/v1/promotion-evidence.yaml scripts/test-production-release-promotion.ps1 scripts/verify-platform-ga.py mate-platform-backend/tests/architecture/test_platform_ga_evidence.py docs/superpowers/plans/2026-09-01-metaplatform-ga-release-and-cutover.md .github/workflows/ga-acceptance.yml
 git commit -m "test(release): require platform GA promotion evidence"
 ~~~
 
@@ -307,15 +320,15 @@ git commit -m "test(release): require platform GA promotion evidence"
 
 - [ ] **Step 1: Execute in dependency waves**
 
-Execute W0 release scope/profile/Gate framework; W1 control plane plus runtime/artifact foundation; W2 MVP1 real order loop; W3 application/capability/MCP and action/data/knowledge/memory products; W4 MVP2–MVP4 and all selected target components; W5 operations, mixed deployment, recovery and GA promotion. Do not start a later wave when its prerequisite Requirement or Gate is FAILED or NOT_EXERCISED.
+Execute W0 release scope/profile/Gate framework plus the signed 0016–0026 schema-only foundation with future Features disabled; W1 control plane plus runtime/artifact foundation; W2 MVP1 real order loop; W3 application/capability/MCP and action/data/knowledge/memory products; W4 MVP2–MVP4 and all selected target components; W5 operations, mixed deployment, recovery, PI-6-only 0027 contract and GA promotion. Do not start a later wave when its prerequisite Requirement or Gate is FAILED or NOT_EXERCISED.
 
 - [ ] **Step 2: Run the complete evidence suite**
 
-Run: pwsh -File scripts/test-production-gate.ps1 -Gate platform-ga -WithDependencies
+Run: pwsh -File scripts/test-production-release-promotion.ps1 -ReleaseManifest acceptance/release/v1/final-candidate.yaml -PromotionPlan acceptance/release/v1/promotion-plan.yaml
 
-Run: pwsh -File scripts/test-production-release-promotion.ps1 -ReleaseManifest acceptance/release/v1/platform-ga.yaml
+Run: mate-platform-backend/.venv/Scripts/python.exe scripts/verify-platform-ga.py acceptance/release/v1/platform-ga.yaml acceptance/release/v1/final-candidate.yaml
 
-Expected: both commands finish with PASSED only for the locked production profile, current Digests, real target environment and recorded rollback capability.
+Expected: the promotion runner records both topology receipts without modifying the frozen candidate; the aggregate verifier is the only process that returns PASSED, and only for the locked production profile, current Digests, real target environments and recorded rollback capability.
 
 - [ ] **Step 3: Publish the readiness report**
 
@@ -330,7 +343,7 @@ git commit -m "docs(release): record MetaPlatform first release decision"
 
 ## Self-Review
 
-- 产品范围：Task 1 强制覆盖 15 个模块；Task 2 按产品主规格的六组边界产出独立可执行计划，避免用单体计划掩盖缺口。
+- 产品范围：Task 1 强制覆盖 15 个模块的对象、操作和接口；Task 2 产出六组产品计划与数据库/GA 两组上线安全计划，避免用模块汇总掩盖缺口。
 - 上线安全：Task 3 收口组件选择、迁移和身份权威；Task 4 收口 SLO、告警、值班和全链路恢复；Task 5 收口真实环境推广与回退。
 - 证据完整性：Task 6 只允许 platform-ga 汇聚当前 Digest、真实 E2E、恢复、推广和签字；所有未执行项目继续显示 NOT_EXERCISED。
 - 术语和接口：Requirement、ProductionProfile、PlatformGA 的状态和 Digest 引用在全部任务中一致；没有以健康检查、mock 或文档评审替代生产证据。

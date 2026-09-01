@@ -228,7 +228,7 @@ async def test_old_lease_is_rejected_before_operation(runtime_repo):
 
 async def test_new_host_session_atomically_fences_old(runtime_repo):
     first = await runtime_repo.attach_host_session(SESSION, host="codex")
-    second = await runtime_repo.attach_host_session(SESSION, host="dsh")
+    second = await runtime_repo.attach_host_session(SESSION, host="deepseek-harness")
     assert second.lease.lease_epoch == first.lease.lease_epoch + 1
     with pytest.raises(StaleLease):
         await runtime_repo.assert_current_lease(first.lease)
@@ -489,7 +489,7 @@ async def test_bootstrap_exchange_is_one_use_host_and_audience_bound(connector):
     token = await connector.exchange(bootstrap.id, pkce(), dpop("codex-1"), audience="order-mcp")
     assert token.run_id == bootstrap.run_id
     assert (await connector.exchange(bootstrap.id, pkce(), dpop("codex-1"), audience="order-mcp")).error_code == "BOOTSTRAP_GRANT_REPLAY"
-    assert (await connector.exchange(bootstrap.id, pkce(), dpop("dsh-2"), audience="order-mcp")).error_code == "BOOTSTRAP_HOST_MISMATCH"
+    assert (await connector.exchange(bootstrap.id, pkce(), dpop("deepseek-harness-2"), audience="order-mcp")).error_code == "BOOTSTRAP_HOST_MISMATCH"
 
 async def test_two_tenants_never_share_streamable_context(streamable_client):
     left = await streamable_client(token=token_for("tenant-a", "employee:collector")).call_tool("employee.resume", {})

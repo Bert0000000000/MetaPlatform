@@ -46,7 +46,7 @@ MetaPlatform 首发交付以产品主规格的 15 个一级模块为固定范围
 | Enabler | 为明确 Feature 服务的技术或证据工作 | 迁移 Job、恢复 Drill、Gate runner | 关联 Feature 的验证证据 |
 | Defect/Risk | 已知失败、风险或债务 | 旧 IAM 路由、运行时 create_all | 修复测试和风险关闭 |
 
-每个 Story 必须引用唯一的首发 Requirement、所属 Epic/Feature、权威对象、权限策略、测试、回退行为和责任人。Requirements Traceability Matrix 是范围权威；看板不能私自把首发 Requirement 标为不做。
+每个 Story 必须引用唯一的对象/操作级首发 Requirement、所属 Epic/Feature、Interface Registry 记录、权威对象、权限策略、消费者契约、测试、回退行为和责任人。Requirements Traceability Matrix 与 Interface Registry 共同构成范围和接口交付权威；看板不能私自把首发 Requirement 或消费者接口标为不做。
 
 ## 4. 完成标准
 
@@ -72,10 +72,10 @@ Feature 只有同时满足下列条件才是 Done：
 3. 使用真实或经批准脱敏样本完成端到端验收；生产验收不得 mock 订单、审批、执行、回执、合同解析或恢复接口。
 4. 关键读取、写入、审批、执行、发布和删除产生正确审计。
 5. 有副作用的功能证明 Run、Lease、Approval 和 idempotency 生效；无副作用场景以 DecisionRecord 结束。
-6. 关联 Gate 为 PASSED，或 Requirement 明确为受控环境能力且不进入 production-profile。
+6. 关联 Gate 为当前 production-profile 与实现 Digest 的 PASSED；受控环境验证可以形成中间证据，但不能把首发 Feature 标为 Done。
 7. 发布后可观察、可告警、可恢复，且回退已演练。
 
-PI 结束时，只有所有承诺 Feature 的 Done 证据和 PI 集成验收齐备，才能关闭；未完成事项不能统计为交付，只能重新拆分、降级为未启用或带风险转入下一 PI。
+PI 结束时，只有所有承诺 Feature 的 Done 证据和 PI 集成验收齐备，才能关闭；未完成事项不能统计为交付，只能重新拆分并按依赖转入下一 Sprint/PI。已承诺首发能力不能通过“降级为未启用”从最终 Release 范围消失。
 
 ## 5. PI 路线图
 
@@ -83,13 +83,14 @@ PI 结束时，只有所有承诺 Feature 的 Done 证据和 PI 集成验收齐�
 
 目标：把“全部功能交付”变成可验证的范围，而不是抽象目标。
 
-- 建立 15 模块 Requirements Traceability Matrix、责任人、受控例外和签字。
+- 建立 15 模块对象/操作级 Requirements Traceability Matrix、全 Surface Interface Registry、责任人、受控例外和签字。
 - 建立 Epic/Feature/Story 模板、统一 Definition of Ready/Done、风险登记和 PI Review 格式。
-- 实现生产 Gate Schema、锁定工具链、唯一 live runner 和 production-profile 骨架。
-- 创建六组产品实施计划的详细 backlog，不复制现有 MVP 契约。
+- 实现生产 Gate Schema、锁定工具链、唯一 live runner 和 production-profile 骨架，并排定 PI-1 至 PI-6 首次使用 Gate lane。
+- 在 PI-1 接受真实业务流量前完成签名最小权限 Alembic Job、生产 create_all/InMemoryOutbox 禁令、Supabase Auth→Keycloak 单一身份路径和最小恢复/可观测基线。
+- 完成六组产品实施计划、数据库升级安全计划和 GA 切换计划的详细 backlog，不复制现有 MVP 契约。
 - 完成 Demo：管理员可查看每个 Requirement 的所属 PI、Feature、Gate 与证据状态。
 
-PI Exit：范围无遗漏；任何启用能力均能追踪到计划、测试和 Gate；所有 Gate 初始保持 NOT_EXERCISED。
+PI Exit：范围无遗漏；六组产品计划、数据库安全计划和 GA 切换计划均已完成交叉评审；任何启用对象/操作/接口均能追踪到计划、消费者测试和 Gate；PI-1 首次使用 Gate 已 PASSED，未来 Gate 保持 NOT_EXERCISED 直到对应 PI 的准入窗口。
 
 ### PI-1：控制面、Runtime 内核与订单闭环
 
@@ -107,10 +108,10 @@ PI Exit：MVP1 完成双重验收；任何重复确认、过期 Lease 或恢复�
 
 目标：让受治理的能力可发现、可装配、可发布，而不复制其权威对象。
 
-- ArtifactSchema、OutputProfile、Markdown/HTML 模板包、装配型应用、安装/升级/回滚。
+- ArtifactSchema、OutputProfile、Markdown/HTML/PDF/DOCX 模板与渲染、装配型应用、安装/升级/回滚。
 - Skill/Capability 生命周期、评测、版本与员工绑定。
 - MCP Server/Tool/Resource/Prompt Catalog、Schema Snapshot、AuthProfile、Route、ConsumerBinding 和兼容测试。
-- Host/Connector 控制面、至少两宿主 Run 续接验证。
+- Host/Connector 控制面，以及 Codex、Claude Code、DSH、Hermes 四宿主各自独立的 Connector/Capability Contract/Run 续接验证。
 - 交付 Demo：管理员发布一个模板包与装配应用；宿主按 UserContext/EmployeeProjection/CapabilityCatalog 调用受权 Tool。
 
 PI Exit：应用、员工、Skill、MCP 与 Artifact 只以固定 Release/Digest 关联；未通过安全 Gate 的 MCP App 与可执行插件不进入运行时。
@@ -154,7 +155,7 @@ PI Exit：MVP4 完成验收；端到端恢复与业务对账满足声明的 RPO/
 
 目标：把已交付功能安全推进到首发生产环境。
 
-- 完成 Connected Runtime 的组件 Gate、生产 profile、签名/SBOM/许可证、迁移 Job 和旧 IAM 退出。
+- 对 PI-0 已建立的生产 profile、签名/SBOM/许可证、迁移 Job 和旧 IAM 退出执行 final-candidate 收口与重验；完成 Connected Runtime 的最终组件 Gate。
 - 云端生产与连接型私有部署使用相同 TenantRuntime Package 完成预生产回放、灰度、观察期和回退。
 - 完成四宿主 Capability Contract；若完全断网 Cell 被列入首发，则完成 disconnected-cell-hosts Gate。
 - 完成全链路灾备、跨故障域恢复、N/N-1 升级/回退、真实业务对账和事故演练。
@@ -191,7 +192,7 @@ PI Exit：platform-ga 为 PASSED；任何子 Gate、恢复、签字或证据 Dig
 
 - 首发 Requirement 只能通过产品、安全、数据和运营共同签字的变更记录新增、删除或降级。
 - Sprint 内发现的实现细节可以调整；跨 PI 的能力边界、权威对象和 Gate 依赖必须先更新规格与追踪矩阵。
-- 未能通过 Gate 的组件保持受控兼容路径或 NOT_IN_RUNTIME，不能以自研替代物绕过评审。
+- 未能通过 Gate 的实现可以在不改变领域契约的前提下更换开源适配实现并重跑相同 Gate；已承诺首发功能不能改记为 NOT_IN_RUNTIME。只有主规格明确列为首发后的 MCP Apps、任意可执行插件、商业市场能力和未纳入 profile 的完全断网 Cell 可以经批准登记为 OUT_OF_SCOPE。
 - 新宿主、MCP App、可执行插件、完全断网 Cell 都是显式范围变更，不能因演示成功自动进入首发。
 - 任何版本、镜像、配置或证据 Digest 改变，受影响 Gate 和 platform-ga 必须重新验证。
 
@@ -207,4 +208,3 @@ PI Exit：platform-ga 为 PASSED；任何子 Gate、恢复、签字或证据 Dig
 - platform-ga 的最终 GO/NO-GO 结论。
 
 燃尽图只用于预测，不得替代上述发布证据。
-

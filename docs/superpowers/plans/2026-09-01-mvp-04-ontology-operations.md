@@ -18,7 +18,7 @@
 - 质量下降、证据不足、影响范围未知、授权过期或旧 Lease 均失败关闭。
 - 回滚必须同时处理 PostgreSQL 权威版本、Jena alias、缓存、下游通知和运行引用；既有 Run 不切换 Digest。
 - MemoryCore 只保存审核后的 L0-L3 经验，不拥有员工、团队、任务、技能、ACL、Wiki、CodeGraph 或知识权威。
-- MemoryCore 是可选生产能力，不是 MVP4 业务验收前置；未启用时必须记录 `NOT_IN_RUNTIME`，本体检测、审批、发布和回滚仍须闭环。
+- MemoryCore 不是 MVP4 本体运维业务验收的权威，但首发记忆中心是独立承诺 Feature：MVP4 可先完成本体检测、审批、发布和回滚，PI-5 与 platform-ga 仍必须完成受治理记忆、删除传播、恢复和当前 Gate，不能以 NOT_IN_RUNTIME 绕过。
 - 旧 Kafka、MinIO、网关或存储只在消费者、数据校验、恢复和回滚证据齐备后退役。
 
 ---
@@ -127,7 +127,7 @@ Expected: FAIL because NATS/Inbox/replay modules are missing.
 
 - [ ] **Step 3: Implement at-least-once transport with exactly-once business effect**
 
-Pin `nats-py` in package/root locks. Migration constants are exact: `0019_ontology_operations.down_revision = "0018_ontology_factory"` and `0020_event_inbox_dlq.down_revision = "0019_ontology_operations"`. Migration `0019` creates DriftProposal, durable `analysis_jobs`, ImpactReport, RegressionReport, rollback and optional memory-review/revocation ledgers with RLS/backfill/downgrade; `0020` creates Outbox/Inbox/DLQ/replay-attempt tables plus event/idempotency uniqueness. `test_mvp_migration_chain.py` requires one Alembic head and executes `0015_merge_migration_heads → 0020_event_inbox_dlq → 0015_merge_migration_heads → 0020_event_inbox_dlq` against seeded legacy order/evidence data, then proves backfill, RLS, foreign keys and uniqueness constraints survived. Publish transaction Outbox rows to tenant-scoped JetStream subjects. Insert event ID into Inbox in the same transaction as handler state changes. Classify retryable, permanent and poison failures; route poison/permanent events to DLQ with redacted diagnostic metadata. Replay reacquires authorization, checks Run state, policy watermark and idempotency instead of bypassing the original handler.
+Pin `nats-py` in package/root locks. Migration constants are exact: `0019_ontology_operations.down_revision = "0018_ontology_factory"` and `0020_event_inbox_dlq.down_revision = "0019_ontology_operations"`. Migration `0019` creates DriftProposal, durable `analysis_jobs`, ImpactReport, RegressionReport and rollback ledgers with RLS/backfill/downgrade; memory review/revocation tables belong exclusively to revision 0025 and the action-data-knowledge-memory plan. `0020` creates Outbox/Inbox/DLQ/replay-attempt tables plus event/idempotency uniqueness. `test_mvp_migration_chain.py` requires one Alembic head and executes `0015_merge_migration_heads → 0020_event_inbox_dlq → 0015_merge_migration_heads → 0020_event_inbox_dlq` against seeded legacy order/evidence data, then proves backfill, RLS, foreign keys and uniqueness constraints survived. Publish transaction Outbox rows to tenant-scoped JetStream subjects. Insert event ID into Inbox in the same transaction as handler state changes. Classify retryable, permanent and poison failures; route poison/permanent events to DLQ with redacted diagnostic metadata. Replay reacquires authorization, checks Run state, policy watermark and idempotency instead of bypassing the original handler.
 
 The NATS account config gives each producer/consumer a distinct service principal and subject ACL: RAG may publish only `tenant.*.knowledge.slice.changed`, data service only `tenant.*.data.schema.changed`, ops consumers may consume their tenant streams, and replay may publish only the replay subject. JetStream config pins retention, maximum age/bytes/message size, duplicate window, consumer ack policy/backoff/max-deliver and DLQ stream. Each event carries the authenticated producer principal and a server-verified signature; body tenant is never an authorization fact.
 
@@ -346,7 +346,7 @@ git add mate-platform-backend/packages/mate-app-ontology-ops/src/mate_app_ontolo
 git commit -m "feat(ontology): orchestrate governed publish and rollback"
 ```
 
-### Task 6: 可选准入受治理 MemoryCore 并验证记忆删除/污染撤销
+### Task 6: 对接受治理 MemoryCore 并验证记忆删除/污染撤销
 
 **Files:**
 - Create: `mate-platform-backend/packages/mate-clients/src/mate_clients/memory_core.py`
@@ -360,7 +360,7 @@ git commit -m "feat(ontology): orchestrate governed publish and rollback"
 - Consumes: approved Artifact/ExecutionReceipt, authorization context and pinned MemoryCore L0-L3 HTTP API.
 - Produces: `submit_candidate(candidate, auth) -> MemoryCandidate`; `promote(candidate_id, approval) -> MemoryRecordRef`; `revoke_by_source(source_digest) -> RevocationResult`.
 
-**Gate status:** Execute this task only when MemoryCore is selected for the deployed runtime and its production-convergence gate has passed. It is excluded from MVP4 business exit criteria; skipping it must be recorded as `NOT_IN_RUNTIME`, not PASS.
+**Gate status:** Execute this task after the first-release Memory Adapter implementation is selected and knowledge-memory-ontology has PASSED. It is not part of the narrow MVP4 ontology-operation signoff, but skipping it blocks PI-5 Exit and platform-ga.
 
 - [ ] **Step 1: Write isolation, provenance and revocation tests**
 
@@ -383,7 +383,7 @@ Expected: FAIL before clients/adapters exist.
 
 - [ ] **Step 3: Implement the narrow L0-L3 adapter**
 
-Pin the MemoryCore tag/commit in deployment values. Only a platform adapter service account and reverse proxy/API allowlist may reach its approved L0-L3 endpoints; Kubernetes NetworkPolicy blocks host and other service access. The adapter rejects direct host credentials, derives tenant/user/employee/team scopes from verified auth, writes provenance and retention metadata, and only promotes an approved candidate. Disable or exclude team-control, task, skill, ACL, Wiki, CodeGraph, knowledge and proxy modules. Maintain a PostgreSQL review/revocation ledger so deletion can be retried and audited without duplicating memory content.
+Pin the MemoryCore tag/commit in deployment values. Only a platform adapter service account and reverse proxy/API allowlist may reach its approved L0-L3 endpoints; Kubernetes NetworkPolicy blocks host and other service access. The adapter rejects direct host credentials, derives tenant/user/employee/team scopes from verified auth, writes provenance and retention metadata, and only promotes an approved candidate. Disable or exclude team-control, task, skill, ACL, Wiki, CodeGraph, knowledge and proxy modules. Call the Memory Center service, whose revision-0025 PostgreSQL review/revocation ledger owns retry and audit facts; MVP4 must not create a second ledger or duplicate memory content.
 
 - [ ] **Step 4: Run live single-active, snapshot and restore tests**
 
