@@ -13,6 +13,7 @@ Path alignment (P0 close-out, 2026-07-30):
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 from typing import Any
@@ -123,6 +124,10 @@ class ChatRequest(BaseModel):
     max_tokens: int | None = None
     tools: list[dict[str, Any]] | None = None
     tenant_id: str = Field(default="default", description="租户 ID")
+    # Sprint 3（真实 LLM 收口）：请求级 OpenAI 兼容 base_url/api_key 覆盖。
+    # 设置时绕过 router，直接走 OpenAI 兼容 provider（如 ARK Plan / MiniMax）。
+    base_url: str | None = Field(default=None, description="OpenAI 兼容 base URL 覆盖")
+    api_key: str | None = Field(default=None, description="API Key 覆盖")
 
 
 class ChatResponseAPI(BaseModel):
@@ -400,7 +405,8 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
         if req.provider == "anthropic":
             model = req.model or "claude-3-5-sonnet-20241022"
             provider = RealAnthropicProvider(
-                model=model, allow_fallback=not is_production_profile()
+                model=model,
+                allow_fallback=not is_production_profile() and not req.tools,
             )
         elif req.provider in ("openai", "custom"):
             # custom = OpenAI 兼容第三方（MiniMax/DeepSeek 等），base_url/api_key 透传
@@ -409,7 +415,10 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 model=model,
                 base_url=req.base_url,
                 api_key=req.api_key,
-                allow_fallback=not is_production_profile(),
+                # A request carrying function tools is an Agent decision,
+                # not a conversational response.  It must never get a
+                # synthetic reply that could be mistaken for a tool result.
+                allow_fallback=not is_production_profile() and not req.tools,
             )
         else:
             raise HTTPException(
@@ -481,7 +490,11 @@ async def real_chat_stream_endpoint(req: RealChatRequest):
         model=model,
         base_url=req.base_url,
         api_key=req.api_key,
-        allow_fallback=not is_production_profile(),
+        # Tool-driven agent decisions are authorization-relevant.  A
+        # synthetic completion can never stand in for a real function call,
+        # even in a local profile: surface the upstream failure so Copilot
+        # records a fail-closed ``llm_unavailable`` decision instead.
+        allow_fallback=False,
     )
 
     stream = provider.stream_chat(
@@ -540,8 +553,12 @@ class MultimodalApiRequest(BaseModel):
     prompt: str = Field(..., description="文本提示")
     images: list[str] = Field(default_factory=list, description="base64 data URI 或 URL")
     audio: list[str] = Field(default_factory=list, description="base64 data URI 或 URL")
-    model: str = Field("gpt-4o-mini", description="多模态模型名")
+    model: str = Field("", description="多模态模型名（空=取 OPENAI_CHAT_MODEL env）")
     tenant_id: str = Field(default="default", description="租户 ID")
+    # 请求级 OpenAI 兼容 provider 覆盖（同 /chat 的 base_url/api_key 语义，
+    # 例如 ARK Plan /api/plan/v3 + vision 模型）。
+    base_url: str | None = Field(default=None, description="OpenAI 兼容 base URL 覆盖")
+    api_key: str | None = Field(default=None, description="API Key 覆盖")
 
 
 class MultimodalApiResponse(BaseModel):
@@ -550,6 +567,81 @@ class MultimodalApiResponse(BaseModel):
     content: str
     model: str
     usage: dict[str, Any] = {}
+
+
+class _OpenAIMultimodalBridge:
+    """MultimodalEngine provider protocol → ``openai_multimodal_chat`` 适配。
+
+    引擎的简化消息（{"type":"image","image":ref}）桥接为 MultimodalContentPart
+    列表，复用既有的 OpenAI-Vision 适配层（真实 /chat/completions 调用）。
+    """
+
+    def __init__(self, openai_provider: Any) -> None:
+        self._provider = openai_provider
+
+    async def chat(self, messages: list[dict[str, Any]], model: str) -> dict[str, Any]:
+        from ..multimodal import MultimodalContentPart, MultimodalMessage
+        from ..providers.multimodal_openai import openai_multimodal_chat
+
+        mm_messages = [_to_mm_message(m) for m in messages]
+        resp = await openai_multimodal_chat(self._provider, mm_messages)
+        return {
+            "content": resp.content,
+            "model": resp.model or model,
+            "usage": dict(resp.usage),
+        }
+
+
+def _to_mm_message(message: dict[str, Any]) -> Any:
+    from ..multimodal import MultimodalContentPart, MultimodalMessage
+
+    content = message.get("content")
+
+    def _media_ref(ref: str, *, url_type: str, b64_type: str) -> MultimodalContentPart:
+        if ref.startswith("data:"):
+            header, _, b64 = ref.partition(",")
+            media = header.removeprefix("data:").split(";")[0]
+            return MultimodalContentPart(type=b64_type, data=b64, media_type=media or None)
+        return MultimodalContentPart(type=url_type, url=ref)
+
+    if not isinstance(content, list):
+        return MultimodalMessage(
+            role=str(message.get("role", "user")),
+            content=[MultimodalContentPart(type="text", text=str(content or ""))],
+        )
+    parts: list[MultimodalContentPart] = []
+    for part in content:
+        ptype = str(part.get("type", "")) if isinstance(part, dict) else ""
+        if ptype == "image":
+            parts.append(_media_ref(
+                str(part.get("image", "")), url_type="image_url", b64_type="image_base64",
+            ))
+        elif ptype == "audio":
+            parts.append(_media_ref(
+                str(part.get("audio", "")), url_type="audio_url", b64_type="audio_base64",
+            ))
+        else:
+            parts.append(MultimodalContentPart(type="text", text=str(part.get("text", ""))))
+    return MultimodalMessage(role=str(message.get("role", "user")), content=parts)
+
+
+def _resolve_multimodal_provider(req: MultimodalApiRequest) -> tuple[Any, str]:
+    """真实 OpenAI 兼容 vision provider 优先；无凭证时退回 dev stub。
+
+    解析优先级：请求显式 base_url/api_key > OPENAI_BASE_URL/OPENAI_API_KEY env
+    （MiniMax 等）。模型：req.model > OPENAI_CHAT_MODEL > gpt-4o-mini。
+    """
+    from ..providers.openai import OpenAIChatProvider
+
+    base_url = req.base_url or os.getenv("OPENAI_BASE_URL") or ""
+    api_key = req.api_key or os.getenv("OPENAI_API_KEY") or ""
+    model = req.model or os.getenv("OPENAI_CHAT_MODEL") or "gpt-4o-mini"
+    if base_url and api_key:
+        bridge = _OpenAIMultimodalBridge(
+            OpenAIChatProvider(api_key=api_key, base_url=base_url, model=model, timeout=120.0),
+        )
+        return bridge, model
+    return None, model
 
 
 @router.post("/chat/multimodal", response_model=MultimodalApiResponse)
@@ -568,6 +660,11 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
         )
 
     from ..multimodal.engine import MultimodalEngine, MultimodalRequest
+
+    real_provider, model = _resolve_multimodal_provider(req)
+    engine = (
+        MultimodalEngine(real_provider) if real_provider is not None else MultimodalEngine()
+    )
 
     # --- 1. Quota check (mirrors router.chat semantics) ---
     bucket = get_quota_bucket()
@@ -591,12 +688,11 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
             )
 
     # --- 2. Engine call ---
-    engine = MultimodalEngine()
     request = MultimodalRequest(
         prompt=req.prompt,
         images=list(req.images),
         audio=list(req.audio),
-        model=req.model,
+        model=model,
     )
     try:
         resp = await engine.chat(request)
@@ -609,7 +705,7 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
     if recorder is not None:
         try:
             await recorder.record(
-                model=req.model, tenant_id=req.tenant_id, usage=resp.usage
+                model=model, tenant_id=req.tenant_id, usage=resp.usage
             )
         except Exception as e:
             logger.warning("llmgw.multimodal.cost.record_failed", error=str(e))

@@ -15,6 +15,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+import structlog
+
 from mate_platform.auth import install_auth
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
@@ -24,6 +26,8 @@ from .api.order_review import public_router as order_review_public_router
 from .api.order_review import router as order_review_router
 from .api.scheduling import router as scheduling_router
 from .bootstrap import seed_default_roles
+
+logger = structlog.get_logger(__name__)
 from .scheduler.capability_runtime import (
     CapabilityRuntime,
     set_capability_runtime,
@@ -39,9 +43,30 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     set_capability_runtime(runtime)
     app.state.capability_runtime = runtime
     await runtime.attach_registered_roles()
+    # Sprint 2：outbox→Temporal 常驻 relay（环境缺 temporalio 时降级跳过）。
+    relay_loop = None
+    try:
+        from .outbox_relay_loop import RelayLoop, TemporalWorkflowStarter
+        from .outbox_temporal_bridge import OutboxTemporalBridge
+
+        starter = TemporalWorkflowStarter()
+        bridge = OutboxTemporalBridge(
+            app.state.outbox_writer, starter,
+        ) if hasattr(app.state, "outbox_writer") else None
+        if bridge is None:
+            from mate_platform.messaging.outbox import InMemoryOutboxWriter
+
+            bridge = OutboxTemporalBridge(InMemoryOutboxWriter(), starter)
+        relay_loop = RelayLoop(bridge)
+        app.state.outbox_relay = relay_loop
+        relay_loop.start()
+    except ImportError:
+        logger.warning("outbox relay disabled: temporalio not installed")
     try:
         yield
     finally:
+        if relay_loop is not None:
+            await relay_loop.stop()
         set_capability_runtime(None)
         await runtime.dispose()
 

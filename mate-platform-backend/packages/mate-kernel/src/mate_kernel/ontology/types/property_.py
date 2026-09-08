@@ -20,6 +20,13 @@ class PropertyFormat(str, Enum):
     DATE = "date"
     TIMESTAMP = "timestamp"
     MARKING = "marking"  # 安全标记
+    # SAL-07（2026-09-08）：富属性一等格式（时序/地理/媒体）
+    GEOJSON = "geojson"          # 地理（GeoJSON geometry）
+    LATLON = "latlon"            # 地理（纬,经 二元组）
+    TIMESERIES = "timeseries"    # 时序引用（series rid）
+    IMAGE = "image"              # 媒体：图片（Storage rid/URI）
+    AUDIO = "audio"              # 媒体：音频
+    VIDEO = "video"              # 媒体：视频
 
 
 @dataclass(frozen=True, slots=True)

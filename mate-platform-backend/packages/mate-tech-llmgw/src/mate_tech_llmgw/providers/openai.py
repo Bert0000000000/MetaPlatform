@@ -23,14 +23,15 @@ class OpenAIChatProvider:
         *,
         api_key: str | None = None,
         model: str = "gpt-4o",
-        base_url: str = "https://api.openai.com/v1",
+        base_url: str | None = None,  # Sprint 3：默认消费 OPENAI_BASE_URL env（MiniMax 等 OpenAI 兼容端点）
         timeout: float = 30.0,
     ) -> None:
         self.model = model
         self._api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self._base_url = base_url
+        self._base_url = base_url or os.getenv(
+            "OPENAI_BASE_URL", "https://api.openai.com/v1")
         self._client = httpx.AsyncClient(
-            base_url=base_url,
+            base_url=self._base_url,
             timeout=timeout,
             headers={"Authorization": f"Bearer {self._api_key}"},
         )

@@ -12,10 +12,10 @@ servers:
 tags:
 - name: llmgw
   description: llmgw domain operations
-security:
-  - bearerAuth: []
-    tenantHeader: []
-    oidcScopes: [platform.read]
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /api/v1/llmgw/chat:
     post:
@@ -136,10 +136,17 @@ paths:
                     type: string
                 model:
                   type: string
-                  default: gpt-4o-mini
+                  default: ''
+                  description: 多模态模型名（空=取 OPENAI_CHAT_MODEL env）
                 tenant_id:
                   type: string
                   default: default
+                base_url:
+                  type: string
+                  description: OpenAI 兼容 base URL 覆盖（如 ARK Plan /api/plan/v3）
+                api_key:
+                  type: string
+                  description: API Key 覆盖
       responses:
         '200':
           description: OK

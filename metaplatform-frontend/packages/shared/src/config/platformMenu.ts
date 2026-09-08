@@ -59,6 +59,7 @@ export const PLATFORM_MENU: Record<string, PlatformModuleMenu> = {
       { key: 'schedule-export', label: '报告导出', path: '/schedule/export' },
       { key: 'schedule-manual-select', label: '人工选择', path: '/schedule/manual-select' },
       { key: 'schedule-a2a', label: 'A2A 协作', path: '/schedule/a2a' },
+      { key: 'orchestration', label: '编排控制台', path: '/superai/orchestration' },
       { key: 'analysis', label: '数据分析', path: '/analysis' },
       { key: 'cost-optimization', label: '成本优化', path: '/cost-optimization' },
     ],

@@ -207,8 +207,26 @@ async def task_status(task_id: str, request: Request) -> dict[str, Any]:
 
 # --- Plans ------------------------------------------------------------------
 @router.post("/plans", status_code=201)
-async def submit_plan(request: Request, body: SubmitPlanRequest) -> dict[str, Any]:
+async def submit_plan(
+    request: Request, body: SubmitPlanRequest, engine: str = "",
+) -> dict[str, Any]:
     tid = _tid(request)
+    # ADR-0061 双轨开关：?engine=temporal（或 WORKFLOW_ENGINE=temporal）走
+    # Temporal 持久路径；缺省 legacy（内存 PlanRunner）语义不变。
+    from ..temporal_rest import engine_from, is_available, submit_and_run
+
+    if engine_from(None, engine) == "temporal":
+        if not is_available():
+            raise HTTPException(
+                status_code=503,
+                detail="temporal engine unavailable: temporalio not installed "
+                       "in this service image",
+            )
+        return await submit_and_run(
+            tenant_id=tid, token=_user_token(request),
+            author_user_id=body.author_user_id,
+            raw_steps=[s.model_dump() for s in body.steps],
+        )
     steps = [
         PlanStep(
             step_id=s.step_id,
@@ -233,9 +251,15 @@ async def submit_plan(request: Request, body: SubmitPlanRequest) -> dict[str, An
     return {"plan_id": spec.plan_id, "status": "submitted", "step_count": len(spec.steps)}
 
 
-@router.get("/plans/{plan_id}", response_model=PlanStatus)
-async def plan_status(plan_id: str, request: Request) -> PlanStatus:
+@router.get("/plans/{plan_id}")
+async def plan_status(plan_id: str, request: Request) -> Any:
     _tid(request)  # tenant guard (plan state is in-memory; guarded here)
+    from ..temporal_rest import is_temporal_plan, is_available, status as twf_status
+
+    if is_temporal_plan(plan_id):
+        if not is_available():
+            raise HTTPException(status_code=503, detail="temporal engine unavailable")
+        return await twf_status(plan_id)
     try:
         state = get_plan_runner().get(plan_id)
     except PlanNotFoundError as e:
@@ -256,6 +280,13 @@ async def plan_status(plan_id: str, request: Request) -> PlanStatus:
 async def plan_execute(plan_id: str, request: Request) -> dict[str, Any]:
     tid = _tid(request)
     token = _user_token(request)
+    from ..temporal_rest import is_temporal_plan
+
+    if is_temporal_plan(plan_id):
+        raise HTTPException(
+            status_code=409,
+            detail="temporal-engine plans start on submit; execute is implicit",
+        )
     try:
         return await get_plan_runner().execute(plan_id=plan_id, tenant_id=tid, token=token)
     except PlanNotFoundError as e:
@@ -268,6 +299,16 @@ async def plan_review(
 ) -> dict[str, Any]:
     tid = _tid(request)
     token = _user_token(request)
+    from ..temporal_rest import is_temporal_plan, is_available
+    from .. import temporal_rest
+
+    if is_temporal_plan(plan_id):
+        if not is_available():
+            raise HTTPException(status_code=503, detail="temporal engine unavailable")
+        return await temporal_rest.review(
+            plan_id=plan_id, step_id=step_id,
+            approved=body.approved, feedback=body.feedback,
+        )
     try:
         return await get_plan_runner().review(
             plan_id=plan_id,
@@ -343,3 +384,168 @@ async def plan_graph(plan_id: str, request: Request) -> PlanGraph:
         plan_id=plan_id, status=status, current_step_id=cur,
         nodes=nodes, edges=edges,
     )
+
+
+# --- Session Evolution（PRD-01 M1 · MP-EMP-EVOLVE-01 · 会话级能力热进化）------
+from pydantic import BaseModel, Field  # noqa: E402
+
+
+class SessionMountBody(BaseModel):
+    name: str
+    ref: str
+    worker_kind: str = "mcp"
+
+
+@router.post("/sessions/{session_id}/open", status_code=201)
+async def evolve_open(session_id: str, request: Request) -> dict[str, Any]:
+    """打开会话进化域（快照挂载当前注册角色）。"""
+    from ..scheduler.session_evolution import get_session_evolution
+
+    tid = _tid(request)
+    scope = await get_session_evolution().open_session(session_id, tid)
+    return {"session_id": session_id, "roles_snapshotted": len(scope.status()["snapshot_roles"])}
+
+
+@router.post("/sessions/{session_id}/capabilities", status_code=201)
+async def evolve_mount(session_id: str, body: SessionMountBody,
+                       request: Request) -> dict[str, Any]:
+    from ..scheduler.session_evolution import get_session_evolution
+
+    tid = _tid(request)
+    scope = get_session_evolution().get(session_id)
+    if scope is None:
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not open")
+    if scope.tenant_id != tid:
+        raise HTTPException(status_code=403, detail="cross-tenant session denied")
+    try:
+        await scope.mount(body.name, body.ref, worker_kind=body.worker_kind)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return {"session_id": session_id, "mounted": body.name, "ref": body.ref}
+
+
+@router.delete("/sessions/{session_id}/capabilities/{name}")
+async def evolve_unmount(session_id: str, name: str, request: Request) -> dict[str, Any]:
+    from ..scheduler.session_evolution import get_session_evolution
+
+    tid = _tid(request)
+    scope = get_session_evolution().get(session_id)
+    if scope is None:
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not open")
+    if scope.tenant_id != tid:
+        raise HTTPException(status_code=403, detail="cross-tenant session denied")
+    ok = await scope.unmount(name)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f"capability {name!r} not mounted")
+    return {"session_id": session_id, "unmounted": name}
+
+
+@router.get("/sessions/{session_id}/evolution")
+async def evolve_status(session_id: str, request: Request) -> dict[str, Any]:
+    from ..scheduler.session_evolution import get_session_evolution
+
+    _tid(request)
+    scope = get_session_evolution().get(session_id)
+    if scope is None:
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not open")
+    return scope.status()
+
+
+@router.post("/sessions/{session_id}/close")
+async def evolve_close(session_id: str, request: Request) -> dict[str, Any]:
+    from ..scheduler.session_evolution import get_session_evolution
+
+    _tid(request)
+    stats = await get_session_evolution().close_session(session_id)
+    if stats is None:
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not open")
+    return {"session_id": session_id, "closed": True, **stats}
+
+
+@router.post("/sessions/sweep")
+async def evolve_sweep(request: Request) -> dict[str, Any]:
+    """PRD-01 M2：清扫过期会话进化域（TTL 兜底；幂等可重入）。"""
+    from ..scheduler.session_evolution import get_session_evolution
+
+    _tid(request)
+    swept = get_session_evolution().sweep_expired()
+    return {"swept": swept}
+
+
+class EvolveProposeBody(BaseModel):
+    name: str
+    ref: str
+    reason: str = ""
+
+
+@router.post("/sessions/{session_id}/evolve-proposals", status_code=201)
+async def evolve_propose(session_id: str, body: EvolveProposeBody,
+                         request: Request) -> dict[str, Any]:
+    """PRD-01 M3：员工提议新能力（pending，人审前不生效）。"""
+    from ..scheduler.session_evolution import get_session_evolution
+
+    scope = get_session_evolution().get(session_id)
+    if scope is None:
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not open")
+    if scope.tenant_id != _tid(request):
+        raise HTTPException(status_code=403, detail="cross-tenant session denied")
+    pid = scope.propose_evolution(body.name, body.ref, body.reason)
+    return {"proposal_id": pid, "status": "pending", "name": body.name}
+
+
+@router.post("/sessions/{session_id}/evolve-proposals/{pid}/approve")
+async def evolve_approve(session_id: str, pid: str, request: Request) -> dict[str, Any]:
+    """人审通过 → 真实挂载（HITL 闸）。"""
+    from ..scheduler.session_evolution import get_session_evolution
+
+    scope = get_session_evolution().get(session_id)
+    if scope is None:
+        raise HTTPException(status_code=404, detail="session not open")
+    if scope.tenant_id != _tid(request):
+        raise HTTPException(status_code=403, detail="cross-tenant session denied")
+    try:
+        return await scope.approve_evolution(pid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post("/sessions/{session_id}/evolve-proposals/{pid}/reject")
+async def evolve_reject(session_id: str, pid: str, request: Request) -> dict[str, Any]:
+    from ..scheduler.session_evolution import get_session_evolution
+
+    scope = get_session_evolution().get(session_id)
+    if scope is None:
+        raise HTTPException(status_code=404, detail="session not open")
+    try:
+        return scope.reject_evolution(pid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+# --- Outbox relay（Sprint 2 · SAL-05 P2 常驻化）--------------------------------
+class OutboxEventBody(BaseModel):
+    type: str
+    aggregate_id: str = "agg-1"
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/outbox/events", status_code=201)
+async def outbox_append(body: OutboxEventBody, request: Request) -> dict[str, Any]:
+    """dev/staging：向应用 outbox 追加事件（真实 writer，非 mock）。"""
+    from mate_platform.messaging.events import Event
+
+    tid = _tid(request)
+    writer = request.app.state.outbox_writer
+    event = Event.create(type=body.type, tenant_id=tid,
+                         aggregate_id=body.aggregate_id, payload=body.payload)
+    writer.append(event)
+    return {"event_id": event.id, "type": event.type, "status": "pending"}
+
+
+@router.post("/outbox/relay")
+async def outbox_relay_once(request: Request) -> dict[str, int]:
+    """手动触发一轮 relay（常驻循环之外的可观测入口）。"""
+    relay = getattr(request.app.state, "outbox_relay", None)
+    if relay is None:
+        raise HTTPException(status_code=503, detail="relay not available")
+    return await relay.relay_once()

@@ -12,6 +12,9 @@ from typing import Any
 from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
 
 from .capability_runtime import CapabilityRuntime, get_capability_runtime
+
+# PRD-01 M1：dispatch 调用方（API 层）设置当前请求的会话 id（无请求上下文时 None）
+_REQ_CTX = type("C", (), {"session_id": None})()
 from .role_registry import (
     CapabilityBinding,
     DigitalEmployeeRole,
@@ -114,7 +117,18 @@ class Dispatcher:
         # gone — refuse before invoking a stale binding. Untracked
         # capabilities keep the legacy behavior unchanged.
         runtime = self._capability_runtime or get_capability_runtime()
-        if runtime is not None and not runtime.allows(tenant_id, capability):
+        # PRD-01 M1 会话门：请求携带会话且会话进化域存在 → 用会话 runtime
+        session_rt = None
+        try:
+            from .session_evolution import get_session_evolution
+
+            session_rt = get_session_evolution().dispatch_runtime(
+                getattr(_REQ_CTX, "session_id", None) if getattr(_REQ_CTX, "session_id", None) else None
+            )
+        except Exception:
+            session_rt = None
+        gate = session_rt or runtime
+        if gate is not None and not gate.allows(tenant_id, capability):
             raise NoRoleForTaskError(
                 f"capability {capability!r} is tracked but not available "
                 f"for tenant {tenant_id!r} (tool unmounted)"
