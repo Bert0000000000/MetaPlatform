@@ -74,6 +74,14 @@ from ..repositories import (
     update_cdc_task,
     update_data_product,
     update_source,
+    catalog_search,
+    create_lineage_edge,
+    create_quality_rule,
+    lineage_graph,
+    list_lineage_edges,
+    list_quality_results,
+    list_quality_rules,
+    run_quality_rules,
 )
 
 router = APIRouter(prefix="/api/v1/data", tags=["data"])
@@ -718,3 +726,88 @@ async def data_product_versions_endpoint(
         "status": product.status,
         "history": [dict(entry) for entry in product.history],
     }
+
+
+# ---------------------------------------------------------------------------
+# DATA-D6/D7 — lineage / quality / catalog（治理面）
+# ---------------------------------------------------------------------------
+from dataclasses import asdict as _asdict  # noqa: E402
+
+
+@router.post("/lineage/edges")
+async def create_lineage_edge_endpoint(request: Request, body: dict) -> dict:
+    """登记 lineage 依赖边（DATA-D6）。body: {source_entity, target_entity, edge_type?}。"""
+    tid = _tid(request)
+    source_entity = str(body.get("source_entity") or "")
+    target_entity = str(body.get("target_entity") or "")
+    if not source_entity or not target_entity:
+        raise HTTPException(status_code=422, detail="source_entity/target_entity required")
+    edge = create_lineage_edge(tid, source_entity, target_entity,
+                               str(body.get("edge_type") or "derived_from"))
+    _emit(request, "data.lineage.edge.created", edge.id,
+          {"edge_id": edge.id, "source_entity": source_entity,
+           "target_entity": target_entity}, tid)
+    return _asdict(edge)
+
+
+@router.get("/lineage/graph")
+async def lineage_graph_endpoint(request: Request,
+                                 entity: str | None = Query(default=None)) -> dict:
+    """返回 {nodes, edges} 依赖图；entity 给定时只保留相连子图（DATA-D6）。"""
+    tid = _tid(request)
+    return lineage_graph(tid, entity)
+
+
+@router.post("/quality/rules")
+async def create_quality_rule_endpoint(request: Request, body: dict) -> dict:
+    """登记 quality 规则（DATA-D7）。body: {entity_id, field, rule_type, params?}。"""
+    tid = _tid(request)
+    entity_id = str(body.get("entity_id") or "")
+    field = str(body.get("field") or "")
+    rule_type = str(body.get("rule_type") or "required")
+    if rule_type not in ("required", "type"):
+        raise HTTPException(status_code=422, detail="rule_type must be required|type")
+    if not entity_id or not field:
+        raise HTTPException(status_code=422, detail="entity_id/field required")
+    rule = create_quality_rule(tid, entity_id, field, rule_type,
+                               body.get("params") or {})
+    _emit(request, "data.quality.rule.created", rule.id,
+          {"rule_id": rule.id, "entity_id": entity_id,
+           "field": field, "rule_type": rule_type}, tid)
+    return _asdict(rule)
+
+
+@router.get("/quality/rules")
+async def list_quality_rules_endpoint(request: Request,
+                                      entity_id: str | None = Query(default=None)) -> dict:
+    tid = _tid(request)
+    rules = list_quality_rules(tid, entity_id)
+    return {"items": [_asdict(r) for r in rules], "total": len(rules)}
+
+
+@router.post("/quality/run")
+async def run_quality_endpoint(request: Request, body: dict | None = None) -> dict:
+    """执行本租户全部 enabled 规则，结果落库（DATA-D7）。"""
+    tid = _tid(request)
+    summary = run_quality_rules(tid)
+    summary["results"] = [_asdict(r) for r in summary["results"]]
+    _emit(request, "data.quality.run.completed", f"{tid}",
+          {"rules_executed": summary["rules_executed"],
+           "passed": summary["passed"], "failed": summary["failed"]}, tid)
+    return summary
+
+
+@router.get("/quality/results")
+async def list_quality_results_endpoint(request: Request,
+                                        limit: int = Query(default=50, le=200)) -> dict:
+    tid = _tid(request)
+    results = list_quality_results(tid, limit)
+    return {"items": [_asdict(r) for r in results], "total": len(results)}
+
+
+@router.get("/catalog/search")
+async def catalog_search_endpoint(request: Request, q: str = Query(...)) -> dict:
+    """跨 sources + data products 检索（catalog 面）。"""
+    tid = _tid(request)
+    items = catalog_search(tid, q)
+    return {"items": items, "total": len(items)}

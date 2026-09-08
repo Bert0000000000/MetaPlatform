@@ -807,6 +807,78 @@ async def validate_data_endpoint(request: Request, payload: dict) -> dict:
 
 
 @router.post(
+    "/shacl/validate",
+    response_model=dict,
+    operation_id="ontValidateV2Shacl",
+)
+async def validate_shacl_endpoint(request: Request, payload: dict) -> dict:
+    """ONT-G14：SHACL Core 关键约束验证（minCount/maxCount/datatype/pattern/class/closed）。
+
+    body::
+
+        {
+          "target_class": "ont.<tenant>.obj.<slug>.<v>",   # 必填（租户守门）
+          "individuals": [ {"rid","class_rid","props"} ],  # 可选；缺省取 repo 内该类全部实例
+          "property_shapes": [ {"path", "min_count"?, "max_count"?, "datatype"?,
+                                "pattern"?, "node_class"?} ],  # 可选，叠加在合成 shape 上
+          "closed": bool                                   # 可选
+        }
+
+    NodeShape 优先由 ObjectType 定义合成（pk/非空 → minCount 1，type_id →
+    datatype）——SHACL 约束与类型定义语义对齐（ontValidateV2* 集成面）；
+    property_shapes 显式给定时叠加 W3C 特有约束（pattern/class 等）。
+    """
+    ctx = _ctx(request)
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+    from mate_kernel.ontology.shacl import (
+        NodeShape, PropertyShape, shape_from_object_type, validate_shacl,
+    )
+
+    target_class = str(payload.get("target_class") or "")
+    if not target_class.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant shacl target denied")
+
+    individuals = payload.get("individuals")
+    if individuals is None:
+        try:
+            stored = await _call_scoped(
+                request, "list_individuals", ClassRef(target_class))
+        except KeyError:
+            stored = []
+        individuals = [
+            {"rid": i.rid, "class_rid": i.class_rid.rid,
+             "props": {k.rid: v for k, v in i.props}}
+            for i in stored
+        ]
+
+    shapes: list = []
+    try:
+        ot = await _call_scoped(request, "get_object_type", ClassRef(target_class))
+        shapes.append(shape_from_object_type(ot))
+    except Exception:
+        shapes = []
+    extra = payload.get("property_shapes") or []
+    if isinstance(extra, list) and extra:
+        ps = tuple(
+            PropertyShape(
+                path=str(s.get("path", "")),
+                min_count=s.get("min_count"),
+                max_count=s.get("max_count"),
+                datatype=s.get("datatype"),
+                pattern=s.get("pattern"),
+                node_class=s.get("node_class"),
+            )
+            for s in extra if isinstance(s, dict) and s.get("path")
+        )
+        shapes.append(NodeShape(target_class=target_class, property_shapes=ps,
+                                closed=bool(payload.get("closed"))))
+    elif payload.get("closed"):
+        shapes.append(NodeShape(target_class=target_class, closed=True))
+
+    return validate_shacl(individuals, shapes)
+
+
+@router.post(
     "/object-types/{rid:path}/branch",
     response_model=ObjectTypeResponse,
     operation_id="ontBranchV2ObjectType",
