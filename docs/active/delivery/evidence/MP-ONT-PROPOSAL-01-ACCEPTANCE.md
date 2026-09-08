@@ -26,3 +26,12 @@
 
 代码和离线测试具备进入真实依赖验收的条件；在上述外部依赖证据补齐前，保持
 Sprint 0 `[~]`，不得标记为 v1.0 GA Accepted。
+
+## 2026-08-31 本地 Docker 验证补充
+
+- Proposal preview 测试 `13 passed`；本地 Docker 通过真实 OIDC 和 Gateway 完成
+  model_type 的 `pending → preview → confirmed → executed`，并从服务端回读终态。
+- Ontology 服务在 PostgreSQL 重启后的 DDL 初始化已实测恢复；详细系统证据见
+  `PRD-05-08-LOCAL-DOCKER-ACCEPTANCE-20260831.md`。
+- 该验证使用本地开发 PostgreSQL，不构成生产 RLS、真实 provider 或 staging 证据，
+  状态仍为 `[~]`。

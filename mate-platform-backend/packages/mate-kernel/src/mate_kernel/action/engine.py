@@ -60,10 +60,10 @@ class ProposalStatus(StrEnum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     REJECTED = "rejected"
-    APPLIED = "applied"
+    EXECUTED = "executed"
     # PRD-02（MP-ACTION-CONFIRM-01，2026-09-08）：撤销语义新增两终态
     WITHDRAWN = "withdrawn"   # pending → withdrawn（作者确认前撤回）
-    REVERTED = "reverted"     # applied → reverted（人审撤销 + 补偿执行）
+    REVERTED = "reverted"     # executed → reverted（人审撤销 + 补偿执行）
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,7 +144,7 @@ class SimpleRuleEvaluator:
 
 @dataclass(frozen=True, slots=True)
 class ActionProposal:
-    """proposal 模型 —— HITL 流程前置产物（ADR-0044 状态机：pending→confirmed→applied / rejected）。"""
+    """proposal 模型 —— HITL 流程前置产物（pending→confirmed→executed / rejected）。"""
 
     proposal_id: str
     action_rid: str  # subject rid：kind=action→ActionType；create_instance→class；model_type→新类型 rid
@@ -265,28 +265,28 @@ class ActionService:
         return updated
 
     def mark_reverted(self, proposal_id: str) -> ActionProposal:
-        """applied → reverted（PRD-02：撤销补偿执行完成后的状态回写；终态）。"""
+        """executed → reverted（PRD-02：撤销补偿执行完成后的状态回写；终态）。"""
         p = self.get_proposal(proposal_id)
-        if p.status is not ProposalStatus.APPLIED:
+        if p.status is not ProposalStatus.EXECUTED:
             raise ProposalNotConfirmed(
-                f"proposal {proposal_id} is {p.status.value}; revert requires applied"
+                f"proposal {proposal_id} is {p.status.value}; revert requires executed"
             )
         updated = replace(p, status=ProposalStatus.REVERTED)
         self._proposals[proposal_id] = updated
         return updated
 
-    def mark_applied(self, proposal_id: str) -> ActionProposal:
-        """confirmed → applied（MP-SAL-04b：create/model 类 proposal 的落库回执）。
+    def mark_executed(self, proposal_id: str) -> ActionProposal:
+        """confirmed → executed（MP-SAL-04b：proposal 的落库执行回执）。
 
         与 apply() 的回写互斥使用：execute_proposal 成功执行后调用；
-        仅 confirmed 可达 applied（未确认/已拒绝/已应用 → ProposalNotConfirmed）。
+        仅 confirmed 可达 executed（未确认/已拒绝/已执行 → ProposalNotConfirmed）。
         """
         p = self.get_proposal(proposal_id)
         if p.status is not ProposalStatus.CONFIRMED:
             raise ProposalNotConfirmed(
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
-        updated = replace(p, status=ProposalStatus.APPLIED)
+        updated = replace(p, status=ProposalStatus.EXECUTED)
         self._proposals[proposal_id] = updated
         return updated
 
@@ -420,7 +420,7 @@ class ActionService:
         if proposal_id is not None:
             try:
                 self._proposals[proposal_id] = replace(
-                    self.get_proposal(proposal_id), status=ProposalStatus.APPLIED,
+                    self.get_proposal(proposal_id), status=ProposalStatus.EXECUTED,
                 )
             except KeyError:
                 pass

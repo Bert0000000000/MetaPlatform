@@ -80,6 +80,45 @@ class OrchestratorClient:
         items = body.get("items", []) if isinstance(body, dict) else []
         return [dict(r) for r in items]
 
+    async def authorized_role_snapshot(
+        self, *, tenant_id: str, fallback_token: str | None = None,
+    ) -> dict[str, Any]:
+        """Fetch the authenticated caller's authorized routing snapshot."""
+        headers = {"X-Tenant-Id": tenant_id}
+        if fallback_token:
+            headers["Authorization"] = f"Bearer {fallback_token}"
+        try:
+            async with httpx.AsyncClient(
+                auth=self._middleware(tenant_id) if not fallback_token else None,
+                timeout=self._timeout,
+            ) as client:
+                response = await client.get(
+                    f"{self._base_url}/api/v1/orchestrator/roles/authorized-snapshot",
+                    headers=headers,
+                )
+        except httpx.HTTPError as exc:
+            raise OrchestratorClientError(
+                f"authorized role snapshot transport error: {exc}"
+            ) from exc
+        if response.status_code != 200:
+            raise OrchestratorClientError(
+                f"authorized role snapshot returned {response.status_code}: {response.text[:200]}"
+            )
+        body = response.json()
+        if not isinstance(body, dict) or not isinstance(body.get("items"), list):
+            raise OrchestratorClientError("authorized role snapshot returned an invalid payload")
+        version = str(body.get("capability_version") or "").strip()
+        if not version:
+            raise OrchestratorClientError("authorized role snapshot missing capability_version")
+        actor_roles_digest = str(body.get("actor_roles_digest") or "").strip()
+        if not actor_roles_digest:
+            raise OrchestratorClientError("authorized role snapshot missing actor_roles_digest")
+        return {
+            "items": [dict(item) for item in body["items"]],
+            "capability_version": version,
+            "actor_roles_digest": actor_roles_digest,
+        }
+
     async def dispatch(
         self,
         *,

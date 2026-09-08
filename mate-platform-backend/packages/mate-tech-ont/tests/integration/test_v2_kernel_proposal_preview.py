@@ -377,7 +377,7 @@ def test_merge_suggestion_low_similarity_warning(client, app) -> None:
                for w in body["impact_summary"]["warnings"])
 
 
-# ─────────────────── 4) confirmed / applied → 409 ───────────────────
+# ─────────────────── 4) confirmed / executed → 409 ───────────────────
 
 
 def test_confirmed_proposal_returns_409(client, app) -> None:
@@ -407,6 +407,36 @@ def test_confirmed_proposal_returns_409(client, app) -> None:
     assert detail["error"] == "proposal_locked"
     assert detail["status"] == "confirmed"
     assert "already confirmed" in detail["message"]
+
+
+def test_executed_proposal_returns_409_with_executed_state(client, app) -> None:
+    repo = app.state.kernel_repo
+    _seed_pair_repo(repo)
+    prop = repo.propose_model_type(
+        type_def={
+            "rid": "ont.acme.obj.executed-preview.v1",
+            "primary_key": ["ont.acme.prop.executed-preview-id.v1"],
+            "properties": [
+                {"rid": "ont.acme.prop.executed-preview-id.v1", "type_id": "string",
+                 "nullable": False, "primary_key": True,
+                 "title": "id", "format": "string"},
+            ],
+            "display_name": "Executed preview", "interfaces": [], "marking": [],
+        },
+        impact_summary="execute preview lock",
+    )
+    repo.confirm_proposal(prop.proposal_id, confirmed_by="alice")
+    repo.execute_proposal(prop.proposal_id)
+
+    resp = client.get(
+        f"/api/v1/ont/v2/proposals/{prop.proposal_id}/preview",
+        headers={"X-Tenant-Id": "acme"},
+    )
+
+    assert resp.status_code == 409
+    detail = resp.json()["detail"]
+    assert detail["status"] == "executed"
+    assert "already executed" in detail["message"]
 
 
 def test_rejected_proposal_returns_409(client, app) -> None:

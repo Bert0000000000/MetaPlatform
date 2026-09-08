@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from mate_app_copilot import agent_loop
 from mate_app_copilot.agent_loop import (
     build_system_prompt,
     run_agent_loop,
@@ -20,7 +21,6 @@ from mate_app_copilot.dispatcher import (
     DEFAULT_CHAIN,
     DispatchResult,
     FallbackStep,
-    make_keyword_substring_handler,
 )
 from mate_app_copilot.semantic_router import CandidateRole, SemanticRouter
 
@@ -95,6 +95,27 @@ def _plain_decision(text: str) -> dict:
     return {"content": text, "tool_calls": []}
 
 
+def _assert_denied(event: dict, *, reason_code: str) -> None:
+    assert event["type"] == "routing_decision"
+    assert event["stage"] == "final"
+    assert event["outcome"] == "denied"
+    assert event["reason_code"] == reason_code
+    assert event["selected"] is None
+    assert isinstance(event["candidates"], list)
+    assert event["candidate_count"] == len(event["candidates"])
+    assert event["policy_version"] == "semantic-router-v1"
+    assert event["trace_id"]
+    assert event["trace_id"] == event["correlation_id"]
+    assert "content" not in event
+
+
+class _NoCandidateRouter:
+    policy = SemanticRouter().policy
+
+    def route(self, *args, **kwargs) -> list[CandidateRole]:
+        return []
+
+
 # ---------------------------------------------------------------------------
 # routing_decision SSE event
 # ---------------------------------------------------------------------------
@@ -124,6 +145,40 @@ async def test_routing_decision_event_emitted_before_reasoning() -> None:
     assert isinstance(rd["candidates"], list)
     # all candidates have role_slug
     assert all("role_slug" in c for c in rd["candidates"])
+
+
+@pytest.mark.asyncio
+async def test_model_selected_role_emits_final_decision_before_dispatch() -> None:
+    llm = _FakeLlm([
+        _tool_call_decision("workflow", "发起审批", "c-1"),
+        _plain_decision("done"),
+    ])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请发起审批"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+        )
+    ]
+
+    selected_index = next(
+        index for index, event in enumerate(events)
+        if event.get("type") == "routing_decision"
+        and event.get("stage") == "final"
+        and event.get("outcome") == "selected"
+    )
+    tool_call_index = next(
+        index for index, event in enumerate(events)
+        if event.get("type") == "tool_call"
+    )
+    selected = events[selected_index]
+    assert selected["selected"] == "workflow"
+    assert selected["reason_code"] == "model_selected"
+    assert selected_index < tool_call_index
 
 
 @pytest.mark.asyncio
@@ -166,6 +221,94 @@ async def test_routing_decision_empty_when_no_user_message() -> None:
     assert rd["candidates"] == []
 
 
+@pytest.mark.asyncio
+async def test_empty_authorized_snapshot_is_denied_without_model_or_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("workflow", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
+            model="doubao-pro-32k",
+            roles=[],
+            tenant_id="tenant-acme",
+            capability_version="snapshot-empty",
+        )
+    ]
+
+    _assert_denied(events[0], reason_code="no_authorized_roles")
+    assert llm._decisions
+    assert orch.calls == []
+
+
+@pytest.mark.asyncio
+async def test_candidate_outside_authorized_snapshot_is_denied_without_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("forbidden-role", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+        )
+    ]
+
+    _assert_denied(events[-1], reason_code="target_not_authorized")
+    assert events[-1]["taken_path"] == "llm_fc"
+    assert orch.calls == []
+
+
+@pytest.mark.asyncio
+async def test_empty_authorized_candidates_are_denied_before_model_or_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("workflow", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+            semantic_router=_NoCandidateRouter(),
+        )
+    ]
+
+    _assert_denied(events[-1], reason_code="no_authorized_candidates")
+    assert llm._decisions
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
+
+
+@pytest.mark.asyncio
+async def test_empty_candidates_with_ontology_tools_still_reject_employee_dispatch() -> None:
+    llm = _FakeLlm([_tool_call_decision("workflow", "should not run")])
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=llm,
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "查本体后帮我派发"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+            semantic_router=_NoCandidateRouter(),
+            ontology_tools=[
+                {"type": "function", "function": {"name": "list_classes", "parameters": {}}}
+            ],
+            ontology_tool_exec=lambda _name, _args: {},
+        )
+    ]
+
+    _assert_denied(events[-1], reason_code="no_authorized_candidates")
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
+
+
 # ---------------------------------------------------------------------------
 # candidate_roles narrows system prompt
 # ---------------------------------------------------------------------------
@@ -196,52 +339,11 @@ def test_build_system_prompt_with_empty_candidate_lists_all() -> None:
 
 
 # ---------------------------------------------------------------------------
-# LLM-down fallback via dispatcher chain
+# Routing uncertainty is fail-closed
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_llm_down_falls_back_via_dispatcher_chain() -> None:
-    """LLM down + dispatcher fallback → dispatcher keyword_substring hits."""
-    orch = _FakeOrch()
-    # Wrap the existing keyword_substring factory as dispatcher fn
-    kw_handler = make_keyword_substring_handler()
-
-    async def _dispatch_by_routing(user_message, available_roles, **_):
-        res = kw_handler(user_message, available_roles)
-        if res is None:
-            return DispatchResult(
-                source="none", target_rid=None,
-                reason="no fallback step matched",
-            )
-        return res
-
-    events = [
-        e async for e in run_agent_loop(
-            llmgw_client=_DownLlm([]),
-            orchestrator_client=orch,
-            messages=[{"role": "user", "content": "请帮我用 workflow 跑一下"}],
-            model="doubao-pro-32k",
-            roles=ROLES,
-            tenant_id="tenant-acme",
-            dispatch_by_routing_fn=_dispatch_by_routing,
-        )
-    ]
-    # routing_decision (pre) → reasoning → routing_decision (selected) → tool_call → tool_result → final
-    rd_events = [e for e in events if e["type"] == "routing_decision"]
-    assert len(rd_events) >= 2
-    # First rd: candidates populated, selected None
-    assert rd_events[0]["selected"] is None
-    assert len(rd_events[0]["candidates"]) >= 1
-    # Second rd: selected = workflow
-    assert any(e["selected"] == "workflow" for e in rd_events)
-
-    tc = next(e for e in events if e["type"] == "tool_call")
-    assert tc["args"]["target_rid"] == "workflow"
-    assert orch.calls and orch.calls[0]["target_rid"] == "workflow"
-
-
-@pytest.mark.asyncio
-async def test_llm_down_no_dispatcher_uses_old_fallback() -> None:
-    """Without dispatcher injection, LLM-down still uses legacy _fallback_decision."""
+async def test_llm_down_is_denied_before_any_tool_call() -> None:
+    """A lost LLM decision must not become a keyword-selected dispatch."""
     orch = _FakeOrch()
     events = [
         e async for e in run_agent_loop(
@@ -251,29 +353,25 @@ async def test_llm_down_no_dispatcher_uses_old_fallback() -> None:
             model="doubao-pro-32k",
             roles=ROLES,
             tenant_id="tenant-acme",
-            # dispatch_by_routing_fn NOT passed
         )
     ]
-    tc = next(e for e in events if e["type"] == "tool_call")
-    assert tc["args"]["target_rid"] == "workflow"
-    assert orch.calls and orch.calls[0]["target_rid"] == "workflow"
+    _assert_denied(events[-1], reason_code="llm_unavailable")
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
 
 
-# ---------------------------------------------------------------------------
-# No-tool-call fallback via dispatcher chain
-# ---------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_no_tool_call_falls_back_via_dispatcher() -> None:
-    """LLM returns plain text (no tool call) → dispatcher fallback hits."""
-    llm = _FakeLlm([_plain_decision("我不确定派谁"), _plain_decision("done")])
+async def test_missing_dispatch_tool_call_is_denied_before_any_tool_call() -> None:
+    """Plain LLM text must not be upgraded by semantic or keyword matching."""
+    llm = _FakeLlm([_plain_decision("我不确定派谁")])
     orch = _FakeOrch()
-    kw_handler = make_keyword_substring_handler()
 
     async def _dispatch_by_routing(user_message, available_roles, **_):
-        res = kw_handler(user_message, available_roles)
-        if res is None:
-            return DispatchResult(source="none", target_rid=None, reason="no match")
-        return res
+        return DispatchResult(
+            source="embedding_match",
+            target_rid="workflow",
+            reason="semantic match must not authorize dispatch",
+        )
 
     events = [
         e async for e in run_agent_loop(
@@ -286,31 +384,60 @@ async def test_no_tool_call_falls_back_via_dispatcher() -> None:
             dispatch_by_routing_fn=_dispatch_by_routing,
         )
     ]
-    # tool_call should be emitted even though LLM didn't return dispatch_employee
-    tc = next(e for e in events if e["type"] == "tool_call")
-    assert tc["args"]["target_rid"] == "workflow"
-    assert orch.calls and orch.calls[0]["target_rid"] == "workflow"
+    _assert_denied(events[-1], reason_code="missing_dispatch_tool_call")
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
 
 
 @pytest.mark.asyncio
-async def test_no_tool_call_no_dispatcher_returns_final() -> None:
-    """LLM returns plain text + no dispatcher → final answer, no dispatch."""
-    llm = _FakeLlm([_plain_decision("好的，我帮你查询"), _plain_decision("done")])
+async def test_llm_down_is_denied_without_calling_dispatcher() -> None:
+    """All LLM outages deny; dispatcher is not an outage fallback."""
     orch = _FakeOrch()
+    dispatcher_called = False
+
+    async def _dispatch_by_routing(**_):
+        nonlocal dispatcher_called
+        dispatcher_called = True
+        return DispatchResult(source="a2a", target_rid="workflow", reason="authorized")
+
     events = [
         e async for e in run_agent_loop(
-            llmgw_client=llm,
+            llmgw_client=_DownLlm([]),
             orchestrator_client=orch,
-            messages=[{"role": "user", "content": "帮我查一下天气"}],
+            messages=[{"role": "user", "content": "请帮我用 workflow 跑一下"}],
+            model="doubao-pro-32k",
+            roles=ROLES,
+            tenant_id="tenant-acme",
+            dispatch_by_routing_fn=_dispatch_by_routing,
+        )
+    ]
+    _assert_denied(events[-1], reason_code="llm_unavailable")
+    assert dispatcher_called is False
+    assert not any(event["type"] == "tool_call" for event in events)
+    assert orch.calls == []
+
+
+@pytest.mark.asyncio
+async def test_missing_llm_decision_is_denied_before_any_tool_call(monkeypatch) -> None:
+    async def _empty_decision_turn(*args, **kwargs):
+        if False:
+            yield {}
+
+    monkeypatch.setattr(agent_loop, "_decision_turn", _empty_decision_turn)
+    orch = _FakeOrch()
+    events = [
+        event async for event in run_agent_loop(
+            llmgw_client=_FakeLlm([]),
+            orchestrator_client=orch,
+            messages=[{"role": "user", "content": "请处理订单"}],
             model="doubao-pro-32k",
             roles=ROLES,
             tenant_id="tenant-acme",
         )
     ]
-    # No tool_call should be emitted
-    assert not any(e["type"] == "tool_call" for e in events)
-    final = next(e for e in events if e["type"] == "final")
-    assert "好的" in final["content"]
+
+    _assert_denied(events[-1], reason_code="llm_decision_missing")
+    assert not any(event["type"] == "tool_call" for event in events)
     assert orch.calls == []
 
 
@@ -357,7 +484,7 @@ async def test_full_happy_path_with_semantic_routing_enabled() -> None:
             tenant_id="tenant-acme",
         )
     ]
-    # types: routing_decision, reasoning, tool_call, tool_result, final
+    # First iteration dispatches; the follow-up text is the ordinary user answer.
     types = [e["type"] for e in events]
     assert types[0] == "routing_decision"
     assert "routing_decision" in types
@@ -365,14 +492,20 @@ async def test_full_happy_path_with_semantic_routing_enabled() -> None:
     assert "tool_result" in types
     assert types[-1] == "final"
     assert orch.calls and orch.calls[0]["target_rid"] == "workflow"
+    final_selection = next(
+        event for event in events
+        if event["type"] == "routing_decision" and event.get("selected") == "workflow"
+    )
+    assert final_selection["taken_path"] == "llm_fc"
+    assert events[-1]["content"] == "完成"
 
 
 # ---------------------------------------------------------------------------
 # DEFAULT_CHAIN smoke
 # ---------------------------------------------------------------------------
-def test_default_chain_includes_all_four_kinds() -> None:
+def test_default_chain_includes_only_authorized_a2a() -> None:
     kinds = {s.kind for s in DEFAULT_CHAIN}
-    assert kinds == {"a2a", "kernel_role", "embedding_match", "keyword_substring"}
+    assert kinds == {"a2a"}
 
 
 def test_fallback_step_constructor() -> None:

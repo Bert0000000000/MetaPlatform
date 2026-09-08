@@ -11,8 +11,9 @@ from mate_tech_orchestrator.scheduler.role_registry import (
     CapabilityBinding,
     RoleRegistry,
 )
+from sqlalchemy import text
 
-from mate_tech_db.base import create_all, init_engine, reset_engine
+from mate_tech_db.base import create_all, get_engine, init_engine, reset_engine
 
 _DB = "./.tmp_test_roles.db"
 
@@ -40,6 +41,7 @@ def test_role_roundtrip_persists(_sqlite) -> None:
         role="knowledge",
         name="知识库员工",
         capabilities=_caps(),
+        allowed_actor_roles=["knowledge_user", "PLATFORM_SUPER_ADMIN"],
     )
 
     # A fresh registry over the same store restores the persisted role.
@@ -51,6 +53,34 @@ def test_role_roundtrip_persists(_sqlite) -> None:
     assert role.name == "知识库员工"
     assert role.capabilities[0].name == "kb_search"
     assert role.capabilities[0].worker_kind == "mcp"
+    assert role.allowed_actor_roles == ("knowledge_user", "PLATFORM_SUPER_ADMIN")
+
+
+def test_authorized_snapshot_filters_roles_and_fails_closed(_sqlite) -> None:
+    store = SqlRoleStore(always_persist=True)
+    reg = RoleRegistry(store=store)
+    reg.register(
+        tenant_id="tenant-acme",
+        role="knowledge",
+        capabilities=_caps(),
+        allowed_actor_roles=["knowledge_user"],
+    )
+    reg.register(
+        tenant_id="tenant-acme",
+        role="workflow",
+        capabilities=_caps(),
+        allowed_actor_roles=["workflow_operator"],
+    )
+    reg.register(
+        tenant_id="tenant-acme",
+        role="ontology",
+        capabilities=_caps(),
+    )
+
+    assert [role.role for role in reg.authorized_snapshot(
+        "tenant-acme", actor_roles={"knowledge_user"},
+    )] == ["knowledge"]
+    assert reg.authorized_snapshot("tenant-acme", actor_roles=set()) == []
 
 
 def test_role_unregister_persists(_sqlite) -> None:
@@ -84,3 +114,32 @@ def test_store_disabled_without_dsn(monkeypatch, _sqlite) -> None:
         )
     )
     assert store.load() == []
+
+
+def test_store_repairs_legacy_role_table_without_actor_roles_column(_sqlite) -> None:
+    """A restart upgrades the pre-role-authorization table before restoring."""
+    engine = get_engine()
+    with engine.begin() as connection:
+        connection.execute(text("DROP TABLE orchestrator_roles"))
+        connection.execute(text("""
+            CREATE TABLE orchestrator_roles (
+                tenant_id VARCHAR(64) NOT NULL,
+                role VARCHAR(64) NOT NULL,
+                name VARCHAR(256),
+                capabilities TEXT,
+                enabled BOOLEAN,
+                created_at VARCHAR(64),
+                PRIMARY KEY (tenant_id, role)
+            )
+        """))
+        connection.execute(text("""
+            INSERT INTO orchestrator_roles
+                (tenant_id, role, name, capabilities, enabled, created_at)
+            VALUES ('tenant-acme', 'knowledge', 'Knowledge', '[]', 1, '')
+        """))
+
+    restored = SqlRoleStore(always_persist=True).load()
+
+    assert [(role.tenant_id, role.role, role.allowed_actor_roles) for role in restored] == [
+        ("tenant-acme", "knowledge", ()),
+    ]

@@ -262,7 +262,7 @@ class TestActionApplyE2E:
             tenant_id="acme",
         ))
 
-    def test_apply_returns_audit(self, client_with_ctx):
+    def test_legacy_apply_is_rejected_with_proposal_migration(self, client_with_ctx):
         c = client_with_ctx
         self._seed(c)
         r = c.post("/api/v1/ont/v2/action-types:apply", json={
@@ -271,23 +271,21 @@ class TestActionApplyE2E:
             "parameters": {"reason": "ok"},
             "provenance": {},
         })
-        assert r.status_code == 200, r.text
-        body = r.json()
-        assert body["audit_id"]
-        assert body["action_rid"] == "ont.acme.act.approve.v1"
-        assert body["side_effects_emitted"] == ["notify"]
+        assert r.status_code == 410, r.text
+        assert "proposals" in r.json()["detail"]
 
-    def test_apply_unknown_action_404(self, client_with_ctx):
+    def test_direct_apply_does_not_leak_action_existence(self, client_with_ctx):
         c = client_with_ctx
         r = c.post("/api/v1/ont/v2/action-types:apply", json={
             "action_rid": "ont.acme.act.unknown.v1",
             "target_iid": "ont.acme.ind.po.0",
             "parameters": {},
         })
-        assert r.status_code == 404
+        assert r.status_code == 410
+        assert "proposals" in r.json()["detail"]
 
-    def test_apply_contract_path(self, client_with_ctx):
-        """契约路径 /action-types/{rid}/apply —— rid 在 path，body 只有 parameters。"""
+    def test_apply_contract_path_is_rejected_with_proposal_migration(self, client_with_ctx):
+        """Direct ActionType apply cannot bypass a confirmed proposal."""
         c = client_with_ctx
         self._seed(c)
         r = c.post(
@@ -298,11 +296,8 @@ class TestActionApplyE2E:
                 "provenance": {"actor": "alice"},
             },
         )
-        assert r.status_code == 200, r.text
-        body = r.json()
-        assert body["action_rid"] == "ont.acme.act.approve.v1"
-        assert body["side_effects_emitted"] == ["notify"]
-        assert body["applied_at"]
+        assert r.status_code == 410, r.text
+        assert "proposals" in r.json()["detail"]
 
     def test_apply_contract_path_cross_tenant_403(self, client_with_ctx):
         c = client_with_ctx

@@ -11,7 +11,7 @@ are re-hydrated by the ``_orm_to_*`` helpers in sql_store.py.
 """
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Integer, String, Text
+from sqlalchemy import Boolean, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base
@@ -50,3 +50,28 @@ class FlowTestRunORM(Base):
     finished_at: Mapped[str] = mapped_column(String(64), default="")
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     output: Mapped[str] = mapped_column(Text, default="{}")  # JSON
+
+
+class WorkflowDefinitionORM(Base):
+    __tablename__ = "wfe_workflow_definitions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    draft_plan: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
+    published_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    published_at: Mapped[str] = mapped_column(String(64), default="")
+    published_by: Mapped[str] = mapped_column(String(128), default="")
+
+
+class WorkflowDefinitionRevisionORM(Base):
+    __tablename__ = "wfe_workflow_definition_revisions"
+
+    definition_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    plan: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    published_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    published_by: Mapped[str] = mapped_column(String(128), nullable=False)

@@ -8,6 +8,47 @@
 # service Dockerfiles from docker-compose.yml.
 
 services:
+  mate-tech-llmgw:
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      PYTHONPATH: /app/packages/mate-tech-llmgw/src:/app/packages/mate-tech-db/src:/app/packages/mate-platform/src:/app/packages/mate-common/src:/app/packages/mate-clients/src
+
+  mate-app-wfe:
+    image: mate-app-copilot:dev
+    command: ["uvicorn", "mate_app_wfe.main:app", "--host", "0.0.0.0", "--port", "8510"]
+    volumes:
+      - ./mate-platform-backend/packages:/app/packages:rw
+    environment:
+      MATE_PROFILE: development
+      MATE_WORKFLOW_BACKEND: local
+      MATE_DB_URL: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: metaplatform
+      KEYCLOAK_AUDIENCE: metaplatform-backend
+      SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      INSECURE_SKIP_SIGNATURE: "true"
+      PYTHONPATH: /app/packages/mate-app-wfe/src:/app/packages/mate-tech-db/src:/app/packages/mate-platform/src:/app/packages/mate-common/src:/app/packages/mate-kernel/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${WFE_PORT:-8510}:8510"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8510/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mate-api-gateway:
+    environment:
+      WFE_URL: http://mate-app-wfe:8510
+    depends_on:
+      mate-app-wfe:
+        condition: service_healthy
+
   a2a-external-agent:
     build:
       context: ./mate-platform-backend
@@ -30,7 +71,6 @@ services:
       start_period: 20s
 
   mate-tech-msg:
-    build: null
     image: mate-tech-rag:dev
     command: ["uvicorn", "mate_tech_msg.main:app", "--host", "0.0.0.0", "--port", "8082"]
     volumes:
@@ -42,7 +82,6 @@ services:
         condition: service_started
 
   mate-tech-dw:
-    build: null
     image: mate-app-copilot:dev
     command: ["uvicorn", "mate_tech_dw.main:app", "--host", "0.0.0.0", "--port", "8021"]
     volumes:
@@ -91,7 +130,6 @@ services:
       start_period: 30s
 
   mate-app-kb:
-    build: null
     image: mate-app-copilot:dev
     command: ["uvicorn", "mate_app_kb.api.app:app", "--host", "0.0.0.0", "--port", "8003"]
     volumes:
@@ -103,7 +141,6 @@ services:
       PYTHONPATH: /app/packages/mate-app-kb/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
 
   mate-app-a2a:
-    build: null
     image: mate-app-copilot:dev
     command: ["uvicorn", "mate_app_a2a.main:app", "--host", "0.0.0.0", "--port", "8502"]
     volumes:
@@ -124,7 +161,6 @@ services:
       KERNEL_PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_ont
 
   mate-tech-orchestrator:
-    build: null
     image: mate-app-copilot:dev
     command: ["uvicorn", "mate_tech_orchestrator.main:app", "--host", "0.0.0.0", "--port", "8505"]
     volumes:
@@ -133,13 +169,14 @@ services:
       MATE_PROFILE: dev
       ONT_HTTP_BASE: http://mate-tech-ont:8007
       ORDER_REVIEW_THRESHOLD_CENTS: ${ORDER_REVIEW_THRESHOLD_CENTS:-100000}
+      ORCHESTRATOR_DEFAULT_ALLOWED_ACTOR_ROLES: PLATFORM_ADMIN
+      ORCHESTRATOR_BACKFILL_EMPTY_DEFAULT_AUTH: "true"
       PYTHONPATH: /app/packages/mate-tech-orchestrator/src:/app/packages/mate-tech-db/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src
     depends_on:
       mate-tech-ont:
         condition: service_healthy
 
   mate-tech-data:
-    build: null
     image: mate-app-copilot:dev
     command: ["uvicorn", "mate_tech_data.main:app", "--host", "0.0.0.0", "--port", "8701"]
     volumes:

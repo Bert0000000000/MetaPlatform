@@ -41,6 +41,7 @@ SERVICES: dict[str, str] = {
     "etl":      os.getenv("ETL_URL",      "http://mate-tech-etl:8022"),
     "scheduler": os.getenv("SCHEDULER_URL", "http://mate-tech-scheduler:8023"),
     "metrics":  os.getenv("METRICS_URL",  "http://mate-tech-metrics:8024"),
+    "wfe":      os.getenv("WFE_URL",      "http://mate-app-wfe:8510"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -76,6 +77,9 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/metrics", "metrics"),   # Task12: 裸 /metrics（list 端点无尾斜杠）
     ("/api/v1/a2a/", "a2a"),
     ("/api/v1/orchestrator/", "orchestrator"),
+    ("/api/v1/workflow-definitions/", "wfe"),
+    ("/api/v1/workflows/", "wfe"),
+    ("/api/v1/workflow-runs/", "wfe"),
     # v1.0 order-review public contract is served by the orchestrator.
     ("/api/v1/action-proposals/", "orchestrator"),
     ("/api/v1/action-proposals", "orchestrator"),

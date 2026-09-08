@@ -21,6 +21,10 @@ class RegisterRoleRequest(BaseModel):
     role: str = Field(min_length=1, description="kernel AgentRole slug")
     name: str = Field(default="")
     capabilities: list[CapabilityBindingRequest] = Field(default_factory=list)
+    allowed_actor_roles: list[str] = Field(
+        default_factory=list,
+        description="Keycloak roles allowed to invoke this digital employee",
+    )
 
 
 class TrackCapabilityRequest(BaseModel):

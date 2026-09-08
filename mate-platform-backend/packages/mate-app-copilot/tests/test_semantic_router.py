@@ -23,6 +23,7 @@ from mate_app_copilot.semantic_router import (
     SemanticRouter,
     semantic_route,
 )
+from mate_app_copilot.routing_policy import RoutingPolicy
 
 ROLES = [
     {
@@ -226,6 +227,16 @@ class _ConstantEmbedder:
         return list(self._vec)
 
 
+class _CountingEmbedder(_ConstantEmbedder):
+    def __init__(self, vec: list[float]) -> None:
+        super().__init__(vec)
+        self.calls = 0
+
+    def embed(self, text: str) -> list[float]:
+        self.calls += 1
+        return super().embed(text)
+
+
 def test_custom_embedder_used() -> None:
     e = _ConstantEmbedder([0.1] * 16)
     router = SemanticRouter(embedder=e)
@@ -245,6 +256,54 @@ def test_custom_embedder_no_cache_inherit() -> None:
     # All zero vector → cosine = 0 + no keyword hit (no capability in query) → similarity == 0
     assert out[0].similarity == 0.0
     assert "embedding cosine" in out[0].reason
+
+
+def test_routing_policy_validates_bounds_and_exposes_defaults() -> None:
+    policy = RoutingPolicy()
+    assert policy.top_k == 3
+    assert policy.minimum_relevance == 0.0
+    assert policy.version
+    with pytest.raises(ValueError, match="top_k"):
+        RoutingPolicy(top_k=0)
+    with pytest.raises(ValueError, match="minimum_relevance"):
+        RoutingPolicy(minimum_relevance=-0.1)
+
+
+def test_policy_relevance_floor_returns_no_candidate() -> None:
+    router = SemanticRouter(
+        embedder=_ConstantEmbedder([0.0] * 16),
+        policy=RoutingPolicy(minimum_relevance=0.1),
+    )
+    assert router.route(
+        "unmatched input",
+        ROLES,
+        tenant_id="tenant-acme",
+        actor_roles_digest="operator-v1",
+        capability_version="cap-v1",
+    ) == []
+
+
+def test_role_embedding_cache_isolated_by_authorized_snapshot_and_version() -> None:
+    embedder = _CountingEmbedder([0.1] * 16)
+    router = SemanticRouter(embedder=embedder)
+    role = [ROLES[0]]
+    kwargs = {
+        "tenant_id": "tenant-acme",
+        "actor_roles_digest": "operator-v1",
+        "capability_version": "cap-v1",
+    }
+
+    router.route("approve", role, **kwargs)
+    assert router.cache_size() == 1
+    first_call_count = embedder.calls
+    router.route("approve", role, **kwargs)
+    assert router.cache_size() == 1
+    assert embedder.calls == first_call_count + 1  # only the query is embedded
+
+    router.route("approve", role, **{**kwargs, "tenant_id": "tenant-other"})
+    router.route("approve", role, **{**kwargs, "actor_roles_digest": "operator-v2"})
+    router.route("approve", role, **{**kwargs, "capability_version": "cap-v2"})
+    assert router.cache_size() == 4
 
 
 # ---------------------------------------------------------------------------

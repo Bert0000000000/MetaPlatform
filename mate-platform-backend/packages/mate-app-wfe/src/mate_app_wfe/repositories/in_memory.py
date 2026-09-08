@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -76,6 +77,50 @@ class FlowDeployment:
     engine: str  # "flowable" | "in-memory"
     status: str  # "deployed" | "fallback" | "failed"
     deployed_at: str = ""
+
+
+@dataclass(frozen=True)
+class WorkflowDefinition:
+    """Tenant-scoped, versioned Plan draft owned by the WFE service."""
+
+    id: str
+    tenant_id: str
+    name: str
+    draft_plan: dict[str, Any]
+    version: int = 1
+    status: str = "draft"
+    published_version: int | None = None
+    published_at: str = ""
+    published_by: str = ""
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "version": self.version,
+            "status": self.status,
+            "published_version": self.published_version,
+        }
+
+
+@dataclass(frozen=True)
+class WorkflowDefinitionRevision:
+    """Immutable Plan snapshot used as the only source for a workflow run."""
+
+    definition_id: str
+    tenant_id: str
+    version: int
+    plan: dict[str, Any]
+    published_at: str
+    published_by: str
+
+
+class WorkflowDefinitionConflict(Exception):
+    """Raised when a save does not match the current optimistic version."""
+
+    def __init__(self, current: WorkflowDefinition) -> None:
+        self.current = current
+        super().__init__(f"workflow definition version conflict: {current.id}@{current.version}")
 
 
 # ---------------------------------------------------------------------------
@@ -169,6 +214,8 @@ _FLOWS: dict[str, dict[str, FlowDefinition]] = {}
 _VALIDATIONS: dict[str, dict[str, FlowValidation]] = {}
 _TEST_RUNS: dict[str, dict[str, FlowTestRun]] = {}
 _DEPLOYMENTS: dict[str, dict[str, FlowDeployment]] = {}
+_WORKFLOW_DEFINITIONS: dict[str, dict[str, WorkflowDefinition]] = {}
+_WORKFLOW_DEFINITION_REVISIONS: dict[str, dict[tuple[str, int], WorkflowDefinitionRevision]] = {}
 
 
 def _ensure_tenant(tenant_id: str) -> None:
@@ -183,6 +230,10 @@ def _ensure_tenant(tenant_id: str) -> None:
         _TEST_RUNS[tenant_id] = {}
     if tenant_id not in _DEPLOYMENTS:
         _DEPLOYMENTS[tenant_id] = {}
+    if tenant_id not in _WORKFLOW_DEFINITIONS:
+        _WORKFLOW_DEFINITIONS[tenant_id] = {}
+    if tenant_id not in _WORKFLOW_DEFINITION_REVISIONS:
+        _WORKFLOW_DEFINITION_REVISIONS[tenant_id] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -342,6 +393,105 @@ def list_deployments(tenant_id: str) -> list[FlowDeployment]:
 
 
 # ---------------------------------------------------------------------------
+# Versioned Plan-definition repository (new Action Orchestration surface)
+# ---------------------------------------------------------------------------
+def get_workflow_definition(tenant_id: str, definition_id: str) -> WorkflowDefinition | None:
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _WORKFLOW_DEFINITIONS[tenant_id].get(definition_id)
+
+
+def save_workflow_definition(
+    tenant_id: str,
+    definition_id: str,
+    *,
+    name: str,
+    draft_plan: dict[str, Any],
+    expected_version: int,
+) -> WorkflowDefinition:
+    """Create or compare-and-save a Plan draft without mutating published revisions."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    existing = _WORKFLOW_DEFINITIONS[tenant_id].get(definition_id)
+    if existing is None:
+        if expected_version != 0:
+            raise ValueError("new workflow definitions require expected_version=0")
+        saved = WorkflowDefinition(
+            id=definition_id,
+            tenant_id=tenant_id,
+            name=name,
+            draft_plan=deepcopy(draft_plan),
+        )
+    else:
+        if expected_version != existing.version:
+            raise WorkflowDefinitionConflict(existing)
+        saved = WorkflowDefinition(
+            id=existing.id,
+            tenant_id=existing.tenant_id,
+            name=name,
+            draft_plan=deepcopy(draft_plan),
+            version=existing.version + 1,
+            status=existing.status,
+            published_version=existing.published_version,
+            published_at=existing.published_at,
+            published_by=existing.published_by,
+        )
+    _WORKFLOW_DEFINITIONS[tenant_id][definition_id] = saved
+    return saved
+
+
+def publish_workflow_definition(
+    tenant_id: str, definition_id: str, *, actor_id: str,
+) -> tuple[WorkflowDefinition, WorkflowDefinitionRevision]:
+    """Freeze the current draft as one immutable revision."""
+    definition = get_workflow_definition(tenant_id, definition_id)
+    if definition is None:
+        raise KeyError(definition_id)
+    revisions = _WORKFLOW_DEFINITION_REVISIONS[tenant_id]
+    key = (definition_id, definition.version)
+    revision = revisions.get(key)
+    if revision is None:
+        import time
+
+        published_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        revision = WorkflowDefinitionRevision(
+            definition_id=definition_id,
+            tenant_id=tenant_id,
+            version=definition.version,
+            plan=deepcopy(definition.draft_plan),
+            published_at=published_at,
+            published_by=actor_id,
+        )
+        revisions[key] = revision
+    published = WorkflowDefinition(
+        id=definition.id,
+        tenant_id=definition.tenant_id,
+        name=definition.name,
+        draft_plan=deepcopy(definition.draft_plan),
+        version=definition.version,
+        status="published",
+        published_version=revision.version,
+        published_at=revision.published_at,
+        published_by=revision.published_by,
+    )
+    _WORKFLOW_DEFINITIONS[tenant_id][definition_id] = published
+    return published, revision
+
+
+def resolve_published_workflow_definition(
+    tenant_id: str, definition_id: str,
+) -> WorkflowDefinitionRevision | None:
+    definition = get_workflow_definition(tenant_id, definition_id)
+    if definition is None or definition.published_version is None:
+        return None
+    return _WORKFLOW_DEFINITION_REVISIONS[tenant_id].get(
+        (definition_id, definition.published_version),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Test helpers — DO NOT call from production code paths
 # ---------------------------------------------------------------------------
 def reset_store() -> None:
@@ -350,3 +500,5 @@ def reset_store() -> None:
     _VALIDATIONS.clear()
     _TEST_RUNS.clear()
     _DEPLOYMENTS.clear()
+    _WORKFLOW_DEFINITIONS.clear()
+    _WORKFLOW_DEFINITION_REVISIONS.clear()

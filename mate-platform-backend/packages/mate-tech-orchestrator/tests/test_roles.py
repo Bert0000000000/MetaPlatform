@@ -69,3 +69,23 @@ def test_register_emits_outbox_event(client: TestClient, auth_headers_acme, outb
     client.post("/api/v1/orchestrator/roles", json=_payload(), headers=auth_headers_acme)
     types = {rec.event.type for rec in outbox.all_records()}
     assert "orchestrator.role.registered" in types
+
+
+def test_authorized_snapshot_returns_only_actor_authorized_roles(
+    client: TestClient, auth_headers_acme,
+) -> None:
+    payload = _payload()
+    payload["allowed_actor_roles"] = ["PLATFORM_SUPER_ADMIN"]
+    created = client.post(
+        "/api/v1/orchestrator/roles", json=payload, headers=auth_headers_acme,
+    )
+    assert created.status_code == 201, created.text
+
+    snapshot = client.get(
+        "/api/v1/orchestrator/roles/authorized-snapshot", headers=auth_headers_acme,
+    )
+    assert snapshot.status_code == 200, snapshot.text
+    body = snapshot.json()
+    assert [item["role"] for item in body["items"]] == ["knowledge"]
+    assert body["capability_version"]
+    assert body["actor_roles_digest"]

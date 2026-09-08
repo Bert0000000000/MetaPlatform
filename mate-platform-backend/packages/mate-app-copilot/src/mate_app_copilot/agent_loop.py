@@ -28,7 +28,6 @@ from typing import Any
 
 from .clients.llmgw_stream import LlmgwStreamError
 from .clients.orchestrator_client import OrchestratorClientError
-from .dispatcher import DispatchResult, dispatch_by_routing
 from .semantic_router import CandidateRole, SemanticRouter
 
 MAX_TOOL_ITERATIONS = 5
@@ -143,33 +142,6 @@ def build_tools(
     if ontology_tools:
         tools.extend(json.loads(json.dumps(t)) for t in ontology_tools)
     return tools
-
-
-def _fallback_decision(
-    messages: list[dict[str, Any]], roles: list[dict[str, Any]],
-) -> dict[str, Any] | None:
-    """Deterministic dispatch decision when the LLM FC turn is unavailable."""
-    text = " ".join(
-        str(m.get("content") or "") for m in messages if m.get("role") == "user"
-    ).lower()
-    for role in roles:
-        slug = str(role.get("role") or "")
-        if slug and slug in text:
-            return {
-                "content": f"（LLM 决策不可用，按关键词匹配到数字员工 {slug}）",
-                "tool_calls": [{
-                    "id": "call-fallback",
-                    "type": "function",
-                    "function": {
-                        "name": "dispatch_employee",
-                        "arguments": json.dumps({
-                            "target_rid": slug,
-                            "message": text[:120],
-                        }, ensure_ascii=False),
-                    },
-                }],
-            }
-    return None
 
 
 def _task_state_of(status: dict[str, Any]) -> str:
@@ -308,6 +280,8 @@ async def run_agent_loop(
     model: str,
     roles: list[dict[str, Any]],
     tenant_id: str,
+    capability_version: str = "legacy",
+    actor_roles_digest: str = "legacy",
     fallback_token: str = "",
     max_iterations: int = MAX_TOOL_ITERATIONS,
     llm_provider: str = "openai",
@@ -341,10 +315,8 @@ async def run_agent_loop(
     MP-SR-01（任务2）：
       - ``semantic_router`` 给定时，第一轮 decision_turn 前用其预筛 top_k
         候选；候选注入 system prompt（LLM 决策面收窄）。
-      - ``dispatch_by_routing_fn`` 给定时，LLM 决策不可用 / 不返回
-        ``dispatch_employee`` 时走 4 级 fallback 链（a2a → kernel_role →
-        embedding_match → keyword_substring），命中即派发。每轮都打
-        ``routing_decision`` SSE event 供前端 trace。
+      - 无授权候选、LLM 决策不可用或决策缺失时，输出 final denied
+        ``routing_decision``；这些不确定状态不会触发自动派发。
     """
     # Pre-screen: 算 candidate_roles（仅取最后一条 user message 算语义）
     last_user_msg = next(
@@ -353,29 +325,73 @@ async def run_agent_loop(
         "",
     )
     router = semantic_router or SemanticRouter()
+    trace_id = uuid.uuid4().hex
+    correlation_id = trace_id
+    # Ontology tools are direct, read-only capability calls: they do not need a
+    # digital-worker candidate and never create a dispatch. Keep that safe
+    # direct-query path available even when the authorized role snapshot is
+    # empty; all dispatch-capable turns remain fail-closed below.
+    if not roles and not ontology_tools:
+        yield {
+            "type": "routing_decision",
+            "stage": "final",
+            "outcome": "denied",
+            "reason_code": "no_authorized_roles",
+            "candidates": [],
+            "selected": None,
+            "policy_version": router.policy.version,
+            "candidate_count": 0,
+            "trace_id": trace_id,
+            "correlation_id": correlation_id,
+        }
+        return
     candidate_roles: list[CandidateRole] = []
     if last_user_msg and roles:
-        candidate_roles = router.route(last_user_msg, roles, top_k=candidate_top_k)
+        candidate_roles = router.route(
+            last_user_msg,
+            roles,
+            top_k=candidate_top_k,
+            tenant_id=tenant_id,
+            actor_roles_digest=actor_roles_digest,
+            capability_version=capability_version,
+        )
 
     # Emit routing_decision（在 reasoning 前，让前端先看到候选）
     yield {
         "type": "routing_decision",
+        "stage": "pre_screen",
+        "taken_path": "semantic_router",
+        "reason_code": "semantic_pre_screen",
+        "policy_version": router.policy.version,
         "candidates": [c.to_dict() for c in candidate_roles],
         "selected": None,
+        "candidate_count": len(candidate_roles),
+        "trace_id": trace_id,
+        "correlation_id": correlation_id,
         "reason": (
             "semantic_router pre-screened roles by embedding + keyword hit"
             if candidate_roles else "no candidates (empty roles or query)"
         ),
     }
+    if not candidate_roles and not ontology_tools:
+        yield _denied_routing_decision(
+            reason_code="no_authorized_candidates",
+            candidate_roles=[],
+            policy_version=router.policy.version,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+        )
+        return
 
+    dispatch_roles = roles if candidate_roles else []
     system_prompt = build_system_prompt(
-        roles,
+        dispatch_roles,
         object_cards=object_cards,
         ontology_hint=bool(ontology_tools),
         candidate_roles=candidate_roles or None,
     )
-    tools = build_tools(roles, ontology_tools=ontology_tools)
-    slug_enum = {str(r.get("role")) for r in roles if r.get("role")}
+    tools = build_tools(dispatch_roles, ontology_tools=ontology_tools)
+    slug_enum = {str(r.get("role")) for r in dispatch_roles if r.get("role")}
     onto_names = {
         t["function"]["name"] for t in (ontology_tools or ())
         if isinstance(t, dict) and "function" in t
@@ -390,8 +406,8 @@ async def run_agent_loop(
     else:
         history.insert(0, {"role": "system", "content": system_prompt})
 
-    degraded = False
     dispatched: list[dict[str, Any]] = []
+    ontology_tool_executed = False
     for _ in range(max_iterations):
         yield {"type": "reasoning", "text": "正在分析任务并选择数字员工…"}
 
@@ -417,60 +433,39 @@ async def run_agent_loop(
                 llm_down = True
 
         if llm_down:
-            # MP-SR-01: 优先走 dispatcher fallback 链；未注入时回退到 _fallback_decision
-            if dispatch_by_routing_fn is not None and roles:
-                fallback_result = await _dispatch_fallback(
-                    user_message=last_user_msg,
-                    roles=roles,
-                    dispatch_by_routing_fn=dispatch_by_routing_fn,
-                )
-                if fallback_result is not None:
-                    decision = _synthesize_dispatch_decision(fallback_result, last_user_msg)
-                    degraded = True
-                    yield _routing_decision_event(fallback_result)
-                else:
-                    yield {
-                        "type": "final",
-                        "content": "LLM 决策服务不可用，且未匹配到可调度的数字员工。",
-                    }
-                    return
-            else:
-                decision = _fallback_decision(history, roles)
-                if decision is None:
-                    yield {
-                        "type": "final",
-                        "content": "LLM 决策服务不可用，且未匹配到可调度的数字员工。",
-                    }
-                    return
-                degraded = True
+            yield _denied_routing_decision(
+                reason_code="llm_unavailable",
+                candidate_roles=candidate_roles,
+                policy_version=router.policy.version,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
+            return
         if decision is None:
-            yield {"type": "final", "content": "LLM 决策服务不可用。"}
+            yield _denied_routing_decision(
+                reason_code="llm_decision_missing",
+                candidate_roles=candidate_roles,
+                policy_version=router.policy.version,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
             return
 
         tool_calls = decision.get("tool_calls") or []
         content = str(decision.get("content") or "")
 
         if not tool_calls:
-            # MP-SR-01: LLM 没返回 dispatch_employee → 试 dispatcher fallback
-            if dispatch_by_routing_fn is not None and roles:
-                fallback_result = await _dispatch_fallback(
-                    user_message=last_user_msg,
-                    roles=roles,
-                    dispatch_by_routing_fn=dispatch_by_routing_fn,
-                )
-                if fallback_result is not None:
-                    decision = _synthesize_dispatch_decision(fallback_result, last_user_msg)
-                    degraded = True
-                    yield _routing_decision_event(fallback_result)
-                    tool_calls = decision.get("tool_calls") or []
-                    content = str(decision.get("content") or "")
-                    # fall through to dispatch below
-                else:
-                    yield {"type": "final", "content": _strip_chain_of_thought(content)}
-                    return
-            else:
+            if dispatched or ontology_tool_executed:
                 yield {"type": "final", "content": _strip_chain_of_thought(content)}
                 return
+            yield _denied_routing_decision(
+                reason_code="missing_dispatch_tool_call",
+                candidate_roles=candidate_roles,
+                policy_version=router.policy.version,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
+            return
 
         # MP-SAL：本体类工具调用（list/inspect/query/search/propose）——同步执行，
         # 结果回填历史，下一轮 LLM 拿着真实本体数据作答/继续决策。
@@ -490,6 +485,7 @@ async def run_agent_loop(
                 onto_calls.append({"call_id": call_id, "name": name, "args": args})
 
         if onto_calls:
+            ontology_tool_executed = True
             assistant_tc = [
                 {"id": c["call_id"], "type": "function",
                  "function": {"name": c["name"], "arguments": json.dumps(c["args"], ensure_ascii=False)}}
@@ -530,10 +526,16 @@ async def run_agent_loop(
                 args = {}
             target = str(args.get("target_rid", "") or "")
             message = str(args.get("message", "") or "")
-            if not target or (slug_enum and target not in slug_enum):
+            if not target or target not in slug_enum:
                 calls.append({
                     "call_id": call_id, "fn": fn, "args": args,
-                    "valid": False, "error": f"未知或缺失 target_rid: {target!r}",
+                    "valid": False,
+                    "error": f"未知或缺失 target_rid: {target!r}",
+                    "reason_code": (
+                        "no_authorized_candidates"
+                        if not candidate_roles
+                        else "target_not_authorized"
+                    ),
                 })
             elif not message:
                 calls.append({
@@ -549,6 +551,49 @@ async def run_agent_loop(
         if not calls:
             yield {"type": "final", "content": _strip_chain_of_thought(content)}
             return
+        denied_reason = next(
+            (
+                str(call["reason_code"])
+                for call in calls
+                if call.get("reason_code") in {
+                    "target_not_authorized",
+                    "no_authorized_candidates",
+                }
+            ),
+            None,
+        )
+        if denied_reason:
+            yield {
+                "type": "routing_decision",
+                "stage": "final",
+                "outcome": "denied",
+                "taken_path": "llm_fc",
+                "reason_code": denied_reason,
+                "candidates": [],
+                "selected": None,
+                "policy_version": router.policy.version,
+                "candidate_count": 0,
+                "trace_id": trace_id,
+                "correlation_id": correlation_id,
+            }
+            return
+
+        for call in calls:
+            if not call["valid"]:
+                continue
+            yield {
+                "type": "routing_decision",
+                "stage": "final",
+                "outcome": "selected",
+                "taken_path": "llm_fc",
+                "reason_code": "model_selected",
+                "candidates": [candidate.to_dict() for candidate in candidate_roles],
+                "selected": str(call["args"].get("target_rid", "")),
+                "policy_version": router.policy.version,
+                "candidate_count": len(candidate_roles),
+                "trace_id": trace_id,
+                "correlation_id": correlation_id,
+            }
 
         # Emit all tool_call events first so the frontend renders all steps.
         for c in calls:
@@ -625,10 +670,6 @@ async def run_agent_loop(
                 "content": json.dumps(result, ensure_ascii=False),
             })
 
-        if degraded:
-            yield {"type": "final", "content": "已通过降级模式完成数字员工调度。"}
-            return
-
     # Hit the iteration cap without a final text — structured close.
     if dispatched:
         lines = [
@@ -645,66 +686,24 @@ async def run_agent_loop(
 # ────────────────── MP-SR-01 helpers ──────────────────
 
 
-async def _dispatch_fallback(
+def _denied_routing_decision(
     *,
-    user_message: str,
-    roles: list[dict[str, Any]],
-    dispatch_by_routing_fn: Any,
-) -> DispatchResult | None:
-    """Wrap ``dispatch_by_routing_fn`` for the agent loop.
-
-    Returns ``None`` when no fallback step matched (chain returned
-    ``source="none"``), so caller can decide between final-text /
-    graceful-degradation.
-    """
-    try:
-        result = await dispatch_by_routing_fn(
-            user_message=user_message,
-            available_roles=roles,
-        )
-    except Exception:
-        return None
-    if result is None or getattr(result, "source", None) in (None, "none"):
-        return None
-    if not getattr(result, "target_rid", None):
-        return None
-    return result
-
-
-def _synthesize_dispatch_decision(
-    fallback_result: DispatchResult,
-    user_message: str,
+    reason_code: str,
+    candidate_roles: list[CandidateRole],
+    policy_version: str,
+    trace_id: str,
+    correlation_id: str,
 ) -> dict[str, Any]:
-    """Build a ``decision`` dict (with synthetic ``dispatch_employee`` tool_call)
-    from a fallback ``DispatchResult``.
-
-    Lets the existing dispatch / history-append / tool_result paths handle the
-    rest unchanged.
-    """
-    target = str(fallback_result.target_rid or "")
-    return {
-        "content": (
-            f"（由 {fallback_result.source} 兜底选择 {target}：{fallback_result.reason}）"
-        ),
-        "tool_calls": [{
-            "id": f"call-{uuid.uuid4().hex[:10]}",
-            "type": "function",
-            "function": {
-                "name": "dispatch_employee",
-                "arguments": json.dumps({
-                    "target_rid": target,
-                    "message": user_message[:120],
-                }, ensure_ascii=False),
-            },
-        }],
-    }
-
-
-def _routing_decision_event(fallback_result: DispatchResult) -> dict[str, Any]:
-    """Build a ``routing_decision`` SSE event from a fallback result."""
+    """Build a final fail-closed routing event without user content or tokens."""
     return {
         "type": "routing_decision",
-        "candidates": [c.to_dict() for c in fallback_result.candidates],
-        "selected": fallback_result.target_rid,
-        "reason": fallback_result.reason,
+        "stage": "final",
+        "outcome": "denied",
+        "reason_code": reason_code,
+        "candidates": [candidate.to_dict() for candidate in candidate_roles],
+        "candidate_count": len(candidate_roles),
+        "selected": None,
+        "policy_version": policy_version,
+        "trace_id": trace_id,
+        "correlation_id": correlation_id,
     }

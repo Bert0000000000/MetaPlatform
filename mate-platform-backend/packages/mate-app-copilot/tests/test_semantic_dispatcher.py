@@ -72,7 +72,7 @@ def _sync_handler(result: DispatchResult | None):
 # ---------------------------------------------------------------------------
 def test_default_chain_order() -> None:
     kinds = [s.kind for s in DEFAULT_CHAIN]
-    assert kinds == ["a2a", "kernel_role", "embedding_match", "keyword_substring"]
+    assert kinds == ["a2a"]
 
 
 # ---------------------------------------------------------------------------
@@ -108,12 +108,8 @@ async def test_a2a_first_wins() -> None:
 
 @pytest.mark.asyncio
 async def test_a2a_skipped_when_no_target_hint() -> None:
-    """a2a step needs target_hint; if missing, falls through."""
+    """A missing explicit target must not fall through to keyword matching."""
     called = {"kw": False}
-    kw_handler = _sync_handler(DispatchResult(
-        source="keyword_substring", target_rid="workflow",
-        reason="role slug workflow in message",
-    ))
 
     def _kw_with_flag(*args, **kwargs):
         called["kw"] = True
@@ -131,8 +127,8 @@ async def test_a2a_skipped_when_no_target_hint() -> None:
         keyword_substring_handler=_kw_with_flag,
         target_hint=None,  # explicit None
     )
-    assert called["kw"] is True
-    assert result.source == "keyword_substring"
+    assert called["kw"] is False
+    assert result.source == "none"
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +136,7 @@ async def test_a2a_skipped_when_no_target_hint() -> None:
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_kernel_role_when_a2a_skipped() -> None:
-    """a2a step's target is missing → a2a skipped → kernel_role runs."""
+    """Kernel classification cannot replace an explicit A2A authorization."""
     chain = (
         FallbackStep("a2a"),  # no target, no target_hint → skipped
         FallbackStep("kernel_role", target="wfe.acme.flow.approve.v1"),
@@ -158,7 +154,7 @@ async def test_kernel_role_when_a2a_skipped() -> None:
         ),
         target_hint=None,
     )
-    assert result.source == "kernel_role"
+    assert result.source == "none"
 
 
 @pytest.mark.asyncio
@@ -179,7 +175,7 @@ async def test_kernel_role_superai_default_is_not_hit() -> None:
         )),
         target_hint="unknown-prefix.foo.bar",
     )
-    assert result.source == "keyword_substring"
+    assert result.source == "none"
 
 
 # ---------------------------------------------------------------------------
@@ -199,8 +195,8 @@ async def test_embedding_match_third() -> None:
         )),
         target_hint=None,
     )
-    assert result.source == "embedding_match"
-    assert result.target_rid == "workflow"
+    assert result.source == "none"
+    assert result.target_rid is None
 
 
 # ---------------------------------------------------------------------------
@@ -221,8 +217,8 @@ async def test_keyword_substring_last_resort() -> None:
         )),
         target_hint=None,
     )
-    assert result.source == "keyword_substring"
-    assert result.target_rid == "workflow"
+    assert result.source == "none"
+    assert result.target_rid is None
 
 
 @pytest.mark.asyncio
@@ -238,7 +234,7 @@ async def test_no_match_returns_none_source() -> None:
     )
     assert result.source == "none"
     assert result.target_rid is None
-    assert "no fallback step matched" in result.reason
+    assert "no authorized a2a target matched" in result.reason
 
 
 @pytest.mark.asyncio
@@ -258,7 +254,7 @@ async def test_empty_roles_returns_none() -> None:
 # Handler exception → next step
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_handler_exception_continues_chain() -> None:
+async def test_handler_exception_denies_without_fallback() -> None:
     async def _boom(target: str, message: str):
         raise RuntimeError("a2a exploded")
 
@@ -274,7 +270,8 @@ async def test_handler_exception_continues_chain() -> None:
         )),
         target_hint="anything",
     )
-    assert result.source == "keyword_substring"
+    assert result.source == "none"
+    assert result.reason == "authorized a2a handler failed"
 
 
 # ---------------------------------------------------------------------------
@@ -295,7 +292,7 @@ async def test_unknown_kind_skipped() -> None:
             reason="substring match",
         )),
     )
-    assert result.source == "keyword_substring"
+    assert result.source == "none"
 
 
 # ---------------------------------------------------------------------------
@@ -424,7 +421,7 @@ def test_make_kernel_role_handler_superai_default() -> None:
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_custom_chain_order() -> None:
-    """Provide chain in keyword-first order → keyword wins regardless of a2a handler."""
+    """A custom chain cannot make keyword matching an authorization source."""
     result = await dispatch_by_routing(
         user_message="请帮我用 workflow 处理",
         available_roles=ROLES,
@@ -438,14 +435,14 @@ async def test_custom_chain_order() -> None:
         )),
         target_hint="agent-x",
     )
-    assert result.source == "keyword_substring"
+    assert result.source == "a2a"
 
 
 # ---------------------------------------------------------------------------
-# EmbeddingMatchHandler shares candidates with result
+# Embedding candidates are not dispatch authority
 # ---------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_embedding_match_result_carries_candidates() -> None:
+async def test_embedding_match_cannot_select_a_dispatch_target() -> None:
     fn = make_embedding_match_handler(min_similarity=0.0)
     result = await dispatch_by_routing(
         user_message="approve workflow",
@@ -453,6 +450,19 @@ async def test_embedding_match_result_carries_candidates() -> None:
         embedding_handler=fn,
         target_hint=None,
     )
-    assert result.source == "embedding_match"
-    assert result.candidates  # carries full top-k for trace
-    assert all(c.similarity >= 0 for c in result.candidates)
+    assert result.source == "none"
+    assert result.target_rid is None
+
+
+@pytest.mark.asyncio
+async def test_a2a_target_outside_authorized_snapshot_is_denied() -> None:
+    result = await dispatch_by_routing(
+        user_message="anything",
+        available_roles=ROLES,
+        a2a_handler=_async_handler(DispatchResult(
+            source="a2a", target_rid="unregistered", reason="not authorized",
+        )),
+        target_hint="agent-x",
+    )
+    assert result.source == "none"
+    assert result.target_rid is None

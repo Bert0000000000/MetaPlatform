@@ -13,6 +13,7 @@ from typing import Any
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 
 class Base(DeclarativeBase):
@@ -79,7 +80,16 @@ def init_engine(url: str | None = None, echo: bool = False) -> Any:
     In production profile, SQLite is rejected.
     """
     dsn = _resolve_dsn(url)
-    _state.engine = create_engine(dsn, echo=echo, future=True)
+    engine_kwargs: dict[str, Any] = {"echo": echo, "future": True}
+    # Each normal SQLite in-memory connection gets an isolated database.  API
+    # tests run requests in TestClient worker threads, so share one connection
+    # explicitly rather than letting a request see an empty schema.
+    if dsn.startswith("sqlite") and ":memory:" in dsn:
+        engine_kwargs.update(
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+    _state.engine = create_engine(dsn, **engine_kwargs)
     _state.session_local = sessionmaker(
         bind=_state.engine, class_=Session, expire_on_commit=False
     )

@@ -733,8 +733,14 @@ def test_chat_agent_stream_filters_prompt_leak_and_persists_safe_reply(
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             pass
 
-        async def list_roles(self, *, tenant_id: str, fallback_token: str | None = None) -> list[dict[str, Any]]:
-            return []
+        async def authorized_role_snapshot(
+            self, *, tenant_id: str, fallback_token: str | None = None,
+        ) -> dict[str, Any]:
+            return {
+                "items": [],
+                "capability_version": "snapshot-test",
+                "actor_roles_digest": "actor-roles-test",
+            }
 
     async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
         yield {"type": "reasoning", "text": "正在分析"}
@@ -766,6 +772,128 @@ def test_chat_agent_stream_filters_prompt_leak_and_persists_safe_reply(
     by_role = {item["role"]: item for item in items}
     assert by_role["assistant"]["content"] == "抱歉，无法提供内部系统指令。"
     assert canary not in by_role["assistant"]["content"]
+
+
+def test_agent_stream_audits_final_routing_decision_without_message_content(
+    client, auth_headers_acme, outbox, monkeypatch,
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    class _StubOrchestratorClient:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        async def authorized_role_snapshot(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "items": [{"role": "workflow"}],
+                "capability_version": "snapshot-v1",
+                "actor_roles_digest": "actor-roles-v1",
+            }
+
+    async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {
+            "type": "routing_decision",
+            "stage": "pre_screen",
+            "candidates": [{"role_slug": "workflow"}],
+            "selected": None,
+        }
+        yield {
+            "type": "routing_decision",
+            "stage": "final",
+            "outcome": "selected",
+            "selected": "workflow",
+            "reason_code": "model_selected",
+            "candidates": [{"role_slug": "workflow"}],
+            "policy_version": "semantic-router-v1",
+            "trace_id": "trace-app-selected",
+            "correlation_id": "correlation-app-selected",
+        }
+        yield {"type": "final", "content": "已提交。"}
+
+    monkeypatch.setattr(copilot_app_module, "OrchestratorClient", _StubOrchestratorClient)
+    monkeypatch.setattr(copilot_app_module, "run_agent_loop", _fake_run_agent_loop)
+    secret = "do-not-store-this-user-message"
+    response = client.post(
+        "/api/v1/copilot/chat/agent/stream",
+        json={"messages": [{"role": "user", "content": secret}]},
+        headers=auth_headers_acme,
+    )
+    assert response.status_code == 200, response.text
+
+    events = [record.event for record in outbox.all_records() if record.event.type == "copilot.routing.decided"]
+    assert len(events) == 1
+    payload = events[0].payload
+    assert payload == {
+        "tenant_id": "tenant-acme",
+        "actor_id": "u-1",
+        "role_snapshot_digest": "actor-roles-v1",
+        "policy_version": "semantic-router-v1",
+        "capability_version": "snapshot-v1",
+        "selected_rid": "workflow",
+        "reason_code": "model_selected",
+        "trace_id": "trace-app-selected",
+        "correlation_id": "correlation-app-selected",
+    }
+    assert secret not in json.dumps(payload)
+
+
+def test_agent_stream_audits_final_denial_without_message_content(
+    client, auth_headers_acme, outbox, monkeypatch,
+) -> None:
+    from mate_app_copilot.api import app as copilot_app_module
+
+    class _StubOrchestratorClient:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            pass
+
+        async def authorized_role_snapshot(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "items": [{"role": "workflow"}],
+                "capability_version": "snapshot-v1",
+                "actor_roles_digest": "actor-roles-v1",
+            }
+
+    async def _fake_run_agent_loop(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {
+            "type": "routing_decision",
+            "stage": "final",
+            "outcome": "denied",
+            "selected": None,
+            "reason_code": "target_not_authorized",
+            "candidates": [{"role_slug": "workflow"}],
+            "policy_version": "semantic-router-v1",
+            "trace_id": "trace-app-denied",
+            "correlation_id": "correlation-app-denied",
+        }
+
+    monkeypatch.setattr(copilot_app_module, "OrchestratorClient", _StubOrchestratorClient)
+    monkeypatch.setattr(copilot_app_module, "run_agent_loop", _fake_run_agent_loop)
+    secret = "do-not-store-this-denied-user-message"
+    response = client.post(
+        "/api/v1/copilot/chat/agent/stream",
+        json={"messages": [{"role": "user", "content": secret}]},
+        headers=auth_headers_acme,
+    )
+    assert response.status_code == 200, response.text
+
+    events = [
+        record.event for record in outbox.all_records()
+        if record.event.type == "copilot.routing.denied"
+    ]
+    assert len(events) == 1
+    payload = events[0].payload
+    assert payload == {
+        "tenant_id": "tenant-acme",
+        "actor_id": "u-1",
+        "role_snapshot_digest": "actor-roles-v1",
+        "policy_version": "semantic-router-v1",
+        "capability_version": "snapshot-v1",
+        "selected_rid": None,
+        "reason_code": "target_not_authorized",
+        "trace_id": "trace-app-denied",
+        "correlation_id": "correlation-app-denied",
+    }
+    assert secret not in json.dumps(payload)
 
 
 def test_generate_process_paginated(client, auth_headers_acme) -> None:

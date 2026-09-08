@@ -12,10 +12,10 @@ import os
 from typing import Any, Protocol
 
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from mate_tech_db.base import create_all, get_session
+from mate_tech_db.base import create_all, get_engine, get_session
 
 from ..scheduler.role_registry import CapabilityBinding, DigitalEmployeeRole
 from . import sql_models as models
@@ -46,6 +46,18 @@ def _capabilities_from_json(raw: str) -> tuple[CapabilityBinding, ...]:
     )
 
 
+def _roles_to_json(roles: tuple[str, ...]) -> str:
+    return json.dumps(list(roles), sort_keys=True)
+
+
+def _roles_from_json(raw: str) -> tuple[str, ...]:
+    try:
+        values = json.loads(raw or "[]")
+    except ValueError:
+        values = []
+    return tuple(str(value) for value in values if isinstance(value, str) and value)
+
+
 class SqlRoleStore:
     """Persist digital-employee roles to SQL when a DSN is configured."""
 
@@ -58,8 +70,29 @@ class SqlRoleStore:
         return bool(os.environ.get("MATE_DB_URL") or os.environ.get("DATABASE_URL"))
 
     def _session(self) -> Session:
-        create_all()  # ensure tables exist (idempotent)
+        self._ensure_schema_compatibility()
         return get_session()
+
+    @staticmethod
+    def _ensure_schema_compatibility() -> None:
+        """Create new tables and repair the one additive legacy column.
+
+        ``create_all`` deliberately does not alter existing tables.  Role
+        authorization was added after early local databases had already
+        created ``orchestrator_roles``, so a restart must add this nullable-
+        by-default field before ``restore`` selects the ORM model.  Alembic
+        carries the production migration; this guard keeps local Docker and
+        existing developer databases restart-safe.
+        """
+        create_all()
+        engine = get_engine()
+        columns = {column["name"] for column in inspect(engine).get_columns("orchestrator_roles")}
+        if "allowed_actor_roles" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "ALTER TABLE orchestrator_roles "
+                    "ADD COLUMN allowed_actor_roles TEXT NOT NULL DEFAULT '[]'"
+                ))
 
     def save(self, role: DigitalEmployeeRole) -> None:
         if not self._enabled():
@@ -70,6 +103,7 @@ class SqlRoleStore:
                 orm = models.RoleORM(tenant_id=role.tenant_id, role=role.role)
             orm.name = role.name
             orm.capabilities = _capabilities_to_json(role.capabilities)
+            orm.allowed_actor_roles = _roles_to_json(role.allowed_actor_roles)
             orm.enabled = role.enabled
             orm.created_at = role.created_at
             session.merge(orm)
@@ -98,6 +132,7 @@ class SqlRoleStore:
                 tenant_id=r.tenant_id,
                 name=r.name or r.role,
                 capabilities=_capabilities_from_json(r.capabilities),
+                allowed_actor_roles=_roles_from_json(r.allowed_actor_roles),
                 enabled=r.enabled,
                 created_at=r.created_at,
             )

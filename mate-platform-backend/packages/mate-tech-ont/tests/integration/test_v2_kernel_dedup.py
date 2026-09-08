@@ -7,7 +7,7 @@
 1. 同 slug 不同 rid → SlugConflictError（DB UNIQUE violation 翻译）
 2. precheck 返回相似候选（中文 "客户" vs 英文 "Customer"，embedder=hash）
 3. merge endpoint 把 source Individual / LinkInstance / Property 重映射到 target
-4. merge_suggestion proposal 走 pending → confirmed → applied 全链路
+4. merge_suggestion proposal 走 pending → confirmed → executed 全链路
 """
 
 from __future__ import annotations
@@ -322,8 +322,8 @@ def test_merge_missing_source_raises_keyerror(repo) -> None:
 # ─────────────────── 4) merge_suggestion proposal 状态机 ───────────────────
 
 
-def test_merge_suggestion_proposal_lifecycle_pending_confirmed_applied(repo) -> None:
-    """完整状态机：pending → confirmed → applied。
+def test_merge_suggestion_proposal_lifecycle_pending_confirmed_executed(repo) -> None:
+    """完整状态机：pending → confirmed → executed。
 
     apply 阶段触发 merge_object_types，把 source Individual 重映射到 target。
     """
@@ -367,9 +367,9 @@ def test_merge_suggestion_proposal_lifecycle_pending_confirmed_applied(repo) -> 
     assert out["affected_individuals"] == 2
     assert out["source_archived"] is True
 
-    # 最终：proposal 已 applied
+    # 最终：proposal 已 executed
     final = repo.get_proposal(prop.proposal_id)
-    assert final.status == ProposalStatus.APPLIED
+    assert final.status == ProposalStatus.EXECUTED
 
     # source Individual 已重映射
     got = repo.get_individual("ont.acme.ind.client.1")

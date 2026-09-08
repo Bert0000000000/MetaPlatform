@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import re
 import threading
@@ -21,6 +22,7 @@ from dataclasses import replace as _dc_replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
+from uuid import uuid4
 
 from mate_kernel.objectset.compiler import CompiledFilter, FilterCompiler, individual_to_row
 from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp, QueryResult
@@ -90,6 +92,25 @@ class SlugConflictError(Exception):
 
 
 DDL: tuple[str, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS ont_axiom (
+        rid          TEXT PRIMARY KEY,
+        tenant_id    TEXT NOT NULL,
+        kind         TEXT NOT NULL,
+        operands     TEXT[] NOT NULL,
+        rule_ref     TEXT NOT NULL DEFAULT 'builtin',
+        enabled      BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS ont_type_version (
+        rid          TEXT PRIMARY KEY,
+        parent_rid   TEXT,
+        branched_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        note         TEXT NOT NULL DEFAULT ''
+    )
+    """,
     """
     CREATE TABLE IF NOT EXISTS ont_object_type (
         rid          TEXT PRIMARY KEY,
@@ -244,6 +265,63 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_prop_tenant ON ont_proposal (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_proposal_event (
+        event_id    BIGSERIAL PRIMARY KEY,
+        proposal_id TEXT NOT NULL REFERENCES ont_proposal(proposal_id) ON DELETE CASCADE,
+        tenant_id   TEXT NOT NULL,
+        from_status TEXT,
+        to_status   TEXT NOT NULL,
+        actor_id    TEXT,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_prop_event_proposal ON ont_proposal_event (proposal_id, event_id)",
+    "CREATE INDEX IF NOT EXISTS ix_ont_prop_event_tenant ON ont_proposal_event (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_proposal_idempotency (
+        tenant_id          TEXT NOT NULL,
+        operation          TEXT NOT NULL,
+        idempotency_key    TEXT NOT NULL,
+        proposal_id        TEXT NOT NULL REFERENCES ont_proposal(proposal_id) ON DELETE CASCADE,
+        request_fingerprint TEXT NOT NULL,
+        created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (tenant_id, operation, idempotency_key)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS ont_proposal_execution (
+        proposal_id TEXT PRIMARY KEY REFERENCES ont_proposal(proposal_id) ON DELETE CASCADE,
+        tenant_id   TEXT NOT NULL,
+        result      JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_prop_execution_tenant ON ont_proposal_execution (tenant_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_action_audit (
+        audit_id    TEXT PRIMARY KEY,
+        tenant_id   TEXT NOT NULL,
+        proposal_id TEXT NOT NULL REFERENCES ont_proposal(proposal_id) ON DELETE CASCADE,
+        action_rid  TEXT NOT NULL,
+        target_iid  TEXT NOT NULL,
+        actor_id    TEXT NOT NULL,
+        result      JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_action_audit_proposal ON ont_action_audit (proposal_id)",
+    """
+    CREATE TABLE IF NOT EXISTS ont_outbox_event (
+        event_id    TEXT PRIMARY KEY,
+        tenant_id   TEXT NOT NULL,
+        proposal_id TEXT NOT NULL REFERENCES ont_proposal(proposal_id) ON DELETE CASCADE,
+        event_type  TEXT NOT NULL,
+        payload     JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_outbox_event_proposal ON ont_outbox_event (proposal_id)",
     # MP-SAL-04b: proposal kind（action / create_instance / model_type）
     "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'action'",
     """
@@ -677,8 +755,12 @@ class PgOntologyRepository(OntologyRepository):
         # MP-SAL-02: 对象语义检索 embedder（env 未配置时为 None → 索引跳过）
         from .object_search import build_env_embedder
         self._embedder: object | None = build_env_embedder()
-        # MP-SAL-04: side_effect outbox 写回（ADR-0044 §2.3；None = dev 未接，行为不变）
-        self._outbox_writer: Any = None
+        # The database transaction outbox is always available. Integrations can
+        # replace this ID allocator with a publisher adapter, but a normal
+        # service must never downgrade an approved action to an unaudited path.
+        self._outbox_writer: Any = lambda _event_type, _tenant_id, _payload: (
+            f"outbox-{uuid4()}"
+        )
 
         # GOVERN-12-02: 构造即 bootstrap DDL。任何路径（启动 / 测试 fixture /
         # 迁移脚本）拿到 PgOntologyRepository 实例即可用；不需要启动序列先
@@ -774,6 +856,9 @@ class PgOntologyRepository(OntologyRepository):
                 with self._cursor(conn) as cur:
                     for stmt in DDL:
                         cur.execute(stmt)
+                    cur.execute(
+                        "UPDATE ont_proposal SET status = 'executed' WHERE status = 'applied'"
+                    )
                 conn.commit()
                 self._initialized = True
             finally:
@@ -894,6 +979,116 @@ class PgOntologyRepository(OntologyRepository):
             return ot
         finally:
             conn.close()
+
+    # ─────────── ONT-G18：Axiom 注册中心 ───────────
+
+    def upsert_axiom_record(self, rid: str, kind: str, operands: list[str],
+                            rule_ref: str = "builtin", *,
+                            tenant_id: str = "", enabled: bool = True) -> dict:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_axiom (rid, tenant_id, kind, operands, rule_ref, enabled)
+                       VALUES (%s,%s,%s,%s,%s,%s)
+                       ON CONFLICT (rid) DO UPDATE SET kind=EXCLUDED.kind,
+                         operands=EXCLUDED.operands, rule_ref=EXCLUDED.rule_ref,
+                         enabled=EXCLUDED.enabled""",
+                    (rid, tenant_id or self._current_tenant() or "tenant-default",
+                     kind, list(operands), rule_ref, enabled))
+            conn.commit()
+        finally:
+            conn.close()
+        return {"rid": rid, "kind": kind, "operands": list(operands),
+                "rule_ref": rule_ref, "enabled": enabled}
+
+    def list_axiom_records(self, tenant_id: str = "", *, enabled_only: bool = False) -> list[dict]:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                sql = "SELECT rid, kind, operands, rule_ref, enabled FROM ont_axiom WHERE tenant_id = %s"
+                if enabled_only:
+                    sql += " AND enabled = TRUE"
+                # 旧表无 created_at（legacy 会话建），兼容 updated_at
+                cur.execute(sql + " ORDER BY updated_at", (tenant_id,))
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        out = []
+        for r in rows:
+            if isinstance(r, dict):
+                out.append({"rid": r["rid"], "kind": r["kind"],
+                            "operands": list(r["operands"]),
+                            "rule_ref": r["rule_ref"], "enabled": r["enabled"]})
+            else:
+                out.append({"rid": r[0], "kind": r[1], "operands": list(r[2]),
+                            "rule_ref": r[3], "enabled": r[4]})
+        return out
+
+    def delete_axiom_record(self, rid: str) -> bool:
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("DELETE FROM ont_axiom WHERE rid = %s", (rid,))
+                deleted = cur.rowcount
+            conn.commit()
+        finally:
+            conn.close()
+        return bool(deleted)
+
+    # ─────────── ONT-G8/G19：branch / diff / rollback ───────────
+
+    def branch_object_type(
+        self, rid: ClassRef, new_rid: ClassRef, *, note: str = "",
+    ) -> ObjectType:
+        """以当前定义复制出 new_rid（如 ...v2），记录 lineage。"""
+        ot = self.get_object_type(rid)
+        from dataclasses import replace as _replace
+
+        branched = _replace(ot, rid=new_rid)
+        # rid 派生租户（to_thread 线程里 _current_tenant() 为 None）
+        with self.tenant_scope(rid.rid.split(".")[1]):
+            self.upsert_object_type(branched)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_type_version (rid, parent_rid, note)
+                       VALUES (%s, %s, %s)
+                       ON CONFLICT (rid) DO UPDATE SET parent_rid = EXCLUDED.parent_rid""",
+                    (new_rid.rid, rid.rid, note),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        return branched
+
+    def diff_object_types(self, old_rid: ClassRef, new_rid: ClassRef) -> dict:
+        from mate_kernel.ontology.versioning_ops import diff_object_types as _diff
+
+        return _diff(self.get_object_type(old_rid), self.get_object_type(new_rid))
+
+    def rollback_object_type(self, rid: ClassRef, from_rid: ClassRef) -> ObjectType:
+        """把 rid 的定义恢复为 from_rid（同族旧版本）的定义。"""
+        restored = self.get_object_type(from_rid)
+        from dataclasses import replace as _replace
+
+        target = _replace(restored, rid=rid)
+        with self.tenant_scope(rid.rid.split(".")[1]):
+            self.upsert_object_type(target)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_type_version (rid, parent_rid, note)
+                       VALUES (%s, %s, %s)
+                       ON CONFLICT (rid) DO UPDATE SET parent_rid = EXCLUDED.parent_rid""",
+                    (rid.rid, from_rid.rid, f"rollback to {from_rid.rid}"),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        return target
 
     def get_object_type(self, rid: ClassRef) -> ObjectType:
         self._ensure_schema()
@@ -1574,15 +1769,73 @@ class PgOntologyRepository(OntologyRepository):
             direction = "DESC" if reverse else "ASC"
             order_by = f" ORDER BY (props ->> '{key}'){cast} {direction}"
 
+        # ONT-G21: 推理层级对 ObjectSet 可见 —— 按本租户已注册 subclass
+        # 公理把「查询类」扩展为「类 + 传递后代类」。公理 operands 存
+        # [sub, sup]，可为本体完整 rid 或 slug；slug 先解析成本租户已注册
+        # 类型的完整 rid（跨写法的传递链才能连通），再求后代闭包。无公理
+        # 时行为与旧版完全一致（仅精确匹配）。
+        rid_str = os_.class_rid.rid
+        rid_parts = rid_str.split(".")
+        axiom_tenant = rid_parts[1] if rid_str.startswith("ont.") and len(rid_parts) >= 3 else ""
+        rid_by_slug: dict[str, set[str]] = {}
+        if axiom_tenant:
+            try:
+                conn_t, _c = self._connect()
+                try:
+                    with self._cursor(conn_t) as cur:
+                        cur.execute(
+                            "SELECT rid FROM ont_object_type WHERE rid LIKE %s",
+                            (f"ont.{axiom_tenant}.obj.%.%",))
+                        for row in cur.fetchall():
+                            type_rid = row["rid"] if isinstance(row, dict) else row[0]
+                            t_parts = type_rid.split(".")
+                            if len(t_parts) >= 5:
+                                rid_by_slug.setdefault(t_parts[3], set()).add(type_rid)
+                finally:
+                    conn_t.close()
+            except Exception:
+                rid_by_slug = {}
+
+        def _canon(tok: str) -> frozenset[str]:
+            if tok.startswith("ont."):
+                return frozenset({tok})
+            return frozenset(rid_by_slug.get(tok, set()))
+
+        class_conds: list[str] = ["class_rid = %s"]
+        class_params: list[Any] = [rid_str]
+        if axiom_tenant:
+            try:
+                axiom_rows = self.list_axiom_records(axiom_tenant, enabled_only=True)
+            except Exception:
+                axiom_rows = []
+            canon_pairs: list[tuple[str, str]] = []
+            for row in axiom_rows:
+                if row.get("kind") != "subclass":
+                    continue
+                ops = row.get("operands") or []
+                if len(ops) >= 2:
+                    for sub in _canon(str(ops[0])):
+                        for sup in _canon(str(ops[1])):
+                            canon_pairs.append((sub, sup))
+            if canon_pairs:
+                from mate_kernel.ontology.reasoning.engine import descendant_closure
+
+                desc_tokens = descendant_closure(canon_pairs).get(rid_str, set())
+                if desc_tokens:
+                    class_conds.append("class_rid = ANY(%s)")
+                    class_params.append(sorted(desc_tokens))
+        where_sql = f"({' OR '.join(class_conds)}) AND ({where_sql})"
+        params = [*class_params, *params]
+
         # where_sql comes from SQLCompiler (not user input); order_by is a
         # controlled sort spec. Safe to compose via f-string.
         sql = (
             f"SELECT * FROM ont_individual "  # noqa: S608
-            f"WHERE class_rid = %s AND ({where_sql})"
+            f"WHERE {where_sql}"
             f"{order_by} "
             f"LIMIT %s OFFSET %s"
         )
-        params_all: list[Any] = [os_.class_rid.rid, *params, os_.paging_limit, os_.paging_offset]
+        params_all: list[Any] = [*params, os_.paging_limit, os_.paging_offset]
 
         conn, _ = self._connect()
         try:
@@ -1886,6 +2139,73 @@ class PgOntologyRepository(OntologyRepository):
         """注入 outbox 写回：writer(event_type, tenant_id, payload) -> event_id | None。"""
         self._outbox_writer = writer
 
+    @staticmethod
+    def _proposal_tenant_id(action_rid: str) -> str:
+        parts = action_rid.split(".")
+        return parts[1] if len(parts) > 1 else ""
+
+    @staticmethod
+    def _append_proposal_event(
+        cur: Any,
+        *,
+        proposal_id: str,
+        tenant_id: str,
+        from_status: str | None,
+        to_status: str,
+        actor_id: str | None,
+        created_at: Any | None = None,
+    ) -> None:
+        cur.execute(
+            """
+            INSERT INTO ont_proposal_event
+                (proposal_id, tenant_id, from_status, to_status, actor_id, created_at)
+            VALUES (%s, %s, %s, %s, %s, COALESCE(%s, now()))
+            """,
+            (proposal_id, tenant_id, from_status, to_status, actor_id, created_at),
+        )
+
+    @staticmethod
+    def _proposal_request_fingerprint(
+        *, operation: str, proposal_id: str, actor_id: str | None,
+    ) -> str:
+        payload = json.dumps(
+            {"operation": operation, "proposal_id": proposal_id, "actor_id": actor_id or ""},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def _replay_idempotent_proposal(
+        self,
+        *,
+        tenant_id: str,
+        operation: str,
+        idempotency_key: str | None,
+        proposal_id: str,
+        request_fingerprint: str,
+    ) -> Any | None:
+        if not idempotency_key:
+            return None
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    SELECT proposal_id, request_fingerprint
+                    FROM ont_proposal_idempotency
+                    WHERE tenant_id = %s AND operation = %s AND idempotency_key = %s
+                    """,
+                    (tenant_id, operation, idempotency_key),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            return None
+        if row["proposal_id"] != proposal_id or row["request_fingerprint"] != request_fingerprint:
+            raise ValueError("idempotency key conflicts with a different proposal command")
+        return self.get_proposal(proposal_id)
+
     def propose_action(
         self,
         action_rid: ClassRef,
@@ -1927,7 +2247,7 @@ class PgOntologyRepository(OntologyRepository):
                     """,
                     (
                         prop.proposal_id,
-                        subject.split(".")[1] if "." in subject else "",
+                        self._proposal_tenant_id(subject),
                         subject,
                         target_iid,
                         json.dumps(parameters, default=str),
@@ -1937,6 +2257,15 @@ class PgOntologyRepository(OntologyRepository):
                         kind,
                         prop.created_at,
                     ),
+                )
+                self._append_proposal_event(
+                    cur,
+                    proposal_id=prop.proposal_id,
+                    tenant_id=self._proposal_tenant_id(subject),
+                    from_status=None,
+                    to_status=prop.status.value,
+                    actor_id=None,
+                    created_at=prop.created_at,
                 )
             conn.commit()
             return prop
@@ -1990,6 +2319,177 @@ class PgOntologyRepository(OntologyRepository):
             conn.close()
         return [self._hydrate_proposal(r) for r in rows]
 
+    def list_proposal_events(self, proposal_id: str) -> list[dict[str, Any]]:
+        """Return ordered lifecycle evidence for one tenant-scoped proposal."""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """
+                    SELECT proposal_id, tenant_id, from_status, to_status, actor_id, created_at
+                    FROM ont_proposal_event
+                    WHERE proposal_id = %s
+                    ORDER BY event_id ASC
+                    """,
+                    (proposal_id,),
+                )
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        return [dict(row) for row in rows]
+
+    # ─────────── PRD-02（MP-ACTION-CONFIRM-01）：withdraw / revert ───────────
+
+    _REVERT_WINDOW_DAYS = 7  # FR-ACT-CONFIRM-006（对齐决策 C3）
+
+    def withdraw_proposal(self, proposal_id: str, *, actor_id: str = "") -> dict[str, Any]:
+        """pending → withdrawn（作者确认前撤回；终态）。幂等键 actor 维度。"""
+        p = self.get_proposal(proposal_id)
+        self._action_service.withdraw_proposal(proposal_id, by=actor_id)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "UPDATE ont_proposal SET status='withdrawn' WHERE proposal_id=%s",
+                    (proposal_id,),
+                )
+                self._append_proposal_event(
+                    cur, proposal_id=proposal_id,
+                    tenant_id=self._proposal_tenant_id(p.action_rid),
+                    from_status="pending", to_status="withdrawn",
+                    actor_id=actor_id or None,
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        return {"proposal_id": proposal_id, "status": "withdrawn"}
+
+    def revert_proposal(
+        self, proposal_id: str, *, actor_id: str = "",
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        """executed → reverted（人审撤销 + 补偿；FR-ACT-CONFIRM-002..004/006）。
+
+        - create_instance → 删除该实例（I1 ≃ 等价：等价于从未创建）
+        - model_type / action → audit-only revert（不可数值逆写，降级 partial）
+        - 超出 7 天窗口 → 拒绝（409 语义由 API 层翻译）
+        """
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
+
+        p = self.get_proposal(proposal_id)
+        if p.status.value != "executed":
+            raise ValueError(
+                f"proposal {proposal_id} is {p.status.value}; revert requires executed"
+            )
+        # 时窗（FR-ACT-CONFIRM-006）
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT applied_at FROM ont_proposal WHERE proposal_id=%s",
+                    (proposal_id,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        # cursor 可能是 dict 型（RealDictCursor）——两种取法都兼容
+        if isinstance(row, dict):
+            applied_at = row.get("applied_at")
+        else:
+            applied_at = row[0] if row else None
+        if applied_at is not None:
+            age_days = (_dt.now(_UTC) - applied_at).days
+            if age_days > self._REVERT_WINDOW_DAYS:
+                raise ValueError(
+                    f"revert window ({self._REVERT_WINDOW_DAYS}d) exceeded: "
+                    f"applied {age_days}d ago (audit-only retrival remains)"
+                )
+
+        execution = self.get_proposal_execution(proposal_id) or {}
+        equivalence = "partial"  # audit-only 默认降级
+        compensated: dict[str, Any] = {}
+
+        if p.kind == "create_instance":
+            ind_rid = str(execution.get("individual_rid") or "")
+            if ind_rid:
+                conn, _ = self._connect()
+                try:
+                    with self._cursor(conn) as cur:
+                        cur.execute(
+                            "DELETE FROM ont_individual WHERE rid=%s", (ind_rid,),
+                        )
+                        deleted = cur.rowcount
+                    conn.commit()
+                finally:
+                    conn.close()
+                # I1 ≃ 等价判定：实例确已消失（FR-ACT-CONFIRM-004）
+                try:
+                    self.get_individual(ind_rid)
+                    equivalence = "partial"
+                except KeyError:
+                    equivalence = "equivalent" if deleted else "partial"
+                compensated = {"deleted_individual": ind_rid, "rows": deleted}
+        elif p.kind == "merge_suggestion":
+            # merge 不可数值逆写 → audit-only（partial）
+            compensated = {"note": "merge reversal is audit-only"}
+
+        self._action_service.mark_reverted(proposal_id)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "UPDATE ont_proposal SET status='reverted' WHERE proposal_id=%s",
+                    (proposal_id,),
+                )
+                self._append_proposal_event(
+                    cur, proposal_id=proposal_id,
+                    tenant_id=self._proposal_tenant_id(p.action_rid),
+                    from_status="executed", to_status="reverted",
+                    actor_id=actor_id or None,
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        result = {
+            "proposal_id": proposal_id, "status": "reverted",
+            "kind": p.kind, "equivalence": equivalence,
+            "compensation": compensated,
+        }
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_proposal_execution (proposal_id, tenant_id, result)
+                       VALUES (%s, %s, %s::jsonb)
+                       ON CONFLICT (proposal_id) DO UPDATE SET result = EXCLUDED.result""",
+                    (proposal_id, self._proposal_tenant_id(p.action_rid),
+                     __import__("json").dumps({"revert": result}, default=str)),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        return result
+
+    def get_proposal_execution(self, proposal_id: str) -> dict[str, Any]:
+        """Return the durable result emitted by a completed proposal execution."""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT result FROM ont_proposal_execution WHERE proposal_id = %s",
+                    (proposal_id,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            raise KeyError(f"proposal execution not found: {proposal_id}")
+        result = row["result"]
+        return dict(result if isinstance(result, dict) else json.loads(result))
+
     def _hydrate_proposal(self, row: dict[str, Any]) -> Any:
         """PG 行 → ActionProposal（并回填引擎镜像，apply 校验用）。"""
         from mate_kernel.action.engine import ActionProposal, ProposalStatus
@@ -2016,7 +2516,17 @@ class PgOntologyRepository(OntologyRepository):
         self._action_service._proposals[prop.proposal_id] = prop  # 镜像回填
         return prop
 
-    def _persist_proposal_transition(self, prop: Any) -> None:
+    def _persist_proposal_transition(
+        self,
+        prop: Any,
+        *,
+        from_status: str,
+        actor_id: str | None,
+        operation: str | None = None,
+        idempotency_key: str | None = None,
+        request_fingerprint: str | None = None,
+        execution_result: dict[str, Any] | None = None,
+    ) -> None:
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -2024,7 +2534,7 @@ class PgOntologyRepository(OntologyRepository):
                     """
                     UPDATE ont_proposal
                     SET status = %s, confirmed_by = %s, confirmed_at = %s,
-                        applied_at = CASE WHEN %s = 'applied' THEN now() ELSE applied_at END
+                        applied_at = CASE WHEN %s = 'executed' THEN now() ELSE applied_at END
                     WHERE proposal_id = %s
                     """,
                     (
@@ -2032,23 +2542,305 @@ class PgOntologyRepository(OntologyRepository):
                         prop.status.value, prop.proposal_id,
                     ),
                 )
+                self._append_proposal_event(
+                    cur,
+                    proposal_id=prop.proposal_id,
+                    tenant_id=self._proposal_tenant_id(prop.action_rid),
+                    from_status=from_status,
+                    to_status=prop.status.value,
+                    actor_id=actor_id,
+                )
+                if idempotency_key and operation and request_fingerprint:
+                    cur.execute(
+                        """
+                        INSERT INTO ont_proposal_idempotency
+                            (tenant_id, operation, idempotency_key, proposal_id, request_fingerprint)
+                        VALUES (%s, %s, %s, %s, %s)
+                        """,
+                        (
+                            self._proposal_tenant_id(prop.action_rid), operation,
+                            idempotency_key, prop.proposal_id, request_fingerprint,
+                        ),
+                    )
+                if execution_result is not None:
+                    cur.execute(
+                        """
+                        INSERT INTO ont_proposal_execution (proposal_id, tenant_id, result)
+                        VALUES (%s, %s, %s::jsonb)
+                        ON CONFLICT (proposal_id) DO UPDATE SET result = EXCLUDED.result
+                        """,
+                        (
+                            prop.proposal_id,
+                            self._proposal_tenant_id(prop.action_rid),
+                            json.dumps(execution_result, default=str),
+                        ),
+                    )
             conn.commit()
         finally:
             conn.close()
 
-    def confirm_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
-        self.get_proposal(proposal_id)  # 行存在性 + 镜像回填
+    def confirm_proposal(
+        self, proposal_id: str, confirmed_by: str = "", idempotency_key: str | None = None,
+    ) -> Any:
+        key = (idempotency_key or "").strip() or None
+        current = self.get_proposal(proposal_id)
+        fingerprint = self._proposal_request_fingerprint(
+            operation="confirm", proposal_id=proposal_id, actor_id=confirmed_by or None,
+        )
+        replayed = self._replay_idempotent_proposal(
+            tenant_id=self._proposal_tenant_id(current.action_rid),
+            operation="confirm",
+            idempotency_key=key,
+            proposal_id=proposal_id,
+            request_fingerprint=fingerprint,
+        )
+        if replayed is not None:
+            return replayed
         prop = self._action_service.confirm_proposal(proposal_id, confirmed_by=confirmed_by)
-        self._persist_proposal_transition(prop)
+        self._persist_proposal_transition(
+            prop,
+            from_status="pending",
+            actor_id=confirmed_by or None,
+            operation="confirm",
+            idempotency_key=key,
+            request_fingerprint=fingerprint,
+        )
         return prop
 
-    def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
-        self.get_proposal(proposal_id)
+    def reject_proposal(
+        self, proposal_id: str, confirmed_by: str = "", idempotency_key: str | None = None,
+    ) -> Any:
+        key = (idempotency_key or "").strip() or None
+        current = self.get_proposal(proposal_id)
+        fingerprint = self._proposal_request_fingerprint(
+            operation="reject", proposal_id=proposal_id, actor_id=confirmed_by or None,
+        )
+        replayed = self._replay_idempotent_proposal(
+            tenant_id=self._proposal_tenant_id(current.action_rid),
+            operation="reject",
+            idempotency_key=key,
+            proposal_id=proposal_id,
+            request_fingerprint=fingerprint,
+        )
+        if replayed is not None:
+            return replayed
         prop = self._action_service.reject_proposal(proposal_id, confirmed_by=confirmed_by)
-        self._persist_proposal_transition(prop)
+        self._persist_proposal_transition(
+            prop,
+            from_status="pending",
+            actor_id=confirmed_by or None,
+            operation="reject",
+            idempotency_key=key,
+            request_fingerprint=fingerprint,
+        )
         return prop
 
-    def execute_proposal(self, proposal_id: str) -> Any:
+    def _execute_action_kind_proposal(
+        self,
+        proposal: Any,
+        *,
+        actor_id: str,
+        idempotency_key: str | None,
+        request_fingerprint: str,
+    ) -> dict[str, Any]:
+        """Execute one confirmed ActionType proposal with durable evidence.
+
+        The ActionService remains responsible for function invocation and
+        submission criteria. This repository owns the durable boundary: the
+        target update, action audit, outbox evidence, proposal state,
+        lifecycle event, idempotency row, and receipt commit together.
+        """
+        from mate_kernel.action.engine import ProposalNotConfirmed, SubmissionContext
+
+        if self._outbox_writer is None:
+            raise RuntimeError("outbox writer unavailable for action proposal execution")
+        if not proposal.target_iid:
+            raise ValueError("action proposal requires target_iid")
+
+        action_type = self.get_action_type(ClassRef(proposal.action_rid))
+        target = self.get_individual(proposal.target_iid)
+        target_props = {key.rid: value for key, value in target.props}
+        outbox_evidence: list[tuple[str, str]] = []
+
+        def emit_outbox(event_type: str) -> str:
+            event_id = self._outbox_writer(
+                event_type,
+                target.tenant_id,
+                {
+                    "action_rid": action_type.rid.rid,
+                    "target_iid": target.rid,
+                    "proposal_id": proposal.proposal_id,
+                },
+            )
+            if event_id is None:
+                raise RuntimeError("outbox writer returned no event identifier")
+            evidence = (event_type, str(event_id))
+            outbox_evidence.append(evidence)
+            return evidence[1]
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT status FROM ont_proposal WHERE proposal_id = %s FOR UPDATE",
+                    (proposal.proposal_id,),
+                )
+                row = cur.fetchone()
+                if row is None:
+                    raise KeyError(f"proposal not found: {proposal.proposal_id}")
+                if row["status"] != "confirmed":
+                    raise ProposalNotConfirmed(
+                        f"proposal {proposal.proposal_id} is {row['status']}; "
+                        "execute requires a confirmed proposal"
+                    )
+
+                outcome = self._action_service.apply(
+                    action_rid=action_type.rid.rid,
+                    submission_criteria=action_type.submission_criteria,
+                    function_ref=action_type.function_ref.rid,
+                    on_rid=action_type.on[0].rid if action_type.on else "",
+                    target_iid=target.rid,
+                    parameters=dict(proposal.parameters),
+                    side_effects=action_type.side_effects,
+                    ctx=SubmissionContext(actor=actor_id, tenant_id=target.tenant_id),
+                    target_props=target_props,
+                    proposal_id=proposal.proposal_id,
+                    side_effect_emitter=emit_outbox,
+                )
+
+                merged_props = dict(target_props)
+                parameter_rids: dict[str, str] = {}
+                for parameter in action_type.parameters:
+                    parts = parameter.rid.rid.split(".")
+                    slug = parts[-2] if parts[-1].startswith("v") else parts[-1]
+                    parameter_rids[slug] = parameter.rid.rid
+                for key, value in proposal.parameters.items():
+                    resolved = key if key.startswith("ont.") else parameter_rids.get(key)
+                    if resolved is None:
+                        raise KeyError(
+                            f"unknown parameter {key!r} for action={proposal.action_rid}"
+                        )
+                    merged_props[resolved] = value
+                if isinstance(outcome.function_result, dict):
+                    for slug, value in outcome.function_result.items():
+                        resolved = parameter_rids.get(slug)
+                        if resolved is not None and slug not in proposal.parameters:
+                            merged_props[resolved] = value
+                cur.execute(
+                    """
+                    UPDATE ont_individual
+                    SET props = %s::jsonb, updated_at = %s
+                    WHERE rid = %s
+                    """,
+                    (json.dumps(merged_props, default=str), outcome.applied_at, target.rid),
+                )
+                if cur.rowcount != 1:
+                    raise KeyError(f"Individual not found: {target.rid}")
+
+                result = {
+                    "kind": "action",
+                    "action_rid": action_type.rid.rid,
+                    "target_iid": target.rid,
+                    "audit_id": outcome.audit_id,
+                    "outbox_event_ids": [event_id for _, event_id in outbox_evidence],
+                    "side_effects_emitted": list(outcome.side_effects_emitted),
+                }
+                cur.execute(
+                    """
+                    INSERT INTO ont_action_audit
+                        (audit_id, tenant_id, proposal_id, action_rid, target_iid, actor_id, result)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
+                    """,
+                    (
+                        outcome.audit_id,
+                        target.tenant_id,
+                        proposal.proposal_id,
+                        action_type.rid.rid,
+                        target.rid,
+                        actor_id,
+                        json.dumps(result, default=str),
+                    ),
+                )
+                for event_type, event_id in outbox_evidence:
+                    cur.execute(
+                        """
+                        INSERT INTO ont_outbox_event
+                            (event_id, tenant_id, proposal_id, event_type, payload)
+                        VALUES (%s, %s, %s, %s, %s::jsonb)
+                        """,
+                        (
+                            event_id,
+                            target.tenant_id,
+                            proposal.proposal_id,
+                            event_type,
+                            json.dumps(
+                                {
+                                    "action_rid": action_type.rid.rid,
+                                    "target_iid": target.rid,
+                                    "proposal_id": proposal.proposal_id,
+                                },
+                                default=str,
+                            ),
+                        ),
+                    )
+                cur.execute(
+                    """
+                    UPDATE ont_proposal
+                    SET status = 'executed', applied_at = now()
+                    WHERE proposal_id = %s
+                    """,
+                    (proposal.proposal_id,),
+                )
+                self._append_proposal_event(
+                    cur,
+                    proposal_id=proposal.proposal_id,
+                    tenant_id=target.tenant_id,
+                    from_status="confirmed",
+                    to_status="executed",
+                    actor_id=actor_id or None,
+                )
+                if idempotency_key:
+                    cur.execute(
+                        """
+                        INSERT INTO ont_proposal_idempotency
+                            (tenant_id, operation, idempotency_key, proposal_id, request_fingerprint)
+                        VALUES (%s, 'execute', %s, %s, %s)
+                        """,
+                        (
+                            target.tenant_id,
+                            idempotency_key,
+                            proposal.proposal_id,
+                            request_fingerprint,
+                        ),
+                    )
+                cur.execute(
+                    """
+                    INSERT INTO ont_proposal_execution (proposal_id, tenant_id, result)
+                    VALUES (%s, %s, %s::jsonb)
+                    """,
+                    (
+                        proposal.proposal_id,
+                        target.tenant_id,
+                        json.dumps(result, default=str),
+                    ),
+                )
+            conn.commit()
+            return result
+        except Exception:
+            conn.rollback()
+            # ActionService is an in-process cache. Restore it after a failed
+            # database transaction so a later retry still sees ``confirmed``.
+            self._action_service._proposals[proposal.proposal_id] = proposal
+            raise
+        finally:
+            conn.close()
+
+    def execute_proposal(
+        self,
+        proposal_id: str,
+        actor_id: str = "",
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
         """MP-SAL-04b：confirmed proposal 落库执行（create_instance / model_type）。"""
         from datetime import UTC as _UTC
         from datetime import datetime as _dt
@@ -2058,14 +2850,30 @@ class PgOntologyRepository(OntologyRepository):
             ProposalStatus,
         )
 
+        key = (idempotency_key or "").strip() or None
         p = self.get_proposal(proposal_id)  # 行存在 + 镜像回填
+        fingerprint = self._proposal_request_fingerprint(
+            operation="execute", proposal_id=proposal_id, actor_id=actor_id or None,
+        )
+        replayed = self._replay_idempotent_proposal(
+            tenant_id=self._proposal_tenant_id(p.action_rid),
+            operation="execute",
+            idempotency_key=key,
+            proposal_id=proposal_id,
+            request_fingerprint=fingerprint,
+        )
+        if replayed is not None:
+            return self.get_proposal_execution(proposal_id)
         if p.status is not ProposalStatus.CONFIRMED:
             raise ProposalNotConfirmed(
                 f"proposal {proposal_id} is {p.status.value}; execute requires a confirmed proposal"
             )
         if p.kind == "action":
-            raise ValueError(
-                "action-kind proposals execute via /action-types/{rid}/apply, not /execute"
+            return self._execute_action_kind_proposal(
+                p,
+                actor_id=actor_id,
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
             )
         if p.kind == "create_instance":
             ot = self.get_object_type(ClassRef(p.action_rid))
@@ -2081,11 +2889,16 @@ class PgOntologyRepository(OntologyRepository):
             # ``ont.<tenant>.ind.<slug>.<pk>``（保持 5 段 individual 格式与 seed.py 一致）。
             tenant, cls_slug = parts[1], parts[4] if len(parts) >= 6 else parts[3]
             resolved = []
-            for key, value in props_in.items():
-                ref = slug_to_ref.get(key) or (ClassRef(key) if key.startswith("ont.") else None)
+            # NOTE: 循环变量绝不能命名为 ``key`` —— 会遮蔽外层幂等键
+            # ``key``，导致 create_instance 的幂等记录写入最后一个 prop slug
+            # （jsonb 排序后常为 'emp-id'）并在跨 proposal 重放时撞唯一约束。
+            for prop_name, prop_value in props_in.items():
+                ref = slug_to_ref.get(prop_name) or (
+                    ClassRef(prop_name) if prop_name.startswith("ont.") else None
+                )
                 if ref is None:
-                    raise KeyError(f"unknown property {key!r} for {p.action_rid}")
-                resolved.append((ref, value))
+                    raise KeyError(f"unknown property {prop_name!r} for {p.action_rid}")
+                resolved.append((ref, prop_value))
             ind = Individual(
                 rid=f"ont.{tenant}.ind.{cls_slug}.{pk_value}",
                 class_rid=ot.rid,
@@ -2096,10 +2909,17 @@ class PgOntologyRepository(OntologyRepository):
                 tenant_id=tenant,
             )
             created = self.create_individual(ind)
+            result = {"kind": "create_instance", "individual_rid": created.rid}
             self._persist_proposal_transition(
-                self._action_service.mark_applied(proposal_id),
+                self._action_service.mark_executed(proposal_id),
+                from_status="confirmed",
+                actor_id=actor_id or None,
+                operation="execute",
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
+                execution_result=result,
             )
-            return created
+            return result
         if p.kind == "model_type":
             type_def = p.parameters["type_def"]
             ot = ObjectType(
@@ -2120,10 +2940,17 @@ class PgOntologyRepository(OntologyRepository):
                 marking=tuple(type_def.get("marking", ())),
             )
             saved = self.upsert_object_type(ot)
+            result = {"kind": "model_type", "type_rid": saved.rid.rid}
             self._persist_proposal_transition(
-                self._action_service.mark_applied(proposal_id),
+                self._action_service.mark_executed(proposal_id),
+                from_status="confirmed",
+                actor_id=actor_id or None,
+                operation="execute",
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
+                execution_result=result,
             )
-            return saved
+            return result
         if p.kind == "merge_suggestion":
             # MP-DEDUP-01：user confirm → 自动触发 merge_object_types
             source_rid = p.parameters.get("source_rid")
@@ -2133,9 +2960,16 @@ class PgOntologyRepository(OntologyRepository):
                     "merge_suggestion proposal requires source_rid + target_rid"
                 )
             mapping = p.parameters.get("mapping") or {}
-            result = self.merge_object_types(source_rid, target_rid, mapping)
+            result = dict(self.merge_object_types(source_rid, target_rid, mapping))
+            result["kind"] = "merge_suggestion"
             self._persist_proposal_transition(
-                self._action_service.mark_applied(proposal_id),
+                self._action_service.mark_executed(proposal_id),
+                from_status="confirmed",
+                actor_id=actor_id or None,
+                operation="execute",
+                idempotency_key=key,
+                request_fingerprint=fingerprint,
+                execution_result=result,
             )
             return result
         raise ValueError(f"unknown proposal kind: {p.kind!r}")

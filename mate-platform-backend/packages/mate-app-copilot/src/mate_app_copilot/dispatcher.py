@@ -1,31 +1,11 @@
-"""mate_app_copilot.dispatcher — SuperAI 多级 fallback 派发（任务2）。
-
-背景
-----
-当前 LLM FC 决策不可用 / 不返回 ``dispatch_employee`` 时，走单一的
-``_fallback_decision``（role slug 子串匹配）。这层兜底在 role 数增长后召回率
-会迅速下降。
-
-做法
-----
-提供 4 级 fallback 链（顺序可配），每级有独立 handler：
-
-  1. ``a2a`` — A2A 协议直发（``OrchestratorClient.dispatch``，已有；用 ``target_hint``）
-  2. ``kernel_role`` — ``mate_kernel.agent.orchestrator.AgentSelector`` 把 rid
-     按前缀分类到 ``AgentRole``（kernel 内核 stub，零 LLM）
-  3. ``embedding_match`` — ``SemanticRouter`` 算 top-k 候选，按相似度派发 top-1
-  4. ``keyword_substring`` — role slug 子串匹配（``_fallback_decision`` 等价行为）
-
-每级可独立注入 ``handler``（``None`` 即跳过该级），便于单测。任意 handler
-抛异常都会降级到下一级；首条命中即返回 ``DispatchResult``。
-"""
+"""Authorization-bounded fallback dispatch for the copilot routing path."""
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from .semantic_router import CandidateRole, SemanticRouter
-
 
 # ────────────────── 数据结构 ──────────────────
 
@@ -58,9 +38,6 @@ class DispatchResult:
 
 DEFAULT_CHAIN: tuple[FallbackStep, ...] = (
     FallbackStep("a2a"),
-    FallbackStep("kernel_role"),
-    FallbackStep("embedding_match"),
-    FallbackStep("keyword_substring"),
 )
 
 
@@ -90,7 +67,7 @@ async def dispatch_by_routing(
     semantic_router: SemanticRouter | None = None,
     target_hint: str | None = None,
 ) -> DispatchResult:
-    """按 ``fallback_chain`` 顺序降级，每级试对应 handler；首个非 ``None`` 即返回。
+    """Only dispatch an explicitly authorized A2A target.
 
     Parameters
     ----------
@@ -99,8 +76,7 @@ async def dispatch_by_routing(
     available_roles:
         orchestrator 注册的 role 列表（与 ``run_agent_loop.roles`` 同源）。
     fallback_chain:
-        降级链；缺省 = ``DEFAULT_CHAIN``（a2a → kernel_role → embedding_match →
-        keyword_substring）。
+        仅 ``a2a`` 可作为派发授权；其他历史 fallback kind 会被忽略。
     a2a_handler / kernel_role_handler / embedding_handler / keyword_substring_handler:
         各级的 handler；``None`` = 跳过该级。
     semantic_router:
@@ -124,10 +100,11 @@ async def dispatch_by_routing(
             reason="no available roles",
         )
 
-    # 让 embedding_handler 缺省时复用 caller 传入的 router（共享 cache）
-    _embedding_router = semantic_router
-
-    last_candidates: tuple[CandidateRole, ...] = ()
+    authorized_targets = {
+        str(role.get("role") or "") for role in available_roles
+    } | {
+        str(role.get("rid") or "") for role in available_roles
+    }
 
     for step in chain:
         kind = step.kind
@@ -139,50 +116,20 @@ async def dispatch_by_routing(
                 if not hint:
                     continue
                 result = await a2a_handler(hint, user_message)
-                if result is not None:
+                if result is not None and result.target_rid in authorized_targets:
                     return result
-
-            elif kind == "kernel_role":
-                if kernel_role_handler is None:
-                    continue
-                hint = step.target or target_hint
-                if not hint:
-                    continue
-                result = kernel_role_handler(hint, user_message)
-                # 仅当 handler 真正选定 target_rid 才算命中；
-                # SUPERAI 默认 / 无效分类 → 让链继续降级。
-                if result is not None and result.target_rid:
-                    return result
-
-            elif kind == "embedding_match":
-                if embedding_handler is None:
-                    continue
-                result = embedding_handler(user_message, available_roles)
-                if result is not None and result.target_rid:
-                    if result.candidates:
-                        last_candidates = result.candidates
-                    return result
-
-            elif kind == "keyword_substring":
-                if keyword_substring_handler is None:
-                    continue
-                result = keyword_substring_handler(user_message, available_roles)
-                if result is not None and result.target_rid:
-                    return result
-
-            else:
-                # 未知 kind：跳过
-                continue
 
         except Exception:
-            # 任何 handler 异常 → 降级到下一级
-            continue
+            return DispatchResult(
+                source="none",
+                target_rid=None,
+                reason="authorized a2a handler failed",
+            )
 
     return DispatchResult(
         source="none",
         target_rid=None,
-        reason="no fallback step matched",
-        candidates=last_candidates,
+        reason="no authorized a2a target matched",
     )
 
 
@@ -279,13 +226,13 @@ def make_kernel_role_handler() -> KernelRoleHandler:
 
 
 __all__ = [
-    "A2AHandler",
     "DEFAULT_CHAIN",
+    "A2AHandler",
     "DispatchResult",
     "EmbeddingHandler",
     "FallbackStep",
-    "KeywordHandler",
     "KernelRoleHandler",
+    "KeywordHandler",
     "dispatch_by_routing",
     "make_embedding_match_handler",
     "make_kernel_role_handler",

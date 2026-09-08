@@ -133,6 +133,42 @@ class AsyncCopilotClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def ont_propose_action(
+        self,
+        rid: str,
+        tenant_id: str,
+        parameters: dict[str, Any] | None = None,
+        target_iid: str = "",
+        fallback_token: str | None = None,
+    ) -> dict[str, Any]:
+        """Create an action proposal; execution remains human-confirmed."""
+        import httpx
+
+        url = f"{self.ont_url()}/v2/action-types/{rid.replace('/', '%2F')}/propose"
+        payload = {
+            "parameters": parameters or {},
+            "target_iid": target_iid,
+            "impact_summary": "Copilot requested a governed ActionType execution.",
+        }
+        if fallback_token:
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                resp = await client.post(
+                    url,
+                    json=payload,
+                    headers={
+                        "Authorization": f"Bearer {fallback_token}",
+                        "X-Tenant-Id": tenant_id,
+                    },
+                )
+        else:
+            async with httpx.AsyncClient(
+                auth=self._middleware(tenant_id),
+                timeout=self.timeout_seconds,
+            ) as client:
+                resp = await client.post(url, json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
     # --- AI model registry (IAM ai_model 表，经 gateway) ----------------------
     async def list_ai_models(
         self,

@@ -27,6 +27,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from .routing_policy import RoutingPolicy
+
 
 class EmbedderLike(Protocol):
     """Minimal Embedder contract.
@@ -121,14 +123,29 @@ class SemanticRouter:
         self,
         *,
         embedder: EmbedderLike | None = None,
-        keyword_boost: float = KEYWORD_BOOST,
-        ttl_seconds: float = DEFAULT_TTL_SECONDS,
+        keyword_boost: float | None = None,
+        ttl_seconds: float | None = None,
+        policy: RoutingPolicy | None = None,
     ) -> None:
         self._embedder: EmbedderLike = embedder or HashEmbedder()
-        self._keyword_boost = float(keyword_boost)
-        self._ttl = float(ttl_seconds)
-        self._cache: dict[str, _CachedRoleEmbedding] = {}
+        base_policy = policy or RoutingPolicy()
+        self._policy = RoutingPolicy(
+            top_k=base_policy.top_k,
+            minimum_relevance=base_policy.minimum_relevance,
+            keyword_boost=(
+                base_policy.keyword_boost if keyword_boost is None else float(keyword_boost)
+            ),
+            cache_ttl_seconds=(
+                base_policy.cache_ttl_seconds if ttl_seconds is None else float(ttl_seconds)
+            ),
+            version=base_policy.version,
+        )
+        self._cache: dict[tuple[str, str, str, str], _CachedRoleEmbedding] = {}
         self._lock = threading.Lock()
+
+    @property
+    def policy(self) -> RoutingPolicy:
+        return self._policy
 
     @property
     def embedder(self) -> EmbedderLike:
@@ -183,20 +200,28 @@ class SemanticRouter:
                     tags.append(str(n))
         return tuple(tags)
 
-    def _get_role_embedding(self, role: dict[str, Any]) -> _CachedRoleEmbedding:
+    def _get_role_embedding(
+        self,
+        role: dict[str, Any],
+        *,
+        tenant_id: str,
+        actor_roles_digest: str,
+        capability_version: str,
+    ) -> _CachedRoleEmbedding:
         slug = str(role.get("role") or "")
         rid = str(role.get("rid") or slug)
         text = self._build_role_text(role)
         tags = self._extract_tags(role)
         display = str(role.get("name") or slug)
         now = time.monotonic()
+        cache_key = (tenant_id, actor_roles_digest, capability_version, slug)
 
         with self._lock:
-            cached = self._cache.get(slug)
+            cached = self._cache.get(cache_key)
             if (
                 cached is not None
                 and cached.text == text
-                and (now - cached.timestamp) < self._ttl
+                and (now - cached.timestamp) < self._policy.cache_ttl_seconds
             ):
                 return cached
             embedding = self._embedder.embed(text) if text else []
@@ -209,7 +234,7 @@ class SemanticRouter:
                 embedding=embedding,
                 timestamp=now,
             )
-            self._cache[slug] = entry
+            self._cache[cache_key] = entry
             return entry
 
     @staticmethod
@@ -230,7 +255,10 @@ class SemanticRouter:
         user_message: str,
         available_roles: list[dict[str, Any]],
         *,
-        top_k: int = DEFAULT_TOP_K,
+        top_k: int | None = None,
+        tenant_id: str | None = None,
+        actor_roles_digest: str | None = None,
+        capability_version: str | None = None,
     ) -> list[CandidateRole]:
         """对 ``user_message`` 与 ``roles`` 计算相似度 + 关键词加权，返回 top_k 候选。
 
@@ -242,33 +270,48 @@ class SemanticRouter:
             return []
 
         qvec = self._embedder.embed(user_message)
+        scope = (
+            tenant_id or "legacy",
+            actor_roles_digest or "legacy",
+            capability_version or "legacy",
+        )
         candidates: list[CandidateRole] = []
         for role in available_roles:
-            entry = self._get_role_embedding(role)
+            entry = self._get_role_embedding(
+                role,
+                tenant_id=scope[0],
+                actor_roles_digest=scope[1],
+                capability_version=scope[2],
+            )
             sim = (
                 self._cosine(qvec, entry.embedding)
                 if qvec and entry.embedding
                 else 0.0
             )
             hit = self._keyword_hit(user_message, entry.capability_tags)
-            adjusted = sim + self._keyword_boost if hit else sim
+            adjusted = max(
+                0.0,
+                sim + self._policy.keyword_boost if hit else sim,
+            )
             if hit and sim > 0:
                 reason = "embedding cosine + keyword hit"
             elif hit:
                 reason = "keyword hit (no cosine signal)"
             else:
                 reason = "embedding cosine"
-            candidates.append(CandidateRole(
-                role_slug=entry.role_slug,
-                role_rid=entry.role_rid,
-                display_name=entry.display_name,
-                capability_tags=entry.capability_tags,
-                similarity=float(adjusted),
-                reason=reason,
-            ))
+            if adjusted >= self._policy.minimum_relevance:
+                candidates.append(CandidateRole(
+                    role_slug=entry.role_slug,
+                    role_rid=entry.role_rid,
+                    display_name=entry.display_name,
+                    capability_tags=entry.capability_tags,
+                    similarity=float(adjusted),
+                    reason=reason,
+                ))
 
         candidates.sort(key=lambda c: c.similarity, reverse=True)
-        return candidates[: max(0, top_k)]
+        bounded_top_k = self._policy.top_k if top_k is None else max(0, top_k)
+        return candidates[:bounded_top_k]
 
 
 def semantic_route(

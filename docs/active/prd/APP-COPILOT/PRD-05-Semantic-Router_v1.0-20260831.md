@@ -1,8 +1,8 @@
 # PRD-05：Semantic Router
 
 > 关联批次：MP-SR-01 · 所属 Sprint：0
-> 状态：`[x] Product Approved — implementation pending` · 2026-08-31
-> 事实基线：`docs/active/delivery/evidence/MP-SR-01-ACCEPTANCE.md`
+> 状态：`[~] Product Approved — local code acceptance passed; production validation remains` · 2026-08-31
+> 事实基线：`docs/active/delivery/evidence/PRD-05-08-LOCAL-DOCKER-ACCEPTANCE-20260831.md`
 
 ## 1. 目标与边界
 
@@ -52,6 +52,8 @@
 
 ## 7. 当前证据与待确认决策
 
-已具备离线路由、dispatcher、SSE 和 SuperAI 展示的条件验收；尚未具备真实 provider/staging 证据。
+本地代码验收已覆盖授权路由、dispatcher、SSE 与 SuperAI 展示：真实用户入口
+`/superai/chat` 在“Agent 调度”模式下可按本轮展示候选、最终选择和命中路径；尚未具备真实
+provider/staging 证据，保持 `[~]`。
 
 产品评审需要确认：默认 top-k 与最小相关性阈值、用户是否可手动改选候选、以及路由审计数据的保留期限。未确认前采用“仅展示、不可人工改选”的安全默认值。

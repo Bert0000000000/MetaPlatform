@@ -1,8 +1,8 @@
 # PRD-07：Ontology Dedup
 
 > 关联批次：MP-DEDUP-01 · 所属 Sprint：0
-> 状态：`[x] Product Approved — implementation pending` · 2026-08-31
-> 事实基线：`docs/active/delivery/evidence/MP-DEDUP-01-ACCEPTANCE.md`
+> 状态：`[~] Product Approved — local Docker lifecycle accepted; production validation remains` · 2026-08-31
+> 事实基线：`docs/active/delivery/evidence/PRD-05-08-LOCAL-DOCKER-ACCEPTANCE-20260831.md`
 
 ## 1. 目标与边界
 
@@ -43,5 +43,9 @@ Ontology Studio 在创建冲突时提供可行动提示，在 merge drawer 中�
 正式 GA 验收必须使用真实 PostgreSQL/RLS，验证并发创建、事务失败、跨租户访问、合并后引用一致性与回滚/补偿；并以真实 embedding provider 和目标数据规模提供索引与性能证据。此前状态保持 `[~]`。
 
 ## 7. 产品评审项
+
+本地 Docker 已经以真实 OIDC/Gateway/PostgreSQL 执行候选预检与 `merge_suggestion`
+的 `pending → confirmed → executed`，并回读终态；生产 PostgreSQL/RLS、真实 embedding
+provider 和性能/补偿证据尚未补齐，保持 `[~]`。
 
 需要确认相似度展示阈值、归档类型的默认可见性、合并后是否支持受控撤销，以及高影响合并的双人审批策略。默认策略是只推荐、不自动合并、归档只读可见、单人显式确认。

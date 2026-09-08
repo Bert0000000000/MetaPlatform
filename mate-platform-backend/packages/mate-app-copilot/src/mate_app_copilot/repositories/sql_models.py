@@ -10,10 +10,36 @@ pattern and will be added incrementally.
 """
 from __future__ import annotations
 
-from sqlalchemy import REAL, Boolean, Integer, String, Text
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import JSON, REAL, Boolean, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base
+
+
+class OutboxEventORM(Base):
+    """Durable PLATFORM-EVENT-01 outbox row owned by the shared database."""
+
+    __tablename__ = "outbox_event"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    aggregate_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    aggregate_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    lineage_hints: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    occurred_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    trace_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True,
+    )
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", index=True)
+    last_error: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
 
 class ConversationORM(Base):

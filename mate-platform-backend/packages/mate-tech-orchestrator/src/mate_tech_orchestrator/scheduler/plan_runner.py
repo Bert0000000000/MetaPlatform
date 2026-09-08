@@ -300,21 +300,8 @@ class PlanRunner:
         """HITL 合一核心：confirm + execute/apply。"""
         assert self._ont is not None
         await self._ont.confirm(tenant_id, proposal_id, confirmed_by="reviewer", token=token)
-        kind = str(waiting_output.get("action_kind") or "action")
-        target = str(waiting_output.get("target") or "")
-        if kind == "create_instance":
-            out = await self._ont.execute_proposal(tenant_id, proposal_id, token=token)
-            return {"proposal_id": proposal_id, "confirmed": True, "executed": out}
-        if kind == "model_type":
-            out = await self._ont.execute_proposal(tenant_id, proposal_id, token=token)
-            return {"proposal_id": proposal_id, "confirmed": True, "executed": out}
-        out = await self._ont.apply(
-            tenant_id, target,
-            parameters=dict(waiting_output.get("parameters") or {}),
-            target_iid=str(waiting_output.get("target_iid") or ""),
-            proposal_id=proposal_id, token=token,
-        )
-        return {"proposal_id": proposal_id, "confirmed": True, "applied": out}
+        out = await self._ont.execute_proposal(tenant_id, proposal_id, token=token)
+        return {"proposal_id": proposal_id, "confirmed": True, "executed": out}
 
     async def _dispatch_step(
         self, tenant_id: str, step: PlanStep, state: PlanState,

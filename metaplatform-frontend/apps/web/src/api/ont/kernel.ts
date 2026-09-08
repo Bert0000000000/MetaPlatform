@@ -325,7 +325,29 @@ export interface ProposalOperationResponse {
   affected_individuals?: number;
   affected_links?: number;
   created_rid?: string;
+  action_rid?: string;
+  target_iid?: string;
+  audit_id?: string;
+  outbox_event_ids?: string[];
+  side_effects_emitted?: string[];
   message?: string;
+}
+
+/** Proposal 的服务端事实状态（用于确认/执行后的权威刷新）。 */
+export interface ProposalRecord {
+  proposal_id: string;
+  status: string;
+  kind: ProposalKind;
+  confirmed_by?: string | null;
+  confirmed_at?: string | null;
+}
+
+export async function getProposal(id: string): Promise<ProposalRecord> {
+  const resp = await apiClient.get(v2(`/proposals/${encodeURIComponent(id)}`));
+  const payload = resp.data as { data?: ProposalRecord } | ProposalRecord;
+  return payload && typeof payload === 'object' && 'data' in payload && payload.data
+    ? payload.data
+    : payload as ProposalRecord;
 }
 
 /**
@@ -343,7 +365,9 @@ export async function getProposalPreview(id: string): Promise<ProposalPreview> {
 
 /** 确认 Proposal（POST /ont/v2/proposals/{id}/confirm）。 */
 export async function confirmProposal(id: string): Promise<ProposalOperationResponse> {
-  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/confirm`));
+  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/confirm`), {}, {
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
   const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
   if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
     return (payload as { data: ProposalOperationResponse }).data;
@@ -353,7 +377,9 @@ export async function confirmProposal(id: string): Promise<ProposalOperationResp
 
 /** 执行已确认的 Proposal（POST /ont/v2/proposals/{id}/execute）。 */
 export async function executeProposal(id: string): Promise<ProposalOperationResponse> {
-  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/execute`));
+  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/execute`), {}, {
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
   const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
   if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
     return (payload as { data: ProposalOperationResponse }).data;
@@ -363,7 +389,9 @@ export async function executeProposal(id: string): Promise<ProposalOperationResp
 
 /** 拒绝 Proposal（POST /ont/v2/proposals/{id}/reject）。 */
 export async function rejectProposal(id: string): Promise<ProposalOperationResponse> {
-  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/reject`));
+  const resp = await apiClient.post(v2(`/proposals/${encodeURIComponent(id)}/reject`), {}, {
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
   const payload = resp.data as { data?: ProposalOperationResponse } | ProposalOperationResponse;
   if (payload && typeof payload === 'object' && 'data' in payload && (payload as { data?: ProposalOperationResponse }).data) {
     return (payload as { data: ProposalOperationResponse }).data;

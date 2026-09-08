@@ -14,7 +14,7 @@ import pytest
 
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual
-from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
+from mate_kernel.ontology.types import ActionType, ObjectType, Property, PropertyFormat
 
 PG_DSN = os.getenv(
     "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test",
@@ -238,19 +238,129 @@ class TestDedupHttpE2E:
         # 2) confirm
         r = client_with_ctx.post(
             f"/api/v1/ont/v2/proposals/{pid}/confirm",
-            json={"confirmed_by": "alice"},
+            json={"confirmed_by": "untrusted-client-identity"},
+            headers={"Idempotency-Key": "dedup-lifecycle-confirm-1"},
         )
         assert r.status_code == 200, f"got {r.status_code}: {r.text}"
         assert r.json()["status"] == "confirmed"
+        assert r.json()["confirmed_by"] == "alice"
 
-        # 3) execute
-        r = client_with_ctx.post(f"/api/v1/ont/v2/proposals/{pid}/execute")
+        # 3) execute requires an idempotency key as well
+        missing_execute_key = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/execute",
+        )
+        assert missing_execute_key.status_code == 400
+
+        r = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{pid}/execute",
+            headers={"Idempotency-Key": "dedup-lifecycle-execute-1"},
+        )
         assert r.status_code == 200, f"got {r.status_code}: {r.text}"
         body = r.json()
         assert body["kind"] == "merge_suggestion"
         assert body["source_rid"] == "ont.acme.obj.crm.customer.v1"
         assert body["affected_individuals"] == 1
 
-        # 4) final proposal status = applied
+        # 4) final proposal status = executed
         r = client_with_ctx.get(f"/api/v1/ont/v2/proposals/{pid}")
-        assert r.json()["status"] == "applied"
+        assert r.json()["status"] == "executed"
+
+    def test_confirm_requires_idempotency_key_and_replays_for_authenticated_actor(
+        self, client_with_ctx, pg_repo,
+    ):
+        pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.customer.v1", "Customer"))
+        pg_repo.upsert_object_type(_ot("ont.acme.obj.crm.client.v1", "Client"))
+        proposal = pg_repo.propose_merge(
+            "ont.acme.obj.crm.customer.v1",
+            "ont.acme.obj.crm.client.v1",
+            similarity=0.92,
+            impact_summary="test proposal",
+        )
+
+        missing_key = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal.proposal_id}/confirm",
+            json={"confirmed_by": "spoofed-user"},
+        )
+        assert missing_key.status_code == 400
+
+        headers = {"Idempotency-Key": "authenticated-confirm-1"}
+        confirmed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal.proposal_id}/confirm",
+            json={"confirmed_by": "spoofed-user"},
+            headers=headers,
+        )
+        assert confirmed.status_code == 200, confirmed.text
+        assert confirmed.json()["confirmed_by"] == "alice"
+
+        replayed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal.proposal_id}/confirm",
+            json={"confirmed_by": "different-spoofed-user"},
+            headers=headers,
+        )
+        assert replayed.status_code == 200, replayed.text
+        assert replayed.json()["proposal_id"] == confirmed.json()["proposal_id"]
+        assert replayed.json()["status"] == "confirmed"
+        assert replayed.json()["confirmed_by"] == "alice"
+        assert [event["to_status"] for event in pg_repo.list_proposal_events(proposal.proposal_id)] == [
+            "pending", "confirmed",
+        ]
+
+    def test_action_executes_only_through_confirmed_proposal_and_returns_evidence(
+        self, client_with_ctx, pg_repo,
+    ):
+        object_rid = "ont.acme.obj.ops.order.v1"
+        action_rid = "ont.acme.act.ops.review-order.v1"
+        target_iid = "ont.acme.ind.order.42"
+        pg_repo.upsert_object_type(_ot(object_rid, "Order"))
+        pg_repo.upsert_action_type(
+            ActionType(
+                rid=ClassRef(action_rid),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=("create_follow_up",),
+                function_ref=ClassRef("ont.acme.fn.ops.review-order.v1"),
+                on=(ClassRef(object_rid),),
+            )
+        )
+        pg_repo.create_individual(_ind(target_iid, object_rid, "42"))
+
+        proposed = client_with_ctx.post(
+            f"/api/v1/ont/v2/action-types/{action_rid}/propose",
+            json={"target_iid": target_iid, "parameters": {}, "impact_summary": "review"},
+        )
+        assert proposed.status_code == 200, proposed.text
+        proposal_id = proposed.json()["proposal_id"]
+
+        direct_apply = client_with_ctx.post(
+            f"/api/v1/ont/v2/action-types/{action_rid}/apply",
+            json={"target_iid": target_iid, "parameters": {}},
+        )
+        assert direct_apply.status_code == 410
+
+        confirmed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal_id}/confirm",
+            json={},
+            headers={"Idempotency-Key": "action-confirm-1"},
+        )
+        assert confirmed.status_code == 200, confirmed.text
+        assert confirmed.json()["confirmed_by"] == "alice"
+
+        executed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal_id}/execute",
+            headers={"Idempotency-Key": "action-execute-1"},
+        )
+        assert executed.status_code == 200, executed.text
+        receipt = executed.json()
+        assert receipt["kind"] == "action"
+        assert receipt["action_rid"] == action_rid
+        assert receipt["target_iid"] == target_iid
+        assert receipt["audit_id"]
+        assert receipt["outbox_event_ids"]
+        assert receipt["side_effects_emitted"] == ["create_follow_up"]
+
+        replayed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal_id}/execute",
+            headers={"Idempotency-Key": "action-execute-1"},
+        )
+        assert replayed.status_code == 200, replayed.text
+        assert replayed.json() == receipt

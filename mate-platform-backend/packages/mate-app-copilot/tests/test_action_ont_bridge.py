@@ -23,6 +23,12 @@ KERNEL_RESPONSE: dict[str, Any] = {
     "audit_id": "audit-123",
     "side_effects_emitted": ["notify_email", "audit_log"],
 }
+KERNEL_PROPOSAL: dict[str, Any] = {
+    "proposal_id": "prop-123",
+    "action_rid": "ont.tenant-acme.act.approve-leave.v1",
+    "status": "pending",
+    "kind": "action",
+}
 
 
 class _FakeClient(AsyncCopilotClient):
@@ -44,6 +50,13 @@ class _FakeClient(AsyncCopilotClient):
         if self._fail:
             raise RuntimeError("kernel unavailable")
         return dict(KERNEL_RESPONSE, action_rid=rid)
+
+    async def ont_propose_action(self, rid, tenant_id, parameters=None,
+                                 target_iid="", fallback_token=None) -> dict[str, Any]:
+        self._calls.append(("propose", rid, tenant_id, parameters, target_iid, fallback_token))
+        if self._fail:
+            raise RuntimeError("kernel unavailable")
+        return dict(KERNEL_PROPOSAL, action_rid=rid)
 
 
 def _dummy_auth():
@@ -97,26 +110,37 @@ def auth_headers() -> dict[str, str]:
 
 
 class TestOntBridgeExecuteByBody:
-    def test_action_id_snake_case_bridges_to_kernel(self, client, auth_headers):
-        """后端原有 snake_case action_id → 走 kernel 落库 + 回显。"""
+    def test_mapped_action_returns_pending_confirmation_proposal(self, client, auth_headers):
+        """A mapped action cannot report completion before human confirmation."""
+        r = client.post(
+            "/api/v1/copilot/actions/execute",
+            json={"action_id": "act-approve-leave", "params": {"decision": "approve"}},
+            headers=auth_headers,
+        )
+        assert r.status_code == 202, r.text
+        body = r.json()
+        assert body["status"] == "pending_confirmation"
+        assert body["proposal"]["proposal_id"] == "prop-123"
+        assert body["proposal"]["status"] == "pending"
+        fake = app_client(client)
+        assert fake._calls[0][0] == "propose"
+
+    def test_action_id_snake_case_creates_kernel_proposal(self, client, auth_headers):
+        """snake_case action_id creates a proposal instead of a side effect."""
         c = client
         r = c.post(
             "/api/v1/copilot/actions/execute",
             json={"action_id": "act-approve-leave", "params": {"decision": "approve"}},
             headers=auth_headers,
         )
-        assert r.status_code == 200, r.text
+        assert r.status_code == 202, r.text
         body = r.json()
-        assert body["status"] == "completed"
+        assert body["status"] == "pending_confirmation"
         assert body["action_id"] == "act-approve-leave"
-        out = body["output"]
-        assert out["side_effects_emitted"] == ["notify_email", "audit_log"]
-        assert out["applied_at"] == KERNEL_RESPONSE["applied_at"]
-        assert out["action_rid"] == "ont.tenant-acme.act.approve-leave.v1"
-        # 桥接调用确实发生了
+        assert body["proposal"]["proposal_id"] == "prop-123"
         fake = app_client(client)
-        assert fake._calls, "ont_apply_action 未被调用"
-        rid, tid, params, target, _ft = fake._calls[0]
+        assert fake._calls, "ont_propose_action 未被调用"
+        _, rid, tid, params, target, _ft = fake._calls[0]
         assert rid == "ont.tenant-acme.act.approve-leave.v1"
         assert tid == "tenant-acme"
         assert params == {"decision": "approve"}
@@ -130,15 +154,15 @@ class TestOntBridgeExecuteByBody:
             json={"actionId": "act-close-ticket", "params": {"resolution": "fixed"}},
             headers=auth_headers,
         )
-        assert r.status_code == 200, r.text
+        assert r.status_code == 202, r.text
         body = r.json()
         assert body["action_id"] == "act-close-ticket"
-        assert body["output"]["side_effects_emitted"] == ["notify_email", "audit_log"]
+        assert body["status"] == "pending_confirmation"
         fake = app_client(client)
-        assert fake._calls[0][0] == "ont.tenant-acme.act.close-ticket.v1"
+        assert fake._calls[0][1] == "ont.tenant-acme.act.close-ticket.v1"
 
-    def test_kernel_failure_falls_back_to_emit_only(self, outbox):
-        """kernel 不可用 → 仍 completed（emit-only 降级），不发 kernel 字段。"""
+    def test_kernel_failure_rejects_mapped_action_without_emit_only_fallback(self, outbox):
+        """A mapped action fails closed when proposal creation is unavailable."""
         from mate_app_copilot.main import create_app
         from mate_app_copilot.repositories import in_memory as in_memory_repo
 
@@ -152,15 +176,10 @@ class TestOntBridgeExecuteByBody:
                 json={"action_id": "act-approve-leave", "params": {"decision": "approve"}},
                 headers=_acme_headers(),
             )
-        assert r.status_code == 200, r.text
-        body = r.json()
-        assert body["status"] == "completed"
-        assert "side_effects_emitted" not in body["output"]
-        assert "applied_at" not in body["output"]
-        assert "action_rid" not in body["output"]
-        # outbox 事件仍发出
+        assert r.status_code == 503, r.text
+        assert "was not executed" in r.json()["detail"]
         events = [r.event for r in outbox.all_records()]
-        assert any(e.type == "copilot.action.executed" for e in events)
+        assert not any(e.type.startswith("copilot.action.") for e in events)
         in_memory_repo.reset_store()
 
     def test_unmapped_action_stays_emit_only(self, client, auth_headers):
@@ -170,7 +189,7 @@ class TestOntBridgeExecuteByBody:
             json={"action_id": "act-send-email", "params": {"to": "a@b.c"}},
             headers=auth_headers,
         )
-        assert r.status_code == 200, r.text
+        assert r.status_code == 202, r.text
         assert "applied_at" not in r.json()["output"]
         assert app_client(client)._calls == []
 
@@ -190,11 +209,11 @@ class TestOntBridgeExecutePath:
             json={"params": {"decision": "approve", "target_iid": "ont.x.ind.1"}},
             headers=auth_headers,
         )
-        assert r.status_code == 200, r.text
+        assert r.status_code == 202, r.text
         body = r.json()
-        assert body["output"]["side_effects_emitted"] == ["notify_email", "audit_log"]
+        assert body["status"] == "pending_confirmation"
         fake = app_client(client)
-        rid, _tid, params, target, _ft = fake._calls[0]
+        _, rid, _tid, params, target, _ft = fake._calls[0]
         # target_iid 从 params 弹出并单独传递
         assert target == "ont.x.ind.1"
         assert "target_iid" not in params

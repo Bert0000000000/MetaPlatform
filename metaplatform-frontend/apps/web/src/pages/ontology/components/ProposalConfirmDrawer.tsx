@@ -16,8 +16,8 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, X } from 'lucide-react';
 import {
-  confirmProposal, executeProposal, getProposalPreview, rejectProposal,
-  type ProposalPreview,
+  confirmProposal, executeProposal, getProposal, getProposalPreview, rejectProposal,
+  type ProposalPreview, type ProposalRecord,
 } from '@/api/ont/kernel';
 import OntologyStagingPreview from './OntologyStagingPreview';
 
@@ -49,12 +49,15 @@ export default function ProposalConfirmDrawer({
   onClosed,
 }: ProposalConfirmDrawerProps) {
   const [preview, setPreview] = useState<ProposalPreview | null>(null);
+  const [authoritativeProposal, setAuthoritativeProposal] = useState<ProposalRecord | null>(null);
   const [state, setState] = useState<DrawerState>('loading');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [executeResult, setExecuteResult] = useState<{
     created_rid?: string;
     affected_individuals?: number;
     affected_links?: number;
+    audit_id?: string;
+    outbox_event_ids?: string[];
   } | null>(null);
 
   // open=true + proposalId 变化 → 加载 preview
@@ -64,6 +67,7 @@ export default function ProposalConfirmDrawer({
     setState('loading');
     setErrorMsg(null);
     setPreview(null);
+    setAuthoritativeProposal(null);
     setExecuteResult(null);
     (async () => {
       try {
@@ -87,6 +91,7 @@ export default function ProposalConfirmDrawer({
   const close = (action: 'cancel' | 'reject' | 'execute') => {
     if (proposalId && action !== 'execute') onClosed?.(proposalId, action);
     setPreview(null);
+    setAuthoritativeProposal(null);
     setExecuteResult(null);
     setErrorMsg(null);
     setState('loading');
@@ -114,6 +119,9 @@ export default function ProposalConfirmDrawer({
     setErrorMsg(null);
     try {
       await confirmProposal(proposalId);
+      const confirmed = await getProposal(proposalId);
+      if (confirmed.status !== 'confirmed') throw new Error(`服务端确认状态异常：${confirmed.status}`);
+      setAuthoritativeProposal(confirmed);
     } catch (e) {
       const msg = (e as Error).message || '确认失败';
       setErrorMsg(msg);
@@ -123,10 +131,15 @@ export default function ProposalConfirmDrawer({
     setState('executing');
     try {
       const result = await executeProposal(proposalId);
+      const executed = await getProposal(proposalId);
+      if (executed.status !== 'executed') throw new Error(`服务端执行状态异常：${executed.status}`);
+      setAuthoritativeProposal(executed);
       const execSummary = {
         created_rid: result.created_rid,
         affected_individuals: result.affected_individuals,
         affected_links: result.affected_links,
+        audit_id: result.audit_id,
+        outbox_event_ids: result.outbox_event_ids,
       };
       setExecuteResult(execSummary);
       setState('done');
@@ -143,6 +156,13 @@ export default function ProposalConfirmDrawer({
 
   const kindLabel = KIND_FALLBACK_LABEL[preview?.kind ?? initialKind ?? '']
     ?? `未知类型（${preview?.kind ?? initialKind ?? '?'}）`;
+  const serverStatus = authoritativeProposal?.status ?? preview?.status ?? 'pending';
+  const statusLabel: Record<string, string> = {
+    pending: '待确认',
+    confirmed: '已确认',
+    rejected: '已拒绝',
+    executed: '已执行',
+  };
 
   return (
     <div>
@@ -177,7 +197,7 @@ export default function ProposalConfirmDrawer({
         }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 2 }}>
-              AI 提案 · 待确认
+              AI 提案 · {statusLabel[serverStatus] ?? serverStatus}
             </div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
               {preview?.title ?? kindLabel}
@@ -271,6 +291,15 @@ export default function ProposalConfirmDrawer({
                   已执行成功
                 </strong>
                 <div style={{ color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+                  <>
+                    服务端状态：<code>{serverStatus}</code><br />
+                  </>
+                  {authoritativeProposal?.confirmed_by && (
+                    <>确认人：<code>{authoritativeProposal.confirmed_by}</code><br /></>
+                  )}
+                  {authoritativeProposal?.confirmed_at && (
+                    <>确认时间：<code>{authoritativeProposal.confirmed_at}</code><br /></>
+                  )}
                   {executeResult.created_rid && (
                     <>新建 rid：<code>{executeResult.created_rid}</code><br /></>
                   )}
@@ -280,6 +309,12 @@ export default function ProposalConfirmDrawer({
                   {typeof executeResult.affected_links === 'number' && (
                     <>受影响 LinkInstance：{executeResult.affected_links}</>
                   )}
+                  {executeResult.audit_id && (
+                    <>审计记录：<code>{executeResult.audit_id}</code><br /></>
+                  )}
+                  {executeResult.outbox_event_ids?.length ? (
+                    <>Outbox 事件：<code>{executeResult.outbox_event_ids.join(', ')}</code></>
+                  ) : null}
                 </div>
               </div>
             </div>

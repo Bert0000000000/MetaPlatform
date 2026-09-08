@@ -7,7 +7,14 @@ export async function post<T>(url: string, body?: unknown): Promise<T> { return 
 export async function put<T>(url: string, body?: unknown): Promise<T> { return data(await apiClient.put<T>(url, body)); }
 export async function del<T>(url: string): Promise<T> { return data(await apiClient.delete<T>(url)); }
 
-import type { Citation, MultimodalModel } from './types';
+import type {
+  Citation,
+  MultimodalModel,
+  RoutingCandidate,
+  RoutingDecision,
+  RoutingSelected,
+  RoutingTakenPath,
+} from './types';
 import { getToken, getUser } from '@mate/shared';
 export interface StreamMessage {
   role: 'system' | 'user' | 'assistant';
@@ -28,10 +35,18 @@ export interface AgentResultEvent {
   status: 'success' | 'error';
   result: Record<string, unknown>;
 }
+export interface RoutingDecisionEvent {
+  decision: RoutingDecision;
+}
+export interface RoutingDecisionErrorEvent {
+  message: string;
+}
 export interface StreamAgentCallbacks {
   onReasoning?: (text: string) => void;
   onToolCall?: (call: AgentCallEvent) => void;
   onToolResult?: (result: AgentResultEvent) => void;
+  onRoutingDecision?: (event: RoutingDecisionEvent) => void;
+  onRoutingDecisionError?: (event: RoutingDecisionErrorEvent) => void;
   onDelta: (text: string) => void;
   onDone: (content: string, citations: Citation[]) => void;
   onError: (message: string) => void;
@@ -237,7 +252,17 @@ export async function streamAgentChat(
       const data = trimmed.slice(5).trim();
       if (!data || data === '[DONE]') continue;
       try {
-        const parsed = JSON.parse(data) as Record<string, any>;
+        const parsed = JSON.parse(data) as unknown;
+        const routingEvent = parseRoutingDecisionStreamEvent(parsed);
+        if (routingEvent.kind === 'valid') {
+          callbacks.onRoutingDecision?.({ decision: routingEvent.decision });
+          continue;
+        }
+        if (routingEvent.kind === 'invalid') {
+          callbacks.onRoutingDecisionError?.({ message: routingEvent.message });
+          continue;
+        }
+        if (!isObjectRecord(parsed)) continue;
         const type = parsed.type as string | undefined;
         if (type === 'reasoning') {
           callbacks.onReasoning?.(String(parsed.text ?? ''));
@@ -257,11 +282,11 @@ export async function streamAgentChat(
           const delta = parsed.choices[0].delta.content ?? '';
           fullContent += delta;
           callbacks.onDelta(delta);
-        } else if (isErrorEvent(parsed)) {
+        } else if (typeof parsed.errorMessage === 'string') {
           callbacks.onError(parsed.errorMessage || 'Agent 流式失败');
           finished = true;
-        } else if (isCitationEvent(parsed)) {
-          citations.push(...(parsed.citations ?? []));
+        } else if (Array.isArray(parsed.citations)) {
+          citations.push(...(parsed.citations as Citation[]));
         }
       } catch {
         // 忽略无法解析的行
@@ -314,4 +339,109 @@ function isCitationEvent(value: unknown): value is CitationEvent {
     'citations' in value &&
     Array.isArray((value as CitationEvent).citations)
   );
+}
+
+export function parseRoutingDecisionEvent(value: unknown): RoutingDecision | null {
+  const result = parseRoutingDecisionStreamEvent(value);
+  return result.kind === 'valid' ? result.decision : null;
+}
+
+type RoutingDecisionParseResult =
+  | { kind: 'not_routing' }
+  | { kind: 'invalid'; message: string }
+  | { kind: 'valid'; decision: RoutingDecision };
+
+function parseRoutingDecisionStreamEvent(value: unknown): RoutingDecisionParseResult {
+  if (!isObjectRecord(value) || value.type !== 'routing_decision') return { kind: 'not_routing' };
+
+  if (value.stage !== 'pre_screen' && value.stage !== 'final') {
+    return invalidRoutingDecision();
+  }
+  if (!Array.isArray(value.candidates) || !value.candidates.every(isRoutingCandidate)) {
+    return invalidRoutingDecision();
+  }
+  if (value.stage === 'pre_screen' && value.outcome != null) {
+    return invalidRoutingDecision();
+  }
+  if (value.stage === 'final' && value.outcome !== 'selected' && value.outcome !== 'denied') {
+    return invalidRoutingDecision();
+  }
+
+  const selected = parseRoutingSelected(value.selected);
+  if (value.stage === 'final' && value.outcome === 'selected' && !selected) {
+    return invalidRoutingDecision();
+  }
+  if (value.stage === 'final' && value.outcome === 'denied' && selected) {
+    return invalidRoutingDecision();
+  }
+
+  const candidates = value.candidates.map((candidate) => ({
+    role_slug: candidate.role_slug,
+    role_rid: typeof candidate.role_rid === 'string' ? candidate.role_rid : undefined,
+    display_name: candidate.display_name,
+    capability_tags: Array.isArray(candidate.capability_tags)
+      ? candidate.capability_tags.filter((tag): tag is string => typeof tag === 'string')
+      : undefined,
+    similarity: candidate.similarity,
+    reason: typeof candidate.reason === 'string' ? candidate.reason : undefined,
+  }));
+
+  const takenPath = parseTakenPath(value.taken_path);
+  const outcome = value.stage === 'final'
+    ? value.outcome === 'selected' || value.outcome === 'denied'
+      ? value.outcome
+      : null
+    : null;
+  return { kind: 'valid', decision: {
+    candidates,
+    selected,
+    taken_path: takenPath,
+    reason:
+      typeof value.reason === 'string'
+        ? value.reason
+        : selected?.reason ?? (candidates.length === 0 ? 'no candidates' : 'semantic_router pre-screen'),
+    stage: value.stage,
+    outcome,
+    reason_code: typeof value.reason_code === 'string' ? value.reason_code : null,
+    policy_version: typeof value.policy_version === 'string' ? value.policy_version : null,
+    seq: typeof value.seq === 'number' ? value.seq : 0,
+    ts: typeof value.ts === 'string' ? value.ts : new Date().toISOString(),
+  } };
+}
+
+function isRoutingCandidate(value: unknown): value is Record<string, unknown> & {
+  role_slug: string;
+  display_name: string;
+  similarity: number;
+} {
+  return isObjectRecord(value) &&
+    typeof value.role_slug === 'string' && value.role_slug.length > 0 &&
+    typeof value.display_name === 'string' && value.display_name.length > 0 &&
+    typeof value.similarity === 'number' && Number.isFinite(value.similarity);
+}
+
+function invalidRoutingDecision(): RoutingDecisionParseResult {
+  return {
+    kind: 'invalid',
+    message: '路由决策事件格式错误，无法安全展示本次路由结果。',
+  };
+}
+
+function parseRoutingSelected(value: unknown): RoutingSelected | null {
+  if (typeof value === 'string' && value.length > 0) return { role_slug: value };
+  if (!isObjectRecord(value)) return null;
+  const roleSlug = typeof value.role_slug === 'string' ? value.role_slug : '';
+  return roleSlug
+    ? { role_slug: roleSlug, reason: typeof value.reason === 'string' ? value.reason : undefined }
+    : null;
+}
+
+function parseTakenPath(value: unknown): RoutingTakenPath | null {
+  return value === 'llm_fc' || value === 'semantic_router' || value === 'dispatcher' || value === 'keyword_fallback'
+    ? value
+    : null;
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }

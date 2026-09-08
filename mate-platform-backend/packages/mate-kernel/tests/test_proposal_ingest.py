@@ -4,7 +4,7 @@ kind 三态（ADR-0044 附录 · Text-to-Ontology）：
 - action          : subject = ActionType rid（SAL-04 既有）
 - create_instance : subject = class rid，parameters = {props}
 - model_type      : subject = 新类型 rid，parameters = 类型定义
-confirm（人闸）与 execute（落库）分离；mark_applied 仅 confirmed 可达。
+confirm（人闸）与 execute（落库）分离；mark_executed 仅 confirmed 可达。
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from mate_kernel.action.engine import (
     ProposalStatus,
 )
 
-_CTX = None  # mark_applied 不需要 ctx
+_CTX = None  # mark_executed 不需要 ctx
 
 
 def _svc() -> ActionService:
@@ -38,31 +38,31 @@ class TestProposalKind:
         assert p.action_rid == "ont.t.obj.supplier.v1"
 
 
-class TestMarkApplied:
-    def test_pending_cannot_mark_applied(self) -> None:
+class TestMarkExecuted:
+    def test_pending_cannot_mark_executed(self) -> None:
         svc = _svc()
         p = svc.propose("ont.t.obj.supplier.v1", {}, None, "i", kind="create_instance")
         with pytest.raises(ProposalNotConfirmed):
-            svc.mark_applied(p.proposal_id)
+            svc.mark_executed(p.proposal_id)
 
-    def test_rejected_cannot_mark_applied(self) -> None:
+    def test_rejected_cannot_mark_executed(self) -> None:
         svc = _svc()
         p = svc.propose("ont.t.obj.supplier.v1", {}, None, "i", kind="create_instance")
         svc.reject_proposal(p.proposal_id)
         with pytest.raises(ProposalNotConfirmed):
-            svc.mark_applied(p.proposal_id)
+            svc.mark_executed(p.proposal_id)
 
-    def test_confirmed_marks_applied(self) -> None:
+    def test_confirmed_marks_executed(self) -> None:
         svc = _svc()
         p = svc.propose("ont.t.obj.supplier.v1", {}, None, "i", kind="create_instance")
         svc.confirm_proposal(p.proposal_id, confirmed_by="alice")
-        out = svc.mark_applied(p.proposal_id)
-        assert out.status is ProposalStatus.APPLIED
+        out = svc.mark_executed(p.proposal_id)
+        assert out.status is ProposalStatus.EXECUTED
 
     def test_double_apply_marks_terminal(self) -> None:
         svc = _svc()
         p = svc.propose("x", {}, None, "i")
         svc.confirm_proposal(p.proposal_id)
-        svc.mark_applied(p.proposal_id)
-        with pytest.raises(ProposalNotConfirmed, match="applied"):
-            svc.mark_applied(p.proposal_id)
+        svc.mark_executed(p.proposal_id)
+        with pytest.raises(ProposalNotConfirmed, match="executed"):
+            svc.mark_executed(p.proposal_id)

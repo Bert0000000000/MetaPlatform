@@ -1,8 +1,8 @@
 # PRD-06：Ontology Proposal
 
 > 关联批次：MP-ONT-PROPOSAL-01 · 所属 Sprint：0
-> 状态：`[x] Product Approved — implementation pending` · 2026-08-31
-> 事实基线：`docs/active/delivery/evidence/MP-ONT-PROPOSAL-01-ACCEPTANCE.md`
+> 状态：`[~] Product Approved — local Docker lifecycle accepted; production validation remains` · 2026-08-31
+> 事实基线：`docs/active/delivery/evidence/PRD-05-08-LOCAL-DOCKER-ACCEPTANCE-20260831.md`
 
 ## 1. 目标与边界
 
@@ -46,5 +46,9 @@ Ontology Studio 的确认抽屉按 kind 显示结构化 preview、影响范围�
 正式 GA 验收必须在真实 LLM provider、PostgreSQL/RLS 与 staging 集群验证：重启恢复、重复确认、版本冲突、越权、依赖故障和回滚/补偿。未获得这些逐笔证据前，状态保持 `[~]`。
 
 ## 7. 产品评审项
+
+本地 Docker 已经以真实 OIDC/Gateway/PostgreSQL 执行 `pending → preview → confirmed →
+executed` 并回读终态；真实 provider、PostgreSQL/RLS 生产角色和 staging 证据尚未补齐，
+保持 `[~]`。
 
 需要确认各 kind 的审批角色矩阵、是否允许批量确认、各类提议的过期策略和拒绝理由是否必填。默认策略是单提议、显式确认、无自动过期执行、拒绝理由可选但审计记录必有。

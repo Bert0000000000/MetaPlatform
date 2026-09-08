@@ -17,6 +17,8 @@ touching a repository, and write handlers emit
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -111,6 +113,7 @@ async def register_role(request: Request, body: RegisterRoleRequest) -> dict[str
                 CapabilityBinding(name=c.name, worker_kind=c.worker_kind, ref=c.ref)
                 for c in body.capabilities
             ],
+            allowed_actor_roles=body.allowed_actor_roles,
         )
     except (RoleRegistryError, ValueError) as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
@@ -128,6 +131,7 @@ async def register_role(request: Request, body: RegisterRoleRequest) -> dict[str
         "role": role.role,
         "name": role.name,
         "capabilities": [binding_to_dict(c) for c in role.capabilities],
+        "allowed_actor_roles": list(role.allowed_actor_roles),
     }
 
 
@@ -144,6 +148,32 @@ async def list_roles(request: Request) -> dict[str, Any]:
         for r in get_role_registry().list(tid)
     ]
     return {"items": roles, "total": len(roles)}
+
+
+@router.get("/roles/authorized-snapshot")
+async def authorized_role_snapshot(request: Request) -> dict[str, Any]:
+    """Return the current caller's tenant-scoped, authorized role snapshot."""
+    tid = _tid(request)
+    actor_roles = getattr(request.state.ctx, "roles", frozenset())
+    actor_role_values = sorted(str(role) for role in actor_roles)
+    roles = get_role_registry().authorized_snapshot(tid, actor_roles=actor_roles)
+    items = [
+        {
+            "role": role.role,
+            "name": role.name,
+            "capabilities": [binding_to_dict(capability) for capability in role.capabilities],
+            "enabled": role.enabled,
+        }
+        for role in roles
+    ]
+    version_payload = json.dumps(items, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    actor_roles_payload = json.dumps(actor_role_values, separators=(",", ":"))
+    return {
+        "items": items,
+        "total": len(items),
+        "capability_version": hashlib.sha256(version_payload.encode("utf-8")).hexdigest(),
+        "actor_roles_digest": hashlib.sha256(actor_roles_payload.encode("utf-8")).hexdigest(),
+    }
 
 
 @router.delete("/roles/{role}")
@@ -211,16 +241,13 @@ async def submit_plan(
     request: Request, body: SubmitPlanRequest, engine: str = "",
 ) -> dict[str, Any]:
     tid = _tid(request)
-    # ADR-0061 双轨开关：?engine=temporal（或 WORKFLOW_ENGINE=temporal）走
-    # Temporal 持久路径；缺省 legacy（内存 PlanRunner）语义不变。
     from ..temporal_rest import engine_from, is_available, submit_and_run
 
     if engine_from(None, engine) == "temporal":
         if not is_available():
             raise HTTPException(
                 status_code=503,
-                detail="temporal engine unavailable: temporalio not installed "
-                       "in this service image",
+                detail="temporal engine unavailable: temporalio not installed",
             )
         return await submit_and_run(
             tenant_id=tid, token=_user_token(request),
@@ -280,13 +307,6 @@ async def plan_status(plan_id: str, request: Request) -> Any:
 async def plan_execute(plan_id: str, request: Request) -> dict[str, Any]:
     tid = _tid(request)
     token = _user_token(request)
-    from ..temporal_rest import is_temporal_plan
-
-    if is_temporal_plan(plan_id):
-        raise HTTPException(
-            status_code=409,
-            detail="temporal-engine plans start on submit; execute is implicit",
-        )
     try:
         return await get_plan_runner().execute(plan_id=plan_id, tenant_id=tid, token=token)
     except PlanNotFoundError as e:

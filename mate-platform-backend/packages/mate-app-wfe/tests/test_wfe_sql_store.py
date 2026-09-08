@@ -68,6 +68,35 @@ def test_put_flow_upsert() -> None:
     assert fetched.status == "active"
 
 
+def test_versioned_plan_definition_publishes_an_immutable_sql_revision() -> None:
+    plan = {"nodes": [{"id": "start", "type": "start"}], "edges": []}
+    created = sql.save_workflow_definition(
+        _TENANT_A,
+        "order-review",
+        name="Order review",
+        draft_plan=plan,
+        expected_version=0,
+    )
+    published, revision = sql.publish_workflow_definition(
+        _TENANT_A, "order-review", actor_id="u-1",
+    )
+    assert published.published_version == created.version
+    assert revision.plan == plan
+
+    updated_plan = {"nodes": [{"id": "next", "type": "action"}], "edges": []}
+    sql.save_workflow_definition(
+        _TENANT_A,
+        "order-review",
+        name="Order review",
+        draft_plan=updated_plan,
+        expected_version=published.version,
+    )
+    resolved = sql.resolve_published_workflow_definition(_TENANT_A, "order-review")
+    assert resolved is not None
+    assert resolved.plan == plan
+    assert sql.get_workflow_definition(_TENANT_B, "order-review") is None
+
+
 # ---------------------------------------------------------------------------
 # FlowValidation round-trip (tuple field)
 # ---------------------------------------------------------------------------

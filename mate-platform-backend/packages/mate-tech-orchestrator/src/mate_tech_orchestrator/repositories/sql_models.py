@@ -18,5 +18,6 @@ class RoleORM(Base):
     role: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(256), default="")
     capabilities: Mapped[str] = mapped_column(Text, default="[]")  # JSON-encoded
+    allowed_actor_roles: Mapped[str] = mapped_column(Text, default="[]")  # JSON-encoded
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[str] = mapped_column(String(64), default="")

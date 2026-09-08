@@ -15,13 +15,19 @@
 - v1.6 `drag-prod.spec.ts` 历史链路已通过并作为前置证据保留。
 - v1.7 用例已纳入仓库，覆盖节点拖拽、属性面板和删除节点操作。
 
+## 2026-08-31 本地 Docker 验证补充
+
+- WFE 版本化 Plan 测试 `25 passed`；本地 Docker 已验证 Keycloak、Gateway 与 WFE 的
+  tenant-bound 保存、发布、运行和状态回读。
+- 前端生产构建 `pnpm --filter @mate/web build` 通过；使用独立 `vite preview`
+  生产静态站点（端口 `9251`）运行 Playwright，保存、发布、运行、刷新持久化和
+  两标签页陈旧保存恢复 `2 passed`。该验证不依赖开发服务器。
+
 ## 未闭环项
 
-- v1.7 进入全屏编辑的 click 在 React 19 root delegation 下仍有已知偶发失败，
-  需要用稳定的 fullscreen/native button 路径修复后再验收。
-- 尚未在当前 Docker 全栈和生产构建产物上完成 Playwright 系统验收。
+- Temporal 持久运行、Outbox 事务和 staging/prod 发布演练仍未完成。
 
 ## 结论
 
-该记录确认实现和验收入口已归档，但存在已知 E2E 不稳定项；保持 `[~]`，不
+该记录确认本地实现和主要系统旅程已通过；真实生产门禁仍未闭环，保持 `[~]`，不
 得宣称 action-orchestration v1.7 已 GA Accepted。

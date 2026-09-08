@@ -11,6 +11,7 @@ is a pure function that does not touch persistence.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from typing import Any
 
 from sqlalchemy import select
@@ -19,7 +20,14 @@ from sqlalchemy.orm import Session
 from mate_tech_db.base import get_session
 
 from . import sql_models as models
-from .in_memory import FlowDefinition, FlowTestRun, FlowValidation
+from .in_memory import (
+    FlowDefinition,
+    FlowTestRun,
+    FlowValidation,
+    WorkflowDefinition,
+    WorkflowDefinitionConflict,
+    WorkflowDefinitionRevision,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +97,33 @@ def _orm_to_flow_test_run(row: models.FlowTestRunORM) -> FlowTestRun:
         finished_at=row.finished_at or "",
         duration_ms=row.duration_ms,
         output=_json_loads(row.output),
+    )
+
+
+def _orm_to_workflow_definition(row: models.WorkflowDefinitionORM) -> WorkflowDefinition:
+    return WorkflowDefinition(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        draft_plan=deepcopy(row.draft_plan or {}),
+        version=row.version,
+        status=row.status,
+        published_version=row.published_version,
+        published_at=row.published_at or "",
+        published_by=row.published_by or "",
+    )
+
+
+def _orm_to_workflow_definition_revision(
+    row: models.WorkflowDefinitionRevisionORM,
+) -> WorkflowDefinitionRevision:
+    return WorkflowDefinitionRevision(
+        definition_id=row.definition_id,
+        tenant_id=row.tenant_id,
+        version=row.version,
+        plan=deepcopy(row.plan or {}),
+        published_at=row.published_at,
+        published_by=row.published_by,
     )
 
 
@@ -196,6 +231,121 @@ def put_flow(tenant_id: str, flow: FlowDefinition) -> FlowDefinition:
         ))
     s.commit()
     return flow
+
+
+# ---------------------------------------------------------------------------
+# Versioned Plan-definition repository (new Action Orchestration surface)
+# ---------------------------------------------------------------------------
+def get_workflow_definition(tenant_id: str, definition_id: str) -> WorkflowDefinition | None:
+    if not tenant_id:
+        return None
+    row = _session().execute(
+        select(models.WorkflowDefinitionORM).where(
+            models.WorkflowDefinitionORM.tenant_id == tenant_id,
+            models.WorkflowDefinitionORM.id == definition_id,
+        )
+    ).scalar_one_or_none()
+    return _orm_to_workflow_definition(row) if row else None
+
+
+def save_workflow_definition(
+    tenant_id: str,
+    definition_id: str,
+    *,
+    name: str,
+    draft_plan: dict[str, Any],
+    expected_version: int,
+) -> WorkflowDefinition:
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    session = _session()
+    row = session.execute(
+        select(models.WorkflowDefinitionORM).where(
+            models.WorkflowDefinitionORM.tenant_id == tenant_id,
+            models.WorkflowDefinitionORM.id == definition_id,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        if expected_version != 0:
+            raise ValueError("new workflow definitions require expected_version=0")
+        row = models.WorkflowDefinitionORM(
+            id=definition_id,
+            tenant_id=tenant_id,
+            name=name,
+            draft_plan=deepcopy(draft_plan),
+            version=1,
+        )
+        session.add(row)
+    else:
+        current = _orm_to_workflow_definition(row)
+        if expected_version != current.version:
+            raise WorkflowDefinitionConflict(current)
+        row.name = name
+        row.draft_plan = deepcopy(draft_plan)
+        row.version = current.version + 1
+    session.commit()
+    return _orm_to_workflow_definition(row)
+
+
+def publish_workflow_definition(
+    tenant_id: str, definition_id: str, *, actor_id: str,
+) -> tuple[WorkflowDefinition, WorkflowDefinitionRevision]:
+    import time
+
+    session = _session()
+    definition = session.execute(
+        select(models.WorkflowDefinitionORM).where(
+            models.WorkflowDefinitionORM.tenant_id == tenant_id,
+            models.WorkflowDefinitionORM.id == definition_id,
+        )
+    ).scalar_one_or_none()
+    if definition is None:
+        raise KeyError(definition_id)
+    revision = session.execute(
+        select(models.WorkflowDefinitionRevisionORM).where(
+            models.WorkflowDefinitionRevisionORM.tenant_id == tenant_id,
+            models.WorkflowDefinitionRevisionORM.definition_id == definition_id,
+            models.WorkflowDefinitionRevisionORM.version == definition.version,
+        )
+    ).scalar_one_or_none()
+    if revision is None:
+        revision = models.WorkflowDefinitionRevisionORM(
+            definition_id=definition_id,
+            tenant_id=tenant_id,
+            version=definition.version,
+            plan=deepcopy(definition.draft_plan or {}),
+            published_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            published_by=actor_id,
+        )
+        session.add(revision)
+    definition.status = "published"
+    definition.published_version = revision.version
+    definition.published_at = revision.published_at
+    definition.published_by = revision.published_by
+    session.commit()
+    return _orm_to_workflow_definition(definition), _orm_to_workflow_definition_revision(revision)
+
+
+def resolve_published_workflow_definition(
+    tenant_id: str, definition_id: str,
+) -> WorkflowDefinitionRevision | None:
+    session = _session()
+    definition = session.execute(
+        select(models.WorkflowDefinitionORM).where(
+            models.WorkflowDefinitionORM.tenant_id == tenant_id,
+            models.WorkflowDefinitionORM.id == definition_id,
+        )
+    ).scalar_one_or_none()
+    if definition is None or definition.published_version is None:
+        return None
+    revision = session.execute(
+        select(models.WorkflowDefinitionRevisionORM).where(
+            models.WorkflowDefinitionRevisionORM.tenant_id == tenant_id,
+            models.WorkflowDefinitionRevisionORM.definition_id == definition_id,
+            models.WorkflowDefinitionRevisionORM.version == definition.published_version,
+        )
+    ).scalar_one_or_none()
+    return _orm_to_workflow_definition_revision(revision) if revision else None
 
 
 # ---------------------------------------------------------------------------

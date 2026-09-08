@@ -1,6 +1,6 @@
 """MP-SAL-04: Proposal 状态机 —— 内核红测试（ADR-0044 §2.1）。
 
-pending → confirmed → applied / rejected（终态）。
+pending → confirmed → executed / rejected（终态）。
 未确认 proposal 永不落库：apply(proposal_id=未确认) → ProposalNotConfirmed。
 """
 
@@ -64,6 +64,17 @@ class TestStateMachine:
         with pytest.raises(ValueError, match="pending"):
             svc.confirm_proposal(p.proposal_id, confirmed_by="bob")
 
+    def test_confirmed_proposal_transitions_to_executed_once(self) -> None:
+        svc = _svc_with_action()
+        p = _propose(svc)
+        svc.confirm_proposal(p.proposal_id, confirmed_by="alice")
+
+        executed = svc.mark_executed(p.proposal_id)
+
+        assert executed.status is ProposalStatus.EXECUTED
+        with pytest.raises(ProposalNotConfirmed, match="executed"):
+            svc.mark_executed(p.proposal_id)
+
 
 class TestApplyGuards:
     def test_unconfirmed_proposal_never_applies(self) -> None:
@@ -99,7 +110,7 @@ class TestApplyGuards:
                 proposal_id=p.proposal_id,
             )
 
-    def test_confirmed_then_apply_marks_applied_and_audits(self) -> None:
+    def test_confirmed_then_apply_marks_executed_and_audits(self) -> None:
         svc = _svc_with_action()
         p = _propose(svc)
         svc.confirm_proposal(p.proposal_id, confirmed_by="alice")
@@ -117,7 +128,7 @@ class TestApplyGuards:
             side_effect_emitter=lambda se: events.append(se) or f"evt-{len(events)}",
         )
         assert outcome.proposal_id == p.proposal_id
-        assert svc.get_proposal(p.proposal_id).status is ProposalStatus.APPLIED
+        assert svc.get_proposal(p.proposal_id).status is ProposalStatus.EXECUTED
         assert outcome.side_effect_events == [("notify_user", "evt-1")]
 
     def test_proposal_action_mismatch_rejected(self) -> None:

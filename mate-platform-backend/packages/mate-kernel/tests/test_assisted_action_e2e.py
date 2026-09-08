@@ -102,7 +102,7 @@ class TestAssistedActionE2E:
         )
         assert applied_at  # ③ 落库
         assert effects == ["notify_user"]
-        assert repo.get_proposal(prop.proposal_id).status.value == "applied"
+        assert repo.get_proposal(prop.proposal_id).status.value == "executed"
         assert outbox.events, "outbox must receive side-effect events"  # ④ 外部同步
         assert outbox.events[0][2]["proposal_id"] == prop.proposal_id
         assert outbox.events[0][2]["action_rid"] == ACT

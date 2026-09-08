@@ -42,7 +42,10 @@ import {
   streamAgentChat,
   listMultimodalModels,
   multimodalUploadChat,
+  parseRoutingDecisionEvent,
 } from '@/api/superai/chat';
+import { RoutingDecisionPanel } from './components/RoutingDecisionPanel';
+import { clearRoutingDecisionForStreamError } from './routingDecisionState';
 import {
   listConversations,
   createConversation as apiCreateConversation,
@@ -61,6 +64,7 @@ import type {
   Evidence,
   GraphData,
   MultimodalModel,
+  RoutingDecision,
 } from '@/api/superai/types';
 
 // ============ 常量 ============
@@ -229,6 +233,21 @@ function conversationToSession(
   };
 }
 
+function restoreHistoryMetadata(
+  metadata: Record<string, unknown> | undefined,
+): ChatMessage['metadata'] {
+  if (!metadata) return undefined;
+  const routingDecisions = Array.isArray(metadata.routingDecisions)
+    ? metadata.routingDecisions
+      .map(parseRoutingDecisionEvent)
+      .filter((decision): decision is RoutingDecision => decision !== null)
+    : undefined;
+  return {
+    ...(metadata as ChatMessage['metadata']),
+    ...(routingDecisions ? { routingDecisions } : {}),
+  };
+}
+
 // ============ 组件 ============
 
 const { Configure } = AIChatInput;
@@ -392,6 +411,7 @@ export default function ChatPage() {
           content: m.content ?? '',
           status: 'success',
           createdAt: m.createdAt ?? now(),
+          metadata: restoreHistoryMetadata(m.metadata),
         }));
         setSessions((prev) =>
           prev.map((s) => (s.id === activeId ? { ...s, messages } : s)),
@@ -636,6 +656,21 @@ export default function ChatPage() {
                 return { ...prev, [assistantId]: steps };
               });
             },
+            onRoutingDecision: ({ decision }) => {
+              updateMessage(sessionId, assistantId, (m) => ({
+                ...m,
+                metadata: {
+                  ...(m.metadata || {}),
+                  routingDecisions: [...(m.metadata?.routingDecisions ?? []), decision],
+                },
+              }));
+            },
+            onRoutingDecisionError: ({ message }) => {
+              updateMessage(sessionId, assistantId, (m) => ({
+                ...m,
+                metadata: clearRoutingDecisionForStreamError(m.metadata, message),
+              }));
+            },
             onDelta: (delta) => {
               setStreamingMap((m) => ({ ...m, [assistantId]: (m[assistantId] || '') + delta }));
             },
@@ -794,6 +829,10 @@ export default function ChatPage() {
   const handleNewConversation = useCallback(async () => {
     try {
       const conv = await apiCreateConversation({ title: '新对话', mode: 'chat' });
+      // The freshly created conversation is known to have no remote messages.
+      // Mark it loaded before switching activeId so its empty-history request
+      // cannot race with the user's first live stream and overwrite it.
+      loadedHistoryRef.current.add(conv.id);
       setSessions((prev) => [conversationToSession(conv), ...prev]);
       setActiveId(conv.id);
     } catch {
@@ -871,6 +910,11 @@ export default function ChatPage() {
           const steps = agentSteps[msg.id];
           if (steps && steps.length > 0) {
             contentItems.push({ type: 'steps', steps });
+          }
+          const routingDecisions = msg.metadata?.routingDecisions as RoutingDecision[] | undefined;
+          const routingDecisionError = msg.metadata?.routingDecisionError;
+          if ((routingDecisions && routingDecisions.length > 0) || routingDecisionError) {
+            contentItems.push({ type: 'routing_decision', routingDecisions, routingDecisionError });
           }
         }
         if (text) {
@@ -1063,6 +1107,12 @@ export default function ChatPage() {
                 </div>
               );
             },
+            routing_decision: (item: { routingDecisions?: RoutingDecision[]; routingDecisionError?: string }) => {
+              const decisions = item.routingDecisions ?? [];
+              return decisions.length > 0 || item.routingDecisionError
+                ? <RoutingDecisionPanel decision={decisions} streamError={item.routingDecisionError} />
+                : null;
+            },
           }}
           chats={semiMessages}
           topSlot={
@@ -1088,6 +1138,7 @@ export default function ChatPage() {
         {/* 输入框（官方 Configure：模型 / 深度思考 / 思考模式 / 附件） */}
         <AIChatInput
           ref={aiInputRef}
+          immediatelyRender={false}
           placeholder="输入消息，Shift + Enter 换行..."
           sendHotKey="enter"
           round={false}
@@ -1162,7 +1213,7 @@ export default function ChatPage() {
           style={{ width: '100%', border: 'none', height: '100%', borderLeft: '1px solid var(--border)' }}
           options={[{ key: 'toolbar', icon: null, name: null }]}
           renderOptionItem={() => (
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div key="toolbar" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Button theme="solid" type="primary" icon={<PlusOutlined />} block onClick={() => void handleNewConversation()}>
                 新建会话
               </Button>
