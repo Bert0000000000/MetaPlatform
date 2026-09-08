@@ -1,6 +1,6 @@
-# SPRINT-5 ACCEPTANCE — 数据产品真实化（第一批）
+# SPRINT-5 ACCEPTANCE — 数据产品真实化（第一批 + 第二批）
 
-> **日期**: 2026-09-08 · **范围**: goal「推进 Sprint 5」· **部署**: docker 全栈 + mate-trino（单节点）+ MinIO S3
+> **日期**: 2026-09-08 · **范围**: goal「推进 Sprint 5」+ goal「Sprint 5 残余收口（第二批）」· **部署**: docker 全栈 + mate-trino（单节点）+ MinIO S3
 
 ## 1. ONT-G21 推理端到端 [x]
 
@@ -51,3 +51,56 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
 | Paimon 运行面 | [ ] | Flink 生态部署（重） |
 | StarRocks BI / staging 大规模演练 / SHACL 完整 / G33 对齐 | [ ] | 后续批次 |
 | Function 执行语义 | 注册面已通，执行引擎留增量 | PRD-30 FR-RSN-004 |
+
+---
+
+# 第二批（Sprint 5 残余收口）
+
+## 6. ONT-G14 SHACL Core 关键约束 [~→关键面已收口]
+
+- kernel `mate_kernel/ontology/shacl.py`：NodeShape/PropertyShape + 结构化验证报告
+  （W3C 结构子集：conforms / violations[{focus_node, path, constraint, message}] / stats）。
+- 约束集：**minCount / maxCount / datatype / pattern / class（值节点类校验）/ closed**
+  ；W3C 语义要点：pattern 仅作用于字符串值；closed 拒绝未声明属性。
+- 集成：ObjectType → NodeShape 合成（pk/非空 → minCount 1，type_id → datatype），
+  与 ontValidateV2* 类型语义对齐；REST `POST /api/v1/ont/v2/shacl/validate`
+  （operationId ontValidateV2Shacl，契约先行，stateless 与 repo 实例双路径）。
+- 单测：kernel `test_ont_g14_shacl.py` **16 passed**（每约束正反例 + 报告聚合 + 环保护语义）。
+- Live（网关）：① 集成路径——g21-employee 类型合成 shape + repo 实例 → conforms=true；
+  ② stateless 负例——pattern 不匹配 + closed 多余属性 → conforms=false，
+  violations 含 pattern+closed。
+- **残余（如实）**：severity 分级 / sh:not / sh:languageIn / sh:qualifiedValueShape 等
+  W3C 全集（PRD-23 FR-SHACL-005）。
+
+## 7. DATA-D6/D7 lineage / quality / catalog [x]
+
+- mate-tech-data 新增治理面（双模式：in-memory + SQL 持久化，契约先行 6 路径）：
+  - **lineage**：POST /lineage/edges 登记 + GET /lineage/graph（entity 子图）→
+    `data_lineage_edges` 表
+  - **quality**：POST/GET /quality/rules（required=列存在 / type=类型匹配，对 source
+    schema 执行）+ POST /quality/run（enabled 规则全量执行）+ GET /quality/results →
+    `data_quality_rules` / `data_quality_results` 表
+  - **catalog**：GET /catalog/search?q= 跨 sources + data products 检索
+- 单测：`test_data_governance.py` **8 passed**（边+子图、租户隔离、required 正例、
+  type 反例、缺列、多轮持久化、双命中、无命中）。
+- Live 5/5（`scripts/smoke_sprint5_governance_e2e.py`，网关）：
+  - SHACL 集成 conforms=true ✓；stateless 负例 pattern+closed ✓
+  - lineage：登记边 + entity 子图节点精确 ✓
+  - quality：2 规则执行（required passed=t / type passed=f 落 PG `data_quality_results`）✓
+  - catalog：q=orders 双命中（source + product）✓
+
+## 8. Trino 激活尝试与边界（最终）
+
+- 第二轮激活（768M 堆）：节点状态到达 **ACTIVE**（uptime 16.5m）但查询仍返回
+  "server is still initializing"，随后 JVM 干净退出（ExitCode=0，非 OOM），
+  `restart: unless-stopped` 进入重启循环（Restarts=2）。
+- 启动/加载期对宿主 VM 的挤占使 31 容器全栈网关出现瞬时 000/502；两轮窗口内
+  主动停止让位后环境立即恢复。
+- **结论**：Trino/Iceberg 交付物（镜像/配置/compose/bucket）全部就绪，
+  激活标 **[!]**——前置 = 独立 VM/低负载宿主（Trino 独占 ≥2GB + 空闲 CPU），
+  或全栈停机窗口内单独激活后跑两条 catalog 查询取证。
+
+## 9. 测试汇总（第二批）
+
+新增：SHACL 16 + 治理 8 = **24 passed**；G21/parity/objectset 既有套件无回归；
+合并后 main 关键套件 51 passed（第一批收口轮）。
