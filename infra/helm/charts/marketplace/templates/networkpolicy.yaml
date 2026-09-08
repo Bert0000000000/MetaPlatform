@@ -21,13 +21,15 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
-    # 1. SaaS 控制面 + 数据面(由 values.allowedEgressCidrs 注入)
+    # 1. SaaS 控制面 + 数据面(由 values.allowedEgressCidrs 注入,列表逐条展开)
+    {{- range .Values.saas.allowedEgressCidrs }}
     - to:
         - ipBlock:
-            cidr: {{ .Values.saas.allowedEgressCidrs | quote }}
+            cidr: {{ . | quote }}
       ports:
         - protocol: TCP
           port: 443
+    {{- end }}
     # 2. 内部依赖:postgres + redis
     - to:
         - namespaceSelector: {}
