@@ -2187,8 +2187,15 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
     except Exception as exc:  # partial-outage visibility, not a 500
         sources["ontology"] = f"unavailable: {type(exc).__name__}"
 
-    return {"items": tools, "total": len(tools), "sources": sources}
+    # SAL §5 工具爆炸护栏：FC 工具预算上限（超出截断并显式标记，
+    # 防止注册面无界增长把 prompt 撑爆）。
+    max_tools = int(os.getenv("AGENT_TOOLS_BUDGET", "64"))
+    truncated = len(tools) > max_tools
+    if truncated:
+        tools = tools[:max_tools]
 
+    return {"items": tools, "total": len(tools),
+            "truncated": truncated, "sources": sources}
 
 # ---------------------------------------------------------------------------
 # Agent loop (FC-driven SuperAI scheduling, real-time event stream)
