@@ -7,11 +7,15 @@ services:
     platform: linux/amd64
     volumes:
       - ./infra/trino/etc:/etc/trino:ro
+      - trino-data:/data
     ports:
       - "8088:8080"
     networks:
       - metaplatform
     restart: unless-stopped
+
+volumes:
+  trino-data:
 
 networks:
   metaplatform:

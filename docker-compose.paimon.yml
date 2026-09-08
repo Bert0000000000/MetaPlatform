@@ -1,0 +1,55 @@
+services:
+  flink-jobmanager:
+    image: docker.m.daocloud.io/apache/flink:1.20
+    container_name: mate-flink-jm
+    platform: linux/amd64
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 640m
+      - AWS_ACCESS_KEY_ID=meta
+      - AWS_SECRET_ACCESS_KEY=metasecretkey123
+      - AWS_REGION=us-east-1
+    volumes:
+      - ./.tmp-paimon/paimon-flink-1.20-1.1.1.jar:/opt/flink/lib/paimon-flink-1.20-1.1.1.jar:ro
+      - ./.tmp-paimon/paimon-s3-1.1.1.jar:/opt/flink/lib/paimon-s3-1.1.1.jar:ro
+      - ./.tmp-paimon/flink-s3-fs-hadoop-1.20.0.jar:/opt/flink/lib/flink-s3-fs-hadoop-1.20.0.jar:ro
+      - ./.tmp-paimon/hadoop-hdfs-client-3.3.4.jar:/opt/flink/lib/hadoop-hdfs-client-3.3.4.jar:ro
+      - ./.tmp-paimon/core-site.xml:/opt/flink/conf/core-site.xml:ro
+      - ./.tmp-paimon/sql:/sql:ro
+    networks:
+      - metaplatform
+    restart: no
+
+  flink-taskmanager:
+    image: docker.m.daocloud.io/apache/flink:1.20
+    container_name: mate-flink-tm
+    platform: linux/amd64
+    command: taskmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 2
+      - AWS_ACCESS_KEY_ID=meta
+      - AWS_SECRET_ACCESS_KEY=metasecretkey123
+      - AWS_REGION=us-east-1
+    volumes:
+      - ./.tmp-paimon/paimon-flink-1.20-1.1.1.jar:/opt/flink/lib/paimon-flink-1.20-1.1.1.jar:ro
+      - ./.tmp-paimon/paimon-s3-1.1.1.jar:/opt/flink/lib/paimon-s3-1.1.1.jar:ro
+      - ./.tmp-paimon/flink-s3-fs-hadoop-1.20.0.jar:/opt/flink/lib/flink-s3-fs-hadoop-1.20.0.jar:ro
+      - ./.tmp-paimon/hadoop-hdfs-client-3.3.4.jar:/opt/flink/lib/hadoop-hdfs-client-3.3.4.jar:ro
+      - ./.tmp-paimon/core-site.xml:/opt/flink/conf/core-site.xml:ro
+    depends_on:
+      - flink-jobmanager
+    networks:
+      - metaplatform
+    restart: no
+
+networks:
+  metaplatform:
+    name: metaplatform_default
+    external: true

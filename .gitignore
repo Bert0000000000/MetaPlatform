@@ -185,3 +185,4 @@ tests/e2e/screenshots/
 
 # Sprint 5: 真实 MinIO 凭据不入库（硬规则 #12）
 infra/trino/etc/catalog/iceberg.properties
+.tmp-paimon/

@@ -104,3 +104,122 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
 
 新增：SHACL 16 + 治理 8 = **24 passed**；G21/parity/objectset 既有套件无回归；
 合并后 main 关键套件 51 passed（第一批收口轮）。
+
+---
+
+# 第三批（Sprint 5 残余收口 · 2026-09-08）
+
+## 10. Trino 激活 [!→x]（根因翻案：配置而非资源）
+
+- **根因更正**：前两批判为「VM 资源挤占」，本批腾挪窗口（停 kind 四节点）
+  后复现重启循环并抓到真凶——`iceberg.catalog.type=file_system` 是 **Trino
+  483 不存在的 CatalogType**（从插件 jar `io/trino/plugin/iceberg/CatalogType.class`
+  挖出合法值：glue/hive_metastore/jdbc/nessie/rest/snowflake/
+  testing_file_metastore）。Iceberg catalog 加载失败会 abort 整个 JVM
+  （Executors.executeUntilFailure），造成「启动期自退出」假象。
+- **修复**：`iceberg.catalog.type=jdbc`（JDBC metastore，免独立 catalog 服务）：
+  - 元数据：mate-postgres 专用库 `iceberg_catalog` 的 `iceberg_tables` /
+    `iceberg_namespace_properties`（V1 DDL）
+  - 数据：native S3（`fs.native-s3.enabled` + `s3.path-style-access`）直存
+    MinIO `mate-warehouse`
+  - compose 增 named volume `trino-data:/data`（消除 Windows bind mount
+    初始化毛刺期的 launcher pid 崩溃循环）
+- **取证 ①（联邦查询）**：`SHOW CATALOGS` → iceberg/postgresql/system；
+  `SELECT count(*) FROM postgresql.public.ont_object_type` = **30**（rid 如
+  `ont.tenant-default.obj.crm.contract.v1`）；`ont_individual` = 16。
+- **取证 ②（Iceberg Roundtrip）**：CREATE SCHEMA `sprint5_evidence` →
+  CREATE TABLE `roundtrip` → INSERT 3 → SELECT 3 → DELETE 1 → SELECT 剩 2；
+  MinIO 侧 parquet 数据文件 + 3 份 metadata.json 快照、PG 侧
+  `iceberg_tables.metadata_location = s3://mate-warehouse/...metadata.json`。
+- `/v1/info`：`{"state":"ACTIVE","starting":false}`，容器 healthy。
+- 取证后 kind 四节点恢复运行。
+
+## 11. 多模态数据产品（Iceberg ADS）[x]
+
+- `scripts/smoke_sprint5_multimodal_ads.py`（网关全链无 mock）：
+  ① 网关登录 JWT；② 3 张真实 PNG（`_png` 生成器）经 MinIO SDK 上传
+  `mate-warehouse/multimodal/ads/*.png`（stat 回读 size）；③ iceberg catalog
+  建 `iceberg.multimodal.ads_image_catalog`（image_key/title/width/height/
+  size_bytes）+ 3 行写入并回查；④ `POST /api/v1/data/products`
+  （modality=mixed, target_iceberg_table=…）→ `dp-a34ba0d4`；
+  ⑤ `POST /products/{id}/publish` → **status=published, version=2**。
+- **顺带修复**：`mate-tech-data` SQL store `set_data_product_status` 缺
+  `bump_version`/`require_owner` 参数（第二批 SQL 化时与 API 契约脱节，
+  publish 500）——已对齐 in_memory 语义并热修烧死镜像。
+
+## 12. ONT-G14 SHACL W3C 全集增量 [~→x]
+
+- kernel `shacl.py` 增量：
+  - **severity 分级**：Violation/Warning/Info（W3C 语义：仅 Violation 使
+    conforms=false）；报告新增 `severity_counts`
+  - **sh:not**：内嵌 PropertyShape 节点级取反（datatype/pattern/class/
+    languageIn 作用于值节点）
+  - **sh:languageIn**：`"@lang"` 后缀与 `{"@value","@language"}` 双载体，
+    无语言标签 = 违例（W3C：literal 须带标签）
+  - **sh:qualifiedValueShape**：qualifiedMinCount/qualifiedMaxCount
+- 单测：`test_ont_g14_shacl.py` **30 passed**（16 既有 + 14 增量，每约束
+  正反例）；REST live 4 项经网关（severity Warning 不破 conforms / not 违例
+  / languageIn 违例 / qualifiedMinCount 违例），契约 ontValidateV2Shacl
+  schema 同步（severity enum + severity_counts + 新约束字段）。
+- PRD-23 → [x]，覆盖/未覆盖清单见 PRD（未覆盖：sh:node 递归、path 表达式、
+  组件族 in/minLength 等、target 三变体、Test Suite conformance、RDF graph
+  报告格式——均已如实列明）。
+
+## 13. ONT-G33 对齐与合并最小闭环 [→~]
+
+- kernel `alignment.py`：
+  - **align_individuals**：explicit_pairs（vocabulary same_as）+ 词汇证据
+    （label 规范化相等）+ 结构证据（属性 slug + 值签名 Jaccard ≥0.5，跨本体
+    可比）；匹配对带 evidence/score；聚类复用 reasoning R2 并查集传递闭包
+  - **merge_object_types**：字段并集（Property rid）+ 同 rid 字段级冲突标记
+    （left/right/resolved）+ keep_left/keep_right 策略 + 合并审计
+    （merged_from/into/strategy/added/conflicts/计数）；PK 并集守
+    ObjectType 不变量
+- REST（契约先行，ont.yaml 新增 2 路径 + operationId）：
+  `ontAlignV2Individuals`（POST /v2/alignment/run）、
+  `ontPreviewV2ObjectTypeMerge`（POST /v2/object-types/merge-preview，
+  stateless；实例重映射仍走既有 ontMergeV2ObjectTypes，互补）。
+- 单测：`test_ont_g33_alignment.py` **9 passed**（显式聚类/词汇/结构/负例/
+  传递闭包/并集/冲突 keep_left/keep_right/审计+PK 并集）；live 2 项经网关
+  （alignment 三证据单簇 / merge-preview 并集+冲突+审计）。
+- 残余（如实）：modularization（FR-ALIGN-003）留增量 → PRD-33 [~]。
+
+## 14. 测试汇总（第三批）
+
+- 新增：SHACL 14 + G33 9 = **23 passed**（合计 kernel 三批 39：SHACL 30 +
+  G33 9）；kernel 全套件 611 passed 无回归。
+- ont 套件 228 passed；`test_tenant_isolation_hard` 8 errors 经 stash 验证
+  **HEAD 上同样失败**（PG 表属主环境问题，非本批引入）；objectset PG 1 例
+  偶发环境抖动，复跑即绿。
+
+## 15. 残余与边界（第三批后）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| Trino 联邦 + Iceberg Roundtrip | [x] | §10 |
+| 多模态 Iceberg ADS | [x] | §11（dp-a34ba0d4 published v2）|
+| SHACL PRD-23 | [x] | §12（未覆盖清单如实）|
+| G33 对齐/合并 | [~] | §13（modularization 留增量）|
+| Paimon 运行面 | [x] | §16（Flink 1.20 + Paimon 1.1.1 on MinIO）|
+| staging 演练 / BI 集成（StarRocks） | [ ] | 后续批次 |
+
+## 16. Paimon 运行面 [x]
+
+- **交付**：`docker-compose.paimon.yml`（Flink 1.20 standalone：JM 640m + TM
+  1024m/2 slot，同 metaplatform 网络）+ `.tmp-paimon/` 运行件：
+  `paimon-flink-1.20-1.1.1.jar` + **`paimon-s3-1.1.1.jar`**（官方 S3 filesystem
+  bundle，SDK v2，原生吃 catalog `'s3.*'` options）+ `flink-s3-fs-hadoop` +
+  `hadoop-hdfs-client`（兜底 hadoop Configuration/HdfsConfiguration 类路径）
+  + `core-site.xml`（fs.s3a.* 兜底）。
+- **调试链（如实）**：① s3 插件只挂 plugins/ → paimon 不可见 hadoop 类
+  （移 lib 解决）；② 缺 hadoop-hdfs-client（补 jar）；③ catalog `'s3.*'`
+  options 走 s3a 签名 403（换 paimon-s3 bundle 解决——s3a 路径对 MinIO 的
+  凭据/签名链路不稳，官方 bundle 为正解）。
+- **SQL 取证**（`sql-client.sh -f`，batch 模式）：CREATE CATALOG paimon
+  （warehouse=s3://mate-warehouse/paimon + s3.endpoint=mate-minio:9000 +
+  path-style）→ CREATE TABLE `sprint5_paimon_rt`(id,name,amount,parquet) →
+  INSERT 3 行（Job `c4519597ad8a0d650e79c66b9e8f47dc`，state=**FINISHED**）→
+  SELECT 返回 **3 rows**（1/alpha/10.5、2/beta/20.5、3/gamma/30.5）。
+- **落位验证**：MinIO `mate-warehouse/paimon/default.db/sprint5_paimon_rt/`
+  完整 lake 布局（bucket-0 parquet 数据文件 + manifest + schema + snapshot）。
+- 与 Trino 激活互斥窗口执行（Flink 验证后 down，Trino 重建，kind 四节点恢复）。
