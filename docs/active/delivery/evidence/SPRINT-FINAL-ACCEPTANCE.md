@@ -87,11 +87,17 @@ marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
   mate-postgres 崩溃恢复两轮均自愈（redo 极小、无数据损失）。
 - 恢复期发现「连接重试风暴拖慢 PG recovery」——静默停依赖服务后 PG 数分钟内
   就绪；依赖服务按序重启即绿。
+- **mate-temporal-worker 二次根因**：容器系裸 `docker run` 创建，
+  `TEMPORAL_HOST=172.27.0.2:7233` 硬编码容器 IP——WSL 重启后 IP 洗牌
+  （172.27.0.2 变为 temporal-db）导致永连不上。已按服务名
+  `temporal:7233` 重建（双网络 metaplatform_default + temporal-net），
+  temporal 本体亦因等待环卡死重启后恢复；worker 稳定运行（自愈探针
+  补丁保留）。教训：容器互联一律用服务名，禁止硬编码 IP。
 
 ## 收尾态
 31 容器 Up（trino 按文档边界回 stopped）、kind 四节点 Ready、fe9200=200、
 login=200（容器内网络验证；宿主端口转发层间歇抖动为 Docker Desktop 基础设施
-问题，与栈无关）、check_plan_tables 0。
+问题，与栈无关）、check_plan_tables 0、temporal 栈全绿（worker 稳定运行）。
 
 ## 16. 安全审计（部分）[~]
 
