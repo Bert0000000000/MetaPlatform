@@ -135,8 +135,8 @@ class TestSeedDemo:
         })
         assert len(r.json()) == 3  # 未重复注入
 
-    def test_seed_apply_action_contract_path(self, client_with_ctx):
-        """种子 ActionType 可经契约路径 apply（唯一合法写路径）。"""
+    def test_seed_direct_apply_path_is_retired(self, client_with_ctx):
+        """Seeded ActionTypes also require the confirmed proposal boundary."""
         c = client_with_ctx
         r = c.post(
             "/api/v1/ont/v2/action-types/ont.tenant-default.act.approve-leave.v1/apply",
@@ -146,8 +146,5 @@ class TestSeedDemo:
                 "provenance": {"actor": "alice"},
             },
         )
-        assert r.status_code == 200, r.text
-        body = r.json()
-        assert body["action_rid"] == "ont.tenant-default.act.approve-leave.v1"
-        assert body["side_effects_emitted"] == ["notify_email", "audit_log"]
-        assert body["applied_at"]
+        assert r.status_code == 410, r.text
+        assert "proposals" in r.json()["detail"]

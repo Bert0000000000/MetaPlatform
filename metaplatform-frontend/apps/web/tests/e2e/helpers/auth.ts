@@ -25,13 +25,21 @@ const IAM_LOGIN_URL =
 const IAM_USERNAME = process.env.E2E_USERNAME ?? 'admin';
 const IAM_PASSWORD = process.env.E2E_PASSWORD ?? 'admin123';
 
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
 /**
  * 用 page.request 走真实 IAM 登录拿 access token；同时校验返回结构。
  * 失败抛 Error 包含 HTTP code + 响应体前 200 字符。
  */
-export async function fetchAccessToken(request: APIRequestContext): Promise<string> {
+export async function fetchAccessToken(
+  request: APIRequestContext,
+  credentials: LoginCredentials = { username: IAM_USERNAME, password: IAM_PASSWORD },
+): Promise<string> {
   const resp = await request.post(IAM_LOGIN_URL, {
-    data: { username: IAM_USERNAME, password: IAM_PASSWORD },
+    data: credentials,
     headers: { 'Content-Type': 'application/json' },
     timeout: 30_000,
   });

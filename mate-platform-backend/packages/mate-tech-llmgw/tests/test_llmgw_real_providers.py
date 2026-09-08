@@ -231,6 +231,35 @@ def test_real_chat_route_openai(monkeypatch: pytest.MonkeyPatch) -> None:
     assert body["provider"] == "openai"
 
 
+def test_real_chat_route_rejects_synthetic_fallback_for_tool_decision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A decision request with tools must fail closed when its provider is down."""
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+    client = _make_client()
+    r = client.post(
+        "/api/v1/llmgw/chat/real",
+        json={
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": "dispatch an employee"}],
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "dispatch_employee",
+                        "parameters": {"type": "object"},
+                    },
+                }
+            ],
+            "tenant_id": "tenant-test",
+        },
+    )
+    assert r.status_code == 503, r.text
+    assert "synthetic fallback is disabled" in r.text
+
+
 def test_real_chat_route_unknown_provider() -> None:
     """POST /llmgw/chat/real with unknown provider returns 400."""
     client = _make_client()

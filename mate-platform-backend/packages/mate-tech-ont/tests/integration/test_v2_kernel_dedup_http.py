@@ -14,7 +14,7 @@ import pytest
 
 from mate_kernel.ontology.identity import ClassRef
 from mate_kernel.ontology.instances import Individual
-from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
+from mate_kernel.ontology.types import ActionType, ObjectType, Property, PropertyFormat
 
 PG_DSN = os.getenv(
     "PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform_ont_test",
@@ -304,3 +304,63 @@ class TestDedupHttpE2E:
         assert [event["to_status"] for event in pg_repo.list_proposal_events(proposal.proposal_id)] == [
             "pending", "confirmed",
         ]
+
+    def test_action_executes_only_through_confirmed_proposal_and_returns_evidence(
+        self, client_with_ctx, pg_repo,
+    ):
+        object_rid = "ont.acme.obj.ops.order.v1"
+        action_rid = "ont.acme.act.ops.review-order.v1"
+        target_iid = "ont.acme.ind.order.42"
+        pg_repo.upsert_object_type(_ot(object_rid, "Order"))
+        pg_repo.upsert_action_type(
+            ActionType(
+                rid=ClassRef(action_rid),
+                parameters=(),
+                submission_criteria=(),
+                side_effects=("create_follow_up",),
+                function_ref=ClassRef("ont.acme.fn.ops.review-order.v1"),
+                on=(ClassRef(object_rid),),
+            )
+        )
+        pg_repo.create_individual(_ind(target_iid, object_rid, "42"))
+
+        proposed = client_with_ctx.post(
+            f"/api/v1/ont/v2/action-types/{action_rid}/propose",
+            json={"target_iid": target_iid, "parameters": {}, "impact_summary": "review"},
+        )
+        assert proposed.status_code == 200, proposed.text
+        proposal_id = proposed.json()["proposal_id"]
+
+        direct_apply = client_with_ctx.post(
+            f"/api/v1/ont/v2/action-types/{action_rid}/apply",
+            json={"target_iid": target_iid, "parameters": {}},
+        )
+        assert direct_apply.status_code == 410
+
+        confirmed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal_id}/confirm",
+            json={},
+            headers={"Idempotency-Key": "action-confirm-1"},
+        )
+        assert confirmed.status_code == 200, confirmed.text
+        assert confirmed.json()["confirmed_by"] == "alice"
+
+        executed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal_id}/execute",
+            headers={"Idempotency-Key": "action-execute-1"},
+        )
+        assert executed.status_code == 200, executed.text
+        receipt = executed.json()
+        assert receipt["kind"] == "action"
+        assert receipt["action_rid"] == action_rid
+        assert receipt["target_iid"] == target_iid
+        assert receipt["audit_id"]
+        assert receipt["outbox_event_ids"]
+        assert receipt["side_effects_emitted"] == ["create_follow_up"]
+
+        replayed = client_with_ctx.post(
+            f"/api/v1/ont/v2/proposals/{proposal_id}/execute",
+            headers={"Idempotency-Key": "action-execute-1"},
+        )
+        assert replayed.status_code == 200, replayed.text
+        assert replayed.json() == receipt

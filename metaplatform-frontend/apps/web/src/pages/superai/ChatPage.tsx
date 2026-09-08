@@ -1213,7 +1213,7 @@ export default function ChatPage() {
           style={{ width: '100%', border: 'none', height: '100%', borderLeft: '1px solid var(--border)' }}
           options={[{ key: 'toolbar', icon: null, name: null }]}
           renderOptionItem={() => (
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div key="toolbar" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Button theme="solid" type="primary" icon={<PlusOutlined />} block onClick={() => void handleNewConversation()}>
                 新建会话
               </Button>

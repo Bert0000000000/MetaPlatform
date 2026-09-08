@@ -61,6 +61,9 @@ class ProposalStatus(StrEnum):
     CONFIRMED = "confirmed"
     REJECTED = "rejected"
     EXECUTED = "executed"
+    # PRD-02（MP-ACTION-CONFIRM-01，2026-09-08）：撤销语义新增两终态
+    WITHDRAWN = "withdrawn"   # pending → withdrawn（作者确认前撤回）
+    REVERTED = "reverted"     # executed → reverted（人审撤销 + 补偿执行）
 
 
 @dataclass(frozen=True, slots=True)
@@ -249,6 +252,28 @@ class ActionService:
     def reject_proposal(self, proposal_id: str, confirmed_by: str = "") -> ActionProposal:
         """pending → rejected（终态）。"""
         return self._transition_proposal(proposal_id, ProposalStatus.REJECTED, by=confirmed_by)
+
+    def withdraw_proposal(self, proposal_id: str, by: str = "") -> ActionProposal:
+        """pending → withdrawn（PRD-02：作者在确认前撤回；终态）。"""
+        p = self.get_proposal(proposal_id)
+        if p.status is not ProposalStatus.PENDING:
+            raise ProposalNotConfirmed(
+                f"proposal {proposal_id} is {p.status.value}; withdraw requires pending"
+            )
+        updated = replace(p, status=ProposalStatus.WITHDRAWN)
+        self._proposals[proposal_id] = updated
+        return updated
+
+    def mark_reverted(self, proposal_id: str) -> ActionProposal:
+        """executed → reverted（PRD-02：撤销补偿执行完成后的状态回写；终态）。"""
+        p = self.get_proposal(proposal_id)
+        if p.status is not ProposalStatus.EXECUTED:
+            raise ProposalNotConfirmed(
+                f"proposal {proposal_id} is {p.status.value}; revert requires executed"
+            )
+        updated = replace(p, status=ProposalStatus.REVERTED)
+        self._proposals[proposal_id] = updated
+        return updated
 
     def mark_executed(self, proposal_id: str) -> ActionProposal:
         """confirmed → executed（MP-SAL-04b：proposal 的落库执行回执）。

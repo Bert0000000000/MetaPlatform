@@ -6,8 +6,11 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import pytest
+from sqlalchemy import text
 
 from mate_app_copilot.clients.orchestrator_client import OrchestratorClientError
+from mate_platform.messaging.events import Event
+from mate_tech_db.base import get_engine, reset_engine
 
 
 class _SnapshotClient:
@@ -181,6 +184,58 @@ def _routing_records(outbox) -> list:
     ]
 
 
+def test_create_app_persists_routing_audit_to_the_database(
+    tmp_path, monkeypatch,
+) -> None:
+    """Removing the durable Writer or its table must fail this audit boundary."""
+    from mate_app_copilot.main import create_app
+
+    reset_engine()
+    monkeypatch.setenv("MATE_PROFILE", "test")
+    monkeypatch.setenv("MATE_DB_URL", f"sqlite:///{tmp_path / 'routing-audit.sqlite'}")
+    try:
+        app = create_app()
+        app.state.outbox_writer.append(
+            Event.create(
+                event_id="routing-audit-persistent-1",
+                type="copilot.routing.decided",
+                tenant_id="tenant-acme",
+                aggregate_id="correlation-persistent-1",
+                trace_id="trace-persistent-1",
+                payload={
+                    "tenant_id": "tenant-acme",
+                    "actor_id": "u-1",
+                    "selected_rid": "workflow",
+                    "reason_code": "model_selected",
+                },
+            )
+        )
+        with get_engine().connect() as connection:
+            row = connection.execute(
+                text(
+                    "SELECT tenant_id, event_type, aggregate_id, payload, status "
+                    "FROM outbox_event WHERE id = :event_id"
+                ),
+                {"event_id": "routing-audit-persistent-1"},
+            ).mappings().one()
+        persisted = dict(row)
+        persisted["payload"] = json.loads(persisted["payload"])
+        assert persisted == {
+            "tenant_id": "tenant-acme",
+            "event_type": "copilot.routing.decided",
+            "aggregate_id": "correlation-persistent-1",
+            "payload": {
+                "tenant_id": "tenant-acme",
+                "actor_id": "u-1",
+                "selected_rid": "workflow",
+                "reason_code": "model_selected",
+            },
+            "status": "pending",
+        }
+    finally:
+        reset_engine()
+
+
 def test_selected_decision_writes_one_minimal_outbox_event(
     client, outbox, auth_headers_acme, monkeypatch,
 ) -> None:
@@ -268,6 +323,56 @@ def test_denied_decision_writes_one_minimal_outbox_event(
         "trace_id": "trace-audit-denied",
         "correlation_id": "correlation-audit-denied",
     }
+
+
+def test_denied_decision_persists_conversation_evidence_without_llm_content(
+    client, auth_headers_acme, monkeypatch,
+) -> None:
+    """A fail-closed turn remains reviewable after the browser reloads."""
+    from mate_app_copilot.api import app as copilot_app
+
+    monkeypatch.setattr(copilot_app, "OrchestratorClient", _SnapshotClient)
+    monkeypatch.setattr(copilot_app, "run_agent_loop", _denied_loop)
+    created = client.post(
+        "/api/v1/copilot/conversations",
+        json={"title": "新对话", "mode": "chat"},
+        headers=auth_headers_acme,
+    )
+    assert created.status_code == 200, created.text
+    conversation_id = created.json()["data"]["id"]
+
+    response = client.post(
+        "/api/v1/copilot/chat/agent/stream",
+        json={
+            "messages": [{"role": "user", "content": "review this order"}],
+            "model": "audit-test-model",
+            "conversationId": conversation_id,
+        },
+        headers=auth_headers_acme,
+    )
+    assert response.status_code == 200, response.text
+
+    history = client.get(
+        f"/api/v1/copilot/conversations/{conversation_id}/messages",
+        headers=auth_headers_acme,
+    )
+    assert history.status_code == 200, history.text
+    items = history.json()["data"]["items"]
+    assert [item["role"] for item in items] == ["user", "assistant"]
+    assert items[1]["content"] == ""
+    assert items[1]["metadata"]["routingDecisions"] == [
+        {
+            "type": "routing_decision",
+            "stage": "final",
+            "outcome": "denied",
+            "selected": None,
+            "reason_code": "no_authorized_candidates",
+            "candidates": [],
+            "policy_version": "semantic-router-v1",
+            "trace_id": "trace-audit-denied",
+            "correlation_id": "correlation-audit-denied",
+        }
+    ]
 
 
 def test_snapshot_failure_writes_a_denied_outbox_event(

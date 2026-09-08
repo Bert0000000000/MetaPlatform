@@ -110,8 +110,8 @@ class TestProposeFlow:
         assert spec.steps[0].step_id == "s1"
 
     @pytest.mark.asyncio
-    async def test_review_approve_confirms_and_applies(self) -> None:
-        """HITL 合一：approve = proposal confirm + execute/apply，真实落库。"""
+    async def test_review_approve_confirms_and_executes_action_proposal(self) -> None:
+        """HITL approval executes the confirmed action proposal, never direct apply."""
         runner, client = _runner()
         spec = runner.submit(author_user_id="u1", steps=[
             PlanStep(step_id="s1", kind=StepKind.PROPOSE, target="ont.t.act.flag.v1",
@@ -125,8 +125,9 @@ class TestProposeFlow:
         assert out["status"] == "completed"
         names = [c[0] for c in client.calls]
         assert "confirm" in names
-        assert "apply" in names
-        assert names.index("confirm") < names.index("apply")
+        assert "execute_proposal" in names
+        assert "apply" not in names
+        assert names.index("confirm") < names.index("execute_proposal")
 
     @pytest.mark.asyncio
     async def test_review_reject_rejects_proposal_and_aborts(self) -> None:
@@ -186,7 +187,7 @@ class TestEvaluateAndDataflow:
 class TestApplyActionStep:
     @pytest.mark.asyncio
     async def test_apply_action_step_runs_same_pipeline(self) -> None:
-        """ADR-0045：APPLY_ACTION ≡ PROPOSE 同管线（propose→HITL→approve=confirm+apply）。"""
+        """ADR-0045：APPLY_ACTION ≡ PROPOSE（propose→HITL→confirm+execute）。"""
         runner, client = _runner()
         spec = runner.submit(author_user_id="u1", steps=[
             PlanStep(step_id="s1", kind=StepKind.APPLY_ACTION, target="ont.t.act.flag.v1",
@@ -199,7 +200,8 @@ class TestApplyActionStep:
                                    feedback="", tenant_id="t")
         assert out2["status"] == "completed"
         names = [c[0] for c in client.calls]
-        assert "propose_action" in names and "confirm" in names and "apply" in names
+        assert "propose_action" in names and "confirm" in names and "execute_proposal" in names
+        assert "apply" not in names
 
 
 class TestNoHitlStillEnforced:

@@ -31,6 +31,8 @@ import asyncio
 from datetime import UTC, datetime
 from typing import Any
 
+import structlog
+
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -60,6 +62,8 @@ from mate_platform.tenancy.guards import require_tenant
 
 from .pg_repo import SlugConflictError  # MP-DEDUP-01: 409 翻译
 from .similarity import search_similar_object_types  # MP-DEDUP-01: precheck 相似扫描
+
+_logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/ont/v2", tags=["v2-kernel"])
 
@@ -536,6 +540,343 @@ async def list_object_types(
 
 
 @router.get(
+    "/object-types/{rid:path}/export",
+    response_model=dict,
+    operation_id="ontExportV2ObjectType",
+)
+async def export_object_type(rid: str, request: Request,
+                             format: str = "jsonld") -> dict:
+    """ONT-G9/G20：导出类型定义为 JSON-LD 或 OWL/Turtle（@prefix 序列）。"""
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+
+    _ctx(request)
+    ot = await _call_scoped(request, "get_object_type", ClassRef(rid))
+    props = [
+        {
+            "@id": p.rid.rid,
+            "@type": "owl:DatatypeProperty",
+            "schema:name": p.rid.rid.split(".")[3] if len(p.rid.rid.split(".")) >= 5 else p.rid.rid,
+            "rdfs:domain": ot.rid.rid,
+            "ont:type_id": p.type_id,
+            "ont:nullable": p.nullable,
+            "ont:primary_key": p.primary_key,
+        }
+        for p in ot.properties
+    ]
+    if format == "turtle":
+        lines = [
+            f"@prefix ont: <{ot.rid.rid.rsplit('.', 2)[0]}> .",
+            "@prefix owl: <http://www.w3.org/2002/07/owl#> .",
+            "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
+            f"ont:{ot.rid.rid.split('.')[4]} a owl:Class ; rdfs:label '{ot.display_name}' .",
+        ]
+        for pr in props:
+            lines.append(
+                f"ont:{pr['schema:name']} a owl:DatatypeProperty ; "
+                f"rdfs:domain ont:{ot.rid.rid.split('.')[4]} ; "
+                f"ont:typeId '{pr['ont:type_id']}' ."
+            )
+        return {"format": "turtle", "rid": rid, "content": chr(10).join(lines)}
+    return {
+        "format": "jsonld",
+        "rid": rid,
+        "content": {
+            "@context": {"owl": "http://www.w3.org/2002/07/owl#",
+                         "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+                         "schema": "https://schema.org/"},
+            "@id": ot.rid.rid,
+            "@type": "owl:Class",
+            "rdfs:label": ot.display_name,
+            "schema:hasProperty": props,
+        },
+    }
+
+
+@router.post(
+    "/object-types/import",
+    response_model=ObjectTypeResponse,
+    operation_id="ontImportV2ObjectType",
+)
+async def import_object_type(request: Request, payload: dict) -> ObjectTypeResponse:
+    """ONT-G9/G20：从 export 的 JSON-LD content 回灌类型（同 rid upsert 语义）。"""
+    ctx = _ctx(request)
+    content = payload.get("content") or {}
+    rid = str(content.get("@id") or payload.get("rid") or "")
+    if not rid.startswith(f"ont.{ctx.tenant_id}.obj."):
+        raise HTTPException(status_code=422, detail="content.@id must be a tenant object rid")
+    raw_props = content.get("schema:hasProperty") or []
+    props = []
+    for rp in raw_props:
+        props.append({
+            "rid": rp["@id"], "type_id": rp.get("ont:type_id", "string"),
+            "nullable": bool(rp.get("ont:nullable", True)),
+            "primary_key": bool(rp.get("ont:primary_key", False)),
+            "title": rp.get("schema:name", rp["@id"]),
+            "format": "string",
+        })
+    if not props:
+        raise HTTPException(status_code=422, detail="no properties in content")
+    body = {
+        "rid": rid, "display_name": content.get("rdfs:label", rid),
+        "primary_key": [p["rid"] for p in props if p["primary_key"]] or [props[0]["rid"]],
+        "properties": props,
+    }
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+
+    from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+    from mate_kernel.ontology.types.object_type import ObjectType
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+
+    pk_rids = [r for r in body["primary_key"]]
+    ot = ObjectType(
+        rid=ClassRef(rid), display_name=body["display_name"],
+        primary_key=tuple(ClassRef(r) for r in pk_rids),
+        properties=tuple(
+            Property(rid=ClassRef(pp["rid"]),
+                     type_id=pp.get("type_id", "string"),
+                     nullable=bool(pp.get("nullable", True)),
+                     primary_key=pp["rid"] in pk_rids,
+                     title=pp.get("title", pp["rid"]),
+                     format=PropertyFormat.STRING)
+            for pp in body["properties"]
+        ),
+    )
+    out = await _call_scoped(request, "upsert_object_type", ot)
+    return _ot_to_dto(out)
+
+
+@router.get(
+    "/reasoning/axioms",
+    response_model=list[dict],
+    operation_id="ontListV2Axioms",
+)
+async def list_axioms(request: Request, enabled_only: bool = False) -> list[dict]:
+    """ONT-G18：列出本租户已注册公理。"""
+    _ctx(request)
+    return await _call_scoped(request, "list_axiom_records", _ctx(request).tenant_id,
+                                  enabled_only=enabled_only)
+
+
+@router.post(
+    "/reasoning/axioms",
+    response_model=dict,
+    operation_id="ontUpsertV2Axiom",
+)
+async def upsert_axiom(request: Request, payload: dict) -> dict:
+    """ONT-G18：注册/更新公理（body: rid/kind/operands/rule_ref/enabled）。"""
+    ctx = _ctx(request)
+    rid = str(payload.get("rid") or "")
+    if not rid.startswith(f"ont.{ctx.tenant_id}.ax."):
+        raise HTTPException(status_code=422, detail="rid must be ont.<tenant>.ax.<slug>.<v>")
+    try:
+        return await _call_scoped(
+            request, "upsert_axiom_record", rid, str(payload.get("kind")),
+            [str(o) for o in payload.get("operands") or []],
+            str(payload.get("rule_ref") or "builtin"),
+            tenant_id=ctx.tenant_id,
+            enabled=bool(payload.get("enabled", True)),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@router.delete(
+    "/reasoning/axioms/{rid:path}",
+    operation_id="ontDeleteV2Axiom",
+)
+async def delete_axiom(rid: str, request: Request) -> dict:
+    _ctx(request)
+    return {"deleted": await _call_scoped(request, "delete_axiom_record", rid)}
+
+
+@router.post(
+    "/reasoning/explain",
+    response_model=dict,
+    operation_id="ontExplainV2Reasoning",
+)
+async def explain_reasoning(request: Request, payload: dict) -> dict:
+    """ONT-G18：derivation chain —— 每个推导事实给出规则 + 前提链。"""
+    _ctx(request)
+    from mate_kernel.ontology.reasoning.engine import run_inference
+
+    sub_ax = [tuple(p) for p in payload.get("subclass_axioms") or []]
+    individuals = dict(payload.get("individuals") or {})
+    out = run_inference(
+        subclass_axioms=sub_ax, individuals=individuals,
+        same_as_pairs=[tuple(p) for p in payload.get("same_as_pairs") or []],
+        transitive_axioms=list(payload.get("transitive_axioms") or []),
+        property_edges=[tuple(e) for e in payload.get("property_edges") or []],
+    )
+    derivations: list[dict] = []
+    for ind, c in out["classification"].items():
+        for cls in c["inferred"]:
+            chain = [cls]
+            changed = True
+            while changed:
+                changed = False
+                for sub, sup in sub_ax:
+                    if chain[-1] == sup and sub not in chain:
+                        chain.append(sub)
+                        changed = True
+            derivations.append({
+                "fact": f"{ind} ∈ {cls}", "rule": "subclass-closure",
+                "chain": list(reversed(chain)) + [ind],
+                "premises": [f"{chain[i]} ⊑ {chain[i+1]}"
+                             for i in range(len(chain) - 1)],
+            })
+    for rep, members in out["same_as_clusters"].items():
+        derivations.append({
+            "fact": " ≈ ".join(members), "rule": "same-as-merge",
+            "chain": members, "premises": payload.get("same_as_pairs") or [],
+        })
+    for e in out["transitive_inferred"]:
+        derivations.append({
+            "fact": f"{e['src']} --{e['property']}--> {e['dst']}",
+            "rule": "transitive-property", "chain": [e["src"], e["dst"]],
+            "premises": [f"{e['src']} --{e['property']}--> ?",
+                         f"? --{e['property']}--> {e['dst']}"],
+        })
+    return {"derivation_count": len(derivations), "derivations": derivations,
+            "result": out}
+
+
+@router.post(
+    "/reasoning/run",
+    response_model=dict,
+    operation_id="ontRunV2Reasoning",
+)
+async def run_reasoning(request: Request, payload: dict) -> dict:
+    """ONT-G16+G13：Axiom 执行引擎（subclass 闭包 / same_as / transitive）。
+
+    body::
+
+        {
+          "subclass_axioms": [["a", "b"], ...],      # a ⊑ b
+          "individuals": {"ind1": ["a"], ...},        # 实例断言类
+          "same_as_pairs": [["i1", "i2"], ...],
+          "transitive_axioms": ["related_to"],
+          "property_edges": [["related_to", "x", "y"], ...]
+        }
+    """
+    _ctx(request)
+    from mate_kernel.ontology.reasoning.engine import run_inference
+
+    return run_inference(
+        subclass_axioms=[tuple(p) for p in payload.get("subclass_axioms") or []],
+        individuals=dict(payload.get("individuals") or {}),
+        same_as_pairs=[tuple(p) for p in payload.get("same_as_pairs") or []],
+        transitive_axioms=list(payload.get("transitive_axioms") or []),
+        property_edges=[tuple(e) for e in payload.get("property_edges") or []],
+    )
+
+
+@router.post(
+    "/object-types/validate",
+    response_model=dict,
+    operation_id="ontValidateV2Model",
+)
+async def validate_model_endpoint(request: Request, payload: dict) -> dict:
+    """ONT-G17：类型定义静态验证（不落库）。body = ObjectTypeDTO 同构。"""
+    _ctx(request)
+    from mate_kernel.ontology.validation_ops import validate_model
+
+    try:
+        dto = ObjectTypeDTO(**payload)
+        ot = _dto_to_ot(dto)
+    except ValueError as e:
+        # 构造器不变量（PK∈properties 等）本身即模型错误 —— 返回为验证结果
+        return {"valid": False, "errors": [str(e)], "warnings": [],
+                "rid": str(payload.get("rid", ""))}
+    return validate_model(ot)
+
+
+@router.post(
+    "/object-types/validate-data",
+    response_model=dict,
+    operation_id="ontValidateV2Data",
+)
+async def validate_data_endpoint(request: Request, payload: dict) -> dict:
+    """ONT-G17：实例 props 对类型 schema 验证。body: {class_rid, props}。"""
+    _ctx(request)
+    from mate_kernel.ontology.identity.class_ref import ClassRef
+    from mate_kernel.ontology.validation_ops import validate_instance
+
+    ot = await _call_scoped(
+        request, "get_object_type", ClassRef(str(payload["class_rid"])))
+    return validate_instance(ot, dict(payload.get("props") or {}))
+
+
+@router.post(
+    "/object-types/{rid:path}/branch",
+    response_model=ObjectTypeResponse,
+    operation_id="ontBranchV2ObjectType",
+)
+async def branch_object_type(
+    rid: str, request: Request, payload: dict = None,
+) -> ObjectTypeResponse:
+    """ONT-G8/G19：以当前定义分支出新版本 rid（body: {new_rid, note?}）。"""
+    ctx = _ctx(request)
+    import json as _json
+    body = payload or {}
+    new_rid = str((body or {}).get("new_rid") or "")
+    note = str((body or {}).get("note") or "")
+    if not new_rid.startswith(f"ont.{ctx.tenant_id}.obj."):
+        raise HTTPException(status_code=422, detail="new_rid must be a tenant object rid")
+    try:
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        out = await _call_scoped(
+            request, "branch_object_type", ClassRef(rid), ClassRef(new_rid), note=note,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _ot_to_dto(out)
+
+
+@router.get(
+    "/object-types/{rid:path}/diff",
+    response_model=dict,
+    operation_id="ontDiffV2ObjectType",
+)
+async def diff_object_type(rid: str, request: Request, against: str) -> dict:
+    """ONT-G8：rid 与 against（同族另一版本）的属性级 diff。"""
+    _ctx(request)
+    try:
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        return await _call_scoped(
+            request, "diff_object_types", ClassRef(rid), ClassRef(against),
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post(
+    "/object-types/{rid:path}/rollback",
+    response_model=ObjectTypeResponse,
+    operation_id="ontRollbackV2ObjectType",
+)
+async def rollback_object_type(
+    rid: str, request: Request, payload: dict = None,
+) -> ObjectTypeResponse:
+    """ONT-G8/G19：把 rid 定义回滚为 from_rid（body: {from_rid}）。"""
+    ctx = _ctx(request)
+    body = payload or {}
+    from_rid = str((body or {}).get("from_rid") or "")
+    if not from_rid.startswith(f"ont.{ctx.tenant_id}.obj."):
+        raise HTTPException(status_code=422, detail="from_rid must be a tenant object rid")
+    try:
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        out = await _call_scoped(
+            request, "rollback_object_type", ClassRef(rid), ClassRef(from_rid),
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _ot_to_dto(out)
+
+
+@router.get(
     "/object-types/{rid:path}",
     response_model=ObjectTypeResponse,
     operation_id="ontGetV2ObjectType",
@@ -750,13 +1091,23 @@ async def _apply_action(request: Request, action_rid: str, payload: ActionApplyB
 async def apply_action_by_rid(
     rid: str, payload: ActionApplyBodyDTO, request: Request,
 ) -> ActionApplyResponse:
-    """Apply an ActionType — the only legal write entry (KERNEL-01 基元 6).
+    """Reject direct execution that could bypass human confirmation.
 
-    Contract path style: rid in the path, body carries parameters /
-    target_iid / provenance. AI/Function/SDK all converge here.
-    MP-SAL-04：provenance.proposal_id 现在被引擎真正校验（未确认永不落库）。
+    ActionType side effects now execute exclusively through a confirmed
+    proposal at ``POST /proposals/{proposal_id}/execute``. The endpoint is
+    retained only to give legacy clients an actionable migration response.
     """
-    return await _apply_action(request, rid, payload)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    del payload
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "direct action apply is retired; create and confirm an action proposal, "
+            "then POST /proposals/{proposal_id}/execute"
+        ),
+    )
 
 
 # ─────────────────── MP-SAL-04: Proposal 状态机端点（ADR-0044 §2.4）───────────────────
@@ -826,6 +1177,11 @@ class ProposalExecuteResultDTO(BaseModel):
     kind: str
     individual_rid: str | None = None
     type_rid: str | None = None
+    action_rid: str | None = None
+    target_iid: str | None = None
+    audit_id: str | None = None
+    outbox_event_ids: list[str] = Field(default_factory=list)
+    side_effects_emitted: list[str] = Field(default_factory=list)
     # MP-DEDUP-01：merge_suggestion 落库后返回 merge 摘要
     source_rid: str | None = None
     target_rid: str | None = None
@@ -845,6 +1201,12 @@ async def propose_instance(
     ctx = _ctx(request)
     if not class_rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant propose denied")
+    _logger.info(
+        "ont.proposal.propose",
+        proposal_kind="create_instance", class_rid=class_rid,
+        tenant_id=getattr(ctx, "tenant_id", ""),
+        actor_id=str(getattr(ctx, "user_id", "")),
+    )
     try:
         prop = await _call_scoped(
             request, "propose_create_instance", class_rid,
@@ -875,6 +1237,66 @@ async def propose_object_type(
 
 
 @router.post(
+    "/proposals/{proposal_id}/withdraw",
+    response_model=dict,
+    operation_id="ontWithdrawV2Proposal",
+)
+async def withdraw_proposal(
+    proposal_id: str, request: Request,
+) -> dict:
+    """PRD-02 FR-ACT-CONFIRM-001：pending → withdrawn（作者确认前撤回；终态）。"""
+    _logger.info(
+        "ont.proposal.withdraw",
+        proposal_id=proposal_id,
+        tenant_id=getattr(_ctx(request), "tenant_id", ""),
+        actor_id=str(getattr(_ctx(request), "user_id", "")),
+    )
+    try:
+        out = await _call_scoped(
+            request, "withdraw_proposal", proposal_id,
+            actor_id=str(_ctx(request).user_id),
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    return out
+
+
+@router.post(
+    "/proposals/{proposal_id}/revert",
+    response_model=dict,
+    operation_id="ontRevertV2Proposal",
+)
+async def revert_proposal(
+    proposal_id: str, request: Request,
+) -> dict:
+    """PRD-02 FR-ACT-CONFIRM-002..006：executed → reverted（人审撤销 + 补偿）。
+
+    create_instance → 实例删除（I1 ≃ 等价判定）；action/model → audit-only
+    partial；7 天窗口外拒绝（409）。
+    """
+    ctx = _ctx(request)
+    idempotency_key = _require_idempotency_key(request)
+    _logger.info(
+        "ont.proposal.revert",
+        proposal_id=proposal_id, tenant_id=getattr(ctx, "tenant_id", ""),
+        actor_id=str(getattr(ctx, "user_id", "")),
+        idempotency_key=idempotency_key,
+    )
+    try:
+        out = await _call_scoped(
+            request, "revert_proposal", proposal_id,
+            actor_id=str(ctx.user_id), idempotency_key=idempotency_key,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    return out
+
+
+@router.post(
     "/proposals/{proposal_id}/execute",
     response_model=ProposalExecuteResultDTO,
     operation_id="ontExecuteV2Proposal",
@@ -887,7 +1309,7 @@ async def execute_proposal(
     - create_instance → 新建实例
     - model_type → upsert 类型
     - merge_suggestion → 自动触发 merge_object_types，archived source
-    - action → 409 指引走 /apply
+    - action → 通过已确认的提案执行，并返回审计与 Outbox 凭据
     """
     ctx = _ctx(request)
     idempotency_key = _require_idempotency_key(request)
@@ -1156,6 +1578,11 @@ async def confirm_proposal(
 ) -> ProposalResponse:
     """用户确认（pending → confirmed）。只能由用户侧发起——不是 LLM 工具。"""
     del payload  # identity comes exclusively from the authenticated context
+    _logger.info(
+        "ont.proposal.confirm",
+        proposal_id=proposal_id, tenant_id=getattr(_ctx(request), "tenant_id", ""),
+        actor_id=str(getattr(_ctx(request), "user_id", "")), 
+    )
     ctx = _ctx(request)
     idempotency_key = _require_idempotency_key(request)
     try:
@@ -1184,6 +1611,11 @@ async def reject_proposal(
     del payload  # identity comes exclusively from the authenticated context
     ctx = _ctx(request)
     idempotency_key = _require_idempotency_key(request)
+    _logger.info(
+        "ont.proposal.reject",
+        proposal_id=proposal_id, tenant_id=getattr(ctx, "tenant_id", ""),
+        actor_id=str(getattr(ctx, "user_id", "")),
+    )
     try:
         prop = await _call_scoped(
             request,
@@ -1207,12 +1639,17 @@ async def reject_proposal(
 async def apply_action_legacy(
     payload: ActionApplyDTO, request: Request,
 ) -> ActionApplyResponse:
-    """Deprecated alias kept for RUNTIME-MVP-01 compatibility.
-
-    Existing SDK clients call this colon-style path with the action rid
-    inside the body. New callers should use `/action-types/{rid}/apply`.
-    """
-    return await _apply_action(request, payload.action_rid, payload)
+    """Reject the colon-style direct apply alias with the same migration path."""
+    ctx = _ctx(request)
+    if not payload.action_rid.startswith(f"ont.{ctx.tenant_id}."):
+        raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "direct action apply is retired; create and confirm an action proposal, "
+            "then POST /proposals/{proposal_id}/execute"
+        ),
+    )
 
 
 # ─────────────────── 4b) MP-SAL-04c: Staging Preview（pending proposal 渲染） ───────────────────

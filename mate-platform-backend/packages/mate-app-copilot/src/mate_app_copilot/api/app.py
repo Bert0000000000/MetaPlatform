@@ -33,7 +33,7 @@ from sqlparse.tokens import DDL, DML, Comment
 
 from mate_clients.security.bearer import BearerAuth
 from mate_platform.messaging.events import Event
-from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.messaging.outbox import OutboxWriter
 from mate_platform.observability import journey_span  # noqa: F401  (used in handlers)
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
@@ -41,7 +41,7 @@ from mate_tech_db.base import get_session
 
 from ..a2a.client import get_default_client as get_default_a2a_client
 from ..a2a.models import DelegationRequest
-from ..agent_loop import run_agent_loop
+from ..agent_loop import DISPATCH_TOOL_SCHEMA, run_agent_loop
 from ..clients import AsyncCopilotClient
 from ..clients.llmgw_stream import LlmgwStreamClient, LlmgwStreamError
 from ..clients.orchestrator_client import OrchestratorClient, OrchestratorClientError
@@ -581,7 +581,7 @@ def _emit(
     tenant_id: str,
 ) -> None:
     """Append an outbox event if a writer is configured (no-op otherwise)."""
-    writer: InMemoryOutboxWriter | None = getattr(
+    writer: OutboxWriter | None = getattr(
         request.app.state, "outbox_writer", None
     )
     if writer is None:
@@ -742,17 +742,17 @@ _ONT_ACTION_SUFFIX: dict[str, str] = {
 }
 
 
-async def _apply_action_to_kernel(
+async def _propose_action_to_kernel(
     request: Request,
     action_id: str,
     params: dict[str, Any],
     tid: str,
 ) -> dict[str, Any] | None:
-    """Try to apply the action in the kernel; return None if not mapped/failed.
+    """Create a governed proposal for a mapped ActionType.
 
-    三大原理 #3：AI 输出 = proposal，用户确认后由 ActionType 落库。
-    任何异常都吞掉并返回 None，调用方降级为 emit-only —— 桥接失败
-    不能让用户可见的动作执行也失败。
+    A mapped action is a real business side effect. Its dependency failure is
+    visible to the caller, and its success remains pending until a user
+    confirms the resulting ontology proposal.
     """
     suffix = _ONT_ACTION_SUFFIX.get(action_id)
     if not suffix:
@@ -768,16 +768,20 @@ async def _apply_action_to_kernel(
             auth_header = request.headers.get("authorization", "")
             if auth_header.lower().startswith("bearer "):
                 fallback_token = auth_header[7:].strip()
-        return await client.ont_apply_action(
+        proposal_params = dict(params)
+        target_iid = str(proposal_params.pop("target_iid", ""))
+        return await client.ont_propose_action(
             rid=rid,
             tenant_id=tid,
-            parameters=params,
-            target_iid=params.pop("target_iid", "") if isinstance(params, dict) else "",
-            provenance={"actor": str(getattr(request.state.ctx, "user_id", ""))},
+            parameters=proposal_params,
+            target_iid=target_iid,
             fallback_token=fallback_token or None,
         )
-    except Exception:
-        return None
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Ontology proposal service is unavailable; action was not executed",
+        ) from exc
 
 
 # --- Root (1) ---------------------------------------------------------------
@@ -922,7 +926,7 @@ async def match_actions(request: Request, body: dict[str, Any]) -> dict[str, Any
     return {"matched": _serialize(matched), "total": len(matched)}
 
 
-@router.post("/actions/{action_id}/execute")
+@router.post("/actions/{action_id}/execute", status_code=202)
 async def execute_action(
     request: Request, action_id: str, body: dict[str, Any],
 ) -> dict[str, Any]:
@@ -933,15 +937,21 @@ async def execute_action(
         raise HTTPException(status_code=404, detail="action not found")
     params = dict(body.get("params", {}))
     result_id = f"res-{uuid.uuid4().hex[:8]}"
-    kernel = await _apply_action_to_kernel(request, action_id, params, tid)
+    proposal = await _propose_action_to_kernel(request, action_id, params, tid)
+    if proposal:
+        _emit(
+            request,
+            "copilot.action.proposed",
+            str(proposal.get("proposal_id") or action_id),
+            {"action_id": action_id, "proposal_id": proposal.get("proposal_id")},
+            tid,
+        )
+        return {
+            "action_id": action_id,
+            "status": "pending_confirmation",
+            "proposal": proposal,
+        }
     output: dict[str, Any] = {"params": params}
-    if kernel:
-        # 三大原理 #3：kernel 落库成功 → 回显 applied_at + side_effects
-        output.update({
-            "applied_at": kernel.get("applied_at", ""),
-            "side_effects_emitted": kernel.get("side_effects_emitted", []),
-            "action_rid": kernel.get("action_rid", ""),
-        })
     _emit(
         request,
         "copilot.action.executed",
@@ -957,7 +967,7 @@ async def execute_action(
     }
 
 
-@router.post("/actions/execute")
+@router.post("/actions/execute", status_code=202)
 async def execute_action_by_body(
     request: Request, body: dict[str, Any],
 ) -> dict[str, Any]:
@@ -983,15 +993,21 @@ async def execute_action_by_body(
         raise HTTPException(status_code=404, detail="action not found")
     params = dict(body.get("params", {}))
     result_id = f"res-{uuid.uuid4().hex[:8]}"
-    kernel = await _apply_action_to_kernel(request, action_id, params, tid)
+    proposal = await _propose_action_to_kernel(request, action_id, params, tid)
+    if proposal:
+        _emit(
+            request,
+            "copilot.action.proposed",
+            str(proposal.get("proposal_id") or action_id),
+            {"action_id": action_id, "proposal_id": proposal.get("proposal_id")},
+            tid,
+        )
+        return {
+            "action_id": action_id,
+            "status": "pending_confirmation",
+            "proposal": proposal,
+        }
     output: dict[str, Any] = {"params": params}
-    if kernel:
-        # 三大原理 #3：kernel 落库成功 → 回显 applied_at + side_effects
-        output.update({
-            "applied_at": kernel.get("applied_at", ""),
-            "side_effects_emitted": kernel.get("side_effects_emitted", []),
-            "action_rid": kernel.get("action_rid", ""),
-        })
     _emit(
         request,
         "copilot.action.executed",
@@ -2105,6 +2121,72 @@ async def search(
     return {"results": results[:10]}
 
 
+# --- Agent tools (1) --------------------------------------------------------
+@router.get("/agent-tools")
+async def get_agent_tools(request: Request) -> dict[str, Any]:
+    """Live SuperAI agent-loop tool registry (FR-COPILOT-COPILOTGETCOPILOTAGENTTOOLS).
+
+    Returns the exact tool set ``run_agent_loop`` would hand to the LLM:
+    ``dispatch_employee`` (enum-restricted to the caller's authorized
+    roles from the orchestrator snapshot) plus the ontology tool face
+    (virtual registry computed live from tech-ont). Each source degrades
+    independently — a partial outage is reported in ``sources`` instead
+    of failing the whole registry read.
+    """
+    tid = _tid(request)
+    user_token = str(getattr(request.state.ctx, "authorization", "") or "")
+    if not user_token:
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer "):
+            user_token = auth_header[7:].strip()
+
+    tools: list[dict[str, Any]] = []
+    sources: dict[str, str] = {}
+
+    roles: list[dict[str, Any]] = []
+    try:
+        orchestrator_client = OrchestratorClient(
+            auth=BearerAuth(
+                token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
+                client_id="metaplatform-backend",
+                client_secret="stub",  # noqa: S106
+                scope="platform.read platform.write",
+            ),
+        )
+        snapshot = await orchestrator_client.authorized_role_snapshot(
+            tenant_id=tid, fallback_token=user_token or None,
+        )
+        roles, _, _ = _validated_role_snapshot(snapshot)
+        sources["orchestrator"] = "ok"
+    except Exception as exc:  # partial-outage visibility, not a 500
+        sources["orchestrator"] = f"unavailable: {type(exc).__name__}"
+
+    if roles:
+        schema = json.loads(json.dumps(DISPATCH_TOOL_SCHEMA))
+        slug_values = [str(r.get("role")) for r in roles if r.get("role")]
+        if slug_values:
+            schema["function"]["parameters"]["properties"]["target_rid"]["enum"] = slug_values
+        tools.append(schema)
+
+    try:
+        from ..ontology_http_repo import OntologyHttpRepo  # noqa: PLC0415
+        from ..ontology_tools import build_ontology_tools  # noqa: PLC0415
+
+        onto_repo = OntologyHttpRepo(
+            headers={
+                "Authorization": f"Bearer {user_token or ''}",
+                "X-Tenant-Id": tid,
+            },
+        )
+        ontology_tools = build_ontology_tools(onto_repo)
+        tools.extend(json.loads(json.dumps(t)) for t in ontology_tools)
+        sources["ontology"] = "ok"
+    except Exception as exc:  # partial-outage visibility, not a 500
+        sources["ontology"] = f"unavailable: {type(exc).__name__}"
+
+    return {"items": tools, "total": len(tools), "sources": sources}
+
+
 # ---------------------------------------------------------------------------
 # Agent loop (FC-driven SuperAI scheduling, real-time event stream)
 # ---------------------------------------------------------------------------
@@ -2380,10 +2462,11 @@ async def chat_agent_stream(
                 })
         yield "data: [DONE]\n\n"
 
-        # Persist assistant message + update conversation.
-        # Wrap in try/except so a DB failure doesn't break the already-streamed chat
-        # (mirror /chat/completions/stream's defensive persistence).
-        if conv_id and full_response:
+        # Persist assistant message + update conversation. A denied routing
+        # decision intentionally has no generated answer, but it must remain
+        # reviewable after reload so users can verify that no dispatch ran.
+        # Wrap in try/except so a DB failure doesn't break the streamed chat.
+        if conv_id and (full_response or routing_decisions):
             try:
                 session = get_session()
                 try:
@@ -2413,7 +2496,11 @@ async def chat_agent_stream(
                             )
                             conv.title = (first_user or conv.title)[:24]
                         conv.message_count = (conv.message_count or 0) + 2
-                        conv.preview = full_response[:100]
+                        conv.preview = (
+                            full_response[:100]
+                            if full_response
+                            else "路由请求未执行（已记录授权决策）"
+                        )
                         conv.updated_at = _now_iso()
                     session.commit()
                 finally:

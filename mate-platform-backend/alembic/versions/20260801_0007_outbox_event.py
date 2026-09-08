@@ -42,6 +42,8 @@ def upgrade() -> None:
         sa.Column("event_type", sa.String(128), nullable=False),
         sa.Column("payload", sa.JSON, nullable=False),
         sa.Column("lineage_hints", sa.JSON, nullable=True),
+        sa.Column("occurred_at", sa.String(64), nullable=False),
+        sa.Column("trace_id", sa.String(128), nullable=False, server_default=""),
         sa.Column(
             "created_at",
             sa.DateTime,
@@ -56,6 +58,7 @@ def upgrade() -> None:
             nullable=False,
             server_default="pending",
         ),
+        sa.Column("last_error", sa.Text, nullable=False, server_default=""),
     )
 
     # Single-column indexes (named per task spec for deterministic DDL)

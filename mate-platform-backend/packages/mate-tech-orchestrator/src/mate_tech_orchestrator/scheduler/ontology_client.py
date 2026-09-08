@@ -52,9 +52,11 @@ class OntologyActionClient:
 
     async def _post(
         self, tenant_id: str, path: str, payload: dict[str, Any], token: str = "",
+        idempotency_key: str = "",
     ) -> Any:
         self._tenant(tenant_id, token)
-        resp = await self._client.post(f"{_BASE}{path}", json=payload)
+        headers = {"Idempotency-Key": idempotency_key} if idempotency_key else {}
+        resp = await self._client.post(f"{_BASE}{path}", json=payload, headers=headers)
         if resp.status_code >= 400:
             raise OntologyClientError(
                 f"tech-ont POST {path} -> {resp.status_code}: {resp.text[:300]}"
@@ -91,6 +93,7 @@ class OntologyActionClient:
         return await self._post(
             tenant_id, f"/proposals/{proposal_id}/confirm",
             {"confirmed_by": confirmed_by}, token,
+            idempotency_key=f"confirm-{proposal_id}",
         )
 
     async def reject(
@@ -100,6 +103,7 @@ class OntologyActionClient:
         return await self._post(
             tenant_id, f"/proposals/{proposal_id}/reject",
             {"confirmed_by": confirmed_by}, token,
+            idempotency_key=f"reject-{proposal_id}",
         )
 
     async def apply(
@@ -113,11 +117,21 @@ class OntologyActionClient:
                            "proposal_id": proposal_id},
         }, token)
 
+    async def revert(
+        self, tenant_id: str, proposal_id: str, token: str = "",
+    ) -> dict[str, Any]:
+        """PRD-02 M3：撤销已执行 proposal（幂等键 = revert-{id}）。"""
+        return await self._post(
+            tenant_id, f"/proposals/{proposal_id}/revert", {},
+            token, idempotency_key=f"revert-{proposal_id}",
+        )
+
     async def execute_proposal(
         self, tenant_id: str, proposal_id: str, token: str = "",
     ) -> dict[str, Any]:
         return await self._post(
             tenant_id, f"/proposals/{proposal_id}/execute", {}, token,
+            idempotency_key=f"execute-{proposal_id}",
         )
 
     async def object_query(

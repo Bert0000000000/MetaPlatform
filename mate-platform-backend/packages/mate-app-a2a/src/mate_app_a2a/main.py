@@ -9,7 +9,7 @@ so liveness probes can reach it without a bearer token.
 """
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 
 from mate_platform.auth import install_auth
 
@@ -28,8 +28,18 @@ def create_app() -> FastAPI:
     # middleware. The health endpoint is anonymous so liveness probes
     # work without a bearer token; all other endpoints read
     # tenant-bound state via require_tenant.
-    install_auth(app, extra_anonymous_paths={"/api/v1/a2a/health"})
+    install_auth(
+        app,
+        extra_anonymous_paths={"/api/v1/a2a/health", "/healthz"},
+    )
     app.include_router(a2a_router)
+
+    # Platform-wide liveness probe path (all mate-* services answer
+    # GET /healthz; the a2a-specific alias /api/v1/a2a/health remains).
+    @app.get("/healthz")
+    async def healthz() -> Response:
+        return Response(content='{"status":"ok"}', media_type="application/json")
+
     # Auto-register the DeerFlow deep-research agent so it is available
     # without manual configuration (PR-3).
     register_deerflow_at_startup_if_enabled()

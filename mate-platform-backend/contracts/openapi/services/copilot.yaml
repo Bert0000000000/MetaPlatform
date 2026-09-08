@@ -252,6 +252,41 @@ paths:
       x-mate-requirements:
       - FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH
       x-mate-implementation-status: implemented
+  /api/v1/copilot/agent-tools:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      tags:
+      - copilot
+      summary: /v1/copilot/agent-tools
+      operationId: copilotGetCopilotAgentTools
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Live SuperAI agent-loop tool registry (dispatch + ontology tools)
+      x-mate-owner: agent-experience
+      x-mate-permission: copilot.get
+      x-mate-requirements:
+      - FR-COPILOT-COPILOTGETCOPILOTAGENTTOOLS
+      x-mate-implementation-status: implemented
   /api/v1/copilot/analysis/audit-sql:
     post:
       security:

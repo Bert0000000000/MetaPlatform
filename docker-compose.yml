@@ -558,6 +558,8 @@ services:
       OTEL_SERVICE_NAME: mate-app-copilot
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: Asia/Shanghai
+      # OntologyToolRepo 跨进程基址（缺省 localhost 在容器内指向自身）
+      ONT_HTTP_BASE: http://mate-tech-ont:8007
       # GOVERN-11
       PYTHONPATH: "/app/packages/mate-app-copilot/src:/app/packages/mate-tech-ont/src:/app/packages/mate-kernel/src:/app/packages/mate-common/src:/app/packages/mate-platform/src:/app/packages/mate-clients/src"
     ports:

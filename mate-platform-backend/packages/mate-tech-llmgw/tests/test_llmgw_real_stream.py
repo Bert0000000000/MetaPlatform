@@ -178,18 +178,16 @@ def test_real_chat_stream_route_assembles_tool_calls(monkeypatch: pytest.MonkeyP
     assert done["reasoning_content"] == "让我想想 选 workflow。"
 
 
-def test_real_chat_stream_route_no_key_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
-    """No API key → the route streams a stub done event (not a 500)."""
+def test_real_chat_stream_route_rejects_synthetic_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A tool-driven agent decision must not stream a synthetic provider reply."""
     monkeypatch.setenv("OPENAI_API_KEY", "")
     client = _make_client()
     r = client.post(
         "/api/v1/llmgw/chat/real/stream",
         json={"provider": "openai", "messages": [{"role": "user", "content": "hi"}]},
     )
-    assert r.status_code == 200, r.text
-    events = _sse_events(r.text)
-    assert events[-1]["type"] == "done"
-    assert "[stub-fallback]" in events[-1]["content"]
+    assert r.status_code == 503, r.text
+    assert "synthetic fallback is disabled" in r.text
 
 
 def test_real_chat_stream_route_rejects_anthropic() -> None:

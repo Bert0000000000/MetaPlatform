@@ -5,6 +5,7 @@ Extended in P3-W1 for production profile guard + env-var DSN resolution.
 from __future__ import annotations
 
 import os
+from threading import Thread
 
 import pytest
 from sqlalchemy import inspect, select
@@ -61,6 +62,41 @@ def test_get_session_works() -> None:
     fetched = session.execute(select(Widget).where(Widget.id == "w-1")).scalar_one()
     assert fetched.value == 42
     session.close()
+
+
+def test_in_memory_sqlite_is_shared_across_testclient_threads() -> None:
+    """A test app and its TestClient worker must see the same in-memory schema."""
+    init_engine("sqlite:///:memory:")
+
+    class ThreadVisibleWidget(Base):
+        __tablename__ = "thread_visible_widgets"
+        id: Mapped[str] = mapped_column(primary_key=True)
+        value: Mapped[int] = mapped_column(default=0)
+
+    create_all()
+    session = get_session()
+    session.add(ThreadVisibleWidget(id="w-1", value=42))
+    session.commit()
+    session.close()
+
+    values: list[int] = []
+    errors: list[Exception] = []
+
+    def query_from_worker() -> None:
+        worker_session = get_session()
+        try:
+            values.append(worker_session.get(ThreadVisibleWidget, "w-1").value)
+        except Exception as exc:  # pragma: no cover - asserted below
+            errors.append(exc)
+        finally:
+            worker_session.close()
+
+    worker = Thread(target=query_from_worker)
+    worker.start()
+    worker.join()
+
+    assert errors == []
+    assert values == [42]
 
 
 def test_run_migrations_idempotent() -> None:

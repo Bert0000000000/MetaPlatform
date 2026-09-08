@@ -12,9 +12,10 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-import os
 
 from fastapi import FastAPI
+
+import structlog
 
 from mate_platform.auth import install_auth
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -25,6 +26,8 @@ from .api.order_review import public_router as order_review_public_router
 from .api.order_review import router as order_review_router
 from .api.scheduling import router as scheduling_router
 from .bootstrap import seed_default_roles
+
+logger = structlog.get_logger(__name__)
 from .scheduler.capability_runtime import (
     CapabilityRuntime,
     set_capability_runtime,
@@ -40,26 +43,36 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     set_capability_runtime(runtime)
     app.state.capability_runtime = runtime
     await runtime.attach_registered_roles()
+    # Sprint 2：outbox→Temporal 常驻 relay（环境缺 temporalio 时降级跳过）。
+    relay_loop = None
+    try:
+        from .outbox_relay_loop import RelayLoop, TemporalWorkflowStarter
+        from .outbox_temporal_bridge import OutboxTemporalBridge
+
+        starter = TemporalWorkflowStarter()
+        bridge = OutboxTemporalBridge(
+            app.state.outbox_writer, starter,
+        ) if hasattr(app.state, "outbox_writer") else None
+        if bridge is None:
+            from mate_platform.messaging.outbox import InMemoryOutboxWriter
+
+            bridge = OutboxTemporalBridge(InMemoryOutboxWriter(), starter)
+        relay_loop = RelayLoop(bridge)
+        app.state.outbox_relay = relay_loop
+        relay_loop.start()
+    except ImportError:
+        logger.warning("outbox relay disabled: temporalio not installed")
     try:
         yield
     finally:
+        if relay_loop is not None:
+            await relay_loop.stop()
         set_capability_runtime(None)
         await runtime.dispose()
 
 
 async def _healthz() -> dict[str, str]:
     return {"status": "ok", "service": "mate-tech-orchestrator"}
-
-
-def _configured_default_actor_roles() -> tuple[str, ...]:
-    raw = os.environ.get("ORCHESTRATOR_DEFAULT_ALLOWED_ACTOR_ROLES", "")
-    return tuple(role.strip() for role in raw.split(",") if role.strip())
-
-
-def _local_authorization_backfill_enabled() -> bool:
-    return os.environ.get("ORCHESTRATOR_BACKFILL_EMPTY_DEFAULT_AUTH", "").lower() in {
-        "1", "true", "yes", "on",
-    }
 
 
 def create_app() -> FastAPI:
@@ -75,12 +88,8 @@ def create_app() -> FastAPI:
     # Wire the scheduler singletons (DI seam for tests via set_* / app.state).
     registry = get_role_registry()
     registry.restore()  # reload persisted roles (cross-restart survival)
-    # Local acceptance can explicitly map built-in employees to its platform
-    # administrator.  Production leaves both settings empty and fails closed.
-    seed_default_roles(
-        default_allowed_actor_roles=_configured_default_actor_roles(),
-        backfill_empty_authorization=_local_authorization_backfill_enabled(),
-    )
+    # Seed default skill capabilities (idempotent) so App role can search/read skills.
+    seed_default_roles()
     app.state.role_registry = registry
     app.state.dispatcher = get_dispatcher()
     # MP-SAL-05：plan runner 注入 ontology client（action 步骤执行器；
