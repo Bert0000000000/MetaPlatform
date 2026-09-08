@@ -1,0 +1,9 @@
+connector.name=iceberg
+iceberg.catalog.type=file_system
+fs.native-s3.enabled=true
+s3.endpoint=http://mate-minio:9000
+s3.region=us-east-1
+s3.path-access-style=true
+s3.aws-access-key=<MINIO_ACCESS_KEY>
+s3.aws-secret-key=<MINIO_SECRET_KEY>
+s3.streaming.part-size=16MB

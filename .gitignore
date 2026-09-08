@@ -182,3 +182,6 @@ metaplatform-frontend/apps/web/tests/e2e/.artifacts/
 tests/e2e/.artifacts/
 tests/e2e/.auth/
 tests/e2e/screenshots/
+
+# Sprint 5: 真实 MinIO 凭据不入库（硬规则 #12）
+infra/trino/etc/catalog/iceberg.properties

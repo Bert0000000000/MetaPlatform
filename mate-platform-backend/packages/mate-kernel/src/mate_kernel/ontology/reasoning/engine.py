@@ -53,6 +53,22 @@ def _same_as_clusters(pairs: list[tuple[str, str]]) -> dict[str, str]:
     return {x: find(x) for x in parent}
 
 
+def descendant_closure(subclass_axioms: list[tuple[str, str]]) -> dict[str, set[str]]:
+    """ONT-G21：类 → 全部传递后代类（直接 + 间接子类）。
+
+    ``descendant_closure``[B] = {A, …}（A ⊑ B 的全部 A）。ObjectSet 按类
+    求值时据此把「查询类」扩展为「类 + 后代类」集合——推断层级对查询
+    可见（实例按断言类存储，祖先查询需要沿公理下钻）。
+    """
+    closed = _subclass_closure(subclass_axioms)  # sub → ancestors
+    out: dict[str, set[str]] = {}
+    for sub, supers in closed.items():
+        for sup in supers:
+            if sup != sub:  # 环场景 _subclass_closure 会产生自环伪影，丢弃
+                out.setdefault(sup, set()).add(sub)
+    return out
+
+
 def run_inference(
     *,
     subclass_axioms: list[tuple[str, str]],
