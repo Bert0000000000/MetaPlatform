@@ -92,3 +92,39 @@ marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
 31 容器 Up（trino 按文档边界回 stopped）、kind 四节点 Ready、fe9200=200、
 login=200（容器内网络验证；宿主端口转发层间歇抖动为 Docker Desktop 基础设施
 问题，与栈无关）、check_plan_tables 0。
+
+## 16. 安全审计（部分）[~]
+
+- 门禁复跑（mate-platform-backend 域）：forbid_raw_sql / forbid_bare_httpx /
+  forbid_legacy_fallback / forbid_skip_tests 全 PASS。
+- NetworkPolicy 覆盖：`validate_networkpolicy_coverage --rendered` →
+  **OK: 21 runtime services**（helm 渲染 101 manifests 基础上）。
+- 签名强校验负例：篡改 token 401 / 伪造 jwt 401 / 跨租户 header 403。
+- 留尾：渗透测试、FOLLOW-UP 台账终审。
+
+## 17. 压测 + 性能审计（部分）[~]
+
+- 压测（`scripts/load_test_v1.py`，容器内经网关）：阶梯 1/4/16 并发 ×
+  login / ont list / reasoning —— 全程 **0 错误**；w4 p95 86-176ms；
+  w16 饱和 ~30rps（p95 0.8-0.95s，受 VM 资源上限）；失败注入（坏 token）
+  401 路径 p50 94ms。数据：evidence/LOAD-TEST-V1.0.json。
+- 性能审计：大查询（100 类型列举）p50≈29ms / reasoning 闭包 ≈20ms
+  （容器内实测）；结合历史 G4 10k 实例基准 P50=25ms。大对象与长任务
+  （Temporal 持久运行）审计随 mate-app-wfe 入栈补全。
+
+## 18. 手册与对位文档 [x]/[~]
+
+- 用户手册 + 运维手册：`docs/active/release/v1.0-{user,ops}-manual.md` [x]
+  （含拓扑、安全基线、Trino/Paimon 互斥窗口操作、故障处理、备份）。
+- ONT-G10 三层对位：`evidence/ONT-G10-PALANTIR-ALIGNMENT.md` [~]。
+- ONT-G34 SHACL conformance：kernel `test_ont_g34_shacl_conformance.py`
+  **10/10**（W3C 核心子集语义对位）[~]。
+
+## 19. 最终冲刺状态总览
+
+| 批次 | 结果 |
+|---|---|
+| 一 | 4/4 [x]（含 2 条件验收转正 + 2 收窄；真 LLM；PRD×11；demo v2）|
+| 二 | 8/8 落地：5/6/7/8/11/12 [~]、9 [x]、10 [!]（外部模型白名单）|
+| 三 | staging [!]（install deployed + 探活被窗口阻塞）、StarRocks [!]、Sandbox L2 [ ] |
+| 四 | 压测/性能/安全审计 [~]、手册 [x]、G10/G34 [~]、demo [~]；G15/G22/G7 dev 留 [ ] |
