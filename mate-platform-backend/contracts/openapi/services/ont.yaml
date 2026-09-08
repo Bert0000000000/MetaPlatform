@@ -2375,6 +2375,14 @@ components:
                 closed:
                   type: boolean
                   default: false
+                subclass_axioms:
+                  type: array
+                  description: >-
+                    (sub, super) 公理对（推理联动）：target 类的传递子类实例纳入验证、
+                    sh:class 满足子类 is-a 语义（G21 descendant_closure）
+                  items:
+                    type: array
+                    items: {type: string}
       responses:
         '200':
           description: W3C 验证报告（severity 分级 + 计数）

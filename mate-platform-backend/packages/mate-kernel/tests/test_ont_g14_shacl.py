@@ -256,3 +256,65 @@ class TestQualifiedValueShape:
                  [self._qshape(qualified_max_count=2)])
         assert not r["conforms"]
         assert r["violations"][0]["constraint"] == "qualifiedMaxCount"
+
+
+# ---------------------------------------------------------------------------
+# ONT-SHACL-REASONING：推理推导事实参与/驱动 SHACL 验证（subclass 公理联动）
+# ---------------------------------------------------------------------------
+
+MGR = "ont.t.ac.obj.manager.v1"
+LEAD = "ont.t.ac.obj.teamlead.v1"
+
+
+class TestShaclReasoning:
+    EMPSHAPE = NodeShape(EMP, (
+        PropertyShape(path=PROP, min_count=1, datatype="string"),))
+
+    def test_subclass_instance_targeted(self):
+        """manager ⊑ employee：employee 的 shape 验证 manager 实例（缺 name 报违例）。"""
+        axioms = [(MGR, EMP)]
+        r = validate_shacl([_ind("m1", MGR, {})], [self.EMPSHAPE],
+                           subclass_axioms=axioms)
+        assert not r["conforms"]
+        assert r["violations"][0]["constraint"] == "minCount"
+
+    def test_transitive_closure_targeting(self):
+        """teamlead ⊑ manager ⊑ employee：传递闭包实例同样被纳入。"""
+        axioms = [(LEAD, MGR), (MGR, EMP)]
+        r = validate_shacl([_ind("l1", LEAD, {PROP: "bob"})],
+                           [self.EMPSHAPE], subclass_axioms=axioms)
+        assert r["conforms"]  # name 满足 → 通过（说明已被 target 到）
+
+    def test_sh_class_subclass_satisfaction(self):
+        """sh:class employee：引用值为 manager 实例即满足（子类 ⟹ is-a）。"""
+        axioms = [(MGR, EMP)]
+        shape = NodeShape(EMP, (
+            PropertyShape(path=PROP_MGR, node_class=EMP),))
+        r = validate_shacl(
+            [_ind("m1", MGR, {PROP: "boss", PROP_MGR: "m2"}),
+             _ind("m2", MGR, {PROP: "x"})],
+            [shape], subclass_axioms=axioms)
+        assert r["conforms"]
+
+    def test_no_axioms_behavior_unchanged(self):
+        """无公理：子类实例不被 target（旧行为）。"""
+        r = validate_shacl([_ind("m1", MGR, {})], [self.EMPSHAPE])
+        assert r["conforms"] and r["stats"]["nodes_validated"] == 0
+
+    def test_multi_parent_closure(self):
+        """多父并集：manager ⊑ employee 且 manager ⊑ person，两 shape 都命中。"""
+        PERSON = "ont.t.ac.obj.person.v1"
+        axioms = [(MGR, EMP), (MGR, PERSON)]
+        pshape = NodeShape(PERSON, (
+            PropertyShape(path=PROP, min_count=1),))
+        r = validate_shacl([_ind("m1", MGR, {PROP: "boss"})],
+                           [self.EMPSHAPE, pshape], subclass_axioms=axioms)
+        assert r["conforms"] and r["stats"]["nodes_validated"] == 1
+
+    def test_unrelated_branch_not_targeted(self):
+        """无公共祖先的分支不被误 target。"""
+        OTHER = "ont.t.ac.obj.machine.v1"
+        axioms = [(OTHER, "ont.t.ac.obj.device.v1")]
+        r = validate_shacl([_ind("x1", OTHER, {})], [self.EMPSHAPE],
+                           subclass_axioms=axioms)
+        assert r["conforms"] and r["stats"]["nodes_validated"] == 0

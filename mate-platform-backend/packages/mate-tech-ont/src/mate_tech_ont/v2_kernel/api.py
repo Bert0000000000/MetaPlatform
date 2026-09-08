@@ -888,7 +888,12 @@ async def validate_shacl_endpoint(request: Request, payload: dict) -> dict:
     elif payload.get("closed"):
         shapes.append(NodeShape(target_class=target_class, closed=True))
 
-    return validate_shacl(individuals, shapes)
+    return validate_shacl(
+        individuals, shapes,
+        subclass_axioms=[(str(a[0]), str(a[1]))
+                         for a in (payload.get("subclass_axioms") or [])
+                         if isinstance(a, (list, tuple)) and len(a) == 2] or None,
+    )
 
 
 @router.post(

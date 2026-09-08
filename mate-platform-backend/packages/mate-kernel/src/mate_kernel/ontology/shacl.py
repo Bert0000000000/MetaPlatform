@@ -149,6 +149,7 @@ def _node_violations(
 def _eval_property_shape(  # noqa: PLR0912 —— 单形状多约束组件的线性判定
     ind: dict[str, Any], focus: str, ps: PropertyShape,
     by_rid: dict[str, dict[str, Any]],
+    descendants: dict[str, set[str]] | None = None,
 ) -> tuple[list[dict[str, str]], int]:
     """单 PropertyShape 对单实例求值。返回 (违例, 检查数)。"""
     violations: list[dict[str, str]] = []
@@ -185,7 +186,11 @@ def _eval_property_shape(  # noqa: PLR0912 —— 单形状多约束组件的线
             checked += 1
             ref = by_rid.get(str(v))
             ref_class = (ref or {}).get("class_rid", "")
-            if ref is None or ref_class != ps.node_class:
+            ok_class = ref is not None and (
+                ref_class == ps.node_class
+                or (descendants is not None
+                    and ref_class in descendants.get(ps.node_class, ())))
+            if not ok_class:
                 emit("class",
                      f"value {v!r} must be an instance of {ps.node_class}")
         if ps.language_in:
@@ -233,8 +238,16 @@ def _closed_extra_paths(
 def validate_shacl(
     individuals: list[dict[str, Any]],
     shapes: list[NodeShape],
+    *,
+    subclass_axioms: list[tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
-    """对 individuals 执行 shapes，返回 W3C 验证报告。"""
+    """对 individuals 执行 shapes，返回 W3C 验证报告。
+
+    ``subclass_axioms``（ONT-SHACL-REASONING）：提供 (sub, super) 公理时——
+    ① target 扩展：shape.target_class 的全部传递子类实例一并纳入验证
+    （推理推导事实参与验证）；② sh:class 语义扩展：值节点为 target 类的
+    传递子类实例即满足（子类 ⟹ is-a）。无公理时行为与旧版完全一致。
+    """
     violations: list[dict[str, str]] = []
     checked = 0
     by_rid: dict[str, dict[str, Any]] = {}
@@ -245,16 +258,32 @@ def validate_shacl(
     def class_of(ind: dict[str, Any]) -> str:
         return ind.get("class_rid") if isinstance(ind, dict) else rid_of(ind)
 
+    # 推理联动：target 扩展集 + 子类满足判定（复用 G21 descendant_closure）
+    descendants: dict[str, set[str]] = {}
+    if subclass_axioms:
+        from .reasoning.engine import descendant_closure
+        descendants = descendant_closure(subclass_axioms)
+
+    def matches_target(cls: str, target: str) -> bool:
+        if cls == target:
+            return True
+        return cls in descendants.get(target, ())
+
+    def satisfies_class(value_cls: str, declared: str) -> bool:
+        if value_cls == declared:
+            return True
+        return value_cls in descendants.get(declared, ())
+
     for shape in shapes:
         targets = [ind for ind in individuals
-                   if class_of(ind) == shape.target_class]
+                   if matches_target(class_of(ind), shape.target_class)]
         for ind in targets:
             focus = ind.get("rid", "") if isinstance(ind, dict) else rid_of(ind)
             known_paths: set[str] = set()
             for ps in shape.property_shapes:
                 known_paths.add(ps.path)
                 new_violations, new_checked = _eval_property_shape(
-                    ind, focus, ps, by_rid)
+                    ind, focus, ps, by_rid, descendants or None)
                 violations.extend(new_violations)
                 checked += new_checked
             if shape.closed:
@@ -281,7 +310,8 @@ def validate_shacl(
         "stats": {
             "nodes_validated": sum(
                 1 for ind in individuals
-                if any(class_of(ind) == s.target_class for s in shapes)
+                if any(matches_target(class_of(ind), s.target_class)
+                       for s in shapes)
             ),
             "constraints_checked": checked,
             "shapes": len(shapes),
