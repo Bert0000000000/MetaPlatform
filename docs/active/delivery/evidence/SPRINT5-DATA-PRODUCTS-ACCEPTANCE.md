@@ -132,7 +132,11 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
   MinIO 侧 parquet 数据文件 + 3 份 metadata.json 快照、PG 侧
   `iceberg_tables.metadata_location = s3://mate-warehouse/...metadata.json`。
 - `/v1/info`：`{"state":"ACTIVE","starting":false}`，容器 healthy。
-- 取证后 kind 四节点恢复运行。
+- 取证后 kind 四节点恢复运行。收尾态：mate-trino 回到 stopped（与本批开始
+  时一致）——同时常驻 Trino + milvus + kind 四节点超出本宿主 VM 内存预算
+  （实测触发全局内存抖动：daemon healthcheck exec 超时、gateway 瞬时 000），
+  证据已收口，需要时单启 `docker start mate-trino`（配置修复后 ~1 分钟即
+  healthy）。
 
 ## 11. 多模态数据产品（Iceberg ADS）[x]
 
@@ -201,7 +205,22 @@ PRD-12（数据栈部署 [~]）/ PRD-16（本体迁移 [x]）/ PRD-17（ObjectSe
 | SHACL PRD-23 | [x] | §12（未覆盖清单如实）|
 | G33 对齐/合并 | [~] | §13（modularization 留增量）|
 | Paimon 运行面 | [x] | §16（Flink 1.20 + Paimon 1.1.1 on MinIO）|
-| staging 演练 / BI 集成（StarRocks） | [ ] | 后续批次 |
+| staging 演练 | [ ] 让位边界如实 | 见 §17（helm 渲染 101 manifests ✓ + kind 四节点 Ready ✓；install 窗口与 Trino/Paimon 激活挤占，apiserver TLS 超时让位）|
+| BI 集成（StarRocks） | [ ] | 后续批次（镜像/资源窗口同上）|
+
+## 17. staging 演练尝试与让位边界（如实）
+
+- helm 渲染（静态）：`helm template mate-staging infra/helm -f values-staging.yaml`
+  → **101 manifests**（9 Deployment + 20 Service + ServiceAccount/ServiceMonitor
+  等），零渲染错误。
+- kind 集群：四个节点（control-plane + 3 worker）恢复后 `kubectl get nodes` 全
+  **Ready**（v1.36.1）；cluster 当前无业务 namespace（干净基线）。
+- install 尝试两轮均因 apiserver `TLS handshake timeout`/EOF 失败——本批窗口
+  被 Trino 激活 + Flink/Paimon 验证 + 四节点启动连续挤占 Docker VM（同期
+  daemon healthcheck exec 也超时、mate-postgres 被迫崩溃恢复一轮后自愈、
+  mate-milvus 退出一次已拉起）。按 goal 条款 staging 让位，解锁条件 = 独立
+  低负载窗口重跑 `helm install`（建议先 `--set datahub.enabled=false` 并补装
+  datahub CRD 或临时关闭依赖 CRD 的组件）。
 
 ## 16. Paimon 运行面 [x]
 
