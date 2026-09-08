@@ -373,6 +373,9 @@ def delete_data_product(tenant_id: str, product_id: str) -> bool:
 
 def set_data_product_status(
     tenant_id: str, product_id: str, status: str,
+    *,
+    bump_version: bool = False,
+    require_owner: bool = False,
 ) -> DataProduct | None:
     if not tenant_id:
         return None
@@ -385,6 +388,10 @@ def set_data_product_status(
     ).scalar_one_or_none()
     if row is None:
         return None
+    if require_owner and not row.owner:
+        return None
+    if bump_version:
+        row.version = row.version + 1
     row.status = status
     s.commit()
     return _orm_to_data_product(row)

@@ -834,6 +834,24 @@ async def validate_shacl_endpoint(request: Request, payload: dict) -> dict:
         NodeShape, PropertyShape, shape_from_object_type, validate_shacl,
     )
 
+    def _ps(s: dict) -> PropertyShape:
+        neg = s.get("not_shape")
+        qvs = s.get("qualified_value_shape")
+        return PropertyShape(
+            path=str(s.get("path", "")),
+            min_count=s.get("min_count"),
+            max_count=s.get("max_count"),
+            datatype=s.get("datatype"),
+            pattern=s.get("pattern"),
+            node_class=s.get("node_class"),
+            severity=str(s.get("severity") or "Violation"),
+            language_in=tuple(s.get("language_in") or ()),
+            not_shape=_ps(neg) if isinstance(neg, dict) else None,
+            qualified_value_shape=_ps(qvs) if isinstance(qvs, dict) else None,
+            qualified_min_count=s.get("qualified_min_count"),
+            qualified_max_count=s.get("qualified_max_count"),
+        )
+
     target_class = str(payload.get("target_class") or "")
     if not target_class.startswith(f"ont.{ctx.tenant_id}."):
         raise HTTPException(status_code=403, detail="cross-tenant shacl target denied")
@@ -859,23 +877,86 @@ async def validate_shacl_endpoint(request: Request, payload: dict) -> dict:
         shapes = []
     extra = payload.get("property_shapes") or []
     if isinstance(extra, list) and extra:
-        ps = tuple(
-            PropertyShape(
-                path=str(s.get("path", "")),
-                min_count=s.get("min_count"),
-                max_count=s.get("max_count"),
-                datatype=s.get("datatype"),
-                pattern=s.get("pattern"),
-                node_class=s.get("node_class"),
-            )
-            for s in extra if isinstance(s, dict) and s.get("path")
-        )
+        ps = tuple(_ps(s) for s in extra
+                   if isinstance(s, dict) and s.get("path"))
         shapes.append(NodeShape(target_class=target_class, property_shapes=ps,
                                 closed=bool(payload.get("closed"))))
     elif payload.get("closed"):
         shapes.append(NodeShape(target_class=target_class, closed=True))
 
     return validate_shacl(individuals, shapes)
+
+
+@router.post(
+    "/alignment/run",
+    response_model=dict,
+    operation_id="ontAlignV2Individuals",
+)
+async def align_individuals_endpoint(request: Request, payload: dict) -> dict:
+    """ONT-G33 FR-ALIGN-001：跨本体实例对齐（stateless）。
+
+    body::
+
+        {
+          "left": [ {"rid","class_rid","props"} ],
+          "right": [ ... ],
+          "explicit_pairs": [["l1","r1"], ...],   # 可选
+          "lexical_threshold": 1.0,               # 可选
+          "structural_threshold": 0.5             # 可选
+        }
+
+    证据链：explicit（显式 same_as）/ lexical（label 规范化相等）/
+    structural（属性 slug + 值签名 Jaccard）；聚类复用 reasoning R2 并查集。
+    """
+    _ctx(request)
+    from mate_kernel.ontology.alignment import align_individuals
+
+    return align_individuals(
+        list(payload.get("left") or []),
+        list(payload.get("right") or []),
+        explicit_pairs=[(str(p[0]), str(p[1]))
+                        for p in (payload.get("explicit_pairs") or [])
+                        if isinstance(p, (list, tuple)) and len(p) == 2],
+        lexical_threshold=float(payload.get("lexical_threshold") or 1.0),
+        structural_threshold=float(payload.get("structural_threshold") or 0.5),
+    )
+
+
+@router.post(
+    "/object-types/merge-preview",
+    response_model=dict,
+    operation_id="ontPreviewV2ObjectTypeMerge",
+)
+async def merge_preview_object_types(request: Request, payload: dict) -> dict:
+    """ONT-G33 FR-ALIGN-002：类型定义合并预览（stateless，不落库）。
+
+    body::
+
+        {
+          "left": ObjectTypeDTO 同构,
+          "right": ObjectTypeDTO 同构,
+          "strategy": "keep_left" | "keep_right"   # 可选，默认 keep_left
+        }
+
+    字段并集 + 同 rid 属性冲突标记 + 合并审计。实例重映射走
+    ontMergeV2ObjectTypes（MP-DEDUP-01），二者互补。
+    """
+    _ctx(request)
+    from mate_kernel.ontology.alignment import merge_object_types
+
+    try:
+        left = _dto_to_ot(ObjectTypeDTO(**(payload.get("left") or {})))
+        right = _dto_to_ot(ObjectTypeDTO(**(payload.get("right") or {})))
+    except KeyError as e:
+        raise HTTPException(
+            status_code=422, detail=f"invalid object type payload: {e}") from e
+    strategy = str(payload.get("strategy") or "keep_left")
+    try:
+        out = merge_object_types(left, right, strategy=strategy)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return {"object_type": _ot_to_dto(out["object_type"]),
+            "audit": out["audit"]}
 
 
 @router.post(
