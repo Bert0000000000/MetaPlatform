@@ -155,7 +155,6 @@ async def _selfheal_watcher(host: str, interval_s: float = 30.0,
                 )
 
                 await c.workflow_service.get_system_info(GetSystemInfoRequest())
-            await c.close()
             failures = 0
         except Exception as exc:
             failures += 1
