@@ -1757,3 +1757,185 @@ components:
           - ACTIVE
           - INACTIVE
           - ERROR
+  /api/v1/data/lineage/edges:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      tags:
+      - data
+      summary: 登记 lineage 依赖边（DATA-D6）
+      operationId: dataPostDataLineageEdges
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      description: 登记 lineage 依赖边
+      x-mate-owner: data-platform
+      x-mate-permission: data.post
+      x-mate-requirements:
+      - FR-DATA-D6-LINEAGE
+      x-mate-implementation-status: implemented
+  /api/v1/data/lineage/graph:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      tags:
+      - data
+      summary: lineage 依赖图（DATA-D6）
+      operationId: dataGetDataLineageGraph
+      parameters:
+      - in: query
+        name: entity
+        required: false
+        schema: {type: string}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      description: lineage 依赖图
+      x-mate-owner: data-platform
+      x-mate-permission: data.get
+      x-mate-requirements:
+      - FR-DATA-D6-LINEAGE
+      x-mate-implementation-status: implemented
+  /api/v1/data/quality/rules:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      tags:
+      - data
+      summary: quality 规则列表（DATA-D7）
+      operationId: dataGetDataQualityRules
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      description: quality 规则列表
+      x-mate-owner: data-platform
+      x-mate-permission: data.get
+      x-mate-requirements:
+      - FR-DATA-D7-QUALITY
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      tags:
+      - data
+      summary: 登记 quality 规则（DATA-D7）
+      operationId: dataPostDataQualityRules
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      description: 登记 quality 规则
+      x-mate-owner: data-platform
+      x-mate-permission: data.post
+      x-mate-requirements:
+      - FR-DATA-D7-QUALITY
+      x-mate-implementation-status: implemented
+  /api/v1/data/quality/run:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.write
+      tags:
+      - data
+      summary: 执行本租户全部 enabled 规则，结果落库（DATA-D7）
+      operationId: dataPostDataQualityRun
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      description: 执行 quality 规则
+      x-mate-owner: data-platform
+      x-mate-permission: data.post
+      x-mate-requirements:
+      - FR-DATA-D7-QUALITY
+      x-mate-implementation-status: implemented
+  /api/v1/data/quality/results:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      tags:
+      - data
+      summary: quality 执行结果列表（DATA-D7）
+      operationId: dataGetDataQualityResults
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      description: quality 执行结果列表
+      x-mate-owner: data-platform
+      x-mate-permission: data.get
+      x-mate-requirements:
+      - FR-DATA-D7-QUALITY
+      x-mate-implementation-status: implemented
+  /api/v1/data/catalog/search:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes:
+        - platform.read
+      tags:
+      - data
+      summary: 跨 sources + data products 检索（catalog 面）
+      operationId: dataGetDataCatalogSearch
+      parameters:
+      - in: query
+        name: q
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+      description: catalog 检索
+      x-mate-owner: data-platform
+      x-mate-permission: data.get
+      x-mate-requirements:
+      - FR-DATA-D6-CATALOG
+      x-mate-implementation-status: implemented

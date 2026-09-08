@@ -271,6 +271,9 @@ def _ensure_tenant(tenant_id: str) -> None:
         _SCHEMAS[tenant_id] = _seed_schemas(tenant_id)
     if tenant_id not in _DATA_PRODUCTS:
         _DATA_PRODUCTS[tenant_id] = _seed_data_products(tenant_id)
+    _LINEAGE_EDGES.setdefault(tenant_id, {})
+    _QUALITY_RULES.setdefault(tenant_id, {})
+    _QUALITY_RESULTS.setdefault(tenant_id, [])
 
 
 def _now() -> str:
@@ -692,3 +695,210 @@ def reset_store() -> None:
     _SOURCES.clear()
     _SCHEMAS.clear()
     _DATA_PRODUCTS.clear()
+    _LINEAGE_EDGES.clear()
+    _QUALITY_RULES.clear()
+    _QUALITY_RESULTS.clear()
+
+
+# ---------------------------------------------------------------------------
+# DATA-D6/D7 — lineage / quality / catalog（治理面）
+# ---------------------------------------------------------------------------
+@dataclass
+class LineageEdge:
+    """实体依赖边：source_entity --edge_type--> target_entity。"""
+
+    id: str
+    tenant_id: str
+    source_entity: str
+    target_entity: str
+    edge_type: str = "derived_from"  # derived_from | copies | feeds
+    created_at: str = ""
+
+
+@dataclass
+class QualityRule:
+    """对 source schema 的字段级断言：required（列存在）/ type（类型匹配）。"""
+
+    id: str
+    tenant_id: str
+    entity_id: str  # source id
+    field: str  # column name
+    rule_type: str = "required"  # required | type
+    params: dict[str, Any] = field(default_factory=dict)  # {"table": ..., "type": ...}
+    enabled: bool = True
+    created_at: str = ""
+
+
+@dataclass
+class QualityResult:
+    """单条规则一次执行的结果。"""
+
+    id: str
+    tenant_id: str
+    rule_id: str
+    entity_id: str
+    field: str
+    rule_type: str
+    passed: bool
+    detail: str = ""
+    ran_at: str = ""
+
+
+_LINEAGE_EDGES: dict[str, dict[str, LineageEdge]] = {}
+_QUALITY_RULES: dict[str, dict[str, QualityRule]] = {}
+_QUALITY_RESULTS: dict[str, list[QualityResult]] = {}
+
+
+def create_lineage_edge(
+    tenant_id: str, source_entity: str, target_entity: str,
+    edge_type: str = "derived_from",
+) -> LineageEdge:
+    _ensure_tenant(tenant_id)
+    edge = LineageEdge(
+        id=f"lnge-{uuid.uuid4().hex[:8]}",
+        tenant_id=tenant_id,
+        source_entity=source_entity,
+        target_entity=target_entity,
+        edge_type=edge_type,
+        created_at=_now(),
+    )
+    _LINEAGE_EDGES[tenant_id][edge.id] = edge
+    return edge
+
+
+def list_lineage_edges(tenant_id: str) -> list[LineageEdge]:
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    return list(_LINEAGE_EDGES[tenant_id].values())
+
+
+def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
+    """返回 {nodes, edges} 依赖图；entity 给定时只保留与该实体相连的子图。"""
+    edges = list_lineage_edges(tenant_id)
+    if entity:
+        edges = [e for e in edges
+                 if e.source_entity == entity or e.target_entity == entity]
+    nodes: dict[str, None] = {}
+    for e in edges:
+        nodes[e.source_entity] = None
+        nodes[e.target_entity] = None
+    return {
+        "nodes": [{"id": n} for n in sorted(nodes)],
+        "edges": [
+            {"source": e.source_entity, "target": e.target_entity,
+             "edge_type": e.edge_type, "id": e.id}
+            for e in edges
+        ],
+    }
+
+
+def create_quality_rule(
+    tenant_id: str, entity_id: str, field: str, rule_type: str,
+    params: dict[str, Any] | None = None,
+) -> QualityRule:
+    _ensure_tenant(tenant_id)
+    rule = QualityRule(
+        id=f"dqr-{uuid.uuid4().hex[:8]}",
+        tenant_id=tenant_id,
+        entity_id=entity_id,
+        field=field,
+        rule_type=rule_type,
+        params=dict(params or {}),
+        created_at=_now(),
+    )
+    _QUALITY_RULES[tenant_id][rule.id] = rule
+    return rule
+
+
+def list_quality_rules(
+    tenant_id: str, entity_id: str | None = None, enabled_only: bool = False,
+) -> list[QualityRule]:
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    rules = list(_QUALITY_RULES[tenant_id].values())
+    if entity_id:
+        rules = [r for r in rules if r.entity_id == entity_id]
+    if enabled_only:
+        rules = [r for r in rules if r.enabled]
+    return rules
+
+
+def _quality_check(rule: QualityRule, schema: dict[str, Any] | None) -> QualityResult:
+    """对 source schema 执行一条规则（required 列存在 / type 类型匹配）。"""
+    detail = ""
+    passed = False
+    if schema is None:
+        detail = "source schema not found"
+    else:
+        table_name = str(rule.params.get("table", ""))
+        table = next((t for t in schema.get("tables", [])
+                      if t.get("name") == table_name), None) if table_name else None
+        columns: dict[str, str] = {}
+        if table is not None:
+            columns = {c.get("name", ""): c.get("type", "")
+                       for c in table.get("columns", [])}
+        if table_name and table is None:
+            detail = f"table {table_name!r} not found in schema"
+        elif rule.field not in columns:
+            detail = f"column {rule.field!r} not found"
+        elif rule.rule_type == "type":
+            expect = str(rule.params.get("type", ""))
+            actual = columns[rule.field]
+            passed = actual == expect
+            detail = f"expects type {expect!r}, found {actual!r}"
+        else:  # required
+            passed = True
+            detail = f"column {rule.field!r} present (type {columns[rule.field]!r})"
+    return QualityResult(
+        id=f"dqr-res-{uuid.uuid4().hex[:8]}",
+        tenant_id=rule.tenant_id,
+        rule_id=rule.id,
+        entity_id=rule.entity_id,
+        field=rule.field,
+        rule_type=rule.rule_type,
+        passed=passed,
+        detail=detail,
+        ran_at=_now(),
+    )
+
+
+def run_quality_rules(tenant_id: str) -> dict[str, Any]:
+    """执行本租户全部 enabled 规则（对 source schema），结果持久化。"""
+    rules = list_quality_rules(tenant_id, enabled_only=True)
+    results: list[QualityResult] = []
+    for rule in rules:
+        schema = get_source_schema(tenant_id, rule.entity_id)
+        result = _quality_check(rule, schema)
+        results.append(result)
+    _QUALITY_RESULTS.setdefault(tenant_id, []).extend(results)
+    return {
+        "rules_executed": len(rules),
+        "passed": sum(1 for r in results if r.passed),
+        "failed": sum(1 for r in results if not r.passed),
+        "results": results,
+    }
+
+
+def list_quality_results(tenant_id: str, limit: int = 50) -> list[QualityResult]:
+    if not tenant_id:
+        return []
+    return list(reversed(_QUALITY_RESULTS.get(tenant_id, [])))[:limit]
+
+
+def catalog_search(tenant_id: str, q: str) -> list[dict[str, Any]]:
+    """跨 sources + data products 的名称/描述检索（catalog 面）。"""
+    q_lower = (q or "").lower()
+    items: list[dict[str, Any]] = []
+    for s in list_sources(tenant_id):
+        hay = f"{s.name} {s.type}".lower()
+        if q_lower in hay:
+            items.append({"kind": "source", "id": s.id, "name": s.name,
+                          "detail": s.type})
+    for p in list_data_products(tenant_id):
+        hay = f"{p.name} {p.description} {p.modality}".lower()
+        if q_lower in hay:
+            items.append({"kind": "product", "id": p.id, "name": p.name,
+                          "detail": p.modality, "status": p.status})
+    return items

@@ -69,3 +69,47 @@ class DataProductORM(Base):
     tags: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
     created_at: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class DataLineageEdgeORM(Base):
+    """DATA-D6：lineage 实体依赖边（source_entity → target_entity）。"""
+
+    __tablename__ = "data_lineage_edges"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_entity: Mapped[str] = mapped_column(String(256), nullable=False)
+    target_entity: Mapped[str] = mapped_column(String(256), nullable=False)
+    edge_type: Mapped[str] = mapped_column(String(64), default="derived_from")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class DataQualityRuleORM(Base):
+    """DATA-D7：quality 规则（对 source schema 的字段级断言）。"""
+
+    __tablename__ = "data_quality_rules"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    entity_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    field: Mapped[str] = mapped_column(String(256), nullable=False)
+    rule_type: Mapped[str] = mapped_column(String(32), nullable=False)  # required | type
+    params: Mapped[str] = mapped_column(Text, default="{}")  # JSON
+    enabled: Mapped[bool] = mapped_column(nullable=False, default=True)
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class DataQualityResultORM(Base):
+    """DATA-D7：quality 规则执行结果（持久化供追溯）。"""
+
+    __tablename__ = "data_quality_results"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    rule_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    entity_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    field: Mapped[str] = mapped_column(String(256), default="")
+    rule_type: Mapped[str] = mapped_column(String(32), default="")
+    passed: Mapped[bool] = mapped_column(nullable=False, default=False)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    ran_at: Mapped[str] = mapped_column(String(64), default="")

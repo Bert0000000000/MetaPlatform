@@ -572,3 +572,175 @@ def update_data_product(
         setattr(product, key, value)
     product.updated_at = _now()
     return put_data_product(tenant_id, product)
+
+
+# ---------------------------------------------------------------------------
+# DATA-D6/D7 — lineage / quality / catalog（治理面，SQL 持久化）
+# ---------------------------------------------------------------------------
+from .in_memory import (  # noqa: E402  (与上方 import 分组分开：治理面域对象)
+    LineageEdge,
+    QualityResult,
+    QualityRule,
+)
+from .sql_models import (  # noqa: E402
+    DataLineageEdgeORM,
+    DataQualityResultORM,
+    DataQualityRuleORM,
+)
+
+
+def create_lineage_edge(
+    tenant_id: str, source_entity: str, target_entity: str,
+    edge_type: str = "derived_from",
+) -> LineageEdge:
+    edge = LineageEdge(
+        id=f"lnge-{uuid.uuid4().hex[:8]}",
+        tenant_id=tenant_id,
+        source_entity=source_entity,
+        target_entity=target_entity,
+        edge_type=edge_type,
+        created_at=_now(),
+    )
+    with _session() as session:
+        session.add(DataLineageEdgeORM(
+            id=edge.id, tenant_id=tenant_id,
+            source_entity=source_entity, target_entity=target_entity,
+            edge_type=edge_type, created_at=edge.created_at))
+        session.commit()
+    return edge
+
+
+def list_lineage_edges(tenant_id: str) -> list[LineageEdge]:
+    with _session() as session:
+        rows = session.query(DataLineageEdgeORM).filter_by(
+            tenant_id=tenant_id).all()
+        return [
+            LineageEdge(
+                id=r.id, tenant_id=r.tenant_id,
+                source_entity=r.source_entity, target_entity=r.target_entity,
+                edge_type=r.edge_type, created_at=r.created_at,
+            ) for r in rows
+        ]
+
+
+def create_quality_rule(
+    tenant_id: str, entity_id: str, field: str, rule_type: str,
+    params: dict[str, Any] | None = None,
+) -> QualityRule:
+    rule = QualityRule(
+        id=f"dqr-{uuid.uuid4().hex[:8]}",
+        tenant_id=tenant_id, entity_id=entity_id, field=field,
+        rule_type=rule_type, params=dict(params or {}),
+        created_at=_now(),
+    )
+    with _session() as session:
+        session.add(DataQualityRuleORM(
+            id=rule.id, tenant_id=tenant_id, entity_id=entity_id,
+            field=field, rule_type=rule_type,
+            params=_json_dumps(rule.params), enabled=True,
+            created_at=rule.created_at))
+        session.commit()
+    return rule
+
+
+def list_quality_rules(
+    tenant_id: str, entity_id: str | None = None, enabled_only: bool = False,
+) -> list[QualityRule]:
+    with _session() as session:
+        q = session.query(DataQualityRuleORM).filter_by(tenant_id=tenant_id)
+        if entity_id:
+            q = q.filter_by(entity_id=entity_id)
+        if enabled_only:
+            q = q.filter_by(enabled=True)
+        rows = q.all()
+        return [
+            QualityRule(
+                id=r.id, tenant_id=r.tenant_id, entity_id=r.entity_id,
+                field=r.field, rule_type=r.rule_type,
+                params=_json_loads(r.params), enabled=bool(r.enabled),
+                created_at=r.created_at,
+            ) for r in rows
+        ]
+
+
+def save_quality_results(tenant_id: str, results: list[QualityResult]) -> None:
+    with _session() as session:
+        for r in results:
+            session.add(DataQualityResultORM(
+                id=r.id, tenant_id=r.tenant_id, rule_id=r.rule_id,
+                entity_id=r.entity_id, field=r.field, rule_type=r.rule_type,
+                passed=r.passed, detail=r.detail, ran_at=r.ran_at))
+        session.commit()
+
+
+def list_quality_results(tenant_id: str, limit: int = 50) -> list[QualityResult]:
+    with _session() as session:
+        rows = (
+            session.query(DataQualityResultORM)
+            .filter_by(tenant_id=tenant_id)
+            .order_by(DataQualityResultORM.ran_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            QualityResult(
+                id=r.id, tenant_id=r.tenant_id, rule_id=r.rule_id,
+                entity_id=r.entity_id, field=r.field, rule_type=r.rule_type,
+                passed=bool(r.passed), detail=r.detail, ran_at=r.ran_at,
+            ) for r in rows
+        ]
+
+
+def run_quality_rules(tenant_id: str) -> dict[str, Any]:
+    """执行本租户全部 enabled 规则（对 source schema），结果落 PG。"""
+    from .in_memory import get_source_schema, _quality_check
+
+    rules = list_quality_rules(tenant_id, enabled_only=True)
+    results: list[QualityResult] = []
+    for rule in rules:
+        schema = get_source_schema(tenant_id, rule.entity_id)
+        results.append(_quality_check(rule, schema))
+    save_quality_results(tenant_id, results)
+    return {
+        "rules_executed": len(rules),
+        "passed": sum(1 for r in results if r.passed),
+        "failed": sum(1 for r in results if not r.passed),
+        "results": results,
+    }
+
+
+def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
+    """返回 {nodes, edges} 依赖图；entity 给定时只保留相连子图。"""
+    edges = list_lineage_edges(tenant_id)
+    if entity:
+        edges = [e for e in edges
+                 if e.source_entity == entity or e.target_entity == entity]
+    nodes: dict[str, None] = {}
+    for e in edges:
+        nodes[e.source_entity] = None
+        nodes[e.target_entity] = None
+    return {
+        "nodes": [{"id": n} for n in sorted(nodes)],
+        "edges": [
+            {"source": e.source_entity, "target": e.target_entity,
+             "edge_type": e.edge_type, "id": e.id}
+            for e in edges
+        ],
+    }
+
+
+def catalog_search(tenant_id: str, q: str) -> list[dict[str, Any]]:
+    """跨 sources + data products 的名称/描述检索（catalog 面）。"""
+    q_lower = (q or "").lower()
+    items: list[dict[str, Any]] = []
+    for s in list_sources(tenant_id):
+        hay = f"{s.name} {s.type}".lower()
+        if q_lower in hay:
+            items.append({"kind": "source", "id": s.id, "name": s.name,
+                          "detail": s.type})
+    for p in list_data_products(tenant_id):
+        hay = f"{p.name} {p.description} {p.modality}".lower()
+        if q_lower in hay:
+            items.append({"kind": "product", "id": p.id, "name": p.name,
+                          "detail": p.modality, "status": p.status})
+    return items

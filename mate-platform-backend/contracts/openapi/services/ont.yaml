@@ -2329,3 +2329,64 @@ components:
         change_set:
           type: array
           items: {type: string}
+  /api/v1/ont/v2/shacl/validate:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      x-required-scopes: [platform.write]
+      tags: [ont]
+      summary: SHACL Core 关键约束验证（minCount/maxCount/datatype/pattern/class/closed）
+      description: >-
+        NodeShape 由 ObjectType 定义合成（pk/非空 → minCount 1，type_id →
+        datatype），与 ontValidateV2* 类型语义对齐；可选 property_shapes
+        叠加 W3C 特有约束（pattern/class），closed 拒绝未声明属性。
+        individuals 缺省取 repo 内该类全部实例。返回 W3C 验证报告结构子集
+        {conforms, violations, stats}。
+      operationId: ontValidateV2Shacl
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ONT-G14-SHACL]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_class]
+              properties:
+                target_class:
+                  type: string
+                  description: 聚焦类 rid（须为本租户）
+                individuals:
+                  type: array
+                  description: 显式实例集（缺省取 repo 内该类全部实例）
+                  items: {type: object}
+                property_shapes:
+                  type: array
+                  description: 叠加的 PropertyShape（pattern/class 等 W3C 特有约束）
+                  items: {type: object}
+                closed:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: W3C 验证报告结构子集
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conforms: {type: boolean}
+                  violations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        focus_node: {type: string}
+                        path: {type: string}
+                        constraint: {type: string}
+                        message: {type: string}
+                  stats:
+                    type: object
+        '403': {$ref: ../common/errors.yaml#/components/responses/Error403}
