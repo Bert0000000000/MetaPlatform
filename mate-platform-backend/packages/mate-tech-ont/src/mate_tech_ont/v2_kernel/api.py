@@ -501,6 +501,10 @@ async def upsert_object_type(
 
     MP-DEDUP-01：DB UNIQUE (tenant_id, slug) 触发 → 409 + 建议合并到已有 rid。
     """
+    ctx = _ctx(request)
+    if not payload.rid.startswith(f"ont.{ctx.tenant_id}."):
+        # GOVERN-06 第一道防线：外租户前缀 rid 一律拒绝写入
+        raise HTTPException(status_code=403, detail="cross-tenant rid denied")
     ot = _dto_to_ot(payload)
     try:
         saved = await _call_scoped(request, "upsert_object_type", ot)
@@ -1035,7 +1039,10 @@ async def rollback_object_type(
     operation_id="ontGetV2ObjectType",
 )
 async def get_object_type(rid: str, request: Request) -> ObjectTypeResponse:
-    _ctx(request)
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):
+        # GOVERN-06：外租户前缀 rid 不泄露存在性（404 而非 403）
+        raise HTTPException(status_code=404, detail=f"object type {rid} not found")
     try:
         ot = await _call_scoped(request, "get_object_type", ClassRef(rid))
     except KeyError as e:

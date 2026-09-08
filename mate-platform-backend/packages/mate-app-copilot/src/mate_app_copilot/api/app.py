@@ -1447,10 +1447,13 @@ async def chat_completions_stream(
         llm_provider = "custom" if provider_cfg.get("base_url") else "openai"
         llm_base_url = provider_cfg.get("base_url") or None
         llm_api_key = provider_cfg.get("api_key") or None
+        # 与 /chat/agent/stream 对齐：custom provider 的 default_model 优先。
+        # 用独立变量，避免在嵌套作用域重绑定外层的 model（UnboundLocalError）。
+        llm_model = provider_cfg.get("default_model") or model
         try:
             async for line in stream_client.stream_chat_real(
                 messages=messages,
-                model=model,
+                model=llm_model,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 provider=llm_provider,

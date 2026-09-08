@@ -9,51 +9,61 @@
 services:
   mate-tech-iam:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-app-kb:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-tech-rag:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-tech-agent:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-tech-mcp:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-tech-ont:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-tech-llmgw:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-app-copilot:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-app-arch:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
   mate-api-gateway:
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080

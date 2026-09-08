@@ -28,7 +28,7 @@ services:
       KEYCLOAK_AUDIENCE: metaplatform-backend
       SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
       SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
-      INSECURE_SKIP_SIGNATURE: "true"
+      INSECURE_SKIP_SIGNATURE: "false"
       PYTHONPATH: /app/packages/mate-app-wfe/src:/app/packages/mate-tech-db/src:/app/packages/mate-platform/src:/app/packages/mate-common/src:/app/packages/mate-kernel/src
     depends_on:
       postgres:
@@ -111,8 +111,8 @@ services:
       SERVICE_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
       SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
       SERVICE_CLIENT_SCOPE: ${AGENT_SERVICE_SCOPE:-openid}
-      INSECURE_SKIP_SIGNATURE: "true"
-      LEGACY_LOGIN_COMPAT: "true"
+      INSECURE_SKIP_SIGNATURE: "false"
+      LEGACY_LOGIN_COMPAT: "false"
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY required for agent}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
