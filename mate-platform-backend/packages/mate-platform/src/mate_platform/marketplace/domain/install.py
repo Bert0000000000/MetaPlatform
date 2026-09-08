@@ -61,3 +61,22 @@ class Install(Base):
             name="uq_marketplace_install_active",
         ),
     )
+
+class InstallAudit(Base):
+    """MP-MKT-INSTALL-01：install 状态转移审计（与状态变更同事务写入）。"""
+
+    __tablename__ = "marketplace_install_audit"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    install_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, index=True
+    )
+    action: Mapped[str] = mapped_column(String(16), nullable=False)
+    from_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    to_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )

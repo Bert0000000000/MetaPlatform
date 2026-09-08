@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..domain.install import Install
+from ..domain.install import Install, InstallAudit
 
 
 def create_install(
@@ -52,3 +52,53 @@ def create_install(
     session.add(install)
     session.flush()
     return install.id, False
+
+
+_TRANSITIONS: dict[str, tuple[tuple[str, ...], str]] = {
+    # action → (允许的起始状态, 目标状态)
+    "uninstall": (("installed", "failed", "verifying"), "uninstalling"),
+    "retry": (("failed", "uninstalled"), "downloading"),
+}
+
+
+class InstallNotFound(LookupError):
+    pass
+
+
+class InvalidTransition(ValueError):
+    pass
+
+
+def transition_install(
+    *,
+    session: Session,
+    install_id: uuid.UUID,
+    action: str,
+    actor: uuid.UUID | None = None,
+) -> Install:
+    """事务化状态转移（uninstall / retry）+ 审计记录（MP-MKT-INSTALL-01）。
+
+    合法性由 _TRANSITIONS 约束；越界转移抛 InvalidTransition（API 层译 409）。
+    审计写入 install_audit 表（actor/action/from/to/at）——审计与状态变更
+    同一事务，保证「无审计的转移不存在」。
+    """
+    allowed, target = _TRANSITIONS[action]
+    install = session.scalar(select(Install).where(Install.id == install_id))
+    if install is None:
+        raise InstallNotFound(str(install_id))
+    if install.state not in allowed:
+        raise InvalidTransition(
+            f"install {install_id} is '{install.state}'; {action} requires "
+            f"one of {sorted(allowed)}"
+        )
+    from_status = install.state
+    install.state = target
+    if action == "retry":
+        install.retry_count = (install.retry_count or 0) + 1
+    session.add(InstallAudit(
+        install_id=install.id, action=action, from_state=from_status,
+        to_state=target, actor=str(actor) if actor else "",
+        created_at=datetime.now(timezone.utc),
+    ))
+    session.flush()
+    return install
