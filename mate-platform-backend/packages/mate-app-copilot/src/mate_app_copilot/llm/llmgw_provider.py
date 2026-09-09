@@ -63,14 +63,22 @@ class LlmgwProvider:
     def chat(self, messages: list[dict]) -> str:
         try:
             with httpx.Client(timeout=self._timeout) as client:
+                # P4: the gateway has no /chat/completions route (it 404'd
+                # into the stub since this file was written); /chat/real is
+                # the real-provider endpoint and returns {content, ...}.
                 resp = client.post(
-                    f"{self._base_url}/api/v1/llmgw/chat/completions",
-                    json={"messages": messages},
+                    f"{self._base_url}/api/v1/llmgw/chat/real",
+                    json={
+                        "provider": "openai",
+                        "model": "",
+                        "messages": messages,
+                        "tenant_id": self._tenant_id,
+                    },
                     auth=OutgoingAuthMiddleware(self._auth, tenant_id=self._tenant_id),
                 )
                 resp.raise_for_status()
                 payload: dict[str, Any] = resp.json()
-                return str(payload["choices"][0]["message"]["content"])
+                return str(payload["content"])
         except (httpx.HTTPError, KeyError, IndexError, ValueError):
             logger.warning("llmgw chat unreachable, using stub")
             return stub_provider.chat(messages)

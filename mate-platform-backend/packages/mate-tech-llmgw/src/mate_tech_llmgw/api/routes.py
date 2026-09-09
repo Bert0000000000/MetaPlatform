@@ -122,6 +122,41 @@ def _ctx_user_id(request: Request | None) -> str:
     return str(user_id) if user_id else "anonymous"
 
 
+def _apply_request_tenant(request: Request | None, req: BaseModel) -> None:
+    """P4 tenant enforcement (hard rule #3 alignment).
+
+    Authenticated ctx (USER/SERVICE/API_KEY):
+      - body tenant_id empty/"default" (the unset sentinel) → backfill
+        from the JWT tenant
+      - body tenant_id set and ≠ ctx tenant → 403 (cross-tenant spoof)
+    Missing request, missing ctx, or anonymous ctx (dev_server anonymous
+    paths, test apps without the auth middleware): keep the body value
+    unchanged — this is what keeps test_llmgw_path_alias green.
+    """
+    if request is None:
+        return
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is None or not getattr(ctx, "is_authenticated", False):
+        return
+    ctx_tenant = str(getattr(ctx, "tenant_id", "") or "")
+    if not ctx_tenant:
+        return
+    body_tenant = str(getattr(req, "tenant_id", "") or "")
+    if not body_tenant or body_tenant == "default":
+        try:
+            req.tenant_id = ctx_tenant  # type: ignore[misc]
+        except Exception:  # noqa: BLE001 — frozen models keep old behavior
+            pass
+        return
+    if body_tenant != ctx_tenant:
+        logger.warning(
+            "llmgw.tenant.mismatch_denied",
+            body_tenant=body_tenant,
+            ctx_tenant=ctx_tenant,
+        )
+        raise HTTPException(status_code=403, detail="tenant access denied")
+
+
 # P1: tenant soft/max budget guard (rebuilt when the recorder pool changes).
 _budget_guard: Any | None = None
 _budget_guard_pool_id: int | None = None
@@ -265,6 +300,7 @@ def _chat_response_payload(response: Any) -> dict[str, Any]:
 @router.post("/chat", response_model=ChatResponseAPI)
 async def chat_endpoint(req: ChatRequest, request: Request) -> ChatResponseAPI:
     """非流式 chat 端点."""
+    _apply_request_tenant(request, req)
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=_ctx_user_id(request))
     await _enforce_tenant_budget(req)
@@ -313,8 +349,9 @@ async def _mock_stream(*, messages=None, model=None, temperature=1.0, **kwargs):
 
 
 @router.post("/chat/stream")
-async def chat_stream_endpoint(req: ChatRequest):
+async def chat_stream_endpoint(req: ChatRequest, request: Request):
     """ST-5.5.7: SSE 流式 chat 端点."""
+    _apply_request_tenant(request, req)
     if is_production_profile():
         raise HTTPException(
             status_code=503,
@@ -424,6 +461,7 @@ async def embeddings_endpoint(req: EmbeddingRequest, request: Request) -> Embedd
     显式带 base_url/api_key 时，优先用后台 AI Provider 配置
     (ai.embedding.default_provider)。无 API key / 网络失败时自动回退到确定性 hash 向量。
     """
+    _apply_request_tenant(request, req)
     try:
         return await _run_embeddings(req, request)
     except RuntimeError as e:
@@ -489,6 +527,7 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
     failure the provider returns a deterministic stub response so the
     caller always gets a reply.
     """
+    _apply_request_tenant(request, req)
     user_id = _ctx_user_id(request)
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=user_id)
@@ -615,6 +654,7 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
       data: {"type": "done", "content", "reasoning_content", "tool_calls",
              "finish_reason", "usage"}
     """
+    _apply_request_tenant(request, req)
     user_id = _ctx_user_id(request)
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=user_id)
@@ -821,7 +861,7 @@ def _resolve_multimodal_provider(req: MultimodalApiRequest) -> tuple[Any, str]:
 
 
 @router.post("/chat/multimodal", response_model=MultimodalApiResponse)
-async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiResponse:
+async def multimodal_chat_endpoint(req: MultimodalApiRequest, request: Request) -> MultimodalApiResponse:
     """v3.2 W2: simplified multimodal chat (text + image + audio → text).
 
     Quota and cost reuse the same singletons as the text chat path
@@ -829,6 +869,7 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
     calls are subject to the same per-tenant RPM/TPM limits and cost
     metering.
     """
+    _apply_request_tenant(request, req)
     if is_production_profile():
         raise HTTPException(
             status_code=503,
@@ -997,7 +1038,8 @@ def _deprecation_header() -> dict[str, str]:
     response_model=ChatResponseAPI,
     deprecated=True,
 )
-async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
+async def legacy_chat(req: ChatRequest, response: Response, request: Request) -> ChatResponseAPI:
+    _apply_request_tenant(request, req)
     try:
         resp = await router_chat(
             req.model,
@@ -1044,6 +1086,7 @@ async def legacy_chat_stream(req: ChatRequest, response: Response):
 )
 async def legacy_embeddings(req: EmbeddingRequest, response: Response, request: Request) -> EmbeddingResponse:
     response.headers.update(_deprecation_header())
+    _apply_request_tenant(request, req)
     return await _run_embeddings(req, request)
 
 

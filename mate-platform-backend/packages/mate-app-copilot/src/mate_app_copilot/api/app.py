@@ -725,7 +725,9 @@ def _get_client(request: Request) -> AsyncCopilotClient:
         auth=BearerAuth(
             token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
             client_id="metaplatform-backend",
-            client_secret="stub",  # noqa: S106
+            client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                # P4: "stub" survives only in legacy-compat dev; production must
+                # inject SERVICE_CLIENT_SECRET (hard rule 12).
             scope="platform.read platform.write",
         ),
         provider=stub_provider,
@@ -1427,7 +1429,9 @@ async def chat_completions_stream(
             auth=BearerAuth(
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
-                client_secret="stub",  # noqa: S106
+                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                    # P4: "stub" survives only in legacy-compat dev; production must
+                    # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
             ),
             tenant_id=tid,
@@ -2149,7 +2153,9 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
             auth=BearerAuth(
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
-                client_secret="stub",  # noqa: S106
+                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                    # P4: "stub" survives only in legacy-compat dev; production must
+                    # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
             ),
         )
@@ -2273,7 +2279,9 @@ async def chat_agent_stream(
     bearer = BearerAuth(
         token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
         client_id="metaplatform-backend",
-        client_secret="stub",  # noqa: S106
+        client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+            # P4: "stub" survives only in legacy-compat dev; production must
+            # inject SERVICE_CLIENT_SECRET (hard rule 12).
         scope="platform.read platform.write",
     )
     llmgw_client = LlmgwStreamClient(
