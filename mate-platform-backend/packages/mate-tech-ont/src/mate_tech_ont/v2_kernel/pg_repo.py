@@ -232,6 +232,9 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_ax_tenant ON ont_axiom (tenant_id)",
+    # 旧库补列：早期 ont_axiom 无 updated_at（G21 闭包查询 ORDER BY 抛错被
+    # evaluate_object_set 静默吞掉 → 层级查询退化为精确匹配，test_ont_g21 失败）
+    "ALTER TABLE ont_axiom ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()",
     # MP-SAL-02: 对象语义检索索引表（OAG，spec §4.2 SAL-02）
     """
     CREATE TABLE IF NOT EXISTS ont_object_embedding (
