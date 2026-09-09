@@ -701,6 +701,19 @@ async def get_materialization(rid: str, request: Request) -> dict:
 
 
 @router.get(
+    "/action-audit",
+    response_model=list[dict],
+    operation_id="ontListV2ActionAudit",
+)
+async def list_action_audit(
+    request: Request, limit: int = 100, action_rid: str | None = None,
+) -> list[dict]:
+    """UI-04：Action 执行历史（actor/参数/结果/审计链，倒序）。"""
+    _ctx(request)
+    return await _call_scoped(request, "list_action_audit", limit, action_rid)
+
+
+@router.get(
     "/usage/types",
     response_model=list[dict],
     operation_id="ontGetV2UsageSummary",

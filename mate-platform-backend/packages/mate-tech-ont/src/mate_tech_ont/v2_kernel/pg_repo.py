@@ -2672,6 +2672,26 @@ class PgOntologyRepository(OntologyRepository):
 
     # ───── GOV-16~19：治理四件套 ─────
 
+    def list_action_audit(self, limit: int = 100,
+                          action_rid: str | None = None) -> list[dict[str, Any]]:
+        """UI-04：执行历史查询（audit 行倒序；action_rid 过滤可选）。"""
+        self._ensure_schema()
+        conds = ""
+        params: list[Any] = []
+        if action_rid:
+            conds = " WHERE action_rid = %s"
+            params.append(action_rid)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_action_audit" + conds +
+                    " ORDER BY created_at DESC LIMIT %s", (*params, limit))
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+
     def record_usage(self, class_rid: str, op: str, count: int = 1) -> None:
         """GOV-16：使用量打点（read/write；UPSERT 日聚合）。best-effort。"""
         tenant = self._current_tenant() or "tenant-default"

@@ -11,11 +11,14 @@
 // 严格原生 button（dev 模式 Semi Button onClick 截 noop，见 CLAUDE.md 记忆）。
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowUpRight, Boxes, Loader2, X } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Boxes, Loader2, X, Zap } from 'lucide-react';
 import {
-  getIndividual, getObjectType, propSlug, searchAround,
-  type KernelIndividual, type KernelObjectType, type SearchAroundGroup,
+  getIndividual, getObjectType, listActionTypes, propSlug, queryTimeseries,
+  searchAround,
+  type KernelActionType, type KernelIndividual, type KernelObjectType,
+  type SearchAroundGroup, type TimeseriesPoint,
 } from '@/api/ont/kernel';
+import ActionFormDrawer from './ActionFormDrawer';
 
 export interface ObjectHomeDrawerProps {
   open: boolean;
@@ -54,6 +57,11 @@ export default function ObjectHomeDrawer({
   const [individual, setIndividual] = useState<KernelIndividual | null>(null);
   const [objectType, setObjectType] = useState<KernelObjectType | null>(null);
   const [groups, setGroups] = useState<SearchAroundGroup[]>([]);
+  // UI-02：可执行 Action（on 命中该类）+ 表单抽屉
+  const [applicableActions, setApplicableActions] = useState<KernelActionType[]>([]);
+  const [formAction, setFormAction] = useState<KernelActionType | null>(null);
+  // UI-05：时序 sparkline（series_rid -> points）
+  const [series, setSeries] = useState<Record<string, TimeseriesPoint[]>>({});
 
   useEffect(() => {
     if (!open || !rid) return;
@@ -68,13 +76,26 @@ export default function ObjectHomeDrawer({
         const ind = await getIndividual(rid);
         if (cancelled) return;
         setIndividual(ind);
-        const [ot, around] = await Promise.all([
+        const [ot, around, ats] = await Promise.all([
           getObjectType(ind.class_rid).catch(() => null),
           searchAround(rid).catch(() => [] as SearchAroundGroup[]),
+          listActionTypes().catch(() => [] as KernelActionType[]),
         ]);
         if (cancelled) return;
         setObjectType(ot);
         setGroups(around);
+        setApplicableActions(ats.filter((at) => at.on.includes(ind.class_rid)));
+        if (ot) {
+          for (const pr of ot.properties) {
+            if (pr.format !== 'timeseries') continue;
+            const v = ind.props[pr.rid];
+            if (typeof v === 'string' && v) {
+              queryTimeseries(v).then((pts) => {
+                if (!cancelled) setSeries((m) => ({ ...m, [v]: pts }));
+              }).catch(() => undefined);
+            }
+          }
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -175,6 +196,33 @@ export default function ObjectHomeDrawer({
           )}
           {individual && !loading && (
             <>
+              {/* 可执行 Action（UI-02）*/}
+              {applicableActions.length > 0 && (
+                <section style={{ marginBottom: 20 }}>
+                  <h4 style={{ fontSize: 13, fontWeight: 600, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Zap style={{ width: 14, height: 14, color: '#fbbf24' }} /> 可执行动作
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {applicableActions.map((at) => (
+                      <button
+                        key={at.rid}
+                        type="button"
+                        onClick={() => setFormAction(at)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          padding: '6px 14px', fontSize: 12, borderRadius: 8,
+                          border: '1px solid var(--border)', background: 'var(--card)',
+                          color: 'var(--foreground)', cursor: 'pointer',
+                        }}
+                      >
+                        <Zap style={{ width: 11, height: 11, color: '#fbbf24' }} />
+                        {at.title || at.rid.split('.')[3] || at.rid}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* 属性区 */}
               <section style={{ marginBottom: 24 }}>
                 <h4 style={{ fontSize: 13, fontWeight: 600, margin: '0 0 10px', color: 'var(--foreground)' }}>属性</h4>
@@ -205,7 +253,9 @@ export default function ObjectHomeDrawer({
                             )}
                           </div>
                           <div style={{ fontSize: 13, color: 'var(--foreground)', wordBreak: 'break-all' }}>
-                            {formatValue(v)}
+                            {meta?.format === 'timeseries' && typeof v === 'string' && series[v]
+                              ? <Sparkline points={series[v]} />
+                              : formatValue(v)}
                           </div>
                         </div>
                       );
@@ -272,7 +322,48 @@ export default function ObjectHomeDrawer({
             </>
           )}
         </div>
+        {/* Action 执行表单（UI-02 D7 预览即确认）*/}
+        <ActionFormDrawer
+          open={formAction !== null}
+          action={formAction}
+          targetIid={rid}
+          targetLabel={individual?.primary_key}
+          onClose={() => setFormAction(null)}
+          onApplied={() => {
+            setFormAction(null);
+            if (rid) {
+              const cur = rid;
+              setGroups([]);
+              setIndividual(null);
+              getIndividual(cur).then(setIndividual).catch(() => undefined);
+            }
+          }}
+        />
       </div>
     </div>
+  );
+}
+
+/** UI-05：时序 mini 折线（SVG，无第三方依赖）。 */
+function Sparkline({ points }: { points: TimeseriesPoint[] }) {
+  if (points.length === 0) return <span>（空序列）</span>;
+  const w = 160, h = 28;
+  const values = points.map((pp) => pp.value);
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = max - min || 1;
+  const path = points.map((pp, i) => {
+    const x = (i / Math.max(points.length - 1, 1)) * (w - 4) + 2;
+    const y = h - 3 - ((pp.value - min) / span) * (h - 6);
+    return (i === 0 ? 'M ' : 'L ') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }).join(' ');
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      <svg width={w} height={h} style={{ display: 'block' }}>
+        <path d={path} fill="none" stroke="var(--foreground)" strokeWidth="1.5" />
+      </svg>
+      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+        {points.length} 点 · {min.toFixed(2)}~{max.toFixed(2)}
+      </span>
+    </span>
   );
 }

@@ -485,3 +485,120 @@ export function propSlug(rid: string): string {
   const parts = rid.split('.');
   return parts[3] ?? rid;
 }
+
+// ── UI-02/03/04/05：Action 表单 / 治理面 / Interface / 时序 ──
+
+/** 提交 edit-set 提案（AI 路径，强制 HITL）。 */
+export async function proposeEditSet(
+  actionRid: string, body: {
+    parameters: Record<string, unknown>; target_iid?: string;
+    edits?: Array<Record<string, unknown>>; impact_summary?: string;
+  },
+): Promise<{ proposal_id: string; status: string; requires_hitl: boolean }> {
+  const resp = await apiClient.post(
+    v2(`/action-types/${encodeURIComponent(actionRid)}/propose-edit-set`), body);
+  const data = resp.data as { data?: unknown } | Record<string, unknown>;
+  return (data && typeof data === 'object' && 'data' in data
+    ? (data as { data: { proposal_id: string; status: string; requires_hitl: boolean } }).data
+    : data) as { proposal_id: string; status: string; requires_hitl: boolean };
+}
+
+/** 人工路径「预览即确认」edit-set（即时 proposal + 单事务 + 审计）。 */
+export async function applyEditSet(
+  actionRid: string, body: {
+    parameters: Record<string, unknown>; target_iid?: string;
+    edits?: Array<Record<string, unknown>>; impact_summary?: string;
+  },
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(
+    v2(`/action-types/${encodeURIComponent(actionRid)}/apply-edit-set`), body);
+  return resp.data as Record<string, unknown>;
+}
+
+/** GOV-16：类型使用量。 */
+export interface UsageRow {
+  class_rid: string;
+  reads: number | null;
+  writes: number | null;
+  active_days: number | null;
+}
+
+export async function getUsageSummary(days = 30): Promise<UsageRow[]> {
+  const resp = await apiClient.get(v2('/usage/types'), { params: { days } });
+  return resp.data as UsageRow[];
+}
+
+/** UI-04：执行历史（audit 行）。 */
+export interface ActionAuditRow {
+  audit_id: string;
+  tenant_id: string;
+  proposal_id: string;
+  action_rid: string;
+  target_iid: string;
+  actor_id: string;
+  result: Record<string, unknown>;
+  created_at: string;
+}
+
+export async function listActionAudit(limit = 100, actionRid?: string): Promise<ActionAuditRow[]> {
+  const resp = await apiClient.get(v2('/action-audit'), {
+    params: { limit, action_rid: actionRid },
+  });
+  return resp.data as ActionAuditRow[];
+}
+
+/** GOV-18：反模式 lint。 */
+export interface LintFinding {
+  pattern: string;
+  subject: string;
+  detail: string;
+  hint: string;
+}
+
+export async function lintAntiPatterns(): Promise<LintFinding[]> {
+  const resp = await apiClient.get(v2('/lint/anti-patterns'));
+  return resp.data as LintFinding[];
+}
+
+/** GOV-17：生命周期处置。 */
+export async function applyLifecycle(
+  classRid: string, action: 'snooze' | 'deprecate' | 'delete',
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/lifecycle`),
+    { action });
+  return resp.data as Record<string, unknown>;
+}
+
+/** UI-03：Interface 清单。 */
+export interface KernelInterface {
+  rid: string;
+  properties: KernelProperty[];
+  required_links: string[];
+  polymorphic_action_constraints: string[];
+}
+
+export async function listInterfaces(): Promise<KernelInterface[]> {
+  return list<KernelInterface>('/interfaces');
+}
+
+export async function listInterfaceImplementations(rid: string): Promise<string[]> {
+  return list<string>(`/interfaces/${encodeURIComponent(rid)}/implementations`);
+}
+
+/** GOV-19：时序窗口查询。 */
+export interface TimeseriesPoint {
+  ts: string;
+  value: number;
+  attrs?: Record<string, unknown>;
+}
+
+export async function queryTimeseries(
+  seriesRid: string, start?: string, end?: string,
+): Promise<TimeseriesPoint[]> {
+  const resp = await apiClient.get(
+    v2(`/timeseries/${encodeURIComponent(seriesRid)}`),
+    { params: { start, end } },
+  );
+  return resp.data as TimeseriesPoint[];
+}
