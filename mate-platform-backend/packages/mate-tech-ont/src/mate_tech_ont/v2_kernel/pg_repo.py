@@ -172,17 +172,22 @@ DDL: tuple[str, ...] = (
     "ALTER TABLE ont_action_type ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''",
     """
     CREATE TABLE IF NOT EXISTS ont_link_type (
-        rid             TEXT PRIMARY KEY,
-        tenant_id       TEXT NOT NULL,
-        src_rid         TEXT NOT NULL,
-        dst_rid         TEXT NOT NULL,
-        cardinality     TEXT NOT NULL,
-        directionality  TEXT NOT NULL,
-        link_properties JSONB NOT NULL DEFAULT '[]'::jsonb,
-        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+        rid               TEXT PRIMARY KEY,
+        tenant_id         TEXT NOT NULL,
+        src_rid           TEXT NOT NULL,
+        dst_rid           TEXT NOT NULL,
+        cardinality       TEXT NOT NULL,
+        directionality    TEXT NOT NULL,
+        link_properties   JSONB NOT NULL DEFAULT '[]'::jsonb,
+        src_display_name  TEXT NOT NULL DEFAULT '',
+        dst_display_name  TEXT NOT NULL DEFAULT '',
+        updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_lt_tenant ON ont_link_type (tenant_id)",
+    # EXP-03：两端命名补列（旧库）
+    "ALTER TABLE ont_link_type ADD COLUMN IF NOT EXISTS src_display_name TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_link_type ADD COLUMN IF NOT EXISTS dst_display_name TEXT NOT NULL DEFAULT ''",
     """
     CREATE TABLE IF NOT EXISTS ont_interface (
         rid                              TEXT PRIMARY KEY,
@@ -418,6 +423,14 @@ def _rewrite_filter_fields(
     return _dc_replace(cf, field_name=new_field, children=new_children)
 
 
+def _slug_of(rid: str) -> str:
+    """rid 的 slug 段（5 段取 [3]，6 段取 [4]；兜底最后一段）。"""
+    parts = rid.split(".")
+    if len(parts) >= 6:
+        return parts[4]
+    return parts[3] if len(parts) >= 5 else parts[-1]
+
+
 def _prop_slug(rid: str) -> str:
     """rid 第 4 段作 slug（与 kernel ``individual_to_row`` 同一规则）。"""
     parts = rid.split(".")
@@ -518,6 +531,8 @@ def _lt_to_row(lt: LinkType) -> dict[str, Any]:
         "dst_rid": lt.dst.rid,
         "cardinality": lt.cardinality.value,
         "directionality": lt.directionality.value,
+        "src_display_name": lt.src_display_name,
+        "dst_display_name": lt.dst_display_name,
         "link_properties": [
             {
                 "rid": p.rid.rid,
@@ -572,6 +587,8 @@ def _row_to_lt(row: dict[str, Any]) -> LinkType:
         dst=ClassRef(row["dst_rid"]),
         cardinality=Cardinality(row["cardinality"]),
         directionality=Directionality(row["directionality"]),
+        src_display_name=row.get("src_display_name", "") or "",
+        dst_display_name=row.get("dst_display_name", "") or "",
         link_properties=tuple(
             Property(
                 rid=ClassRef(p["rid"]),
@@ -1473,14 +1490,17 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     """
                     INSERT INTO ont_link_type
-                        (rid, tenant_id, src_rid, dst_rid, cardinality, directionality, link_properties, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, now())
+                        (rid, tenant_id, src_rid, dst_rid, cardinality, directionality,
+                         link_properties, src_display_name, dst_display_name, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, now())
                     ON CONFLICT (rid) DO UPDATE SET
                         src_rid = EXCLUDED.src_rid,
                         dst_rid = EXCLUDED.dst_rid,
                         cardinality = EXCLUDED.cardinality,
                         directionality = EXCLUDED.directionality,
                         link_properties = EXCLUDED.link_properties,
+                        src_display_name = EXCLUDED.src_display_name,
+                        dst_display_name = EXCLUDED.dst_display_name,
                         updated_at = now()
                     """,
                     (
@@ -1491,6 +1511,8 @@ class PgOntologyRepository(OntologyRepository):
                         row["cardinality"],
                         row["directionality"],
                         json.dumps(row["link_properties"]),
+                        row.get("src_display_name", ""),
+                        row.get("dst_display_name", ""),
                     ),
                 )
             conn.commit()
@@ -1782,6 +1804,8 @@ class PgOntologyRepository(OntologyRepository):
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
         self._ensure_schema()
         row = _li_to_row(li)
+        # EXP-03：基数校验（LinkType 已注册时强制；未注册类型保持 legacy 宽松）
+        self._check_link_cardinality(row["link_type_rid"], row["src"], row["dst"])
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -1813,6 +1837,86 @@ class PgOntologyRepository(OntologyRepository):
             return li
         finally:
             conn.close()
+
+    def _check_link_cardinality(self, link_type_rid: str, src: str, dst: str) -> None:
+        """EXP-03：注册 LinkType 的基数约束（见 kernel check_cardinality）。"""
+        from mate_kernel.ontology.types.link_type import check_cardinality
+
+        try:
+            lt = self.get_link_type(ClassRef(link_type_rid))
+        except KeyError:
+            return
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT"
+                    " COUNT(*) FILTER (WHERE src = %s) AS src_out,"
+                    " COUNT(*) FILTER (WHERE dst = %s) AS dst_in"
+                    " FROM ont_link_instance WHERE link_type_rid = %s",
+                    (src, dst, link_type_rid),
+                )
+                r = cur.fetchone()
+            src_out = int(r["src_out"]) if r else 0
+            dst_in = int(r["dst_in"]) if r else 0
+        finally:
+            conn.close()
+        violation = check_cardinality(lt.cardinality, src_out, dst_in)
+        if violation:
+            raise ValueError(
+                f"{violation} (link_type={link_type_rid}, src={src}, dst={dst})"
+            )
+
+    def search_around(self, rid: str, limit: int = 100) -> list[dict[str, Any]]:
+        """EXP-03：一跳关系遍历（Object Explorer Search Around 同语义）。
+
+        返回按 (link_type, direction) 分组的对端实例清单：
+        [{link_type_rid, link_display, direction, peers: [individual_row...]}]。
+        limit 是对端实例总数上限（默认 100，防大图拖垮）。
+        """
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT * FROM ont_link_instance WHERE src = %s OR dst = %s "
+                    "LIMIT %s",
+                    (rid, rid, limit),
+                )
+                links = cur.fetchall()
+                if not links:
+                    return []
+                peer_rids = list({
+                    (l["dst"] if l["src"] == rid else l["src"]) for l in links
+                })[:limit]
+                cur.execute(
+                    "SELECT * FROM ont_individual WHERE rid = ANY(%s)",
+                    (peer_rids,),
+                )
+                ind_rows = {r["rid"]: _row_to_individual(r) for r in cur.fetchall()}
+        finally:
+            conn.close()
+        link_types = {lt.rid.rid: lt for lt in self.list_link_types()}
+        grouped: dict[tuple[str, str], dict[str, Any]] = {}
+        for l in links:
+            lt = link_types.get(l["link_type_rid"])
+            outgoing = l["src"] == rid
+            peer_rid = l["dst"] if outgoing else l["src"]
+            key = (l["link_type_rid"], "out" if outgoing else "in")
+            entry = grouped.setdefault(key, {
+                "link_type_rid": l["link_type_rid"],
+                "link_display": (
+                    (lt.src_display_name if lt else "") or _slug_of(l["link_type_rid"])
+                    if outgoing else
+                    (lt.dst_display_name if lt else "") or _slug_of(l["link_type_rid"])
+                ),
+                "direction": key[1],
+                "peers": [],
+            })
+            ind = ind_rows.get(peer_rid)
+            if ind is not None:
+                entry["peers"].append(individual_to_row(ind))
+        return list(grouped.values())
 
     def list_link_instances(self) -> list[LinkInstance]:
         self._ensure_schema()

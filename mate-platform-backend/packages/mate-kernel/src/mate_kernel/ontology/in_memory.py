@@ -348,8 +348,58 @@ class InMemoryOntologyRepository(OntologyRepository):
         return list(items)
 
     def create_link_instance(self, li: LinkInstance) -> LinkInstance:
+        # EXP-03：注册 LinkType 的基数约束（未注册类型 legacy 宽松）
+        from .types.link_type import check_cardinality
+
+        lt = self._link_types.get(li.link_type_rid)
+        if lt is not None:
+            src_out = sum(
+                1 for x in self._link_instances.values()
+                if x.link_type_rid == li.link_type_rid and x.src == li.src
+            )
+            dst_in = sum(
+                1 for x in self._link_instances.values()
+                if x.link_type_rid == li.link_type_rid and x.dst == li.dst
+            )
+            violation = check_cardinality(lt.cardinality, src_out, dst_in)
+            if violation:
+                raise ValueError(
+                    f"{violation} (link_type={li.link_type_rid.rid}, "
+                    f"src={li.src}, dst={li.dst})"
+                )
         self._link_instances[li.rid] = li
         return li
+
+    def search_around(self, rid: str, limit: int = 100) -> list[dict[str, Any]]:
+        """EXP-03：一跳关系遍历（与 PgOntologyRepository.search_around 同语义）。"""
+        links = [l for l in self._link_instances.values() if l.src == rid or l.dst == rid][:limit]
+        if not links:
+            return []
+        peers_needed = {(l.dst if l.src == rid else l.src) for l in links}
+        grouped: dict[tuple[str, str], dict[str, Any]] = {}
+        from mate_kernel.objectset.compiler import individual_to_row
+
+        for l in links:
+            outgoing = l.src == rid
+            peer_rid = l.dst if outgoing else l.src
+            lt = self._link_types.get(l.link_type_rid)
+            lt_slug = l.link_type_rid.rid.split(".")
+            display = (
+                (lt.src_display_name if lt else "") or (lt_slug[3] if len(lt_slug) >= 5 else lt_slug[-1])
+                if outgoing else
+                (lt.dst_display_name if lt else "") or (lt_slug[3] if len(lt_slug) >= 5 else lt_slug[-1])
+            )
+            key = (l.link_type_rid.rid, "out" if outgoing else "in")
+            entry = grouped.setdefault(key, {
+                "link_type_rid": l.link_type_rid.rid,
+                "link_display": display,
+                "direction": key[1],
+                "peers": [],
+            })
+            ind = self._individuals.get(peer_rid)
+            if ind is not None:
+                entry["peers"].append(individual_to_row(ind))
+        return list(grouped.values())
 
     def list_link_instances(self) -> list[LinkInstance]:
         return list(self._link_instances.values())

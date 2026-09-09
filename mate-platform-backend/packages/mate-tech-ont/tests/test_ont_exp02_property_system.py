@@ -94,7 +94,7 @@ def _dept_type() -> ObjectType:
 def _link_type() -> LinkType:
     return LinkType(
         rid=ClassRef(LINK), src=ClassRef(OBJ_DEPT), dst=ClassRef(OBJ_EMP),
-        cardinality=Cardinality.ONE_TO_MANY,
+        cardinality=Cardinality.MANY_TO_MANY,
         directionality=Directionality.DIRECTED,
     )
 

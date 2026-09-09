@@ -180,6 +180,9 @@ class LinkTypeDTO(BaseModel):
     cardinality: str
     directionality: str
     link_properties: list[PropertyDTO] = Field(default_factory=list)
+    # EXP-03：两端独立命名（双向可读）
+    src_display_name: str = ""
+    dst_display_name: str = ""
 
 
 class InterfaceDTO(BaseModel):
@@ -405,6 +408,8 @@ def _dto_to_link_type(d: LinkTypeDTO) -> LinkType:
         cardinality=Cardinality(d.cardinality),
         directionality=Directionality(d.directionality),
         link_properties=tuple(_dto_to_prop(p) for p in d.link_properties),
+        src_display_name=d.src_display_name,
+        dst_display_name=d.dst_display_name,
     )
 
 
@@ -416,6 +421,8 @@ def _link_type_to_dto(lt: LinkType) -> LinkTypeDTO:
         cardinality=lt.cardinality.value,
         directionality=lt.directionality.value,
         link_properties=[_prop_to_dto(p) for p in lt.link_properties],
+        src_display_name=lt.src_display_name,
+        dst_display_name=lt.dst_display_name,
     )
 
 
@@ -2542,6 +2549,20 @@ async def list_interfaces(
     _ctx(request)
     items = await _call_scoped(request, "list_interfaces")
     return [_interface_to_dto(i) for i in items]
+
+
+@router.get(
+    "/individuals/{rid:path}/around",
+    response_model=list[dict],
+    operation_id="ontSearchAroundV2Individual",
+)
+async def search_around(rid: str, request: Request, limit: int = 100) -> list[dict]:
+    """EXP-03：一跳关系遍历（Object Explorer Search Around 同语义）。
+
+    按 (link_type, direction) 分组返回对端实例清单；limit 为对端总数上限。
+    """
+    _ctx(request)
+    return await _call_scoped(request, "search_around", rid, limit)
 
 
 # ─────────────────── 8) Individual by rid ───────────────────
