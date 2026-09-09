@@ -87,6 +87,7 @@ class ObjectTypeDTO(BaseModel):
     display_name: str = ""
     interfaces: list[str] = Field(default_factory=list)
     marking: list[str] = Field(default_factory=list)
+    parent_class: str = ""  # EXP-01：浅层级声明（限 1 层；自动同步 subclass 公理）
 
 
 class ObjectTypeResponse(BaseModel):
@@ -96,6 +97,7 @@ class ObjectTypeResponse(BaseModel):
     display_name: str = ""
     interfaces: list[str] = Field(default_factory=list)
     marking: list[str] = Field(default_factory=list)
+    parent_class: str = ""
 
 
 class IndividualCreateDTO(BaseModel):
@@ -330,6 +332,7 @@ def _ot_to_dto(ot: ObjectType) -> ObjectTypeResponse:
         display_name=ot.display_name,
         interfaces=[i.rid for i in ot.interfaces],
         marking=list(ot.marking),
+        parent_class=ot.parent_class.rid if ot.parent_class is not None else "",
     )
 
 
@@ -483,10 +486,36 @@ def _dto_to_ot(d: ObjectTypeDTO) -> ObjectType:
         display_name=d.display_name,
         interfaces=tuple(ClassRef(i) for i in d.interfaces),
         marking=tuple(d.marking),
+        parent_class=ClassRef(d.parent_class) if d.parent_class else None,
     )
 
 
 # ─────────────────── 1) ObjectType CRUD ───────────────────
+
+
+@router.get(
+    "/object-types/hierarchy",
+    response_model=list[dict],
+    operation_id="ontGetV2TypeHierarchy",
+)
+async def get_type_hierarchy(request: Request) -> list[dict]:
+    """EXP-01：租户类型层级树（parent_class 维度，children 嵌套完整子树）。"""
+    _ctx(request)
+    return await _call_scoped(request, "get_type_hierarchy")
+
+
+@router.get(
+    "/interfaces/{rid:path}/implementations",
+    response_model=list[str],
+    operation_id="ontListV2InterfaceImplementations",
+)
+async def list_interface_implementations(rid: str, request: Request) -> list[str]:
+    """EXP-01：Interface rid → 实现它的全部 ObjectType rid（多态查询源展开结果）。"""
+    from mate_kernel.ontology.types.interface import interface_source_rids
+
+    _ctx(request)
+    ots = await _call_scoped(request, "list_object_types", 10000, 0)
+    return interface_source_rids(rid, ots)
 
 
 @router.post(
@@ -643,6 +672,9 @@ async def import_object_type(request: Request, payload: dict) -> ObjectTypeRespo
                      title=pp.get("title", pp["rid"]),
                      format=PropertyFormat.STRING)
             for pp in body["properties"]
+        ),
+        parent_class=(
+            ClassRef(body["parent_class"]) if body.get("parent_class") else None
         ),
     )
     out = await _call_scoped(request, "upsert_object_type", ot)

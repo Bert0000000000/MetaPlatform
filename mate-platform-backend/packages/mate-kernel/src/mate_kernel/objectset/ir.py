@@ -216,7 +216,14 @@ class InMemoryQueryExecutor:
         self._links: tuple[LinkInstance, ...] = tuple(links)
         self._types: dict[str, ObjectType] = {t.rid.rid: t for t in object_types}
 
-    def execute(self, q: ObjectSetQuery) -> QueryResult:
+    def execute(
+        self, q: ObjectSetQuery, source_classes: "frozenset[str] | None" = None,
+    ) -> QueryResult:
+        """执行 ObjectSetQuery。
+
+        source_classes（EXP-01）：源类集合覆盖 —— repo 层用于 Interface 多态
+        源展开与 subclass 后代闭包。None = 按 q.source 精确匹配（legacy）。
+        """
         if q.aggregation is not None:
             for m in q.aggregation.metrics:
                 if m.fn != "count" and m.field is None:
@@ -225,9 +232,14 @@ class InMemoryQueryExecutor:
                     raise ValueError(f"unknown metric fn {m.fn!r}")
 
         current_class = q.source
-        current: list[Individual] = [
-            i for i in self._individuals if i.class_rid.rid == current_class
-        ]
+        if source_classes is not None:
+            current: list[Individual] = [
+                i for i in self._individuals if i.class_rid.rid in source_classes
+            ]
+        else:
+            current = [
+                i for i in self._individuals if i.class_rid.rid == current_class
+            ]
 
         for cond in q.filters:
             current = [

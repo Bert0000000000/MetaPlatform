@@ -122,6 +122,7 @@ DDL: tuple[str, ...] = (
         display_name TEXT NOT NULL DEFAULT '',
         marking      TEXT[] NOT NULL DEFAULT '{}',
         archived     BOOLEAN NOT NULL DEFAULT FALSE,
+        parent_class TEXT NOT NULL DEFAULT '',
         updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
@@ -131,6 +132,8 @@ DDL: tuple[str, ...] = (
     # MP-DEDUP-01：slug 列（从 rid 第 4 段派生）+ archived 列（merge 软删标记）
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE",
+    # EXP-01（D2）：浅层级声明列（限 1 层 parent；自动同步 subclass 公理）
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS parent_class TEXT NOT NULL DEFAULT ''",
     # MP-DEDUP-01：(tenant_id, slug) 唯一约束。WHERE 子句排除 archived 行（merge 后
     # 软删的源 OT 不再占 slug）与空 slug（兼容旧库未填写 slug 的脏数据）。
     "CREATE UNIQUE INDEX IF NOT EXISTS uq_ont_ot_tenant_slug "
@@ -478,6 +481,7 @@ def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
         "interfaces": [i.rid for i in ot.interfaces],
         "display_name": ot.display_name,
         "marking": list(ot.marking),
+        "parent_class": ot.parent_class.rid if ot.parent_class is not None else "",
     }
 
 
@@ -499,6 +503,9 @@ def _row_to_ot(row: dict[str, Any]) -> ObjectType:
         interfaces=tuple(ClassRef(i) for i in row["interfaces"]),
         display_name=row["display_name"],
         marking=tuple(row.get("marking") or ()),
+        parent_class=(
+            ClassRef(row["parent_class"]) if row.get("parent_class") else None
+        ),
     )
 
 
@@ -901,6 +908,12 @@ class PgOntologyRepository(OntologyRepository):
     def upsert_object_type(self, ot: ObjectType) -> ObjectType:
         self._ensure_schema()
         row = _ot_to_row(ot)
+        # EXP-01：Interface 约束 fail-fast —— 已注册 Interface 的属性签名不符即拒绝
+        # （未注册的 Interface 声明保持 legacy 宽松语义：可能先声明后注册）。
+        self._validate_registered_interfaces(ot)
+        # EXP-01：parent_class 环检测（沿 parent 链上溯，出现自身即成环）
+        if row["parent_class"]:
+            self._assert_parent_acyclic(row["rid"], row["parent_class"])
         conn, _ = self._connect()
         try:
             # MP-DEDUP-01：先做 (tenant_id, slug) pre-check，命中即抛 SlugConflictError
@@ -929,8 +942,8 @@ class PgOntologyRepository(OntologyRepository):
                         """
                         INSERT INTO ont_object_type
                             (rid, tenant_id, slug, primary_key, properties, interfaces,
-                             display_name, marking, updated_at)
-                        VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s, now())
+                             display_name, marking, parent_class, updated_at)
+                        VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, now())
                         ON CONFLICT (rid) DO UPDATE SET
                             slug = EXCLUDED.slug,
                             primary_key = EXCLUDED.primary_key,
@@ -938,6 +951,7 @@ class PgOntologyRepository(OntologyRepository):
                             interfaces = EXCLUDED.interfaces,
                             display_name = EXCLUDED.display_name,
                             marking = EXCLUDED.marking,
+                            parent_class = EXCLUDED.parent_class,
                             updated_at = now()
                         """,
                         (
@@ -949,6 +963,7 @@ class PgOntologyRepository(OntologyRepository):
                             row["interfaces"],
                             row["display_name"],
                             row["marking"],
+                            row["parent_class"],
                         ),
                     )
                 except psycopg2_errors.UniqueViolation as e:
@@ -979,9 +994,102 @@ class PgOntologyRepository(OntologyRepository):
                         ) from e
                     raise
             conn.commit()
+            # EXP-01：parent_class → subclass 公理自动同步（单一事实源）。
+            # 声明 parent 即启用公理；清空 parent 即禁用旧公理（不删记录，留审计）。
+            # 公理 rid 由类型 rid 派生（obj → ax.parent 段替换），满足 ClassRef 正则。
+            try:
+                _head, _t, _kind, _rest = row["rid"].split(".", 3)
+                ax_rid = f"{_head}.{_t}.ax.parent.{_rest}"
+                if row["parent_class"]:
+                    self.upsert_axiom_record(
+                        ax_rid, "subclass",
+                        [row["rid"], row["parent_class"]],
+                        rule_ref="parent_class",
+                        tenant_id=row["tenant_id"], enabled=True,
+                    )
+                else:
+                    self.upsert_axiom_record(
+                        ax_rid, "subclass", [row["rid"], ""],
+                        rule_ref="parent_class",
+                        tenant_id=row["tenant_id"], enabled=False,
+                    )
+            except Exception:
+                # 公理同步失败不阻断类型落库（G21 查询自然退化为精确匹配）
+                pass
             return ot
         finally:
             conn.close()
+
+    def _validate_registered_interfaces(self, ot: ObjectType) -> None:
+        """EXP-01：对已注册 Interface 做 fail-fast 约束校验（属性签名维度）。
+
+        未注册的 Interface 声明保持宽松（先声明后注册合法）；已注册但属性
+        签名不符 → ValueError（对齐 Palantir OMS 保存门禁语义）。
+        """
+        from mate_kernel.ontology.types.interface import validate_interface_constraints
+
+        try:
+            interfaces = self.list_interfaces()
+        except Exception:
+            return
+        registered = {i.rid.rid: i for i in interfaces}
+        for ref in ot.interfaces:
+            ifc = registered.get(ref.rid if hasattr(ref, "rid") else str(ref))
+            if ifc is None:
+                continue
+            violations = validate_interface_constraints(ot, ifc)
+            if violations:
+                raise ValueError("; ".join(violations))
+
+    def _assert_parent_acyclic(self, rid: str, parent: str, _depth: int = 0) -> None:
+        """EXP-01：沿 parent_class 链上溯做环检测（同时限深，防脏数据长链）。"""
+        if _depth > 16:
+            raise ValueError(
+                f"parent_class chain too deep (>{16}) at {rid!r}; "
+                "deep hierarchies should use Interface composition"
+            )
+        if parent == rid:
+            raise ValueError(f"parent_class cycle detected: {rid!r} is its own ancestor")
+        try:
+            parent_ot = self.get_object_type(ClassRef(parent))
+        except KeyError:
+            return  # parent 未注册（允许先声明后注册）
+        next_parent = (
+            parent_ot.parent_class.rid
+            if parent_ot.parent_class is not None else ""
+        )
+        if next_parent:
+            self._assert_parent_acyclic(rid, next_parent, _depth + 1)
+
+    def get_type_hierarchy(self) -> list[dict[str, Any]]:
+        """EXP-01：租户内类型层级树（parent_class 维度）。
+
+        返回扁平行 [{rid, display_name, parent_class, children:[...]}]，
+        children 嵌套完整子树；孤儿/脏 parent 挂 children 缺席不报错（按根渲染）。
+        """
+        all_types = self.list_object_types(limit=10000, offset=0)
+        by_rid = {ot.rid.rid: ot for ot in all_types}
+        children_of: dict[str, list[str]] = {}
+        roots: list[str] = []
+        for ot in all_types:
+            parent = ot.parent_class.rid if ot.parent_class is not None else ""
+            if parent and parent in by_rid:
+                children_of.setdefault(parent, []).append(ot.rid.rid)
+            else:
+                roots.append(ot.rid.rid)
+
+        def _node(rid: str) -> dict[str, Any]:
+            ot = by_rid[rid]
+            return {
+                "rid": rid,
+                "display_name": ot.display_name,
+                "parent_class": (
+                    ot.parent_class.rid if ot.parent_class is not None else ""
+                ),
+                "children": [_node(c) for c in children_of.get(rid, [])],
+            }
+
+        return [_node(r) for r in roots]
 
     # ─────────── ONT-G18：Axiom 注册中心 ───────────
 
@@ -1746,6 +1854,28 @@ class PgOntologyRepository(OntologyRepository):
             for p in ot.properties:
                 slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                 rid_type[p.rid.rid] = p.type_id
+        # EXP-01：Interface 多态查询源 —— source 是已注册 Interface rid 时，
+        # 展开为实现类型集合（slug 归一化用 Interface 自身 properties ——
+        # 共享属性 rid 在全部实现类型上一致）。
+        interface_source: list[str] = []
+        if ot is None:
+            try:
+                ifcs = self.list_interfaces()
+            except Exception:
+                ifcs = []
+            target = os_.class_rid.rid
+            ifc = next(
+                (i for i in ifcs if i.rid.rid == target), None,
+            )
+            if ifc is not None:
+                from mate_kernel.ontology.types.interface import interface_source_rids
+
+                interface_source = interface_source_rids(
+                    target, self.list_object_types(limit=10000, offset=0),
+                )
+                for p in ifc.properties:
+                    slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
+                    rid_type[p.rid.rid] = p.type_id
         if slug_to_rid:
             compiled = _rewrite_filter_fields(compiled, slug_to_rid)
 
@@ -1792,7 +1922,12 @@ class PgOntologyRepository(OntologyRepository):
                         for row in cur.fetchall():
                             type_rid = row["rid"] if isinstance(row, dict) else row[0]
                             t_parts = type_rid.split(".")
-                            if len(t_parts) >= 5:
+                            # EXP-01 修复：6 段 rid（ont.t.obj.domain.slug.vN）的 slug
+                            # 在 t_parts[4]；t_parts[3] 是 domain，误注册会让 slug 公理
+                            # 解析到整个 domain。5 段 legacy rid（无 domain）slug 在 [3]。
+                            if len(t_parts) >= 6:
+                                rid_by_slug.setdefault(t_parts[4], set()).add(type_rid)
+                            elif len(t_parts) == 5:
                                 rid_by_slug.setdefault(t_parts[3], set()).add(type_rid)
                 finally:
                     conn_t.close()
@@ -1804,8 +1939,11 @@ class PgOntologyRepository(OntologyRepository):
                 return frozenset({tok})
             return frozenset(rid_by_slug.get(tok, set()))
 
-        class_conds: list[str] = ["class_rid = %s"]
-        class_params: list[Any] = [rid_str]
+        # EXP-01：源类集合 —— Interface 源展开为实现类型；普通源就是自身。
+        source_rids: list[str] = interface_source or [rid_str]
+        class_conds: list[str] = []
+        class_params: list[Any] = []
+        closure_map: dict[str, set[str]] = {}
         if axiom_tenant:
             try:
                 axiom_rows = self.list_axiom_records(axiom_tenant, enabled_only=True)
@@ -1823,10 +1961,16 @@ class PgOntologyRepository(OntologyRepository):
             if canon_pairs:
                 from mate_kernel.ontology.reasoning.engine import descendant_closure
 
-                desc_tokens = descendant_closure(canon_pairs).get(rid_str, set())
-                if desc_tokens:
-                    class_conds.append("class_rid = ANY(%s)")
-                    class_params.append(sorted(desc_tokens))
+                closure_map = descendant_closure(canon_pairs)
+        for srid in source_rids:
+            class_conds.append("class_rid = %s")
+            class_params.append(srid)
+            desc_tokens = closure_map.get(srid, set())
+            if desc_tokens:
+                class_conds.append("class_rid = ANY(%s)")
+                class_params.append(sorted(desc_tokens))
+        if not class_conds:  # interface 源无实现类型 → 恒空结果
+            return []
         where_sql = f"({' OR '.join(class_conds)}) AND ({where_sql})"
         params = [*class_params, *params]
 
@@ -1874,8 +2018,34 @@ class PgOntologyRepository(OntologyRepository):
                 slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
                 rid_type[p.rid.rid] = p.type_id
 
-        params: list[Any] = [q.source]
-        inner = "SELECT rid FROM ont_individual WHERE class_rid = %s"
+        # EXP-01：Interface 多态查询源（IR 路径）—— source 是 Interface rid 时
+        # 展开为实现类型集合；无实现类型 → 空结果信封。
+        if ot is None:
+            try:
+                ifcs = self.list_interfaces()
+            except Exception:
+                ifcs = []
+            ifc = next((i for i in ifcs if i.rid.rid == q.source), None)
+            if ifc is not None:
+                from mate_kernel.ontology.types.interface import interface_source_rids
+
+                for p in ifc.properties:
+                    slug_to_rid[_prop_slug(p.rid.rid)] = p.rid.rid
+                    rid_type[p.rid.rid] = p.type_id
+                impl = interface_source_rids(
+                    q.source, self.list_object_types(limit=10000, offset=0),
+                )
+                if not impl:
+                    return QueryResult(kind="objects", rows=(), result_schema=None)
+                params_inner: list[Any] = [impl]
+                inner = "SELECT rid FROM ont_individual WHERE class_rid = ANY(%s)"
+            else:
+                params_inner = [q.source]
+                inner = "SELECT rid FROM ont_individual WHERE class_rid = %s"
+        else:
+            params_inner = [q.source]
+            inner = "SELECT rid FROM ont_individual WHERE class_rid = %s"
+        params: list[Any] = list(params_inner)
         where_sql, where_params = _ir_where(q.filters, slug_to_rid)
         if where_sql:
             inner += f" AND ({where_sql})"

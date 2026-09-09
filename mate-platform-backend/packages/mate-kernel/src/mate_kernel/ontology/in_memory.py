@@ -104,8 +104,120 @@ class InMemoryOntologyRepository(OntologyRepository):
     def upsert_object_type(self, ot: ObjectType) -> ObjectType:
         for p in ot.properties:
             self._properties[p.rid] = p
+        # EXP-01：已注册 Interface 约束 fail-fast（属性签名维度）
+        from .types.interface import validate_interface_constraints
+
+        for ref in ot.interfaces:
+            key = ClassRef(ref.rid) if hasattr(ref, "rid") else ClassRef(str(ref))
+            ifc = self._interfaces.get(key)
+            if ifc is None:
+                continue  # 未注册 → 先声明后注册合法
+            violations = validate_interface_constraints(ot, ifc)
+            if violations:
+                raise ValueError("; ".join(violations))
+        # EXP-01：parent_class 环检测 + subclass 公理同步（单一事实源）
+        if ot.parent_class is not None:
+            parent_rid = ot.parent_class.rid
+            seen = {ot.rid.rid}
+            cursor: str | None = parent_rid
+            while cursor is not None and cursor:
+                if cursor in seen:
+                    raise ValueError(
+                        f"parent_class cycle detected at {cursor!r}"
+                    )
+                seen.add(cursor)
+                parent_ot = self._object_types.get(ClassRef(cursor))
+                cursor = (
+                    parent_ot.parent_class.rid
+                    if parent_ot is not None and parent_ot.parent_class is not None
+                    else None
+                )
         self._object_types[ot.rid] = ot
+        # 公理 rid 由类型 rid 派生（obj → ax.parent 段替换，与 PG 侧同规则）；
+        # 清空 parent → 禁用（保留记录，metadata 标记 enabled=false）
+        try:
+            _head, _t, _kind, _rest = ot.rid.rid.split(".", 3)
+            ax_rid = f"{_head}.{_t}.ax.parent.{_rest}"
+        except ValueError:
+            return ot
+        from .reasoning.axiom import AxiomKind
+
+        existing_ax = self._axioms.get(ClassRef(ax_rid))
+        new_kind = AxiomKind(AxiomKind.SUBCLASS)
+        if ot.parent_class is not None:
+            self._axioms[ClassRef(ax_rid)] = Axiom(
+                rid=ClassRef(ax_rid),
+                kind=new_kind,
+                operands=(ot.rid, ot.parent_class),
+                rule_ref="parent_class",
+            )
+        elif existing_ax is not None:
+            # InMemory 无审计诉求 → 直接移除（PG 侧保留禁用行留痕）
+            del self._axioms[ClassRef(ax_rid)]
         return ot
+
+    def _subclass_pairs(self) -> list[tuple[str, str]]:
+        """已启用 subclass 公理 → (sub, sup) 对（metadata enabled=false 视为禁用）。"""
+        pairs: list[tuple[str, str]] = []
+        for ax in self._axioms.values():
+            if ax.kind.value != "subclass":
+                continue
+            meta = dict(ax.metadata)
+            if meta.get("enabled") == "false":
+                continue
+            ops = [o.rid for o in ax.operands]
+            if len(ops) >= 2 and ops[1]:
+                pairs.append((ops[0], ops[1]))
+        return pairs
+
+    def _expand_source_classes(self, source_rid: str) -> frozenset[str]:
+        """EXP-01：查询源类集合展开 —— Interface → 实现类型 + subclass 后代闭包。
+
+        返回「source 之外额外应命中的类集合」（普通 source = 仅后代；Interface
+        source = 实现类型 + 各自后代）。executor 侧再并入 source 本身。
+        """
+        from mate_kernel.ontology.reasoning.engine import descendant_closure
+        from .types.interface import interface_source_rids
+
+        bases: list[str]
+        is_interface = ClassRef(source_rid) in self._interfaces
+        if is_interface:
+            bases = interface_source_rids(source_rid, list(self._object_types.values()))
+        else:
+            bases = [source_rid]
+        closure = descendant_closure(self._subclass_pairs())
+        extra: set[str] = set()
+        for b in bases:
+            extra |= closure.get(b, set())
+        if is_interface:
+            extra |= set(bases)
+        return frozenset(extra)
+
+    def get_type_hierarchy(self) -> list[dict[str, Any]]:
+        """EXP-01：InMemory 层级树（与 PgOntologyRepository.get_type_hierarchy 同语义）。"""
+        all_types = list(self._object_types.values())
+        by_rid = {ot.rid.rid: ot for ot in all_types}
+        children_of: dict[str, list[str]] = {}
+        roots: list[str] = []
+        for ot in all_types:
+            parent = ot.parent_class.rid if ot.parent_class is not None else ""
+            if parent and parent in by_rid:
+                children_of.setdefault(parent, []).append(ot.rid.rid)
+            else:
+                roots.append(ot.rid.rid)
+
+        def _node(rid: str) -> dict[str, Any]:
+            ot = by_rid[rid]
+            return {
+                "rid": rid,
+                "display_name": ot.display_name,
+                "parent_class": (
+                    ot.parent_class.rid if ot.parent_class is not None else ""
+                ),
+                "children": [_node(c) for c in children_of.get(rid, [])],
+            }
+
+        return [_node(r) for r in roots]
 
     def upsert_link_type(self, lt: LinkType) -> LinkType:
         for p in lt.link_properties:
@@ -262,19 +374,22 @@ class InMemoryOntologyRepository(OntologyRepository):
 
     def evaluate_object_set(self, os_: ObjectSet) -> list[Individual]:
         # dev runtime: 委托给 InMemoryObjectSetExecutor，filter_expr / sort 真正生效
+        # EXP-01：Interface 源展开 + subclass 后代闭包（G21 同语义进 InMemory 路径）
         from mate_kernel.objectset.compiler import InMemoryObjectSetExecutor
         items = list(self._individuals.values())
-        return InMemoryObjectSetExecutor(items).execute(os_)
+        extra = self._expand_source_classes(os_.class_rid.rid)
+        return InMemoryObjectSetExecutor(items).execute(os_, extra_classes=extra)
 
     def execute_object_query(self, q: "ObjectSetQuery") -> "QueryResult":
         """MP-SAL-01: 结构化 IR 查询（ADR-0043），与 PG 侧同语义。"""
         from mate_kernel.objectset.ir import InMemoryQueryExecutor
+        source_classes = self._expand_source_classes(q.source)
         executor = InMemoryQueryExecutor(
             individuals=tuple(self._individuals.values()),
             links=tuple(self._link_instances.values()),
             object_types=tuple(self._object_types.values()),
         )
-        return executor.execute(q)
+        return executor.execute(q, source_classes=source_classes)
 
     # ───── MP-SAL-04: proposal 状态机 + outbox（ADR-0044 §2.2-2.3）─────
 
@@ -448,6 +563,10 @@ class InMemoryOntologyRepository(OntologyRepository):
             interfaces=tuple(ClassRef(i) for i in type_def.get("interfaces", ())),
             display_name=type_def.get("display_name", ""),
             marking=tuple(type_def.get("marking", ())),
+            parent_class=(
+                ClassRef(type_def["parent_class"])
+                if type_def.get("parent_class") else None
+            ),
         )
 
     def get_proposal(self, proposal_id: str) -> Any:

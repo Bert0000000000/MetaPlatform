@@ -20,6 +20,10 @@ class ObjectType:
     interfaces: tuple[ClassRef, ...] = field(default_factory=tuple)
     display_name: str = ""
     marking: tuple[str, ...] = ()  # 类型级安全标记（ADR-0043 §2.6，工具可见性）
+    # EXP-01（D2 拍板 2026-09-10）：浅层级声明（限 1 层 parent）。
+    # repo 层 upsert 时自动生成 subclass 公理（单一事实源），并做环检测；
+    # 深层级按 Palantir "组合优于深层次级" 原则不建模，用 Interface 组合。
+    parent_class: ClassRef | None = None
 
     def __post_init__(self) -> None:
         if not self.primary_key:
@@ -30,3 +34,5 @@ class ObjectType:
                 raise ValueError(
                     f"ObjectType.primary_key {pk} not in properties"
                 )
+        if self.parent_class is not None and self.parent_class == self.rid:
+            raise ValueError("ObjectType.parent_class must not equal rid (self-parent)")
