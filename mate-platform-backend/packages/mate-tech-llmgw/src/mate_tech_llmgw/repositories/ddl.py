@@ -49,12 +49,69 @@ CREATE TABLE IF NOT EXISTS llmgw_tenant_quota (
   updated_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
   PRIMARY KEY (tenant_id, month_epoch)
 );
+
+-- per-(tenant, day, key, model) rollup (LiteLLM DailyUserSpend pattern; P1).
+-- Budget checks read ONLY this table, never the detail table.
+CREATE TABLE IF NOT EXISTS llm_usage_daily (
+  tenant_id         VARCHAR(64)   NOT NULL,
+  day               DATE          NOT NULL,
+  api_key_id        VARCHAR(64)   NOT NULL DEFAULT '',
+  model             VARCHAR(128)  NOT NULL DEFAULT '',
+  prompt_tokens     BIGINT        NOT NULL DEFAULT 0,
+  completion_tokens BIGINT        NOT NULL DEFAULT 0,
+  total_tokens      BIGINT        NOT NULL DEFAULT 0,
+  cost_usd          NUMERIC(14,8) NOT NULL DEFAULT 0,
+  api_requests      INT           NOT NULL DEFAULT 0,
+  failed_requests   INT           NOT NULL DEFAULT 0,
+  PRIMARY KEY (tenant_id, day, api_key_id, model)
+);
+CREATE INDEX IF NOT EXISTS idx_llm_usage_daily_key ON llm_usage_daily (api_key_id, day DESC);
+
+-- per-tenant runtime limits (P3 TenantConfigProvider; soft/max budgets P1)
+CREATE TABLE IF NOT EXISTS llmgw_tenant_config (
+  tenant_id            VARCHAR(64) PRIMARY KEY,
+  rpm_limit            INT           NOT NULL DEFAULT 100,
+  tpm_limit            BIGINT        NOT NULL DEFAULT 100000,
+  monthly_token_limit  BIGINT        NOT NULL DEFAULT 100000000,
+  soft_budget_usd      NUMERIC(12,2),
+  max_budget_usd       NUMERIC(12,2),
+  daily_cost_limit_usd NUMERIC(10,2) NOT NULL DEFAULT 5.0,
+  updated_at           TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+-- consumer virtual keys (LiteLLM VerificationToken pattern; populated in P5,
+-- created now so the spend-on-key UPDATE in the P1 write path is a no-op
+-- instead of a failed transaction)
+CREATE TABLE IF NOT EXISTS llmgw_api_keys (
+  key_id          VARCHAR(64)   PRIMARY KEY,
+  tenant_id       VARCHAR(64)   NOT NULL,
+  key_name        VARCHAR(128)  NOT NULL DEFAULT '',
+  key_hash        CHAR(64)      NOT NULL UNIQUE,
+  key_prefix      VARCHAR(16)   NOT NULL DEFAULT '',
+  models          TEXT          NOT NULL DEFAULT '[]',
+  max_budget_usd  NUMERIC(12,2),
+  soft_budget_usd NUMERIC(12,2),
+  budget_duration VARCHAR(8),
+  budget_reset_at TIMESTAMPTZ,
+  tpm_limit       BIGINT,
+  rpm_limit       INT,
+  spend_usd       NUMERIC(14,8) NOT NULL DEFAULT 0,
+  blocked         BOOLEAN       NOT NULL DEFAULT FALSE,
+  expires_at      TIMESTAMPTZ,
+  last_active_at  TIMESTAMPTZ,
+  created_by      VARCHAR(128)  NOT NULL DEFAULT '',
+  created_at      TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_llmgw_keys_tenant ON llmgw_api_keys (tenant_id);
 """
 
 # Rollback helper for operators (never executed automatically).
 DOWNGRADE_SQL = """
 DROP TABLE IF EXISTS llm_usage;
+DROP TABLE IF EXISTS llm_usage_daily;
 DROP TABLE IF EXISTS llmgw_tenant_quota;
+DROP TABLE IF EXISTS llmgw_tenant_config;
+DROP TABLE IF EXISTS llmgw_api_keys;
 """
 
 

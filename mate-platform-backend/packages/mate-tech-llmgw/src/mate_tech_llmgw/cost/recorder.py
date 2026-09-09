@@ -1,6 +1,10 @@
-"""Cost metering (ST-5.5.5.1).
+"""Cost metering (ST-5.5.5.1, P1 pricing close-out 2026-09-09).
 
-每个请求记录 token 用量 + 单价 → 写入 PG `llm_usage` 表(asyncpg)。
+每个请求记录 token 用量 + 单价 → 三层持久化（明细 / 日聚合 / key 行累计，
+LiteLLM SpendLogs / DailyUserSpend / spend-on-key 模式）。
+
+单价来源：``cost/pricing.py`` 的 vendored 价格库（LiteLLM MIT 数据子集 +
+arkcli 核实的 ARK 价），env 可覆盖；``estimate_cost`` 保持函数签名不变。
 
 Usage:
     async with CostRecorder(pg_pool) as rec:
@@ -16,18 +20,28 @@ from typing import Any
 
 import structlog
 
+from .pricing import get_pricing
+from .usage_store import UsageStore
+
 logger = structlog.get_logger(__name__)
 
-# 单价表(USD / 1k tokens)— ST-5.5.5 DoD
-PRICING: dict[str, dict[str, float]] = {
-    "gpt-4o": {"prompt": 0.005, "completion": 0.015},
-    "gpt-4o-mini": {"prompt": 0.00015, "completion": 0.0006},
-    "gpt-4-turbo": {"prompt": 0.01, "completion": 0.03},
-    "gpt-3.5-turbo": {"prompt": 0.0005, "completion": 0.0015},
-    "claude-3-5-sonnet-20241022": {"prompt": 0.003, "completion": 0.015},
-    "claude-3-opus-20240229": {"prompt": 0.015, "completion": 0.075},
-    "claude-3-haiku-20240307": {"prompt": 0.00025, "completion": 0.00125},
-}
+
+# Backwards-compatible view over the vendored table: {model: per-1k USD}.
+# Kept because cost/__init__ re-exports it; new code should use pricing.py.
+def _build_pricing_view() -> dict[str, dict[str, float]]:
+    table = get_pricing()
+    out: dict[str, dict[str, float]] = {}
+    for key in table.catalog_keys():
+        price = table.get(key)
+        if price is not None:
+            out[key] = {
+                "prompt": price.input_per_token * 1000.0,
+                "completion": price.output_per_token * 1000.0,
+            }
+    return out
+
+
+PRICING: dict[str, dict[str, float]] = _build_pricing_view()
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,22 +55,40 @@ class UsageRecord:
     completion_tokens: int
     cost_usd: float
     ts: datetime
+    # P1 metadata (defaults keep the legacy constructor shape valid).
+    api_key_id: str = ""
+    provider: str = ""
+    request_id: str = ""
+    duration_ms: int = 0
+    cache_hit: bool = False
+    status: str = "success"
 
 
 def estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
-    """根据 PRICING 表计算成本(USD)."""
-    price = PRICING.get(model)
+    """根据 vendored 价格库计算成本(USD per-token)."""
+    price = get_pricing().get(model)
     if price is None:
         return 0.0
-    cost = (
-        prompt_tokens / 1000.0 * price["prompt"]
-        + completion_tokens / 1000.0 * price["completion"]
+    return round(price.cost(prompt_tokens, completion_tokens), 6)
+
+
+def estimate_cost_cached(
+    model: str,
+    cached_prompt_tokens: int,
+    prompt_tokens: int,
+    completion_tokens: int,
+) -> float:
+    """Cache-hit aware cost (cache-read tokens billed at the lower rate)."""
+    price = get_pricing().get(model)
+    if price is None:
+        return 0.0
+    return round(
+        price.cost_cached(cached_prompt_tokens, prompt_tokens, completion_tokens), 6
     )
-    return round(cost, 6)
 
 
 class CostRecorder:
-    """AsyncPG 包装的 cost 记录器."""
+    """AsyncPG 包装的 cost 记录器（三层持久化）."""
 
     def __init__(self, pool: Any | None = None, dsn: str | None = None) -> None:
         self._pool = pool
@@ -64,6 +96,7 @@ class CostRecorder:
         # Bounded in-memory fallback (dev / PG-less): replaces the unbounded
         # list so a long-running process cannot grow without limit.
         self._records: deque[UsageRecord] = deque(maxlen=10_000)
+        self._store = UsageStore(pool) if pool is not None else None
 
     @property
     def pool(self) -> Any | None:
@@ -82,21 +115,36 @@ class CostRecorder:
         tenant_id: str,
         usage: dict[str, int],
         user_id: str = "anonymous",
+        api_key_id: str | None = None,
+        provider: str = "",
+        request_id: str = "",
+        duration_ms: int = 0,
+        cache_hit: bool = False,
+        status: str = "success",
     ) -> UsageRecord:
-        """记录一次调用的成本.
+        """记录一次调用的成本（三层写入）.
 
         Args:
             model: LLM 模型名
             tenant_id: 租户 id
-            user_id: 用户 id(用于 per-user daily cap + denial-of-wallet)
             usage: {prompt_tokens, completion_tokens, total_tokens}
+            user_id: 用户 id(用于 per-user daily cap + denial-of-wallet)
+            api_key_id: 消费方 virtual key id（P5；空 = JWT 用户流量）
+            provider: provider 名（openai/doubao/...）
+            request_id: 请求追踪 id
+            duration_ms: provider 调用耗时
+            cache_hit: 是否网关缓存命中（cache-read 计价）
+            status: success | error | fallback
 
         Returns:
             UsageRecord 实例
         """
         pt = int(usage.get("prompt_tokens", 0))
         ct = int(usage.get("completion_tokens", 0))
-        cost = estimate_cost(model, pt, ct)
+        if cache_hit:
+            cost = estimate_cost_cached(model, pt, pt, ct)
+        else:
+            cost = estimate_cost(model, pt, ct)
         record = UsageRecord(
             model=model,
             tenant_id=tenant_id,
@@ -105,10 +153,20 @@ class CostRecorder:
             completion_tokens=ct,
             cost_usd=cost,
             ts=datetime.now(UTC),
+            api_key_id=api_key_id or "",
+            provider=provider,
+            request_id=request_id,
+            duration_ms=duration_ms,
+            cache_hit=cache_hit,
+            status=status,
         )
         self._records.append(record)
-        # 写 PG(如果 pool 已配置)
-        if self._pool is not None:
+
+        if self._store is not None:
+            await self._store.record_usage(record)
+        elif self._pool is not None:
+            # Legacy single-layer path (kept for pools without the store —
+            # e.g. foreign pools injected by tests).
             try:
                 async with self._pool.acquire() as conn:
                     await conn.execute(
@@ -134,15 +192,21 @@ class CostRecorder:
             pt=pt,
             ct=ct,
             cost_usd=cost,
+            cache_hit=cache_hit,
         )
         return record
 
     async def summary(self, tenant_id: str, days: int = 30) -> dict[str, Any]:
         """返回某租户的成本用量摘要.
 
-        PG pool 可用时从 ``llm_usage`` 聚合（重启不丢）；否则回退到
-        bounded 内存记录。输出 shape 两条路径一致。
+        PG pool 可用时优先读日聚合表（预算判定同源，重启不丢）；否则
+        回退 bounded 内存记录。输出 shape 两条路径一致。
         """
+        if self._store is not None:
+            try:
+                return await self._store.tenant_summary(tenant_id, days)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("cost.pg_summary_failed", error=str(e))
         if self._pool is not None:
             try:
                 return await self._summary_from_pg(tenant_id, days)

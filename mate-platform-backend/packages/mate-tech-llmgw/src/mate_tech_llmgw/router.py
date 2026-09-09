@@ -268,7 +268,7 @@ async def chat(
         except Exception as e:
             logger.warning("llmgw.quota.degraded", tenant=tenant_id, error=str(e))
 
-    # --- 2. Cache check (命中则跳过 provider) ---
+    # --- 2. Cache check (命中则跳过 provider; P1: 命中也计量,cache-read 计价) ---
     ckey: str | None = None
     if _cache is not None:
         ckey = cache_key(
@@ -278,6 +278,17 @@ async def chat(
             cached = await _cache.get(ckey)
             if cached is not None:
                 logger.info("llmgw.cache.hit", tenant=tenant_id, model=model)
+                if _cost_recorder is not None:
+                    try:
+                        await _cost_recorder.record(
+                            model=model,
+                            tenant_id=tenant_id,
+                            usage=cached.usage,
+                            cache_hit=True,
+                            status="cache_hit",
+                        )
+                    except Exception as e:
+                        logger.warning("llmgw.cost.record_failed", error=str(e))
                 return cached
         except Exception as e:
             logger.warning("llmgw.cache.get_failed", error=str(e))

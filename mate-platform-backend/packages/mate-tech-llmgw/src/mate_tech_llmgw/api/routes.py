@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 from typing import Any
@@ -121,12 +122,64 @@ def _ctx_user_id(request: Request | None) -> str:
     return str(user_id) if user_id else "anonymous"
 
 
+# P1: tenant soft/max budget guard (rebuilt when the recorder pool changes).
+_budget_guard: Any | None = None
+_budget_guard_pool_id: int | None = None
+
+
+def _get_budget_guard() -> Any | None:
+    global _budget_guard, _budget_guard_pool_id
+    recorder = get_cost_recorder()
+    pool = getattr(recorder, "pool", None) if recorder is not None else None
+    if pool is None:
+        return None
+    if _budget_guard is None or _budget_guard_pool_id != id(pool):
+        from ..cost.budget import TenantBudgetGuard
+
+        _budget_guard = TenantBudgetGuard(pool)
+        _budget_guard_pool_id = id(pool)
+    return _budget_guard
+
+
+async def _enforce_tenant_budget(req: ChatRequest | RealChatRequest) -> None:
+    """P1: soft 预算告警 / max 预算 429（LiteLLM BudgetTable 语义）."""
+    from ..cost.budget import BudgetExceededError
+
+    guard = _get_budget_guard()
+    if guard is None:
+        return
+    estimated_tokens = 0
+    for msg in req.messages or []:
+        content = getattr(msg, "content", "") or ""
+        estimated_tokens += max(len(content) // 4, 1)
+    estimated_cost_usd = estimated_tokens / 1000.0 * 0.015
+    try:
+        await guard.check(req.tenant_id or "default", estimated_cost_usd=estimated_cost_usd)
+    except BudgetExceededError as e:
+        logger.warning(
+            "llmgw.budget.exceeded",
+            tenant_id=req.tenant_id,
+            spent_usd=e.spent_usd,
+            max_usd=e.max_usd,
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="tenant budget exceeded",
+            headers={"Retry-After": "3600"},
+        ) from e
+
+
 async def _record_cost(
     *,
     model: str,
     tenant_id: str,
     usage: dict[str, int],
     user_id: str = "anonymous",
+    provider: str = "",
+    request_id: str = "",
+    duration_ms: int = 0,
+    cache_hit: bool = False,
+    status: str = "success",
 ) -> None:
     """Fire cost metering through the recorder singleton (soft dependency)."""
     recorder = get_cost_recorder()
@@ -134,7 +187,15 @@ async def _record_cost(
         return
     try:
         await recorder.record(
-            model=model, tenant_id=tenant_id or "default", usage=usage, user_id=user_id
+            model=model,
+            tenant_id=tenant_id or "default",
+            usage=usage,
+            user_id=user_id,
+            provider=provider,
+            request_id=request_id,
+            duration_ms=duration_ms,
+            cache_hit=cache_hit,
+            status=status,
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("llmgw.cost.record_failed", error=str(e))
@@ -206,6 +267,7 @@ async def chat_endpoint(req: ChatRequest, request: Request) -> ChatResponseAPI:
     """非流式 chat 端点."""
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=_ctx_user_id(request))
+    await _enforce_tenant_budget(req)
     with journey_span(
         "llmgw.chat",
         tenant_id=req.tenant_id or "default",
@@ -430,6 +492,7 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
     user_id = _ctx_user_id(request)
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=user_id)
+    await _enforce_tenant_budget(req)
     with journey_span(
         "llmgw.chat.real",
         tenant_id=req.tenant_id or "default",
@@ -462,6 +525,7 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
                 detail=f"unknown provider: {req.provider!r} (expected 'openai', 'anthropic', or 'custom')",
             )
 
+        started = time.monotonic()
         try:
             resp = await provider.chat(
                 req.messages,
@@ -477,6 +541,7 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
             ) from exc
         finally:
             await provider.aclose()
+        duration_ms = int((time.monotonic() - started) * 1000)
 
         # Detect fallback by checking for the stub marker in content
         is_fallback = "[stub-fallback]" in resp.content
@@ -493,6 +558,9 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
             tenant_id=req.tenant_id,
             usage=resp.usage,
             user_id=user_id,
+            provider=req.provider,
+            duration_ms=duration_ms,
+            status="fallback" if is_fallback else "success",
         )
 
         return RealChatResponseAPI(
@@ -521,6 +589,7 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
     user_id = _ctx_user_id(request)
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=user_id)
+    await _enforce_tenant_budget(req)
     if req.provider not in ("openai", "custom"):
         raise HTTPException(
             status_code=400,
@@ -584,6 +653,7 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
                     tenant_id=req.tenant_id,
                     usage=last_usage,
                     user_id=user_id,
+                    provider=req.provider,
                 )
 
     return StreamingResponse(

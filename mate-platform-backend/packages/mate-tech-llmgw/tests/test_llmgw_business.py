@@ -112,6 +112,7 @@ def _make_mock_cost_recorder() -> CostRecorder:
     rec._pool = None
     rec._dsn = "postgresql://test"
     rec._records = []
+    rec._store = None
     # Bind the real record/summary methods
     rec.record = CostRecorder.record.__get__(rec, CostRecorder)
     rec.summary = CostRecorder.summary.__get__(rec, CostRecorder)
