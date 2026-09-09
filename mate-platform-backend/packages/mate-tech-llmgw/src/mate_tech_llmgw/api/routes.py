@@ -107,6 +107,39 @@ def _enforce_user_daily_cap(req: ChatRequest | RealChatRequest, *, user_id: str)
             headers={"Retry-After": str(e.retry_after)},
         ) from e
 
+
+def _ctx_user_id(request: Request | None) -> str:
+    """Authenticated user id from the request context, 'anonymous' fallback.
+
+    ctx 缺失（无 auth 中间件的测试 app / dev_server 匿名路径）时返回
+    "anonymous"，绝不抛错 — 与 quota bucket 的软依赖降级语义一致。
+    """
+    if request is None:
+        return "anonymous"
+    ctx = getattr(request.state, "ctx", None)
+    user_id = getattr(ctx, "user_id", None)
+    return str(user_id) if user_id else "anonymous"
+
+
+async def _record_cost(
+    *,
+    model: str,
+    tenant_id: str,
+    usage: dict[str, int],
+    user_id: str = "anonymous",
+) -> None:
+    """Fire cost metering through the recorder singleton (soft dependency)."""
+    recorder = get_cost_recorder()
+    if recorder is None or not usage:
+        return
+    try:
+        await recorder.record(
+            model=model, tenant_id=tenant_id or "default", usage=usage, user_id=user_id
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("llmgw.cost.record_failed", error=str(e))
+
+
 # Canonical prefix per the spec.
 router = APIRouter(prefix="/api/v1/llmgw", tags=["llmgw"])
 
@@ -169,9 +202,10 @@ def _chat_response_payload(response: Any) -> dict[str, Any]:
 
 
 @router.post("/chat", response_model=ChatResponseAPI)
-async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
+async def chat_endpoint(req: ChatRequest, request: Request) -> ChatResponseAPI:
     """非流式 chat 端点."""
     await _enforce_monthly_ceiling(req)
+    _enforce_user_daily_cap(req, user_id=_ctx_user_id(request))
     with journey_span(
         "llmgw.chat",
         tenant_id=req.tenant_id or "default",
@@ -385,7 +419,7 @@ class RealChatResponseAPI(BaseModel):
 
 
 @router.post("/chat/real", response_model=RealChatResponseAPI)
-async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
+async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChatResponseAPI:
     """TD-6: route to a real OpenAI / Anthropic provider with stub fallback.
 
     The ``provider`` field selects the backend. Each provider resolves
@@ -393,7 +427,9 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
     failure the provider returns a deterministic stub response so the
     caller always gets a reply.
     """
+    user_id = _ctx_user_id(request)
     await _enforce_monthly_ceiling(req)
+    _enforce_user_daily_cap(req, user_id=user_id)
     with journey_span(
         "llmgw.chat.real",
         tenant_id=req.tenant_id or "default",
@@ -451,6 +487,14 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 tenant_id=req.tenant_id,
             )
 
+        # P0: meter the copilot hot path (previously unmetered).
+        await _record_cost(
+            model=resp.model or model,
+            tenant_id=req.tenant_id,
+            usage=resp.usage,
+            user_id=user_id,
+        )
+
         return RealChatResponseAPI(
             content=resp.content,
             model=resp.model,
@@ -464,7 +508,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
 
 
 @router.post("/chat/real/stream")
-async def real_chat_stream_endpoint(req: RealChatRequest):
+async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
     """Streaming function-calling decision turn (SuperAI agent loop).
 
     Same request shape as ``/chat/real`` but streams the provider deltas
@@ -474,7 +518,9 @@ async def real_chat_stream_endpoint(req: RealChatRequest):
       data: {"type": "done", "content", "reasoning_content", "tool_calls",
              "finish_reason", "usage"}
     """
+    user_id = _ctx_user_id(request)
     await _enforce_monthly_ceiling(req)
+    _enforce_user_daily_cap(req, user_id=user_id)
     if req.provider not in ("openai", "custom"):
         raise HTTPException(
             status_code=400,
@@ -519,12 +565,26 @@ async def real_chat_stream_endpoint(req: RealChatRequest):
         ) from exc
 
     async def _event_stream():
+        last_usage: dict[str, int] = {}
         try:
             yield f"data: {json.dumps(first_event, ensure_ascii=False)}\n\n"
             async for event in stream:
+                if isinstance(event, dict) and event.get("type") == "done":
+                    usage = event.get("usage")
+                    if isinstance(usage, dict):
+                        last_usage = usage
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
         finally:
             await provider.aclose()
+            # P0: meter the streaming hot path once the stream ends
+            # (usage is only authoritative on the "done" event).
+            if last_usage:
+                await _record_cost(
+                    model=model,
+                    tenant_id=req.tenant_id,
+                    usage=last_usage,
+                    user_id=user_id,
+                )
 
     return StreamingResponse(
         _event_stream(),
@@ -802,7 +862,7 @@ async def usage_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
             "total_cost": 0.0,
             "by_model": {},
         }
-    return recorder.summary(tenant_id)
+    return await recorder.summary(tenant_id)
 
 
 # ---------------------------------------------------------------------------

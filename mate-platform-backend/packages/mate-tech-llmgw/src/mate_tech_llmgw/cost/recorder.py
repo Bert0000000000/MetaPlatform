@@ -9,8 +9,9 @@ Usage:
 from __future__ import annotations
 
 import os
+from collections import deque
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -60,7 +61,9 @@ class CostRecorder:
     def __init__(self, pool: Any | None = None, dsn: str | None = None) -> None:
         self._pool = pool
         self._dsn = dsn or os.getenv("PG_DSN", "postgresql://mate:mate@localhost:5432/mate")
-        self._records: list[UsageRecord] = []
+        # Bounded in-memory fallback (dev / PG-less): replaces the unbounded
+        # list so a long-running process cannot grow without limit.
+        self._records: deque[UsageRecord] = deque(maxlen=10_000)
 
     @property
     def pool(self) -> Any | None:
@@ -134,8 +137,52 @@ class CostRecorder:
         )
         return record
 
-    def summary(self, tenant_id: str) -> dict[str, Any]:
-        """返回某租户的成本用量摘要."""
+    async def summary(self, tenant_id: str, days: int = 30) -> dict[str, Any]:
+        """返回某租户的成本用量摘要.
+
+        PG pool 可用时从 ``llm_usage`` 聚合（重启不丢）；否则回退到
+        bounded 内存记录。输出 shape 两条路径一致。
+        """
+        if self._pool is not None:
+            try:
+                return await self._summary_from_pg(tenant_id, days)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("cost.pg_summary_failed", error=str(e))
+        return self._summary_from_memory(tenant_id)
+
+    async def _summary_from_pg(self, tenant_id: str, days: int) -> dict[str, Any]:
+        since = datetime.now(UTC) - timedelta(days=days)
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT model,
+                       SUM(prompt_tokens + completion_tokens) AS tokens,
+                       SUM(cost_usd) AS cost,
+                       COUNT(*) AS calls
+                FROM llm_usage
+                WHERE tenant_id = $1 AND ts >= $2
+                GROUP BY model
+                """,
+                tenant_id,
+                since,
+            )
+        by_model: dict[str, dict[str, Any]] = {}
+        total_tokens = 0
+        total_cost = 0.0
+        for row in rows:
+            tokens = int(row["tokens"] or 0)
+            cost = round(float(row["cost"] or 0.0), 6)
+            by_model[row["model"]] = {"tokens": tokens, "cost": cost, "calls": int(row["calls"])}
+            total_tokens += tokens
+            total_cost += cost
+        return {
+            "tenant_id": tenant_id,
+            "total_tokens": total_tokens,
+            "total_cost": round(total_cost, 6),
+            "by_model": by_model,
+        }
+
+    def _summary_from_memory(self, tenant_id: str) -> dict[str, Any]:
         tenant_records = [r for r in self._records if r.tenant_id == tenant_id]
         total_tokens = sum(r.prompt_tokens + r.completion_tokens for r in tenant_records)
         total_cost = sum(r.cost_usd for r in tenant_records)
