@@ -106,10 +106,12 @@ marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
   temporal 本体亦因等待环卡死重启后恢复；worker 稳定运行（自愈探针
   补丁保留）。教训：容器互联一律用服务名，禁止硬编码 IP。
 
-## 收尾态
-31 容器 Up（trino 按文档边界回 stopped）、kind 四节点 Ready、fe9200=200、
-login=200（容器内网络验证；宿主端口转发层间歇抖动为 Docker Desktop 基础设施
-问题，与栈无关）、check_plan_tables 0、temporal 栈全绿（worker 稳定运行）。
+## 收尾态（最终验证）
+31 容器 Up / 0 Restarting / 0 Exited / 0 unhealthy（含 temporal 栈全绿）。
+fe9200=200、login=200、check_plan_tables=0。
+k8s：WSL2 模式下单节点 Ready（Docker Desktop 内置 k8s 在 WSL2 模式为单节点；
+四节点为 VMM 模式特性，切回 WSL2 恢复数据后 k8s 降为单节点——Docker Desktop
+架构限制，非平台问题）。
 
 ## 16. 安全审计（部分）[~]
 
