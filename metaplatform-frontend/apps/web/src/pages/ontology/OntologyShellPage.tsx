@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus } from 'lucide-react';
+import { Hexagon, Link2, Zap, Database, PlayCircle, GitBranch, Plus, Boxes } from 'lucide-react';
 import { Button } from '@douyinfe/semi-ui';
 import { AIAssistantTrigger, AIAssistantWorkspace, PageRoot, SubTabs, usePageAssistant } from '@mate/shared';
 import OntologyModelingPage from './OntologyModelingPage';
 import OntologyDatacenterPage from './OntologyDatacenterPage';
 import OntologyActionPage from './OntologyActionPage';
 import OntologyGraphPage from './OntologyGraphPage';
+import ObjectDataPage from './ObjectDataPage';
 import RelationshipTypeListPage from './relationship-types/RelationshipTypeListPage';
 import ActionTypeListPage from './actions/ActionTypeListPage';
 import { useOntologyAssistant, type ProposalFromStream } from './hooks/useOntologyAssistant';
@@ -14,6 +15,7 @@ import ProposalConfirmDrawer from './components/ProposalConfirmDrawer';
 
 const TABS = [
   { key: 'concept', label: '概念模型', icon: Hexagon, path: '/ontology' },
+  { key: 'objects', label: '对象数据', icon: Boxes, path: '/ontology?tab=objects' },
   { key: 'relationship-types', label: '关系类型', icon: Link2, path: '/ontology?tab=relationship-types' },
   { key: 'action-types', label: '动作类型', icon: Zap, path: '/ontology?tab=action-types' },
   { key: 'datacenter', label: '数据中心', icon: Database, path: '/ontology?tab=datacenter' },
@@ -37,6 +39,7 @@ const ALIASES: Record<string, string> = {
  */
 const TAB_TITLES: Record<string, string> = {
   concept: '概念模型',
+  objects: '对象数据',
   'relationship-types': '关系模型',
   'action-types': 'Action 模型',
   datacenter: '数据中心',
@@ -180,6 +183,7 @@ export default function OntologyShellPage() {
   return (
     <PageRoot header={stickyHeader}>
       <AIAssistantWorkspace assistant={activeAssistant}>
+        {activeTab === 'objects' && <ObjectDataPage />}
         {activeTab === 'concept' && (
           <OntologyModelingPage
             createOpen={createOpen}

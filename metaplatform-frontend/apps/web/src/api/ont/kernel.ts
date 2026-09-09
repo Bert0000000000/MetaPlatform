@@ -18,6 +18,12 @@ export interface KernelObjectType {
   properties: KernelProperty[];
   interfaces: string[];
   display_name: string;
+  marking?: string[];
+  parent_class?: string;
+  description?: string;
+  status?: string;
+  type_group?: string;
+  render_hints?: Array<[string, string]>;
 }
 
 export interface KernelActionType {
@@ -38,6 +44,9 @@ export interface KernelLinkType {
   cardinality: string;
   directionality: string;
   link_properties: KernelProperty[];
+  src_display_name?: string;
+  dst_display_name?: string;
+  description?: string;
 }
 
 export interface KernelIndividual {
@@ -410,4 +419,69 @@ export function slugAndVersionOfProperty(rid: string): { slug: string; version: 
   const m = last.match(/^v\d+$/);
   if (!m) return { slug: tail.join('.'), version: '' };
   return { slug: tail.slice(0, -1).join('.'), version: last };
+}
+
+// ── EXP-01/03（ONT-UI-01 对象浏览器）：层级树 / searchAround / 语义检索 ──
+
+/** 类型层级树节点（GET /object-types/hierarchy）。 */
+export interface TypeHierarchyNode {
+  rid: string;
+  display_name: string;
+  parent_class: string;
+  children: TypeHierarchyNode[];
+}
+
+/** 层级树（EXP-01）。 */
+export async function getTypeHierarchy(): Promise<TypeHierarchyNode[]> {
+  return list<TypeHierarchyNode>('/object-types/hierarchy');
+}
+
+/** searchAround 分组条目（GET /individuals/{rid}/around）。 */
+export interface SearchAroundGroup {
+  link_type_rid: string;
+  /** 方向性显示名（出边 = src_display_name，入边 = dst_display_name）。 */
+  link_display: string;
+  direction: 'out' | 'in' | string;
+  peers: Array<Record<string, unknown> & { __rid__?: string }>;
+}
+
+/** 一跳关系遍历（EXP-03）。 */
+export async function searchAround(rid: string, limit = 100): Promise<SearchAroundGroup[]> {
+  const resp = await apiClient.get(
+    v2(`/individuals/${encodeURIComponent(rid)}/around`), { params: { limit } },
+  );
+  return resp.data as SearchAroundGroup[];
+}
+
+/** 单个实例详情（GET /individuals/{rid}）。 */
+export async function getIndividual(rid: string): Promise<KernelIndividual> {
+  return getOne<KernelIndividual>(`/individuals/${encodeURIComponent(rid)}`);
+}
+
+/** 语义检索结果卡片（POST /object-search，MP-SAL-02 OAG）。 */
+export interface SemanticSearchCard {
+  individual_rid: string;
+  class_rid: string;
+  score: number;
+  matched: Array<{ property_rid: string; value_text: string; score: number }>;
+  card_text?: string;
+}
+
+/** 对象语义检索（OAG → 对象卡片，带 rid 可追溯）。 */
+export async function searchObjectsSemantic(payload: {
+  text: string;
+  class_rid?: string;
+  top_k?: number;
+}): Promise<SemanticSearchCard[]> {
+  const resp = await apiClient.post(v2('/object-search'), payload);
+  const data = resp.data as { data?: SemanticSearchCard[]; results?: SemanticSearchCard[] } | SemanticSearchCard[];
+  if (Array.isArray(data)) return data;
+  const wrapped = data as { data?: SemanticSearchCard[]; results?: SemanticSearchCard[] };
+  return wrapped.data ?? wrapped.results ?? [];
+}
+
+/** props 键（完整 Property rid）→ slug 短键（与后端 individual_to_row 同规则）。 */
+export function propSlug(rid: string): string {
+  const parts = rid.split('.');
+  return parts[3] ?? rid;
 }
