@@ -265,12 +265,35 @@ async def lifespan(app: FastAPI):
         except Exception as exc:  # noqa: BLE001
             logger.warning("mate-tech-llmgw.user_daily_cap.degraded", error=str(exc))
 
+    # --- Virtual API keys (P5: store + cache; verifier resolves these lazily) ---
+    if _env_flag("MATE_LLMGW_ENABLE_KEYS", default=True) and deps.pg_pool is not None:
+        try:
+            from .security.api_keys import (
+                ApiKeyCache,
+                ApiKeyStore,
+                set_api_key_runtime,
+            )
+
+            set_api_key_runtime(
+                ApiKeyStore(deps.pg_pool),
+                ApiKeyCache(deps.redis_client),
+                deps.redis_client,
+            )
+            logger.info("mate-tech-llmgw.apikeys.enabled")
+        except Exception as exc:  # noqa: BLE001
+            from .security.api_keys import set_api_key_runtime
+
+            set_api_key_runtime(None, None, None)
+            logger.warning("mate-tech-llmgw.apikeys.degraded", error=str(exc))
+
     logger.info("mate-tech-llmgw.startup", version=app.version)
     try:
         yield
     finally:
         from .resilience.cooldown import set_cooldown
+        from .security.api_keys import set_api_key_runtime
 
+        set_api_key_runtime(None, None, None)
         set_cooldown(None)
         set_cache(None)
         set_cost_recorder(None)
@@ -295,8 +318,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Hook 1 of 5: install auth middleware (SEC-IAM-01).
-install_auth(app)
+# Hook 1 of 5: install auth middleware (SEC-IAM-01). The optional
+# api_key_verifier is the P5 virtual-key second chance: sk-llmgw-* bearers
+# the JWT verifier rejects fall through to llmgw_api_key_verifier, which
+# resolves the PG/Redis singletons lazily (the pool only exists inside the
+# lifespan). Default behavior for every other service is unchanged.
+from .security.api_keys import llmgw_api_key_verifier  # noqa: E402
+
+install_auth(app, api_key_verifier=llmgw_api_key_verifier)
+
+# P5: virtual key management endpoints (same-tenant guarded).
+from .api.keys_routes import router as keys_router  # noqa: E402
+
+app.include_router(keys_router)
 
 # Canonical prefix is /api/v1/llmgw/* (per spec). The legacy
 # /api/v1/llm/* alias is also wired for one release so existing

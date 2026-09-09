@@ -204,6 +204,45 @@ async def _enforce_tenant_budget(req: ChatRequest | RealChatRequest) -> None:
         ) from e
 
 
+async def _enforce_api_key_limits(
+    request: Request | None, *, model: str, estimated_tokens: int
+) -> None:
+    """P5: virtual-key limits (models whitelist / rpm+tpm / budget window).
+
+    No-op for JWT traffic (only the API_KEY verifier stashes a record)
+    and for direct unit-test calls without a request.
+    """
+    if request is None:
+        return
+    record = getattr(request.state, "llmgw_api_key", None)
+    if record is None:
+        return
+    from ..security.api_keys import enforce_key_limits, get_api_key_redis
+    from ..quota.bucket import QuotaExceededError
+
+    try:
+        await enforce_key_limits(
+            record,
+            model=model,
+            estimated_tokens=estimated_tokens,
+            redis_client=get_api_key_redis(),
+        )
+    except QuotaExceededError as e:
+        raise HTTPException(
+            status_code=429,
+            detail=f"api key rate limit exceeded; retry after {e.retry_after}s",
+            headers={"Retry-After": str(e.retry_after)},
+        ) from e
+
+
+def _messages_estimated_tokens(messages: list[Any]) -> int:
+    total = 0
+    for msg in messages or []:
+        content = getattr(msg, "content", "") or ""
+        total += max(len(content) // 4, 1)
+    return total
+
+
 async def _record_cost(
     *,
     model: str,
@@ -301,6 +340,9 @@ def _chat_response_payload(response: Any) -> dict[str, Any]:
 async def chat_endpoint(req: ChatRequest, request: Request) -> ChatResponseAPI:
     """非流式 chat 端点."""
     _apply_request_tenant(request, req)
+    await _enforce_api_key_limits(
+        request, model=req.model, estimated_tokens=_messages_estimated_tokens(req.messages)
+    )
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=_ctx_user_id(request))
     await _enforce_tenant_budget(req)
@@ -462,6 +504,9 @@ async def embeddings_endpoint(req: EmbeddingRequest, request: Request) -> Embedd
     (ai.embedding.default_provider)。无 API key / 网络失败时自动回退到确定性 hash 向量。
     """
     _apply_request_tenant(request, req)
+    await _enforce_api_key_limits(
+        request, model=req.model, estimated_tokens=sum(len(t) // 4 for t in req.input) or 1
+    )
     try:
         return await _run_embeddings(req, request)
     except RuntimeError as e:
@@ -529,6 +574,11 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
     """
     _apply_request_tenant(request, req)
     user_id = _ctx_user_id(request)
+    await _enforce_api_key_limits(
+        request,
+        model=req.model,
+        estimated_tokens=_messages_estimated_tokens(req.messages),
+    )
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=user_id)
     await _enforce_tenant_budget(req)
@@ -656,6 +706,11 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
     """
     _apply_request_tenant(request, req)
     user_id = _ctx_user_id(request)
+    await _enforce_api_key_limits(
+        request,
+        model=req.model,
+        estimated_tokens=_messages_estimated_tokens(req.messages),
+    )
     await _enforce_monthly_ceiling(req)
     _enforce_user_daily_cap(req, user_id=user_id)
     await _enforce_tenant_budget(req)
