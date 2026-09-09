@@ -1,9 +1,24 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-08-27（Sprint 0 FOLLOW-UP A-D + Hard Rule #10/#13 门禁复核）；上一版 2026-08-25（ADR-0061 Temporal Workflow 架构同步）
+> **最近更新**：2026-09-09（Sprint-Final 收口 + LEGACY_LOGIN_COMPAT 全量移除 + ARK Plan LLM 接入 + 跨租户守门修复）；上一版 2026-08-27
 >
 > **当前架构版本**：**v3.0 GA + v3.1/v4 增量**；ADR-0061 已接受 **Temporal 作为业务 Workflow 可靠编排控制面**，PlanRunner 为 DSL 翻译层；Sprint 1A 迁移尚未完成，Flowable 仅作为双轨期 legacy
+>
+> **平台运行环境（2026-09-09 实测）**：
+>
+> | 服务 | 地址 | 认证 |
+> |---|---|---|
+> | 前端 UI | http://localhost:9250 | admin/admin123 |
+> | API Gateway | http://localhost:8100 | Bearer JWT（RS256）|
+> | 登录 | `POST http://localhost:8100/api/v1/iam/auth/login` | `{"username":"admin","password":"admin123"}` |
+> | Keycloak | http://localhost:8080 (realm: metaplatform) | RS256 JWKS |
+> | MinIO | http://localhost:9000 (console: 9001) | meta/metasecretkey123 |
+> | Trino | http://localhost:8088（需 `docker start mate-trino`）| 无认证（内网）|
+>
+> **安全基线**：`LEGACY_LOGIN_COMPAT=false` + `INSECURE_SKIP_SIGNATURE=false`（全 19+ 服务）。
+> LLM 通道：ARK Plan custom provider（`/api/plan/v3` + glm-5.3-flash，IAM admin configs 配置）。
+> Docker Desktop：WSL2 模式，8GB 内存；Trino+Milvus+kind 不可同驻，分窗口运行。
 >
 > **架构治理路线（2026-08-27 复核）**：`docs/active/governance/HARD-RULES-MATRIX.md` + `docs/active/governance/FOLLOW-UP-BOARD.md` + `docs/active/V1.0-RELEASE-PLAN.md`。13 条硬规则均已有可执行门禁（13 ✅ / 0 🟡）；这表示 CI/渲染验证闭环，不表示 staging/prod 已完成部署演练。FOLLOW-UP-A/B/C/D 已完成各自 focused gate，历史登记明细合计 68（原摘要为 67），详见 FOLLOW-UP-BOARD。
 
