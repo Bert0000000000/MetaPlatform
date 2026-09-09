@@ -1,0 +1,10 @@
+# Palantir 官方页正文补抓（functions.txt）
+> 源: https://palantir.com/docs/foundry/functions/overview/ (+ functions-on-objects, api-object-sets)
+> 抓取: 2026-09-09 via web search snippets
+> 性质: 搜索快照摘录（非逐字全文；逐字全文需登录后抓取，边界如实）
+
+
+Functions provide first-class support for authoring logic based on the Ontology (reading object properties,
+reusing logic across use cases). Functions on objects: native support for accessing and modifying data from
+objects and links after defining object/link types. Object set APIs: filter object sets, perform Search
+Arounsd via link types, compute aggregations. Manage published functions via Ontology Manager's Functions tab.

@@ -1,0 +1,12 @@
+# Palantir 官方页正文补抓（markings.txt）
+> 源: https://palantir.com/docs/foundry/security/markings/ (+ mandatory-control-properties, CBAC)
+> 抓取: 2026-09-09 via web search snippets
+> 性质: 搜索快照摘录（非逐字全文；逐字全文需登录后抓取，边界如实）
+
+
+Markings are a mandatory security control restricting resource access to only users satisfying ALL applied
+Marking criteria. Mandatory controls restrict access by requiring a user to hold a particular Marking to
+access data (managed via the Expand Access permission on the Marking itself). Markings propagate down data
+lineage. Related mandatory control types on properties: Markings, Organizations, and Classifications
+(classification-based access controls protect sensitive government information). Security combines mandatory
+and discretionary controls which propagate.

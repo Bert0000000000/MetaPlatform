@@ -1,0 +1,10 @@
+# Palantir 官方页正文补抓（link-types.txt）
+> 源: https://palantir.com/docs/foundry/object-link-types/link-types-overview/
+> 抓取: 2026-09-09 via web search snippets
+> 性质: 搜索快照摘录（非逐字全文；逐字全文需登录后抓取，边界如实）
+
+
+A link type is the schema definition of a relationship between two object types; a link refers to a single
+instance of that relationship. Cardinality: the Foundry Ontology supports 1-to-1, 1-to-many, and many-to-many
+link types. When accessing the "1" side of a link, the generated field is a single object; on the "many" side,
+a list/collection. Link types can be created from the link type graph on an object type's Overview page.

@@ -1,0 +1,13 @@
+# Palantir 官方页正文补抓（aip-agents-overview.txt）
+> 源: https://palantir.com/docs/foundry/aip/overview/ (+ chatbot-studio/overview, agents/overview, aip-features)
+> 抓取: 2026-09-09 via web search snippets
+> 性质: 搜索快照摘录（非逐字全文；逐字全文需登录后抓取，边界如实）
+
+
+AIP (Artificial Intelligence Platform) builds production-ready AI-powered workflows, agents, and functions on
+top of the Ontology. AIP Chatbot Studio (formerly AIP Agent Studio) builds interactive assistants using the
+Ontology SDK and platform APIs, grounded in the Ontology, documents, and custom context. Agent tools can
+execute Ontology edits (run automatically or with user confirmation). Pro-code agents can read/write Ontology
+data, build platform resources, and migrate legacy systems. Palantir MCP lets external AI IDEs and agents
+connect to the platform and gain context on the Ontology and Foundry tools. AIP Logic is built on the same
+security model governing the rest of the platform (user and function permissions).
