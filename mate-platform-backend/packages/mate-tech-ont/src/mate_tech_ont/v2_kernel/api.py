@@ -559,6 +559,42 @@ def _dto_to_ot(d: ObjectTypeDTO) -> ObjectType:
 # ─────────────────── 1) ObjectType CRUD ───────────────────
 
 
+class ChunkIngestDTO(BaseModel):
+    """AI-10：文档 → chunk 对象 + 回源 link（Palantir chunk 溯源设计）。"""
+    doc_class_rid: str
+    doc_pk: str
+    chunks: list[str]
+    doc_props: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post(
+    "/object-types/chunks/ingest",
+    response_model=dict,
+    operation_id="ontIngestV2DocumentChunks",
+)
+async def ingest_document_chunks(
+    payload: ChunkIngestDTO, request: Request,
+) -> dict:
+    """AI-10：文档切块入本体（chunk 即对象，link 回源文档，检索可溯源）。"""
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.doc_class_rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant doc class denied")
+
+    def _ingest() -> dict:
+        from .chunk_pipeline import ingest_document_chunks as _ing
+
+        with _scoped_repo(request) as repo:
+            return _ing(
+                repo, tenant, payload.doc_class_rid, payload.doc_pk,
+                payload.chunks, doc_props=payload.doc_props or None,
+            )
+
+    import asyncio
+
+    return await asyncio.to_thread(_ingest)
+
+
 @router.get(
     "/object-types/hierarchy",
     response_model=list[dict],
@@ -2945,11 +2981,15 @@ async def list_agent_tools(
         str(ctx.tenant_id),  # type: ignore[attr-defined]  # 显式租户（thread-local 不可见）
     )
     links = await _call_scoped(request, "list_link_instances")
-    schemas = agent_tool_schemas(object_types, links, caller_markings)
+    action_types = await _call_scoped(request, "list_action_types")
+    schemas = agent_tool_schemas(
+        object_types, links, caller_markings, action_types=action_types)
     tools: list[AgentToolDTO] = []
     for s in schemas:
         name = s["function"]["name"]
-        if not name.startswith("query_"):
+        # AI-11：读工具（query_*）+ 语义检索 + 写提案工具（propose_action_*）
+        if not (name.startswith("query_") or name == "search_objects"
+                or name.startswith("propose_action_")):
             continue
         tools.append(AgentToolDTO(
             name=name,

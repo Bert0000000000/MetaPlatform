@@ -411,13 +411,16 @@ class InMemoryOntologyRepository(OntologyRepository):
 
         lt = self._link_types.get(li.link_type_rid)
         if lt is not None:
+            # 同 rid 的既有行不算（upsert 语义：重建同一条链接不违反基数）
             src_out = sum(
                 1 for x in self._link_instances.values()
-                if x.link_type_rid == li.link_type_rid and x.src == li.src
+                if x.rid != li.rid
+                and x.link_type_rid == li.link_type_rid and x.src == li.src
             )
             dst_in = sum(
                 1 for x in self._link_instances.values()
-                if x.link_type_rid == li.link_type_rid and x.dst == li.dst
+                if x.rid != li.rid
+                and x.link_type_rid == li.link_type_rid and x.dst == li.dst
             )
             violation = check_cardinality(lt.cardinality, src_out, dst_in)
             if violation:

@@ -1926,7 +1926,9 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def _check_link_cardinality(self, link_type_rid: str, src: str, dst: str) -> None:
+    def _check_link_cardinality(
+        self, link_type_rid: str, src: str, dst: str, exclude_rid: str = "",
+    ) -> None:
         """EXP-03：注册 LinkType 的基数约束（见 kernel check_cardinality）。"""
         from mate_kernel.ontology.types.link_type import check_cardinality
 
@@ -1937,12 +1939,13 @@ class PgOntologyRepository(OntologyRepository):
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
+                # 同 rid 既有行不算（upsert 语义）；rid 由调用方生成后传入
                 cur.execute(
                     "SELECT"
-                    " COUNT(*) FILTER (WHERE src = %s) AS src_out,"
-                    " COUNT(*) FILTER (WHERE dst = %s) AS dst_in"
+                    " COUNT(*) FILTER (WHERE src = %s AND rid != %s) AS src_out,"
+                    " COUNT(*) FILTER (WHERE dst = %s AND rid != %s) AS dst_in"
                     " FROM ont_link_instance WHERE link_type_rid = %s",
-                    (src, dst, link_type_rid),
+                    (src, exclude_rid, dst, exclude_rid, link_type_rid),
                 )
                 r = cur.fetchone()
             src_out = int(r["src_out"]) if r else 0
