@@ -112,6 +112,7 @@ def _make_mock_cost_recorder() -> CostRecorder:
     rec._pool = None
     rec._dsn = "postgresql://test"
     rec._records = []
+    rec._store = None
     # Bind the real record/summary methods
     rec.record = CostRecorder.record.__get__(rec, CostRecorder)
     rec.summary = CostRecorder.summary.__get__(rec, CostRecorder)
@@ -191,7 +192,7 @@ async def test_chat_records_cost_after_provider_call() -> None:
     msgs = [ChatMessage(role="user", content="hello world")]
     await router_mod.chat("gpt-4o", msgs, tenant_id="acme")
 
-    summary = recorder.summary("acme")
+    summary = await recorder.summary("acme")
     assert summary["total_tokens"] == 15
     assert summary["total_cost"] > 0
     assert "gpt-4o" in summary["by_model"]
@@ -411,7 +412,7 @@ def test_management_routes_reject_cross_tenant_before_lookup(
 ) -> None:
     """Cross-tenant management calls fail before quota/usage/cache lookups run."""
     bucket = SimpleNamespace(status=AsyncMock(return_value={"tenant_id": "acme"}))
-    recorder = SimpleNamespace(summary=MagicMock(return_value={"tenant_id": "acme"}))
+    recorder = SimpleNamespace(summary=AsyncMock(return_value={"tenant_id": "acme"}))
     cache = SimpleNamespace(clear_tenant=AsyncMock(return_value=1))
     router_mod.set_quota_bucket(bucket)
     router_mod.set_cost_recorder(recorder)
@@ -460,7 +461,7 @@ def test_management_routes_allow_same_tenant_lookup(
         )
     else:
         target = SimpleNamespace(
-            summary=MagicMock(
+            summary=AsyncMock(
                 return_value={
                     "tenant_id": "acme",
                     "total_tokens": 150,
@@ -492,7 +493,7 @@ def test_management_routes_deny_cross_tenant_admin_before_lookup(
 ) -> None:
     """cross_tenant_admin must still be denied on these Task 4 routes."""
     bucket = SimpleNamespace(status=AsyncMock(return_value={"tenant_id": "acme"}))
-    recorder = SimpleNamespace(summary=MagicMock(return_value={"tenant_id": "acme"}))
+    recorder = SimpleNamespace(summary=AsyncMock(return_value={"tenant_id": "acme"}))
     cache = SimpleNamespace(clear_tenant=AsyncMock(return_value=1))
     router_mod.set_quota_bucket(bucket)
     router_mod.set_cost_recorder(recorder)

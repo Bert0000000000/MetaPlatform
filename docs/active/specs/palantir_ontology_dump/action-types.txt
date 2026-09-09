@@ -1,0 +1,10 @@
+# Palantir 官方页正文补抓（action-types.txt）
+> 源: https://palantir.com/docs/foundry/action-types/overview/
+> 抓取: 2026-09-09 via web search snippets
+> 性质: 搜索快照摘录（非逐字全文；逐字全文需登录后抓取，边界如实）
+
+
+An action type defines a set of changes or edits to objects, property values, and links that a user can take
+at once, including side effects. Action types can be backed by functions (function-backed actions) or by
+simple rules that create/modify/delete objects or links. Ontology edit functions must be configured as
+Actions (function-backed Actions) to take effect.

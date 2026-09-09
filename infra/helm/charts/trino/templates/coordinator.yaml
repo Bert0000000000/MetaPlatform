@@ -45,6 +45,16 @@ spec:
               {{- if .Values.catalogs.system.enabled }}
               echo "connector.name=system" > /etc/trino/catalog/system.properties
               {{- end }}
+              # node/jvm 基础文件（launcher 直启，绕过镜像内 -D 参数错位的包装）
+              cat > /etc/trino/node.properties <<EOF
+              node.environment={{ .Chart.Name }}
+              node.id=${HOSTNAME}
+              node.data-dir=/tmp/trino-data
+              EOF
+              mkdir -p /tmp/trino-data
+              cat > /etc/trino/jvm.config <<EOF
+              -Xmx1G
+              EOF
               # HTTP server config.
               cat > /etc/trino/config.properties <<EOF
               coordinator=true
@@ -52,7 +62,7 @@ spec:
               http-server.http.port={{ .Values.service.httpPort }}
               discovery.uri=http://localhost:{{ .Values.service.httpPort }}
               EOF
-              exec /usr/lib/trino/bin/run-trino server
+              exec /usr/lib/trino/bin/launcher --etc-dir=/etc/trino run
           ports:
             - name: http
               containerPort: {{ .Values.service.httpPort }}

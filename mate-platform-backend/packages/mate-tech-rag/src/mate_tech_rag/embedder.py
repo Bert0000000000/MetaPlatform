@@ -200,6 +200,50 @@ class LlmgwEmbedder:
         self._url = f"{self._base_url}/api/v1/llmgw/embeddings"
         configured = int(os.environ.get("LLMGW_EMBED_DIM", "0") or "0")
         self._dim = configured or self.DEFAULT_DIM
+        # P4 auth: the gateway's AuthMiddleware requires a Bearer token on
+        # every non-anonymous path — without a header this 401s in any
+        # standalone deployment (only dev_server whitelists the path).
+        # Precedence: llmgw virtual key (P5) > service identity. Without
+        # either env, no header is sent (dev parity with the old behavior).
+        self._api_key = os.environ.get("LLMGW_API_KEY", "").strip() or None
+        self._bearer = None
+        if not self._api_key and os.environ.get("SERVICE_CLIENT_SECRET"):
+            try:
+                from mate_clients.security import BearerAuth
+
+                keycloak = os.environ.get(
+                    "KEYCLOAK_URL", "http://keycloak:8080"
+                ).rstrip("/")
+                self._bearer = BearerAuth(
+                    token_uri=(
+                        f"{keycloak}/realms/metaplatform"
+                        "/protocol/openid-connect/token"
+                    ),
+                    client_id=os.environ.get(
+                        "SERVICE_CLIENT_ID", "metaplatform-backend"
+                    ),
+                    client_secret=os.environ["SERVICE_CLIENT_SECRET"],
+                )
+            except Exception:  # noqa: BLE001 — auth helper unavailable in this env
+                self._bearer = None
+
+    def _auth_headers(self) -> dict[str, str]:
+        headers: dict[str, str] = {}
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+            headers["X-Tenant-Id"] = self._tenant_id
+        elif self._bearer is not None:
+            try:
+                token = self._bearer.token()
+            except Exception as exc:  # noqa: BLE001 — token fetch failure must
+                # never break the embed call; proceed unauthenticated and let
+                # the gateway's 401/fallback path handle it.
+                _log.warning("LlmgwEmbedder auth token fetch failed: %s", exc)
+                token = None
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+                headers["X-Tenant-Id"] = self._tenant_id
+        return headers
 
     @property
     def dim(self) -> int:
@@ -225,6 +269,7 @@ class LlmgwEmbedder:
                 "provider": self._provider,
                 "tenant_id": self._tenant_id,
             },
+            headers=self._auth_headers(),
         )
         resp.raise_for_status()
         body = resp.json()

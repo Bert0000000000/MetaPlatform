@@ -10,6 +10,7 @@ Covers:
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -173,7 +174,7 @@ class TestMultimodalEndpoint:
                 json={"prompt": "charge me", "tenant_id": "t-bill"},
             )
             assert r.status_code == 200, r.text
-            summary = recorder.summary("t-bill")
+            summary = asyncio.run(recorder.summary("t-bill"))
             # one call recorded for the default model
             assert summary["by_model"]["gpt-4o-mini"]["calls"] == 1
         finally:
@@ -194,13 +195,13 @@ class TestMultimodalEndpoint:
                 "/api/v1/llmgw/chat/multimodal",
                 json={"prompt": "b", "tenant_id": "tenantB"},
             )
-            a = recorder.summary("tenantA")
-            b = recorder.summary("tenantB")
+            a = asyncio.run(recorder.summary("tenantA"))
+            b = asyncio.run(recorder.summary("tenantB"))
             # each tenant sees exactly its own single call (isolation)
             assert a["by_model"]["gpt-4o-mini"]["calls"] == 1
             assert b["by_model"]["gpt-4o-mini"]["calls"] == 1
             # a third tenant has no records at all
-            assert recorder.summary("tenantC")["by_model"] == {}
+            assert asyncio.run(recorder.summary("tenantC"))["by_model"] == {}
         finally:
             set_cost_recorder(None)
 

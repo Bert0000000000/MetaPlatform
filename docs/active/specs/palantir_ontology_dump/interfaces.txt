@@ -1,0 +1,10 @@
+# Palantir 官方页正文补抓（interfaces.txt）
+> 源: https://palantir.com/docs/foundry/interfaces/interface-overview/ (+ type-reference)
+> 抓取: 2026-09-09 via web search snippets
+> 性质: 搜索快照摘录（非逐字全文；逐字全文需登录后抓取，边界如实）
+
+
+An interface is an Ontology type that describes the shape of an object type and its capabilities. Interfaces
+provide object type polymorphism, allowing for consistent modeling of and interaction with object types that
+share a common shape. An object type implements an interface by containing the interface's shared properties
+or mapping existing object properties onto interface properties.

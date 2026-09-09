@@ -1,13 +1,20 @@
-"""Retry + Fallback (ST-5.5.6).
+"""Retry + Fallback (ST-5.5.6, P2 semantics fix).
 
-主模型 5xx/超时 → 自动 fallback 到次选。
+主模型 5xx/超时/429 → 自动 fallback 到次选。
+
+P2 fix (LiteLLM semantics): non-retryable 4xx client errors (400/401/403/
+404/422 …) are NOT retried and do NOT consume the fallback chain — they
+surface to the caller with the upstream status, because retrying a bad
+request cannot succeed and masks caller bugs.
 """
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Any
 
 import structlog
+from fastapi import HTTPException
 from tenacity import (
     AsyncRetrying,
     RetryError,
@@ -17,6 +24,7 @@ from tenacity import (
 )
 
 from ..chat import ChatMessage, ChatResponse
+from ..resilience.errors import ProviderCallError
 
 logger = structlog.get_logger(__name__)
 
@@ -64,20 +72,37 @@ async def chat_with_fallback(
             if model != primary_model:
                 logger.warning("llmgw.fallback.used", model=model, primary=primary_model)
             return resp
-        except Exception as e:
+        except ProviderCallError as e:
+            if e.non_retryable_client_error:
+                # Bad request / bad key / unknown model: falling back would
+                # hide the caller's bug and burn fallback quota.
+                logger.warning(
+                    "llmgw.fallback.client_error_no_retry",
+                    model=model,
+                    status=e.status_code,
+                    error=str(e),
+                )
+                raise HTTPException(
+                    status_code=e.status_code or 400, detail=str(e)
+                ) from e
             last_error = e
-            logger.warning(
-                "llmgw.fallback.failed",
-                model=model,
-                error=str(e),
-                next=chain[chain.index(model) + 1] if chain.index(model) + 1 < len(chain) else None,
-            )
+            _log_fallback_failure(model, e, chain)
+            continue
+        except Exception as e:  # noqa: BLE001 — unclassified errors keep legacy behavior
+            last_error = e
+            _log_fallback_failure(model, e, chain)
             continue
     # 全部失败
     msg = f"All models failed. Primary={primary_model}, fallbacks={fallback_models}"
     if last_error:
         msg += f", last_error={last_error}"
     raise RuntimeError(msg)
+
+
+def _log_fallback_failure(model: str, error: Exception, chain: tuple[str, ...]) -> None:
+    idx = chain.index(model) if model in chain else len(chain) - 1
+    nxt = chain[idx + 1] if idx + 1 < len(chain) else None
+    logger.warning("llmgw.fallback.failed", model=model, error=str(error), next=nxt)
 
 
 def with_retry(

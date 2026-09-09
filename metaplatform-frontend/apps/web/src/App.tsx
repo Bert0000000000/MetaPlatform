@@ -40,6 +40,7 @@ const SuperaiSchedulePlanCardPage = lazy(() => import('./pages/superai/ScheduleP
 const ActionOrchestrationPage = lazy(() => import('./pages/wfe/ActionOrchestrationPage'));
 const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
 const SuperaiOrderReviewPage = lazy(() => import('./pages/superai/OrderReviewPage'));
+const SuperaiOrchestrationConsolePage = lazy(() => import('./pages/superai/OrchestrationConsolePage'));
 
 // 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换
 const ApphubShellPage = lazy(() => import('./pages/apphub/ApphubShellPage'));
@@ -275,6 +276,7 @@ function AppRoutes() {
           {/* 应用中心单页：所有子内容作为 tab 在 ApphubShellPage 内切换 */}
           <Route path="apps" element={<ApphubShellPage />} />
           <Route path="apps/order-review" element={<SuperaiOrderReviewPage />} />
+          <Route path="superai/orchestration" element={<SuperaiOrchestrationConsolePage />} />
           {/* 旧子路由重定向到合并页（带 tab + app/tid 参数保留用户上下文） */}
           <Route path="apps/:appId" element={<LegacyAppRoute tab="detail" />} />
           <Route path="apps/:appId/lifecycle" element={<LegacyAppRoute tab="lifecycle" />} />

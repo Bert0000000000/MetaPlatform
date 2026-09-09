@@ -1,6 +1,7 @@
 """FastAPI middleware that injects a verified RequestContext."""
 from __future__ import annotations
 
+import inspect
 import logging
 import os
 from collections.abc import Awaitable, Callable
@@ -37,6 +38,7 @@ def install_auth(
     *,
     config: AuthConfig | None = None,
     extra_anonymous_paths: set[str] | None = None,
+    api_key_verifier: Callable[[Request, str], RequestContext | Awaitable[RequestContext]] | None = None,
 ) -> TokenVerifier:
     """Install the bearer-token auth middleware on `app`.
 
@@ -49,8 +51,14 @@ def install_auth(
             methods are not filtered, so POST endpoints in this set will
             still receive `require_tenant`-style guard checks downstream
             (where applicable).
+        api_key_verifier: Optional second-chance authenticator for tokens
+            the JWT verifier rejects (e.g. service-issued virtual API keys
+            like llmgw's ``sk-llmgw-*``). Receives ``(request, token)``,
+            returns a RequestContext (sync or async); raising rejects the
+            request with 401. Default None keeps behavior identical for
+            every other service.
 
-    The DEFAULT anonymous paths (`/healthz`, `/readyz`, `/openapi.json`,
+    This DEFAULT anonymous paths (`/healthz`, `/readyz`, `/openapi.json`,
     `/docs`, `/docs/oauth2-redirect`) are always honoured. Pass
     `extra_anonymous_paths` to widen the set for a specific service.
     """
@@ -65,6 +73,7 @@ def install_auth(
         config=cfg,
         verifier=verifier,
         anonymous_paths=anonymous_paths,
+        api_key_verifier=api_key_verifier,
     )
     # Map TenantAccessError (raised by require_tenant / hard rule 3) to a
     # 400 Bad Request instead of a 500. Registered here so every package
@@ -98,11 +107,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         config: AuthConfig,
         verifier: TokenVerifier,
         anonymous_paths: frozenset[str] | None = None,
+        api_key_verifier: Callable[[Request, str], RequestContext | Awaitable[RequestContext]] | None = None,
     ) -> None:
         super().__init__(app)
         self._config = config
         self._verifier = verifier
         self._anonymous_paths = anonymous_paths or ANONYMOUS_PATHS
+        self._api_key_verifier = api_key_verifier
 
     async def dispatch(
         self,
@@ -119,6 +130,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
         try:
             claims = self._verifier.verify(token)
         except TokenError as exc:
+            # Second-chance authenticator (e.g. virtual API keys) before
+            # rejecting: the JWT verifier cannot know about service-issued
+            # token formats.
+            if self._api_key_verifier is not None:
+                try:
+                    ctx = self._api_key_verifier(request, token)
+                    if inspect.isawaitable(ctx):
+                        ctx = await ctx
+                except Exception:  # noqa: BLE001 — verifier rejects; JWT reason stands
+                    return _unauth(f"token rejected: {exc}", status=401)
+                request.state.ctx = ctx
+                return await call_next(request)
             return _unauth(f"token rejected: {exc}", status=401)
 
         try:

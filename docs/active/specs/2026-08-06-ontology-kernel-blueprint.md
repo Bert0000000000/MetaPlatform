@@ -29,7 +29,7 @@
 4. **Polymorphism via Interface** —— Interfaces provide object type polymorphism, allowing for consistent modeling of and interaction with object types that share a common shape.
 5. **Kinetics 包含 dynamic security** —— dynamic security 是 kinetic 元素的一部分。
 
-> 待补抓：`/object-types /link-types /action-types /functions /interfaces /markings /aip/agents-overview` 正文章节。在补抓前，本蓝图对这几页的"可证伪"边界仅以"业内共识"引用。
+> 已补抓（2026-09-09，ONT-G2）：七页正文摘录落 `docs/active/specs/palantir_ontology_dump/`（object-types / link-types / action-types / functions / interfaces / markings / aip-agents-overview；搜索快照摘录，非登录逐字全文——边界如实）。要点对位：① link 基数 1:1 / 1:N / N:N（映射 LinkType）② interfaces = 共享 shape 的多态（映射 Interface 基元）③ markings 为强制性安全控制、沿血缘传播（映射 marking + SAL-06 可见性）④ actions = 一次提交的对象/属性/链接变更集 + 副作用（映射 ActionType + proposal 状态机）⑤ AIP agents 基于 Ontology SDK + 工具执行 Ontology 编辑（映射 SuperAI agent loop + MCP 工具面）。
 
 ---
 

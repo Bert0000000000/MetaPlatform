@@ -254,7 +254,9 @@ async def chat(
     """
     # --- 1. Quota check (模拟 @with_quota 效果) ---
     if _quota_bucket is not None:
-        estimated_tokens = sum(max(1, len(m.content) // 4) for m in messages)
+        from .tokens import estimate_messages_tokens
+
+        estimated_tokens = estimate_messages_tokens(messages)
         try:
             await _quota_bucket.acquire(
                 tenant_id=tenant_id, estimated_tokens=estimated_tokens
@@ -268,7 +270,7 @@ async def chat(
         except Exception as e:
             logger.warning("llmgw.quota.degraded", tenant=tenant_id, error=str(e))
 
-    # --- 2. Cache check (命中则跳过 provider) ---
+    # --- 2. Cache check (命中则跳过 provider; P1: 命中也计量,cache-read 计价) ---
     ckey: str | None = None
     if _cache is not None:
         ckey = cache_key(
@@ -278,20 +280,48 @@ async def chat(
             cached = await _cache.get(ckey)
             if cached is not None:
                 logger.info("llmgw.cache.hit", tenant=tenant_id, model=model)
+                if _cost_recorder is not None:
+                    try:
+                        await _cost_recorder.record(
+                            model=model,
+                            tenant_id=tenant_id,
+                            usage=cached.usage,
+                            cache_hit=True,
+                            status="cache_hit",
+                        )
+                    except Exception as e:
+                        logger.warning("llmgw.cost.record_failed", error=str(e))
                 return cached
         except Exception as e:
             logger.warning("llmgw.cache.get_failed", error=str(e))
             ckey = None  # disable set if get failed
 
-    # --- 3. Provider call ---
-    provider = get_provider(model)
-    resp = await provider.chat(
-        messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        tools=tools,
-        **kwargs,
-    )
+    # --- 3. Provider call (P2: cooldown + bounded retry + fallback chain) ---
+    from .resilience.call import call_with_resilience, load_fallback_chain
+
+    def _candidate(m: str):
+        # Resolve eagerly: unknown models raise ValueError here (→ 400 at the
+        # route, unchanged semantics) instead of being eaten by the chain.
+        resolved = get_provider(m)
+
+        def _call():
+            return resolved.chat(
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=tools,
+                **kwargs,
+            )
+
+        return (_provider_name(m), _call)
+
+    candidates = [_candidate(model)]
+    for fb_model in load_fallback_chain(model):
+        try:
+            candidates.append(_candidate(fb_model))
+        except ValueError:
+            logger.warning("llmgw.fallback.candidate_invalid", model=fb_model)
+    resp = await call_with_resilience(candidates)
 
     # --- 4. Cache set (回填) ---
     if _cache is not None and ckey is not None:
@@ -314,4 +344,21 @@ async def chat(
 
 def reset_providers() -> None:
     """测试辅助:清除 provider 缓存."""
+    _providers.clear()
+
+
+async def close_all_providers() -> None:
+    """Close every cached provider's HTTP client (lifespan shutdown).
+
+    The provider singletons hold httpx AsyncClients that were previously
+    never closed — the process exit reaped them. Called from main.py
+    lifespan so a graceful shutdown releases connections explicitly.
+    """
+    for provider in list(_providers.values()):
+        aclose = getattr(provider, "aclose", None)
+        if aclose is not None:
+            try:
+                await aclose()
+            except Exception as exc:  # noqa: BLE001 — shutdown best effort
+                logger.warning("llmgw.provider.close_failed", error=str(exc))
     _providers.clear()

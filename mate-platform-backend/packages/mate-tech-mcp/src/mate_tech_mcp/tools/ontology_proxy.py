@@ -71,8 +71,16 @@ class OntologyProxyTool:
         self._base_url = base_url or os.getenv(
             "TECH_ONT_URL", "http://localhost:8007",
         )
+        # dev/staging：技术本体代理的出站服务凭证。生产应改为逐请求透传
+        # 调用方 token（见 MP-SAL-05 运行时接线的 token 透传）。
+        _token = os.getenv("TECH_ONT_TOKEN", "")
+        _tenant = os.getenv("TECH_ONT_TENANT", "tenant-default")
+        _headers = {}
+        if _token:
+            _headers["Authorization"] = f"Bearer {_token}"
+            _headers["X-Tenant-Id"] = _tenant
         self._client = client or httpx.AsyncClient(
-            base_url=self._base_url, timeout=timeout,
+            base_url=self._base_url, timeout=timeout, headers=_headers,
         )
 
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:

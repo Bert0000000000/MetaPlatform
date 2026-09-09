@@ -32,12 +32,21 @@ spec:
           args:
             - |
               set -euo pipefail
+              cat > /etc/trino/node.properties <<EOF
+              node.environment={{ .Chart.Name }}
+              node.id=${HOSTNAME}
+              node.data-dir=/tmp/trino-data
+              EOF
+              mkdir -p /tmp/trino-data
+              cat > /etc/trino/jvm.config <<EOF
+              -Xmx768M
+              EOF
               cat > /etc/trino/config.properties <<EOF
               coordinator=false
               discovery.uri=http://{{ include "trino.fullname" . }}-coordinator:{{ .Values.service.httpPort }}
               http-server.http.port={{ .Values.service.httpPort }}
               EOF
-              exec /usr/lib/trino/bin/run-trino server
+              exec /usr/lib/trino/bin/launcher --etc-dir=/etc/trino run
           ports:
             - name: http
               containerPort: {{ .Values.service.httpPort }}

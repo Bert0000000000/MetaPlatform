@@ -1,0 +1,18 @@
+connector.name=iceberg
+# Trino 483 CatalogType 合法值: glue/hive_metastore/jdbc/nessie/rest/snowflake/
+# testing_file_metastore（无 file_system/nested）。
+# 采用 JDBC metastore：Iceberg 元数据存 PostgreSQL，数据落 S3（MinIO）。
+iceberg.catalog.type=jdbc
+iceberg.jdbc-catalog.catalog-name=iceberg
+iceberg.jdbc-catalog.driver-class=org.postgresql.Driver
+iceberg.jdbc-catalog.connection-url=jdbc:postgresql://<PG_HOST>:5432/<ICEBERG_CATALOG_DB>
+iceberg.jdbc-catalog.connection-user=<PG_USER>
+iceberg.jdbc-catalog.connection-password=<PG_PASSWORD>
+iceberg.jdbc-catalog.default-warehouse-dir=s3://<WAREHOUSE_BUCKET>/
+fs.native-s3.enabled=true
+s3.endpoint=http://<MINIO_HOST>:9000
+s3.region=us-east-1
+s3.path-style-access=true
+s3.aws-access-key=<MINIO_ACCESS_KEY>
+s3.aws-secret-key=<MINIO_SECRET_KEY>
+s3.streaming.part-size=16MB

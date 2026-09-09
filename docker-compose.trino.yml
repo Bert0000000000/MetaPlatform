@@ -1,0 +1,23 @@
+# Sprint 5 — Trino 单节点（联邦查询 + Iceberg on MinIO）
+# 用法：docker compose -f docker-compose.trino.yml up -d
+services:
+  trino:
+    image: docker.m.daocloud.io/trinodb/trino:latest
+    container_name: mate-trino
+    platform: linux/amd64
+    volumes:
+      - ./infra/trino/etc:/etc/trino:ro
+      - trino-data:/data
+    ports:
+      - "8088:8080"
+    networks:
+      - metaplatform
+    restart: unless-stopped
+
+volumes:
+  trino-data:
+
+networks:
+  metaplatform:
+    name: metaplatform_default
+    external: true

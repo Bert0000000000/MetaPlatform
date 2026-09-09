@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Mapping
 from dataclasses import asdict, is_dataclass
 from typing import Any
@@ -53,10 +54,9 @@ async def _enforce_monthly_ceiling(req: ChatRequest | RealChatRequest) -> None:
     bucket = get_monthly_bucket()
     if bucket is None:
         return
-    estimated_tokens = 0
-    for msg in req.messages or []:
-        content = getattr(msg, "content", "") or ""
-        estimated_tokens += max(len(content) // 4, 1)
+    from ..tokens import estimate_messages_tokens
+
+    estimated_tokens = estimate_messages_tokens(req.messages)
     try:
         await bucket.check_and_record(
             tenant_id=req.tenant_id or "default",
@@ -82,10 +82,9 @@ def _enforce_user_daily_cap(req: ChatRequest | RealChatRequest, *, user_id: str)
     cap = get_user_daily_cap()
     if cap is None:
         return
-    estimated_tokens = 0
-    for msg in req.messages or []:
-        content = getattr(msg, "content", "") or ""
-        estimated_tokens += max(len(content) // 4, 1)
+    from ..tokens import estimate_messages_tokens
+
+    estimated_tokens = estimate_messages_tokens(req.messages)
     # 4 chars ~ 1 token,模型价格取保守上限 $0.015/1k completion。
     estimated_cost_usd = max(estimated_tokens, 0) / 1000.0 * 0.015
     try:
@@ -106,6 +105,170 @@ def _enforce_user_daily_cap(req: ChatRequest | RealChatRequest, *, user_id: str)
             detail="user daily cost cap exceeded; using stub provider",
             headers={"Retry-After": str(e.retry_after)},
         ) from e
+
+
+def _ctx_user_id(request: Request | None) -> str:
+    """Authenticated user id from the request context, 'anonymous' fallback.
+
+    ctx 缺失（无 auth 中间件的测试 app / dev_server 匿名路径）时返回
+    "anonymous"，绝不抛错 — 与 quota bucket 的软依赖降级语义一致。
+    """
+    if request is None:
+        return "anonymous"
+    ctx = getattr(request.state, "ctx", None)
+    user_id = getattr(ctx, "user_id", None)
+    return str(user_id) if user_id else "anonymous"
+
+
+def _apply_request_tenant(request: Request | None, req: BaseModel) -> None:
+    """P4 tenant enforcement (hard rule #3 alignment).
+
+    Authenticated ctx (USER/SERVICE/API_KEY):
+      - body tenant_id empty/"default" (the unset sentinel) → backfill
+        from the JWT tenant
+      - body tenant_id set and ≠ ctx tenant → 403 (cross-tenant spoof)
+    Missing request, missing ctx, or anonymous ctx (dev_server anonymous
+    paths, test apps without the auth middleware): keep the body value
+    unchanged — this is what keeps test_llmgw_path_alias green.
+    """
+    if request is None:
+        return
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is None or not getattr(ctx, "is_authenticated", False):
+        return
+    ctx_tenant = str(getattr(ctx, "tenant_id", "") or "")
+    if not ctx_tenant:
+        return
+    body_tenant = str(getattr(req, "tenant_id", "") or "")
+    if not body_tenant or body_tenant == "default":
+        try:
+            req.tenant_id = ctx_tenant  # type: ignore[misc]
+        except Exception:  # noqa: BLE001 — frozen models keep old behavior
+            pass
+        return
+    if body_tenant != ctx_tenant:
+        logger.warning(
+            "llmgw.tenant.mismatch_denied",
+            body_tenant=body_tenant,
+            ctx_tenant=ctx_tenant,
+        )
+        raise HTTPException(status_code=403, detail="tenant access denied")
+
+
+# P1: tenant soft/max budget guard (rebuilt when the recorder pool changes).
+_budget_guard: Any | None = None
+_budget_guard_pool_id: int | None = None
+
+
+def _get_budget_guard() -> Any | None:
+    global _budget_guard, _budget_guard_pool_id
+    recorder = get_cost_recorder()
+    pool = getattr(recorder, "pool", None) if recorder is not None else None
+    if pool is None:
+        return None
+    if _budget_guard is None or _budget_guard_pool_id != id(pool):
+        from ..cost.budget import TenantBudgetGuard
+
+        _budget_guard = TenantBudgetGuard(pool)
+        _budget_guard_pool_id = id(pool)
+    return _budget_guard
+
+
+async def _enforce_tenant_budget(req: ChatRequest | RealChatRequest) -> None:
+    """P1: soft 预算告警 / max 预算 429（LiteLLM BudgetTable 语义）."""
+    from ..cost.budget import BudgetExceededError
+
+    guard = _get_budget_guard()
+    if guard is None:
+        return
+    from ..tokens import estimate_messages_tokens
+
+    estimated_tokens = estimate_messages_tokens(req.messages)
+    estimated_cost_usd = estimated_tokens / 1000.0 * 0.015
+    try:
+        await guard.check(req.tenant_id or "default", estimated_cost_usd=estimated_cost_usd)
+    except BudgetExceededError as e:
+        logger.warning(
+            "llmgw.budget.exceeded",
+            tenant_id=req.tenant_id,
+            spent_usd=e.spent_usd,
+            max_usd=e.max_usd,
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="tenant budget exceeded",
+            headers={"Retry-After": "3600"},
+        ) from e
+
+
+async def _enforce_api_key_limits(
+    request: Request | None, *, model: str, estimated_tokens: int
+) -> None:
+    """P5: virtual-key limits (models whitelist / rpm+tpm / budget window).
+
+    No-op for JWT traffic (only the API_KEY verifier stashes a record)
+    and for direct unit-test calls without a request.
+    """
+    if request is None:
+        return
+    record = getattr(request.state, "llmgw_api_key", None)
+    if record is None:
+        return
+    from ..security.api_keys import enforce_key_limits, get_api_key_redis
+    from ..quota.bucket import QuotaExceededError
+
+    try:
+        await enforce_key_limits(
+            record,
+            model=model,
+            estimated_tokens=estimated_tokens,
+            redis_client=get_api_key_redis(),
+        )
+    except QuotaExceededError as e:
+        raise HTTPException(
+            status_code=429,
+            detail=f"api key rate limit exceeded; retry after {e.retry_after}s",
+            headers={"Retry-After": str(e.retry_after)},
+        ) from e
+
+
+def _messages_estimated_tokens(messages: list[Any]) -> int:
+    from ..tokens import estimate_messages_tokens
+
+    return estimate_messages_tokens(messages)
+
+
+async def _record_cost(
+    *,
+    model: str,
+    tenant_id: str,
+    usage: dict[str, int],
+    user_id: str = "anonymous",
+    provider: str = "",
+    request_id: str = "",
+    duration_ms: int = 0,
+    cache_hit: bool = False,
+    status: str = "success",
+) -> None:
+    """Fire cost metering through the recorder singleton (soft dependency)."""
+    recorder = get_cost_recorder()
+    if recorder is None or not usage:
+        return
+    try:
+        await recorder.record(
+            model=model,
+            tenant_id=tenant_id or "default",
+            usage=usage,
+            user_id=user_id,
+            provider=provider,
+            request_id=request_id,
+            duration_ms=duration_ms,
+            cache_hit=cache_hit,
+            status=status,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("llmgw.cost.record_failed", error=str(e))
+
 
 # Canonical prefix per the spec.
 router = APIRouter(prefix="/api/v1/llmgw", tags=["llmgw"])
@@ -169,9 +332,15 @@ def _chat_response_payload(response: Any) -> dict[str, Any]:
 
 
 @router.post("/chat", response_model=ChatResponseAPI)
-async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
+async def chat_endpoint(req: ChatRequest, request: Request) -> ChatResponseAPI:
     """非流式 chat 端点."""
+    _apply_request_tenant(request, req)
+    await _enforce_api_key_limits(
+        request, model=req.model, estimated_tokens=_messages_estimated_tokens(req.messages)
+    )
     await _enforce_monthly_ceiling(req)
+    _enforce_user_daily_cap(req, user_id=_ctx_user_id(request))
+    await _enforce_tenant_budget(req)
     with journey_span(
         "llmgw.chat",
         tenant_id=req.tenant_id or "default",
@@ -217,8 +386,9 @@ async def _mock_stream(*, messages=None, model=None, temperature=1.0, **kwargs):
 
 
 @router.post("/chat/stream")
-async def chat_stream_endpoint(req: ChatRequest):
+async def chat_stream_endpoint(req: ChatRequest, request: Request):
     """ST-5.5.7: SSE 流式 chat 端点."""
+    _apply_request_tenant(request, req)
     if is_production_profile():
         raise HTTPException(
             status_code=503,
@@ -328,6 +498,10 @@ async def embeddings_endpoint(req: EmbeddingRequest, request: Request) -> Embedd
     显式带 base_url/api_key 时，优先用后台 AI Provider 配置
     (ai.embedding.default_provider)。无 API key / 网络失败时自动回退到确定性 hash 向量。
     """
+    _apply_request_tenant(request, req)
+    await _enforce_api_key_limits(
+        request, model=req.model, estimated_tokens=sum(len(t) // 4 for t in req.input) or 1
+    )
     try:
         return await _run_embeddings(req, request)
     except RuntimeError as e:
@@ -385,7 +559,7 @@ class RealChatResponseAPI(BaseModel):
 
 
 @router.post("/chat/real", response_model=RealChatResponseAPI)
-async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
+async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChatResponseAPI:
     """TD-6: route to a real OpenAI / Anthropic provider with stub fallback.
 
     The ``provider`` field selects the backend. Each provider resolves
@@ -393,7 +567,16 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
     failure the provider returns a deterministic stub response so the
     caller always gets a reply.
     """
+    _apply_request_tenant(request, req)
+    user_id = _ctx_user_id(request)
+    await _enforce_api_key_limits(
+        request,
+        model=req.model,
+        estimated_tokens=_messages_estimated_tokens(req.messages),
+    )
     await _enforce_monthly_ceiling(req)
+    _enforce_user_daily_cap(req, user_id=user_id)
+    await _enforce_tenant_budget(req)
     with journey_span(
         "llmgw.chat.real",
         tenant_id=req.tenant_id or "default",
@@ -401,6 +584,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
     ):
         from ..providers.real_anthropic_provider import RealAnthropicProvider
         from ..providers.real_openai_provider import RealOpenAIProvider
+        from ..resilience.call import call_with_resilience, load_fallback_chain
 
         if req.provider == "anthropic":
             model = req.model or "claude-3-5-sonnet-20241022"
@@ -426,14 +610,43 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 detail=f"unknown provider: {req.provider!r} (expected 'openai', 'anthropic', or 'custom')",
             )
 
-        try:
-            resp = await provider.chat(
+        def _primary_call():
+            return provider.chat(
                 req.messages,
                 temperature=req.temperature,
                 max_tokens=req.max_tokens,
                 tenant_id=req.tenant_id,
                 tools=req.tools,
             )
+
+        # P2: cooldown + bounded retry + env fallback chain.
+        candidates: list[tuple[str, Any]] = [(req.provider, _primary_call)]
+        for fb_model in load_fallback_chain(model):
+            fb_provider = RealOpenAIProvider(
+                model=fb_model,
+                allow_fallback=not is_production_profile() and not req.tools,
+            )
+
+            def _fb_call(p=fb_provider):
+                async def _run():
+                    try:
+                        return await p.chat(
+                            req.messages,
+                            temperature=req.temperature,
+                            max_tokens=req.max_tokens,
+                            tenant_id=req.tenant_id,
+                            tools=req.tools,
+                        )
+                    finally:
+                        await p.aclose()
+
+                return _run()
+
+            candidates.append(("openai", _fb_call))
+
+        started = time.monotonic()
+        try:
+            resp = await call_with_resilience(candidates)
         except RuntimeError as exc:
             raise HTTPException(
                 status_code=503,
@@ -441,6 +654,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
             ) from exc
         finally:
             await provider.aclose()
+        duration_ms = int((time.monotonic() - started) * 1000)
 
         # Detect fallback by checking for the stub marker in content
         is_fallback = "[stub-fallback]" in resp.content
@@ -450,6 +664,17 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
                 provider=req.provider,
                 tenant_id=req.tenant_id,
             )
+
+        # P0: meter the copilot hot path (previously unmetered).
+        await _record_cost(
+            model=resp.model or model,
+            tenant_id=req.tenant_id,
+            usage=resp.usage,
+            user_id=user_id,
+            provider=req.provider,
+            duration_ms=duration_ms,
+            status="fallback" if is_fallback else "success",
+        )
 
         return RealChatResponseAPI(
             content=resp.content,
@@ -464,7 +689,7 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
 
 
 @router.post("/chat/real/stream")
-async def real_chat_stream_endpoint(req: RealChatRequest):
+async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
     """Streaming function-calling decision turn (SuperAI agent loop).
 
     Same request shape as ``/chat/real`` but streams the provider deltas
@@ -474,7 +699,16 @@ async def real_chat_stream_endpoint(req: RealChatRequest):
       data: {"type": "done", "content", "reasoning_content", "tool_calls",
              "finish_reason", "usage"}
     """
+    _apply_request_tenant(request, req)
+    user_id = _ctx_user_id(request)
+    await _enforce_api_key_limits(
+        request,
+        model=req.model,
+        estimated_tokens=_messages_estimated_tokens(req.messages),
+    )
     await _enforce_monthly_ceiling(req)
+    _enforce_user_daily_cap(req, user_id=user_id)
+    await _enforce_tenant_budget(req)
     if req.provider not in ("openai", "custom"):
         raise HTTPException(
             status_code=400,
@@ -484,47 +718,79 @@ async def real_chat_stream_endpoint(req: RealChatRequest):
             ),
         )
     from ..providers.real_openai_provider import RealOpenAIProvider
+    from ..resilience.call import call_with_resilience
 
     model = req.model or "gpt-4o-mini"
-    provider = RealOpenAIProvider(
-        model=model,
-        base_url=req.base_url,
-        api_key=req.api_key,
-        # Tool-driven agent decisions are authorization-relevant.  A
-        # synthetic completion can never stand in for a real function call,
-        # even in a local profile: surface the upstream failure so Copilot
-        # records a fail-closed ``llm_unavailable`` decision instead.
-        allow_fallback=False,
-    )
 
-    stream = provider.stream_chat(
-        req.messages,
-        temperature=req.temperature,
-        max_tokens=req.max_tokens,
-        tools=req.tools,
-        tenant_id=req.tenant_id,
-    )
+    def _open_stream():
+        """Create provider + stream and pull the first event (retryable unit).
+
+        Retry/cooldown applies ONLY until the first SSE event — once tokens
+        are flowing to the client, restarting would duplicate output.
+        """
+        async def _run():
+            p = RealOpenAIProvider(
+                model=model,
+                base_url=req.base_url,
+                api_key=req.api_key,
+                # Tool-driven agent decisions are authorization-relevant.  A
+                # synthetic completion can never stand in for a real function
+                # call, even in a local profile: surface the upstream failure
+                # so Copilot records a fail-closed ``llm_unavailable``
+                # decision instead.
+                allow_fallback=False,
+            )
+            s = p.stream_chat(
+                req.messages,
+                temperature=req.temperature,
+                max_tokens=req.max_tokens,
+                tools=req.tools,
+                tenant_id=req.tenant_id,
+            )
+            try:
+                first = await s.__anext__()
+            except StopAsyncIteration:
+                await p.aclose()
+                raise RuntimeError("LLM provider returned no stream") from None
+            except Exception:
+                await p.aclose()
+                raise
+            return p, s, first
+
+        return _run()
+
     try:
-        first_event = await stream.__anext__()
+        provider, stream, first_event = await call_with_resilience(
+            [(req.provider, _open_stream)]
+        )
     except RuntimeError as exc:
-        await provider.aclose()
         raise HTTPException(
             status_code=503,
             detail="LLM provider unavailable; synthetic fallback is disabled",
         ) from exc
-    except StopAsyncIteration as exc:
-        await provider.aclose()
-        raise HTTPException(
-            status_code=503, detail="LLM provider returned no stream"
-        ) from exc
 
     async def _event_stream():
+        last_usage: dict[str, int] = {}
         try:
             yield f"data: {json.dumps(first_event, ensure_ascii=False)}\n\n"
             async for event in stream:
+                if isinstance(event, dict) and event.get("type") == "done":
+                    usage = event.get("usage")
+                    if isinstance(usage, dict):
+                        last_usage = usage
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
         finally:
             await provider.aclose()
+            # P0: meter the streaming hot path once the stream ends
+            # (usage is only authoritative on the "done" event).
+            if last_usage:
+                await _record_cost(
+                    model=model,
+                    tenant_id=req.tenant_id,
+                    usage=last_usage,
+                    user_id=user_id,
+                    provider=req.provider,
+                )
 
     return StreamingResponse(
         _event_stream(),
@@ -645,7 +911,7 @@ def _resolve_multimodal_provider(req: MultimodalApiRequest) -> tuple[Any, str]:
 
 
 @router.post("/chat/multimodal", response_model=MultimodalApiResponse)
-async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiResponse:
+async def multimodal_chat_endpoint(req: MultimodalApiRequest, request: Request) -> MultimodalApiResponse:
     """v3.2 W2: simplified multimodal chat (text + image + audio → text).
 
     Quota and cost reuse the same singletons as the text chat path
@@ -653,6 +919,7 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
     calls are subject to the same per-tenant RPM/TPM limits and cost
     metering.
     """
+    _apply_request_tenant(request, req)
     if is_production_profile():
         raise HTTPException(
             status_code=503,
@@ -669,7 +936,9 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiRe
     # --- 1. Quota check (mirrors router.chat semantics) ---
     bucket = get_quota_bucket()
     if bucket is not None:
-        estimated_tokens = max(1, len(req.prompt) // 4) + 100 * (
+        from ..tokens import estimate_tokens
+
+        estimated_tokens = estimate_tokens(req.prompt) + 100 * (
             len(req.images) + len(req.audio)
         )
         try:
@@ -802,7 +1071,7 @@ async def usage_endpoint(tenant_id: str, request: Request) -> dict[str, Any]:
             "total_cost": 0.0,
             "by_model": {},
         }
-    return recorder.summary(tenant_id)
+    return await recorder.summary(tenant_id)
 
 
 # ---------------------------------------------------------------------------
@@ -821,7 +1090,8 @@ def _deprecation_header() -> dict[str, str]:
     response_model=ChatResponseAPI,
     deprecated=True,
 )
-async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
+async def legacy_chat(req: ChatRequest, response: Response, request: Request) -> ChatResponseAPI:
+    _apply_request_tenant(request, req)
     try:
         resp = await router_chat(
             req.model,
@@ -868,6 +1138,7 @@ async def legacy_chat_stream(req: ChatRequest, response: Response):
 )
 async def legacy_embeddings(req: EmbeddingRequest, response: Response, request: Request) -> EmbeddingResponse:
     response.headers.update(_deprecation_header())
+    _apply_request_tenant(request, req)
     return await _run_embeddings(req, request)
 
 

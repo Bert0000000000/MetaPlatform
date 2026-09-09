@@ -1,0 +1,10 @@
+# Palantir 官方页正文补抓（object-types.txt）
+> 源: https://palantir.com/docs/foundry/object-link-types/object-types-overview/
+> 抓取: 2026-09-09 via web search snippets (search-time cache of official page)
+> 性质: 搜索快照摘录（非逐字全文；逐字全文需登录后抓取，边界如实）
+
+
+An object type is the schema definition of a real-world entity or event; an object is a single instance of an object type.
+Object types are defined by mapping existing datasources into objects, properties, and links in the Ontology.
+Properties define characteristics of object types. Object types support mandatory control properties
+(Markings, Organizations, Classifications) on the property level for security classification.

@@ -16,6 +16,9 @@ class AuthMethod(StrEnum):
     USER = "user"
     SERVICE = "service"
     ANONYMOUS = "anonymous"
+    # P5: service-issued virtual API keys (e.g. llmgw sk-llmgw-* keys).
+    # Verified by the api_key_verifier hook instead of the JWT verifier.
+    API_KEY = "api_key"
 
 
 TenantId = NewType("TenantId", str)

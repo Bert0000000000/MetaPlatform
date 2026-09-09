@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1.7
+# =============================================================================
+# mate-temporal-worker : Temporal PlanWorkflow worker (Sprint 1A, ADR-0061)
+# Base: mate-tech-orchestrator:dev（含全部 mate_* 包 site-packages）
+# 增量：离线安装 temporalio wheels（来自 temporal-wheels/，宿主预下载）
+# CMD: python -m mate_tech_orchestrator.temporal_worker
+# Build context: ./mate-platform-backend
+# =============================================================================
+FROM mate-tech-orchestrator:dev
+
+COPY temporal-wheels/ /wheels/
+RUN pip install --no-index --find-links=/wheels temporalio pydantic \
+    && rm -rf /wheels
+
+ENV TEMPORAL_HOST=temporal:7233 \
+    ONTOLOGY_URL=http://mate-tech-ont:8007 \
+    MCP_URL=http://mate-tech-mcp:8081 \
+    SEED_ROLES=1
+
+# Worker 无 HTTP 端口；健康由 Temporal task-queue poller 状态体现。
+CMD ["python", "-m", "mate_tech_orchestrator.temporal_worker"]

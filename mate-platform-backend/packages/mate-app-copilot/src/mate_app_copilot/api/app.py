@@ -725,7 +725,9 @@ def _get_client(request: Request) -> AsyncCopilotClient:
         auth=BearerAuth(
             token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
             client_id="metaplatform-backend",
-            client_secret="stub",  # noqa: S106
+            client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                # P4: "stub" survives only in legacy-compat dev; production must
+                # inject SERVICE_CLIENT_SECRET (hard rule 12).
             scope="platform.read platform.write",
         ),
         provider=stub_provider,
@@ -926,7 +928,7 @@ async def match_actions(request: Request, body: dict[str, Any]) -> dict[str, Any
     return {"matched": _serialize(matched), "total": len(matched)}
 
 
-@router.post("/actions/{action_id}/execute", status_code=202)
+@router.post("/actions/{action_id}/execute", status_code=200)
 async def execute_action(
     request: Request, action_id: str, body: dict[str, Any],
 ) -> dict[str, Any]:
@@ -967,7 +969,7 @@ async def execute_action(
     }
 
 
-@router.post("/actions/execute", status_code=202)
+@router.post("/actions/execute", status_code=200)
 async def execute_action_by_body(
     request: Request, body: dict[str, Any],
 ) -> dict[str, Any]:
@@ -979,6 +981,11 @@ async def execute_action_by_body(
     ``actionId`` — both spellings are accepted. Mapped actions are
     applied in the ontology kernel (三大原理 #3); unmapped actions stay
     emit-only. Emits ``copilot.action.executed`` outbox event.
+
+    200 (not 202): execution is synchronous and the completed result (or
+    the pending-confirmation proposal) is IN this response — the OpenAPI
+    contract (contracts/openapi/services/copilot.yaml, hard rule #1)
+    declares 200.
     """
     tid = _tid(request)
     actions = list_actions(tid)
@@ -1427,7 +1434,9 @@ async def chat_completions_stream(
             auth=BearerAuth(
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
-                client_secret="stub",  # noqa: S106
+                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                    # P4: "stub" survives only in legacy-compat dev; production must
+                    # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
             ),
             tenant_id=tid,
@@ -2152,7 +2161,9 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
             auth=BearerAuth(
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
-                client_secret="stub",  # noqa: S106
+                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                    # P4: "stub" survives only in legacy-compat dev; production must
+                    # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
             ),
         )
@@ -2283,7 +2294,9 @@ async def chat_agent_stream(
     bearer = BearerAuth(
         token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
         client_id="metaplatform-backend",
-        client_secret="stub",  # noqa: S106
+        client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+            # P4: "stub" survives only in legacy-compat dev; production must
+            # inject SERVICE_CLIENT_SECRET (hard rule 12).
         scope="platform.read platform.write",
     )
     llmgw_client = LlmgwStreamClient(

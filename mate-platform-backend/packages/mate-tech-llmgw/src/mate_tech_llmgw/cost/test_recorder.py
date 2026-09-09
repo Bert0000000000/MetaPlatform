@@ -5,10 +5,10 @@ from mate_tech_llmgw.cost.recorder import PRICING, CostRecorder, estimate_cost
 
 
 def test_estimate_cost_gpt4o() -> None:
-    """gpt-4o: $5/1M prompt + $15/1M completion."""
+    """gpt-4o: $2.5/1M prompt + $10/1M completion (LiteLLM 2026-09 data)."""
     # 1000 prompt + 500 completion
     cost = estimate_cost("gpt-4o", 1000, 500)
-    expected = 1000 / 1000 * 0.005 + 500 / 1000 * 0.015
+    expected = 1000 * 2.5e-06 + 500 * 1e-05
     assert abs(cost - expected) < 1e-6
 
 
