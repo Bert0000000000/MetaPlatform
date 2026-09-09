@@ -26,6 +26,26 @@ def _require_scope(user, scope: str) -> None:
         )
 
 
+def _install_policy_engine():
+    """INTERCEPT/POLICY 接线：env 驱动的 deny-first 策略（组合内核）。
+
+    `MP_POLICY_DENY_KINDS=<kind[,kind…]>` 命中即拒绝安装（403）。
+    """
+    import os as _os
+
+    from ...composition.policy import PolicyEngine, PolicyRule
+
+    engine = PolicyEngine()
+    denied = [k.strip() for k in
+              _os.getenv("MP_POLICY_DENY_KINDS", "").split(",") if k.strip()]
+    for kind in denied:
+        engine.register(PolicyRule(
+            name=f"deny-kind:{kind}",
+            predicate=lambda ctx, _k=kind: ctx.get("kind") == _k,
+        ))
+    return engine
+
+
 def _safe_uuid(value: str | None) -> UUID | None:
     """把字符串转 UUID；非 UUID 字符串用确定性哈希兜底（避免 500）。"""
     if not value:
@@ -45,6 +65,13 @@ def _safe_uuid(value: str | None) -> UUID | None:
 async def post_install(body: dict, request: Request):
     user = getattr(request.state, "user", None)
     _require_scope(user, "platform.marketplace.write")
+    # INTERCEPT/POLICY：deny-first 策略判定（env 驱动规则）
+    verdict = _install_policy_engine().check({"kind": body.get("kind", "")})
+    if not getattr(verdict, "allowed", True):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "MP_POLICY_DENIED", "message": verdict.reason},
+        )
 
     install_id, already = create_install(
         session=request.state.db,

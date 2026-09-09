@@ -108,8 +108,22 @@ def generate(contract_path: str) -> str:
     return HEADER.format(source=src, count=count) + "\n" + "\n".join(methods)
 
 
+def _cli() -> int:
+    import argparse
+
+    ap = argparse.ArgumentParser(
+        prog="generate_typed_client",
+        description="Generate a typed Python client from an OpenAPI contract.")
+    ap.add_argument("contract", help="path to services/*.yaml")
+    ap.add_argument("-o", "--out", required=True, help="output .py path")
+    args = ap.parse_args()
+    code = generate(args.contract)
+    with open(args.out, "w", encoding="utf-8", newline="\n") as f:
+        f.write(code)
+    n = code.count("    def ")
+    print(f"generated {args.out} from {args.contract} ({n} operations)")
+    return 0
+
+
 if __name__ == "__main__":
-    src, dst = sys.argv[1], sys.argv[2]
-    code = generate(src)
-    open(dst, "w", encoding="utf-8", newline="\n").write(code)
-    print(f"generated {dst} from {src}")
+    raise SystemExit(_cli())
