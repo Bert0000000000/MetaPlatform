@@ -2920,6 +2920,25 @@ class PgOntologyRepository(OntologyRepository):
         elif p.kind == "merge_suggestion":
             # merge 不可数值逆写 → audit-only（partial）
             compensated = {"note": "merge reversal is audit-only"}
+        elif p.kind == "edit_set":
+            # ACT-07：逆编辑补偿（执行期 invert_edits 已排除不可逆项）
+            inverse_edits = list(execution.get("inverse") or [])
+            non_inv = list(execution.get("non_invertible") or [])
+            if inverse_edits:
+                comp = self.apply_edit_set_now(
+                    p.action_rid, p.target_iid, {}, inverse_edits,
+                    actor=actor_id or "revert",
+                    impact_summary=f"revert compensation for {proposal_id}",
+                )
+                equivalence = "equivalent" if not non_inv else "partial"
+                compensated = {
+                    "applied_count": comp.get("applied_count"),
+                    "audit_id": comp.get("audit_id"),
+                    "non_invertible": non_inv,
+                }
+            else:
+                compensated = {"note": "nothing invertible",
+                               "non_invertible": non_inv}
 
         self._action_service.mark_reverted(proposal_id)
         conn, _ = self._connect()
@@ -3354,6 +3373,17 @@ class PgOntologyRepository(OntologyRepository):
         import uuid as _uuid
 
         from mate_kernel.action.edit_set import resolve_edit_templates
+        from mate_kernel.action.validation import validate_parameters
+
+        # ACT-06：参数 schema fail-fast
+        try:
+            at = self.get_action_type(ClassRef(action_rid))
+        except KeyError:
+            at = None
+        if at is not None:
+            violations = validate_parameters(at.parameters, parameters)
+            if violations:
+                raise ValueError("; ".join(violations))
 
         ops = resolve_edit_templates(
             edit_templates, target_iid=target_iid, parameters=parameters,

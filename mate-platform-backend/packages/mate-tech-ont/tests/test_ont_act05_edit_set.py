@@ -88,7 +88,7 @@ def _mk_repo() -> InMemoryOntologyRepository:
         title="Transfer Employee",
         declarative_edits=(
             {"op": "set_property", "target": "$target",
-             "property_rid": P_STATUS, "value": "$param.newStatus"},
+             "property_rid": P_STATUS, "value": "$param.new-status"},
         ),
     ))
     return r
@@ -120,7 +120,7 @@ class TestInMemoryExecution:
         r = _mk_repo()
         at = r.get_action_type(ClassRef(ACT))
         prop = r.propose_edit_set(
-            ACT, f"ont.{T}.ind.employee.alice", {"newStatus": "transferred"},
+            ACT, f"ont.{T}.ind.employee.alice", {"new-status": "transferred"},
             list(at.declarative_edits), "把 alice 调岗")
         # pending 不可执行
         from mate_kernel.action.engine import ProposalNotConfirmed
@@ -258,9 +258,9 @@ class TestPgSameSemantics:
         with pg_repo.tenant_scope(T):
             # 人工路径：set_property 成功
             result = pg_repo.apply_edit_set_now(
-                ACT, f"ont.{T}.ind.employee.alice", {"newStatus": "pg-transferred"},
+                ACT, f"ont.{T}.ind.employee.alice", {"new-status": "pg-transferred"},
                 [{"op": "set_property", "target": "$target",
-                  "property_rid": P_STATUS, "value": "$param.newStatus"}],
+                  "property_rid": P_STATUS, "value": "$param.new-status"}],
                 actor="hr-pg",
             )
             assert result["kind"] == "edit_set"
@@ -297,9 +297,9 @@ class TestPgSameSemantics:
     def test_pg_ai_path_propose_confirm_execute(self, pg_repo) -> None:
         with pg_repo.tenant_scope(T):
             prop = pg_repo.propose_edit_set(
-                ACT, f"ont.{T}.ind.employee.alice", {"newStatus": "pg-promoted"},
+                ACT, f"ont.{T}.ind.employee.alice", {"new-status": "pg-promoted"},
                 [{"op": "set_property", "target": "$target",
-                  "property_rid": P_STATUS, "value": "$param.newStatus"}],
+                  "property_rid": P_STATUS, "value": "$param.new-status"}],
                 "AI 提案：晋升",
             )
             pid = prop.proposal_id if hasattr(prop, "proposal_id") else prop["proposal_id"]

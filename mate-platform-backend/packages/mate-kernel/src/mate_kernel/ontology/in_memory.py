@@ -690,6 +690,14 @@ class InMemoryOntologyRepository(OntologyRepository):
     ) -> Any:
         """AI/HITL 流程的 edit-set 提案（pending → 用户 confirm → execute）。"""
         from mate_kernel.action.edit_set import resolve_edit_templates
+        from mate_kernel.action.validation import validate_parameters
+
+        # ACT-06：参数 schema fail-fast
+        at = self._action_types.get(ClassRef(action_rid))
+        if at is not None:
+            violations = validate_parameters(at.parameters, parameters)
+            if violations:
+                raise ValueError("; ".join(violations))
 
         # dry-run 计算 expected_diff（预览即确认的数据基础）
         ops = resolve_edit_templates(
@@ -718,6 +726,13 @@ class InMemoryOntologyRepository(OntologyRepository):
         人工表单入口用；AI 流程必须走 propose_edit_set → 显式 confirm。
         """
         from mate_kernel.action.edit_set import resolve_edit_templates
+        from mate_kernel.action.validation import validate_parameters
+
+        at = self._action_types.get(ClassRef(action_rid))
+        if at is not None:
+            violations = validate_parameters(at.parameters, parameters)
+            if violations:
+                raise ValueError("; ".join(violations))
 
         ops = resolve_edit_templates(
             edit_templates, target_iid=target_iid, parameters=parameters,
