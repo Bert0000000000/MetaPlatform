@@ -928,7 +928,7 @@ async def match_actions(request: Request, body: dict[str, Any]) -> dict[str, Any
     return {"matched": _serialize(matched), "total": len(matched)}
 
 
-@router.post("/actions/{action_id}/execute", status_code=202)
+@router.post("/actions/{action_id}/execute", status_code=200)
 async def execute_action(
     request: Request, action_id: str, body: dict[str, Any],
 ) -> dict[str, Any]:
@@ -969,7 +969,7 @@ async def execute_action(
     }
 
 
-@router.post("/actions/execute", status_code=202)
+@router.post("/actions/execute", status_code=200)
 async def execute_action_by_body(
     request: Request, body: dict[str, Any],
 ) -> dict[str, Any]:
@@ -981,6 +981,11 @@ async def execute_action_by_body(
     ``actionId`` — both spellings are accepted. Mapped actions are
     applied in the ontology kernel (三大原理 #3); unmapped actions stay
     emit-only. Emits ``copilot.action.executed`` outbox event.
+
+    200 (not 202): execution is synchronous and the completed result (or
+    the pending-confirmation proposal) is IN this response — the OpenAPI
+    contract (contracts/openapi/services/copilot.yaml, hard rule #1)
+    declares 200.
     """
     tid = _tid(request)
     actions = list_actions(tid)

@@ -117,7 +117,7 @@ class TestOntBridgeExecuteByBody:
             json={"action_id": "act-approve-leave", "params": {"decision": "approve"}},
             headers=auth_headers,
         )
-        assert r.status_code == 202, r.text
+        assert r.status_code == 200, r.text
         body = r.json()
         assert body["status"] == "pending_confirmation"
         assert body["proposal"]["proposal_id"] == "prop-123"
@@ -133,7 +133,7 @@ class TestOntBridgeExecuteByBody:
             json={"action_id": "act-approve-leave", "params": {"decision": "approve"}},
             headers=auth_headers,
         )
-        assert r.status_code == 202, r.text
+        assert r.status_code == 200, r.text
         body = r.json()
         assert body["status"] == "pending_confirmation"
         assert body["action_id"] == "act-approve-leave"
@@ -154,7 +154,7 @@ class TestOntBridgeExecuteByBody:
             json={"actionId": "act-close-ticket", "params": {"resolution": "fixed"}},
             headers=auth_headers,
         )
-        assert r.status_code == 202, r.text
+        assert r.status_code == 200, r.text
         body = r.json()
         assert body["action_id"] == "act-close-ticket"
         assert body["status"] == "pending_confirmation"
@@ -189,7 +189,7 @@ class TestOntBridgeExecuteByBody:
             json={"action_id": "act-send-email", "params": {"to": "a@b.c"}},
             headers=auth_headers,
         )
-        assert r.status_code == 202, r.text
+        assert r.status_code == 200, r.text
         assert "applied_at" not in r.json()["output"]
         assert app_client(client)._calls == []
 
@@ -209,7 +209,7 @@ class TestOntBridgeExecutePath:
             json={"params": {"decision": "approve", "target_iid": "ont.x.ind.1"}},
             headers=auth_headers,
         )
-        assert r.status_code == 202, r.text
+        assert r.status_code == 200, r.text
         body = r.json()
         assert body["status"] == "pending_confirmation"
         fake = app_client(client)
