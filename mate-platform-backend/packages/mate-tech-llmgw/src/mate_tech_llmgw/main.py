@@ -176,12 +176,17 @@ async def lifespan(app: FastAPI):
     if deps.pg_pool is not None:
         await ensure_schema(deps.pg_pool)
 
-    # --- Quota bucket (pre-existing wiring; now shares the client) ---
+    # --- Quota bucket (pre-existing wiring; P3: shared client + per-tenant limits) ---
     if get_quota_bucket() is None and _redis_quota_enabled():
         try:
+            from .quota.bucket import TenantConfigProvider
+
+            tenant_config = TenantConfigProvider(
+                pg_pool=deps.pg_pool, redis_client=deps.redis_client
+            )
             quota_bucket_owns_client = deps.redis_client is None
             owned_quota_bucket = RedisTokenBucket(
-                redis_client=deps.redis_client
+                redis_client=deps.redis_client, tenant_config=tenant_config
             )
             set_quota_bucket(owned_quota_bucket)
             logger.info(
@@ -189,6 +194,7 @@ async def lifespan(app: FastAPI):
                 profile=runtime_profile(),
                 backend="redis",
                 shared_client=not quota_bucket_owns_client,
+                per_tenant_config=deps.pg_pool is not None,
             )
         except Exception as exc:  # noqa: BLE001
             owned_quota_bucket = None

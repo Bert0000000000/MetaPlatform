@@ -271,7 +271,7 @@ def test_staging_lifespan_wires_owned_quota_bucket_and_closes_it(
     created: list[_FakeQuotaBucket] = []
 
     class _FakeQuotaBucket:
-        def __init__(self, redis_client=None) -> None:
+        def __init__(self, redis_client=None, tenant_config=None) -> None:
             self.closed = False
             created.append(self)
 
@@ -307,7 +307,7 @@ def test_redis_url_without_profile_enables_owned_quota_bucket_and_closes_it(
     created: list[_FakeQuotaBucket] = []
 
     class _FakeQuotaBucket:
-        def __init__(self, redis_client=None) -> None:
+        def __init__(self, redis_client=None, tenant_config=None) -> None:
             self.closed = False
             created.append(self)
 
