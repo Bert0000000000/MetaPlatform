@@ -24,8 +24,17 @@ class ObjectType:
     # repo 层 upsert 时自动生成 subclass 公理（单一事实源），并做环检测；
     # 深层级按 Palantir "组合优于深层次级" 原则不建模，用 Interface 组合。
     parent_class: ClassRef | None = None
+    # EXP-04（2026-09-10）：治理/展示元数据（G16 —— AI 可导航性 + 管理面分组）
+    description: str = ""            # 类型描述（喂 agent 工具与 OAG 检索）
+    status: str = "active"           # active / draft / deprecated（Cleanup 生命周期）
+    type_group: str = ""             # 管理面分组（type groups）
+    render_hints: tuple[tuple[str, str], ...] = ()  # 展示提示 kv（icon/color/单位）
 
     def __post_init__(self) -> None:
+        if self.status not in ("active", "draft", "deprecated"):
+            raise ValueError(
+                f"ObjectType.status must be active/draft/deprecated, got {self.status!r}"
+            )
         if not self.primary_key:
             raise ValueError("ObjectType.primary_key must be non-empty")
         prop_rids = {p.rid for p in self.properties}

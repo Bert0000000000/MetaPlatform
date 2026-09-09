@@ -102,6 +102,11 @@ class ObjectTypeDTO(BaseModel):
     interfaces: list[str] = Field(default_factory=list)
     marking: list[str] = Field(default_factory=list)
     parent_class: str = ""  # EXP-01：浅层级声明（限 1 层；自动同步 subclass 公理）
+    # EXP-04：治理/展示元数据
+    description: str = ""
+    status: str = "active"
+    type_group: str = ""
+    render_hints: list[tuple[str, str]] = Field(default_factory=list)
 
 
 class ObjectTypeResponse(BaseModel):
@@ -112,6 +117,10 @@ class ObjectTypeResponse(BaseModel):
     interfaces: list[str] = Field(default_factory=list)
     marking: list[str] = Field(default_factory=list)
     parent_class: str = ""
+    description: str = ""
+    status: str = "active"
+    type_group: str = ""
+    render_hints: list[tuple[str, str]] = Field(default_factory=list)
 
 
 class IndividualCreateDTO(BaseModel):
@@ -183,6 +192,7 @@ class LinkTypeDTO(BaseModel):
     # EXP-03：两端独立命名（双向可读）
     src_display_name: str = ""
     dst_display_name: str = ""
+    description: str = ""
 
 
 class InterfaceDTO(BaseModel):
@@ -371,6 +381,10 @@ def _ot_to_dto(ot: ObjectType) -> ObjectTypeResponse:
         interfaces=[i.rid for i in ot.interfaces],
         marking=list(ot.marking),
         parent_class=ot.parent_class.rid if ot.parent_class is not None else "",
+        description=ot.description,
+        status=ot.status,
+        type_group=ot.type_group,
+        render_hints=[tuple(kv) for kv in ot.render_hints],
     )
 
 
@@ -410,6 +424,7 @@ def _dto_to_link_type(d: LinkTypeDTO) -> LinkType:
         link_properties=tuple(_dto_to_prop(p) for p in d.link_properties),
         src_display_name=d.src_display_name,
         dst_display_name=d.dst_display_name,
+        description=d.description,
     )
 
 
@@ -423,6 +438,7 @@ def _link_type_to_dto(lt: LinkType) -> LinkTypeDTO:
         link_properties=[_prop_to_dto(p) for p in lt.link_properties],
         src_display_name=lt.src_display_name,
         dst_display_name=lt.dst_display_name,
+        description=lt.description,
     )
 
 
@@ -529,6 +545,10 @@ def _dto_to_ot(d: ObjectTypeDTO) -> ObjectType:
         interfaces=tuple(ClassRef(i) for i in d.interfaces),
         marking=tuple(d.marking),
         parent_class=ClassRef(d.parent_class) if d.parent_class else None,
+        description=d.description,
+        status=d.status,
+        type_group=d.type_group,
+        render_hints=tuple(tuple(kv) for kv in d.render_hints),
     )
 
 

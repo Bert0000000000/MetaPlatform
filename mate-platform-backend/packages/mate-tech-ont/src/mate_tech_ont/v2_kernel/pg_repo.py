@@ -134,6 +134,11 @@ DDL: tuple[str, ...] = (
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE",
     # EXP-01（D2）：浅层级声明列（限 1 层 parent；自动同步 subclass 公理）
     "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS parent_class TEXT NOT NULL DEFAULT ''",
+    # EXP-04：治理/展示元数据列
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'",
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS type_group TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_object_type ADD COLUMN IF NOT EXISTS render_hints JSONB NOT NULL DEFAULT '[]'::jsonb",
     # MP-DEDUP-01：(tenant_id, slug) 唯一约束。WHERE 子句排除 archived 行（merge 后
     # 软删的源 OT 不再占 slug）与空 slug（兼容旧库未填写 slug 的脏数据）。
     "CREATE UNIQUE INDEX IF NOT EXISTS uq_ont_ot_tenant_slug "
@@ -188,6 +193,7 @@ DDL: tuple[str, ...] = (
     # EXP-03：两端命名补列（旧库）
     "ALTER TABLE ont_link_type ADD COLUMN IF NOT EXISTS src_display_name TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE ont_link_type ADD COLUMN IF NOT EXISTS dst_display_name TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_link_type ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''",
     """
     CREATE TABLE IF NOT EXISTS ont_interface (
         rid                              TEXT PRIMARY KEY,
@@ -492,6 +498,10 @@ def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
         "display_name": ot.display_name,
         "marking": list(ot.marking),
         "parent_class": ot.parent_class.rid if ot.parent_class is not None else "",
+        "description": ot.description,
+        "status": ot.status,
+        "type_group": ot.type_group,
+        "render_hints": [list(kv) for kv in ot.render_hints],
     }
 
 
@@ -505,6 +515,12 @@ def _row_to_ot(row: dict[str, Any]) -> ObjectType:
         marking=tuple(row.get("marking") or ()),
         parent_class=(
             ClassRef(row["parent_class"]) if row.get("parent_class") else None
+        ),
+        description=row.get("description", "") or "",
+        status=row.get("status", "") or "active",
+        type_group=row.get("type_group", "") or "",
+        render_hints=tuple(
+            tuple(kv) for kv in (row.get("render_hints") or [])
         ),
     )
 
@@ -533,6 +549,7 @@ def _lt_to_row(lt: LinkType) -> dict[str, Any]:
         "directionality": lt.directionality.value,
         "src_display_name": lt.src_display_name,
         "dst_display_name": lt.dst_display_name,
+        "description": lt.description,
         "link_properties": [
             {
                 "rid": p.rid.rid,
@@ -589,6 +606,7 @@ def _row_to_lt(row: dict[str, Any]) -> LinkType:
         directionality=Directionality(row["directionality"]),
         src_display_name=row.get("src_display_name", "") or "",
         dst_display_name=row.get("dst_display_name", "") or "",
+        description=row.get("description", "") or "",
         link_properties=tuple(
             Property(
                 rid=ClassRef(p["rid"]),
@@ -1003,8 +1021,10 @@ class PgOntologyRepository(OntologyRepository):
                         """
                         INSERT INTO ont_object_type
                             (rid, tenant_id, slug, primary_key, properties, interfaces,
-                             display_name, marking, parent_class, updated_at)
-                        VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, now())
+                             display_name, marking, parent_class,
+                             description, status, type_group, render_hints, updated_at)
+                        VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s,
+                                %s, %s, %s, %s::jsonb, now())
                         ON CONFLICT (rid) DO UPDATE SET
                             slug = EXCLUDED.slug,
                             primary_key = EXCLUDED.primary_key,
@@ -1013,6 +1033,10 @@ class PgOntologyRepository(OntologyRepository):
                             display_name = EXCLUDED.display_name,
                             marking = EXCLUDED.marking,
                             parent_class = EXCLUDED.parent_class,
+                            description = EXCLUDED.description,
+                            status = EXCLUDED.status,
+                            type_group = EXCLUDED.type_group,
+                            render_hints = EXCLUDED.render_hints,
                             updated_at = now()
                         """,
                         (
@@ -1025,6 +1049,10 @@ class PgOntologyRepository(OntologyRepository):
                             row["display_name"],
                             row["marking"],
                             row["parent_class"],
+                            row["description"],
+                            row["status"],
+                            row["type_group"],
+                            json.dumps(row["render_hints"]),
                         ),
                     )
                 except psycopg2_errors.UniqueViolation as e:
@@ -1491,8 +1519,9 @@ class PgOntologyRepository(OntologyRepository):
                     """
                     INSERT INTO ont_link_type
                         (rid, tenant_id, src_rid, dst_rid, cardinality, directionality,
-                         link_properties, src_display_name, dst_display_name, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, now())
+                         link_properties, src_display_name, dst_display_name,
+                         description, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, now())
                     ON CONFLICT (rid) DO UPDATE SET
                         src_rid = EXCLUDED.src_rid,
                         dst_rid = EXCLUDED.dst_rid,
@@ -1513,6 +1542,7 @@ class PgOntologyRepository(OntologyRepository):
                         json.dumps(row["link_properties"]),
                         row.get("src_display_name", ""),
                         row.get("dst_display_name", ""),
+                        row.get("description", ""),
                     ),
                 )
             conn.commit()
