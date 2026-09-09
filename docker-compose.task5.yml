@@ -163,10 +163,10 @@ services:
   mate-tech-orchestrator:
     image: mate-app-copilot:dev
     command: ["uvicorn", "mate_tech_orchestrator.main:app", "--host", "0.0.0.0", "--port", "8505"]
-    volumes:
-      - ./mate-platform-backend/packages:/app/packages:rw
     environment:
       MATE_PROFILE: dev
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_URL: http://keycloak:8080
       ONT_HTTP_BASE: http://mate-tech-ont:8007
       ORDER_REVIEW_THRESHOLD_CENTS: ${ORDER_REVIEW_THRESHOLD_CENTS:-100000}
       ORCHESTRATOR_DEFAULT_ALLOWED_ACTOR_ROLES: PLATFORM_ADMIN

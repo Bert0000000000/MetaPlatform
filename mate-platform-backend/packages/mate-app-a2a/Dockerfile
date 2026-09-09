@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir \
         fastapi pydantic uvicorn structlog \
         httpx pydantic-settings 'pyjwt[crypto]' \
         python-multipart sqlalchemy sqlmodel \
-        a2a-sdk \
+        a2a-sdk 'protobuf<6' \
         opentelemetry-api opentelemetry-sdk \
         opentelemetry-exporter-otlp-proto-grpc \
         opentelemetry-instrumentation-fastapi
