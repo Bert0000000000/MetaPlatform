@@ -595,6 +595,48 @@ async def ingest_document_chunks(
     return await asyncio.to_thread(_ingest)
 
 
+class SecurityPolicyDTO(BaseModel):
+    """SEC-12：行列级安全策略。row：行可见条件 + bypass_markings；
+    column：属性 required_markings。"""
+    rid: str = ""
+    kind: str  # row | column
+    class_rid: str = ""
+    property_rid: str = ""
+    field: str = ""
+    op: str = ""
+    value: Any = None
+    markings: list[str] = Field(default_factory=list)
+
+
+@router.post(
+    "/security-policies",
+    response_model=dict,
+    operation_id="ontUpsertV2SecurityPolicy",
+)
+async def upsert_security_policy(
+    payload: SecurityPolicyDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    payload_dict = payload.model_dump()
+    payload_dict["tenant_id"] = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    return await _call_scoped(request, "upsert_security_policy", payload_dict)
+
+
+@router.get(
+    "/security-policies",
+    response_model=list[dict],
+    operation_id="ontListV2SecurityPolicies",
+)
+async def list_security_policies(request: Request) -> list[dict]:
+    _ctx(request)
+    items = await _call_scoped(request, "list_security_policies")
+    out: list[dict] = []
+    for it in items:
+        it.pop("value_json", None)
+        out.append({k: v for k, v in it.items()})
+    return out
+
+
 @router.get(
     "/object-types/hierarchy",
     response_model=list[dict],
@@ -1352,14 +1394,18 @@ async def create_individual(
     operation_id="ontListV2Individuals",
 )
 async def list_individuals(
-    request: Request, class_rid: str | None = None,
+    request: Request, class_rid: str | None = None, markings: str = "",
 ) -> list[IndividualResponse]:
-    """List individuals; class_rid 过滤。"""
+    """List individuals; class_rid 过滤 + SEC-12 行策略读时强制（markings 参数）。"""
     ctx = _ctx(request)
     cls_ref = ClassRef(class_rid) if class_rid else None
     if cls_ref and not cls_ref.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
     items = await _call_scoped(request, "list_individuals", cls_ref)
+    if markings:
+        viewer = tuple(m.strip() for m in markings.split(",") if m.strip())
+        items = await _call_scoped(
+            request, "enforce_read_policies", items, viewer)
     return [
         IndividualResponse(
             rid=i.rid,
@@ -2911,14 +2957,20 @@ def _dto_to_ir_query(d: ObjectQueryDTO) -> ObjectSetQuery:
     operation_id="ontExecuteV2ObjectQuery",
 )
 async def execute_object_query(
-    payload: ObjectQueryDTO, request: Request,
+    payload: ObjectQueryDTO, request: Request, markings: str = "",
 ) -> ObjectQueryResultDTO:
-    """Structured IR query (ADR-0043): filters / aggregation / traversal / multi-key sort."""
+    """Structured IR query (ADR-0043) + SEC-12 enforcement (markings param)."""
     ctx = _ctx(request)
     if not payload.source.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant query denied")
     q = _dto_to_ir_query(payload)
     result = await _call_scoped(request, "execute_object_query", q)
+    if markings and result.kind == "objects":
+        viewer = tuple(m.strip() for m in markings.split(",") if m.strip())
+        rows = list(result.rows)
+        rows = await _call_scoped(request, "mask_rows", rows, viewer)
+        result = type(result)(kind=result.kind, rows=tuple(rows),
+                              result_schema=result.result_schema)
     return ObjectQueryResultDTO(
         kind=result.kind,
         rows=[dict(r) for r in result.rows],

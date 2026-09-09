@@ -273,6 +273,22 @@ DDL: tuple[str, ...] = (
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_oemb_tenant ON ont_object_embedding (tenant_id)",
     "CREATE INDEX IF NOT EXISTS ix_ont_oemb_ind ON ont_object_embedding (individual_rid)",
+    # SEC-12：行列级安全策略（读时强制；与租户 RLS 叠加）
+    """
+    CREATE TABLE IF NOT EXISTS ont_security_policy (
+        rid          TEXT PRIMARY KEY,
+        tenant_id    TEXT NOT NULL,
+        kind         TEXT NOT NULL,
+        class_rid    TEXT NOT NULL DEFAULT '',
+        property_rid TEXT NOT NULL DEFAULT '',
+        field        TEXT NOT NULL DEFAULT '',
+        op           TEXT NOT NULL DEFAULT '',
+        value        JSONB,
+        markings     TEXT[] NOT NULL DEFAULT '{}',
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_secpol_tenant ON ont_security_policy (tenant_id)",
     # MP-SAL-04: proposal 状态机持久化（ADR-0044 §2.2）
     """
     CREATE TABLE IF NOT EXISTS ont_proposal (
@@ -2610,6 +2626,132 @@ class PgOntologyRepository(OntologyRepository):
             logging.getLogger(__name__).warning(
                 "object_embedding_index_failed", extra={"rid": ind.rid},
             )
+
+    # ───── SEC-12：行列级安全策略（存储 + 执行）─────
+
+    def upsert_security_policy(self, policy: dict[str, Any]) -> dict[str, Any]:
+        """row/column 策略 upsert。字段：rid/kind/class_rid/property_rid/
+        field/op/value/markings（row: bypass_markings；column: required_markings）。"""
+        import uuid as _uuid
+
+        rid = policy.get("rid") or f"ont.{policy.get('tenant_id', 't')}.secpol.{_uuid.uuid4().hex[:8]}"
+        tenant = policy.get("tenant_id") or self._current_tenant() or "tenant-default"
+        kind = policy["kind"]
+        if kind not in ("row", "column"):
+            raise ValueError("policy.kind must be row|column")
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_security_policy
+                       (rid, tenant_id, kind, class_rid, property_rid, field, op,
+                        value, markings, updated_at)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,now())
+                       ON CONFLICT (rid) DO UPDATE SET
+                         kind=EXCLUDED.kind, class_rid=EXCLUDED.class_rid,
+                         property_rid=EXCLUDED.property_rid, field=EXCLUDED.field,
+                         op=EXCLUDED.op, value=EXCLUDED.value,
+                         markings=EXCLUDED.markings, updated_at=now()""",
+                    (rid, tenant, kind, policy.get("class_rid", ""),
+                     policy.get("property_rid", ""), policy.get("field", ""),
+                     policy.get("op", ""),
+                     json.dumps(policy.get("value"), default=str),
+                     list(policy.get("markings", ())) or
+                     list(policy.get("bypass_markings", ())) or
+                     list(policy.get("required_markings", ()))),
+                )
+            conn.commit()
+            return {"rid": rid, "kind": kind, "tenant_id": tenant}
+        finally:
+            conn.close()
+
+    def list_security_policies(self) -> list[dict[str, Any]]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_security_policy ORDER BY rid")
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def _policy_set(self) -> Any:
+        """行/列策略 → kernel SecurityPolicySet（本租户）。"""
+        from mate_kernel.ontology.security_policies import (
+            ColumnPolicy, RowPolicy, SecurityPolicySet,
+        )
+
+        rows_, cols_ = [], []
+        for r in self.list_security_policies():
+            markings = tuple(r.get("markings") or ())
+            if r["kind"] == "row":
+                rows_.append(RowPolicy(
+                    class_rid=r.get("class_rid", ""), field=r.get("field", ""),
+                    op=r.get("op", ""), value=r.get("value"),
+                    bypass_markings=markings))
+            else:
+                cols_.append(ColumnPolicy(
+                    property_rid=r.get("property_rid", ""),
+                    required_markings=markings))
+        return SecurityPolicySet(row_policies=tuple(rows_),
+                                 column_policies=tuple(cols_))
+
+    def _ancestors_of_class(self, class_rid: str) -> frozenset[str]:
+        """类的全部祖先（subclass 公理闭包，EXP-01 联动）。"""
+        rid_by_slug: dict[str, set[str]] = {}
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT rid FROM ont_object_type WHERE rid LIKE %s",
+                            ("ont.%.obj.%.%",))
+                for row in cur.fetchall():
+                    parts = row["rid"].split(".")
+                    if len(parts) >= 6:
+                        rid_by_slug.setdefault(parts[4], set()).add(row["rid"])
+        finally:
+            conn.close()
+        pairs: list[tuple[str, str]] = []
+        for r in self.list_axiom_records("", enabled_only=False):
+            if r.get("kind") != "subclass":
+                continue
+            ops = r.get("operands") or []
+            if len(ops) >= 2 and ops[1]:
+                subs = {ops[0]} if ops[0].startswith("ont.") else rid_by_slug.get(ops[0], set())
+                sups = {ops[1]} if ops[1].startswith("ont.") else rid_by_slug.get(ops[1], set())
+                pairs.extend((a, b) for a in subs for b in sups)
+        if not pairs:
+            return frozenset({class_rid})
+        from mate_kernel.ontology.reasoning.engine import _subclass_closure
+
+        anc = _subclass_closure(pairs).get(class_rid, set())
+        return frozenset({class_rid} | anc)
+
+    def enforce_read_policies(
+        self, individuals: list[Any], viewer_markings: list[str] | tuple[str, ...],
+    ) -> list[Any]:
+        """行策略过滤（读端点调用；分页前）。"""
+        from mate_kernel.ontology.security_policies import filter_visible_individuals
+
+        ps = self._policy_set()
+        if not ps.row_policies:
+            return individuals
+        return filter_visible_individuals(
+            individuals, ps, viewer_markings,
+            ancestor_classes_of=self._ancestors_of_class,
+        )
+
+    def mask_rows(
+        self, rows: list[dict[str, Any]], viewer_markings: list[str] | tuple[str, ...],
+    ) -> list[dict[str, Any]]:
+        """列策略脱敏（值置 None，对象仍可见）。"""
+        from mate_kernel.ontology.security_policies import mask_property_values
+
+        ps = self._policy_set()
+        if not ps.column_policies:
+            return rows
+        for r in rows:
+            mask_property_values(r, ps, viewer_markings)
+        return rows
 
     def search_objects(
         self, text: str, class_rid: str | None = None, top_k: int = 5,

@@ -54,6 +54,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._outbox_writer: Any = None
         # MP-SAL-05: 流程编排定义持久化
         self._flow_definitions: dict[str, dict[str, Any]] = {}
+        # SEC-12：行列级安全策略
+        self._security_policies: dict[str, dict[str, Any]] = {}
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
         from .function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
@@ -337,6 +339,69 @@ class InMemoryOntologyRepository(OntologyRepository):
             })
         cards.sort(key=lambda c: c["score"], reverse=True)
         return cards[:top_k]
+
+    def upsert_security_policy(self, policy: dict[str, Any]) -> dict[str, Any]:
+        """SEC-12：row/column 策略 upsert（InMemory 同语义）。"""
+        rid = policy.get("rid") or f"secpol-{len(self._security_policies) + 1}"
+        self._security_policies[rid] = dict(policy)
+        return {"rid": rid, "kind": policy.get("kind", "")}
+
+    def list_security_policies(self) -> list[dict[str, Any]]:
+        return [dict(v, rid=k) for k, v in self._security_policies.items()]
+
+    def _policy_set(self) -> Any:
+        from .security_policies import ColumnPolicy, RowPolicy, SecurityPolicySet
+
+        rows_, cols_ = [], []
+        for p in self._security_policies.values():
+            markings = tuple(p.get("markings") or p.get("bypass_markings")
+                             or p.get("required_markings") or ())
+            if p.get("kind") == "row":
+                rows_.append(RowPolicy(
+                    class_rid=p.get("class_rid", ""), field=p.get("field", ""),
+                    op=p.get("op", ""), value=p.get("value"),
+                    bypass_markings=markings))
+            else:
+                cols_.append(ColumnPolicy(
+                    property_rid=p.get("property_rid", ""),
+                    required_markings=markings))
+        return SecurityPolicySet(row_policies=tuple(rows_),
+                                 column_policies=tuple(cols_))
+
+    def enforce_read_policies(
+        self, individuals: list[Any], viewer_markings: list[str] | tuple[str, ...],
+    ) -> list[Any]:
+        from .security_policies import filter_visible_individuals
+
+        ps = self._policy_set()
+        if not ps.row_policies:
+            return individuals
+
+        def _ancestors(class_rid: str) -> frozenset[str]:
+            from .reasoning.engine import descendant_closure
+
+            closed = descendant_closure(self._subclass_pairs())
+            # ancestors(x) = descendants 闭包的逆：找所有 y 使 x ∈ descendants(y)
+            anc = {class_rid}
+            for y, descs in closed.items():
+                if class_rid in descs:
+                    anc.add(y)
+            return frozenset(anc)
+
+        return filter_visible_individuals(
+            individuals, ps, viewer_markings, ancestor_classes_of=_ancestors)
+
+    def mask_rows(
+        self, rows: list[dict[str, Any]], viewer_markings: list[str] | tuple[str, ...],
+    ) -> list[dict[str, Any]]:
+        from .security_policies import mask_property_values
+
+        ps = self._policy_set()
+        if not ps.column_policies:
+            return rows
+        for r in rows:
+            mask_property_values(r, ps, viewer_markings)
+        return rows
 
     def search_objects_hybrid(
         self, text: str, class_rid: str | None = None, top_k: int = 5,
