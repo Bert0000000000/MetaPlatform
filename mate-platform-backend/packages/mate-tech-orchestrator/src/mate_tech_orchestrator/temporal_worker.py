@@ -146,8 +146,15 @@ async def _selfheal_watcher(host: str, interval_s: float = 30.0,
         await asyncio.sleep(interval_s)
         try:
             c = await _Client.connect(host)
-            await c.workflow_service.get_system_info()
-            await c.close()
+            try:
+                await c.workflow_service.get_system_info()
+            except TypeError:
+                # temporalio ≥1.7 要求 request 参数（旧签名无参会 TypeError）
+                from temporalio.api.workflowservice.v1 import (
+                    GetSystemInfoRequest,
+                )
+
+                await c.workflow_service.get_system_info(GetSystemInfoRequest())
             failures = 0
         except Exception as exc:
             failures += 1

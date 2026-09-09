@@ -2364,14 +2364,28 @@ components:
                   items: {type: object}
                 property_shapes:
                   type: array
-                  description: 叠加的 PropertyShape（pattern/class 等 W3C 特有约束）
+                  description: >-
+                    叠加的 PropertyShape。支持 W3C 约束：min_count/max_count/
+                    datatype/pattern/node_class + severity（Violation/Warning/
+                    Info，仅 Violation 影响 conforms）+ language_in（sh:languageIn，
+                    语言标签集）+ not_shape（sh:not 内嵌 shape，节点级取反）+
+                    qualified_value_shape/qualified_min_count/
+                    qualified_max_count（sh:qualifiedValueShape）。
                   items: {type: object}
                 closed:
                   type: boolean
                   default: false
+                subclass_axioms:
+                  type: array
+                  description: >-
+                    (sub, super) 公理对（推理联动）：target 类的传递子类实例纳入验证、
+                    sh:class 满足子类 is-a 语义（G21 descendant_closure）
+                  items:
+                    type: array
+                    items: {type: string}
       responses:
         '200':
-          description: W3C 验证报告结构子集
+          description: W3C 验证报告（severity 分级 + 计数）
           content:
             application/json:
               schema:
@@ -2387,6 +2401,146 @@ components:
                         path: {type: string}
                         constraint: {type: string}
                         message: {type: string}
+                        severity:
+                          type: string
+                          enum: [Violation, Warning, Info]
+                  severity_counts:
+                    type: object
+                    description: 各 severity 结果计数 {Violation, Warning, Info}
                   stats:
                     type: object
         '403': {$ref: ../common/errors.yaml#/components/responses/Error403}
+  /api/v1/ont/v2/alignment/run:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      x-required-scopes: [platform.write]
+      tags: [ont]
+      summary: 跨本体实例对齐（same_as 词汇 + 结构相似，并查集聚类）
+      description: >-
+        ONT-G33 FR-ALIGN-001 stateless 对齐：explicit_pairs（显式 same_as）+
+        词汇相似（label 规范化相等）+ 结构相似（属性 slug + 值签名 Jaccard）。
+        聚类复用 reasoning R2 并查集（传递闭包）。不落库。
+      operationId: ontAlignV2Individuals
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ALIGN-001]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [left, right]
+              properties:
+                left:
+                  type: array
+                  description: 左侧实例 [{rid, class_rid, props}]
+                  items: {type: object}
+                right:
+                  type: array
+                  description: 右侧实例
+                  items: {type: object}
+                explicit_pairs:
+                  type: array
+                  description: 已知 same_as 配对 [[left_rid, right_rid]]
+                  items:
+                    type: array
+                    items: {type: string}
+                lexical_threshold: {type: number, default: 1.0}
+                structural_threshold: {type: number, default: 0.5}
+      responses:
+        '200':
+          description: 对齐结果（clusters / matched_pairs / stats）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clusters:
+                    type: object
+                    description: 代表元 → 簇成员（多成员簇）
+                  matched_pairs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        left: {type: string}
+                        right: {type: string}
+                        score: {type: number}
+                        evidence:
+                          type: array
+                          items:
+                            type: string
+                            enum: [explicit, lexical, structural]
+                  stats: {type: object}
+        '403': {$ref: ../common/errors.yaml#/components/responses/Error403}
+  /api/v1/ont/v2/object-types/merge-preview:
+    post:
+      security: [{bearerAuth: [], tenantHeader: [], oidcScopes: [platform.write]}]
+      x-required-scopes: [platform.write]
+      tags: [ont]
+      summary: 类型定义合并预览（字段并集 + 冲突标记 + 合并审计）
+      description: >-
+        ONT-G33 FR-ALIGN-002 stateless 合并预览：两 ObjectType 字段并集，
+        同 rid 属性冲突按策略（keep_left / keep_right）消解并留冲突标记与
+        合并审计记录。不落库（实例重映射走 ontMergeV2ObjectTypes）。
+      operationId: ontPreviewV2ObjectTypeMerge
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.write
+      x-mate-required-tenant: true
+      x-mate-requirements: [FR-ALIGN-002]
+      x-mate-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [left, right]
+              properties:
+                left:
+                  type: object
+                  description: ObjectType 定义（ObjectTypeDTO 同构）
+                right:
+                  type: object
+                  description: ObjectType 定义（ObjectTypeDTO 同构）
+                strategy:
+                  type: string
+                  enum: [keep_left, keep_right]
+                  default: keep_left
+      responses:
+        '200':
+          description: 合并结果（merged ObjectType + audit）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object_type:
+                    type: object
+                    description: 合并后 ObjectType（rid 取 left）
+                  audit:
+                    type: object
+                    properties:
+                      merged_from:
+                        type: array
+                        items: {type: string}
+                      into: {type: string}
+                      strategy: {type: string}
+                      properties_merged: {type: integer}
+                      added:
+                        type: array
+                        items: {type: string}
+                      conflicts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            property_rid: {type: string}
+                            field: {type: string}
+                            left: {}
+                            right: {}
+                            resolved: {}
+        '422': {$ref: ../common/errors.yaml#/components/responses/Error422}

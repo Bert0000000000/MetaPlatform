@@ -8,7 +8,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from ..service.install_service import create_install
+from ..service.install_service import (
+    InstallNotFound,
+    InvalidTransition,
+    create_install,
+    transition_install,
+)
 
 router = APIRouter(tags=["marketplace"])
 
@@ -19,6 +24,26 @@ def _require_scope(user, scope: str) -> None:
             status_code=403,
             detail={"code": "MP_INSUFFICIENT_SCOPE", "message": f"missing {scope}"},
         )
+
+
+def _install_policy_engine():
+    """INTERCEPT/POLICY 接线：env 驱动的 deny-first 策略（组合内核）。
+
+    `MP_POLICY_DENY_KINDS=<kind[,kind…]>` 命中即拒绝安装（403）。
+    """
+    import os as _os
+
+    from ...composition.policy import PolicyEngine, PolicyRule
+
+    engine = PolicyEngine()
+    denied = [k.strip() for k in
+              _os.getenv("MP_POLICY_DENY_KINDS", "").split(",") if k.strip()]
+    for kind in denied:
+        engine.register(PolicyRule(
+            name=f"deny-kind:{kind}",
+            predicate=lambda ctx, _k=kind: ctx.get("kind") == _k,
+        ))
+    return engine
 
 
 def _safe_uuid(value: str | None) -> UUID | None:
@@ -40,6 +65,13 @@ def _safe_uuid(value: str | None) -> UUID | None:
 async def post_install(body: dict, request: Request):
     user = getattr(request.state, "user", None)
     _require_scope(user, "platform.marketplace.write")
+    # INTERCEPT/POLICY：deny-first 策略判定（env 驱动规则）
+    verdict = _install_policy_engine().check({"kind": body.get("kind", "")})
+    if not getattr(verdict, "allowed", True):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "MP_POLICY_DENIED", "message": verdict.reason},
+        )
 
     install_id, already = create_install(
         session=request.state.db,
@@ -85,7 +117,37 @@ async def get_install_status(install_id: UUID, request: Request):
 async def uninstall(install_id: UUID, request: Request):
     user = getattr(request.state, "user", None)
     _require_scope(user, "platform.marketplace.write")
-    return {"install_id": str(install_id), "state": "uninstalling"}
+    # MP-MKT-INSTALL-01：事务化状态转移 + 同事务审计 + outbox 事件
+    try:
+        install = transition_install(
+            session=request.state.db,
+            install_id=install_id,
+            action="uninstall",
+            actor=_safe_uuid(str(getattr(user, "id", None))),
+        )
+    except InstallNotFound as e:
+        request.state.db.rollback()
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except InvalidTransition as e:
+        request.state.db.rollback()
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    try:
+        request.state.db.commit()
+    except Exception:
+        request.state.db.rollback()
+        raise
+    outbox = getattr(request.state, "outbox", None)
+    if outbox is not None:
+        try:
+            await outbox.publish(
+                topic="marketplace.install.uninstalling",
+                key=str(install_id),
+                payload={"install_id": str(install_id),
+                         "state": install.state},
+            )
+        except Exception:
+            pass
+    return {"install_id": str(install_id), "state": install.state}
 
 
 @router.post(
@@ -94,4 +156,35 @@ async def uninstall(install_id: UUID, request: Request):
 async def retry_install(install_id: UUID, request: Request):
     user = getattr(request.state, "user", None)
     _require_scope(user, "platform.marketplace.write")
-    return {"install_id": str(install_id), "state": "downloading"}
+    try:
+        install = transition_install(
+            session=request.state.db,
+            install_id=install_id,
+            action="retry",
+            actor=_safe_uuid(str(getattr(user, "id", None))),
+        )
+    except InstallNotFound as e:
+        request.state.db.rollback()
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except InvalidTransition as e:
+        request.state.db.rollback()
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    try:
+        request.state.db.commit()
+    except Exception:
+        request.state.db.rollback()
+        raise
+    outbox = getattr(request.state, "outbox", None)
+    if outbox is not None:
+        try:
+            await outbox.publish(
+                topic="marketplace.install.retry",
+                key=str(install_id),
+                payload={"install_id": str(install_id),
+                         "state": install.state,
+                         "retry_count": install.retry_count},
+            )
+        except Exception:
+            pass
+    return {"install_id": str(install_id), "state": install.state,
+            "retry_count": install.retry_count}

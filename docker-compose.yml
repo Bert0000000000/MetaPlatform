@@ -91,8 +91,9 @@ services:
     environment:
       IAM_DATA_DIR: /data
       IAM_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_iam
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
@@ -123,8 +124,9 @@ services:
     image: mate-tech-dw:dev
     container_name: mate-tech-dw
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
@@ -385,8 +387,9 @@ services:
     container_name: mate-tech-rag
     environment:
       # === 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳娼￠弻鐔衡偓鐢殿焾瀛濈紓浣界堪閸婃繈寮婚敃鈧灒濞撴凹鍨遍敍鍡涙偡濠婂懎顣奸悽顖涘笧婢规洘绺介崨濠勫幗闂佸綊鍋婇崹浼存儍濞差亝鐓熸繛鎴炵墪閸旓附鎱ㄦ繝鍐┿仢鐎规洦鍋婂畷鐔碱敇濞戞瑧鈧亶姊? 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛銈呭閺屾盯顢曢敐鍡欙紩闂侀€炲苯澧剧紒鐘虫尭閻ｉ攱绺界粙娆炬綂闂佺偨鍎遍崯璺ㄨ姳閵夆晜鈷掑ù锝囶焾椤ュ繘鏌涚€ｂ晝绐旂€规洘娲樺蹇涘煛閸愵亞鍔跺┑鐘灱閸╂牠宕濋弽顓熷亗婵炲棙鎸哥痪褔鏌涢锝囩畵闁抽攱妫冮弻锝夋晲閸粌鎯堥梺姹囧労娴滎亪鐛崱姘兼Ъ闂佺顑冮崕鐢稿蓟閳ュ磭鏆嗛柍褜鍓熷畷浼村箻閼告娼熼梺鍦劋椤ㄥ懘锝為崨瀛樼厽婵☆垵娅ｉ敍宥吤瑰鍐煟婵﹦绮幏鍛瑹椤栨粌濮兼俊鐐€栭崹鐢稿疮閺夋垹鏆︽繝闈涱儏缁狅綁鏌ㄩ弴妤€浜鹃梺钘夊暟閸犳牠寮婚敓鐘茬倞闁宠桨鐒﹂悘浣虹磽娴ｅ弶顎嗛柛瀣崌濮婄粯绻濇惔鈥茬盎濠电偠顕滄俊鍥╁垝濞嗘挸绠虫俊銈咃攻閺呮盯鎮楅獮鍨姎婵炲眰鍔庢竟鏇㈡寠婢规繂缍婇弫鎰板川椤旇棄鍓甸梺鍝勭▌缁绘繂顫忓ú顏呭€婚柍鍝勫€归悵锕傛⒑閹肩偛濮€婵炲鐩、姘舵晲閸ャ劌鐝板┑鐐存綑椤戝棝锝炲澶嬧拺闂傚牊绋撶粻鍐测攽椤旂偓鏆挊鐔哥節闂堟侗鍎愰柣鎾跺枛閺岋綁骞囬澶婃闂佸磭绮幑鍥蓟瀹ュ牜妾ㄩ梺鍛婃尰閻熲晛鐣烽姀銈呭唨闁靛ě鍛獎闂備礁鎼ú銏ゅ垂濞差亜鐓曢柟杈鹃檮閻撴瑦銇勯弽褎顥滈悗姘煎櫍閵嗗懏瀵肩€涙ǚ鎷虹紓浣割儐椤戞瑩宕曡箛娑欏€垫慨姗嗗亜瀹撳棛鈧娲樺浠嬪春閳? 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳顭烽弻锝夊箛椤掍焦鍎撻梺鎼炲妼閸婂潡寮诲☉銏╂晝闁挎繂妫涢ˇ銉х磽娴ｅ搫小闁告濞婂璇测槈濡攱鏂€闂佸憡娲﹂崑鍕叏閵忋倖鈷戞繛鑼额嚙楠炴鏌熼悷鐗堝枠鐎殿喖顭烽幃銏ゆ惞閸︻叏绱查梻渚€娼х换鎺撴叏閻㈠憡鍊堕柛顐犲劜閳锋垶鎱ㄩ悷鐗堟悙闁逞屽厵閸婃繂鐣烽幎鑺ユ櫜濠㈣泛锕ㄩ幗?host.docker.internal ===
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       RAG_MODE: ${RAG_MODE:-full}
       EMBEDDER_PROVIDER: ${EMBEDDER_PROVIDER:-local}
@@ -434,8 +437,8 @@ services:
     image: mate-tech-agent:dev
     container_name: mate-tech-agent
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-metaplatform}
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-metaplatform-backend}
@@ -476,8 +479,9 @@ services:
     image: mate-app-kb:dev
     container_name: mate-app-kb
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       RAG_URL: http://mate-tech-rag:8001
       AGENT_URL: http://mate-tech-agent:8002
@@ -510,8 +514,9 @@ services:
     image: mate-tech-llmgw:dev
     container_name: mate-tech-llmgw
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_kb
@@ -548,8 +553,9 @@ services:
     image: mate-app-copilot:dev
     container_name: mate-app-copilot
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
@@ -588,8 +594,9 @@ services:
     image: mate-app-arch:dev
     container_name: mate-app-arch
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
@@ -621,8 +628,9 @@ services:
     image: mate-app-hub:dev
     container_name: mate-app-hub
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
@@ -658,8 +666,9 @@ services:
     image: mate-tech-data:dev
     container_name: mate-tech-data
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform
@@ -693,8 +702,9 @@ services:
     image: mate-app-a2a:dev
     container_name: mate-app-a2a
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
@@ -756,8 +766,8 @@ services:
     image: mate-tech-orchestrator:dev
     container_name: mate-tech-orchestrator
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: metaplatform
       ONT_HTTP_BASE: http://mate-tech-ont:8007
@@ -803,8 +813,9 @@ services:
     image: mate-tech-ont:dev
     container_name: mate-tech-ont
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       ONT_SEED_DEMO: "1"
       NEO4J_URI: bolt://neo4j:7687
@@ -842,8 +853,9 @@ services:
     image: mate-tech-msg:dev
     container_name: mate-tech-msg
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP: kafka:9092
@@ -873,8 +885,9 @@ services:
     image: mate-tech-mcp:dev
     container_name: mate-tech-mcp
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
       MCP_SERVER_NAME: mate-tech-mcp
@@ -907,8 +920,9 @@ services:
     image: mate-tech-obs:dev
     container_name: mate-tech-obs
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       LOKI_ENDPOINT: http://loki:3100/loki/api/v1/push
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
@@ -1137,8 +1151,9 @@ services:
     image: mate-tech-etl:dev
     container_name: mate-tech-etl
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-etl
@@ -1162,8 +1177,9 @@ services:
     image: mate-tech-scheduler:dev
     container_name: mate-tech-scheduler
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-scheduler
@@ -1187,8 +1203,9 @@ services:
     image: mate-tech-metrics:dev
     container_name: mate-tech-metrics
     environment:
-      LEGACY_LOGIN_COMPAT: "true"
-      INSECURE_SKIP_SIGNATURE: "true"
+      LEGACY_LOGIN_COMPAT: "false"
+      SERVICE_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      INSECURE_SKIP_SIGNATURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_SERVICE_NAME: mate-tech-metrics
