@@ -1,0 +1,24 @@
+NAME                                           READY   STATUS                       RESTARTS        AGE   IP            NODE                    NOMINATED NODE   READINESS GATES
+debezium-8558dff598-ljq6v                      0/1     CreateContainerConfigError   6 (16m ago)     22m   10.244.0.15   desktop-control-plane   <none>           <none>
+kafka-0                                        0/1     Pending                      0               16m   <none>        <none>                  <none>           <none>
+marquez-0                                      0/1     CrashLoopBackOff             9 (78s ago)     22m   10.244.0.14   desktop-control-plane   <none>           <none>
+mate-staging-keycloak-0                        0/1     Pending                      0               22m   <none>        <none>                  <none>           <none>
+mate-staging-otel-collector-69c7458b57-hwk62   1/1     Running                      0               22m   10.244.0.16   desktop-control-plane   <none>           <none>
+postgresql-0                                   0/1     CrashLoopBackOff             9 (2m9s ago)    22m   10.244.0.13   desktop-control-plane   <none>           <none>
+starrocks-be-0                                 0/1     Pending                      0               41m   <none>        <none>                  <none>           <none>
+starrocks-fe-0                                 0/1     CrashLoopBackOff             7 (2m55s ago)   41m   10.244.0.18   desktop-control-plane   <none>           <none>
+trino-coordinator-7d5698685c-bwlxg             0/1     Pending                      0               16m   <none>        <none>                  <none>           <none>
+trino-coordinator-dd8d94f94-5dgx9              0/1     Pending                      0               16m   <none>        <none>                  <none>           <none>
+trino-worker-7d9f99b6f7-5958g                  1/1     Running                      0               41m   10.244.0.10   desktop-control-plane   <none>           <none>
+trino-worker-7d9f99b6f7-9n89x                  1/1     Running                      0               41m   10.244.0.12   desktop-control-plane   <none>           <none>
+NAME                                        STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-starrocks-be-0   Pending                                                                        standard       <unset>                 41m
+persistentvolumeclaim/data-starrocks-fe-0   Bound     pvc-f60abf9e-6ed1-4568-afad-ab888621fb5e   50Gi       RWO            standard       <unset>                 41m
+
+NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                                AGE
+service/debezium                      ClusterIP   10.96.35.29     <none>        8083/TCP                               41m
+service/kafka                         ClusterIP   10.96.251.192   <none>        9092/TCP                               16m
+service/kafka-headless                ClusterIP   None            <none>        9092/TCP,9093/TCP,9094/TCP             16m
+service/marquez                       ClusterIP   10.96.83.159    <none>        5000/TCP,3000/TCP                      41m
+service/marquez-headless              ClusterIP   None            <none>        5000/TCP                               41m
+captured Wed Sep  9 19:55:20     2026
