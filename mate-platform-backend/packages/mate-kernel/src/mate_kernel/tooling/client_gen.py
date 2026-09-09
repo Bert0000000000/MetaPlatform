@@ -240,7 +240,7 @@ def generate_client_source(
         seen_cls.add(cls_name)
         desc_lines = ""
         if getattr(ot, "description", ""):
-            desc_lines = f"    {ot.description}\\n\\n"
+            desc_lines = f"    {ot.description}\n\n"
         meta_bits = []
         if getattr(ot, "status", "active") != "active":
             meta_bits.append(f"status={ot.status}")
@@ -251,7 +251,7 @@ def generate_client_source(
         if getattr(ot, "interfaces", ()):
             meta_bits.append(f"interfaces={len(ot.interfaces)}")
         if meta_bits:
-            desc_lines += "    " + " · ".join(meta_bits) + "\\n"
+            desc_lines += "    " + " · ".join(meta_bits) + "\n"
         field_lines = "".join(
             _FIELD_TMPL.format(
                 slug=slug_of_property_rid(p.rid.rid).replace("-", "_"),
@@ -271,5 +271,5 @@ def generate_client_source(
             slug = slug_of_rid(at.rid.rid).replace("-", "_").upper()
             title = getattr(at, "title", "") or slug
             lines.append(f"{slug}_RID = {at.rid.rid!r}  # {title}")
-        parts.append("\\n".join(lines))
+        parts.append("\n".join(lines))
     return "".join(parts)
