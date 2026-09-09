@@ -289,6 +289,24 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_secpol_tenant ON ont_security_policy (tenant_id)",
+    # DATA-14：背挂数据源声明（与类型 schema 分离存储 —— Palantir 同构）
+    """
+    CREATE TABLE IF NOT EXISTS ont_backing_datasource (
+        rid           TEXT PRIMARY KEY,
+        tenant_id     TEXT NOT NULL,
+        class_rid     TEXT NOT NULL,
+        name          TEXT NOT NULL,
+        kind          TEXT NOT NULL DEFAULT 'pg_table',
+        dsn_env       TEXT NOT NULL DEFAULT 'ONT_SOURCE_DSN',
+        table_name    TEXT NOT NULL,
+        pk_column     TEXT NOT NULL,
+        field_mapping JSONB NOT NULL DEFAULT '{}'::jsonb,
+        priority      INTEGER NOT NULL DEFAULT 100,
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (tenant_id, class_rid, name)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_bds_tenant ON ont_backing_datasource (tenant_id)",
     # MP-SAL-04: proposal 状态机持久化（ADR-0044 §2.2）
     """
     CREATE TABLE IF NOT EXISTS ont_proposal (
@@ -2626,6 +2644,80 @@ class PgOntologyRepository(OntologyRepository):
             logging.getLogger(__name__).warning(
                 "object_embedding_index_failed", extra={"rid": ind.rid},
             )
+
+    # ───── DATA-14：背挂数据源声明 ─────
+
+    def upsert_backing_datasource(self, decl: dict[str, Any]) -> dict[str, Any]:
+        """声明/更新一个 backing datasource（kind v1=pg_table；secret 走 dsn_env）。"""
+        rid = decl.get("rid") or (
+            f"ont.{decl.get('tenant_id', 't')}.bds."
+            f"{decl['class_rid'].split('.')[-2]}-{decl['name']}"
+        )
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_backing_datasource
+                       (rid, tenant_id, class_rid, name, kind, dsn_env,
+                        table_name, pk_column, field_mapping, priority, updated_at)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,now())
+                       ON CONFLICT (rid) DO UPDATE SET
+                         name=EXCLUDED.name, kind=EXCLUDED.kind,
+                         dsn_env=EXCLUDED.dsn_env, table_name=EXCLUDED.table_name,
+                         pk_column=EXCLUDED.pk_column,
+                         field_mapping=EXCLUDED.field_mapping,
+                         priority=EXCLUDED.priority, updated_at=now()""",
+                    (rid, decl.get("tenant_id") or self._current_tenant() or "tenant-default",
+                     decl["class_rid"], decl["name"], decl.get("kind", "pg_table"),
+                     decl.get("dsn_env", "ONT_SOURCE_DSN"), decl["table"],
+                     decl["pk_column"], json.dumps(decl.get("field_mapping") or {}),
+                     int(decl.get("priority", 100))),
+                )
+            conn.commit()
+            return {"rid": rid, "name": decl["name"]}
+        finally:
+            conn.close()
+
+    def list_backing_datasources(self, class_rid: str | None = None) -> list[dict[str, Any]]:
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                if class_rid:
+                    cur.execute(
+                        "SELECT * FROM ont_backing_datasource "
+                        "WHERE class_rid = %s ORDER BY priority, name", (class_rid,))
+                else:
+                    cur.execute(
+                        "SELECT * FROM ont_backing_datasource ORDER BY priority, name")
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def sync_backing_datasources(self, class_rid: str) -> dict[str, Any]:
+        """DATA-14：执行同步（声明按 priority 序 → sync_backing_datasource）。"""
+        from .backing_datasources import BackingDatasource, sync_backing_datasource
+
+        decls = self.list_backing_datasources(class_rid)
+        if not decls:
+            raise KeyError(f"no backing datasources declared for {class_rid}")
+        ot = self.get_object_type(ClassRef(class_rid))
+        sources = [
+            BackingDatasource(
+                name=d["name"], kind=d["kind"], dsn_env=d["dsn_env"],
+                table=d["table_name"], pk_column=d["pk_column"],
+                field_mapping={k: v for k, v in (d.get("field_mapping") or {}).items()},
+                priority=int(d.get("priority", 100)),
+            )
+            for d in decls
+        ]
+        return sync_backing_datasource(self, ot, sources)
+
+    def materialize_object_type(self, class_rid: str, limit: int = 10000) -> dict[str, Any]:
+        """DATA-15：对象当前状态 → 行集（materialization 读端点）。"""
+        from .backing_datasources import materialize_object_type as _mat
+
+        return _mat(self, class_rid, limit=limit)
 
     # ───── SEC-12：行列级安全策略（存储 + 执行）─────
 

@@ -637,6 +637,69 @@ async def list_security_policies(request: Request) -> list[dict]:
     return out
 
 
+class BackingDatasourceDTO(BaseModel):
+    """DATA-14：背挂数据源声明（kind v1=pg_table；secret 走 dsn_env 环境变量）。"""
+    class_rid: str
+    name: str
+    kind: str = "pg_table"
+    dsn_env: str = "ONT_SOURCE_DSN"
+    table: str
+    pk_column: str
+    field_mapping: dict[str, str] = Field(default_factory=dict)
+    priority: int = 100
+
+
+@router.post(
+    "/object-types/{rid:path}/datasources",
+    response_model=dict,
+    operation_id="ontUpsertV2BackingDatasource",
+)
+async def upsert_backing_datasource(
+    rid: str, payload: BackingDatasourceDTO, request: Request,
+) -> dict:
+    """DATA-14：声明 backing datasource（数据平面 → 对象索引管道配置）。"""
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    decl = payload.model_dump()
+    decl["class_rid"] = rid
+    decl["tenant_id"] = tenant
+    return await _call_scoped(request, "upsert_backing_datasource", decl)
+
+
+@router.post(
+    "/object-types/{rid:path}/datasources/sync",
+    response_model=dict,
+    operation_id="ontSyncV2BackingDatasources",
+)
+async def sync_backing_datasources(rid: str, request: Request) -> dict:
+    """DATA-14：执行同步（批量索引；MDO 多源按 priority 字段级合并）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(request, "sync_backing_datasources", rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.get(
+    "/object-types/{rid:path}/materialization",
+    response_model=dict,
+    operation_id="ontGetV2Materialization",
+)
+async def get_materialization(rid: str, request: Request) -> dict:
+    """DATA-15：对象最新状态行集（materialization 回流读端点）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(request, "materialize_object_type", rid)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
 @router.get(
     "/object-types/hierarchy",
     response_model=list[dict],
