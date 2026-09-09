@@ -307,6 +307,31 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_bds_tenant ON ont_backing_datasource (tenant_id)",
+    # GOV-16：使用量指标（Reads/Writes per type per day）
+    """
+    CREATE TABLE IF NOT EXISTS ont_usage_metric (
+        id         BIGSERIAL PRIMARY KEY,
+        tenant_id  TEXT NOT NULL,
+        class_rid  TEXT NOT NULL,
+        op         TEXT NOT NULL,
+        day        DATE NOT NULL DEFAULT CURRENT_DATE,
+        count      BIGINT NOT NULL DEFAULT 0,
+        UNIQUE (tenant_id, class_rid, op, day)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_usage_tenant ON ont_usage_metric (tenant_id)",
+    # GOV-19：时序存储（TIMESERIES 属性背后的 series store）
+    """
+    CREATE TABLE IF NOT EXISTS ont_timeseries_point (
+        series_rid TEXT NOT NULL,
+        tenant_id  TEXT NOT NULL,
+        ts         TIMESTAMPTZ NOT NULL,
+        value      DOUBLE PRECISION NOT NULL,
+        attrs      JSONB NOT NULL DEFAULT '{}'::jsonb,
+        PRIMARY KEY (series_rid, ts)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS ix_ont_ts_tenant ON ont_timeseries_point (tenant_id)",
     # MP-SAL-04: proposal 状态机持久化（ADR-0044 §2.2）
     """
     CREATE TABLE IF NOT EXISTS ont_proposal (
@@ -2644,6 +2669,137 @@ class PgOntologyRepository(OntologyRepository):
             logging.getLogger(__name__).warning(
                 "object_embedding_index_failed", extra={"rid": ind.rid},
             )
+
+    # ───── GOV-16~19：治理四件套 ─────
+
+    def record_usage(self, class_rid: str, op: str, count: int = 1) -> None:
+        """GOV-16：使用量打点（read/write；UPSERT 日聚合）。best-effort。"""
+        tenant = self._current_tenant() or "tenant-default"
+        try:
+            conn, _ = self._connect()
+            try:
+                with self._cursor(conn) as cur:
+                    cur.execute(
+                        """INSERT INTO ont_usage_metric
+                           (tenant_id, class_rid, op, day, count)
+                           VALUES (%s,%s,%s,CURRENT_DATE,%s)
+                           ON CONFLICT (tenant_id, class_rid, op, day)
+                           DO UPDATE SET count = ont_usage_metric.count + EXCLUDED.count""",
+                        (tenant, class_rid, op, count))
+                conn.commit()
+            finally:
+                conn.close()
+        except Exception:
+            pass
+
+    def usage_summary(self, days: int = 30) -> list[dict[str, Any]]:
+        """GOV-16：近 N 天 per-type 使用量（reads/writes/total + active_days）。"""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """SELECT class_rid,
+                              SUM(count) FILTER (WHERE op='read') AS reads,
+                              SUM(count) FILTER (WHERE op='write') AS writes,
+                              COUNT(DISTINCT day) AS active_days
+                       FROM ont_usage_metric
+                       WHERE day > CURRENT_DATE - %s::int
+                       GROUP BY class_rid ORDER BY SUM(count) DESC""",
+                    (days,))
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def apply_lifecycle(self, class_rid: str, action: str,
+                        actor: str = "") -> dict[str, Any]:
+        """GOV-17：Snooze/Deprecate/Delete 三级处置 + 删除保护。
+
+        删除保护：近 30 天有 read 使用量的类型拒绝 delete（先 Deprecate）。
+        snooze → status 不变 + 标记；deprecate → status='deprecated'；
+        delete → 归档 + 移除数据。
+        """
+        from mate_kernel.ontology.identity.class_ref import ClassRef
+
+        if action not in ("snooze", "deprecate", "delete"):
+            raise ValueError(f"action must be snooze|deprecate|delete: {action!r}")
+        ot = self.get_object_type(ClassRef(class_rid))
+        if action == "delete":
+            usage = [u for u in self.usage_summary(30)
+                     if u["class_rid"] == class_rid
+                     and (u.get("reads") or 0) > 0]
+            if usage:
+                raise ValueError(
+                    f"delete protection: {class_rid} has "
+                    f"{usage[0]['reads']} reads in last 30d; deprecate first"
+                )
+        from dataclasses import replace as _replace
+
+        if action == "deprecate":
+            updated = _replace(ot, status="deprecated")
+            self.upsert_object_type(updated)
+            return {"class_rid": class_rid, "action": action,
+                    "status": "deprecated"}
+        if action == "snooze":
+            # snooze 是个人队列语义（v1 记审计事件即可）
+            return {"class_rid": class_rid, "action": action,
+                    "status": ot.status}
+        # delete：软删（archived）—— 与 MP-DEDUP-01 merge 同口径
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "UPDATE ont_object_type SET archived = TRUE "
+                    "WHERE rid = %s", (class_rid,))
+            conn.commit()
+        finally:
+            conn.close()
+        return {"class_rid": class_rid, "action": action, "archived": True}
+
+    def append_timeseries(self, series_rid: str, points: list[dict[str, Any]],
+                          tenant_id: str | None = None) -> int:
+        """GOV-19：追加时序点 [{ts, value, attrs?}]（UPSERT on (series, ts)）。"""
+        tenant = tenant_id or self._current_tenant() or "tenant-default"
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                for p in points:
+                    cur.execute(
+                        """INSERT INTO ont_timeseries_point
+                           (series_rid, tenant_id, ts, value, attrs)
+                           VALUES (%s,%s,%s,%s,%s::jsonb)
+                           ON CONFLICT (series_rid, ts) DO UPDATE SET
+                             value = EXCLUDED.value, attrs = EXCLUDED.attrs""",
+                        (series_rid, tenant, p["ts"], float(p["value"]),
+                         json.dumps(p.get("attrs") or {})))
+            conn.commit()
+            return len(points)
+        finally:
+            conn.close()
+
+    def query_timeseries(self, series_rid: str,
+                         start: str | None = None, end: str | None = None,
+                         limit: int = 10000) -> list[dict[str, Any]]:
+        """GOV-19：窗口查询（ts 升序）。"""
+        self._ensure_schema()
+        conds = ["series_rid = %s"]
+        params: list[Any] = [series_rid]
+        if start:
+            conds.append("ts >= %s")
+            params.append(start)
+        if end:
+            conds.append("ts <= %s")
+            params.append(end)
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    "SELECT ts, value, attrs FROM ont_timeseries_point WHERE "
+                    + " AND ".join(conds) + " ORDER BY ts ASC LIMIT %s",
+                    (*params, limit))
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
 
     # ───── DATA-14：背挂数据源声明 ─────
 

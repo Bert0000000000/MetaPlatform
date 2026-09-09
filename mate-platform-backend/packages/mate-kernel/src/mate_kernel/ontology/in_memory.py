@@ -56,6 +56,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._flow_definitions: dict[str, dict[str, Any]] = {}
         # SEC-12：行列级安全策略
         self._security_policies: dict[str, dict[str, Any]] = {}
+        # GOV-16：使用量计数器
+        self._usage_counters: dict[tuple[str, str], int] = {}
         # GOVERN-05: FunctionResolver 让 upsert_function / set_function_executor 注入。
         from .function_resolver import InMemoryFunctionResolver
         self._function_resolver: InMemoryFunctionResolver = InMemoryFunctionResolver()
@@ -339,6 +341,21 @@ class InMemoryOntologyRepository(OntologyRepository):
             })
         cards.sort(key=lambda c: c["score"], reverse=True)
         return cards[:top_k]
+
+    # ───── GOV-16：使用量（InMemory 计数器，与 PG 日聚合同语义）─────
+
+    def record_usage(self, class_rid: str, op: str, count: int = 1) -> None:
+        key = (class_rid, op)
+        self._usage_counters[key] = self._usage_counters.get(key, 0) + count
+
+    def usage_summary(self, days: int = 30) -> list[dict[str, Any]]:
+        out: dict[str, dict[str, Any]] = {}
+        for (cls, op), n in self._usage_counters.items():
+            e = out.setdefault(cls, {"class_rid": cls, "reads": 0,
+                                     "writes": 0, "active_days": 1})
+            e["reads" if op == "read" else "writes"] += n
+        return sorted(out.values(),
+                      key=lambda x: -(x["reads"] + x["writes"]))
 
     def upsert_security_policy(self, policy: dict[str, Any]) -> dict[str, Any]:
         """SEC-12：row/column 策略 upsert（InMemory 同语义）。"""

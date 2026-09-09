@@ -701,6 +701,98 @@ async def get_materialization(rid: str, request: Request) -> dict:
 
 
 @router.get(
+    "/usage/types",
+    response_model=list[dict],
+    operation_id="ontGetV2UsageSummary",
+)
+async def usage_summary(request: Request, days: int = 30) -> list[dict]:
+    """GOV-16：近 N 天 per-type 使用量（变更影响评估 / 退役决策）。"""
+    _ctx(request)
+    return await _call_scoped(request, "usage_summary", days)
+
+
+class LifecycleActionDTO(BaseModel):
+    action: str  # snooze | deprecate | delete
+    actor: str = ""
+
+
+@router.post(
+    "/object-types/{rid:path}/lifecycle",
+    response_model=dict,
+    operation_id="ontApplyV2Lifecycle",
+)
+async def apply_lifecycle(
+    rid: str, payload: LifecycleActionDTO, request: Request,
+) -> dict:
+    """GOV-17：Cleanup 三级处置（Snooze/Deprecate/Delete）+ 使用量删除保护。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant class denied")
+    try:
+        return await _call_scoped(
+            request, "apply_lifecycle", rid, payload.action,
+            payload.actor or str(getattr(ctx, "user_id", "")))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
+@router.get(
+    "/lint/anti-patterns",
+    response_model=list[dict],
+    operation_id="ontLintV2AntiPatterns",
+)
+async def lint_anti_patterns(request: Request) -> list[dict]:
+    """GOV-18：反模式 lint（god_object / kitchen_sink / misnomer / action_sprawl）。"""
+    from .governance import lint_anti_patterns as _lint
+
+    _ctx(request)
+    ots = await _call_scoped(request, "list_object_types", 10000, 0)
+    ats = await _call_scoped(request, "list_action_types")
+    return _lint(list(ots), list(ats))
+
+
+class TimeseriesAppendDTO(BaseModel):
+    """GOV-19：时序点追加（series_rid = TIMESERIES 属性值）。"""
+    series_rid: str
+    points: list[dict[str, Any]]
+
+
+@router.post(
+    "/timeseries/append",
+    response_model=dict,
+    operation_id="ontAppendV2Timeseries",
+)
+async def append_timeseries(
+    payload: TimeseriesAppendDTO, request: Request,
+) -> dict:
+    ctx = _ctx(request)
+    tenant = str(ctx.tenant_id)  # type: ignore[attr-defined]
+    if not payload.series_rid.startswith(f"ont.{tenant}."):
+        raise HTTPException(status_code=403, detail="cross-tenant series denied")
+    n = await _call_scoped(
+        request, "append_timeseries", payload.series_rid,
+        payload.points, tenant)
+    return {"appended": n}
+
+
+@router.get(
+    "/timeseries/{series_rid:path}",
+    response_model=list[dict],
+    operation_id="ontQueryV2Timeseries",
+)
+async def query_timeseries(
+    series_rid: str, request: Request,
+    start: str | None = None, end: str | None = None,
+) -> list[dict]:
+    """GOV-19：时序窗口查询（ts 升序）。"""
+    _ctx(request)
+    return await _call_scoped(
+        request, "query_timeseries", series_rid, start, end)
+
+
+@router.get(
     "/object-types/hierarchy",
     response_model=list[dict],
     operation_id="ontGetV2TypeHierarchy",
@@ -1465,6 +1557,8 @@ async def list_individuals(
     if cls_ref and not cls_ref.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
     items = await _call_scoped(request, "list_individuals", cls_ref)
+    if class_rid:  # GOV-16：读打点（best-effort）
+        await _call_scoped(request, "record_usage", class_rid, "read", 1)
     if markings:
         viewer = tuple(m.strip() for m in markings.split(",") if m.strip())
         items = await _call_scoped(
@@ -1646,6 +1740,13 @@ async def apply_edit_set(
         dict(payload.parameters), edits, actor,
         payload.impact_summary,
     )
+    # GOV-16：写打点（on 里第一个类；best-effort）
+    try:
+        at0 = at.on[0].rid if at.on else ""
+        if at0:
+            await _call_scoped(request, "record_usage", at0, "write", 1)
+    except Exception:
+        pass
     return result
 
 
