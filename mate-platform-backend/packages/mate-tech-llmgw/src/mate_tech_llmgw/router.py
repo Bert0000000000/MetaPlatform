@@ -254,7 +254,9 @@ async def chat(
     """
     # --- 1. Quota check (模拟 @with_quota 效果) ---
     if _quota_bucket is not None:
-        estimated_tokens = sum(max(1, len(m.content) // 4) for m in messages)
+        from .tokens import estimate_messages_tokens
+
+        estimated_tokens = estimate_messages_tokens(messages)
         try:
             await _quota_bucket.acquire(
                 tenant_id=tenant_id, estimated_tokens=estimated_tokens
@@ -342,4 +344,21 @@ async def chat(
 
 def reset_providers() -> None:
     """测试辅助:清除 provider 缓存."""
+    _providers.clear()
+
+
+async def close_all_providers() -> None:
+    """Close every cached provider's HTTP client (lifespan shutdown).
+
+    The provider singletons hold httpx AsyncClients that were previously
+    never closed — the process exit reaped them. Called from main.py
+    lifespan so a graceful shutdown releases connections explicitly.
+    """
+    for provider in list(_providers.values()):
+        aclose = getattr(provider, "aclose", None)
+        if aclose is not None:
+            try:
+                await aclose()
+            except Exception as exc:  # noqa: BLE001 — shutdown best effort
+                logger.warning("llmgw.provider.close_failed", error=str(exc))
     _providers.clear()

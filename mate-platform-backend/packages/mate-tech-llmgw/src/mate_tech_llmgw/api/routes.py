@@ -54,10 +54,9 @@ async def _enforce_monthly_ceiling(req: ChatRequest | RealChatRequest) -> None:
     bucket = get_monthly_bucket()
     if bucket is None:
         return
-    estimated_tokens = 0
-    for msg in req.messages or []:
-        content = getattr(msg, "content", "") or ""
-        estimated_tokens += max(len(content) // 4, 1)
+    from ..tokens import estimate_messages_tokens
+
+    estimated_tokens = estimate_messages_tokens(req.messages)
     try:
         await bucket.check_and_record(
             tenant_id=req.tenant_id or "default",
@@ -83,10 +82,9 @@ def _enforce_user_daily_cap(req: ChatRequest | RealChatRequest, *, user_id: str)
     cap = get_user_daily_cap()
     if cap is None:
         return
-    estimated_tokens = 0
-    for msg in req.messages or []:
-        content = getattr(msg, "content", "") or ""
-        estimated_tokens += max(len(content) // 4, 1)
+    from ..tokens import estimate_messages_tokens
+
+    estimated_tokens = estimate_messages_tokens(req.messages)
     # 4 chars ~ 1 token,模型价格取保守上限 $0.015/1k completion。
     estimated_cost_usd = max(estimated_tokens, 0) / 1000.0 * 0.015
     try:
@@ -183,10 +181,9 @@ async def _enforce_tenant_budget(req: ChatRequest | RealChatRequest) -> None:
     guard = _get_budget_guard()
     if guard is None:
         return
-    estimated_tokens = 0
-    for msg in req.messages or []:
-        content = getattr(msg, "content", "") or ""
-        estimated_tokens += max(len(content) // 4, 1)
+    from ..tokens import estimate_messages_tokens
+
+    estimated_tokens = estimate_messages_tokens(req.messages)
     estimated_cost_usd = estimated_tokens / 1000.0 * 0.015
     try:
         await guard.check(req.tenant_id or "default", estimated_cost_usd=estimated_cost_usd)
@@ -236,11 +233,9 @@ async def _enforce_api_key_limits(
 
 
 def _messages_estimated_tokens(messages: list[Any]) -> int:
-    total = 0
-    for msg in messages or []:
-        content = getattr(msg, "content", "") or ""
-        total += max(len(content) // 4, 1)
-    return total
+    from ..tokens import estimate_messages_tokens
+
+    return estimate_messages_tokens(messages)
 
 
 async def _record_cost(
@@ -941,7 +936,9 @@ async def multimodal_chat_endpoint(req: MultimodalApiRequest, request: Request) 
     # --- 1. Quota check (mirrors router.chat semantics) ---
     bucket = get_quota_bucket()
     if bucket is not None:
-        estimated_tokens = max(1, len(req.prompt) // 4) + 100 * (
+        from ..tokens import estimate_tokens
+
+        estimated_tokens = estimate_tokens(req.prompt) + 100 * (
             len(req.images) + len(req.audio)
         )
         try:

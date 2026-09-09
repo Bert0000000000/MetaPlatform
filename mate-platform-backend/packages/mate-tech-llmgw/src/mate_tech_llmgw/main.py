@@ -291,6 +291,7 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         from .resilience.cooldown import set_cooldown
+        from .router import close_all_providers
         from .security.api_keys import set_api_key_runtime
 
         set_api_key_runtime(None, None, None)
@@ -299,6 +300,11 @@ async def lifespan(app: FastAPI):
         set_cost_recorder(None)
         set_monthly_bucket(None)
         set_user_daily_cap(None)
+        # P6: release provider HTTP clients explicitly on graceful shutdown.
+        try:
+            await close_all_providers()
+        except Exception:  # noqa: BLE001
+            pass
         # Only clear the quota bucket we own; an externally injected one
         # (dev_server / tests) must survive our shutdown.
         if owned_quota_bucket is not None:
