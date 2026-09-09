@@ -207,6 +207,28 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning("mate-tech-llmgw.cache.degraded", reason="no redis")
 
+    # --- Provider cooldown / circuit breaking (P2, needs Redis) ---
+    if _env_flag("MATE_LLMGW_ENABLE_COOLDOWN", default=True):
+        if deps.redis_client is not None:
+            try:
+                from .resilience.cooldown import CooldownManager, set_cooldown
+
+                set_cooldown(
+                    CooldownManager(
+                        deps.redis_client,
+                        allowed_fails=int(os.getenv("LLMGW_COOLDOWN_ALLOWED_FAILS", "2")),
+                        default_cooldown_sec=float(os.getenv("LLMGW_COOLDOWN_SECONDS", "60")),
+                    )
+                )
+                logger.info("mate-tech-llmgw.cooldown.enabled")
+            except Exception as exc:  # noqa: BLE001
+                from .resilience.cooldown import set_cooldown
+
+                set_cooldown(None)
+                logger.warning("mate-tech-llmgw.cooldown.degraded", error=str(exc))
+        else:
+            logger.warning("mate-tech-llmgw.cooldown.degraded", reason="no redis")
+
     # --- Cost recorder (always injected; PG pool optional) ---
     try:
         cost_pool = (
@@ -241,6 +263,9 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        from .resilience.cooldown import set_cooldown
+
+        set_cooldown(None)
         set_cache(None)
         set_cost_recorder(None)
         set_monthly_bucket(None)

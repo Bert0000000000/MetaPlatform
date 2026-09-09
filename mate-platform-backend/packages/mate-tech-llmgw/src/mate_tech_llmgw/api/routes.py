@@ -500,6 +500,7 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
     ):
         from ..providers.real_anthropic_provider import RealAnthropicProvider
         from ..providers.real_openai_provider import RealOpenAIProvider
+        from ..resilience.call import call_with_resilience, load_fallback_chain
 
         if req.provider == "anthropic":
             model = req.model or "claude-3-5-sonnet-20241022"
@@ -525,15 +526,43 @@ async def real_chat_endpoint(req: RealChatRequest, request: Request) -> RealChat
                 detail=f"unknown provider: {req.provider!r} (expected 'openai', 'anthropic', or 'custom')",
             )
 
-        started = time.monotonic()
-        try:
-            resp = await provider.chat(
+        def _primary_call():
+            return provider.chat(
                 req.messages,
                 temperature=req.temperature,
                 max_tokens=req.max_tokens,
                 tenant_id=req.tenant_id,
                 tools=req.tools,
             )
+
+        # P2: cooldown + bounded retry + env fallback chain.
+        candidates: list[tuple[str, Any]] = [(req.provider, _primary_call)]
+        for fb_model in load_fallback_chain(model):
+            fb_provider = RealOpenAIProvider(
+                model=fb_model,
+                allow_fallback=not is_production_profile() and not req.tools,
+            )
+
+            def _fb_call(p=fb_provider):
+                async def _run():
+                    try:
+                        return await p.chat(
+                            req.messages,
+                            temperature=req.temperature,
+                            max_tokens=req.max_tokens,
+                            tenant_id=req.tenant_id,
+                            tools=req.tools,
+                        )
+                    finally:
+                        await p.aclose()
+
+                return _run()
+
+            candidates.append(("openai", _fb_call))
+
+        started = time.monotonic()
+        try:
+            resp = await call_with_resilience(candidates)
         except RuntimeError as exc:
             raise HTTPException(
                 status_code=503,
@@ -599,38 +628,55 @@ async def real_chat_stream_endpoint(req: RealChatRequest, request: Request):
             ),
         )
     from ..providers.real_openai_provider import RealOpenAIProvider
+    from ..resilience.call import call_with_resilience
 
     model = req.model or "gpt-4o-mini"
-    provider = RealOpenAIProvider(
-        model=model,
-        base_url=req.base_url,
-        api_key=req.api_key,
-        # Tool-driven agent decisions are authorization-relevant.  A
-        # synthetic completion can never stand in for a real function call,
-        # even in a local profile: surface the upstream failure so Copilot
-        # records a fail-closed ``llm_unavailable`` decision instead.
-        allow_fallback=False,
-    )
 
-    stream = provider.stream_chat(
-        req.messages,
-        temperature=req.temperature,
-        max_tokens=req.max_tokens,
-        tools=req.tools,
-        tenant_id=req.tenant_id,
-    )
+    def _open_stream():
+        """Create provider + stream and pull the first event (retryable unit).
+
+        Retry/cooldown applies ONLY until the first SSE event — once tokens
+        are flowing to the client, restarting would duplicate output.
+        """
+        async def _run():
+            p = RealOpenAIProvider(
+                model=model,
+                base_url=req.base_url,
+                api_key=req.api_key,
+                # Tool-driven agent decisions are authorization-relevant.  A
+                # synthetic completion can never stand in for a real function
+                # call, even in a local profile: surface the upstream failure
+                # so Copilot records a fail-closed ``llm_unavailable``
+                # decision instead.
+                allow_fallback=False,
+            )
+            s = p.stream_chat(
+                req.messages,
+                temperature=req.temperature,
+                max_tokens=req.max_tokens,
+                tools=req.tools,
+                tenant_id=req.tenant_id,
+            )
+            try:
+                first = await s.__anext__()
+            except StopAsyncIteration:
+                await p.aclose()
+                raise RuntimeError("LLM provider returned no stream") from None
+            except Exception:
+                await p.aclose()
+                raise
+            return p, s, first
+
+        return _run()
+
     try:
-        first_event = await stream.__anext__()
+        provider, stream, first_event = await call_with_resilience(
+            [(req.provider, _open_stream)]
+        )
     except RuntimeError as exc:
-        await provider.aclose()
         raise HTTPException(
             status_code=503,
             detail="LLM provider unavailable; synthetic fallback is disabled",
-        ) from exc
-    except StopAsyncIteration as exc:
-        await provider.aclose()
-        raise HTTPException(
-            status_code=503, detail="LLM provider returned no stream"
         ) from exc
 
     async def _event_stream():

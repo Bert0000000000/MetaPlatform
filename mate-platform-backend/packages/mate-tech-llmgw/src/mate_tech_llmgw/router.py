@@ -294,15 +294,32 @@ async def chat(
             logger.warning("llmgw.cache.get_failed", error=str(e))
             ckey = None  # disable set if get failed
 
-    # --- 3. Provider call ---
-    provider = get_provider(model)
-    resp = await provider.chat(
-        messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        tools=tools,
-        **kwargs,
-    )
+    # --- 3. Provider call (P2: cooldown + bounded retry + fallback chain) ---
+    from .resilience.call import call_with_resilience, load_fallback_chain
+
+    def _candidate(m: str):
+        # Resolve eagerly: unknown models raise ValueError here (→ 400 at the
+        # route, unchanged semantics) instead of being eaten by the chain.
+        resolved = get_provider(m)
+
+        def _call():
+            return resolved.chat(
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=tools,
+                **kwargs,
+            )
+
+        return (_provider_name(m), _call)
+
+    candidates = [_candidate(model)]
+    for fb_model in load_fallback_chain(model):
+        try:
+            candidates.append(_candidate(fb_model))
+        except ValueError:
+            logger.warning("llmgw.fallback.candidate_invalid", model=fb_model)
+    resp = await call_with_resilience(candidates)
 
     # --- 4. Cache set (回填) ---
     if _cache is not None and ckey is not None:

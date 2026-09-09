@@ -162,6 +162,19 @@ class RealAnthropicProvider:
                     "Anthropic provider unavailable: request timed out"
                 ) from None
             return _stub_response(self.model, messages)
+        except httpx.HTTPStatusError as e:
+            # P2: surface upstream status for retry/cooldown classification.
+            logger.warning(
+                "llmgw.real.anthropic.http_status",
+                tenant_id=tenant_id,
+                model=self.model,
+                status=e.response.status_code,
+            )
+            if not self._fallback_enabled():
+                from ..resilience.errors import classify_provider_error
+
+                raise classify_provider_error("anthropic", e) from e
+            return _stub_response(self.model, messages)
         except httpx.HTTPError as e:
             logger.warning(
                 "llmgw.real.anthropic.error",

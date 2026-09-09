@@ -166,6 +166,21 @@ class RealOpenAIProvider:
                     "OpenAI provider unavailable: request timed out"
                 ) from None
             return _stub_response(self.model, messages)
+        except httpx.HTTPStatusError as e:
+            # P2: keep the upstream status (4xx vs 5xx) for retry/fallback
+            # classification — ProviderCallError subclasses RuntimeError so
+            # existing route handlers are unchanged.
+            logger.warning(
+                "llmgw.real.openai.http_status",
+                tenant_id=tenant_id,
+                model=self.model,
+                status=e.response.status_code,
+            )
+            if not self._fallback_enabled():
+                from ..resilience.errors import classify_provider_error
+
+                raise classify_provider_error("openai", e) from e
+            return _stub_response(self.model, messages)
         except httpx.HTTPError as e:
             logger.warning(
                 "llmgw.real.openai.error",
@@ -307,6 +322,20 @@ class RealOpenAIProvider:
                 raise RuntimeError(
                     "OpenAI provider unavailable: request timed out"
                 ) from None
+            yield self._done_event(_stub_response(self.model, messages))
+            return
+        except httpx.HTTPStatusError as e:
+            # P2: surface upstream status for retry/cooldown classification.
+            logger.warning(
+                "llmgw.real.openai.stream.http_status",
+                tenant_id=tenant_id,
+                model=self.model,
+                status=e.response.status_code,
+            )
+            if not self._fallback_enabled():
+                from ..resilience.errors import classify_provider_error
+
+                raise classify_provider_error("openai", e) from e
             yield self._done_event(_stub_response(self.model, messages))
             return
         except httpx.HTTPError as e:
