@@ -76,6 +76,49 @@ def validate_parameters(
     return violations
 
 
+def validate_referenced_parameters(
+    parameter_defs: tuple[Any, ...],
+    parameters: dict[str, Any],
+    templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+) -> list[str]:
+    """ACT-06：按模板实际引用的 $param.<name> 精确校验。
+
+    语义：编辑模板引用了声明参数 → 必须提供且类型匹配；未引用的必填参数
+    不强求（自定义 edits 路径的参数与 action 全量表无契约关系）。
+    引用了**未声明**的参数名 → 违规（模板与契约漂移）。
+    """
+    import re as _re
+
+    referenced: set[str] = set()
+    for t in templates:
+        blob = repr(t)
+        referenced.update(_re.findall(r"\$param\.([A-Za-z0-9_.\-]+)", blob))
+    if not referenced:
+        return []
+    by_key: dict[str, Any] = {}
+    for p in parameter_defs:
+        by_key[p.rid.rid] = p
+        by_key.setdefault(_slug(p.rid.rid), p)
+    violations: list[str] = []
+    for name in sorted(referenced):
+        value = parameters.get(name)
+        p = by_key.get(name)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            violations.append(f"referenced parameter {name!r} missing")
+            continue
+        if p is None:
+            continue  # 未声明参数 —— 允许（模板自带逻辑值），只查缺值
+        fmt = getattr(p.format, "value", str(p.format))
+        is_num = isinstance(value, (int, float)) and not isinstance(value, bool)
+        if fmt in ("integer", "double") and not is_num:
+            violations.append(
+                f"parameter {name!r} expects number, got {type(value).__name__}")
+        elif fmt == "boolean" and not isinstance(value, bool):
+            violations.append(
+                f"parameter {name!r} expects boolean, got {type(value).__name__}")
+    return violations
+
+
 # ─────────────────── 结构化规则（AND/OR 嵌套）───────────────────
 
 

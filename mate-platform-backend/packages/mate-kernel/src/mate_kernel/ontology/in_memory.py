@@ -690,12 +690,13 @@ class InMemoryOntologyRepository(OntologyRepository):
     ) -> Any:
         """AI/HITL 流程的 edit-set 提案（pending → 用户 confirm → execute）。"""
         from mate_kernel.action.edit_set import resolve_edit_templates
-        from mate_kernel.action.validation import validate_parameters
+        from mate_kernel.action.validation import validate_referenced_parameters
 
-        # ACT-06：参数 schema fail-fast
+        # ACT-06：模板引用参数 fail-fast（自定义 edits 只约束引用到的参数）
         at = self._action_types.get(ClassRef(action_rid))
         if at is not None:
-            violations = validate_parameters(at.parameters, parameters)
+            violations = validate_referenced_parameters(
+                at.parameters, parameters, edit_templates)
             if violations:
                 raise ValueError("; ".join(violations))
 
@@ -726,11 +727,12 @@ class InMemoryOntologyRepository(OntologyRepository):
         人工表单入口用；AI 流程必须走 propose_edit_set → 显式 confirm。
         """
         from mate_kernel.action.edit_set import resolve_edit_templates
-        from mate_kernel.action.validation import validate_parameters
+        from mate_kernel.action.validation import validate_referenced_parameters
 
         at = self._action_types.get(ClassRef(action_rid))
         if at is not None:
-            violations = validate_parameters(at.parameters, parameters)
+            violations = validate_referenced_parameters(
+                at.parameters, parameters, edit_templates)
             if violations:
                 raise ValueError("; ".join(violations))
 
