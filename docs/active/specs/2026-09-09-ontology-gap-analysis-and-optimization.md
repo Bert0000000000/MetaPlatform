@@ -240,7 +240,7 @@ Wave1 ONT-EXP-01→02→03→04（纯内核，无外部依赖）─┬→ UI-03 
 Wave2 ONT-ACT-05→06→07→08（依赖 EXP-01 约束、EXP-02 参数 schema）→ UI-02 深化
 Wave3 ONT-AI-09→10→11（09 独立；10 依赖 09；11 依赖 ACT-05）→ UI-01 语义搜索深化
 Wave4 ONT-SEC-12/13（12 依赖 EXP-02 Condition IR；13 依赖 EXP-04）→ UI-04 治理面
-Wave5 ONT-DATA-14→15（外部依赖 DATA 批次 CDC；建议最后/并行另立）
+Wave5 ONT-DATA-14→15（D1 已拍板全量纳入；复用 mate-tech-etl/CDC 栈，排 Wave 1-4 后）
 Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 ```
 
@@ -265,17 +265,28 @@ Wave6 GOV-16~19（随时可插，互相独立）→ UI-04
 
 ---
 
-## 7. 需要拍板的决策点
+## 7. 决策点 —— 已全部拍板（2026-09-10）
 
-| # | 决策 | 选项与建议 |
-|---|---|---|
-| D1 | **Wave 5（数据平面绑定）是否纳入本轮** | 建议剥离：工程量最大且依赖 DATA-D0-D8；先聚焦 Wave 1-4（纯引擎优化）。若本轮纳入，本体才真正开始吃企业数据 |
-| D2 | **Interface 多态 vs subclass 层级的主次** | 建议：Interface 为**一等查询/工作流目标**（对齐 Palantir 组合哲学），parent_class 仅作浅声明（1 层，自动生成 subclass 公理） |
-| D3 | **HITL 强制是否对声明式 edit-set 让步** | Palantir Action 直接执行；我们决策 B3 = "每次 ≥1 HITL"。建议保持（差异化安全卖点），但**人工触发的 edit-set 免 HITL**（proposal 仅 AI 发起时强制） |
-| D4 | **派生属性 v1 用声明式聚合还是 function_ref** | 建议声明式先行（count/sum/avg over link 三算子），function_ref 进 v2（复用 SAL-03 沙箱执行器，但每次查询进 K8s Job 成本高，需缓存层） |
-| D5 | **向量检索的 embedder 供给** | 建议接 llmgw（平台已有 LLM Gateway + ARK embedding 通道），HashEmbedder 保留为离线兜底；避免 object_search.py 里独立的 OPENAI_* env 直连 |
-| D6 | **UI 轨道优先级与首件** | 建议 UI-01（对象浏览器+对象主页）为第一件——零后端依赖、用户价值最大；若你更看重"建模体验"可改 UI-03 先行，但它被 EXP-01/02 后端字段卡住 |
-| D7 | **人工 Action 执行是否强制 HITL 自确认** | 建议：人工发起走 propose→confirm 但默认预览即确认（一步 expected_diff 展示 + 确认按钮），AI 发起保持强制显式确认——与 D3 同一原则的两面 |
+| # | 决策 | 结论 | 影响 |
+|---|---|---|---|
+| D1 | Wave 5 数据平面绑定是否纳入本轮 | ✅ **全量纳入本轮**（ONT-DATA-14/15 转正式 Batch，排在 Wave 1-4 之后执行；本体的"数字孪生"定位本轮兑现） | 总 Batch 数 26；Wave 5 设计基线：复用 `mate-tech-etl` / `debezium_engine.py`（blueprint 敏感区 #18-19）与数据中心 UI 已有的 CDC/ETL/数据源视图，本体侧补 backing_datasources 声明 + 索引管道 + 双流合并 |
+| D2 | Interface 多态 vs subclass 层级主次 | ✅ **Interface 一等 + parent_class 浅声明**（Interface 可作查询源；parent_class 限 1 层，自动生成 subclass 公理，单一事实源） | EXP-01 设计基线锁定；UI-03 层级树按"1 层 parent + Interface 分组"渲染 |
+| D3+D7 | 写路径 HITL 政策 | ✅ **AI 发起强制显式确认；人工表单发起"预览即确认"一步式**（expected_diff 展示 + 确认按钮，同一条 propose→confirm→execute 管道，审计不旁路） | ACT-05 edit-set 与 UI-02 Action 表单的交互基线锁定；B3 决策（每次 ≥1 HITL）对 AI 路径保持不变 |
+| D4 | 派生属性 v1 形态 | ✅ 声明式聚合先行（count/sum/avg over link 三算子）；function_ref 进 v2（查询进沙箱成本高，需缓存） | EXP-02 范围锁定 |
+| D5 | embedder 供给 | ✅ 接 llmgw（复用平台 LLM Gateway + ARK embedding 通道）；HashEmbedder 留离线兜底；废弃 object_search.py 独立 OPENAI_* env 直连 | AI-09 设计基线锁定 |
+| D6 | UI 轨道首件 | ✅ **ONT-UI-01（对象浏览器 + 对象主页）**；首发组合 = Wave 1（EXP-01~04）+ UI-01 双线并行（零文件交集） | 执行顺序锁定 |
+
+**执行顺序（决策后定稿）**：
+
+```
+第 1 步（并行双线）：Wave 1 EXP-01→02→03→04（内核表达力） ‖ ONT-UI-01 对象浏览器+对象主页
+第 2 步：Wave 2 ACT-05→06→07→08（动能事务模型） + UI-02 Action 表单
+第 3 步：Wave 3 AI-09→10→11（向量检索/chunk/工具面）
+第 4 步：Wave 4 SEC-12/13（行列安全/typed client） + UI-04 治理面
+第 5 步：Wave 5 DATA-14→15（数据平面绑定，D1 已确认全量纳入）
+第 6 步：Wave 6 GOV-16~19（治理，可穿插） + UI-03/05 随对应后端就绪
+挂起：G7 scoped session / G25 WebSocket / G44 Scenario UI / G23 Function 工程
+```
 
 ---
 
