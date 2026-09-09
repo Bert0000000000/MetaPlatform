@@ -180,6 +180,8 @@ class ActionTypeDTO(BaseModel):
     on: list[str] = Field(default_factory=list)
     title: str = ""
     description: str = ""
+    # ACT-05：声明式编辑模板（非空时 apply 走 edit-set 单事务）
+    declarative_edits: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class LinkTypeDTO(BaseModel):
@@ -398,6 +400,7 @@ def _dto_to_action_type(d: ActionTypeDTO) -> ActionType:
         on=tuple(ClassRef(o) for o in d.on),
         title=d.title,
         description=d.description,
+        declarative_edits=tuple(dict(t) for t in d.declarative_edits),
     )
 
 
@@ -411,6 +414,7 @@ def _action_type_to_dto(at: ActionType) -> ActionTypeDTO:
         on=[c.rid for c in at.on],
         title=at.title,
         description=at.description,
+        declarative_edits=[dict(t) for t in at.declarative_edits],
     )
 
 
@@ -1428,6 +1432,76 @@ async def apply_action_by_rid(
             "then POST /proposals/{proposal_id}/execute"
         ),
     )
+
+
+class EditSetApplyBodyDTO(BaseModel):
+    """ACT-05：edit-set 执行体。edits 缺省时用 ActionType.declarative_edits 模板。"""
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    target_iid: str = ""
+    edits: list[dict[str, Any]] = Field(default_factory=list)
+    impact_summary: str = ""
+
+
+@router.post(
+    "/action-types/{rid:path}/propose-edit-set",
+    response_model=dict,
+    operation_id="ontProposeV2EditSet",
+)
+async def propose_edit_set(
+    rid: str, payload: EditSetApplyBodyDTO, request: Request,
+) -> dict:
+    """ACT-05：AI 路径 edit-set 提案（强制 HITL —— pending → 用户 confirm → execute）。"""
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    try:
+        at = await _call_scoped(request, "get_action_type", ClassRef(rid))
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"action type not found: {rid}")
+    edits = payload.edits or [dict(t) for t in at.declarative_edits]
+    if not edits:
+        raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
+    prop = await _call_scoped(
+        request, "propose_edit_set", rid, payload.target_iid or None,
+        dict(payload.parameters), edits,
+        payload.impact_summary or f"edit-set proposal for {rid}",
+    )
+    return {
+        "proposal_id": getattr(prop, "proposal_id", None) or prop.get("proposal_id"),
+        "status": "pending",
+        "requires_hitl": True,
+    }
+
+
+@router.post(
+    "/action-types/{rid:path}/apply-edit-set",
+    response_model=dict,
+    operation_id="ontApplyV2EditSet",
+)
+async def apply_edit_set(
+    rid: str, payload: EditSetApplyBodyDTO, request: Request,
+) -> dict:
+    """ACT-05 / D7：人工路径「预览即确认」—— 即时 proposal + 单事务执行 + 审计。
+
+    expected_diff 预览在 proposal 记录中可查（GET /proposals/{id}/preview）。
+    """
+    ctx = _ctx(request)
+    if not rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant action denied")
+    actor = str(ctx.user_id if hasattr(ctx, "user_id") else "") or "human-operator"
+    try:
+        at = await _call_scoped(request, "get_action_type", ClassRef(rid))
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"action type not found: {rid}")
+    edits = payload.edits or [dict(t) for t in at.declarative_edits]
+    if not edits:
+        raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
+    result = await _call_scoped(
+        request, "apply_edit_set_now", rid, payload.target_iid or None,
+        dict(payload.parameters), edits, actor,
+        payload.impact_summary,
+    )
+    return result
 
 
 # ─────────────────── MP-SAL-04: Proposal 状态机端点（ADR-0044 §2.4）───────────────────

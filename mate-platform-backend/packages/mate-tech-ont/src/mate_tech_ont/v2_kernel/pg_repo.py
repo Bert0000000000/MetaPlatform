@@ -175,6 +175,8 @@ DDL: tuple[str, ...] = (
     # 旧库补列（CREATE TABLE IF NOT EXISTS 不会给已存在的表加列）
     "ALTER TABLE ont_action_type ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE ont_action_type ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''",
+    # ACT-05：声明式编辑模板（Palantir action rules 对位）
+    "ALTER TABLE ont_action_type ADD COLUMN IF NOT EXISTS declarative_edits JSONB NOT NULL DEFAULT '[]'::jsonb",
     """
     CREATE TABLE IF NOT EXISTS ont_link_type (
         rid               TEXT PRIMARY KEY,
@@ -322,6 +324,8 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_prop_execution_tenant ON ont_proposal_execution (tenant_id)",
+    "ALTER TABLE ont_proposal_execution ADD COLUMN IF NOT EXISTS executed_at TIMESTAMPTZ",
+    "ALTER TABLE ont_proposal_execution ADD COLUMN IF NOT EXISTS audit_id TEXT",
     """
     CREATE TABLE IF NOT EXISTS ont_action_audit (
         audit_id    TEXT PRIMARY KEY,
@@ -348,6 +352,10 @@ DDL: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS ix_ont_outbox_event_proposal ON ont_outbox_event (proposal_id)",
     # MP-SAL-04b: proposal kind（action / create_instance / model_type）
     "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'action'",
+    # ACT-05：edit-set 提案字段（与 kernel ActionProposal 对齐）
+    "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS requires_hitl BOOLEAN NOT NULL DEFAULT TRUE",
+    "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS created_by TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_proposal ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()",
     """
     CREATE TABLE IF NOT EXISTS ont_function (
         rid        TEXT PRIMARY KEY,
@@ -594,6 +602,7 @@ def _row_to_at(row: dict[str, Any]) -> ActionType:
         on=tuple(ClassRef(r) for r in row.get("target_object_types") or []),
         title=row.get("title") or "",
         description=row.get("description") or "",
+        declarative_edits=tuple(row.get("declarative_edits") or []),
     )
 
 
@@ -1559,8 +1568,8 @@ class PgOntologyRepository(OntologyRepository):
                 cur.execute(
                     """
                     INSERT INTO ont_action_type
-                        (rid, tenant_id, parameters, submission_criteria, side_effects, function_ref, target_object_types, title, description, updated_at)
-                    VALUES (%s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s, %s, %s, now())
+                        (rid, tenant_id, parameters, submission_criteria, side_effects, function_ref, target_object_types, title, description, declarative_edits, updated_at)
+                    VALUES (%s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s, %s, %s, %s::jsonb, now())
                     ON CONFLICT (rid) DO UPDATE SET
                         parameters = EXCLUDED.parameters,
                         submission_criteria = EXCLUDED.submission_criteria,
@@ -1569,6 +1578,7 @@ class PgOntologyRepository(OntologyRepository):
                         target_object_types = EXCLUDED.target_object_types,
                         title = EXCLUDED.title,
                         description = EXCLUDED.description,
+                        declarative_edits = EXCLUDED.declarative_edits,
                         updated_at = now()
                     """,
                     (
@@ -1588,6 +1598,7 @@ class PgOntologyRepository(OntologyRepository):
                         [c.rid for c in at.on],
                         at.title,
                         at.description,
+                        json.dumps([dict(t) for t in at.declarative_edits]),
                     ),
                 )
             conn.commit()
@@ -3310,6 +3321,264 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
+
+    # ───── ACT-05：声明式 edit-set（propose / apply-now / 事务执行）─────
+
+    def propose_edit_set(
+        self,
+        action_rid: str,
+        target_iid: str | None,
+        parameters: dict[str, Any],
+        edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+        impact_summary: str,
+    ) -> Any:
+        """AI/HITL 流程的 edit-set 提案（pending → 用户 confirm → execute）。"""
+        from mate_kernel.action.edit_set import resolve_edit_templates
+
+        return self._propose_edit_set_pg(
+            action_rid, target_iid, parameters, edit_templates, impact_summary,
+        )
+
+    def _propose_edit_set_pg(
+        self,
+        action_rid: str,
+        target_iid: str | None,
+        parameters: dict[str, Any],
+        edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+        impact_summary: str,
+    ) -> Any:
+        """PG 落库版 propose（kind=edit_set；复用 ont_proposal 状态机）。"""
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
+
+        import uuid as _uuid
+
+        from mate_kernel.action.edit_set import resolve_edit_templates
+
+        ops = resolve_edit_templates(
+            edit_templates, target_iid=target_iid, parameters=parameters,
+        )
+        proposal_id = f"prop-{_uuid.uuid4().hex[:12]}"
+        tenant_id = self._current_tenant() or action_rid.split(".")[1] if "." in action_rid else "tenant-default"
+        expected_diff = {
+            "~ops": len(ops),
+            "ops": [e.op for e in ops],
+        }
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(
+                    """INSERT INTO ont_proposal
+                       (proposal_id, tenant_id, action_rid, target_iid, parameters,
+                        impact_summary, requires_hitl, status, kind, expected_diff,
+                        created_by, created_at, updated_at)
+                       VALUES (%s,%s,%s,%s,%s::jsonb,%s,%s,'pending','edit_set',%s::jsonb,%s,now(),now())
+                       ON CONFLICT (proposal_id) DO NOTHING""",
+                    (proposal_id, tenant_id, action_rid, target_iid,
+                     json.dumps({"edits": list(edit_templates),
+                                 "parameters": dict(parameters)}),
+                     impact_summary, True, json.dumps(expected_diff, default=str),
+                     "ai-agent"),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+        return self.get_proposal(proposal_id)
+
+    def apply_edit_set_now(
+        self,
+        action_rid: str,
+        target_iid: str | None,
+        parameters: dict[str, Any],
+        edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+        actor: str,
+        impact_summary: str = "",
+    ) -> dict[str, Any]:
+        """D7「预览即确认」：即时 proposal（confirmed）+ 事务执行 + 审计。"""
+        prop = self._propose_edit_set_pg(
+            action_rid, target_iid, parameters, edit_templates,
+            impact_summary or f"edit-set by {actor}",
+        )
+        self.confirm_proposal(prop.proposal_id, confirmed_by=actor)
+        return self.execute_proposal(
+            prop.proposal_id, actor_id=actor,
+            idempotency_key=f"editset-{prop.proposal_id}",
+        )
+
+    def _execute_edit_set_proposal(
+        self, p: Any, *, actor_id: str,
+        idempotency_key: str | None, request_fingerprint: str | None,
+    ) -> dict[str, Any]:
+        """kind=edit_set 的事务执行：编辑集 + 审计 + outbox 单事务。"""
+        import uuid as _uuid
+        from dataclasses import replace as _replace
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
+
+        from mate_kernel.action.edit_set import (
+            EDIT_BATCH_LIMIT, EditSetError, invert_edits, resolve_edit_templates,
+        )
+
+        templates = list((p.parameters or {}).get("edits") or [])
+        params = dict((p.parameters or {}).get("parameters") or {})
+        if len(templates) > EDIT_BATCH_LIMIT:
+            raise EditSetError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}")
+        ops = resolve_edit_templates(
+            templates, target_iid=p.target_iid, parameters=params,
+            now_iso=_dt.now(_UTC).isoformat(),
+        )
+        applied: list[Any] = []
+        created_rids: list[str] = []
+        old_values: dict[str, Any] = {}
+        removed_links: list[dict[str, Any]] = []
+        tenant_id = self._current_tenant() or "tenant-default"
+        audit_id = f"audit-{_uuid.uuid4().hex[:12]}"
+
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                for e in ops:
+                    if e.op == "set_property":
+                        cur.execute(
+                            "SELECT props FROM ont_individual WHERE rid = %s "
+                            "FOR UPDATE", (e.target,))
+                        row = cur.fetchone()
+                        if row is None:
+                            raise EditSetError(
+                                f"set_property target not found: {e.target}")
+                        old_props = row["props"] if isinstance(row["props"], dict) else {}
+                        old_values[f"{e.target}#{e.property_rid}"] = old_props.get(
+                            e.property_rid)
+                        new_props = dict(old_props)
+                        new_props[e.property_rid] = e.value
+                        cur.execute(
+                            "UPDATE ont_individual SET props = %s::jsonb, "
+                            "updated_at = now() WHERE rid = %s",
+                            (json.dumps(new_props, default=str), e.target))
+                    elif e.op == "create_object":
+                        parts = e.class_rid.split(".")
+                        tenant = parts[1]
+                        cls_slug = parts[4] if len(parts) >= 6 else parts[3]
+                        rid = f"ont.{tenant}.ind.{cls_slug}.{e.primary_key}"
+                        cur.execute(
+                            """INSERT INTO ont_individual
+                               (rid, tenant_id, class_rid, props, primary_key,
+                                created_at, updated_at)
+                               VALUES (%s, %s, %s, %s::jsonb, %s, now(), now())
+                               ON CONFLICT (rid) DO UPDATE SET
+                                 props = EXCLUDED.props,
+                                 primary_key = EXCLUDED.primary_key,
+                                 updated_at = now()""",
+                            (rid, tenant, e.class_rid,
+                             json.dumps(e.props, default=str),
+                             str(e.primary_key)))
+                        created_rids.append(rid)
+                    elif e.op == "delete_object":
+                        cur.execute(
+                            "DELETE FROM ont_link_instance WHERE src = %s OR dst = %s",
+                            (e.target, e.target))
+                        cur.execute(
+                            "DELETE FROM ont_individual WHERE rid = %s", (e.target,))
+                        if cur.rowcount != 1:
+                            raise EditSetError(
+                                f"delete_object target not found: {e.target}")
+                    elif e.op == "add_link":
+                        lt_parts = e.link_type_rid.split(".")
+                        lt_slug = (lt_parts[-2]
+                                   if lt_parts[-1].startswith("v") else lt_parts[-1])
+                        li_rid = (f"ont.{e.src.split('.')[1] if '.' in e.src else tenant_id}"
+                                  f".lnk.{lt_slug}.{_uuid.uuid4().hex[:10]}")
+                        cur.execute(
+                            """INSERT INTO ont_link_instance
+                               (rid, tenant_id, link_type_rid, src, dst, props,
+                                marking, created_at, updated_at)
+                               VALUES (%s, %s, %s, %s, %s, '{}'::jsonb, '{}',
+                                       now(), now())""",
+                            (li_rid, tenant_id, e.link_type_rid, e.src, e.dst))
+                        e = _replace(e, link_instance_rid=li_rid)
+                    elif e.op == "remove_link":
+                        cur.execute(
+                            "SELECT * FROM ont_link_instance WHERE rid = %s "
+                            "FOR UPDATE", (e.link_instance_rid,))
+                        row = cur.fetchone()
+                        if row is None:
+                            raise EditSetError(
+                                f"remove_link not found: {e.link_instance_rid}")
+                        removed_links.append({
+                            "rid": row["rid"],
+                            "link_type_rid": row["link_type_rid"],
+                            "src": row["src"], "dst": row["dst"],
+                            "props": row.get("props") or {},
+                        })
+                        cur.execute(
+                            "DELETE FROM ont_link_instance WHERE rid = %s",
+                            (e.link_instance_rid,))
+                    applied.append(e)
+
+                inverse, non_invertible = invert_edits(
+                    applied, old_values=old_values, created_rids=created_rids,
+                    removed_links=removed_links,
+                )
+                result = {
+                    "kind": "edit_set",
+                    "action_rid": p.action_rid,
+                    "target_iid": p.target_iid,
+                    "audit_id": audit_id,
+                    "applied_count": len(applied),
+                    "created_rids": created_rids,
+                    "non_invertible": list(non_invertible),
+                    "inverse": [
+                        {"op": i.op, "target": i.target,
+                         "property_rid": i.property_rid, "value": i.value,
+                         "class_rid": i.class_rid, "primary_key": i.primary_key,
+                         "props": i.props, "link_type_rid": i.link_type_rid,
+                         "src": i.src, "dst": i.dst,
+                         "link_instance_rid": i.link_instance_rid}
+                        for i in inverse
+                    ],
+                }
+                cur.execute(
+                    """INSERT INTO ont_action_audit
+                       (audit_id, tenant_id, proposal_id, action_rid, target_iid,
+                        actor_id, result)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)""",
+                    (audit_id, tenant_id, p.proposal_id, p.action_rid,
+                     p.target_iid or "", actor_id or "system",
+                     json.dumps(result, default=str)),
+                )
+                event_id = f"evt-{_uuid.uuid4().hex[:12]}"
+                cur.execute(
+                    """INSERT INTO ont_outbox_event
+                       (event_id, tenant_id, proposal_id, event_type, payload)
+                       VALUES (%s, %s, %s, %s, %s::jsonb)""",
+                    (event_id, tenant_id, p.proposal_id, "edit_set.applied",
+                     json.dumps({"action_rid": p.action_rid,
+                                 "applied_count": len(applied)},
+                                default=str)),
+                )
+                cur.execute(
+                    "UPDATE ont_proposal SET status = 'executed', "
+                    "applied_at = now() WHERE proposal_id = %s",
+                    (p.proposal_id,),
+                )
+                cur.execute(
+                    """INSERT INTO ont_proposal_execution
+                       (proposal_id, tenant_id, executed_at, result, audit_id)
+                       VALUES (%s, %s, now(), %s::jsonb, %s)
+                       ON CONFLICT (proposal_id) DO UPDATE SET
+                         executed_at = now(), result = EXCLUDED.result,
+                         audit_id = EXCLUDED.audit_id""",
+                    (p.proposal_id, tenant_id,
+                     json.dumps(result, default=str), audit_id),
+                )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+        return result
+
     def execute_proposal(
         self,
         proposal_id: str,
@@ -3350,6 +3619,12 @@ class PgOntologyRepository(OntologyRepository):
                 idempotency_key=key,
                 request_fingerprint=fingerprint,
             )
+        if p.kind == "edit_set":
+            result = self._execute_edit_set_proposal(
+                p, actor_id=actor_id,
+                idempotency_key=key, request_fingerprint=fingerprint,
+            )
+            return result
         if p.kind == "create_instance":
             ot = self.get_object_type(ClassRef(p.action_rid))
             props_in: dict[str, Any] = dict(p.parameters.get("props") or {})

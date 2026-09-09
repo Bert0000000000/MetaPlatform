@@ -603,12 +603,6 @@ class InMemoryOntologyRepository(OntologyRepository):
         )
 
     def execute_proposal(self, proposal_id: str) -> Any:
-        """confirmed proposal 的落库执行（按 kind 分派）。
-
-        create_instance → 新建 Individual（rid = ont.<t>.ind.<cls>.<pk>）
-        model_type      → upsert ObjectType
-        action          → 拒绝（走 /action-types/{rid}/apply 唯一写入口）
-        """
         from datetime import UTC as _UTC, datetime as _dt
 
         from mate_kernel.action.engine import ProposalNotConfirmed, ProposalStatus
@@ -622,6 +616,28 @@ class InMemoryOntologyRepository(OntologyRepository):
             raise ValueError(
                 "action-kind proposals execute via /action-types/{rid}/apply, not /execute"
             )
+        if p.kind == "edit_set":
+            # ACT-05：声明式编辑集执行（confirmed 才到这；AI 流程 propose→confirm 前置）
+            from mate_kernel.action.edit_set import (
+                EDIT_BATCH_LIMIT, EditOp, resolve_edit_templates,
+            )
+
+            templates = p.parameters.get("edits") or []
+            if len(templates) > EDIT_BATCH_LIMIT:
+                raise ValueError(
+                    f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}"
+                )
+            ops = resolve_edit_templates(
+                templates, target_iid=p.target_iid,
+                parameters=dict(p.parameters.get("parameters") or {}),
+                now_iso=_dt.now(_UTC).isoformat(),
+            )
+            result = self._apply_edits(
+                str(p.action_rid), ops, proposal_id=proposal_id,
+                actor=str(p.confirmed_by or ""),
+            )
+            self._action_service.mark_executed(proposal_id)
+            return result
         if p.kind == "create_instance":
             ot = self.get_object_type(ClassRef(p.action_rid))
             props_in: dict[str, Any] = dict(p.parameters.get("props") or {})
@@ -661,6 +677,244 @@ class InMemoryOntologyRepository(OntologyRepository):
             self._action_service.mark_executed(proposal_id)
             return ot
         raise ValueError(f"unknown proposal kind: {p.kind!r}")
+
+    # ───── ACT-05：声明式 edit-set（propose / apply-now / 原子执行）─────
+
+    def propose_edit_set(
+        self,
+        action_rid: str,
+        target_iid: str | None,
+        parameters: dict[str, Any],
+        edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+        impact_summary: str,
+    ) -> Any:
+        """AI/HITL 流程的 edit-set 提案（pending → 用户 confirm → execute）。"""
+        from mate_kernel.action.edit_set import resolve_edit_templates
+
+        # dry-run 计算 expected_diff（预览即确认的数据基础）
+        ops = resolve_edit_templates(
+            edit_templates, target_iid=target_iid, parameters=parameters,
+        )
+        return self._action_service.propose(
+            action_rid=action_rid,
+            parameters={"edits": list(edit_templates), "parameters": dict(parameters)},
+            target_iid=target_iid,
+            impact_summary=impact_summary,
+            expected_diff=self._dry_run_diff(ops),
+            kind="edit_set",
+        )
+
+    def apply_edit_set_now(
+        self,
+        action_rid: str,
+        target_iid: str | None,
+        parameters: dict[str, Any],
+        edit_templates: list[dict[str, Any]] | tuple[dict[str, Any], ...],
+        actor: str,
+        impact_summary: str = "",
+    ) -> Any:
+        """D7「预览即确认」：即时 proposal（confirmed）+ 执行，同一条审计管道。
+
+        人工表单入口用；AI 流程必须走 propose_edit_set → 显式 confirm。
+        """
+        from mate_kernel.action.edit_set import resolve_edit_templates
+
+        ops = resolve_edit_templates(
+            edit_templates, target_iid=target_iid, parameters=parameters,
+        )
+        prop = self._action_service.propose(
+            action_rid=action_rid,
+            parameters={"edits": list(edit_templates), "parameters": dict(parameters)},
+            target_iid=target_iid,
+            impact_summary=impact_summary or f"edit-set: {len(ops)} edits",
+            expected_diff=self._dry_run_diff(ops),
+            kind="edit_set",
+        )
+        self._action_service.confirm_proposal(prop.proposal_id, confirmed_by=actor)
+        return self.execute_proposal(prop.proposal_id)
+
+    def _dry_run_diff(self, ops: list[Any]) -> dict[str, Any]:
+        """计算编辑集的预期 diff（不落库）。"""
+        diff: dict[str, Any] = {}
+        for e in ops:
+            if e.op == "set_property":
+                cur = self._individuals.get(e.target)
+                old = cur.get(ClassRef(e.property_rid)) if cur else None
+                diff.setdefault("~props", []).append(
+                    {e.target: {e.property_rid: {"old": old, "new": e.value}}})
+            elif e.op == "create_object":
+                diff.setdefault("+objects", []).append(
+                    {"class_rid": e.class_rid, "primary_key": e.primary_key})
+            elif e.op == "delete_object":
+                diff.setdefault("-objects", []).append(e.target)
+            elif e.op == "add_link":
+                diff.setdefault("+links", []).append(
+                    {"link_type_rid": e.link_type_rid, "src": e.src, "dst": e.dst})
+            elif e.op == "remove_link":
+                diff.setdefault("-links", []).append(e.link_instance_rid)
+        return diff
+
+    def _apply_edits(
+        self, action_rid: str, ops: list[Any], *, proposal_id: str, actor: str,
+    ) -> Any:
+        """顺序执行编辑集；任一步失败 → 整体回滚（补偿式，InMemory 语义）。
+
+        回滚与 revert 共用 invert_edits 产出的逆序列（单一逆编辑代数）。
+        """
+        from dataclasses import replace as _replace
+        from datetime import UTC as _UTC, datetime as _dt
+
+        from mate_kernel.action.edit_set import (
+            OP_ADD_LINK, OP_CREATE_OBJECT, OP_DELETE_OBJECT, OP_REMOVE_LINK,
+            OP_SET_PROPERTY, EditOp, EditSetError, EditSetResult, invert_edits,
+        )
+        from mate_kernel.ontology.instances.link_instance import LinkInstance as _LI
+
+        applied: list[EditOp] = []
+        created_rids: list[str] = []
+        old_values: dict[str, Any] = {}
+        removed_links: list[dict[str, Any]] = []
+        now = _dt.now(_UTC)
+
+        def _exec_inverse(inv: list[EditOp]) -> None:
+            for e in reversed(inv):
+                try:
+                    if e.op == OP_SET_PROPERTY:
+                        cur = self._individuals.get(e.target)
+                        if cur is not None:
+                            merged = {k.rid: v for k, v in cur.props}
+                            merged[e.property_rid] = e.value
+                            self._individuals[cur.rid] = _replace(
+                                cur, props=tuple(
+                                    (ClassRef(k), v) for k, v in merged.items()),
+                                updated_at=now)
+                    elif e.op == OP_DELETE_OBJECT:
+                        self._individuals.pop(e.target, None)
+                        for lrid in [l.rid for l in self._link_instances.values()
+                                     if l.src == e.target or l.dst == e.target]:
+                            self._link_instances.pop(lrid)
+                    elif e.op == OP_REMOVE_LINK:
+                        self._link_instances.pop(e.link_instance_rid, None)
+                    elif e.op == OP_ADD_LINK:
+                        tenant = e.src.split(".")[1] if "." in e.src else ""
+                        self._link_instances.pop(
+                            f"{e.link_instance_rid}", None)
+                        # 逆 add_link 用确定性 rid 重建
+                        self._link_instances[f"rb-{e.link_instance_rid}"] = _LI(
+                            rid=f"rb-{e.link_instance_rid}",
+                            link_type_rid=ClassRef(e.link_type_rid),
+                            src=e.src, dst=e.dst, props=(),
+                            created_at=now, tenant_id=tenant,
+                        )
+                except Exception:
+                    pass  # 回滚尽力而为（与 legacy rollback hook 语义一致）
+
+        try:
+            for e in ops:
+                if e.op == OP_SET_PROPERTY:
+                    cur = self._individuals.get(e.target)
+                    if cur is None:
+                        raise EditSetError(f"set_property target not found: {e.target}")
+                    old_values[f"{e.target}#{e.property_rid}"] = cur.get(
+                        ClassRef(e.property_rid))
+                    merged = {k.rid: v for k, v in cur.props}
+                    merged[e.property_rid] = e.value
+                    self._individuals[e.target] = _replace(
+                        cur, props=tuple(
+                            (ClassRef(k), v) for k, v in merged.items()),
+                        updated_at=now)
+                elif e.op == OP_CREATE_OBJECT:
+                    ot = self._object_types.get(ClassRef(e.class_rid))
+                    if ot is None:
+                        raise EditSetError(f"create_object class not found: {e.class_rid}")
+                    rid_parts = e.class_rid.split(".")
+                    tenant = rid_parts[1]
+                    cls_slug = rid_parts[4] if len(rid_parts) >= 6 else rid_parts[3]
+                    ind = Individual(
+                        rid=f"ont.{tenant}.ind.{cls_slug}.{e.primary_key}",
+                        class_rid=ot.rid,
+                        props=tuple((ClassRef(k), v) for k, v in e.props.items()),
+                        primary_key=str(e.primary_key),
+                        created_at=now, updated_at=now, tenant_id=tenant,
+                    )
+                    self.create_individual(ind)
+                    created_rids.append(ind.rid)
+                elif e.op == OP_DELETE_OBJECT:
+                    if e.target not in self._individuals:
+                        raise EditSetError(f"delete_object target not found: {e.target}")
+                    self._individuals.pop(e.target)
+                    for lrid in [l.rid for l in self._link_instances.values()
+                                 if l.src == e.target or l.dst == e.target]:
+                        self._link_instances.pop(lrid)
+                elif e.op == OP_ADD_LINK:
+                    tenant = e.src.split(".")[1] if "." in e.src else "t"
+                    lt_slug = e.link_type_rid.split(".")[-2]                         if e.link_type_rid.split(".")[-1].startswith("v")                         else e.link_type_rid.split(".")[-1]
+                    li_rid = (f"ont.{tenant}.lnk.{lt_slug}."
+                              f"{len(self._link_instances) + 1}-"
+                              f"{e.src.split('.')[-1]}-{e.dst.split('.')[-1]}")
+                    li = _LI(
+                        rid=li_rid, link_type_rid=ClassRef(e.link_type_rid),
+                        src=e.src, dst=e.dst, props=(),
+                        created_at=now, tenant_id=tenant,
+                    )
+                    self.create_link_instance(li)  # 内含基数校验
+                    e = _replace(e, link_instance_rid=li_rid)  # 回填供 invert
+                elif e.op == OP_REMOVE_LINK:
+                    li = self._link_instances.get(e.link_instance_rid)
+                    if li is None:
+                        raise EditSetError(f"remove_link not found: {e.link_instance_rid}")
+                    removed_links.append({
+                        "rid": li.rid, "link_type_rid": li.link_type_rid.rid,
+                        "src": li.src, "dst": li.dst,
+                        "props": {k.rid: v for k, v in li.props},
+                    })
+                    del self._link_instances[li.rid]
+                applied.append(e)
+        except Exception:
+            inv_ops, _ni = invert_edits(
+                applied, old_values=old_values, created_rids=created_rids,
+                removed_links=removed_links,
+            )
+            _exec_inverse(list(inv_ops))
+            raise
+
+        inv_ops, non_invertible = invert_edits(
+            applied, old_values=old_values, created_rids=created_rids,
+            removed_links=removed_links,
+        )
+        result = EditSetResult(
+            action_rid=action_rid,
+            applied=tuple(applied),
+            inverse=inv_ops,
+            non_invertible=tuple(non_invertible),
+            created_rids=tuple(created_rids),
+        )
+        self._record_edit_set_audit(action_rid, result, proposal_id, actor)
+        return result
+
+    def _record_edit_set_audit(
+        self, action_rid: str, result: Any, proposal_id: str, actor: str,
+    ) -> None:
+        """edit-set 执行结果落 ActionService 审计（13 硬规则 #9）。"""
+        from dataclasses import dataclass as _dc
+
+        @_dc(frozen=True)
+        class _EditOutcome:
+            action_rid: str
+            proposal_id: str
+            actor: str
+            applied_count: int
+            created_rids: tuple
+            applied: tuple
+
+        self._action_service._audit.append(  # noqa: SLF001
+            _EditOutcome(
+                action_rid=action_rid, proposal_id=proposal_id, actor=actor,
+                applied_count=len(result.applied),
+                created_rids=result.created_rids,
+                applied=result.applied,
+            )
+        )
 
     @staticmethod
     def _type_def_to_object_type(type_def: dict[str, Any]) -> ObjectType:
