@@ -1713,11 +1713,14 @@ async def propose_edit_set(
     edits = payload.edits or [dict(t) for t in at.declarative_edits]
     if not edits:
         raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
-    prop = await _call_scoped(
-        request, "propose_edit_set", rid, payload.target_iid or None,
-        dict(payload.parameters), edits,
-        payload.impact_summary or f"edit-set proposal for {rid}",
-    )
+    try:
+        prop = await _call_scoped(
+            request, "propose_edit_set", rid, payload.target_iid or None,
+            dict(payload.parameters), edits,
+            payload.impact_summary or f"edit-set proposal for {rid}",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     return {
         "proposal_id": getattr(prop, "proposal_id", None) or prop.get("proposal_id"),
         "status": "pending",
@@ -1748,11 +1751,15 @@ async def apply_edit_set(
     edits = payload.edits or [dict(t) for t in at.declarative_edits]
     if not edits:
         raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
-    result = await _call_scoped(
-        request, "apply_edit_set_now", rid, payload.target_iid or None,
-        dict(payload.parameters), edits, actor,
-        payload.impact_summary,
-    )
+    try:
+        result = await _call_scoped(
+            request, "apply_edit_set_now", rid, payload.target_iid or None,
+            dict(payload.parameters), edits, actor,
+            payload.impact_summary,
+        )
+    except ValueError as e:
+        # ACT-06 校验 / 模板解析失败 / 编辑执行失败 → 422（可操作错误）
+        raise HTTPException(status_code=422, detail=str(e)) from e
     # GOV-16：写打点（on 里第一个类；best-effort）
     try:
         at0 = at.on[0].rid if at.on else ""
