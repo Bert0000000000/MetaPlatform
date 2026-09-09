@@ -104,6 +104,16 @@ class InMemoryOntologyRepository(OntologyRepository):
     def upsert_object_type(self, ot: ObjectType) -> ObjectType:
         for p in ot.properties:
             self._properties[p.rid] = p
+        # EXP-02：值类型宽松校验（已注册 type_id 的 format 一致性）
+        from .types.value_types import get_value_type
+
+        for p in ot.properties:
+            vt = get_value_type(p.type_id)
+            if vt is not None and vt.format is not p.format:
+                raise ValueError(
+                    f"property {p.rid.rid} format {p.format.value!r} != "
+                    f"value type {p.type_id!r} declared format {vt.format.value!r}"
+                )
         # EXP-01：已注册 Interface 约束 fail-fast（属性签名维度）
         from .types.interface import validate_interface_constraints
 
@@ -173,25 +183,24 @@ class InMemoryOntologyRepository(OntologyRepository):
     def _expand_source_classes(self, source_rid: str) -> frozenset[str]:
         """EXP-01：查询源类集合展开 —— Interface → 实现类型 + subclass 后代闭包。
 
-        返回「source 之外额外应命中的类集合」（普通 source = 仅后代；Interface
-        source = 实现类型 + 各自后代）。executor 侧再并入 source 本身。
+        返回完整允许集（普通 source = 自身 + 后代；Interface source = 实现
+        类型 + 各自后代）。IR 路径用它整体替换按源类精确过滤的条件。
         """
         from mate_kernel.ontology.reasoning.engine import descendant_closure
         from .types.interface import interface_source_rids
 
-        bases: list[str]
         is_interface = ClassRef(source_rid) in self._interfaces
         if is_interface:
             bases = interface_source_rids(source_rid, list(self._object_types.values()))
         else:
             bases = [source_rid]
         closure = descendant_closure(self._subclass_pairs())
-        extra: set[str] = set()
+        allowed: set[str] = set(bases)
+        if not is_interface:
+            allowed.add(source_rid)
         for b in bases:
-            extra |= closure.get(b, set())
-        if is_interface:
-            extra |= set(bases)
-        return frozenset(extra)
+            allowed |= closure.get(b, set())
+        return frozenset(allowed)
 
     def get_type_hierarchy(self) -> list[dict[str, Any]]:
         """EXP-01：InMemory 层级树（与 PgOntologyRepository.get_type_hierarchy 同语义）。"""
@@ -389,7 +398,64 @@ class InMemoryOntologyRepository(OntologyRepository):
             links=tuple(self._link_instances.values()),
             object_types=tuple(self._object_types.values()),
         )
-        return executor.execute(q, source_classes=source_classes)
+        result = executor.execute(q, source_classes=source_classes)
+        # EXP-02：派生列追加（count/sum/avg over link）
+        if result.kind == "objects":
+            ot = self._object_types.get(ClassRef(q.source))
+            if ot is not None:
+                rows = list(result.rows)
+                self._attach_derived_inmemory(ot, rows)
+                from dataclasses import replace as _replace
+
+                result = _replace(result, rows=tuple(rows))
+        return result
+
+    def _attach_derived_inmemory(self, ot: ObjectType, rows: list[Any]) -> None:
+        from .types.derived import attach_derived_values
+
+        link_meta = {
+            lt.rid.rid: (lt.src.rid, lt.dst.rid)
+            for lt in self._link_types.values()
+        }
+        link_pairs: dict[str, list[tuple[str, str]]] = {}
+        for li in self._link_instances.values():
+            link_pairs.setdefault(li.link_type_rid.rid, []).append((li.src, li.dst))
+
+        def _value_of(peer_rid: str, field_rid: str | None) -> float | None:
+            if field_rid is None:
+                return None
+            peer = self._individuals.get(peer_rid)
+            if peer is None:
+                return None
+            raw = peer.get(ClassRef(field_rid))
+            if raw is None:
+                return None
+            try:
+                return float(raw)  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                return None
+
+        attach_derived_values(
+            rows, ot.rid.rid, ot.properties, link_meta, link_pairs, _value_of,
+        )
+
+    def list_properties(self) -> list[Property]:
+        """EXP-02：属性库全量（与 PgOntologyRepository 同语义）。"""
+        return list(self._properties.values())
+
+    def shared_properties_usage(self) -> list[dict[str, Any]]:
+        """EXP-02：共享属性使用统计（与 PG 侧同语义）。"""
+        usage: dict[str, list[str]] = {}
+        for ot in self._object_types.values():
+            for p in ot.properties:
+                usage.setdefault(p.rid.rid, []).append(ot.rid.rid)
+        return [
+            {"rid": rid, "shared": len(users) > 1, "used_by": users}
+            for rid, users in sorted(
+                usage.items(), key=lambda kv: (-len(kv[1]), kv[0]),
+            )
+            if users
+        ]
 
     # ───── MP-SAL-04: proposal 状态机 + outbox（ADR-0044 §2.2-2.3）─────
 

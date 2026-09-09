@@ -207,6 +207,13 @@ DDL: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS ix_ont_prop_tenant ON ont_property (tenant_id)",
+    # EXP-02：属性库扩展列（描述/struct/数组/派生/共享）—— 旧库补列
+    "ALTER TABLE ont_property ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_property ADD COLUMN IF NOT EXISTS struct_fields JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE ont_property ADD COLUMN IF NOT EXISTS is_array BOOLEAN NOT NULL DEFAULT FALSE",
+    "ALTER TABLE ont_property ADD COLUMN IF NOT EXISTS reducer TEXT",
+    "ALTER TABLE ont_property ADD COLUMN IF NOT EXISTS derived JSONB",
+    "ALTER TABLE ont_property ADD COLUMN IF NOT EXISTS shared BOOLEAN NOT NULL DEFAULT FALSE",
     """
     CREATE TABLE IF NOT EXISTS ont_link_instance (
         rid            TEXT PRIMARY KEY,
@@ -467,17 +474,7 @@ def _ot_to_row(ot: ObjectType) -> dict[str, Any]:
         # parts[3] 是 domain（与 seed.py 实际使用的 6 段格式一致）。
         "slug": rid_parts[4] if len(rid_parts) >= 6 else "",
         "primary_key": [pk.rid for pk in ot.primary_key],
-        "properties": [
-            {
-                "rid": p.rid.rid,
-                "type_id": p.type_id,
-                "nullable": p.nullable,
-                "primary_key": p.primary_key,
-                "title": p.title,
-                "format": p.format.value,
-            }
-            for p in ot.properties
-        ],
+        "properties": [_prop_to_json(p) for p in ot.properties],
         "interfaces": [i.rid for i in ot.interfaces],
         "display_name": ot.display_name,
         "marking": list(ot.marking),
@@ -489,17 +486,7 @@ def _row_to_ot(row: dict[str, Any]) -> ObjectType:
     return ObjectType(
         rid=ClassRef(row["rid"]),
         primary_key=tuple(ClassRef(pk) for pk in row["primary_key"]),
-        properties=tuple(
-            Property(
-                rid=ClassRef(p["rid"]),
-                type_id=p["type_id"],
-                nullable=p["nullable"],
-                primary_key=p["primary_key"],
-                title=p["title"],
-                format=PropertyFormat(p["format"]),
-            )
-            for p in row["properties"]
-        ),
+        properties=tuple(_json_to_prop(p) for p in row["properties"]),
         interfaces=tuple(ClassRef(i) for i in row["interfaces"]),
         display_name=row["display_name"],
         marking=tuple(row.get("marking") or ()),
@@ -640,27 +627,81 @@ def _row_to_if(row: dict[str, Any]) -> Interface:
     )
 
 
-def _prop_to_row(p: Property) -> dict[str, Any]:
+def _prop_to_json(p: Property) -> dict[str, Any]:
+    """EXP-02：Property → JSONB dict（ont_object_type.properties 与 ont_property 共用）。"""
     return {
         "rid": p.rid.rid,
-        "tenant_id": p.rid.rid.split(".")[1] if "." in p.rid.rid else "",
         "type_id": p.type_id,
         "nullable": p.nullable,
         "primary_key": p.primary_key,
         "title": p.title,
         "format": p.format.value,
+        "description": p.description,
+        "struct_fields": [_prop_to_json(sf) for sf in p.struct_fields],
+        "array": p.array,
+        "reducer": p.reducer,
+        "derived": (
+            {"fn": p.derived.fn, "over_link": p.derived.over_link,
+             "field": p.derived.field}
+            if p.derived is not None else None
+        ),
+        "shared": p.shared,
     }
 
 
-def _row_to_prop(row: dict[str, Any]) -> Property:
+def _json_to_prop(d: dict[str, Any]) -> Property:
+    from mate_kernel.ontology.types.property_ import DerivedSpec
+
+    derived_raw = d.get("derived")
     return Property(
-        rid=ClassRef(row["rid"]),
-        type_id=row["type_id"],
-        nullable=row["nullable"],
-        primary_key=row["primary_key"],
-        title=row["title"],
-        format=PropertyFormat(row["format"]),
+        rid=ClassRef(d["rid"]),
+        type_id=d["type_id"],
+        nullable=d["nullable"],
+        primary_key=d["primary_key"],
+        title=d["title"],
+        format=PropertyFormat(d["format"]),
+        description=d.get("description", ""),
+        struct_fields=tuple(
+            _json_to_prop(sf) for sf in d.get("struct_fields") or ()
+        ),
+        array=bool(d.get("array", False)),
+        reducer=d.get("reducer"),
+        derived=(
+            DerivedSpec(
+                fn=derived_raw["fn"],
+                over_link=derived_raw["over_link"],
+                field=derived_raw.get("field"),
+            )
+            if derived_raw else None
+        ),
+        shared=bool(d.get("shared", False)),
     )
+
+
+def _prop_to_row(p: Property) -> dict[str, Any]:
+    row = _prop_to_json(p)
+    row["tenant_id"] = p.rid.rid.split(".")[1] if "." in p.rid.rid else ""
+    return row
+
+
+def _row_to_prop(row: dict[str, Any]) -> Property:
+    return _json_to_prop(row)
+
+
+def _assert_value_type_consistent(p: Property) -> None:
+    """EXP-02：宽松值类型校验 —— 已注册 type_id 与 format 不符即 ValueError。
+
+    未注册 type_id 放行（开放注册表：先声明后注册合法）；注册与否查询
+    kernel value_types 模块（进程内注册表，无 DB 依赖）。
+    """
+    from mate_kernel.ontology.types.value_types import get_value_type
+
+    vt = get_value_type(p.type_id)
+    if vt is not None and vt.format is not p.format:
+        raise ValueError(
+            f"property {p.rid.rid} format {p.format.value!r} != "
+            f"value type {p.type_id!r} declared format {vt.format.value!r}"
+        )
 
 
 def _li_to_row(li: LinkInstance) -> dict[str, Any]:
@@ -911,6 +952,9 @@ class PgOntologyRepository(OntologyRepository):
         # EXP-01：Interface 约束 fail-fast —— 已注册 Interface 的属性签名不符即拒绝
         # （未注册的 Interface 声明保持 legacy 宽松语义：可能先声明后注册）。
         self._validate_registered_interfaces(ot)
+        # EXP-02：值类型宽松校验（已注册 type_id 的 format 一致性）
+        for p in ot.properties:
+            _assert_value_type_consistent(p)
         # EXP-01：parent_class 环检测（沿 parent 链上溯，出现自身即成环）
         if row["parent_class"]:
             self._assert_parent_acyclic(row["rid"], row["parent_class"])
@@ -1532,20 +1576,31 @@ class PgOntologyRepository(OntologyRepository):
     def upsert_property(self, p: Property) -> Property:
         self._ensure_schema()
         row = _prop_to_row(p)
+        # EXP-02：值类型宽松校验 —— type_id 已注册但 format 不符即拒
+        # （未注册 type_id 放行：开放注册表，先声明后注册合法）。
+        _assert_value_type_consistent(p)
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
                 cur.execute(
                     """
                     INSERT INTO ont_property
-                        (rid, tenant_id, type_id, nullable, primary_key, title, format, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+                        (rid, tenant_id, type_id, nullable, primary_key, title, format,
+                         description, struct_fields, is_array, reducer, derived, shared,
+                         updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s::jsonb, %s, now())
                     ON CONFLICT (rid) DO UPDATE SET
                         type_id = EXCLUDED.type_id,
                         nullable = EXCLUDED.nullable,
                         primary_key = EXCLUDED.primary_key,
                         title = EXCLUDED.title,
                         format = EXCLUDED.format,
+                        description = EXCLUDED.description,
+                        struct_fields = EXCLUDED.struct_fields,
+                        is_array = EXCLUDED.is_array,
+                        reducer = EXCLUDED.reducer,
+                        derived = EXCLUDED.derived,
+                        shared = EXCLUDED.shared,
                         updated_at = now()
                     """,
                     (
@@ -1556,12 +1611,50 @@ class PgOntologyRepository(OntologyRepository):
                         row["primary_key"],
                         row["title"],
                         row["format"],
+                        row["description"],
+                        json.dumps(row["struct_fields"]),
+                        row["array"],
+                        row["reducer"],
+                        json.dumps(row["derived"]) if row["derived"] is not None else None,
+                        row["shared"],
                     ),
                 )
             conn.commit()
             return p
         finally:
             conn.close()
+
+    def list_properties(self) -> list[Property]:
+        """EXP-02：属性库全量（共享属性管理面 / 建模引用）。"""
+        self._ensure_schema()
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute("SELECT * FROM ont_property ORDER BY rid")
+                rows = cur.fetchall()
+            return [_row_to_prop(r) for r in rows]
+        finally:
+            conn.close()
+
+    def shared_properties_usage(self) -> list[dict[str, Any]]:
+        """EXP-02：共享属性使用统计 —— Property rid → 引用它的 ObjectType 清单。
+
+        同一 Property rid 被 >1 类型引用即视为共享（Palantir shared property
+        语义：一致建模、一改全改）。返回 [{rid, shared, used_by:[type rid...]}]，
+        仅含 used_by 非空条目，按引用数降序。
+        """
+        types = self.list_object_types(limit=10000, offset=0)
+        usage: dict[str, list[str]] = {}
+        for ot in types:
+            for p in ot.properties:
+                usage.setdefault(p.rid.rid, []).append(ot.rid.rid)
+        return [
+            {"rid": rid, "shared": len(users) > 1, "used_by": users}
+            for rid, users in sorted(
+                usage.items(), key=lambda kv: (-len(kv[1]), kv[0]),
+            )
+            if users
+        ]
 
     def list_link_types(self) -> list[LinkType]:
         self._ensure_schema()
@@ -2097,11 +2190,86 @@ class PgOntologyRepository(OntologyRepository):
             individuals = [_row_to_individual(r) for r in rows]
         finally:
             conn.close()
+        result_rows = [individual_to_row(i) for i in individuals]
+        # EXP-02：派生列追加（count/sum/avg over link，批量聚合避免逐行子查询）
+        if ot is not None:
+            self._attach_derived_pg(ot, result_rows)
         return QueryResult(
             kind="objects",
-            rows=tuple(individual_to_row(i) for i in individuals),
+            rows=tuple(result_rows),
             result_schema=self._ir_objects_schema(final_class),
         )
+
+    def _attach_derived_pg(
+        self, ot: ObjectType, rows: list[dict[str, Any]],
+    ) -> None:
+        """派生属性批量计算：每个 DerivedSpec 一条聚合 SQL，结果映射回行。
+
+        方向由 LinkType 端点决定（本类是 src 端 → 行 rid 在 li.src）。
+        count 缺省 0；sum/avg 无对端数值时 None（与内核 compute_derived_for_row
+        同语义）。field 必须是完整 Property rid（DerivedSpec 契约）。
+        """
+        from mate_kernel.ontology.types.derived import derived_properties
+
+        dprops = derived_properties(ot.properties)
+        if not dprops or not rows:
+            return
+        row_rids = [r["__rid__"] for r in rows if r.get("__rid__")]
+        if not row_rids:
+            return
+        conn, _ = self._connect()
+        try:
+            for p in dprops:
+                spec = p.derived
+                assert spec is not None
+                try:
+                    lt = self.get_link_type(ClassRef(spec.over_link))
+                except KeyError:
+                    continue
+                if ot.rid.rid == lt.src.rid:
+                    col, peer_col = "src", "dst"
+                elif ot.rid.rid == lt.dst.rid:
+                    col, peer_col = "dst", "src"
+                else:
+                    continue
+                slug = _prop_slug(p.rid.rid)
+                if spec.fn == "count":
+                    cur_sql = (
+                        f"SELECT li.{col} AS rid, COUNT(*) AS v "  # noqa: S608
+                        f"FROM ont_link_instance li "
+                        f"WHERE li.link_type_rid = %s AND li.{col} = ANY(%s) "
+                        f"GROUP BY li.{col}"
+                    )
+                    q_params: list[Any] = [spec.over_link, row_rids]
+                else:
+                    field = spec.field or ""
+                    if not _SAFE_JSON_KEY.match(field):
+                        continue
+                    agg = "SUM" if spec.fn == "sum" else "AVG"
+                    cur_sql = (
+                        f"SELECT li.{col} AS rid, {agg}((pi.props ->> '{field}')::numeric) AS v "  # noqa: S608
+                        f"FROM ont_link_instance li "
+                        f"JOIN ont_individual pi ON pi.rid = li.{peer_col} "
+                        f"WHERE li.link_type_rid = %s AND li.{col} = ANY(%s) "
+                        f"GROUP BY li.{col}"
+                    )
+                    q_params = [spec.over_link, row_rids]
+                with self._cursor(conn) as cur:
+                    cur.execute(cur_sql, q_params)
+                    mapping = {
+                        (r["rid"] if isinstance(r, dict) else r[0]):
+                            (r["v"] if isinstance(r, dict) else r[1])
+                        for r in cur.fetchall()
+                    }
+                for row in rows:
+                    rid_key = row.get("__rid__")
+                    if spec.fn == "count":
+                        row[slug] = mapping.get(rid_key, 0)
+                    else:
+                        v = mapping.get(rid_key)
+                        row[slug] = float(v) if v is not None else None
+        finally:
+            conn.close()
 
     def _object_query_aggregate(
         self,

@@ -71,6 +71,13 @@ router = APIRouter(prefix="/api/v1/ont/v2", tags=["v2-kernel"])
 # ─────────────────── DTO ───────────────────
 
 
+class DerivedSpecDTO(BaseModel):
+    """EXP-02：派生属性规格（D4：v1 声明式聚合）。field 须为完整 Property rid。"""
+    fn: str  # count | sum | avg
+    over_link: str  # LinkType rid
+    field: str | None = None
+
+
 class PropertyDTO(BaseModel):
     rid: str
     type_id: str
@@ -78,6 +85,13 @@ class PropertyDTO(BaseModel):
     primary_key: bool = False
     title: str = ""
     format: str = "string"
+    # ── EXP-02 扩展 ──
+    description: str = ""
+    struct_fields: list["PropertyDTO"] = Field(default_factory=list)
+    array: bool = False
+    reducer: str | None = None  # first / latest
+    derived: DerivedSpecDTO | None = None
+    shared: bool = False
 
 
 class ObjectTypeDTO(BaseModel):
@@ -307,10 +321,21 @@ def _prop_to_dto(p: Property) -> PropertyDTO:
     return PropertyDTO(
         rid=p.rid.rid, type_id=p.type_id, nullable=p.nullable,
         primary_key=p.primary_key, title=p.title, format=p.format.value,
+        description=p.description,
+        struct_fields=[_prop_to_dto(sf) for sf in p.struct_fields],
+        array=p.array, reducer=p.reducer,
+        derived=(
+            DerivedSpecDTO(fn=p.derived.fn, over_link=p.derived.over_link,
+                           field=p.derived.field)
+            if p.derived is not None else None
+        ),
+        shared=p.shared,
     )
 
 
 def _dto_to_prop(d: PropertyDTO) -> Property:
+    from mate_kernel.ontology.types.property_ import DerivedSpec
+
     return Property(
         rid=ClassRef(d.rid),
         type_id=d.type_id,
@@ -318,6 +343,16 @@ def _dto_to_prop(d: PropertyDTO) -> Property:
         primary_key=d.primary_key,
         title=d.title,
         format=PropertyFormat(d.format),
+        description=d.description,
+        struct_fields=tuple(_dto_to_prop(sf) for sf in d.struct_fields),
+        array=d.array,
+        reducer=d.reducer,
+        derived=(
+            DerivedSpec(fn=d.derived.fn, over_link=d.derived.over_link,
+                        field=d.derived.field)
+            if d.derived is not None else None
+        ),
+        shared=d.shared,
     )
 
 
@@ -502,6 +537,67 @@ async def get_type_hierarchy(request: Request) -> list[dict]:
     """EXP-01：租户类型层级树（parent_class 维度，children 嵌套完整子树）。"""
     _ctx(request)
     return await _call_scoped(request, "get_type_hierarchy")
+
+
+@router.get(
+    "/value-types",
+    response_model=list[dict],
+    operation_id="ontListV2ValueTypes",
+)
+async def list_value_types(request: Request) -> list[dict]:
+    """EXP-02：值类型注册表（Property.type_id 引用目标）。"""
+    _ctx(request)
+    from mate_kernel.ontology.types.value_types import list_value_types as _list
+
+    return [
+        {
+            "type_id": vt.type_id,
+            "format": vt.format.value,
+            "description": vt.description,
+            "params": vt.params,
+        }
+        for vt in _list()
+    ]
+
+
+@router.get(
+    "/properties",
+    response_model=list[PropertyDTO],
+    operation_id="ontListV2Properties",
+)
+async def list_properties(request: Request) -> list[PropertyDTO]:
+    """EXP-02：属性库全量（共享属性建模 / 引用面）。"""
+    _ctx(request)
+    items = await _call_scoped(request, "list_properties")
+    return [_prop_to_dto(p) for p in items]
+
+
+@router.get(
+    "/properties/shared",
+    response_model=list[dict],
+    operation_id="ontListV2SharedProperties",
+)
+async def shared_properties(request: Request) -> list[dict]:
+    """EXP-02：共享属性使用统计 —— Property rid → 引用类型清单（>1 即共享）。"""
+    _ctx(request)
+    return await _call_scoped(request, "shared_properties_usage")
+
+
+@router.post(
+    "/properties",
+    response_model=PropertyDTO,
+    operation_id="ontUpsertV2Property",
+)
+async def upsert_property(
+    payload: PropertyDTO, request: Request,
+) -> PropertyDTO:
+    """EXP-02：属性库独立 upsert（先注册后引用；struct/derived/共享标记可带）。"""
+    ctx = _ctx(request)
+    if not payload.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
+        raise HTTPException(status_code=403, detail="cross-tenant rid denied")
+    p = _dto_to_prop(payload)
+    saved = await _call_scoped(request, "upsert_property", p)
+    return _prop_to_dto(saved)
 
 
 @router.get(
