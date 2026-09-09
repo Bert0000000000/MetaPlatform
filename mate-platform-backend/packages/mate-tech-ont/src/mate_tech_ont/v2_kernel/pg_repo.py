@@ -958,6 +958,53 @@ class PgOntologyRepository(OntologyRepository):
                 self._initialized = True
             finally:
                 conn.close()
+        # AI-09：建表成功后尝试 pgvector 升级（一次尝试，失败静默兜底）
+        self._try_pgvector_upgrade()
+
+    def _try_pgvector_upgrade(self) -> None:
+        """AI-09：ont_object_embedding 加向量列 + HNSW 索引（对齐 tech-rag kb_chunks v3）。
+
+        扩展不可用（非 pgvector 镜像）→ 标志保持 False，检索走 JSONB cosine
+        兜底（同接口双实现）。HNSW 2000 维上限 → dim>2000 用 halfvec。
+        """
+        import os as _os
+
+        try:
+            vec_dim = int(_os.environ.get("ONT_VECTOR_DIM", "2048"))
+        except ValueError:
+            vec_dim = 2048
+        vec_type = "halfvec" if vec_dim > 2000 else "vector"
+        vec_ops = vec_type + "_cosine_ops"
+        stmts = [
+            "CREATE EXTENSION IF NOT EXISTS vector",
+            (
+                "DO $do$ BEGIN "
+                "IF EXISTS (SELECT 1 FROM information_schema.columns "
+                "WHERE table_name='ont_object_embedding' "
+                "AND column_name='embedding_vec' "
+                "AND (udt_name <> '" + vec_type + "' "
+                "     OR COALESCE(character_maximum_length::text, '') <> '" + str(vec_dim) + "')) THEN "
+                "ALTER TABLE ont_object_embedding DROP COLUMN embedding_vec; "
+                "END IF; "
+                "END $do$"
+            ),
+            "ALTER TABLE ont_object_embedding ADD COLUMN IF NOT EXISTS "
+            "embedding_vec " + vec_type + "(" + str(vec_dim) + ")",
+            "CREATE INDEX IF NOT EXISTS ix_ont_oemb_vec ON ont_object_embedding "
+            "USING hnsw (embedding_vec " + vec_ops + ")",
+        ]
+        try:
+            conn, _ = self._connect()
+            try:
+                with self._cursor(conn) as cur:
+                    for stmt in stmts:
+                        cur.execute(stmt)
+                conn.commit()
+                self._pgvector_ready = True
+            finally:
+                conn.close()
+        except Exception:
+            self._pgvector_ready = False
 
     def _cursor(self, conn):
         """返回 RealDictCursor —— 永远走 dict 路径。"""
@@ -2513,22 +2560,48 @@ class PgOntologyRepository(OntologyRepository):
                 return
             with self._cursor(conn) as cur:
                 for chunk_id, individual_rid, class_rid, property_rid, value_text, vec in chunks:
-                    cur.execute(
-                        """
-                        INSERT INTO ont_object_embedding
-                            (chunk_id, individual_rid, class_rid, property_rid,
-                             value_text, embedding, tenant_id, created_at)
-                        VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, now())
-                        ON CONFLICT (chunk_id) DO UPDATE SET
-                            embedding = EXCLUDED.embedding,
-                            value_text = EXCLUDED.value_text,
-                            created_at = now()
-                        """,
-                        (
-                            chunk_id, individual_rid, class_rid, property_rid,
-                            value_text, json.dumps(vec), ind.tenant_id,
-                        ),
-                    )
+                    vec_written = False
+                    if getattr(self, "_pgvector_ready", False):
+                        vec_literal = "[" + ",".join(f"{x:.6g}" for x in vec) + "]"
+                        try:
+                            cur.execute(
+                                """
+                                INSERT INTO ont_object_embedding
+                                    (chunk_id, individual_rid, class_rid, property_rid,
+                                     value_text, embedding, embedding_vec, tenant_id, created_at)
+                                VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, now())
+                                ON CONFLICT (chunk_id) DO UPDATE SET
+                                    embedding = EXCLUDED.embedding,
+                                    embedding_vec = EXCLUDED.embedding_vec,
+                                    value_text = EXCLUDED.value_text,
+                                    created_at = now()
+                                """,
+                                (
+                                    chunk_id, individual_rid, class_rid, property_rid,
+                                    value_text, json.dumps(vec), vec_literal,
+                                    ind.tenant_id,
+                                ),
+                            )
+                            vec_written = True
+                        except Exception:
+                            conn.rollback()  # 维度不匹配等 → 回落 JSONB-only
+                    if not vec_written:
+                        cur.execute(
+                            """
+                            INSERT INTO ont_object_embedding
+                                (chunk_id, individual_rid, class_rid, property_rid,
+                                 value_text, embedding, tenant_id, created_at)
+                            VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, now())
+                            ON CONFLICT (chunk_id) DO UPDATE SET
+                                embedding = EXCLUDED.embedding,
+                                value_text = EXCLUDED.value_text,
+                                created_at = now()
+                            """,
+                            (
+                                chunk_id, individual_rid, class_rid, property_rid,
+                                value_text, json.dumps(vec), ind.tenant_id,
+                            ),
+                        )
         except Exception:  # 索引失败不影响主路径
             import logging
             logging.getLogger(__name__).warning(
@@ -2551,8 +2624,55 @@ class PgOntologyRepository(OntologyRepository):
 
         qvec = self._embedder.embed(text)
         tenant = tenant_id or self._current_tenant()
+        self._ensure_schema()
+        rows: list[dict[str, Any]] = []
+        if getattr(self, "_pgvector_ready", False):
+            # AI-09：pgvector KNN（HNSW 余弦距离），score = 1 - distance
+            vec_literal = "[" + ",".join(f"{x:.6g}" for x in qvec) + "]"
+            conds = ["embedding_vec IS NOT NULL"]
+            params: list[Any] = []
+            if tenant:
+                conds.append("tenant_id = %s")
+                params.append(tenant)
+            if class_rid:
+                conds.append("class_rid = %s")
+                params.append(class_rid)
+            sql = (
+                "SELECT *, 1 - (embedding_vec <=> %s::halfvec) AS _score "
+                "FROM ont_object_embedding WHERE "
+                + " AND ".join(conds)
+                + " ORDER BY embedding_vec <=> %s::halfvec LIMIT %s"
+            )
+            q_params = [vec_literal, *params, vec_literal, max(top_k * 12, 24)]
+            conn, _ = self._connect()
+            try:
+                with self._cursor(conn) as cur:
+                    cur.execute(sql, q_params)
+                    raw = cur.fetchall()
+            finally:
+                conn.close()
+            per_individual: dict[str, list[dict[str, Any]]] = {}
+            class_of: dict[str, str] = {}
+            for r in raw:
+                score = float(r["_score"]) if r.get("_score") is not None else 0.0
+                if score <= 0.0:
+                    continue
+                class_of[r["individual_rid"]] = r["class_rid"]
+                per_individual.setdefault(r["individual_rid"], []).append({
+                    "property_rid": r["property_rid"],
+                    "value_text": r["value_text"],
+                    "score": score,
+                })
+            cards = []
+            for individual_rid, matched in per_individual.items():
+                matched.sort(key=lambda m: m["score"], reverse=True)
+                cards.append(
+                    build_card(individual_rid, class_of[individual_rid], matched[:3]))
+            cards.sort(key=lambda c: c["score"], reverse=True)
+            return cards[:top_k]
+
         conds: list[str] = []
-        params: list[Any] = []
+        params = []
         if tenant:
             conds.append("tenant_id = %s")
             params.append(tenant)
@@ -2562,7 +2682,6 @@ class PgOntologyRepository(OntologyRepository):
         sql = "SELECT * FROM ont_object_embedding"
         if conds:
             sql += " WHERE " + " AND ".join(conds)
-        self._ensure_schema()
         conn, _ = self._connect()
         try:
             with self._cursor(conn) as cur:
@@ -2595,6 +2714,98 @@ class PgOntologyRepository(OntologyRepository):
             )
         cards.sort(key=lambda c: c["score"], reverse=True)
         return cards[:top_k]
+
+    def search_objects_hybrid(
+        self, text: str, class_rid: str | None = None, top_k: int = 5,
+        tenant_id: str | None = None, k_rrf: int = 60,
+    ) -> list[dict[str, Any]]:
+        """AI-09：混合检索（关键词 + 向量 + RRF 融合，调研材料 03 §OAG）。
+
+        RRFscore(d) = Σ 1/(k + rank_i(d))；两路各自取 top 3*top_k 后融合。
+        关键词路 = value_text/token ILIKE；向量路复用 search_objects。
+        """
+        import re as _re
+
+        tenant = tenant_id or self._current_tenant()
+        self._ensure_schema()
+        tokens = [
+            t for t in _re.split(r"\s+", text.strip()) if len(t) >= 2
+        ][:8] or [text.strip()]
+        conds: list[str] = []
+        params: list[Any] = []
+        if tenant:
+            conds.append("tenant_id = %s")
+            params.append(tenant)
+        if class_rid:
+            conds.append("class_rid = %s")
+            params.append(class_rid)
+        like_clauses = " OR ".join(
+            f"value_text ILIKE %s" for _ in tokens
+        )
+        sql = (
+            "SELECT * FROM ont_object_embedding WHERE ("
+            + like_clauses + ")"
+            + (" AND " + " AND ".join(conds) if conds else "")
+            + " ORDER BY created_at DESC LIMIT %s"
+        )
+        like_params = [f"%{t}%" for t in tokens]
+        kw_rows: list[dict[str, Any]] = []
+        conn, _ = self._connect()
+        try:
+            with self._cursor(conn) as cur:
+                cur.execute(sql, [*like_params, *params, max(top_k * 6, 12)])
+                kw_rows = cur.fetchall()
+        finally:
+            conn.close()
+
+        # 关键词路按 (individual, 命中位置) 排名
+        kw_rank: dict[str, int] = {}
+        kw_meta: dict[str, dict[str, Any]] = {}
+        for i, r in enumerate(kw_rows):
+            irid = r["individual_rid"]
+            if irid not in kw_rank:
+                kw_rank[irid] = len(kw_rank) + 1
+                kw_meta[irid] = r
+
+        # 向量路
+        vec_cards = self.search_objects(text, class_rid, top_k * 3, tenant_id)
+        vec_rank: dict[str, int] = {c["individual_rid"]: i + 1
+                                    for i, c in enumerate(vec_cards)}
+
+        all_rids = set(kw_rank) | set(vec_rank)
+        class_of = {c["individual_rid"]: c["class_rid"] for c in vec_cards}
+        for irid, r in kw_meta.items():
+            class_of.setdefault(irid, r["class_rid"])
+
+        def _rrf(irid: str) -> float:
+            score = 0.0
+            if irid in kw_rank:
+                score += 1.0 / (k_rrf + kw_rank[irid])
+            if irid in vec_rank:
+                score += 1.0 / (k_rrf + vec_rank[irid])
+            return score
+
+        fused = sorted(all_rids, key=_rrf, reverse=True)[:top_k]
+        cards: list[dict[str, Any]] = []
+        for irid in fused:
+            kw_hit = kw_meta.get(irid)
+            matched = [{
+                "property_rid": kw_hit["property_rid"] if kw_hit else "",
+                "value_text": kw_hit["value_text"] if kw_hit else "",
+                "score": _rrf(irid),
+            }]
+            cards.append({
+                "individual_rid": irid,
+                "class_rid": class_of.get(irid, ""),
+                "score": _rrf(irid),
+                "matched": matched,
+                "card_text": f"{irid}:\n- {matched[0]['value_text']}",
+                "legs": {
+                    "keyword_rank": kw_rank.get(irid),
+                    "vector_rank": vec_rank.get(irid),
+                },
+            })
+        return cards
 
     def reindex_object_embeddings(self, tenant_id: str | None = None) -> int:
         """存量补齐：租户内全量 Individual 重嵌入（返回索引数；tenant 显式传参优先）。"""

@@ -3002,6 +3002,27 @@ async def search_objects(
 
 
 @router.post(
+    "/object-search/hybrid",
+    response_model=ObjectSearchResultDTO,
+    operation_id="ontHybridSearchV2Objects",
+)
+async def hybrid_search_objects(
+    payload: ObjectSearchDTO, request: Request,
+) -> ObjectSearchResultDTO:
+    """AI-09：混合检索（关键词 + 向量 + RRF 融合，调研材料 03 §OAG）。"""
+    ctx = _ctx(request)
+    if payload.class_rid and not payload.class_rid.startswith(
+        f"ont.{ctx.tenant_id}.",  # type: ignore[attr-defined]
+    ):
+        raise HTTPException(status_code=403, detail="cross-tenant search denied")
+    cards = await _call_scoped(
+        request, "search_objects_hybrid", payload.text, payload.class_rid,
+        payload.top_k, str(ctx.tenant_id),  # type: ignore[attr-defined]
+    )
+    return ObjectSearchResultDTO(cards=cards)
+
+
+@router.post(
     "/object-search/reindex",
     operation_id="ontReindexV2ObjectSearch",
 )

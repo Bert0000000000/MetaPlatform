@@ -338,6 +338,64 @@ class InMemoryOntologyRepository(OntologyRepository):
         cards.sort(key=lambda c: c["score"], reverse=True)
         return cards[:top_k]
 
+    def search_objects_hybrid(
+        self, text: str, class_rid: str | None = None, top_k: int = 5,
+        tenant_id: str | None = None, k_rrf: int = 60,
+    ) -> list[dict[str, Any]]:
+        """AI-09：混合检索（InMemory 同语义：关键词子串 + cosine + RRF）。"""
+        import re as _re
+
+        if self._embedder is None:
+            return []
+        tokens = [t for t in _re.split(r"\s+", text.strip()) if len(t) >= 2][:8] or [text.strip()]
+        # 关键词路
+        kw_rank: dict[str, int] = {}
+        kw_meta: dict[str, dict[str, Any]] = {}
+        for chunk in sorted(
+            self._embeddings.values(),
+            key=lambda c: c.get("created_at", "") if isinstance(c, dict) else "",
+        ):
+            if class_rid and chunk["class_rid"] != class_rid:
+                continue
+            if any(t.lower() in str(chunk["value_text"]).lower() for t in tokens):
+                irid = chunk["individual_rid"]
+                if irid not in kw_rank:
+                    kw_rank[irid] = len(kw_rank) + 1
+                    kw_meta[irid] = chunk
+        # 向量路
+        vec_cards = self.search_objects(text, class_rid, top_k * 3)
+        vec_rank = {c["individual_rid"]: i + 1 for i, c in enumerate(vec_cards)}
+        class_of = {c["individual_rid"]: c["class_rid"] for c in vec_cards}
+        for irid, meta in kw_meta.items():
+            class_of.setdefault(irid, meta["class_rid"])
+
+        def _rrf(irid: str) -> float:
+            score = 0.0
+            if irid in kw_rank:
+                score += 1.0 / (k_rrf + kw_rank[irid])
+            if irid in vec_rank:
+                score += 1.0 / (k_rrf + vec_rank[irid])
+            return score
+
+        fused = sorted(set(kw_rank) | set(vec_rank), key=_rrf, reverse=True)[:top_k]
+        return [
+            {
+                "individual_rid": irid,
+                "class_rid": class_of.get(irid, ""),
+                "score": _rrf(irid),
+                "matched": [{
+                    "property_rid": kw_meta[irid]["property_rid"] if irid in kw_meta else "",
+                    "value_text": kw_meta[irid]["value_text"] if irid in kw_meta else "",
+                    "score": _rrf(irid),
+                }],
+                "legs": {
+                    "keyword_rank": kw_rank.get(irid),
+                    "vector_rank": vec_rank.get(irid),
+                },
+            }
+            for irid in fused
+        ]
+
     def get_individual(self, rid: str) -> Individual:
         return self._individuals[rid]
 
