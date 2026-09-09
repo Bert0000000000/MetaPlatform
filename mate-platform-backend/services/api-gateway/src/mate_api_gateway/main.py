@@ -47,6 +47,8 @@ SERVICES: dict[str, str] = {
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 RATE_LIMIT_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "600"))
 UPSTREAM_TIMEOUT_SEC = float(os.getenv("UPSTREAM_TIMEOUT_SEC", "60"))
+# 请求体上限（安全测试组发现：无限制时 1MB body 令上游挂起至 504，构成 DoS 面）
+MAX_BODY_BYTES = int(os.getenv("GATEWAY_MAX_BODY_BYTES", str(1024 * 1024)))
 
 # Path prefix -> upstream service name
 ROUTE_MAP: list[tuple[str, str]] = [
@@ -214,11 +216,25 @@ def _build_target_url(target_base: str, path: str) -> httpx.URL:
 @app.api_route("/api/v1/{path:path}", methods=PROXY_METHODS)
 async def proxy(path: str, request: Request) -> Response:
     """Match longest prefix in ROUTE_MAP and forward to upstream.
-    with open('D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/.tmp-gw-debug.log', "a") as f:
-        f.write(f"[PROXY] HIT path={path} url={request.url.path} method={request.method}\n")
 
     Injects X-Forwarded-* headers, preserves body and query string.
+    Rejects bodies above GATEWAY_MAX_BODY_BYTES with 413 (DoS 面收敛).
     """
+    declared_length = request.headers.get("content-length")
+    try:
+        if declared_length and int(declared_length) > MAX_BODY_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "code": "E413_PAYLOAD_TOO_LARGE",
+                    "message": (
+                        f"body exceeds gateway limit of {MAX_BODY_BYTES} bytes"
+                    ),
+                },
+            )
+    except ValueError:
+        pass
+
     matched_service: str | None = None
     for prefix, svc in sorted(ROUTE_MAP, key=lambda x: -len(x[0])):
         if request.url.path.startswith(prefix):
