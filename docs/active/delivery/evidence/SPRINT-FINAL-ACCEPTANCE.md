@@ -58,20 +58,32 @@ marketplace 26 绿、copilot 基线持平（仅存 HEAD 存量失败）。
 
 ## 批次三 · 重资源窗口（部分完成 + 如实 [!]）
 
-### 13. staging 演练 [!]（部署成功 · 探活被窗口阻塞）
-- **已完成**：① 修复 `marketplace` NetworkPolicy 模板 bug（egress cidr 列表
-  被 quote 成 `[...]`）→ 改 range 展开；② 新增 `infra/helm/crds/
-  staging-crds.yaml`（datahub ×3 / monitoring ×2 / SealedSecret，含
-  `x-kubernetes-preserve-unknown-fields` 修正）；③ 创建 metaplatform ns；
-  ④ **helm install 成功**：release mate-staging deployed，19 pods 调度
-  （trino×3 / starrocks-fe+be / paimon / iceberg / kafka / marquez / datahub /
-  debezium / ge / deerflow / keycloak / marketplace×3 / otel / postgresql），
-  trino-coordinator 达 Running。
-- **阻塞（如实）**：docker.io 镜像拉取波（12 ImagePullBackOff；otel 0.104/
-  marketplace 镜像缺失）+ VM 内存压力 → apiserver TLS 超时 ×2（其间一次
-  WSL 硬重启恢复；PG 崩溃恢复一轮后自愈）。
-- **解锁**：独立大窗口 + 预拉镜像（daocloud→kind load）+ 构建 marketplace
-  镜像或 `--set marketplace.enabled=false`。
+### 13. staging 演练 [!]（两轮部署 · 最终卡点=存储权限/内存上限/上游镜像删除）
+
+**第二轮部署（Docker Desktop 内置 k8s，WSL2 模式）**：
+- 用户中途将 Docker Desktop 切到 Docker VMM 模式 → 触发引擎数据根切换、
+  全部容器不可见（数据仍在原 WSL2 盘，已切回并确认 111.6GB
+  docker_data.vhdx 完好保留于 D:\Docker\wsl_storage\DockerDesktopWSL\disk\）。
+- VMM 期间还发现 MemoryMiB=4096 是全天内存挤占的根源，已调至 8192。
+- 镜像拉取真相：旧引擎的 daocloud daemon-mirror 白名单拦截了大量 docker.io
+  镜像（paimon/datahub/GE 等 403 "not in allowlist"）；新引擎直拉可用。
+- **上游镜像已被删除（真实发现）**：bitnami/kafka:3.7.1（bitnami 清库）、
+  apache/paimon:0.8（仓库迁移）、starrocks 3.3（已换 3.5.21 tag 拉取成功）。
+- 已预拉成功：postgres:16 / trino:435 / keycloak:24.0(quay) /
+  debezium:2.7.0(quay) / otel:0.110.0 / marquez:0.30.0 / starrocks fe+be:3.5.21。
+- **部署**：helm install deployed（keycloak/otel/postgresql/trino×2/marquez/
+  debezium/starrocks×2 + 33 NetworkPolicy）；**otel-collector 1/1 Running、
+  trino-worker×2 1/1 Running** 达成。
+- **修复清单**：trino chart launcher 直启（node.properties/jvm.config 自生成，
+  修「-D 参数位置」崩溃 +「Too small maximum heap」）；6 个 CRD；4 个 DB
+  secret（keycloak-db/postgres-admin/marquez-db/postgresql-credentials）；
+  metaplatform ns。
+- **最终卡点（如实）**：① postgresql local-path 卷属主 initdb 报
+  Operation not permitted（需 fsGroup/存储类手术）② keycloak/starrocks
+  Pending（单节点内存上限）③ marquez/debezium 依赖 postgres 就绪
+  ④ kafka/chart 引用的上游镜像 tag 已删除。
+- **解锁**：修复 local-path+postgres 权限（subPath 或 storageClass）、
+  8GB 内存生效后逐批调度、chart 镜像 tag 全面升级。
 
 ### 14. StarRocks + Trino BI [!]
 镜像拉取受同一窗口限制（starrocks-fe/be 从未 Running）；Trino 数据面已可用
