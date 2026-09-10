@@ -1521,13 +1521,12 @@ async def append_object_type_property(
         )
 
     new_prop = _dto_to_prop(payload)
-    merged = ObjectType(
-        rid=existing.rid,
-        primary_key=existing.primary_key,
-        properties=existing.properties + (new_prop,),
-        display_name=existing.display_name,
-        interfaces=existing.interfaces,
-    )
+    # dataclasses.replace 保留全部既有字段（marking/parent_class/description/
+    # status/type_group/render_hints —— 旧版显式重建会丢 EXP-01/02/04 字段）
+    from dataclasses import replace as _dc_replace
+
+    merged = _dc_replace(
+        existing, properties=existing.properties + (new_prop,))
     saved = await _call_scoped(request, "upsert_object_type", merged)
     return _ot_to_dto(saved)
 

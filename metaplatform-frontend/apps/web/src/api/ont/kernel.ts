@@ -3,6 +3,14 @@
 
 import { apiClient } from '@/api/client';
 
+/** EXP-02：派生属性规格（fn ∈ count/sum/avg + over_link + 对端属性完整 rid）。 */
+export interface KernelDerivedSpec {
+  fn: 'count' | 'sum' | 'avg' | string;
+  over_link: string;
+  /** sum/avg 必填（对端类型属性完整 rid）；count 可为 null。 */
+  field: string | null;
+}
+
 export interface KernelProperty {
   rid: string;
   type_id: string;
@@ -10,6 +18,16 @@ export interface KernelProperty {
   primary_key: boolean;
   title: string;
   format: string;
+  // ── EXP-02 扩展（可选，增量；后端 PropertyDTO 已支持） ──
+  description?: string;
+  /** format=struct 时的嵌套字段定义。 */
+  struct_fields?: KernelProperty[];
+  array?: boolean;
+  /** 多值归约：first / latest；仅 array 时有意义。 */
+  reducer?: string | null;
+  derived?: KernelDerivedSpec | null;
+  /** 共享属性（同一 rid 被多个 ObjectType 引用）。 */
+  shared?: boolean;
 }
 
 export interface KernelObjectType {
@@ -110,6 +128,20 @@ export async function listFunctions(): Promise<KernelFunction[]> {
   return list<KernelFunction>('/functions');
 }
 
+/** EXP-02：值类型注册表条目（GET /value-types）。type_id → format 一致性由注册表保证。 */
+export interface KernelValueType {
+  type_id: string;
+  format: string;
+  description: string;
+  /** 结构化附加参数（vector dims / decimal precision 等），元数据级。 */
+  params?: Record<string, unknown>;
+}
+
+/** 值类型注册表（Property.type_id 引用目标；format 决定 struct_fields 等联动）。 */
+export async function listValueTypes(): Promise<KernelValueType[]> {
+  return list<KernelValueType>('/value-types');
+}
+
 // 写操作：与后端 PropertyDTO / ObjectTypeDTO 对齐（v2_kernel/api.py）。
 
 export interface KernelObjectTypeCreate {
@@ -118,6 +150,15 @@ export interface KernelObjectTypeCreate {
   primary_key: string[];
   properties: KernelProperty[];
   interfaces: string[];
+  // ── EXP-02/EXP-04 扩展（可选，增量；POST /object-types 整体 upsert） ──
+  marking?: string[];
+  /** 父类型 rid（浅层级声明，限 1 层）；空串 = 无。 */
+  parent_class?: string;
+  description?: string;
+  /** active / draft / deprecated。 */
+  status?: string;
+  type_group?: string;
+  render_hints?: Array<[string, string]>;
 }
 
 /** 增量追加单个 Property 到已存在的 ObjectType（POST /object-types/{rid}/properties）。 */
