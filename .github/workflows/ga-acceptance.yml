@@ -208,7 +208,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: install uv + pytest
-        run: python -m pip install uv pre-commit pytest pytest-asyncio pyyaml
+        run: python -m pip install uv pre-commit pytest pytest-asyncio pyyaml sqlalchemy pydantic httpx structlog fastapi tenacity pyjwt opentelemetry-api opentelemetry-sdk temporalio alembic
       # 依赖闭包一次性安装：uv sync --frozen 从 workspace 锁文件解全部
       # runtime+dev 依赖（手工 pip 清单连续 6 轮暴露缺口：fastapi→pyjwt→
       # otel→temporalio→alembic…），与 ga-014 同一验证过的路径
