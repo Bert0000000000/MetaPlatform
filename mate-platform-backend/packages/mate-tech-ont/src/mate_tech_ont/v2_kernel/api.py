@@ -3876,7 +3876,8 @@ async def hybrid_search_objects(
     viewer = _effective_markings(request, markings) if markings else None
     cards = await _call_scoped(
         request, "search_objects_hybrid", payload.text, payload.class_rid,
-        payload.top_k, str(ctx.tenant_id), viewer,  # type: ignore[attr-defined]
+        payload.top_k, str(ctx.tenant_id),  # type: ignore[attr-defined]
+        viewer_markings=viewer,
     )
     return ObjectSearchResultDTO(cards=cards)
 

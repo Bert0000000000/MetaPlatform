@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import LineageFullView from './components/LineageFullView';
 import { ErrorBoundary } from '@mate/shared';
+import BackingDatasourcePanel from './components/BackingDatasourcePanel';
 import BigDataSourceView from './components/BigDataSourceView';
 import CDCView from './components/CDCView';
 import ETLView from './components/ETLView';
@@ -91,6 +92,9 @@ export default function OntologyDatacenterPage({ initialSubTab }: { initialSubTa
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
+
+          {/* B5：数据源绑定（Ontology 对象索引管道，DATA-14/15）—— 顶部区块，不依赖下方 SubTab */}
+          <BackingDatasourcePanel />
 
           {/* Toolbar（Semi Button，替换原生 button） */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 16 }}>

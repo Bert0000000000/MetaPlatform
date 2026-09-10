@@ -20,6 +20,8 @@ import {
   listObjectTypes, rollbackObjectType, slugAndVersionOfObjectType,
   type ActionAuditRow, type KernelObjectType, type LintFinding, type UsageRow,
 } from '@/api/ont/kernel';
+import SchemaWipCard from './components/SchemaWipCard';
+import SecurityPolicyCard from './components/SecurityPolicyCard';
 
 const PATTERN_LABEL: Record<string, string> = {
   god_object: '上帝对象',
@@ -443,6 +445,9 @@ export default function GovernancePage() {
             </div>
           </Card>
 
+          {/* Schema 暂存（WIP，G33）—— 应用（破坏性 409 二段确认）/ 丢弃 */}
+          <SchemaWipCard />
+
           {/* 使用量 */}
           <Card bodyStyle={{ padding: 0 }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -485,6 +490,9 @@ export default function GovernancePage() {
               </div>
             )}
           </Card>
+
+          {/* 安全策略（行/列，SEC-12）—— 策略清单 + 新建 + 删除 */}
+          <SecurityPolicyCard />
 
           {/* 执行历史 */}
           <Card bodyStyle={{ padding: 0 }}>

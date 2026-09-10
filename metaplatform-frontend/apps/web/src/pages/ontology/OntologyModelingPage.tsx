@@ -12,9 +12,10 @@ import {
   getObjectType,
   precheckObjectTypes, mergeObjectTypes,
   domainOfObjectType, slugAndVersionOfObjectType, slugAndVersionOfProperty,
+  errDetailText, extractDestructiveConfirm,
   type KernelObjectType, type KernelActionType, type KernelLinkType,
   type KernelValueType, type KernelInterface, type KernelObjectTypeCreate,
-  type ObjectTypeCandidate,
+  type ObjectTypeCandidate, type DestructiveConfirmDetail,
 } from '@/api/ont/kernel';
 import { getTenantId } from '@/utils/auth';
 import { actionDisplayName } from './actions/ActionTypeListPage';
@@ -254,10 +255,12 @@ export default function OntologyModelingPage({
     if (ots.some((ot) => ot.rid === rid)) setSelectedConcept(rid);
   };
 
-  // V2 编辑器提交：create 先过 precheck 门禁；edit 整体 upsert。返回 null=成功，string=错误信息。
+  // V2 编辑器提交：create 先过 precheck 门禁；edit 整体 upsert。
+  // 返回 null=成功；string=错误信息；DestructiveConfirmDetail 对象=409 破坏性门禁
+  // （编辑器抽屉底部展示二段确认区，确认重发时 payload 顶层带 confirm_name）。
   const submitEditor = async (
     payload: KernelObjectTypeCreate, mode: 'create' | 'edit',
-  ): Promise<string | null> => {
+  ): Promise<string | DestructiveConfirmDetail | null> => {
     const domain = domainOfObjectType(payload.rid);
     // rid = ont.<tenant>.obj.<domain>.<slug>.v1 → slug 段（与 handleCreateNameBlur 的 key 同构）
     const fullSlug = slugAndVersionOfObjectType(payload.rid).slug.replace(/^obj\./, '');
@@ -287,7 +290,10 @@ export default function OntologyModelingPage({
       return null;
     } catch (e) {
       console.warn('保存概念失败', e);
-      return e instanceof Error ? e.message : String(e);
+      // G33：409 且 detail 是对象 {error:"destructive_confirm_required",...} → 交给抽屉二段确认
+      const dc = extractDestructiveConfirm(e);
+      if (dc) return dc;
+      return errDetailText(e, '保存概念失败');
     }
   };
 

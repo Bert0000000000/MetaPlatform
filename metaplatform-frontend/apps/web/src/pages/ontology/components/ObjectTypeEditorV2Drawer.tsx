@@ -17,8 +17,8 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 import {
   propSlug, slugAndVersionOfObjectType,
-  type KernelInterface, type KernelLinkType, type KernelObjectType,
-  type KernelObjectTypeCreate, type KernelValueType,
+  type DestructiveConfirmDetail, type KernelInterface, type KernelLinkType,
+  type KernelObjectType, type KernelObjectTypeCreate, type KernelValueType,
 } from '@/api/ont/kernel';
 import PropertyEditorV2, {
   FALLBACK_VALUE_TYPES, draftFormat, draftFromProperty, draftToPropertyDTO,
@@ -90,9 +90,13 @@ export interface ObjectTypeEditorV2DrawerProps {
   onClose: () => void;
   /**
    * 提交钩子（页面负责 create 的 precheck 门禁 + POST /object-types + 刷新）。
-   * 返回 null = 成功（抽屉自行关闭）；string = 错误信息（抽屉内展示并保持打开）。
+   * 返回 null = 成功（抽屉自行关闭）；string = 错误信息（抽屉内展示并保持打开）；
+   * DestructiveConfirmDetail 对象 = 409 破坏性门禁（抽屉底部展示二段确认区，
+   * 确认重发时在 payload 顶层加 confirm_name 再走本钩子）。
    */
-  onSubmit: (payload: KernelObjectTypeCreate, mode: 'create' | 'edit') => Promise<string | null>;
+  onSubmit: (
+    payload: KernelObjectTypeCreate, mode: 'create' | 'edit',
+  ) => Promise<string | DestructiveConfirmDetail | null>;
   /** create 模式概念名失焦 → 页面触发相似扫描（MP-DEDUP-01）。 */
   onCreateNameBlur?: (name: string, slug: string, domain: string) => void;
   /** 相似扫描进行中（create 概念名旁的提示）。 */
@@ -132,6 +136,9 @@ export default function ObjectTypeEditorV2Drawer({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // G33：409 破坏性变更二段确认（页面 onSubmit 返回 DestructiveConfirmDetail 时激活）
+  const [destructive, setDestructive] = useState<DestructiveConfirmDetail | null>(null);
+  const [confirmInput, setConfirmInput] = useState('');
 
   const vts = valueTypes.length > 0 ? valueTypes : FALLBACK_VALUE_TYPES;
 
@@ -164,6 +171,8 @@ export default function ObjectTypeEditorV2Drawer({
     setError('');
     setSubmitting(false);
     setExpanded(null);
+    setDestructive(null);
+    setConfirmInput('');
     const pf = prefillRef.current;
     if (mode === 'edit' && objectType) {
       setDisplayName(objectType.display_name ?? '');
@@ -243,7 +252,8 @@ export default function ObjectTypeEditorV2Drawer({
     return out;
   };
 
-  const submit = async () => {
+  /** 提交（整体 upsert）。confirmNameVal 非空 = 破坏性 409 后的确认重发（payload 顶层加 confirm_name）。 */
+  const submit = async (confirmNameVal?: string) => {
     if (mode === 'edit' && !objectType) return;
     const errs: string[] = [];
     if (!displayName.trim()) errs.push('概念显示名必填');
@@ -282,12 +292,22 @@ export default function ObjectTypeEditorV2Drawer({
         .filter((h) => h.k.trim())
         .map((h) => [h.k.trim(), h.v] as [string, string]),
     };
+    // G33：破坏性变更确认重发 —— confirm_name 加在 payload 顶层
+    if (confirmNameVal) payload.confirm_name = confirmNameVal;
     setSubmitting(true);
     setError('');
+    setDestructive(null);
     try {
-      const err = await onSubmit(payload, mode);
-      if (err) setError(err);
-      else onClose();
+      const result = await onSubmit(payload, mode);
+      if (result && typeof result === 'object') {
+        // 409 destructive_confirm_required：抽屉底部展开二段确认区
+        setDestructive(result);
+        setConfirmInput('');
+      } else if (result) {
+        setError(result);
+      } else {
+        onClose();
+      }
     } finally {
       setSubmitting(false);
     }
@@ -597,6 +617,66 @@ export default function ObjectTypeEditorV2Drawer({
 
         {/* Footer */}
         <div style={{ borderTop: '1px solid var(--border)', padding: '12px 20px', flexShrink: 0 }}>
+          {/* G33：破坏性变更二段确认区（409 destructive_confirm_required） */}
+          {destructive && (
+            <div style={{
+              marginBottom: 10, padding: 10, fontSize: 12, lineHeight: 1.6,
+              border: '1px solid var(--destructive)', borderRadius: 6,
+              background: 'var(--card)',
+            }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: 'var(--destructive)', fontWeight: 600, marginBottom: 6 }}>
+                <AlertTriangle style={{ width: 13, height: 13, flexShrink: 0 }} />
+                保存被拦截：检测到破坏性变更，需二次确认
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 8 }}>
+                {destructive.changes.map((c, i) => (
+                  <div key={i} style={{ color: 'var(--destructive)', fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
+                    · {c}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+                输入 <code style={{ color: 'var(--destructive)' }}>{destructive.confirm_with}</code>
+                （该类型当前显示名）以确认执行；确认重发会在提交体顶层附带 confirm_name。
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={confirmInput}
+                  placeholder={`输入 ${destructive.confirm_with} 以确认`}
+                  onChange={(e) => setConfirmInput(e.target.value)}
+                  style={{ ...inputStyle, height: 30, fontSize: 12, fontFamily: 'monospace' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => void submit(confirmInput.trim())}
+                  disabled={submitting || !confirmInput.trim()}
+                  style={{
+                    height: 30, padding: '0 14px', fontSize: 12, fontWeight: 600, flexShrink: 0,
+                    background: submitting ? 'var(--muted)' : 'var(--destructive)',
+                    color: submitting ? 'var(--muted-foreground)' : '#fff',
+                    border: 'none', borderRadius: 'var(--radius)',
+                    cursor: submitting ? 'wait' : 'pointer',
+                  }}
+                >
+                  {submitting ? '重发中…' : '确认重发'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDestructive(null); setConfirmInput(''); }}
+                  disabled={submitting}
+                  style={{
+                    height: 30, padding: '0 12px', fontSize: 12, flexShrink: 0,
+                    background: 'var(--card)', color: 'var(--foreground)',
+                    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          )}
           {error && (
             <div style={{
               marginBottom: 10, padding: 10, fontSize: 12, lineHeight: 1.6,

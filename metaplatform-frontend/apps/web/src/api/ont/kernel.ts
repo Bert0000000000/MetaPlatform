@@ -159,6 +159,8 @@ export interface KernelObjectTypeCreate {
   status?: string;
   type_group?: string;
   render_hints?: Array<[string, string]>;
+  /** G33：破坏性变更二段确认（须等于现有类型 display_name；后端 ObjectTypeDTO 已有该字段）。 */
+  confirm_name?: string;
 }
 
 /** 增量追加单个 Property 到已存在的 ObjectType（POST /object-types/{rid}/properties）。 */
@@ -700,4 +702,187 @@ export async function importObjectTypes(
 ): Promise<KernelObjectType> {
   const resp = await apiClient.post(v2('/object-types/import'), payload);
   return resp.data as KernelObjectType;
+}
+
+// ── G33：WIP 暂存（schema 变更暂存区，他人不可见）+ 409 破坏性门禁 ──
+
+/** G33：409 detail 的破坏性确认形态（POST /object-types 与 WIP apply 共用；detail 也可能是普通 string）。 */
+export interface DestructiveConfirmDetail {
+  error: 'destructive_confirm_required' | string;
+  changes: string[];
+  confirm_with: string;
+  hint?: string;
+}
+
+/** 从 axios 错误中提取 409 破坏性确认 detail；非该形态（含 detail 为 string）返回 null。 */
+export function extractDestructiveConfirm(e: unknown): DestructiveConfirmDetail | null {
+  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (!detail || typeof detail !== 'object' || Array.isArray(detail)) return null;
+  const d = detail as Record<string, unknown>;
+  if (d.error !== 'destructive_confirm_required') return null;
+  if (!Array.isArray(d.changes) || typeof d.confirm_with !== 'string') return null;
+  return {
+    error: 'destructive_confirm_required',
+    changes: d.changes.map(String),
+    confirm_with: d.confirm_with,
+    hint: typeof d.hint === 'string' ? d.hint : undefined,
+  };
+}
+
+/** 从 axios 错误取 FastAPI detail 文本（detail 可能是 string 或 dict —— dict 时取 message/error，兜底 JSON 串）。 */
+export function errDetailText(e: unknown, fallback: string): string {
+  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (typeof detail === 'string' && detail) return detail;
+  if (detail && typeof detail === 'object') {
+    const d = detail as Record<string, unknown>;
+    const msg = d.message ?? d.error;
+    if (typeof msg === 'string' && msg) return msg;
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      // fall through
+    }
+  }
+  if (e instanceof Error && e.message) return e.message;
+  return fallback;
+}
+
+/** GET /object-types/wip 行（payload 即 ObjectTypeDTO 形态）。 */
+export interface SchemaWipEntry {
+  rid: string;
+  author: string;
+  payload: Record<string, unknown>;
+  created_at?: string;
+}
+
+/** WIP 暂存清单（G33，他人不可见）。 */
+export async function listSchemaWip(): Promise<SchemaWipEntry[]> {
+  return list<SchemaWipEntry>('/object-types/wip');
+}
+
+/** 应用 WIP → 正式表（走与直接 upsert 相同的破坏性门禁；二段确认 confirm_name 走 query 参数）。 */
+export async function applySchemaWip(rid: string, confirmName = ''): Promise<KernelObjectType> {
+  const resp = await apiClient.post(
+    v2(`/object-types/wip/${encodeURIComponent(rid)}/apply`), {},
+    { params: confirmName ? { confirm_name: confirmName } : undefined },
+  );
+  return resp.data as KernelObjectType;
+}
+
+/** 丢弃 WIP。 */
+export async function discardSchemaWip(rid: string): Promise<{ rid: string; discarded: boolean }> {
+  const resp = await apiClient.delete(v2(`/object-types/wip/${encodeURIComponent(rid)}`));
+  return resp.data as { rid: string; discarded: boolean };
+}
+
+// ── SEC-12：行/列级安全策略 ──
+
+/** GET /security-policies 行（SELECT * 列；value 为 JSONB 反序列化值，markings 为数组）。 */
+export interface KernelSecurityPolicy {
+  rid: string;
+  kind: 'row' | 'column' | string;
+  class_rid?: string;
+  property_rid?: string;
+  field?: string;
+  op?: string;
+  value?: unknown;
+  markings?: string[];
+}
+
+/** POST /security-policies 入参（row：class_rid/field/op/value + markings；column：property_rid + markings）。 */
+export interface SecurityPolicyCreate {
+  rid?: string;
+  kind: 'row' | 'column';
+  class_rid?: string;
+  property_rid?: string;
+  field?: string;
+  op?: string;
+  value?: unknown;
+  markings: string[];
+}
+
+export async function listSecurityPolicies(): Promise<KernelSecurityPolicy[]> {
+  return list<KernelSecurityPolicy>('/security-policies');
+}
+
+export async function upsertSecurityPolicy(
+  payload: SecurityPolicyCreate,
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(v2('/security-policies'), payload);
+  return resp.data as Record<string, unknown>;
+}
+
+export async function deleteSecurityPolicy(rid: string): Promise<{ rid: string; deleted: boolean }> {
+  const resp = await apiClient.delete(v2(`/security-policies/${encodeURIComponent(rid)}`));
+  return resp.data as { rid: string; deleted: boolean };
+}
+
+// ── DATA-14/15：背挂数据源声明 + 同步 + 物化 ──
+
+/** GET /object-types/{rid}/datasources 行（DB 列名 table_name / ts_column / last_synced_at）。 */
+export interface KernelBackingDatasource {
+  rid: string;
+  class_rid: string;
+  name: string;
+  kind: string;
+  dsn_env: string;
+  table_name: string;
+  pk_column: string;
+  field_mapping: Record<string, string>;
+  priority: number;
+  ts_column?: string;
+  last_synced_at?: string | null;
+  updated_at?: string;
+}
+
+/** POST /object-types/{rid}/datasources 声明入参（DTO 字段 table；class_rid 以路径 rid 为准）。 */
+export interface BackingDatasourceCreate {
+  class_rid: string;
+  name: string;
+  kind?: string;
+  dsn_env?: string;
+  table: string;
+  pk_column: string;
+  field_mapping: Record<string, string>;
+  priority?: number;
+}
+
+export async function listBackingDatasources(
+  classRid: string,
+): Promise<KernelBackingDatasource[]> {
+  return list<KernelBackingDatasource>(
+    `/object-types/${encodeURIComponent(classRid)}/datasources`);
+}
+
+export async function upsertBackingDatasource(
+  classRid: string, payload: BackingDatasourceCreate,
+): Promise<Record<string, unknown>> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/datasources`), payload);
+  return resp.data as Record<string, unknown>;
+}
+
+/** 批量/增量同步（incremental=true 按 ts_column > 水位）；返回 {源名: 同步行数}。 */
+export async function syncBackingDatasources(
+  classRid: string, incremental = false,
+): Promise<Record<string, number>> {
+  const resp = await apiClient.post(
+    v2(`/object-types/${encodeURIComponent(classRid)}/datasources/sync`), {},
+    { params: incremental ? { incremental: true } : undefined },
+  );
+  return resp.data as Record<string, number>;
+}
+
+/** DATA-15：物化行集（对象最新状态回流读端点）。 */
+export interface MaterializationResult {
+  class_rid: string;
+  count: number;
+  rows: Array<Record<string, unknown>>;
+  schema: Record<string, Record<string, unknown>>;
+  generated_at?: string;
+}
+
+export async function getMaterialization(classRid: string): Promise<MaterializationResult> {
+  return getOne<MaterializationResult>(
+    `/object-types/${encodeURIComponent(classRid)}/materialization`);
 }
