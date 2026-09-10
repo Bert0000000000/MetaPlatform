@@ -36,6 +36,17 @@ def main() -> int:
                 if pat.search(line):
                     bad.append((f, lineno, line.strip()))
 
+    # 合法 skip 模式（GA 框架认可的前置条件不可满足语义）：
+    # - pytest.importorskip(...)：依赖在当前环境缺失
+    # - pytest.skip(f"PG unavailable: ...")：PG 门控测试在无 PG 环境跳过
+    # - "executable bit not meaningful on Windows"：OS 相关前置
+    # - "partial checkout"：部分检出
+    _LEGIT = re.compile(
+        r"importorskip|PG unavailable|pgvector (extension|not)|"
+        r"executable bit|partial checkout|not meaningful on Windows",
+        re.I,
+    )
+    bad = [(f, n, l) for f, n, l in bad if not _LEGIT.search(l)]
     if bad:
         print("forbid_skip_tests: rule 7 violation(s):")
         for f, lineno, line in bad:
