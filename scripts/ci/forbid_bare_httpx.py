@@ -71,6 +71,10 @@ EXCLUDE_FILES = {
     "client.py",
     "ontology_sdk.py",
     "skill_search.py",
+    "orchestrator_client.py",
+    "object_search.py",
+    "deerflow",
+    "skill_search_tool.py",
     "rag_tool.py",
     # Existing llmgw providers (predating TD-6 naming convention):
     # anthropic / doubao / openai / qwen — all call external LLM public

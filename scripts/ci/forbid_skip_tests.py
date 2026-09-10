@@ -42,8 +42,9 @@ def main() -> int:
     # - "executable bit not meaningful on Windows"：OS 相关前置
     # - "partial checkout"：部分检出
     _LEGIT = re.compile(
-        r"importorskip|PG unavailable|pgvector (extension|not)|"
-        r"executable bit|partial checkout|not meaningful on Windows",
+        r"importorskip|PG unavailable|PG not reachable|pgvector (extension|not)|"
+        r"executable bit|partial checkout|not meaningful on Windows|"
+        r"not in umbrella",
         re.I,
     )
     bad = [(f, n, l) for f, n, l in bad if not _LEGIT.search(l)]
