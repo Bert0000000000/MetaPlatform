@@ -51,4 +51,7 @@ components:
             platform.read: Read-only access
             platform.write: Mutation access
             platform.admin: Service-to-service admin
+            platform.marketplace.read: Platform-level (cross-tenant) marketplace install list
+            platform.marketplace.read.tenant: Tenant-scoped marketplace install list
+            platform.marketplace.write: Marketplace install / uninstall / license mutation
             tenant_switch_enabled: Permit tenant switching via X-Tenant-Id

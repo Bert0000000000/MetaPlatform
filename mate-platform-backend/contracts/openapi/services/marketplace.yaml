@@ -143,7 +143,9 @@ paths:
       description:
         "跨租户可见 — 不参与 SEC-TENANT-01 db_filter 强过滤,范围由 OAuth scope 决定:
 
-        - `platform.read` — 已认证调用可见清单
+        - `platform.marketplace.read.tenant` — 本租户安装清单
+
+        - `platform.marketplace.read` — 平台级(跨租户)安装清单
 
         "
       tags:
@@ -152,7 +154,8 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes:
-            - platform.read
+            - platform.marketplace.read
+            - platform.marketplace.read.tenant
       parameters:
         - in: query
           name: kind
@@ -197,7 +200,7 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes:
-            - platform.write
+            - platform.marketplace.write
       requestBody:
         required: true
         content:
@@ -262,7 +265,7 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes:
-            - platform.write
+            - platform.marketplace.write
       parameters:
         - in: path
           name: install_id
@@ -300,7 +303,7 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes:
-            - platform.write
+            - platform.marketplace.write
       parameters:
         - in: path
           name: install_id
@@ -353,7 +356,7 @@ paths:
         - bearerAuth: []
           tenantHeader: []
           oidcScopes:
-            - platform.write
+            - platform.marketplace.write
       requestBody:
         required: true
         content:
@@ -648,6 +651,9 @@ components:
             platform.read: Read-only access
             platform.write: Mutation access
             platform.admin: Service-to-service admin
+            platform.marketplace.read: Platform-level (cross-tenant) marketplace install list
+            platform.marketplace.read.tenant: Tenant-scoped marketplace install list
+            platform.marketplace.write: Marketplace install / uninstall / license mutation
             tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     Skill:
@@ -700,12 +706,10 @@ components:
         message:
           type: string
         retry_after_ms:
-          type: integer
-          nullable: true
+          type: ["integer", "null"]
         request_id:
-          type: string
+          type: ["string", "null"]
           format: uuid
-          nullable: true
     ArtifactSummary:
       type: object
       required:
@@ -736,19 +740,16 @@ components:
             - partner
             - community
         title:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         tags:
           type: array
           items:
             type: string
         icon:
-          type: string
+          type: ["string", "null"]
           format: uri
-          nullable: true
         installed_version:
-          type: string
-          nullable: true
+          type: ["string", "null"]
     ArtifactList:
       type: object
       required:
@@ -894,9 +895,8 @@ components:
           type: string
           format: uuid
         tenant_id:
-          type: string
+          type: ["string", "null"]
           format: uuid
-          nullable: true
         kind:
           type: string
           enum:
@@ -924,15 +924,12 @@ components:
           type: string
           format: uuid
         installed_at:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
         install_path:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         failure_reason:
-          type: string
-          nullable: true
+          type: ["string", "null"]
     InstallList:
       type: object
       required:
@@ -962,8 +959,7 @@ components:
         version:
           type: string
         license_key:
-          type: string
-          nullable: true
+          type: ["string", "null"]
     InstallAccepted:
       type: object
       required:
@@ -993,8 +989,7 @@ components:
           minimum: 0
           maximum: 100
         error:
-          type: object
-          nullable: true
+          type: ["object", "null"]
           required:
             - code
             - message
@@ -1018,9 +1013,8 @@ components:
         sku:
           type: string
         expires_at:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
     SubscriptionRow:
       type: object
       required:
@@ -1044,9 +1038,8 @@ components:
           type: string
           format: date-time
         expires_at:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
     SubscriptionList:
       type: object
       required:

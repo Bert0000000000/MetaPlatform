@@ -606,6 +606,16 @@ requirements:
       - mate-platform-backend/contracts/tests/test_runtime_comparison.py
     implementationStatus: implemented
     acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTAGENTTOOLS:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+      - copilotGetCopilotAgentTools
+    handler: mate_app_copilot.main:app#copilotGetCopilotAgentTools
+    tests:
+      - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
   FR-COPILOT-COPILOTGETCOPILOTANALYSISEXPLAINSQL:
     prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
     service: copilot

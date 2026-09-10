@@ -683,7 +683,12 @@ paths:
       x-mate-permission: mcp.read
       x-mate-requirements:
         - FR-MCP-PROTOCOL-GET
-      x-mate-implementation-status: implemented
+      # Served live by the FastMCP streamable-http ASGI mount at
+      # /api/v1/mcp/protocol (mate_tech_mcp.main). Mounted sub-apps are
+      # structurally invisible to app.openapi(), so the runtime-parity
+      # gate cannot see this route — declared placeholder (not held to
+      # FastAPI-route parity; see test_planned_and_placeholder_may_be_absent).
+      x-mate-implementation-status: placeholder
     post:
       security:
         - bearerAuth: []
@@ -703,7 +708,8 @@ paths:
       x-mate-permission: mcp.write
       x-mate-requirements:
         - FR-MCP-PROTOCOL-POST
-      x-mate-implementation-status: implemented
+      # Same mount-invisible streamable-http surface as GET above.
+      x-mate-implementation-status: placeholder
 components:
   securitySchemes:
     bearerAuth:
@@ -793,8 +799,7 @@ components:
         sort_order:
           type: integer
         parent_id:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         created_at:
           type: string
           format: date-time
@@ -814,8 +819,7 @@ components:
         sort_order:
           type: integer
         parent_id:
-          type: string
-          nullable: true
+          type: ["string", "null"]
       required: [name, code]
     # ---- Federation schemas (mirror federation.py FederatedServer) ----
     FederatedServer:
@@ -874,23 +878,18 @@ components:
       type: object
       properties:
         transport_url:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         auth_token_ref:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         description:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         status:
-          type: string
-          nullable: true
+          type: ["string", "null"]
           enum: [active, disabled, deleted]
         tools:
-          type: array
+          type: ["array", "null"]
           items:
             type: string
-          nullable: true
     FederatedTool:
       type: object
       properties:

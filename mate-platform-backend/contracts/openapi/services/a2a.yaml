@@ -689,12 +689,10 @@ components:
             - file
             - data
         text:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         data:
-          type: object
+          type: ["object", "null"]
           additionalProperties: true
-          nullable: true
     A2AMessage:
       type: object
       description: W3C A2A message envelope (the `/messages` request body).
@@ -716,11 +714,9 @@ components:
           items:
             $ref: "#/components/schemas/A2APart"
         contextId:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         taskId:
-          type: string
-          nullable: true
+          type: ["string", "null"]
     A2AArtifact:
       type: object
       description: A W3C A2A artifact attached to a Task.

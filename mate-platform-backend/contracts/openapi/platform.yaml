@@ -575,3 +575,7 @@ components:
   securitySchemes:
     bearerAuth:
       $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+    tenantHeader:
+      $ref: ./common/security.yaml#/components/securitySchemes/tenantHeader
+    oidcScopes:
+      $ref: ./common/security.yaml#/components/securitySchemes/oidcScopes

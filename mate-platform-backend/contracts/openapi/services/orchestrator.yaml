@@ -204,8 +204,7 @@ components:
         author_user_id:
           type: string
         current_step_id:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         aborted:
           type: boolean
         history:
@@ -221,8 +220,7 @@ components:
                 type: object
                 additionalProperties: true
               error:
-                type: string
-                nullable: true
+                type: ["string", "null"]
     ReviewRequest:
       type: object
       required:
@@ -829,8 +827,7 @@ paths:
                   status:
                     type: string
                   current_step_id:
-                    type: string
-                    nullable: true
+                    type: ["string", "null"]
                   results:
                     type: array
                     items:
@@ -880,8 +877,7 @@ paths:
                   status:
                     type: string
                   current_step_id:
-                    type: string
-                    nullable: true
+                    type: ["string", "null"]
                   results:
                     type: array
         "404":
