@@ -239,11 +239,13 @@ jobs:
       # sqlalchemy -> mate_tech_db sqlite in-memory store (test_ont_sql_store);
       # neo4j -> legacy repo imported at module level by mate_tech_ont.main;
       # rdflib -> owl/io.py lazy import exercised by test_owl.py assertions;
-      # psycopg2-binary -> import-time + PG-gated tests (skips without PG).
+      # psycopg2-binary -> import-time + PG-gated tests (skips without PG);
+      # pyyaml -> tests/contracts/test_lint_sunset_headers.py (CI 上一轮实跑暴露).
       - name: install minimal deps
         run: >
           pip install pytest pytest-asyncio fastapi httpx pydantic pydantic-settings
           structlog tenacity psycopg2-binary "pyjwt[crypto]" sqlalchemy neo4j rdflib
+          pyyaml
       # Root pyproject [tool.pytest.ini_options] provides pythonpath +
       # --import-mode=importlib; test files also bootstrap sys.path themselves.
       - name: mate-kernel/tests + mate-tech-ont/tests
