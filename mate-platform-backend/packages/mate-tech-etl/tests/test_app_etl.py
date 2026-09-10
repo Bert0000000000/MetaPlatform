@@ -6,8 +6,9 @@ Outbox events are captured via the shared `outbox` fixture.
 """
 from __future__ import annotations
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from fastapi.testclient import TestClient
+
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
 # ---------------------------------------------------------------------------

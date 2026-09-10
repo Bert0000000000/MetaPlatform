@@ -40,7 +40,7 @@ from __future__ import annotations
 import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Literal, Protocol
+from typing import Literal, Protocol
 
 from ..datahub import DataHubClient, DataProduct, Dataset
 from ..lineage import LineageHints

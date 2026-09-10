@@ -12,7 +12,7 @@ registry 提供 register / get / visible_to（按 actor markings 过滤）——
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

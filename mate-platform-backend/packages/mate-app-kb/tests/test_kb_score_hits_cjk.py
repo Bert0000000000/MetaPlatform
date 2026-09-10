@@ -18,8 +18,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
-import pytest
-
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
 
@@ -33,7 +31,7 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter  # noqa: E402
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
 def _make_tenant_ctx(tenant: str = "tenant-acme"):
@@ -46,7 +44,7 @@ def _make_tenant_ctx(tenant: str = "tenant-acme"):
     )
 
 
-def _build_client(tenant: str, fake_hits: list[dict]) -> "TestClient":
+def _build_client(tenant: str, fake_hits: list[dict]) -> TestClient:
     """Build a TestClient whose /search returns the given raw hits."""
     from fastapi.testclient import TestClient
 

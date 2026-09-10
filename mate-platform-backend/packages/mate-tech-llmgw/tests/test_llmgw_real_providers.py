@@ -38,11 +38,11 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_llmgw.chat import ChatMessage  # noqa: E402
-from mate_tech_llmgw.providers.real_anthropic_provider import (  # noqa: E402
+from mate_tech_llmgw.chat import ChatMessage
+from mate_tech_llmgw.providers.real_anthropic_provider import (
     RealAnthropicProvider,
 )
-from mate_tech_llmgw.providers.real_openai_provider import (  # noqa: E402
+from mate_tech_llmgw.providers.real_openai_provider import (
     RealOpenAIProvider,
 )
 

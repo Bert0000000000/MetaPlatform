@@ -94,7 +94,7 @@ def delete_document_cascade(tenant_id: str, document_id: str) -> CascadeDeleteRe
             try:
                 removed = pg_store.delete_document(document_id)
                 result.pg_chunks_removed = int(removed or 0)
-            except Exception as exc:  # noqa: BLE001 — best-effort
+            except Exception as exc:
                 _log.debug("PG cascade delete skipped: %s", exc)
 
         # Persistent kb membership rows (RAG_MODE=pg only) so a re-uploaded
@@ -108,9 +108,9 @@ def delete_document_cascade(tenant_id: str, document_id: str) -> CascadeDeleteRe
                 kb_store = get_kb_document_store()
                 if kb_store.is_available():
                     kb_membership_removed = kb_store.delete_by_document(document_id) > 0
-        except Exception as exc:  # noqa: BLE001 — best-effort
+        except Exception as exc:
             _log.debug("cascade: kb_documents delete skipped: %s", exc)
-    except Exception as exc:  # noqa: BLE001 — best-effort; index may be uninitialized
+    except Exception as exc:
         _log.debug("cascade: store iteration failed: %s", exc)
 
     # 2. Drop catalog row (RagDocument).
@@ -118,7 +118,7 @@ def delete_document_cascade(tenant_id: str, document_id: str) -> CascadeDeleteRe
         from mate_tech_rag.repositories import in_memory as mem
 
         result.catalog_removed = bool(mem.delete_document(tenant_id, document_id))
-    except Exception as exc:  # noqa: BLE001 — best-effort
+    except Exception as exc:
         _log.debug("cascade: catalog delete skipped: %s", exc)
 
     # 3. Drop lifecycle record (so search filter rejects the doc).
@@ -126,7 +126,7 @@ def delete_document_cascade(tenant_id: str, document_id: str) -> CascadeDeleteRe
         from mate_tech_rag.api.document_registry import unregister_document
 
         result.registry_removed = bool(unregister_document(tenant_id, document_id))
-    except Exception as exc:  # noqa: BLE001 — best-effort
+    except Exception as exc:
         _log.debug("cascade: registry unregister skipped: %s", exc)
 
     result.deleted = (

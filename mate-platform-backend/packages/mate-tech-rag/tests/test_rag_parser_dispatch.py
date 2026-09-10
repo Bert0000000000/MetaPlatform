@@ -9,18 +9,14 @@ parser.
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable
 from pathlib import Path
-
-import pytest
 
 REPO = Path(__file__).resolve().parents[3]
 PKG = REPO / "packages"
 for sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-rag"):
     sys.path.insert(0, str(PKG / sub / "src"))
 
-from mate_tech_rag.chunking import MarkdownChunker, RecursiveChunker  # noqa: E402
-from mate_tech_rag.clients.ragflow_client import InMemoryRAGFlowClient  # noqa: E402
+from mate_tech_rag.clients.ragflow_client import InMemoryRAGFlowClient
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +44,7 @@ class TestParserRegistryDefaults:
     def test_explicit_registry_overrides(self):
         """Caller-supplied registry overrides the class default entirely."""
         sentinel: list[str] = []
-        def fake(_b: bytes, _d: str, _f: str, _m, **_kw) -> list[str]:  # noqa: ANN001
+        def fake(_b: bytes, _d: str, _f: str, _m, **_kw) -> list[str]:
             sentinel.append("called")
             return ["from-fake"]
         client = InMemoryRAGFlowClient(parser_registry={".foo": fake})
@@ -161,7 +157,7 @@ class TestTextFallbackPath:
 class TestParserFailures:
     def test_registry_parser_exception_degrades_to_fallback(self):
         """If a registry parser raises, parse_bytes falls back to text decoder."""
-        def boom(*_a, **_kw):  # noqa: ANN001, ANN002
+        def boom(*_a, **_kw):
             raise RuntimeError("decoder exploded")
         client = InMemoryRAGFlowClient(parser_registry={".md": boom})
         chunks = client.parse_bytes(b"# Title\n\nbody", "doc", filename="x.md")
@@ -198,8 +194,10 @@ class TestUploadEndpointMarkdown:
             os.environ.setdefault(k, v)
 
         import time
+
         import jwt as pyjwt
         from fastapi.testclient import TestClient
+
         from mate_tech_rag.api import app as _app_module
         from mate_tech_rag.api.document_registry import reset_registry
         from mate_tech_rag.api.retrieval import get_lightrag, get_ragflow

@@ -176,7 +176,7 @@ async def key_info(key_id: str, request: Request) -> dict[str, Any]:
                         api_key_id=key_id,
                         since=datetime.now(UTC) - timedelta(days=30),
                     )
-                except Exception:  # noqa: BLE001 — informational only
+                except Exception:
                     payload["window_spend_usd"] = None
             return payload
     raise HTTPException(status_code=404, detail="key not found")

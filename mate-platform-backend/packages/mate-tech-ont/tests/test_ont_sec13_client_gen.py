@@ -15,11 +15,11 @@ _K = os.path.join(os.path.dirname(__file__), "..", "..", "mate-kernel", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.types.action_type import ActionType  # noqa: E402
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
-from mate_kernel.tooling.client_gen import generate_client_source  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.types.action_type import ActionType
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+from mate_kernel.tooling.client_gen import generate_client_source
 
 T = "sec13"
 OBJ = f"ont.{T}.obj.crm.vip-customer.v1"
@@ -72,7 +72,7 @@ class TestClientGen:
     def test_generated_module_instantiable(self) -> None:
         src = generate_client_source([_ot()], [], tenant=T)
         ns: dict[str, object] = {}
-        exec(compile(src, "<generated>", "exec"), ns)  # noqa: S102
+        exec(compile(src, "<generated>", "exec"), ns)
         client_cls = ns["OntologyClient"]
         client = client_cls(base_url="http://localhost:8100/api/v1/ont/v2",
                             token="t")

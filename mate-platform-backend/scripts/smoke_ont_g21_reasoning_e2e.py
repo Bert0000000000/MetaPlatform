@@ -52,7 +52,7 @@ def _call(method: str, path: str, token: str, payload: dict | None = None,
 
 def _login() -> str:
     last = ""
-    for attempt in range(5):
+    for _attempt in range(5):
         status, body = _call("POST", "/api/v1/iam/auth/login", "",
                              {"username": "admin", "password": "admin123"})
         if status == 200:

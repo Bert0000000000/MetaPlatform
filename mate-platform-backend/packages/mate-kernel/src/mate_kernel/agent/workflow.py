@@ -13,15 +13,15 @@ M3 范围：内存版流程引擎（不接 Flowable 8.0；Flowable 由 mate-tech
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from mate_kernel.action.engine import ActionService, SubmissionContext, SubmissionCriteriaFailed
-from mate_kernel.agent.orchestrator import AgentRole, AgentSelector
+from mate_kernel.agent.orchestrator import AgentSelector
 from mate_kernel.manager.protocol import Manager, ManagerContext
 
 
-class NodeKind(str, Enum):
+class NodeKind(StrEnum):
     START = "start"
     ACTION = "action"
     GATEWAY = "gateway"
@@ -56,7 +56,7 @@ class FlowDefinition:
                     raise ValueError(f"node {n.node_id} next refs missing: {ref!r}")
 
 
-class FlowStatus(str, Enum):
+class FlowStatus(StrEnum):
     RUNNING = "running"
     AWAITING_USER = "awaiting_user"
     COMPLETED = "completed"
@@ -69,7 +69,7 @@ class FlowState:
     current_node_id: str
     status: FlowStatus
     history: list[str] = field(default_factory=list)
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None
 
 
@@ -125,7 +125,7 @@ class WorkflowAgent:
         if state is None:
             raise KeyError(f"no flow state for {key!r}")
         state.status = FlowStatus.ABORTED
-        state.finished_at = datetime.now(timezone.utc)
+        state.finished_at = datetime.now(UTC)
         state.history.append(f"aborted: {reason}")
         return state
 
@@ -162,7 +162,7 @@ class WorkflowAgent:
                 continue
             if node.kind == NodeKind.END:
                 state.status = FlowStatus.COMPLETED
-                state.finished_at = datetime.now(timezone.utc)
+                state.finished_at = datetime.now(UTC)
                 state.history.append("completed")
                 break
             if node.kind == NodeKind.ACTION:

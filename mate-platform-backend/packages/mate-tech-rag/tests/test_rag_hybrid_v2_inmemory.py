@@ -10,7 +10,6 @@ Covers:
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -21,7 +20,7 @@ PKG = REPO / "packages"
 for sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-rag"):
     sys.path.insert(0, str(PKG / sub / "src"))
 
-from mate_tech_rag.clients.hybrid_v2_client import InMemoryHybridV2Client  # noqa: E402
+from mate_tech_rag.clients.hybrid_v2_client import InMemoryHybridV2Client
 
 
 # ---------------------------------------------------------------------------
@@ -30,7 +29,7 @@ from mate_tech_rag.clients.hybrid_v2_client import InMemoryHybridV2Client  # noq
 class TestCreateClientsHybridV2Mode:
     def test_hybrid_v2_forces_in_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """When RAG_MODE=hybrid_v2, get_hybrid() returns InMemoryHybridV2Client."""
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
 
         old_hybrid = retrieval._hybrid
         old_hybrid_real = retrieval._hybrid_real
@@ -54,7 +53,7 @@ class TestCreateClientsHybridV2Mode:
 
     def test_hybrid_v2_does_not_init_milvus(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """RAG_MODE=hybrid_v2 must NOT instantiate MilvusHybridClient."""
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
 
         old_hybrid = retrieval._hybrid
         old_hybrid_real = retrieval._hybrid_real
@@ -93,8 +92,6 @@ class TestHybridV2ScoreFusionMath:
         # Manually re-add with different doc:
         c._store.add("d2", "epsilon zeta eta theta", [0.0, 1.0, 0.0, 0.0])
         # Re-register BM25 entries for the second doc with the same chunk id.
-        from collections import Counter
-        from mate_tech_rag.tokenize import tokenize_for_match
         chunk_id2 = c._store._chunks.__iter__().__next__()
         # Ensure both chunks share the same text and id (re-aligned below).
         return c

@@ -28,19 +28,12 @@ PG_DSN = os.getenv(
 )
 os.environ["IAM_DATABASE_URL"] = PG_DSN
 
-from sqlalchemy import select
-
 from mate_tech_iam.db import AsyncSessionMaker, init_db
 from mate_tech_iam.domain import (
-    LoginLog,
-    Org,
-    Permission,
-    Role,
-    RolePermission,
     SystemConfig,
     User,
-    UserRole,
 )
+from sqlalchemy import select
 
 
 def _now():

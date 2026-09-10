@@ -191,7 +191,7 @@ async def anthropic_multimodal_chat(
         model=provider.model,
         message_count=len(messages),
     )
-    return await _post_and_parse(provider._client, payload)  # noqa: SLF001
+    return await _post_and_parse(provider._client, payload)
 
 
 __all__ = ["anthropic_multimodal_chat"]

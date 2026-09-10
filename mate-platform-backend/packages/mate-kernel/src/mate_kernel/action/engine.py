@@ -17,13 +17,11 @@ GOVERN-05 扩展：
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Iterable, Protocol, runtime_checkable
-
-if TYPE_CHECKING:
-    from ..ontology.identity import ClassRef
+from typing import Any, Protocol, runtime_checkable
 
 from ..sandbox.k8s import FunctionExecutor
 
@@ -213,7 +211,7 @@ class ActionService:
             target_iid=target_iid,
             parameters=parameters,
             impact_summary=impact_summary,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             requires_hitl=True,
             expected_diff=dict(expected_diff or {}),
             kind=kind,
@@ -240,7 +238,7 @@ class ActionService:
             p,
             status=to_status,
             confirmed_by=by,
-            confirmed_at=datetime.now(timezone.utc) if to_status is ProposalStatus.CONFIRMED else p.confirmed_at,
+            confirmed_at=datetime.now(UTC) if to_status is ProposalStatus.CONFIRMED else p.confirmed_at,
         )
         self._proposals[proposal_id] = updated
         return updated
@@ -347,7 +345,7 @@ class ActionService:
         executor = self._executors.get(function_ref)
         if executor is not None and self._resolver is not None:
             try:
-                from ..ontology.identity import ClassRef as _ClassRef  # noqa: PLC0415
+                from ..ontology.identity import ClassRef as _ClassRef
                 lang, source = self._resolver.resolve(_ClassRef(function_ref))
                 rc, out, err = executor.execute(source, (target_iid or "", parameters))
                 if rc != 0:
@@ -384,7 +382,7 @@ class ActionService:
                         rollback_hook(target_iid, parameters)
                     except Exception:
                         pass
-                raise FunctionExecutionError(f"function {function_ref!r} crashed")
+                raise FunctionExecutionError(f"function {function_ref!r} crashed") from None
         else:
             invoker = self._invokers.get(function_ref)
             if invoker is None:
@@ -407,7 +405,7 @@ class ActionService:
         outcome = ApplyOutcome(
             action_rid=action_rid,
             target_iid=target_iid,
-            applied_at=datetime.now(timezone.utc),
+            applied_at=datetime.now(UTC),
             side_effects_emitted=emitted,
             audit_id=f"audit-{len(self._audit) + 1}",
             rolled_back=rolled_back,

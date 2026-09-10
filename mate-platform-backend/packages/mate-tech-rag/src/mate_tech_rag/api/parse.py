@@ -13,7 +13,7 @@ P0 — per-request ragflow override:
 """
 from __future__ import annotations
 
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 
 from mate_tech_rag.api.retrieval import (
     get_embedder,

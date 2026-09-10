@@ -78,7 +78,7 @@ class TestHashEmbedder:
 
 class TestInMemoryObjectSearch:
     def test_search_returns_traceable_cards(self) -> None:
-        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: PLC0415
+        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 
         repo = InMemoryOntologyRepository()
         repo.set_embedder(HashEmbedder())  # index-on-write：先设 embedder 再写入
@@ -96,7 +96,7 @@ class TestInMemoryObjectSearch:
         assert top["card_text"]
 
     def test_class_filter_scopes_search(self) -> None:
-        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: PLC0415
+        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 
         repo = InMemoryOntologyRepository()
         repo.upsert_object_type(_ot())
@@ -106,7 +106,7 @@ class TestInMemoryObjectSearch:
         assert cards == []
 
     def test_no_embedder_returns_empty(self) -> None:
-        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: PLC0415
+        from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
 
         repo = InMemoryOntologyRepository()
         repo.create_individual(_ind("o1", "open", "memo"))
@@ -152,15 +152,15 @@ class _CaptureConn:
 
 @pytest.fixture
 def capture_repo(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, _CaptureCursor]:
-    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository  # noqa: PLC0415
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
     repo = PgOntologyRepository.__new__(PgOntologyRepository)
     repo._dsn = "postgresql://mock/mock"
     repo._lock = threading.Lock()
     repo._initialized = True
     repo._tenant_local = threading.local()
-    from mate_kernel.action.engine import ActionService  # noqa: PLC0415
-    from mate_kernel.ontology.function_resolver import (  # noqa: PLC0415
+    from mate_kernel.action.engine import ActionService
+    from mate_kernel.ontology.function_resolver import (
         InMemoryFunctionResolver,
     )
     repo._action_service = ActionService()

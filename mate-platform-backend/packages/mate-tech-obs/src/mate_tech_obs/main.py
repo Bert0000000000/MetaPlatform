@@ -25,12 +25,12 @@ from mate_platform.auth import install_auth
 from mate_platform.tenancy.guards import require_tenant
 
 from .admin import router as admin_router
-from .admin.alert_rule_routes import router as alert_rule_management_router
 from .admin.alert_rule_routes import _set_outbox as _share_alert_rule_outbox
 from .admin.alert_rule_routes import _set_store as _share_alert_rule_store
+from .admin.alert_rule_routes import router as alert_rule_management_router
 from .alerts.management import AlertRuleStore
-from .dashboards.routes import router as dashboard_config_router
 from .dashboards.routes import _set_store as _share_dashboard_config_store
+from .dashboards.routes import router as dashboard_config_router
 from .dashboards.store import DashboardConfigStore
 from .health.aggregator import aggregate_health
 from .metrics.prom import render_metrics
@@ -128,4 +128,4 @@ async def on_startup() -> None:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8083")))  # noqa: S104
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8083")))

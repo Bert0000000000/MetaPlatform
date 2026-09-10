@@ -205,12 +205,12 @@ class CostRecorder:
         if self._store is not None:
             try:
                 return await self._store.tenant_summary(tenant_id, days)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.warning("cost.pg_summary_failed", error=str(e))
         if self._pool is not None:
             try:
                 return await self._summary_from_pg(tenant_id, days)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.warning("cost.pg_summary_failed", error=str(e))
         return self._summary_from_memory(tenant_id)
 

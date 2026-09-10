@@ -35,7 +35,6 @@ ADR-0014 5-step pattern
 from __future__ import annotations
 
 from dataclasses import asdict
-from datetime import datetime
 from typing import Any
 
 import structlog
@@ -45,8 +44,8 @@ from pydantic import BaseModel, Field
 from mate_platform.tenancy.guards import require_tenant
 
 from .subscriptions import (
-    DLQEntry,
     Delivery,
+    DLQEntry,
     InMemoryDLQStore,
     Subscription,
     SubscriptionStore,
@@ -65,7 +64,7 @@ subscription_store: SubscriptionStore = SubscriptionStore()
 
 def _set_store(store: SubscriptionStore) -> None:
     """Called by main.py to share its store instance with the router."""
-    global subscription_store  # noqa: PLW0603
+    global subscription_store
     subscription_store = store
 
 
@@ -75,7 +74,7 @@ dlq_store: InMemoryDLQStore = InMemoryDLQStore()
 
 def _set_dlq_store(store: InMemoryDLQStore) -> None:
     """Called by main.py to share its DLQ store instance with the router."""
-    global dlq_store  # noqa: PLW0603
+    global dlq_store
     dlq_store = store
 
 
@@ -345,10 +344,10 @@ async def replay_dlq_endpoint(
 
 
 __all__ = [
+    "_set_dlq_store",
+    "_set_store",
     "dlq_router",
     "dlq_store",
     "router",
     "subscription_store",
-    "_set_dlq_store",
-    "_set_store",
 ]

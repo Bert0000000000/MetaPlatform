@@ -30,9 +30,9 @@ from mate_kernel.ontology.instances.individual import Individual
 
 __all__ = [
     "BackingDatasource",
-    "sync_backing_datasource",
     "apply_cdc_changes",
     "materialize_object_type",
+    "sync_backing_datasource",
 ]
 
 
@@ -124,14 +124,14 @@ def sync_backing_datasource(
                     wm = watermarks.get(ds.name)
                     if wm:
                         cur.execute(
-                            f"SELECT * FROM {ds.table} "  # noqa: S608
+                            f"SELECT * FROM {ds.table} "
                             f"WHERE {ts_col} > %s ORDER BY {ts_col} LIMIT %s",
                             (wm, batch_limit,))
                     else:
                         cur.execute(
-                            f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))  # noqa: S608
+                            f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))
                 else:
-                    cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))  # noqa: S608
+                    cur.execute(f"SELECT * FROM {ds.table} LIMIT %s", (batch_limit,))
                 rows = cur.fetchall()
         finally:
             conn.close()

@@ -51,10 +51,10 @@ async def _inject_marketplace_state(request: Request):
     以 router dependency 形式（而非 middleware）注册，确保在
     AuthMiddleware 之后执行（此时 request.state.ctx 已被填充）。
     """
-    from mate_tech_db.base import get_session, create_all
+    from mate_tech_db.base import create_all, get_session
     try:
         create_all()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("marketplace.create_all_failed", error=str(exc))
 
     session = get_session()

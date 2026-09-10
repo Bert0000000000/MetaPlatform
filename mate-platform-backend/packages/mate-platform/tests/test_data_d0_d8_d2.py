@@ -19,7 +19,6 @@ from mate_platform.datahub import (
     DataProductVersion,
     Dataset,
     InMemoryDataHubClient,
-    TenantMismatchError,
 )
 from mate_platform.lineage import LineageHints
 

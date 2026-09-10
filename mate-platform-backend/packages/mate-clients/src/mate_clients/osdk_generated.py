@@ -33,7 +33,7 @@ class GeneratedClient:
 
     def ontpostontclasses(self, **body: Any) -> Any:
         """Create class"""
-        path = f"/api/v1/ont/classes"
+        path = "/api/v1/ont/classes"
         return self._request("POST", path, json=body)
 
 
@@ -45,49 +45,49 @@ class GeneratedClient:
 
     def ontpostontexplain(self, **body: Any) -> Any:
         """SPARQL EXPLAIN (parse + transpile only)"""
-        path = f"/api/v1/ont/explain"
+        path = "/api/v1/ont/explain"
         return self._request("POST", path, json=body)
 
 
     def ontpostfederationmappings(self, **body: Any) -> Any:
         """Create cross-ontology mapping"""
-        path = f"/api/v1/ont/federation/mappings"
+        path = "/api/v1/ont/federation/mappings"
         return self._request("POST", path, json=body)
 
 
     def ontgetfederationmappings(self, **params: Any) -> Any:
         """List cross-ontology mappings"""
-        path = f"/api/v1/ont/federation/mappings"
+        path = "/api/v1/ont/federation/mappings"
         return self._request("GET", path, params=params)
 
 
     def ontpostfederationquery(self, **body: Any) -> Any:
         """Cross-ontology federation query"""
-        path = f"/api/v1/ont/federation/query"
+        path = "/api/v1/ont/federation/query"
         return self._request("POST", path, json=body)
 
 
     def ontgetontinstances(self, **params: Any) -> Any:
         """List instances (optional class_id filter)"""
-        path = f"/api/v1/ont/instances"
+        path = "/api/v1/ont/instances"
         return self._request("GET", path, params=params)
 
 
     def ontpostontinstances(self, **body: Any) -> Any:
         """Create instance"""
-        path = f"/api/v1/ont/instances"
+        path = "/api/v1/ont/instances"
         return self._request("POST", path, json=body)
 
 
     def ontgetontinstancesrelations(self, **params: Any) -> Any:
         """List relations"""
-        path = f"/api/v1/ont/instances/relations"
+        path = "/api/v1/ont/instances/relations"
         return self._request("GET", path, params=params)
 
 
     def ontpostontinstancesrelations(self, **body: Any) -> Any:
         """Create relation"""
-        path = f"/api/v1/ont/instances/relations"
+        path = "/api/v1/ont/instances/relations"
         return self._request("POST", path, json=body)
 
 
@@ -105,7 +105,7 @@ class GeneratedClient:
 
     def ontpostontontologies(self, **body: Any) -> Any:
         """Create ontology"""
-        path = f"/api/v1/ont/ontologies"
+        path = "/api/v1/ont/ontologies"
         return self._request("POST", path, json=body)
 
 
@@ -117,41 +117,41 @@ class GeneratedClient:
 
     def ontpostontsparql(self, **body: Any) -> Any:
         """SPARQL -> Cypher -> execute"""
-        path = f"/api/v1/ont/sparql"
+        path = "/api/v1/ont/sparql"
         return self._request("POST", path, json=body)
 
 
     def ontlistv2actiontypes(self, **params: Any) -> Any:
         """List ActionTypes (all write operations route through here)"""
-        path = f"/api/v1/ont/v2/action-types"
+        path = "/api/v1/ont/v2/action-types"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2actiontype(self, **body: Any) -> Any:
         """Create ActionType (write the only legal entry point)"""
-        path = f"/api/v1/ont/v2/action-types"
+        path = "/api/v1/ont/v2/action-types"
         return self._request("POST", path, json=body)
 
 
-    def ontapplyv2actiontype(self, **body: Any) -> Any:
+    def ontapplyv2actiontype(self, *, rid: str, **body: Any) -> Any:
         """Apply ActionType — only legal write entry (AI/Function/SDK all converge here)"""
         path = f"/api/v1/ont/v2/action-types/{rid}/apply"
         return self._request("POST", path, json=body)
 
 
-    def ontgetv2actionflow(self, **params: Any) -> Any:
+    def ontgetv2actionflow(self, *, rid: str, **params: Any) -> Any:
         """Get flow orchestration definition for an ActionType (SAL-05 persist)"""
         path = f"/api/v1/ont/v2/action-types/{rid}/flow"
         return self._request("GET", path, params=params)
 
 
-    def ontputv2actionflow(self, **body: Any) -> Any:
+    def ontputv2actionflow(self, *, rid: str, **body: Any) -> Any:
         """Persist flow orchestration definition for an ActionType (SAL-05 persist)"""
         path = f"/api/v1/ont/v2/action-types/{rid}/flow"
         return self._request("PUT", path, json=body)
 
 
-    def ontproposev2actiontype(self, **body: Any) -> Any:
+    def ontproposev2actiontype(self, *, rid: str, **body: Any) -> Any:
         """Propose an action (SAL-04 pending proposal, not applied)"""
         path = f"/api/v1/ont/v2/action-types/{rid}/propose"
         return self._request("POST", path, json=body)
@@ -159,29 +159,29 @@ class GeneratedClient:
 
     def ontlistv2agenttools(self, **params: Any) -> Any:
         """Virtual registry of agent tools generated from ObjectTypes (SAL-01)"""
-        path = f"/api/v1/ont/v2/agent-tools"
+        path = "/api/v1/ont/v2/agent-tools"
         return self._request("GET", path, params=params)
 
 
     def ontlistv2axioms(self, **params: Any) -> Any:
         """List Axioms"""
-        path = f"/api/v1/ont/v2/axioms"
+        path = "/api/v1/ont/v2/axioms"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2axiom(self, **body: Any) -> Any:
         """Create Axiom"""
-        path = f"/api/v1/ont/v2/axioms"
+        path = "/api/v1/ont/v2/axioms"
         return self._request("POST", path, json=body)
 
 
-    def ontinspectv2class(self, **params: Any) -> Any:
+    def ontinspectv2class(self, *, class_rid: str, **params: Any) -> Any:
         """Inspect class metadata (properties/links/actions) for agents (SAL-01)"""
         path = f"/api/v1/ont/v2/classes/{class_rid}/inspect"
         return self._request("GET", path, params=params)
 
 
-    def ontproposev2instance(self, **body: Any) -> Any:
+    def ontproposev2instance(self, *, class_rid: str, **body: Any) -> Any:
         """Propose a new instance from extracted fields (SAL-04b ingest)"""
         path = f"/api/v1/ont/v2/classes/{class_rid}/propose-instance"
         return self._request("POST", path, json=body)
@@ -189,29 +189,29 @@ class GeneratedClient:
 
     def ontlistv2functions(self, **params: Any) -> Any:
         """List Functions"""
-        path = f"/api/v1/ont/v2/functions"
+        path = "/api/v1/ont/v2/functions"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2function(self, **body: Any) -> Any:
         """Register Function (referenced by ActionType)"""
-        path = f"/api/v1/ont/v2/functions"
+        path = "/api/v1/ont/v2/functions"
         return self._request("POST", path, json=body)
 
 
     def ontlistv2individuals(self, **params: Any) -> Any:
         """List Individuals (mutable)"""
-        path = f"/api/v1/ont/v2/individuals"
+        path = "/api/v1/ont/v2/individuals"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2individual(self, **body: Any) -> Any:
         """Create Individual (use ActionType.apply for any side-effect-bearing change)"""
-        path = f"/api/v1/ont/v2/individuals"
+        path = "/api/v1/ont/v2/individuals"
         return self._request("POST", path, json=body)
 
 
-    def ontgetv2individual(self, **params: Any) -> Any:
+    def ontgetv2individual(self, *, rid: str, **params: Any) -> Any:
         """Read Individual"""
         path = f"/api/v1/ont/v2/individuals/{rid}"
         return self._request("GET", path, params=params)
@@ -219,41 +219,41 @@ class GeneratedClient:
 
     def ontlistv2interfaces(self, **params: Any) -> Any:
         """List Interfaces (polymorphic surface)"""
-        path = f"/api/v1/ont/v2/interfaces"
+        path = "/api/v1/ont/v2/interfaces"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2interface(self, **body: Any) -> Any:
         """Create Interface"""
-        path = f"/api/v1/ont/v2/interfaces"
+        path = "/api/v1/ont/v2/interfaces"
         return self._request("POST", path, json=body)
 
 
     def ontlistv2linkinstances(self, **params: Any) -> Any:
         """List LinkInstances"""
-        path = f"/api/v1/ont/v2/link-instances"
+        path = "/api/v1/ont/v2/link-instances"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2linkinstance(self, **body: Any) -> Any:
         """Create LinkInstance"""
-        path = f"/api/v1/ont/v2/link-instances"
+        path = "/api/v1/ont/v2/link-instances"
         return self._request("POST", path, json=body)
 
 
     def ontlistv2linktypes(self, **params: Any) -> Any:
         """List LinkTypes"""
-        path = f"/api/v1/ont/v2/link-types"
+        path = "/api/v1/ont/v2/link-types"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2linktype(self, **body: Any) -> Any:
         """Create LinkType"""
-        path = f"/api/v1/ont/v2/link-types"
+        path = "/api/v1/ont/v2/link-types"
         return self._request("POST", path, json=body)
 
 
-    def ontgetv2linktype(self, **params: Any) -> Any:
+    def ontgetv2linktype(self, *, rid: str, **params: Any) -> Any:
         """Read LinkType"""
         path = f"/api/v1/ont/v2/link-types/{rid}"
         return self._request("GET", path, params=params)
@@ -261,89 +261,89 @@ class GeneratedClient:
 
     def ontexecutev2objectquery(self, **body: Any) -> Any:
         """Execute structured ObjectSet IR query (SAL-01)"""
-        path = f"/api/v1/ont/v2/object-query"
+        path = "/api/v1/ont/v2/object-query"
         return self._request("POST", path, json=body)
 
 
     def ontsearchv2objects(self, **body: Any) -> Any:
         """Semantic object search - OAG retrieval context (SAL-02)"""
-        path = f"/api/v1/ont/v2/object-search"
+        path = "/api/v1/ont/v2/object-search"
         return self._request("POST", path, json=body)
 
 
     def ontreindexv2objectsearch(self, **body: Any) -> Any:
         """Backfill object embeddings for the tenant (SAL-02)"""
-        path = f"/api/v1/ont/v2/object-search/reindex"
+        path = "/api/v1/ont/v2/object-search/reindex"
         return self._request("POST", path, json=body)
 
 
     def ontevaluatev2objectset(self, **body: Any) -> Any:
         """Evaluate ObjectSet → bindings"""
-        path = f"/api/v1/ont/v2/object-sets/query"
+        path = "/api/v1/ont/v2/object-sets/query"
         return self._request("POST", path, json=body)
 
 
     def ontlistv2objecttypes(self, **params: Any) -> Any:
         """List ObjectTypes (v2 不可变类型层)"""
-        path = f"/api/v1/ont/v2/object-types"
+        path = "/api/v1/ont/v2/object-types"
         return self._request("GET", path, params=params)
 
 
     def ontcreatev2objecttype(self, **body: Any) -> Any:
         """Create ObjectType (v2 不可变类型层)"""
-        path = f"/api/v1/ont/v2/object-types"
+        path = "/api/v1/ont/v2/object-types"
         return self._request("POST", path, json=body)
 
 
     def ontproposev2objecttype(self, **body: Any) -> Any:
         """Propose a new ObjectType from text (SAL-04b AI-assisted modeling)"""
-        path = f"/api/v1/ont/v2/object-types/propose"
+        path = "/api/v1/ont/v2/object-types/propose"
         return self._request("POST", path, json=body)
 
 
-    def ontgetv2objecttype(self, **params: Any) -> Any:
+    def ontgetv2objecttype(self, *, rid: str, **params: Any) -> Any:
         """Read ObjectType by rid"""
         path = f"/api/v1/ont/v2/object-types/{rid}"
         return self._request("GET", path, params=params)
 
 
-    def ontappendv2objecttypeproperty(self, **body: Any) -> Any:
+    def ontappendv2objecttypeproperty(self, *, rid: str, **body: Any) -> Any:
         """Append a Property to an existing ObjectType (v2 不可变类型层增量)"""
         path = f"/api/v1/ont/v2/object-types/{rid}/properties"
         return self._request("POST", path, json=body)
 
 
-    def ontgetv2proposal(self, **params: Any) -> Any:
+    def ontgetv2proposal(self, *, proposal_id: str, **params: Any) -> Any:
         """Get proposal (SAL-04 state machine)"""
         path = f"/api/v1/ont/v2/proposals/{proposal_id}"
         return self._request("GET", path, params=params)
 
 
-    def ontconfirmv2proposal(self, **body: Any) -> Any:
+    def ontconfirmv2proposal(self, *, proposal_id: str, **body: Any) -> Any:
         """Confirm proposal (user-side HITL; pending -> confirmed)"""
         path = f"/api/v1/ont/v2/proposals/{proposal_id}/confirm"
         return self._request("POST", path, json=body)
 
 
-    def ontexecutev2proposal(self, **body: Any) -> Any:
+    def ontexecutev2proposal(self, *, proposal_id: str, **body: Any) -> Any:
         """Execute a confirmed proposal (create_instance / model_type; SAL-04b)"""
         path = f"/api/v1/ont/v2/proposals/{proposal_id}/execute"
         return self._request("POST", path, json=body)
 
 
-    def ontrejectv2proposal(self, **body: Any) -> Any:
+    def ontrejectv2proposal(self, *, proposal_id: str, **body: Any) -> Any:
         """Reject proposal (terminal)"""
         path = f"/api/v1/ont/v2/proposals/{proposal_id}/reject"
         return self._request("POST", path, json=body)
 
 
-    def ontlistv2versions(self, **params: Any) -> Any:
+    def ontlistv2versions(self, *, class_rid: str, **params: Any) -> Any:
         """List Versions of a class"""
         path = f"/api/v1/ont/v2/versions/{class_rid}"
         return self._request("GET", path, params=params)
 
 
-    def ontcreatev2version(self, **body: Any) -> Any:
+    def ontcreatev2version(self, *, class_rid: str, **body: Any) -> Any:
         """Snapshot new Version (immutable history)"""
         path = f"/api/v1/ont/v2/versions/{class_rid}"
         return self._request("POST", path, json=body)
@@ -351,5 +351,5 @@ class GeneratedClient:
 
     def ontgethealthz(self, **params: Any) -> Any:
         """Liveness probe"""
-        path = f"/healthz"
+        path = "/healthz"
         return self._request("GET", path, params=params)

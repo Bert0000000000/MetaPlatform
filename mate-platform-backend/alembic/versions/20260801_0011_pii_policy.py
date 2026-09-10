@@ -14,6 +14,7 @@ Per ADR-0016 §3.3 D7.
 from __future__ import annotations
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0011_pii_policy"

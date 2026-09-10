@@ -53,7 +53,7 @@ class OntologyContract:
     action_type: dict[str, Any]
 
 
-class EvidenceUnavailable(RuntimeError):  # noqa: N818 - public API mandated by the task brief
+class EvidenceUnavailable(RuntimeError):
     """Raised when the order-review evidence bundle cannot be built."""
 
 

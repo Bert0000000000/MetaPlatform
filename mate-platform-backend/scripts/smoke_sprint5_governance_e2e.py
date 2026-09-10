@@ -31,7 +31,7 @@ def _call(method: str, path: str, token: str, payload: dict | None = None,
     if token:
         headers["Authorization"] = f"Bearer {token}"
     last_exc: Exception | None = None
-    for attempt in range(3):
+    for _attempt in range(3):
         req = urllib.request.Request(GW + path, data=data, headers=headers,
                                      method=method)
         try:

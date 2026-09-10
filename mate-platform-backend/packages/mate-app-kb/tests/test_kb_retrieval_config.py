@@ -31,7 +31,7 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter  # noqa: E402
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
 def _make_tenant_ctx(tenant: str = "tenant-acme"):

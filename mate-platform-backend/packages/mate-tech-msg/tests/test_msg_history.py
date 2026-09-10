@@ -29,10 +29,10 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-import jwt as _pyjwt  # noqa: E402
+import jwt as _pyjwt
 
-from mate_tech_msg import in_memory as msg_store  # noqa: E402
-from mate_tech_msg import main as main_mod  # noqa: E402
+from mate_tech_msg import in_memory as msg_store
+from mate_tech_msg import main as main_mod
 
 _TEST_JWT_SECRET = "test-secret"
 

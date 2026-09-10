@@ -20,17 +20,15 @@ import pytest
 from mate_platform.auth import (
     InMemoryRetentionStore,
     RetentionPolicy,
-    request_gdpr_forget,
     is_tenant_soft_deleted,
+    request_gdpr_forget,
 )
+from mate_platform.auth.retention import SoftDeleteRecord
 from mate_platform.auth.retention_cleanup import (
-    CleanupResult,
-    DEFAULT_BUSINESS_TABLES,
     find_ready_hard_deletes,
     run_gdpr_hard_delete,
     run_retention_cleanup,
 )
-from mate_platform.auth.retention import SoftDeleteRecord
 
 
 @pytest.fixture

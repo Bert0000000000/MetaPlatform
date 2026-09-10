@@ -18,7 +18,6 @@ Keycloak / IAM / dev_server.
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -46,7 +45,6 @@ class TestInMemoryRAGFlowChunkingOverride:
 
     def test_default_uses_recursive_strategy(self):
         """Default constructor + default parse() uses recursive chunker."""
-        from mate_tech_rag.chunking import RecursiveChunker
         from mate_tech_rag.clients.ragflow_client import InMemoryRAGFlowClient
 
         client = InMemoryRAGFlowClient()
@@ -57,7 +55,6 @@ class TestInMemoryRAGFlowChunkingOverride:
 
     def test_per_call_markdown_strategy(self):
         """Passing chunker_strategy='markdown' switches to MarkdownChunker."""
-        from mate_tech_rag.chunking import MarkdownChunker
         from mate_tech_rag.clients.ragflow_client import InMemoryRAGFlowClient
 
         client = InMemoryRAGFlowClient(chunker_strategy="recursive")

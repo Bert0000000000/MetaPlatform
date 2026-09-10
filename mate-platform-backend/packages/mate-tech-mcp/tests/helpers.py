@@ -11,7 +11,7 @@ import time
 
 import jwt as _pyjwt
 
-_TEST_JWT_SECRET = "test-secret"  # noqa: S105 - test-only signing key
+_TEST_JWT_SECRET = "test-secret"
 
 
 def make_keycloak_token(

@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Optional
 
 
 class MissingTenantContextError(RuntimeError):
@@ -45,7 +44,7 @@ class TenantContext:
             )
 
 
-_current: ContextVar[Optional[TenantContext]] = ContextVar(
+_current: ContextVar[TenantContext | None] = ContextVar(
     "mate_kernel_current_tenant", default=None
 )
 
@@ -59,7 +58,7 @@ def clear_tenant() -> None:
     _current.set(None)
 
 
-def current_tenant() -> Optional[TenantContext]:
+def current_tenant() -> TenantContext | None:
     return _current.get()
 
 
@@ -82,12 +81,12 @@ def assert_same_tenant(resource_tenant: str, ctx: TenantContext) -> None:
 
 
 __all__ = [
-    "TenantContext",
-    "MissingTenantContextError",
     "CrossTenantAccessError",
-    "set_tenant",
+    "MissingTenantContextError",
+    "TenantContext",
+    "assert_same_tenant",
     "clear_tenant",
     "current_tenant",
     "require_tenant",
-    "assert_same_tenant",
+    "set_tenant",
 ]

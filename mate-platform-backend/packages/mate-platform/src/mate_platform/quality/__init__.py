@@ -1,8 +1,8 @@
 """Public API for mate_platform.quality (DATA-D3)."""
 from .client import (
     Check,
-    CheckResult,
     Checkpoint,
+    CheckResult,
     ExpectationSuite,
     ExpectationSuiteNotFoundError,
     InMemoryQualityClient,

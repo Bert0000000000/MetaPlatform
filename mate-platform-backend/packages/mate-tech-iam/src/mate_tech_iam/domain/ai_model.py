@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Index, String
+from sqlalchemy import Boolean, Column, DateTime, Index
 from sqlmodel import Field, SQLModel
 
 

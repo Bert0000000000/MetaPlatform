@@ -18,11 +18,11 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class SessionPhase(str, Enum):
+class SessionPhase(StrEnum):
     PLANNING = "planning"
     AWAITING_USER = "awaiting_user"
     RUNNING = "running"

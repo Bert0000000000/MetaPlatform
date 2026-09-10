@@ -35,7 +35,7 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_mcp.federation import (  # noqa: E402
+from mate_tech_mcp.federation import (
     AuthError,
     FederationDLQ,
     FederationDLQEntry,
@@ -47,7 +47,7 @@ from mate_tech_mcp.federation import (  # noqa: E402
 )
 
 ENDPOINT = "http://remote-mcp:8081"
-TOKEN = "test-bearer-token"  # noqa: S105
+TOKEN = "test-bearer-token"
 
 
 # ---------------------------------------------------------------------------
@@ -210,14 +210,14 @@ class TestHealthChecker:
             tenant_id="t1",
             name="up-server",
             transport_url="http://up:8081",
-            auth_token_ref="vault://up",  # noqa: S106
+            auth_token_ref="vault://up",
             tools=("tool.a",),
         )
         dead = registry.register_server(
             tenant_id="t1",
             name="down-server",
             transport_url="http://down:8081",
-            auth_token_ref="vault://down",  # noqa: S106
+            auth_token_ref="vault://down",
             tools=("tool.b",),
         )
 
@@ -249,14 +249,14 @@ class TestHealthChecker:
             tenant_id="t1",
             name="up",
             transport_url="http://up:8081",
-            auth_token_ref="vault://up",  # noqa: S106
+            auth_token_ref="vault://up",
             tools=("tool.a",),
         )
         already_down = registry.register_server(
             tenant_id="t1",
             name="down",
             transport_url="http://down:8081",
-            auth_token_ref="vault://down",  # noqa: S106
+            auth_token_ref="vault://down",
             tools=("tool.b",),
         )
         # Flip one to disabled before the run.
@@ -289,7 +289,7 @@ class TestHealthChecker:
             tenant_id="t1",
             name="flaky",
             transport_url="http://flaky:8081",
-            auth_token_ref="vault://flaky",  # noqa: S106
+            auth_token_ref="vault://flaky",
             tools=("tool.x",),
         )
 

@@ -209,7 +209,7 @@ class FakeCursor:
     def fetchall(self) -> list[tuple]:
         return list(self._results)
 
-    def __enter__(self) -> "FakeCursor":
+    def __enter__(self) -> FakeCursor:
         return self
 
     def __exit__(self, *exc: Any) -> None:
@@ -226,7 +226,7 @@ class FakeConnection:
     def commit(self) -> None:
         return None
 
-    def __enter__(self) -> "FakeConnection":
+    def __enter__(self) -> FakeConnection:
         return self
 
     def __exit__(self, *exc: Any) -> None:
@@ -518,7 +518,7 @@ class TestLatencyBucketPgFlush:
         bucket = LatencyBucket(name="search", pg_sink=sink, flush_every=10)
         for i in range(10):
             bucket.observe(float(i))  # flush -> PG has 10
-        for i in range(3):
+        for _ in range(3):
             bucket.observe(100.0)  # 3 unflushed
         merged = bucket.snapshot_merged({"count": 10, "sum_ms": 45.0, "p95_last": 8.0})
         assert merged["count"] == 13
@@ -593,8 +593,8 @@ class TestCreateClientsPgWiring:
     def test_pg_mode_wires_graph_and_lightrag(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        import mate_tech_rag.api.retrieval as retrieval
-        import mate_tech_rag.storage.pg_ext_store as pg_ext_store
+        from mate_tech_rag.api import retrieval
+        from mate_tech_rag.storage import pg_ext_store
         from mate_tech_rag.storage.pg_ext_store import PgGraphRAGClient, PgLightRAGClient
 
         saved = (
@@ -621,7 +621,7 @@ class TestCreateClientsPgWiring:
             self._restore(retrieval, saved)
 
     def test_pg_mode_requires_reachable_pg(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
 
         saved = (
             retrieval._hybrid, retrieval._graph, retrieval._lightrag,
@@ -640,7 +640,7 @@ class TestCreateClientsPgWiring:
     def test_memory_mode_leaves_pg_mode_flag_false(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
 
         saved = (
             retrieval._hybrid, retrieval._graph, retrieval._lightrag,
@@ -802,7 +802,7 @@ class TestMetricsEndpointPgMerge:
 # ---------------------------------------------------------------------------
 class TestPoolResurrection:
     def test_connection_failure_triggers_reconnect(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import mate_tech_rag.storage.pg_ext_store as pg_ext_store
+        from mate_tech_rag.storage import pg_ext_store
 
         class DeadPool:
             def connection(self) -> None:
@@ -825,7 +825,7 @@ class TestPoolResurrection:
         assert client.query("复活", top_k=3)
 
     def test_close_shared_pools_resets_singletons(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import mate_tech_rag.storage.pg_ext_store as pg_ext_store
+        from mate_tech_rag.storage import pg_ext_store
 
         monkeypatch.setattr(pg_ext_store, "_POOLS", {})
         monkeypatch.setattr(
@@ -843,9 +843,9 @@ class TestCascadeKbCleanup:
     def test_cascade_deletes_kb_membership_rows(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        import mate_tech_rag.api.retrieval as retrieval
-        import mate_tech_rag.storage.pg_ext_store as pg_ext_store
+        from mate_tech_rag.api import retrieval
         from mate_tech_rag.api.cascade import delete_document_cascade
+        from mate_tech_rag.storage import pg_ext_store
 
         fake = FakeKbStore()
         fake.register("kb-1", "doc-cascade")
@@ -858,9 +858,9 @@ class TestCascadeKbCleanup:
     def test_cascade_skips_kb_cleanup_in_memory_mode(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        import mate_tech_rag.api.retrieval as retrieval
-        import mate_tech_rag.storage.pg_ext_store as pg_ext_store
+        from mate_tech_rag.api import retrieval
         from mate_tech_rag.api.cascade import delete_document_cascade
+        from mate_tech_rag.storage import pg_ext_store
 
         def _fail(dsn=None):  # pragma: no cover - must not be called
             raise AssertionError("get_kb_document_store must not run in memory mode")

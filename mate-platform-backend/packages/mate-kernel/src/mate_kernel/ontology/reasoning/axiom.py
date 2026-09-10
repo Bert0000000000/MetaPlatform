@@ -8,12 +8,12 @@ SubclassRule/TransitivityRule 是其雏形。不可变。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 from ..identity.class_ref import ClassRef
 
 
-class AxiomKind(str, Enum):
+class AxiomKind(StrEnum):
     SUBCLASS = "subclass"  # SubclassRule
     TRANSITIVITY = "transitivity"  # TransitivityRule
     PROPERTY = "property"  # 属性约束

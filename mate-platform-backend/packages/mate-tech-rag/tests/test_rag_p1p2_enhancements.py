@@ -16,6 +16,7 @@ from pathlib import Path
 
 import jwt as pyjwt
 import pytest
+from fastapi.testclient import TestClient
 
 os.environ.setdefault("INSECURE_SKIP_SIGNATURE", "1")
 os.environ.setdefault("KEYCLOAK_URL", "http://localhost:8080")
@@ -29,7 +30,7 @@ PKG = REPO / "packages"
 for sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-rag"):
     sys.path.insert(0, str(PKG / sub / "src"))
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter  # noqa: E402
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 JWT_SECRET = "test-secret"
 
@@ -81,10 +82,10 @@ def _reset_rag_state() -> None:
 
 
 @pytest.fixture
-def rag_client() -> Iterator["TestClient"]:
-    _reset_rag_state()
+def rag_client() -> Iterator[TestClient]:
     from fastapi.testclient import TestClient
 
+    _reset_rag_state()
     from mate_tech_rag.api import app as rag_app_module
 
     rag_app_module.app.state.outbox_writer = InMemoryOutboxWriter()

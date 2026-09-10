@@ -220,7 +220,7 @@ class InMemoryHybridV2Client:
         vals = list(scores.values())
         lo, hi = min(vals), max(vals)
         if hi == lo:
-            return {k: 1.0 for k in scores}
+            return dict.fromkeys(scores, 1.0)
         span = hi - lo
         return {k: (v - lo) / span for k, v in scores.items()}
 

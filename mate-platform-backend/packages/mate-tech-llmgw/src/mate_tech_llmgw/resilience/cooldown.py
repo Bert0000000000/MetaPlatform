@@ -75,7 +75,7 @@ class CooldownManager:
         """Remaining cooldown seconds, or None when the provider is free."""
         try:
             until = self._redis.get(f"llmgw:cd:{provider}:until")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("llmgw.cooldown.check_failed", provider=provider, error=str(exc))
             return None
         if until is None:
@@ -112,7 +112,7 @@ class CooldownManager:
                     allowed_fails=self._allowed_fails,
                     duration_sec=self._cooldown_duration(retry_after_hint, cooldown_sec),
                 )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("llmgw.cooldown.record_failed", provider=provider, error=str(exc))
 
     async def record_success(self, provider: str) -> None:
@@ -121,7 +121,7 @@ class CooldownManager:
             await self._redis.delete(
                 f"llmgw:cd:{provider}:fails", f"llmgw:cd:{provider}:fails:ts"
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("llmgw.cooldown.reset_failed", provider=provider, error=str(exc))
 
     def _cooldown_duration(

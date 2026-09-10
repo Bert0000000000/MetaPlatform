@@ -163,7 +163,7 @@ async def test_complexity_routing_deep() -> None:
         query=query,
         llmgw_client=llmgw,
         ctx=_ctx(),
-        bearer_token="test-token",  # noqa: S106
+        bearer_token="test-token",
         http_client=http,
     )
 

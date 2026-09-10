@@ -3,19 +3,19 @@
 from .api import OntologyRepository
 from .identity import ClassRef, Version
 from .in_memory import InMemoryOntologyRepository
+from .instances import Individual, LinkInstance
+from .query import ObjectSet
+from .reasoning import Axiom, AxiomKind, Function, FunctionLanguage
 from .types import (
-    Property,
-    PropertyFormat,
-    ObjectType,
-    LinkType,
+    ActionType,
     Cardinality,
     Directionality,
-    ActionType,
     Interface,
+    LinkType,
+    ObjectType,
+    Property,
+    PropertyFormat,
 )
-from .instances import Individual, LinkInstance
-from .reasoning import Axiom, AxiomKind, Function, FunctionLanguage
-from .query import ObjectSet
 
 __all__ = [
     # identity

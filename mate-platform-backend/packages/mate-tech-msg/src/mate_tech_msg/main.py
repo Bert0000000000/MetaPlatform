@@ -29,9 +29,9 @@ from .kafka_client import create_kafka_client
 from .observability.tracing import init_tracing
 from .publisher import Publisher
 from .schemas import PublishRequest, PublishResponse
-from .subscription_routes import router as subscription_router
-from .subscription_routes import dlq_router as dlq_router_mod
 from .subscription_routes import _set_dlq_store as _share_dlq_store
+from .subscription_routes import dlq_router as dlq_router_mod
+from .subscription_routes import router as subscription_router
 from .subscriptions import InMemoryDLQStore, SubscriptionStore
 
 logger = structlog.get_logger(__name__)
@@ -46,7 +46,7 @@ dlq_store = InMemoryDLQStore()
 # Share the store with the subscription_routes module so handlers
 # resolve to the same instance (the router module also creates a
 # default store at import time as a fallback for direct-import tests).
-from .subscription_routes import _set_store as _share_subscription_store  # noqa: E402
+from .subscription_routes import _set_store as _share_subscription_store
 
 _share_subscription_store(subscription_store)
 _share_dlq_store(dlq_store)

@@ -8,7 +8,7 @@ _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-from mate_kernel.ontology.rulesdsl import (  # noqa: E402
+from mate_kernel.ontology.rulesdsl import (
     parse_rules,
     run_rules,
 )

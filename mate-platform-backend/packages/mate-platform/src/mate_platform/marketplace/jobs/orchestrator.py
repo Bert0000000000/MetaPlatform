@@ -16,7 +16,8 @@ from __future__ import annotations
 import enum
 import logging
 import uuid
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from packaging.version import InvalidVersion, Version
 
@@ -30,7 +31,7 @@ from mate_clients.marketplace.errors import (
 log = logging.getLogger(__name__)
 
 
-class InstallState(str, enum.Enum):
+class InstallState(enum.StrEnum):
     DOWNLOADING = "downloading"
     VERIFYING = "verifying"
     INSTALLED = "installed"

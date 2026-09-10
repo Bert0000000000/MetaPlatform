@@ -34,7 +34,6 @@ from typing import Any, Protocol
 
 from ..observability.xdomain_audit import (
     CrossDomainAuditSink,
-    InMemoryCrossDomainSink,
     emit_cross_domain_query,
 )
 

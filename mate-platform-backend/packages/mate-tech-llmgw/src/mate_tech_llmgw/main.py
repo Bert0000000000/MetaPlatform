@@ -35,12 +35,12 @@ from .cost.recorder import CostRecorder
 from .quota.bucket import RedisTokenBucket
 from .repositories.ddl import ensure_schema
 from .router import (
+    get_quota_bucket,
     set_cache,
     set_cost_recorder,
     set_monthly_bucket,
     set_quota_bucket,
     set_user_daily_cap,
-    get_quota_bucket,
 )
 
 logger = structlog.get_logger(__name__)
@@ -79,7 +79,7 @@ async def _build_redis_client() -> Any | None:
     try:
         client = redis.from_url(url, decode_responses=True, socket_connect_timeout=2)
         await client.ping()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("mate-tech-llmgw.redis.degraded", error=str(exc))
         return None
     return client
@@ -98,7 +98,7 @@ async def _build_pg_pool() -> Any | None:
         import asyncpg
 
         pool = await asyncpg.create_pool(dsn, min_size=1, max_size=5, timeout=5)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("mate-tech-llmgw.pg.degraded", error=str(exc))
         return None
     return pool
@@ -118,19 +118,19 @@ class _RuntimeDeps:
         if self.cache is not None:
             try:
                 await self.cache.close()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
             self.cache = None
         elif self.redis_client is not None:
             try:
                 await self.redis_client.aclose()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
             self.redis_client = None
         if self.pg_pool is not None:
             try:
                 await self.pg_pool.close()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
             self.pg_pool = None
 
@@ -164,12 +164,12 @@ async def lifespan(app: FastAPI):
     # --- Infrastructure clients (each degrades to None independently) ---
     try:
         deps.redis_client = await _build_redis_client()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("mate-tech-llmgw.redis.build_failed", error=str(exc))
         deps.redis_client = None
     try:
         deps.pg_pool = await _build_pg_pool()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("mate-tech-llmgw.pg.build_failed", error=str(exc))
         deps.pg_pool = None
 
@@ -196,7 +196,7 @@ async def lifespan(app: FastAPI):
                 shared_client=not quota_bucket_owns_client,
                 per_tenant_config=deps.pg_pool is not None,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             owned_quota_bucket = None
             logger.warning("mate-tech-llmgw.quota.degraded", error=str(exc))
 
@@ -207,7 +207,7 @@ async def lifespan(app: FastAPI):
                 deps.cache = LLMCache(redis_client=deps.redis_client)
                 set_cache(deps.cache)
                 logger.info("mate-tech-llmgw.cache.enabled", backend="redis")
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 deps.cache = None
                 logger.warning("mate-tech-llmgw.cache.degraded", error=str(exc))
         else:
@@ -227,7 +227,7 @@ async def lifespan(app: FastAPI):
                     )
                 )
                 logger.info("mate-tech-llmgw.cooldown.enabled")
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 from .resilience.cooldown import set_cooldown
 
                 set_cooldown(None)
@@ -246,7 +246,7 @@ async def lifespan(app: FastAPI):
         logger.info(
             "mate-tech-llmgw.cost.enabled", persistent=cost_pool is not None
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("mate-tech-llmgw.cost.degraded", error=str(exc))
 
     # --- Monthly token ceiling (in-memory or PG-backed) ---
@@ -254,7 +254,7 @@ async def lifespan(app: FastAPI):
         try:
             set_monthly_bucket(MonthlyTokenBucket(pool=deps.pg_pool))
             logger.info("mate-tech-llmgw.monthly_ceiling.enabled")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("mate-tech-llmgw.monthly_ceiling.degraded", error=str(exc))
 
     # --- Per-user daily cost cap (in-memory) ---
@@ -262,7 +262,7 @@ async def lifespan(app: FastAPI):
         try:
             set_user_daily_cap(UserDailyCap())
             logger.info("mate-tech-llmgw.user_daily_cap.enabled")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("mate-tech-llmgw.user_daily_cap.degraded", error=str(exc))
 
     # --- Virtual API keys (P5: store + cache; verifier resolves these lazily) ---
@@ -280,7 +280,7 @@ async def lifespan(app: FastAPI):
                 deps.redis_client,
             )
             logger.info("mate-tech-llmgw.apikeys.enabled")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             from .security.api_keys import set_api_key_runtime
 
             set_api_key_runtime(None, None, None)
@@ -303,7 +303,7 @@ async def lifespan(app: FastAPI):
         # P6: release provider HTTP clients explicitly on graceful shutdown.
         try:
             await close_all_providers()
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
         # Only clear the quota bucket we own; an externally injected one
         # (dev_server / tests) must survive our shutdown.
@@ -312,7 +312,7 @@ async def lifespan(app: FastAPI):
             if quota_bucket_owns_client:
                 try:
                     await owned_quota_bucket.close()
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass
         await deps.close()
 
@@ -329,12 +329,12 @@ app = FastAPI(
 # the JWT verifier rejects fall through to llmgw_api_key_verifier, which
 # resolves the PG/Redis singletons lazily (the pool only exists inside the
 # lifespan). Default behavior for every other service is unchanged.
-from .security.api_keys import llmgw_api_key_verifier  # noqa: E402
+from .security.api_keys import llmgw_api_key_verifier
 
 install_auth(app, api_key_verifier=llmgw_api_key_verifier)
 
 # P5: virtual key management endpoints (same-tenant guarded).
-from .api.keys_routes import router as keys_router  # noqa: E402
+from .api.keys_routes import router as keys_router
 
 app.include_router(keys_router)
 
@@ -355,4 +355,4 @@ async def healthz() -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8008)  # noqa: S104
+    uvicorn.run(app, host="0.0.0.0", port=8008)

@@ -19,13 +19,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.instances.individual import Individual
-from mate_kernel.ontology.types.property_ import PropertyFormat
 from mate_kernel.ontology.query.object_set import ObjectSet
-
+from mate_kernel.ontology.types.property_ import PropertyFormat
 
 # ─────────────────── 数据结构 ───────────────────
 
@@ -40,7 +38,7 @@ class RagChunk:
     value_text: str
     property_format: PropertyFormat
     weight: float
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True, slots=True)

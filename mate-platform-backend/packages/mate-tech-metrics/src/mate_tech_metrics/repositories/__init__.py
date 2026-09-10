@@ -29,8 +29,8 @@ __all__ = [
     "list_metrics",
     "metric_to_dict",
     "reset_store",
-    "update_metric",
     "sql_store",
+    "update_metric",
 ]
 
 from . import sql_store

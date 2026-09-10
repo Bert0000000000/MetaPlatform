@@ -4,10 +4,9 @@ Table names are prefixed with ``llmgw_``.
 """
 from __future__ import annotations
 
+from mate_tech_db.base import Base
 from sqlalchemy import Boolean, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-
-from mate_tech_db.base import Base
 
 
 class LlmProviderORM(Base):

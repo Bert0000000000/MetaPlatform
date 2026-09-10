@@ -12,9 +12,10 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
+
+from alembic import command
 
 # mate-platform-backend/ root (parents: tests/ → mate-tech-db/ → packages/ → backend/)
 _BACKEND_ROOT = Path(__file__).resolve().parents[3]

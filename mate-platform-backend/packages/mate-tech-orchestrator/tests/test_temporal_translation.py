@@ -19,10 +19,9 @@ _KERNEL = os.path.join(
 if _KERNEL not in sys.path:
     sys.path.insert(0, _KERNEL)
 
-from mate_tech_orchestrator.temporal_translation import (  # noqa: E402
+from mate_tech_orchestrator.temporal_translation import (
     PlanWorkflowInput,
     ReviewSignal,
-    WorkflowStep,
     plan_steps_from_dicts,
     steps_from_dicts,
     workflow_input_from_steps,

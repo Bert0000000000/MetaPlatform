@@ -7,20 +7,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 from ..identity.class_ref import ClassRef
 from .property_ import Property
 
 
-class Cardinality(str, Enum):
+class Cardinality(StrEnum):
     ONE_TO_ONE = "1:1"
     ONE_TO_MANY = "1:N"
     MANY_TO_ONE = "N:1"
     MANY_TO_MANY = "N:N"
 
 
-class Directionality(str, Enum):
+class Directionality(StrEnum):
     UNDIRECTED = "undirected"
     DIRECTED = "directed"
     BIDIRECTIONAL = "bidirectional"
@@ -42,7 +42,7 @@ class LinkType:
 
 
 def check_cardinality(
-    cardinality: "Cardinality",
+    cardinality: Cardinality,
     src_outgoing: int,
     dst_incoming: int,
 ) -> str | None:

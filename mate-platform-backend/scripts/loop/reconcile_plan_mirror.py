@@ -15,8 +15,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 UPSERT = """
 INSERT INTO plan_mirror
@@ -41,13 +40,12 @@ async def main() -> int:
     ap.add_argument("--limit", type=int, default=200)
     args = ap.parse_args()
 
+    import psycopg2
     from temporalio.client import Client
     from temporalio.contrib.pydantic import pydantic_data_converter
 
-    import psycopg2
-
     client = await Client.connect(args.temporal, data_converter=pydantic_data_converter)
-    since = datetime.now(timezone.utc) - timedelta(hours=args.hours)
+    since = datetime.now(UTC) - timedelta(hours=args.hours)
     rows = []
     async for wf in client.list_workflows(
         query=f"StartTime > '{since.isoformat()}'",

@@ -37,10 +37,10 @@ from .router import chat as router_chat
 logger = structlog.get_logger(__name__)
 
 # P3-W9: management API helpers (cache / quota / cost singletons).
-from mate_platform.observability import journey_span  # noqa: E402
+from mate_platform.observability import journey_span
 
-from ..quota.bucket import QuotaExceededError  # noqa: E402
-from ..router import (  # noqa: E402
+from ..quota.bucket import QuotaExceededError
+from ..router import (
     get_cache,
     get_cost_recorder,
     get_monthly_bucket,
@@ -143,7 +143,7 @@ def _apply_request_tenant(request: Request | None, req: BaseModel) -> None:
     if not body_tenant or body_tenant == "default":
         try:
             req.tenant_id = ctx_tenant  # type: ignore[misc]
-        except Exception:  # noqa: BLE001 — frozen models keep old behavior
+        except Exception:
             pass
         return
     if body_tenant != ctx_tenant:
@@ -214,8 +214,8 @@ async def _enforce_api_key_limits(
     record = getattr(request.state, "llmgw_api_key", None)
     if record is None:
         return
-    from ..security.api_keys import enforce_key_limits, get_api_key_redis
     from ..quota.bucket import QuotaExceededError
+    from ..security.api_keys import enforce_key_limits, get_api_key_redis
 
     try:
         await enforce_key_limits(
@@ -266,7 +266,7 @@ async def _record_cost(
             cache_hit=cache_hit,
             status=status,
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning("llmgw.cost.record_failed", error=str(e))
 
 
@@ -454,7 +454,7 @@ async def _run_embeddings(req: EmbeddingRequest, request: Request | None = None)
     if request is not None and not req.base_url:
         try:
             resolved = await resolve_effective_embedding(request, req.tenant_id)
-        except Exception:  # noqa: BLE001
+        except Exception:
             resolved = {}
 
     if resolved or req.base_url:
@@ -846,7 +846,6 @@ class _OpenAIMultimodalBridge:
         self._provider = openai_provider
 
     async def chat(self, messages: list[dict[str, Any]], model: str) -> dict[str, Any]:
-        from ..multimodal import MultimodalContentPart, MultimodalMessage
         from ..providers.multimodal_openai import openai_multimodal_chat
 
         mm_messages = [_to_mm_message(m) for m in messages]
@@ -1291,7 +1290,7 @@ async def providers_models_endpoint(req: ProviderModelsRequest) -> ProviderModel
                 message=f"HTTP {resp.status_code}",
             )
         payload = resp.json()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return ProviderModelsResponse(
             ok=False,
             provider=provider,

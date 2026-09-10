@@ -10,10 +10,10 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_kernel.action.stubs import FunctionStub  # noqa: E402
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
-from mate_kernel.ontology.reasoning.function import Function  # noqa: E402
+from mate_kernel.action.stubs import FunctionStub
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_kernel.ontology.reasoning.function import Function
 
 T = "g23"
 FN = f"ont.{T}.fn.approve.v1"

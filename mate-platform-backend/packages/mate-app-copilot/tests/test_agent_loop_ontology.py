@@ -79,7 +79,7 @@ class TestOntologyToolExecution:
         assert executed == [("list_classes", {})]
         kinds = [(e["type"], e.get("tool")) for e in events]
         assert ("tool_call", "list_classes") in kinds
-        assert ("tool_result", None) != kinds[0]
+        assert kinds[0] != ("tool_result", None)
         tool_results = [e for e in events if e["type"] == "tool_result"]
         assert tool_results and tool_results[0]["status"] == "success"
         assert len(tool_results[0]["result"]["classes"]) == 2

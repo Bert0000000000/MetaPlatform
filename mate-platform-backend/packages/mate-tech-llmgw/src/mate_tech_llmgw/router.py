@@ -359,6 +359,6 @@ async def close_all_providers() -> None:
         if aclose is not None:
             try:
                 await aclose()
-            except Exception as exc:  # noqa: BLE001 — shutdown best effort
+            except Exception as exc:
                 logger.warning("llmgw.provider.close_failed", error=str(exc))
     _providers.clear()

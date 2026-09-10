@@ -211,7 +211,7 @@ def delete_index(tenant_id: str, index_id: str) -> bool:
 # Bootstrap
 # ---------------------------------------------------------------------------
 def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["documents"] = len(

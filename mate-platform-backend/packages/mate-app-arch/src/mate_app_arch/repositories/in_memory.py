@@ -1095,7 +1095,7 @@ def add_value_stream_stage(
     vs = store_get(tenant_id, "value_streams", vs_id)
     if vs is None:
         return None
-    new_stages = tuple(list(vs.stages) + [stage_name])
+    new_stages = tuple([*list(vs.stages), stage_name])
     return store_update(tenant_id, "value_streams", vs_id, {"stages": new_stages})
 
 

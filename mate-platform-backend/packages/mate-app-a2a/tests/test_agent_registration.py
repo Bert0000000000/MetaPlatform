@@ -9,10 +9,7 @@ Covers:
 """
 from __future__ import annotations
 
-import os
-
 import pytest
-
 from mate_app_a2a.bootstrap.agent_registration import (
     get_startup_agent,
     register_deerflow_at_startup,

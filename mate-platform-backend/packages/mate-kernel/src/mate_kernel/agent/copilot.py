@@ -14,12 +14,11 @@ M3 范围：内存版；持久化在 v4 路线（runtime / PG）。
 
 from __future__ import annotations
 
-import re
 import secrets
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Any, Protocol, runtime_checkable
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
+from typing import Protocol, runtime_checkable
 
 from mate_kernel.agent.orchestrator import (
     AgentRole,
@@ -36,7 +35,7 @@ from mate_kernel.agent.prompts import SYSTEM_PROMPTS
 from mate_kernel.manager.protocol import Manager, ManagerContext
 
 
-class RetentionPolicy(str, Enum):
+class RetentionPolicy(StrEnum):
     DISCARD = "discard"           # C3 默认：不持久化
     PERSIST_7D = "persist_7d"     # C3 opt-in：保留 7 天
 
@@ -53,7 +52,7 @@ class HitlToken:
     used: bool = False
 
     def is_valid(self, now: datetime | None = None) -> bool:
-        now = now or datetime.now(timezone.utc)
+        now = now or datetime.now(UTC)
         return not self.used and now < self.expires_at
 
 
@@ -72,7 +71,7 @@ class HitlTokenStore:
             tenant_id=ctx.tenant_id,
             plan_id=plan_id,
             step_id=step_id,
-            expires_at=datetime.now(timezone.utc) + timedelta(seconds=self.ttl),
+            expires_at=datetime.now(UTC) + timedelta(seconds=self.ttl),
         )
         self._tokens[t.token] = t
         return t
@@ -120,7 +119,7 @@ class IntentRouter:
 
     def route(self, query: str) -> AgentRole:
         q = query.lower()
-        scores: dict[AgentRole, int] = {role: 0 for role in AgentRole}
+        scores: dict[AgentRole, int] = dict.fromkeys(AgentRole, 0)
         for role, keywords in _INTENT_KEYWORDS.items():
             for kw in keywords:
                 if kw.lower() in q:
@@ -183,7 +182,7 @@ class AuditRetention:
     def record(self, plan: PlanState, ctx: ManagerContext) -> AuditRecord | None:
         if self.policy == RetentionPolicy.DISCARD:
             return None
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         rec = AuditRecord(
             plan_id=plan.plan.plan_id,
             user_id=ctx.user_id,
@@ -197,7 +196,7 @@ class AuditRetention:
         return rec
 
     def evict_expired(self, now: datetime | None = None) -> int:
-        now = now or datetime.now(timezone.utc)
+        now = now or datetime.now(UTC)
         before = len(self._records)
         self._records = [r for r in self._records if r.expires_at is None or r.expires_at > now]
         return before - len(self._records)

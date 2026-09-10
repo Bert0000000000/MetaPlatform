@@ -45,7 +45,7 @@ KERNEL01_V2_TABLES_FOR_TESTS: tuple[str, ...] = (
 
 def _pg_available() -> bool:
     try:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -62,7 +62,7 @@ def _pg_role_is_privileged() -> bool:
     also bypass.
     """
     try:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         try:
             with conn.cursor() as cur:
@@ -93,7 +93,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def pg_repo() -> object:
-    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository  # noqa: PLC0415
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
     return PgOntologyRepository(dsn=PG_DSN)
 
 
@@ -101,7 +101,7 @@ def pg_repo() -> object:
 def _clean_pg(pg_repo: object) -> None:
     """Wipe 9 tables before each test so RLS state is predictable."""
     pg_repo._ensure_schema()
-    import psycopg2  # type: ignore  # noqa: PLC0415
+    import psycopg2  # type: ignore
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:
@@ -171,8 +171,8 @@ def test_t2_create_with_cross_tenant_rid_via_api_guard(pg_repo: object) -> None:
     pg_repo 不做字符串前缀兜底（那是 API 层的事），但 tenant_scope("acme")
     下写 row.tenant_id="other" 会被 WITH CHECK 拒绝。
     """
-    from mate_kernel.ontology.identity import ClassRef  # noqa: PLC0415
-    from mate_kernel.ontology.instances import Individual  # noqa: PLC0415
+    from mate_kernel.ontology.identity import ClassRef
+    from mate_kernel.ontology.instances import Individual
 
     ind = Individual(
         rid="ont.other.ind.po.0",
@@ -184,7 +184,7 @@ def test_t2_create_with_cross_tenant_rid_via_api_guard(pg_repo: object) -> None:
         tenant_id="other",
     )
     with pg_repo.tenant_scope("acme") as repo:
-        from psycopg2 import errors as pg_errors  # noqa: PLC0415
+        from psycopg2 import errors as pg_errors
 
         with pytest.raises(pg_errors.InsufficientPrivilege):
             repo.create_individual(ind)
@@ -197,9 +197,9 @@ def test_t3_apply_action_cross_tenant_target_rejected(pg_repo: object) -> None:
     返回 KeyError（被 API 层翻成 404）。
     """
     _seed_ind_raw(pg_repo, "ont.other.ind.po.0", "other")
-    from mate_kernel.ontology.identity import ClassRef  # noqa: PLC0415
-    from mate_kernel.ontology.types import ActionType  # noqa: PLC0415
-    from mate_kernel.ontology.types.property_ import (  # noqa: PLC0415
+    from mate_kernel.ontology.identity import ClassRef
+    from mate_kernel.ontology.types import ActionType
+    from mate_kernel.ontology.types.property_ import (
         Property,
         PropertyFormat,
     )
@@ -237,8 +237,8 @@ def test_t4_upsert_object_type_cross_tenant_rid_blocked(pg_repo: object) -> None
     从 rid，tenant_scope("acme") 下派生出的 tenant 不等于 row 的 tenant，
     WITH CHECK 拦截。
     """
-    from mate_kernel.ontology.identity import ClassRef  # noqa: PLC0415
-    from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat  # noqa: PLC0415
+    from mate_kernel.ontology.identity import ClassRef
+    from mate_kernel.ontology.types import ObjectType, Property, PropertyFormat
 
     ot = ObjectType(
         rid=ClassRef("ont.other.obj.evil.v1"),
@@ -256,7 +256,7 @@ def test_t4_upsert_object_type_cross_tenant_rid_blocked(pg_repo: object) -> None
         display_name="Evil",
     )
     with pg_repo.tenant_scope("acme") as repo:
-        from psycopg2 import errors as pg_errors  # noqa: PLC0415
+        from psycopg2 import errors as pg_errors
 
         with pytest.raises(pg_errors.InsufficientPrivilege):
             repo.upsert_object_type(ot)
@@ -264,8 +264,8 @@ def test_t4_upsert_object_type_cross_tenant_rid_blocked(pg_repo: object) -> None
 
 def test_t5_link_instance_cross_tenant_blocked(pg_repo: object) -> None:
     """T5: link_instance 跨租户 → RLS WITH CHECK 拦截。"""
-    from mate_kernel.ontology.identity import ClassRef  # noqa: PLC0415
-    from mate_kernel.ontology.instances import LinkInstance  # noqa: PLC0415
+    from mate_kernel.ontology.identity import ClassRef
+    from mate_kernel.ontology.instances import LinkInstance
 
     li = LinkInstance(
         rid="ont.other.lnk.rel.0",
@@ -278,7 +278,7 @@ def test_t5_link_instance_cross_tenant_blocked(pg_repo: object) -> None:
         marking=(),
     )
     with pg_repo.tenant_scope("acme") as repo:
-        from psycopg2 import errors as pg_errors  # noqa: PLC0415
+        from psycopg2 import errors as pg_errors
 
         with pytest.raises(pg_errors.InsufficientPrivilege):
             repo.create_link_instance(li)
@@ -291,8 +291,8 @@ def test_t6_write_with_wrong_tenant_id_blocked_by_with_check(pg_repo: object) ->
     通过正常 API 路径覆盖时 WITH CHECK 应该拒绝。
     """
     _seed_ind_raw(pg_repo, "ont.other.ind.po.0", "acme")
-    from mate_kernel.ontology.identity import ClassRef  # noqa: PLC0415
-    from mate_kernel.ontology.instances import Individual  # noqa: PLC0415
+    from mate_kernel.ontology.identity import ClassRef
+    from mate_kernel.ontology.instances import Individual
 
     # 构造一个新 individual，rid=acme 但 tenant_id=other → RLS 应拒绝写入。
     ind = Individual(
@@ -309,7 +309,7 @@ def test_t6_write_with_wrong_tenant_id_blocked_by_with_check(pg_repo: object) ->
     # tested with a deliberately malformed row as intended by T6.
     object.__setattr__(ind, "tenant_id", "other")
     with pg_repo.tenant_scope("acme") as repo:
-        from psycopg2 import errors as pg_errors  # noqa: PLC0415
+        from psycopg2 import errors as pg_errors
 
         with pytest.raises(pg_errors.InsufficientPrivilege):
             repo.create_individual(ind)

@@ -19,7 +19,7 @@ def counter():
 
 
 def _ctx(*, auth_method, tenant_id="t1", user_id="u1"):
-    from mate_platform.tenancy.context import AuthMethod, RequestContext
+    from mate_platform.tenancy.context import RequestContext
 
     return RequestContext(
         request_id="r1",

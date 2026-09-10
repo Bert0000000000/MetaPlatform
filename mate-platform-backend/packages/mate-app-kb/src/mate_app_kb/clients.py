@@ -108,7 +108,7 @@ class RAGClient:
         r.raise_for_status()
         try:
             return r.json()
-        except Exception:  # noqa: BLE001 — best-effort
+        except Exception:
             return {"deleted": False, "document_id": document_id}
 
     def close(self) -> None:

@@ -23,9 +23,6 @@ import urllib.request
 
 sys.path.insert(0, "packages/mate-tech-orchestrator/src")
 
-from temporalio.client import Client
-from temporalio.contrib.pydantic import pydantic_data_converter
-
 from mate_tech_orchestrator.temporal_translation import (
     TASK_QUEUE,
     ReviewSignal,
@@ -33,6 +30,8 @@ from mate_tech_orchestrator.temporal_translation import (
     workflow_input_from_steps,
 )
 from mate_tech_orchestrator.temporal_workflow import PlanWorkflow
+from temporalio.client import Client
+from temporalio.contrib.pydantic import pydantic_data_converter
 
 GW = "http://127.0.0.1:8100"
 _TS = int(time.time())
@@ -193,7 +192,7 @@ async def main() -> int:
     results.append(("long_task(75s)", gate, lt["status"]))
 
     print("\n=== RESULTS ===")
-    for kind, gate, status in results:
+    for kind, _gate, status in results:
         print(f"{kind:28s} {status}", flush=True)
     ok = all(s == "completed" or (k.startswith("propose") and s == "aborted")
              for k, g, s in results)

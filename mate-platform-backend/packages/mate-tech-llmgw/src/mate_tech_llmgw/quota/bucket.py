@@ -115,7 +115,7 @@ class TenantConfigProvider:
                 cached = await self._redis.get(f"llmgw:tenantcfg:{tenant_id}")
                 if cached:
                     return _cfg_from_json(cached)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("llmgw.tenantcfg.cache_read_failed", error=str(exc))
 
         if tenant_id in self._local:
@@ -140,7 +140,7 @@ class TenantConfigProvider:
                         tpm_limit=int(row["tpm_limit"]),
                         window_sec=int(row["window_sec"]),
                     )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("llmgw.tenantcfg.pg_read_failed", error=str(exc))
 
         self._local[tenant_id] = cfg
@@ -159,7 +159,7 @@ class TenantConfigProvider:
                         }
                     ),
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("llmgw.tenantcfg.cache_write_failed", error=str(exc))
         return cfg
 
@@ -169,7 +169,7 @@ class TenantConfigProvider:
         if self._redis is not None:
             try:
                 await self._redis.delete(f"llmgw:tenantcfg:{tenant_id}")
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("llmgw.tenantcfg.invalidate_failed", error=str(exc))
 
 
@@ -208,7 +208,7 @@ class RedisTokenBucket:
             return self._config
         try:
             return await self._tenant_config.resolve(tenant_id)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("llmgw.tenantcfg.resolve_failed", error=str(exc))
             return self._config
 
@@ -244,7 +244,7 @@ class RedisTokenBucket:
                 cfg.window_sec,
                 int(time.time()),
             )
-        except Exception as exc:  # noqa: BLE001 — degrade open, never block on Redis
+        except Exception as exc:
             logger.warning("llmgw.quota.acquire_degraded", tenant=tenant_id, error=str(exc))
             return
 

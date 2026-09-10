@@ -16,9 +16,7 @@ import pytest
 
 from mate_platform.federation import (
     FederationClient,
-    FederationResult,
     InMemoryDataSourceAdapter,
-    TenantQueryResult,
 )
 from mate_platform.observability.xdomain_audit import InMemoryCrossDomainSink
 

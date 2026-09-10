@@ -15,11 +15,11 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.types.action_type import ActionType  # noqa: E402
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
-from mate_tech_ont.v2_kernel.governance import lint_anti_patterns  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.types.action_type import ActionType
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+from mate_tech_ont.v2_kernel.governance import lint_anti_patterns
 
 T = "gov"
 PG_DSN = os.environ.get(

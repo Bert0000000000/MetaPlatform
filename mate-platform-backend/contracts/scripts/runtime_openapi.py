@@ -29,4 +29,4 @@ def export()->dict[str,str]:
 if __name__=="__main__":
  try: export()
  except Exception as exc:
-  print(f"runtime export failed: {type(exc).__name__}: {exc}",file=sys.stderr); raise SystemExit(1)
+  print(f"runtime export failed: {type(exc).__name__}: {exc}",file=sys.stderr); raise SystemExit(1) from exc

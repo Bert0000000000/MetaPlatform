@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
 
 import structlog
 from fastapi import HTTPException
@@ -88,7 +87,7 @@ async def chat_with_fallback(
             last_error = e
             _log_fallback_failure(model, e, chain)
             continue
-        except Exception as e:  # noqa: BLE001 — unclassified errors keep legacy behavior
+        except Exception as e:
             last_error = e
             _log_fallback_failure(model, e, chain)
             continue

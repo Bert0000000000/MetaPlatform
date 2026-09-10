@@ -37,11 +37,11 @@ for sub in (
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from unittest.mock import AsyncMock  # noqa: E402
+from unittest.mock import AsyncMock
 
-import pytest  # noqa: E402
+import pytest
 
-from mate_tech_llmgw.cache.llm_cache import LLMCache  # noqa: E402
+from mate_tech_llmgw.cache.llm_cache import LLMCache
 
 
 @pytest.fixture

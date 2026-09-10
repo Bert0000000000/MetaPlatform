@@ -12,12 +12,12 @@ for _p in ("mate-kernel", "mate-common", "mate-platform", "mate-clients",
     if os.path.isdir(_d) and _d not in sys.path:
         sys.path.insert(0, _d)
 
-from mate_tech_orchestrator.scheduler.role_registry import (  # noqa: E402
+from mate_tech_orchestrator.scheduler.role_registry import (
     CapabilityBinding,
-    set_role_registry,
     RoleRegistry,
+    set_role_registry,
 )
-from mate_tech_orchestrator.scheduler.session_evolution import (  # noqa: E402
+from mate_tech_orchestrator.scheduler.session_evolution import (
     SessionEvolution,
     get_session_evolution,
     set_session_evolution,
@@ -67,7 +67,7 @@ class TestHotMount:
         run(evo.open_session("s2", "t-a"))
         try:
             run(evo.get("s2").mount("x", "r", worker_kind="a2a"))
-            assert False, "should reject"
+            raise AssertionError("should reject")
         except ValueError:
             pass
 

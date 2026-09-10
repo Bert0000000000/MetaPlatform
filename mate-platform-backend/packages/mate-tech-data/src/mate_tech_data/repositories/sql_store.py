@@ -405,7 +405,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
 
     Returns counts of rows inserted per table.
     """
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["cdc_tasks"] = len(
@@ -584,12 +584,12 @@ def update_data_product(
 # ---------------------------------------------------------------------------
 # DATA-D6/D7 — lineage / quality / catalog（治理面，SQL 持久化）
 # ---------------------------------------------------------------------------
-from .in_memory import (  # noqa: E402  (与上方 import 分组分开：治理面域对象)
+from .in_memory import (
     LineageEdge,
     QualityResult,
     QualityRule,
 )
-from .sql_models import (  # noqa: E402
+from .sql_models import (
     DataLineageEdgeORM,
     DataQualityResultORM,
     DataQualityRuleORM,
@@ -700,7 +700,7 @@ def list_quality_results(tenant_id: str, limit: int = 50) -> list[QualityResult]
 
 def run_quality_rules(tenant_id: str) -> dict[str, Any]:
     """执行本租户全部 enabled 规则（对 source schema），结果落 PG。"""
-    from .in_memory import get_source_schema, _quality_check
+    from .in_memory import _quality_check, get_source_schema
 
     rules = list_quality_rules(tenant_id, enabled_only=True)
     results: list[QualityResult] = []
@@ -721,7 +721,7 @@ def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
     edges = list_lineage_edges(tenant_id)
     if entity:
         edges = [e for e in edges
-                 if e.source_entity == entity or e.target_entity == entity]
+                 if entity in (e.source_entity, e.target_entity)]
     nodes: dict[str, None] = {}
     for e in edges:
         nodes[e.source_entity] = None

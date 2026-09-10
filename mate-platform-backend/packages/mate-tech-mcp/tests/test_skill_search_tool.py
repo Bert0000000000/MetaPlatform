@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import httpx
-import pytest
 import respx
 
 from mate_tech_mcp.tools.skill_search import ReadSkillTool, SearchSkillTool

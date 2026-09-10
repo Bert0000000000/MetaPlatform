@@ -36,7 +36,7 @@ PG_DSN = os.getenv(
 
 def _pg_available() -> bool:
     try:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -252,7 +252,7 @@ def test_function_apply_explicit_parameters_take_precedence_inmemory() -> None:
 
 @pytest.fixture
 def pg_repo() -> object:
-    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository  # noqa: PLC0415
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
     return PgOntologyRepository(dsn=PG_DSN)
 
 
@@ -265,7 +265,7 @@ def _clean_pg(pg_repo) -> None:
     if not _pg_available():
         return
     pg_repo._ensure_schema()
-    import psycopg2  # type: ignore  # noqa: PLC0415
+    import psycopg2  # type: ignore
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:

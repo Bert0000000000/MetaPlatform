@@ -11,7 +11,7 @@ _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-from mate_kernel.ontology.reasoning.engine import descendant_closure  # noqa: E402
+from mate_kernel.ontology.reasoning.engine import descendant_closure
 
 
 class TestDescendantClosure:

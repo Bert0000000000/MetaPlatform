@@ -36,7 +36,7 @@ dashboard_config_store: DashboardConfigStore = DashboardConfigStore()
 
 def _set_store(store: DashboardConfigStore) -> None:
     """Called by main.py to share its store instance with the router."""
-    global dashboard_config_store  # noqa: PLW0603
+    global dashboard_config_store
     dashboard_config_store = store
 
 
@@ -111,4 +111,4 @@ async def update_dashboard_config(
     return {"config": _serialize(entry)}
 
 
-__all__ = ["router", "dashboard_config_store", "_set_store"]
+__all__ = ["_set_store", "dashboard_config_store", "router"]

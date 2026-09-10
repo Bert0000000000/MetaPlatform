@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -47,7 +47,7 @@ def create_install(
         installed_by=installed_by,
         retry_count=0,
         installed_at=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     session.add(install)
     session.flush()
@@ -98,7 +98,7 @@ def transition_install(
     session.add(InstallAudit(
         install_id=install.id, action=action, from_state=from_status,
         to_state=target, actor=str(actor) if actor else "",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     ))
     session.flush()
     return install

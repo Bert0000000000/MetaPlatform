@@ -12,19 +12,19 @@ M3 范围：内存版 manifest + 协议枚举 + mock invoker；
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 
-class ExtProtocol(str, Enum):
+class ExtProtocol(StrEnum):
     HTTP = "http"
     MCP = "mcp"   # Model Context Protocol
     A2A = "a2a"   # Agent-to-Agent
 
 
-class SandboxTier(str, Enum):
+class SandboxTier(StrEnum):
     L1_PROCESS = "l1_process"
     L2_CONTAINER = "l2_container"
     L3_MICROVM = "l3_microvm"  # Marketplace 强制
@@ -146,7 +146,7 @@ class ExtAgentRegistry:
             capability=capability,
             parameters=parameters,
             sandbox_id="",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         try:
             sandbox_id, output = self.runner.run(agent, capability, parameters)
@@ -157,7 +157,7 @@ class ExtAgentRegistry:
                 parameters=inv.parameters,
                 sandbox_id=sandbox_id,
                 started_at=inv.started_at,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
                 output=output,
                 status="ok",
             )
@@ -169,7 +169,7 @@ class ExtAgentRegistry:
                 parameters=inv.parameters,
                 sandbox_id="-",
                 started_at=inv.started_at,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
                 error=str(e),
                 status="failed",
             )

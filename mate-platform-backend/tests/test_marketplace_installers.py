@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from mate_clients.marketplace.errors import DigestMismatch
-from mate_platform.marketplace.jobs.installer_mcp import McpInstaller
 from mate_platform.marketplace.jobs.installer_agent import AgentInstaller
+from mate_platform.marketplace.jobs.installer_mcp import McpInstaller
 from mate_platform.marketplace.jobs.installer_ontology import (
     OntologyInstaller,
 )

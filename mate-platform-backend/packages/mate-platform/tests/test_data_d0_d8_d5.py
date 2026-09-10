@@ -11,13 +11,9 @@ Verifies the D5 audit surface:
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 import pytest
 
 from mate_platform.auth import (
-    CrossTenantDataAccess,
-    InMemoryAuditSink,
     emit_cross_tenant_data_access,
     make_test_sink,
 )
@@ -111,7 +107,7 @@ class TestMultipleEvents:
         sink = make_test_sink()
 
         def emit_n(n: int) -> None:
-            for i in range(n):
+            for _i in range(n):
                 emit_cross_tenant_data_access(
                     actor_user_id="u",
                     actor_tenant_id="a",

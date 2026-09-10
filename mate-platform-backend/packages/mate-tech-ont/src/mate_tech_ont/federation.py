@@ -83,14 +83,14 @@ class OntologyMapping:
     def has_class_correspondence(self, class_name: str) -> bool:
         """检查某类是否在映射中存在(任一方向)."""
         for cm in self.class_mappings:
-            if cm.source_class == class_name or cm.target_class == class_name:
+            if class_name in (cm.source_class, cm.target_class):
                 return True
         return False
 
     def has_property_correspondence(self, prop_name: str) -> bool:
         """检查某属性是否在映射中存在(任一方向)."""
         for pm in self.property_mappings:
-            if pm.source_property == prop_name or pm.target_property == prop_name:
+            if prop_name in (pm.source_property, pm.target_property):
                 return True
         return False
 

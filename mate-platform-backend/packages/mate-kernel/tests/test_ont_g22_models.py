@@ -8,9 +8,9 @@ _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-import pytest  # noqa: E402
+import pytest
 
-from mate_kernel.ontology.models import ModelObject, ModelRegistry  # noqa: E402
+from mate_kernel.ontology.models import ModelObject, ModelRegistry
 
 
 def _mdl(rid: str, markings: tuple[str, ...] = ()) -> ModelObject:

@@ -47,10 +47,10 @@ def is_temporal_plan(plan_id: str) -> bool:
 async def _get_client() -> Any:
     global _client
     if _client is None:
+        import pathlib as _pl
+
         from temporalio.client import Client
         from temporalio.contrib.pydantic import pydantic_data_converter
-
-        import pathlib as _pl
 
         _default = ("host.docker.internal:7233"
                     if _pl.Path("/.dockerenv").exists() else "127.0.0.1:7233")

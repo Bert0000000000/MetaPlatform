@@ -21,7 +21,7 @@ Per ADR-0016 §3.2 (D2 scope).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Protocol
 
 from ..lineage import LineageHints
@@ -72,7 +72,7 @@ class DataProduct:
     quality: dict[str, Any] = field(default_factory=dict)
     lineage_hints: LineageHints | None = None
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
 
@@ -82,7 +82,7 @@ class DataProductVersion:
 
     product: DataProduct
     recorded_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
 

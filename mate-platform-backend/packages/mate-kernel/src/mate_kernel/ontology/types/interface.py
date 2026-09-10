@@ -7,9 +7,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from ..identity.class_ref import ClassRef
 from .property_ import Property
+
+if TYPE_CHECKING:
+    from .object_type import ObjectType
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,7 +24,7 @@ class Interface:
     polymorphic_action_constraints: tuple[str, ...] = field(default_factory=tuple)
 
 
-def implements_interface(ot: "ObjectType", ifc: Interface) -> bool:
+def implements_interface(ot: ObjectType, ifc: Interface) -> bool:
     """SAL-07：ObjectType 是否实现 Interface（多态契约，G9 骨干）。
 
     规则（蓝图 §3 Interface 基元）：
@@ -45,8 +49,8 @@ def implements_interface(ot: "ObjectType", ifc: Interface) -> bool:
 
 
 def interface_source_rids(
-    interface_rid: "str | ClassRef",
-    object_types: "tuple[ObjectType, ...] | list[ObjectType]",
+    interface_rid: str | ClassRef,
+    object_types: tuple[ObjectType, ...] | list[ObjectType],
 ) -> list[str]:
     """EXP-01：Interface 多态查询源展开 —— Interface rid → 实现它的全部 ObjectType rid。
 
@@ -66,9 +70,9 @@ def interface_source_rids(
 
 
 def validate_interface_constraints(
-    ot: "ObjectType",
+    ot: ObjectType,
     ifc: Interface,
-    link_type_endpoint_pairs: "list[tuple[str, frozenset[str]]] | None" = None,
+    link_type_endpoint_pairs: list[tuple[str, frozenset[str]]] | None = None,
 ) -> list[str]:
     """EXP-01：Interface 约束校验（占位串 → 结构化校验）。
 

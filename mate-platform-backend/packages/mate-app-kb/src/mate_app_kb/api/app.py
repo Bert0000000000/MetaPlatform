@@ -48,6 +48,7 @@ from mate_app_kb.api.schemas import (
     UploadResponse,
 )
 from mate_app_kb.clients import AgentClient, RAGClient
+
 # CRUD + retrieval-config helpers are KB_STORE-selectable (memory|sql);
 # entity dataclasses stay on the in-memory module either way (shared shapes).
 from mate_app_kb.repositories import (
@@ -712,7 +713,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                     rag_outcome = res.as_dict()
                 except ImportError:  # pragma: no cover — keep cascade best-effort
                     rag_outcome = {"deleted": False, "document_id": did}
-        except Exception as exc:  # noqa: BLE001 — best-effort cascade
+        except Exception as exc:
             rag_error = str(exc)
         delete_document(tid, did)
         _emit(

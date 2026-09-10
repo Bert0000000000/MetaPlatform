@@ -11,7 +11,6 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -27,10 +26,9 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-import jwt as _pyjwt  # noqa: E402
+import jwt as _pyjwt
 
-from mate_tech_obs.dashboards.store import (  # noqa: E402
-    DashboardConfig,
+from mate_tech_obs.dashboards.store import (
     DashboardConfigStore,
 )
 

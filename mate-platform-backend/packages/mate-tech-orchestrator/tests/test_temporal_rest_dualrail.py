@@ -12,11 +12,10 @@ for _p in ("mate-kernel", "mate-common", "mate-platform", "mate-clients",
     if os.path.isdir(_d) and _d not in sys.path:
         sys.path.insert(0, _d)
 
-from fastapi.testclient import TestClient  # noqa: E402
-
-from mate_tech_orchestrator import temporal_rest  # noqa: E402
-from mate_tech_orchestrator.main import create_app  # noqa: E402
-from mate_tech_orchestrator.temporal_rest import engine_from, is_temporal_plan  # noqa: E402
+from fastapi.testclient import TestClient
+from mate_tech_orchestrator import temporal_rest
+from mate_tech_orchestrator.main import create_app
+from mate_tech_orchestrator.temporal_rest import engine_from, is_temporal_plan
 
 
 def run(coro):

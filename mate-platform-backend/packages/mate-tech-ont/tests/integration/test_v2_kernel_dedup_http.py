@@ -23,7 +23,7 @@ PG_DSN = os.getenv(
 
 def _pg_available() -> bool:
     try:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -50,7 +50,7 @@ def pg_repo() -> Any:
 
 @pytest.fixture(autouse=True)
 def _clean_pg(pg_repo) -> None:
-    import psycopg2  # type: ignore  # noqa: PLC0415
+    import psycopg2  # type: ignore
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:

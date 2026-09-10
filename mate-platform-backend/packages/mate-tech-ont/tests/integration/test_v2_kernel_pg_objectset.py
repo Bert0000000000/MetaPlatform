@@ -135,8 +135,8 @@ class _CaptureConn:
 @pytest.fixture
 def capture_repo(monkeypatch: pytest.MonkeyPatch) -> tuple[PgOntologyRepository, _CaptureCursor]:
     """PgOntologyRepository，_connect 替换为捕获连接（不触 PG）。"""
-    from mate_kernel.action.engine import ActionService  # noqa: PLC0415
-    from mate_kernel.ontology.function_resolver import (  # noqa: PLC0415
+    from mate_kernel.action.engine import ActionService
+    from mate_kernel.ontology.function_resolver import (
         InMemoryFunctionResolver,
     )
 
@@ -288,7 +288,7 @@ PG_DSN = os.getenv("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform
 
 def _pg_available() -> bool:
     try:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -301,7 +301,7 @@ class TestRealPgSlugQuery:
     """PG_DSN 可达时：slug 过滤 + 数值/文本排序在真实 PG 上执行。"""
 
     def test_slug_filter_and_sorts_on_real_pg(self) -> None:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
 
         repo = PgOntologyRepository(dsn=PG_DSN)
         repo._ensure_schema()
@@ -310,7 +310,7 @@ class TestRealPgSlugQuery:
         try:
             with conn.cursor() as cur:
                 for tbl in ("ont_individual", "ont_object_type"):
-                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))  # noqa: S608
+                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))
             conn.commit()
         finally:
             conn.close()
@@ -349,7 +349,7 @@ class TestRealPgSlugQuery:
         try:
             with conn.cursor() as cur:
                 for tbl in ("ont_individual", "ont_object_type"):
-                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))  # noqa: S608
+                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))
                 cur.execute("DELETE FROM ont_action_type WHERE tenant_id = %s", (_T,))
             conn.commit()
         finally:

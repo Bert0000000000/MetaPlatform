@@ -21,18 +21,18 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from fastapi import FastAPI  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
-from mate_tech_llmgw.api.routes import (  # noqa: E402
+from mate_tech_llmgw.api.routes import (
     MultimodalApiRequest,
     _OpenAIMultimodalBridge,
     _resolve_multimodal_provider,
     _to_mm_message,
     router,
 )
-from mate_tech_llmgw.multimodal import MultimodalMessage  # noqa: E402
-from mate_tech_llmgw.providers import multimodal_openai  # noqa: E402
+from mate_tech_llmgw.multimodal import MultimodalMessage
+from mate_tech_llmgw.providers import multimodal_openai
 
 
 class _FakeOpenAIProvider:

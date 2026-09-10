@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json
 import os
 import sys
 from pathlib import Path
@@ -35,10 +34,9 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-import jwt as _pyjwt  # noqa: E402
+import jwt as _pyjwt
 
-from mate_tech_msg.subscriptions import (  # noqa: E402
-    Delivery,
+from mate_tech_msg.subscriptions import (
     Subscription,
     SubscriptionStore,
     deliver_once,

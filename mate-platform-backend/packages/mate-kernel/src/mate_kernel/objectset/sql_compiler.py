@@ -42,7 +42,7 @@ class SQLCompiler:
         return sql, params
 
     def _column(self, field_name: str) -> str:
-        return self._column_for_field.get(field_name, f"(props ->> %s)")
+        return self._column_for_field.get(field_name, "(props ->> %s)")
 
     def _render(self, cf: CompiledFilter, params: list[Any]) -> str:
         k = cf.kind

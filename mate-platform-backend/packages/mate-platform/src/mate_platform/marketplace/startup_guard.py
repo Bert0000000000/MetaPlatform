@@ -18,7 +18,7 @@ def _probe_saas(url: str) -> bool:
             timeout=5,
         )
         return r.status_code < 500
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False
 
 

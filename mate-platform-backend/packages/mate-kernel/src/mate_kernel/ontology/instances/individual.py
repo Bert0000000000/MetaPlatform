@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from ..identity.class_ref import ClassRef
-from ..types.property_ import PropertyFormat
 
 
 @dataclass(frozen=True, slots=True)

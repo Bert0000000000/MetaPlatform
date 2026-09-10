@@ -109,10 +109,10 @@ app.state.outbox_writer = _outbox
 
 # P3-W10 Fix-1: 5 spec endpoints mounted via the explicit origin router
 # (api/origin_routes.py) so that spec-level scanners can discover them.
-from .api.clients_routes import router as clients_router  # noqa: E402
-from .api.extras_routes import router as extras_router  # noqa: E402
-from .api.management_routes import router as management_router  # noqa: E402
-from .api.origin_routes import router as origin_router  # noqa: E402
+from .api.clients_routes import router as clients_router
+from .api.extras_routes import router as extras_router
+from .api.management_routes import router as management_router
+from .api.origin_routes import router as origin_router
 
 app.include_router(origin_router)
 app.include_router(clients_router)
@@ -126,7 +126,7 @@ app.include_router(extras_router)
 app.include_router(federation_router_routes)
 
 # W4: real MCP protocol surface (streamable-http) for external MCP clients.
-from .protocol.streamable import build_streamable_http_app  # noqa: E402
+from .protocol.streamable import build_streamable_http_app
 
 # Keep the protocol endpoint inside the canonical /api/v1/mcp namespace so
 # direct service callers and the API gateway expose the same contract.
@@ -183,4 +183,4 @@ if __name__ == "__main__":
     else:
         import uvicorn
 
-        uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8081")))  # noqa: S104
+        uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8081")))

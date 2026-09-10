@@ -13,7 +13,6 @@ These tests pin the new wiring contract:
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient

@@ -34,22 +34,20 @@ import os
 import time
 import uuid
 from dataclasses import asdict
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
-from typing import Annotated
 
 _log = logging.getLogger(__name__)
-
-from mate_platform.messaging.events import Event
-from mate_platform.messaging.outbox import InMemoryOutboxWriter
-from mate_platform.tenancy.context import TenantId
-from mate_platform.tenancy.guards import require_tenant
 
 # 数字员工身份 prompt 单一数据源：kernel SYSTEM_PROMPTS（蓝图 §4.1 的 7+1 类 AgentRole）。
 from mate_kernel.agent.orchestrator import AgentRole
 from mate_kernel.agent.prompts import SYSTEM_PROMPTS
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import TenantId
+from mate_platform.tenancy.guards import require_tenant
 
 from ..clients import RAGClient
 from ..repositories import (
@@ -79,8 +77,8 @@ from ..repositories import (
     list_documents,
     list_employee_conversations,
     list_employee_messages,
-    list_employees,
     list_employee_tasks,
+    list_employees,
     list_evaluations,
     list_extracts,
     list_knowledge_bases,
@@ -112,7 +110,7 @@ if os.environ.get("DW_STORE", "memory").lower() == "sql":
 
         seed_from_inmemory("tenant-default")
         _log.info("DW_STORE=sql: tables ensured + tenant-default seeded")
-    except Exception as exc:  # noqa: BLE001 — degrade to empty store, never crash import
+    except Exception as exc:
         _log.warning("DW_STORE=sql init failed (falling back at repo layer): %s", exc)
 
 router = APIRouter(prefix="/api/v1/dw", tags=["dw"])
@@ -344,7 +342,7 @@ async def dw_post_documents_upload(
             chunk_count = int(data.get("chunk_count", 0) or 0)
         finally:
             rag.close()
-    except Exception as exc:  # noqa: BLE001 — degrade, don't fail the upload
+    except Exception as exc:
         _log.warning("dw.documents.upload.rag_failed doc=%s error=%s", document_id, exc)
 
     doc = DwDocument(
@@ -1057,7 +1055,7 @@ async def promote_learning_feedback_to_kb(
             chunk_count = int(data.get("chunk_count", 0) or 0)
         finally:
             rag.close()
-    except Exception as exc:  # noqa: BLE001 — keep the feedback intact on RAG failure
+    except Exception as exc:
         _log.warning(
             "dw.learning.promote.rag_failed feedback=%s error=%s",
             feedback_id, exc,
@@ -1463,7 +1461,7 @@ async def dw_delete_document(request: Request, doc_id: str) -> dict:
             cascade = rag.delete_document(doc_id)
         finally:
             rag.close()
-    except Exception as exc:  # noqa: BLE001 — best-effort cascade
+    except Exception as exc:
         _log.warning("dw.documents.delete.rag_failed doc=%s error=%s", doc_id, exc)
         rag_error = str(exc)
 

@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 import respx
-
 from mate_tech_data.clients import AsyncDataClient
 from mate_tech_data.services.debezium_engine import DebeziumEngine, DebeziumEngineError
 

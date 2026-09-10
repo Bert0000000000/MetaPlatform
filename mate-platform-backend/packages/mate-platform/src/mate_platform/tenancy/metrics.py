@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from prometheus_client import Counter
 
-_counter: "Counter | None" = None
+_counter: Counter | None = None
 
 
-def cross_tenant_attempt() -> "Counter | None":
+def cross_tenant_attempt() -> Counter | None:
     """Return the singleton counter (None if prometheus_client missing)."""
     global _counter
     if _counter is not None:

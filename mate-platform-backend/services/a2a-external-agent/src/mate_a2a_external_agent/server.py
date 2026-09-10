@@ -28,7 +28,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import structlog
-from a2a.helpers import new_text_artifact, new_text_artifact_update_event
+from a2a.helpers import new_text_artifact
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events.event_queue import EventQueue
 from a2a.server.request_handlers import DefaultRequestHandler

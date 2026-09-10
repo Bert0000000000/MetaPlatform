@@ -27,8 +27,6 @@ from .temporal_translation import (
 )
 from .temporal_workflow import PlanWorkflow, RevertWorkflow
 
-
-
 _SERVICE_TOKEN: dict[str, Any] = {"token": "", "exp": 0.0}
 
 

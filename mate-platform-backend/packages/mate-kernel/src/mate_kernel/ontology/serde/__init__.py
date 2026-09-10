@@ -6,14 +6,14 @@
 - `rid_split / rid_join`：按 rid 形如 `ont.<tenant>.<kind>.<rest>` 解析 / 拼接
 """
 
-from .codec import encode_rid, decode_rid, rid_split, rid_join
-from .serde import to_dict, from_dict
+from .codec import decode_rid, encode_rid, rid_join, rid_split
+from .serde import from_dict, to_dict
 
 __all__ = [
-    "encode_rid",
     "decode_rid",
-    "rid_split",
-    "rid_join",
-    "to_dict",
+    "encode_rid",
     "from_dict",
+    "rid_join",
+    "rid_split",
+    "to_dict",
 ]

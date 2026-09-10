@@ -16,11 +16,11 @@ _DB_SRC = str(_MONOREPO / "packages" / "mate-tech-db" / "src")
 if _DB_SRC not in sys.path:
     sys.path.insert(0, _DB_SRC)
 
-from mate_tech_db.base import create_all, init_engine, reset_engine  # noqa: E402
+from mate_tech_db.base import create_all, init_engine, reset_engine
 
-from mate_tech_mcp.repositories import in_memory as mem  # noqa: E402
-from mate_tech_mcp.repositories import sql_models as models  # noqa: E402, F401
-from mate_tech_mcp.repositories import sql_store as sql  # noqa: E402
+from mate_tech_mcp.repositories import in_memory as mem
+from mate_tech_mcp.repositories import sql_models as models  # noqa: F401
+from mate_tech_mcp.repositories import sql_store as sql
 
 
 @pytest.fixture(autouse=True)

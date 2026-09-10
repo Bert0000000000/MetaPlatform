@@ -23,12 +23,12 @@ import sys
 import tempfile
 import textwrap
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 if sys.platform != "win32":
-    import resource  # noqa: F401  POSIX-only RLIMIT_*
+    import resource
 
 
 class SandboxViolation(RuntimeError):

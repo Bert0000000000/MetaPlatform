@@ -26,12 +26,15 @@ from dataclasses import dataclass, field, replace
 from typing import Any
 
 __all__ = [
-    "EditOp",
-    "EditSetResult",
-    "EditSetError",
     "EDIT_BATCH_LIMIT",
-    "OP_SET_PROPERTY", "OP_CREATE_OBJECT", "OP_DELETE_OBJECT",
-    "OP_ADD_LINK", "OP_REMOVE_LINK",
+    "OP_ADD_LINK",
+    "OP_CREATE_OBJECT",
+    "OP_DELETE_OBJECT",
+    "OP_REMOVE_LINK",
+    "OP_SET_PROPERTY",
+    "EditOp",
+    "EditSetError",
+    "EditSetResult",
     "invert_edits",
     "resolve_edit_template",
 ]

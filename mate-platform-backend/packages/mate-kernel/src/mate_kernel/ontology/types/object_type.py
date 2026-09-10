@@ -47,7 +47,7 @@ class ObjectType:
             raise ValueError("ObjectType.parent_class must not equal rid (self-parent)")
 
 
-def detect_destructive_changes(old: "ObjectType", new: "ObjectType") -> list[str]:
+def detect_destructive_changes(old: ObjectType, new: ObjectType) -> list[str]:
     """G33：破坏性 schema 变更检测（返回清单，空 = 安全）。
 
     破坏性（数据兼容性破坏）：

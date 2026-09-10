@@ -21,8 +21,8 @@ Usage:
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode

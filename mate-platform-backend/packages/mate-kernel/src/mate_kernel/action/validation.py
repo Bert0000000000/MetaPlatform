@@ -18,11 +18,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 __all__ = [
-    "validate_parameters",
-    "RuleGroup",
     "Condition",
-    "RuleOps",
+    "RuleGroup",
     "evaluate_rule_group",
+    "validate_parameters",
     "validate_submission_rules",
 ]
 
@@ -137,8 +136,8 @@ class Condition:
 class RuleGroup:
     """all_of / any_of 嵌套组；叶节点是 Condition。空组 = 恒真。"""
 
-    all_of: tuple["Condition | RuleGroup", ...] = field(default_factory=tuple)
-    any_of: tuple["Condition | RuleGroup", ...] = field(default_factory=tuple)
+    all_of: tuple[Condition | RuleGroup, ...] = field(default_factory=tuple)
+    any_of: tuple[Condition | RuleGroup, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not self.all_of and not self.any_of:
@@ -146,7 +145,7 @@ class RuleGroup:
 
 
 def evaluate_rule_group(
-    group: "Condition | RuleGroup",
+    group: Condition | RuleGroup,
     resolve: Any,  # callable(field) -> value
 ) -> bool:
     """规则求值：resolve(field) 取值（参数或目标属性，调用方决定合并视图）。"""

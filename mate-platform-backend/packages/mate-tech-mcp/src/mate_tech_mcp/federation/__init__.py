@@ -438,9 +438,9 @@ def emit_federation_event(
 # ---------------------------------------------------------------------------
 # v3.2 W1: real federation components (re-exported from submodules)
 # ---------------------------------------------------------------------------
-from .dlq import FederationDLQ, FederationDLQEntry  # noqa: E402
-from .heartbeat import HealthChecker  # noqa: E402
-from .mcp_remote_client import (  # noqa: E402
+from .dlq import FederationDLQ, FederationDLQEntry
+from .heartbeat import HealthChecker
+from .mcp_remote_client import (
     AuthError,
     FederationClientError,
     McpRemoteClient,

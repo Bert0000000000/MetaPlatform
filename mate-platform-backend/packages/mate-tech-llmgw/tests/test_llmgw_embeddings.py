@@ -35,7 +35,7 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_llmgw.providers.embeddings import (  # noqa: E402
+from mate_tech_llmgw.providers.embeddings import (
     LocalEmbeddingProvider,
     OpenAIEmbeddingProvider,
     _hash_embedding,

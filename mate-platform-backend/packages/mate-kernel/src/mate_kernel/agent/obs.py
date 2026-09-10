@@ -12,28 +12,28 @@ M3 范围：内存版规则引擎；OTel SDK 接入在平台层（PLATFORM-EVENT
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from mate_kernel.action.engine import ActionService, SubmissionContext
 from mate_kernel.manager.protocol import Manager, ManagerContext
 
 
-class AlertSeverity(str, Enum):
+class AlertSeverity(StrEnum):
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
 
 
-class AlertState(str, Enum):
+class AlertState(StrEnum):
     PENDING = "pending"
     FIRING = "firing"
     RESOLVED = "resolved"
     SILENCED = "silenced"
 
 
-class Comparator(str, Enum):
+class Comparator(StrEnum):
     GT = ">"
     GTE = ">="
     LT = "<"
@@ -114,7 +114,7 @@ class ObservabilityAgent:
                 state=AlertState.FIRING,
                 severity=rule.severity,
                 observed_value=value,
-                fired_at=datetime.now(timezone.utc),
+                fired_at=datetime.now(UTC),
                 message=f"{rule.name}: {metric_name}={value} {rule.comparator.value} {rule.threshold}",
             )
             self._events.append(event)
@@ -135,7 +135,7 @@ class ObservabilityAgent:
                         severity=ev.severity,
                         observed_value=ev.observed_value,
                         fired_at=ev.fired_at,
-                        resolved_at=datetime.now(timezone.utc),
+                        resolved_at=datetime.now(UTC),
                         message=ev.message,
                     )
                     n += 1

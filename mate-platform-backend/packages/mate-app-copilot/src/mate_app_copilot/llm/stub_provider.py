@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import hashlib
 import struct
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from .base import LLMResponse
 
@@ -56,7 +57,7 @@ def generate_sql(nl_prompt: str, tables: list[str]) -> str:
     """Return a stub SELECT SQL referencing the requested tables."""
     cols = ", ".join(tables[:3]) if tables else "*"
     table = tables[0] if tables else "dual"
-    return f"SELECT {cols} FROM {table} WHERE 1=1; -- {nl_prompt[:60]}"  # noqa: S608
+    return f"SELECT {cols} FROM {table} WHERE 1=1; -- {nl_prompt[:60]}"
 
 
 # ---------------------------------------------------------------------------

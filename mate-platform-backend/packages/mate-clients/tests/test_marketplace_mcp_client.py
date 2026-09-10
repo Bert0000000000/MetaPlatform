@@ -28,7 +28,7 @@ class _StubBearerAuth(BearerAuth):
     ``Authorization: Bearer <token>``, so we expose a token() method.
     """
 
-    def __init__(self, token: str = "test-bearer-token") -> None:  # noqa: S107
+    def __init__(self, token: str = "test-bearer-token") -> None:
         # Skip parent __init__ entirely.
         self._token = token
 
@@ -38,7 +38,7 @@ class _StubBearerAuth(BearerAuth):
 
 @pytest.fixture
 def stub_auth() -> _StubBearerAuth:
-    return _StubBearerAuth(token="test-bearer-token")  # noqa: S106
+    return _StubBearerAuth(token="test-bearer-token")
 
 
 def _build_manifest(blob: bytes) -> dict:

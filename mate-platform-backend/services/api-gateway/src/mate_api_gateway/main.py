@@ -6,12 +6,12 @@ L7 路由: path 前缀匹配 -> 上游服务
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 from contextlib import asynccontextmanager, suppress
 from typing import Any
 
-import asyncio
 import httpx
 import structlog
 from fastapi import FastAPI, Request, Response

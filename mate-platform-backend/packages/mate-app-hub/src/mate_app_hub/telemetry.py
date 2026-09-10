@@ -40,7 +40,7 @@ _tracer: trace.Tracer | None = None
 
 def get_tracer() -> trace.Tracer:
     """Return the package's tracer. Initialised lazily on first call."""
-    global _tracer  # noqa: PLW0603
+    global _tracer
     if _tracer is None:
         _tracer = trace.get_tracer(_TRACER_NAME, _TRACER_VERSION)
     return _tracer
@@ -52,7 +52,7 @@ def install_in_memory_exporter() -> Generator[InMemorySpanExporter, None, None]:
     Returns the exporter so the test can introspect the captured spans.
     The provider is shut down on context exit.
     """
-    global _tracer  # noqa: PLW0603
+    global _tracer
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))

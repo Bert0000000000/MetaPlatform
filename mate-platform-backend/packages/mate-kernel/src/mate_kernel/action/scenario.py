@@ -17,18 +17,22 @@ Palantir 语义：对本体做隔离分叉，编辑全部留在沙盒内；最�
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from mate_kernel.action.edit_set import (
-    OP_ADD_LINK, OP_CREATE_OBJECT, OP_DELETE_OBJECT, OP_REMOVE_LINK,
-    OP_SET_PROPERTY, EditOp,
+    OP_ADD_LINK,
+    OP_CREATE_OBJECT,
+    OP_DELETE_OBJECT,
+    OP_REMOVE_LINK,
+    OP_SET_PROPERTY,
+    EditOp,
 )
 from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.instances.individual import Individual
 from mate_kernel.ontology.instances.link_instance import LinkInstance
 
-__all__ = ["ScenarioOverlay", "ScenarioConflictError"]
+__all__ = ["ScenarioConflictError", "ScenarioOverlay"]
 
 
 class _Absent:
@@ -124,7 +128,7 @@ class ScenarioOverlay:
         self._individuals[rid] = replace(
             cur,
             props=tuple((ClassRef(k), v) for k, v in merged.items()),
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         self._pending.append(EditOp(
             op=OP_SET_PROPERTY, target=rid, property_rid=property_rid,
@@ -137,7 +141,7 @@ class ScenarioOverlay:
         tenant = parts[1]
         cls_slug = parts[4] if len(parts) >= 6 else parts[3]
         rid = f"ont.{tenant}.ind.{cls_slug}.{primary_key}"
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         ind = Individual(
             rid=rid, class_rid=ClassRef(class_rid),
             props=tuple((ClassRef(k), v) for k, v in props.items()),
@@ -154,10 +158,10 @@ class ScenarioOverlay:
         self.get_individual(rid)  # 不存在（或已沙盒删除）→ KeyError
         self._individuals[rid] = None
         for lrid, li in list(self._link_instances.items()):
-            if li is not None and (li.src == rid or li.dst == rid):
+            if li is not None and (rid in (li.src, li.dst)):
                 self._link_instances[lrid] = None
         for l in self.base.list_link_instances():
-            if l.src == rid or l.dst == rid:
+            if rid in (l.src, l.dst):
                 self._link_instances.setdefault(l.rid, None)
         self._pending.append(EditOp(op=OP_DELETE_OBJECT, target=rid))
 
@@ -171,7 +175,7 @@ class ScenarioOverlay:
         self._link_instances[li_rid] = LinkInstance(
             rid=li_rid, link_type_rid=ClassRef(link_type_rid),
             src=src, dst=dst, props=(),
-            created_at=datetime.now(timezone.utc), tenant_id=tenant,
+            created_at=datetime.now(UTC), tenant_id=tenant,
         )
         self._pending.append(EditOp(
             op=OP_ADD_LINK, link_type_rid=link_type_rid, src=src, dst=dst))
@@ -211,7 +215,7 @@ class ScenarioOverlay:
                 "op": e.op, "target": e.target, "property_rid": e.property_rid,
                 "value": e.value, "class_rid": e.class_rid,
                 "primary_key": e.primary_key,
-                "props": {k: v for k, v in e.props.items()} if e.props else {},
+                "props": dict(e.props.items()) if e.props else {},
                 "link_type_rid": e.link_type_rid, "src": e.src, "dst": e.dst,
                 "link_instance_rid": e.link_instance_rid,
             }

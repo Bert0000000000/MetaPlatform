@@ -281,7 +281,8 @@ async def submit_plan(
 @router.get("/plans/{plan_id}")
 async def plan_status(plan_id: str, request: Request) -> Any:
     _tid(request)  # tenant guard (plan state is in-memory; guarded here)
-    from ..temporal_rest import is_temporal_plan, is_available, status as twf_status
+    from ..temporal_rest import is_available, is_temporal_plan
+    from ..temporal_rest import status as twf_status
 
     if is_temporal_plan(plan_id):
         if not is_available():
@@ -319,8 +320,8 @@ async def plan_review(
 ) -> dict[str, Any]:
     tid = _tid(request)
     token = _user_token(request)
-    from ..temporal_rest import is_temporal_plan, is_available
     from .. import temporal_rest
+    from ..temporal_rest import is_available, is_temporal_plan
 
     if is_temporal_plan(plan_id):
         if not is_available():
@@ -407,7 +408,7 @@ async def plan_graph(plan_id: str, request: Request) -> PlanGraph:
 
 
 # --- Session Evolution（PRD-01 M1 · MP-EMP-EVOLVE-01 · 会话级能力热进化）------
-from pydantic import BaseModel, Field  # noqa: E402
+from pydantic import BaseModel, Field
 
 
 class SessionMountBody(BaseModel):

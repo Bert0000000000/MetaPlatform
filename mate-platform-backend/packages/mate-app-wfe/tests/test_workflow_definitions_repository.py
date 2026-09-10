@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import pytest
-
 from mate_app_wfe.repositories import in_memory as repository
 
 

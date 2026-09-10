@@ -14,9 +14,6 @@ import sys
 
 sys.path.insert(0, "packages/mate-tech-orchestrator/src")
 
-from temporalio.client import Client
-from temporalio.contrib.pydantic import pydantic_data_converter
-
 from mate_tech_orchestrator.temporal_translation import (
     TASK_QUEUE,
     ReviewSignal,
@@ -24,6 +21,8 @@ from mate_tech_orchestrator.temporal_translation import (
     workflow_input_from_steps,
 )
 from mate_tech_orchestrator.temporal_workflow import PlanWorkflow
+from temporalio.client import Client
+from temporalio.contrib.pydantic import pydantic_data_converter
 
 TEMPORAL_ADDR = os.environ.get("TEMPORAL_HOST", "127.0.0.1:7233")
 

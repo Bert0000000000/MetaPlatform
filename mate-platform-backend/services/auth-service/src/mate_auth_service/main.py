@@ -234,7 +234,7 @@ async def verify(req: VerifyRequest) -> VerifyResponse:
         unverified_claims = jwt.decode(req.token, options={"verify_signature": False})
         jti = unverified_claims.get("jti", "")
     except jwt.InvalidTokenError as exc:
-        raise HTTPException(status_code=401, detail=f"Malformed token: {exc}")
+        raise HTTPException(status_code=401, detail=f"Malformed token: {exc}") from exc
 
     if app.state.redis and jti:
         try:
@@ -253,7 +253,7 @@ async def verify(req: VerifyRequest) -> VerifyResponse:
             _jwks_cache.update(new_keys)
         except Exception as exc:
             logger.error("jwks.refresh_failed", error=str(exc))
-            raise HTTPException(status_code=503, detail="JWKS unavailable")
+            raise HTTPException(status_code=503, detail="JWKS unavailable") from exc
 
     if kid not in _jwks_cache:
         raise HTTPException(status_code=401, detail="Unknown signing key")
@@ -269,13 +269,13 @@ async def verify(req: VerifyRequest) -> VerifyResponse:
             options={"require": ["exp", "iat", "iss", "aud"]},
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+        raise HTTPException(status_code=401, detail="Token expired") from None
     except jwt.InvalidIssuerError:
-        raise HTTPException(status_code=401, detail="Invalid issuer")
+        raise HTTPException(status_code=401, detail="Invalid issuer") from None
     except jwt.InvalidAudienceError:
-        raise HTTPException(status_code=401, detail="Invalid audience")
+        raise HTTPException(status_code=401, detail="Invalid audience") from None
     except jwt.InvalidTokenError as exc:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
+        raise HTTPException(status_code=401, detail=f"Invalid token: {exc}") from exc
 
     return VerifyResponse(
         valid=True,
@@ -304,7 +304,7 @@ async def revoke(req: RevokeRequest) -> dict[str, Any]:
         return {"revoked": True, "jti": req.jti}
     except Exception as exc:
         logger.error("revoke.failed", error=str(exc))
-        raise HTTPException(status_code=500, detail=f"Revoke failed: {exc}")
+        raise HTTPException(status_code=500, detail=f"Revoke failed: {exc}") from exc
 
 
 @app.get("/api/v1/auth/userinfo")
@@ -319,7 +319,7 @@ async def userinfo(authorization: str | None = Header(default=None)) -> dict[str
             return r.json()
         raise HTTPException(status_code=r.status_code, detail=r.text)
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Keycloak userinfo timeout")
+        raise HTTPException(status_code=504, detail="Keycloak userinfo timeout") from None
 
 
 
@@ -345,7 +345,7 @@ async def iam_login(req: IamLoginRequest) -> IamAuthResponse:
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Keycloak timeout")
+        raise HTTPException(status_code=504, detail="Keycloak timeout") from None
     if r.status_code != 200:
         try:
             err = r.json()
@@ -407,7 +407,7 @@ async def iam_refresh(req: IamRefreshRequest) -> IamAuthResponse:
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Keycloak timeout")
+        raise HTTPException(status_code=504, detail="Keycloak timeout") from None
     if r.status_code != 200:
         try:
             err = r.json()
@@ -475,7 +475,7 @@ async def dashboard_login_keycloak(req: IamLoginRequest) -> dict[str, Any]:
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Keycloak timeout")
+        raise HTTPException(status_code=504, detail="Keycloak timeout") from None
     if r.status_code != 200:
         try:
             err = r.json()
@@ -585,7 +585,7 @@ async def list_sso_providers(
 
 app.include_router(_sso_router)
 
-from mate_tech_iam.api import (  # noqa: E402
+from mate_tech_iam.api import (
     configs_router,
     dashboard_router,
     logs_router,
@@ -594,6 +594,7 @@ from mate_tech_iam.api import (  # noqa: E402
     permissions_router,
     users_router,
 )
+
 app.include_router(dashboard_router)
 app.include_router(users_router)
 app.include_router(permissions_router)

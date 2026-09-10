@@ -16,7 +16,7 @@ from mate_clients.security import BearerAuth
 
 
 class _StubBearerAuth(BearerAuth):
-    def __init__(self, token: str = "test-bearer-token") -> None:  # noqa: S107
+    def __init__(self, token: str = "test-bearer-token") -> None:
         self._token = token
 
     def token(self) -> str:  # type: ignore[override]
@@ -25,7 +25,7 @@ class _StubBearerAuth(BearerAuth):
 
 @pytest.fixture
 def stub_auth() -> _StubBearerAuth:
-    return _StubBearerAuth(token="test-bearer-token")  # noqa: S106
+    return _StubBearerAuth(token="test-bearer-token")
 
 
 def _build_manifest(blob: bytes) -> dict:

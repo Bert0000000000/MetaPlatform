@@ -85,7 +85,9 @@ def _reset_rag_state() -> None:
     from mate_tech_rag.api import app as rag_app
     from mate_tech_rag.api.document_registry import reset_registry
     from mate_tech_rag.api.retrieval import (
-        get_hybrid, get_lightrag, get_ragflow,
+        get_hybrid,
+        get_lightrag,
+        get_ragflow,
     )
 
     reset_registry()
@@ -222,8 +224,8 @@ class TestRagflowPerRequestOverride:
 
     @pytest.fixture
     def client_with_stub(self) -> Iterator[tuple[TestClient, _StubRagflowWithOverride]]:
-        from mate_tech_rag.api import retrieval as _retrieval
         from mate_tech_rag.api import app as _app_module
+        from mate_tech_rag.api import retrieval as _retrieval
 
         _reset_rag_state()
         stub = _StubRagflowWithOverride()

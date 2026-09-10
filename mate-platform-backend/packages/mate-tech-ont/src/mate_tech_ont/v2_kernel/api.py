@@ -32,7 +32,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 import structlog
-
 from fastapi import APIRouter, HTTPException, Request, WebSocket
 from pydantic import BaseModel, Field
 
@@ -88,7 +87,7 @@ class PropertyDTO(BaseModel):
     format: str = "string"
     # ── EXP-02 扩展 ──
     description: str = ""
-    struct_fields: list["PropertyDTO"] = Field(default_factory=list)
+    struct_fields: list[PropertyDTO] = Field(default_factory=list)
     array: bool = False
     reducer: str | None = None  # first / latest
     derived: DerivedSpecDTO | None = None
@@ -653,7 +652,7 @@ async def list_security_policies(request: Request) -> list[dict]:
     out: list[dict] = []
     for it in items:
         it.pop("value_json", None)
-        out.append({k: v for k, v in it.items()})
+        out.append(dict(it.items()))
     return out
 
 
@@ -721,7 +720,7 @@ async def sync_backing_datasources(
 ) -> dict:
     """DATA-14/CDC：批量或增量同步（增量按 ts_column > 水位；用户编辑覆盖层不覆盖）。"""
     ctx = _ctx(request)
-    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+    if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
         return await _call_scoped(
@@ -747,7 +746,7 @@ async def apply_cdc_changes(
 ) -> dict:
     """CDC 流式绑定：变更事件 → 对象平面（upsert 尊重用户编辑覆盖层）。"""
     ctx = _ctx(request)
-    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+    if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
         return await _call_scoped(
@@ -764,7 +763,7 @@ async def apply_cdc_changes(
 async def get_materialization(rid: str, request: Request) -> dict:
     """DATA-15：对象最新状态行集（materialization 回流读端点）。"""
     ctx = _ctx(request)
-    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+    if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
         return await _call_scoped(request, "materialize_object_type", rid)
@@ -905,7 +904,7 @@ async def invoke_function(
 
 
 @router.websocket("/ws/object-changes")
-async def ws_object_changes(websocket: "WebSocket") -> None:
+async def ws_object_changes(websocket: WebSocket) -> None:
     """G25：对象变更 WebSocket 订阅（outbox 事件推送）。
 
     连接即订阅：服务端轮询 repo outbox 增量（~1.5s）推 JSON 事件
@@ -1194,7 +1193,7 @@ async def apply_lifecycle(
 ) -> dict:
     """GOV-17：Cleanup 三级处置（Snooze/Deprecate/Delete）+ 使用量删除保护。"""
     ctx = _ctx(request)
-    if not rid.startswith(f"ont.{str(ctx.tenant_id)}."):  # type: ignore[attr-defined]
+    if not rid.startswith(f"ont.{ctx.tenant_id!s}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant class denied")
     try:
         return await _call_scoped(
@@ -1596,12 +1595,10 @@ async def import_object_type(request: Request, payload: dict) -> ObjectTypeRespo
         "properties": props,
     }
     from mate_kernel.ontology.identity.class_ref import ClassRef
-
-    from mate_kernel.ontology.types.property_ import Property, PropertyFormat
     from mate_kernel.ontology.types.object_type import ObjectType
-    from mate_kernel.ontology.identity.class_ref import ClassRef
+    from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
-    pk_rids = [r for r in body["primary_key"]]
+    pk_rids = list(body["primary_key"])
     ot = ObjectType(
         rid=ClassRef(rid), display_name=body["display_name"],
         primary_key=tuple(ClassRef(r) for r in pk_rids),
@@ -1697,11 +1694,11 @@ async def explain_reasoning(request: Request, payload: dict) -> dict:
                         changed = True
             derivations.append({
                 "fact": f"{ind} ∈ {cls}", "rule": "subclass-closure",
-                "chain": list(reversed(chain)) + [ind],
+                "chain": [*list(reversed(chain)), ind],
                 "premises": [f"{chain[i]} ⊑ {chain[i+1]}"
                              for i in range(len(chain) - 1)],
             })
-    for rep, members in out["same_as_clusters"].items():
+    for _rep, members in out["same_as_clusters"].items():
         derivations.append({
             "fact": " ≈ ".join(members), "rule": "same-as-merge",
             "chain": members, "premises": payload.get("same_as_pairs") or [],
@@ -1808,7 +1805,10 @@ async def validate_shacl_endpoint(request: Request, payload: dict) -> dict:
     ctx = _ctx(request)
     from mate_kernel.ontology.identity.class_ref import ClassRef
     from mate_kernel.ontology.shacl import (
-        NodeShape, PropertyShape, shape_from_object_type, validate_shacl,
+        NodeShape,
+        PropertyShape,
+        shape_from_object_type,
+        validate_shacl,
     )
 
     def _ps(s: dict) -> PropertyShape:
@@ -1951,7 +1951,6 @@ async def branch_object_type(
 ) -> ObjectTypeResponse:
     """ONT-G8/G19：以当前定义分支出新版本 rid（body: {new_rid, note?}）。"""
     ctx = _ctx(request)
-    import json as _json
     body = payload or {}
     new_rid = str((body or {}).get("new_rid") or "")
     note = str((body or {}).get("note") or "")
@@ -2065,7 +2064,7 @@ async def append_object_type_property(
     from dataclasses import replace as _dc_replace
 
     merged = _dc_replace(
-        existing, properties=existing.properties + (new_prop,))
+        existing, properties=(*existing.properties, new_prop))
     saved = await _call_scoped(request, "upsert_object_type", merged)
     return _ot_to_dto(saved)
 
@@ -2276,7 +2275,7 @@ async def propose_edit_set(
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
-        raise HTTPException(status_code=404, detail=f"action type not found: {rid}")
+        raise HTTPException(status_code=404, detail=f"action type not found: {rid}") from None
     edits = payload.edits or [dict(t) for t in at.declarative_edits]
     if not edits:
         raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
@@ -2314,7 +2313,7 @@ async def apply_edit_set(
     try:
         at = await _call_scoped(request, "get_action_type", ClassRef(rid))
     except KeyError:
-        raise HTTPException(status_code=404, detail=f"action type not found: {rid}")
+        raise HTTPException(status_code=404, detail=f"action type not found: {rid}") from None
     edits = payload.edits or [dict(t) for t in at.declarative_edits]
     if not edits:
         raise HTTPException(status_code=422, detail="no declarative_edits on action and no edits in body")
@@ -2808,7 +2807,7 @@ async def confirm_proposal(
     _logger.info(
         "ont.proposal.confirm",
         proposal_id=proposal_id, tenant_id=getattr(_ctx(request), "tenant_id", ""),
-        actor_id=str(getattr(_ctx(request), "user_id", "")), 
+        actor_id=str(getattr(_ctx(request), "user_id", "")),
     )
     ctx = _ctx(request)
     idempotency_key = _require_idempotency_key(request)
@@ -3139,7 +3138,6 @@ async def get_proposal_preview(
 
     已确认/已应用/已拒绝的 proposal 返回 409（preview 已不可改）。
     """
-    from mate_kernel.action.engine import ProposalStatus  # local import 避免 module 循环
     ctx = _ctx(request)
     tenant_id = str(ctx.tenant_id)  # type: ignore[attr-defined]
     try:
@@ -3519,7 +3517,7 @@ async def get_individual(rid: str, request: Request) -> IndividualResponse:
     response_model=AxiomDTO,
     operation_id="ontCreateV2Axiom",
 )
-async def upsert_axiom(
+async def upsert_axiom_dto(
     payload: AxiomDTO, request: Request,
 ) -> AxiomDTO:
     ctx = _ctx(request)
@@ -3533,9 +3531,9 @@ async def upsert_axiom(
 @router.get(
     "/axioms",
     response_model=list[AxiomDTO],
-    operation_id="ontListV2Axioms",
+    operation_id="ontListV2AxiomDto",
 )
-async def list_axioms(
+async def list_axioms_dto(
     request: Request,
 ) -> list[AxiomDTO]:
     _ctx(request)

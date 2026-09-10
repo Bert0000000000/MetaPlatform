@@ -10,8 +10,9 @@ kernel 试点语义不变）：会话打开时对全局注册角色做**快照�
 """
 from __future__ import annotations
 
-import structlog
 import time
+
+import structlog
 
 from .capability_runtime import CapabilityRuntime
 from .role_registry import CapabilityBinding, get_role_registry

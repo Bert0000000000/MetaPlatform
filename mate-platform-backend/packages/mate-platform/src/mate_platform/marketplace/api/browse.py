@@ -26,7 +26,7 @@ async def list_artifacts(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"code": "MP_SAAS_UNREACHABLE", "message": str(e)},
-        )
+        ) from e
 
 
 @router.get("/artifacts/{kind}/{artifact_id}")
@@ -44,4 +44,4 @@ async def get_artifact(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"code": "MP_SAAS_UNREACHABLE", "message": str(e)},
-        )
+        ) from e

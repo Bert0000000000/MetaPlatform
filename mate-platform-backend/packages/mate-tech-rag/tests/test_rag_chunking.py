@@ -5,25 +5,22 @@ the create_chunker factory, and InMemoryRAGFlowClient integration.
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
-
-import pytest
 
 REPO = Path(__file__).resolve().parents[3]
 PKG = REPO / "packages"
 for sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-rag"):
     sys.path.insert(0, str(PKG / sub / "src"))
 
-from mate_tech_rag.chunking import (  # noqa: E402
+from mate_tech_rag.chunking import (
     MarkdownChunker,
     RecursiveChunker,
     SemanticChunker,
     SlidingWindowChunker,
     create_chunker,
 )
-from mate_tech_rag.clients.ragflow_client import InMemoryRAGFlowClient  # noqa: E402
+from mate_tech_rag.clients.ragflow_client import InMemoryRAGFlowClient
 
 
 # ---------------------------------------------------------------------------

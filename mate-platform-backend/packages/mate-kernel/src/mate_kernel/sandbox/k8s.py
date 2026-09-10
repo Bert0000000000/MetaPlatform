@@ -17,26 +17,26 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import uuid
 import subprocess
 import sys
 import tempfile
+import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 if sys.platform != "win32":
-    import resource  # noqa: F401  (POSIX-only)
+    import resource
 
 
-class SandboxTier(str, Enum):
+class SandboxTier(StrEnum):
     L1_PROCESS = "l1_process"
     L2_CONTAINER = "l2_container"
     L3_MICROVM = "l3_microvm"
 
 
-class JobPhase(str, Enum):
+class JobPhase(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
@@ -324,7 +324,7 @@ class K8sJobExecutor:
                 capture_output=True, text=True, timeout=30,
             )
             return (0, logs.stdout, logs.stderr)
-        except Exception as e:  # noqa: BLE001 — 集群不可达等降级为执行失败
+        except Exception as e:
             return (1, "", f"k8s executor error: {type(e).__name__}: {e}")
         finally:
             with contextlib.suppress(Exception):
@@ -361,7 +361,7 @@ class K8sSandboxRunner:
     def submit(self, spec: K8sSandboxSpec) -> SandboxResult:
         self._counter += 1
         job_name = f"sandbox-{spec.function_ref.split('.')[-2]}-{self._counter}"
-        started = datetime.now(timezone.utc)
+        started = datetime.now(UTC)
         # 在真实 K8s 里这里 submit 到 API server；M3 直接同步执行（mock）
         # timeout 用 rlimit 守护（mock 简化）
         try:
@@ -376,7 +376,7 @@ class K8sSandboxRunner:
             stdout=stdout,
             stderr=stderr,
             started_at=started,
-            finished_at=datetime.now(timezone.utc),
+            finished_at=datetime.now(UTC),
             o11y_trace_id=None,
         )
         self._jobs[job_name] = result

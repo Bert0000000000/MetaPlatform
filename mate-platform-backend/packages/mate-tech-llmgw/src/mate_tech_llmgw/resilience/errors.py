@@ -59,7 +59,7 @@ def _parse_retry_after(headers: Any) -> int | None:
         return None
     try:
         raw = headers.get("retry-after") or headers.get("Retry-After")
-    except Exception:  # noqa: BLE001 — header access must never raise
+    except Exception:
         return None
     if raw is None:
         return None

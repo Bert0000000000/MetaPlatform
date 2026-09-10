@@ -10,7 +10,6 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from mate_tech_metrics.clients import AsyncMetricsClient
 from mate_tech_metrics.services.dbt_engine import DbtMetricsEngine, DbtMetricsError
 
@@ -97,9 +96,8 @@ async def test_dbt_compute_metric_failure() -> None:
         "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
         new_callable=AsyncMock,
         return_value=proc,
-    ):
-        with pytest.raises(DbtMetricsError) as exc_info:
-            await engine.compute_metric("mtc-bad")
+    ), pytest.raises(DbtMetricsError) as exc_info:
+        await engine.compute_metric("mtc-bad")
 
     assert exc_info.value.returncode == 1
     assert "Compilation Error" in exc_info.value.stderr
@@ -121,9 +119,8 @@ async def test_dbt_compute_metric_timeout() -> None:
         "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
         new_callable=AsyncMock,
         return_value=proc,
-    ):
-        with pytest.raises(DbtMetricsError) as exc_info:
-            await engine.compute_metric("mtc-slow")
+    ), pytest.raises(DbtMetricsError) as exc_info:
+        await engine.compute_metric("mtc-slow")
 
     assert "timed out" in str(exc_info.value).lower()
     assert proc.killed is True
@@ -172,9 +169,8 @@ async def test_dbt_get_lineage_failure() -> None:
         "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
         new_callable=AsyncMock,
         return_value=proc,
-    ):
-        with pytest.raises(DbtMetricsError) as exc_info:
-            await engine.get_lineage("mtc-bad")
+    ), pytest.raises(DbtMetricsError) as exc_info:
+        await engine.get_lineage("mtc-bad")
     assert exc_info.value.returncode == 2
 
 
@@ -238,9 +234,8 @@ async def test_dbt_get_values_failure() -> None:
         "mate_tech_metrics.services.dbt_engine.asyncio.create_subprocess_exec",
         new_callable=AsyncMock,
         return_value=proc,
-    ):
-        with pytest.raises(DbtMetricsError) as exc_info:
-            await engine.get_values("mtc-bad", expression="SUM(x)")
+    ), pytest.raises(DbtMetricsError) as exc_info:
+        await engine.get_values("mtc-bad", expression="SUM(x)")
     assert "Macro not found" in exc_info.value.stderr
 
 

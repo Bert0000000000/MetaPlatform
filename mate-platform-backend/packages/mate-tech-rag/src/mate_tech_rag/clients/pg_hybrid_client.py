@@ -62,8 +62,8 @@ class PgHybridClient:
 
         vec_scores = _norm([vec_by_id[c]["score"] for c in vec_by_id]) if vec_by_id else []
         bm25_scores = _norm([bm25_by_id[c]["score"] for c in bm25_by_id]) if bm25_by_id else []
-        vec_norm = dict(zip(vec_by_id.keys(), vec_scores))
-        bm25_norm = dict(zip(bm25_by_id.keys(), bm25_scores))
+        vec_norm = dict(zip(vec_by_id.keys(), vec_scores, strict=False))
+        bm25_norm = dict(zip(bm25_by_id.keys(), bm25_scores, strict=False))
 
         fused: list[tuple[float, str]] = []
         for cid in all_ids:

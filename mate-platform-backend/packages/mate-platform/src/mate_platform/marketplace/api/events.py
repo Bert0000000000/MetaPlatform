@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from fastapi import APIRouter, Request
 from sse_starlette.sse import EventSourceResponse
@@ -50,7 +51,7 @@ async def install_event_stream(
         if hasattr(sub, "close"):
             try:
                 await sub.close()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
 
@@ -59,7 +60,8 @@ async def stream_install_events(install_id: str, request: Request):
     redis = getattr(request.state, "redis", None)
     if redis is None:
         # 没有 pubsub,直接 503 — 上层会启用轮询 fallback
-        from fastapi import HTTPException, status as _status
+        from fastapi import HTTPException
+        from fastapi import status as _status
 
         raise HTTPException(
             status_code=_status.HTTP_503_SERVICE_UNAVAILABLE,

@@ -44,8 +44,9 @@ cur.execute(
      ])))
 
 # 1) 1 万实例（COPY 级批量）
-from datetime import datetime, timezone
-now = datetime.now(timezone.utc)
+from datetime import UTC, datetime
+
+now = datetime.now(UTC)
 rows = []
 for i in range(N):
     rows.append((
@@ -68,8 +69,8 @@ cur.execute("""CREATE INDEX IF NOT EXISTS ix_ont_ind_class_pk
                ON ont_individual (class_rid, primary_key)""")
 
 # 3) object-query 计时（经 repo SQL 编译路径）
-from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp  # noqa: E402
-from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository  # noqa: E402
+from mate_kernel.objectset.ir import Condition, ObjectSetQuery, QueryOp
+from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
 
 repo = PgOntologyRepository(dsn=DSN)
 with repo.tenant_scope(TENANT):

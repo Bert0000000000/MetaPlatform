@@ -18,7 +18,8 @@ header 双注入（GOVERN-06），全部方法返回 dict（契约响应形状�
 from __future__ import annotations
 
 import uuid
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import httpx
 

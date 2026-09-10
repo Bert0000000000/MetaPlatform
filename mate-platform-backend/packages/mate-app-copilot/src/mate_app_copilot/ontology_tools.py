@@ -229,7 +229,7 @@ def _list_classes(repo: OntologyToolRepo, _markings: tuple[str, ...]) -> dict[st
 
 
 def _inspect_class(repo: OntologyToolRepo, class_rid: str) -> dict[str, Any]:
-    from mate_kernel.ontology.identity import ClassRef  # noqa: PLC0415
+    from mate_kernel.ontology.identity import ClassRef
 
     ot = repo.get_object_type(ClassRef(class_rid))
     return {

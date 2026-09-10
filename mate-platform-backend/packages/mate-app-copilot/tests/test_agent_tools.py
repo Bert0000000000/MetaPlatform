@@ -42,7 +42,7 @@ def test_agent_tools_returns_dispatch_and_ontology_tools(
 ) -> None:
     """The registry mirrors the exact tool face run_agent_loop would use."""
     from mate_app_copilot.api import app as copilot_app
-    import mate_app_copilot.ontology_tools as ontology_tools
+    from mate_app_copilot import ontology_tools
 
     monkeypatch.setattr(copilot_app, "OrchestratorClient", _SnapshotClient)
     monkeypatch.setattr(
@@ -75,7 +75,7 @@ def test_agent_tools_degrades_when_orchestrator_unavailable(
 ) -> None:
     """A snapshot outage is reported per-source without failing the read."""
     from mate_app_copilot.api import app as copilot_app
-    import mate_app_copilot.ontology_tools as ontology_tools
+    from mate_app_copilot import ontology_tools
 
     monkeypatch.setattr(copilot_app, "OrchestratorClient", _UnavailableSnapshotClient)
     monkeypatch.setattr(
@@ -100,7 +100,7 @@ def test_agent_tools_degrades_when_ontology_unavailable(
 ) -> None:
     """An ontology outage keeps the dispatch tool and reports the source."""
     from mate_app_copilot.api import app as copilot_app
-    import mate_app_copilot.ontology_tools as ontology_tools
+    from mate_app_copilot import ontology_tools
 
     def _boom(repo: Any, agent_markings: tuple[str, ...] = ()) -> list[dict[str, Any]]:
         raise RuntimeError("tech-ont unreachable")
@@ -122,7 +122,7 @@ def test_agent_tools_requires_tenant_context(
 ) -> None:
     """The registry read enforces ADR-0014 step 2 like every other handler."""
     from mate_app_copilot.api import app as copilot_app
-    import mate_app_copilot.ontology_tools as ontology_tools
+    from mate_app_copilot import ontology_tools
 
     monkeypatch.setattr(copilot_app, "OrchestratorClient", _SnapshotClient)
     monkeypatch.setattr(ontology_tools, "build_ontology_tools", lambda *_: [])

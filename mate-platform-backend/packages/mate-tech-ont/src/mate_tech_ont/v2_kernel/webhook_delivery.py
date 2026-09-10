@@ -21,7 +21,7 @@ import json
 import time
 from typing import Any
 
-__all__ = ["sign_payload", "deliver_pending", "RETRY_DELAYS"]
+__all__ = ["RETRY_DELAYS", "deliver_pending", "sign_payload"]
 
 RETRY_DELAYS = (0.2, 0.5, 1.0)
 
@@ -77,7 +77,7 @@ def deliver_pending(repo: Any, *, limit: int = 50) -> dict[str, Any]:
                 "X-Mate-Signature": sign_payload(sub.get("secret", ""), body),
             }
             ok, attempts, last_err = False, 0, ""
-            for attempt, delay in enumerate((0.0,) + RETRY_DELAYS, start=1):
+            for attempt, delay in enumerate((0.0, *RETRY_DELAYS), start=1):
                 if delay:
                     time.sleep(delay)
                 attempts = attempt
@@ -88,7 +88,7 @@ def deliver_pending(repo: Any, *, limit: int = 50) -> dict[str, Any]:
                         ok = True
                         break
                     last_err = f"HTTP {resp.status_code}"
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     last_err = str(e)[:300]
                 if attempt > len(RETRY_DELAYS):
                     break

@@ -21,7 +21,7 @@ from mate_tech_orchestrator.scheduler.role_registry import get_role_registry
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
-JWT_SECRET = "test-secret"  # noqa: S105 - test-only signing key
+JWT_SECRET = "test-secret"
 
 
 def _keycloak_token(*, tenant_id: str = "tenant-acme") -> str:

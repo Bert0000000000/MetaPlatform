@@ -23,10 +23,10 @@ GLOBEX_E2 = "dw-emp-globex-2"
 
 import pytest
 from fastapi.testclient import TestClient
-
-from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_tech_dw.main import create_app
 from mate_tech_dw.repositories import in_memory as in_memory_repo
+
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
 @pytest.fixture
@@ -560,7 +560,9 @@ def test_update_learning_feedback_repo_unit() -> None:
     """Repo-level update_learning_feedback rebuilds the frozen dataclass correctly."""
     from mate_tech_dw.repositories import in_memory as repo
     from mate_tech_dw.repositories.in_memory import (
-        DwLearningFeedback, append_learning_feedback, get_learning_feedback,
+        DwLearningFeedback,
+        append_learning_feedback,
+        get_learning_feedback,
         update_learning_feedback,
     )
     repo.reset_store()

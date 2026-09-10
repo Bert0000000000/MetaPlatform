@@ -146,7 +146,7 @@ def _node_violations(
     return out
 
 
-def _eval_property_shape(  # noqa: PLR0912 —— 单形状多约束组件的线性判定
+def _eval_property_shape(
     ind: dict[str, Any], focus: str, ps: PropertyShape,
     by_rid: dict[str, dict[str, Any]],
     descendants: dict[str, set[str]] | None = None,

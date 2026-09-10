@@ -161,7 +161,7 @@ def set_etl_task_status(
 # ---------------------------------------------------------------------------
 def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     """Seed the SQL store from in_memory seed data."""
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["etl_tasks"] = len(

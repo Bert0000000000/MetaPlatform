@@ -25,7 +25,6 @@ from typing import Any, Protocol, runtime_checkable
 from mate_kernel.ontology.instances.individual import Individual
 from mate_kernel.ontology.query.object_set import ObjectSet
 
-
 # ─────────────────── 表达式求值 ───────────────────
 
 
@@ -35,7 +34,7 @@ class CompiledFilter:
     kind: str  # "always" / "compare_eq" / "compare_gt" / "logical_and" / "logical_or" / "negate" / "startswith" / "contains"
     field_name: str | None = None
     value: object = None
-    children: tuple["CompiledFilter", ...] = field(default_factory=tuple)
+    children: tuple[CompiledFilter, ...] = field(default_factory=tuple)
 
 
 class FilterCompiler:
@@ -72,18 +71,17 @@ class FilterCompiler:
             if in_str:
                 if ch == in_str and expr[i - 1] != "\\":
                     in_str = None
-            else:
-                if ch in ("'", '"'):
-                    in_str = ch
-                elif ch == "(":
-                    depth += 1
-                elif ch == ")":
-                    depth -= 1
-                elif depth == 0 and expr[i:i + len(sep)] == sep:
-                    out.append(expr[:i])
-                    expr = expr[i + len(sep):]
-                    i = 0
-                    continue
+            elif ch in ("'", '"'):
+                in_str = ch
+            elif ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+            elif depth == 0 and expr[i:i + len(sep)] == sep:
+                out.append(expr[:i])
+                expr = expr[i + len(sep):]
+                i = 0
+                continue
             i += 1
         out.append(expr)
         return out
@@ -215,7 +213,7 @@ class InMemoryObjectSetExecutor:
         self.source = source
 
     def execute(
-        self, plan: ObjectSet, extra_classes: "frozenset[str] | None" = None,
+        self, plan: ObjectSet, extra_classes: frozenset[str] | None = None,
     ) -> list[Individual]:
         """执行 ObjectSet。
 
@@ -276,8 +274,8 @@ __all__ = [
     "CompiledFilter",
     "FilterCompiler",
     "FilterEvaluator",
-    "ObjectSetExecutor",
     "InMemoryObjectSetExecutor",
+    "ObjectSetExecutor",
     "SQLObjectSetExecutor",
     "individual_to_row",
 ]

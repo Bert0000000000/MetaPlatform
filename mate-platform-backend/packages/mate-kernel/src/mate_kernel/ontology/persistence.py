@@ -15,9 +15,10 @@ PG schema（dev）:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Iterable, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from .identity import ClassRef, Version
 from .types import Property, PropertyFormat
@@ -31,7 +32,7 @@ class ClassRefRow:
     rest: str
 
     @classmethod
-    def from_class_ref(cls, c: ClassRef) -> "ClassRefRow":
+    def from_class_ref(cls, c: ClassRef) -> ClassRefRow:
         # rid 形如 ont.<tenant>.<kind>.<rest...>
         parts = c.rid.split(".", 3)
         if len(parts) < 4:
@@ -57,7 +58,7 @@ class VersionRow:
     change_set: tuple[str, ...]
 
     @classmethod
-    def from_version(cls, v: Version) -> "VersionRow":
+    def from_version(cls, v: Version) -> VersionRow:
         return cls(
             rid=v.rid,
             class_ref=v.class_ref.rid,
@@ -88,7 +89,7 @@ class PropertyRow:
     format: str
 
     @classmethod
-    def from_property(cls, p: Property) -> "PropertyRow":
+    def from_property(cls, p: Property) -> PropertyRow:
         return cls(
             rid=p.rid.rid,
             type_id=p.type_id,
@@ -162,9 +163,9 @@ DDL_STATEMENTS: tuple[str, ...] = (
 
 
 __all__ = [
-    "ClassRefRow",
-    "VersionRow",
-    "PropertyRow",
-    "PersistentOntologyRepository",
     "DDL_STATEMENTS",
+    "ClassRefRow",
+    "PersistentOntologyRepository",
+    "PropertyRow",
+    "VersionRow",
 ]

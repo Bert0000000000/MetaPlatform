@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 class TopologyCycleError(ValueError):
@@ -54,7 +54,7 @@ class CapabilityTopology:
 
     def topological_order(self) -> list[str]:
         """Kahn 拓扑排序；环抛 TopologyCycleError。"""
-        indegree = {cap: 0 for cap in self._nodes}
+        indegree = dict.fromkeys(self._nodes, 0)
         edges: dict[str, list[str]] = {cap: [] for cap in self._nodes}
         for node in self._nodes.values():
             for dep in node.depends_on:

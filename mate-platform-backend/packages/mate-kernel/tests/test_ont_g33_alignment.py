@@ -13,13 +13,13 @@ _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-from mate_kernel.ontology.alignment import (  # noqa: E402
+from mate_kernel.ontology.alignment import (
     align_individuals,
     merge_object_types,
 )
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
 
 def _ind(rid: str, cls: str, **props) -> dict:

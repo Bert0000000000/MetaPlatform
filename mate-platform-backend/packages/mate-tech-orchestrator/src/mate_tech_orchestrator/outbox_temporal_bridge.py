@@ -15,8 +15,10 @@ Temporal workflow；两者可并存（Kafka 广播 + Temporal 编排）。
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any, Protocol
+
 import structlog
-from typing import Any, Mapping, Protocol
 
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import OutboxWriter

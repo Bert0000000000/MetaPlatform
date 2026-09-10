@@ -138,7 +138,7 @@ def delete_metric(tenant_id: str, metric_id: str) -> bool:
 # ---------------------------------------------------------------------------
 def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     """Seed the SQL store from in_memory seed data."""
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["metrics"] = len(

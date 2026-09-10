@@ -30,10 +30,10 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_msg.kafka_client import KafkaClient  # noqa: E402
-from mate_tech_msg.publisher import Publisher  # noqa: E402
-from mate_tech_msg.schemas import PublishRequest  # noqa: E402
-from mate_tech_msg.subscriptions import (  # noqa: E402
+from mate_tech_msg.kafka_client import KafkaClient
+from mate_tech_msg.publisher import Publisher
+from mate_tech_msg.schemas import PublishRequest
+from mate_tech_msg.subscriptions import (
     InMemoryDLQStore,
     SubscriptionStore,
     deliver_with_retries,

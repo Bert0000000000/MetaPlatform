@@ -13,7 +13,6 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
-
 from mate_tech_dw.main import create_app
 from mate_tech_dw.repositories import in_memory as in_memory_repo
 

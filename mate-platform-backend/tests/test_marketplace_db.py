@@ -9,11 +9,11 @@ import pytest_asyncio
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import mate_platform.marketplace.domain.install
+import mate_platform.marketplace.domain.instance
+
 # Trigger model import (registers on Base.metadata)
 import mate_platform.marketplace.domain.subscription  # noqa: F401
-import mate_platform.marketplace.domain.install  # noqa: F401
-import mate_platform.marketplace.domain.instance  # noqa: F401
-
 from mate_tech_db.base import Base
 
 

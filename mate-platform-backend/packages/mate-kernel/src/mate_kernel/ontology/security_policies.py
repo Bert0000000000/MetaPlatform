@@ -28,11 +28,11 @@ from typing import Any
 from ..action.validation import Condition, evaluate_rule_group
 
 __all__ = [
-    "RowPolicy",
     "ColumnPolicy",
+    "RowPolicy",
     "SecurityPolicySet",
-    "filter_visible_individuals",
     "filter_by_markings",
+    "filter_visible_individuals",
     "mask_property_values",
     "policy_applies",
 ]

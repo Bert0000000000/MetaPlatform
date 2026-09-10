@@ -13,8 +13,8 @@ import asyncio
 import httpx
 import pytest
 import respx
-
 from mate_app_wfe.clients import FlowableClient
+
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 _VALID_BPMN = (
@@ -140,7 +140,7 @@ def test_deploy_flow_tenant_isolation(
 def test_flowable_client_injects_bearer_and_tenant_header(monkeypatch) -> None:
     """FlowableClient.attach BearerAuth + tenant_id so every outbound
     request carries Authorization and X-Tenant-Id (ACL Client contract)."""
-    from mate_clients.security import BearerAuth, OutgoingAuthMiddleware
+    from mate_clients.security import BearerAuth
 
     monkeypatch.setenv("FLOWABLE_BASE_URL", "http://flowable:8080")
 

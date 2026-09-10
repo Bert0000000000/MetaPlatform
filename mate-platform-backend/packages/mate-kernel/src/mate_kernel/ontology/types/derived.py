@@ -49,7 +49,7 @@ def compute_derived_for_row(
     if class_rid == link_src:
         peers = [dst for s, dst in link_pairs if s == row_rid]
     elif class_rid == link_dst:
-        peers = [src for s, _d in link_pairs if _d == row_rid]
+        peers = [s for s, _d in link_pairs if _d == row_rid]
     else:
         return None
     if spec.fn == "count":

@@ -7,12 +7,11 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Index, String, types
+from sqlalchemy import JSON, DateTime, Index, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base
-
 
 # JSONB 在 PostgreSQL;其他方言(JSON) 回退为普通 JSON,保证 SQLite 测试也能 create_all
 JSONType = JSONB().with_variant(JSON(), "sqlite")

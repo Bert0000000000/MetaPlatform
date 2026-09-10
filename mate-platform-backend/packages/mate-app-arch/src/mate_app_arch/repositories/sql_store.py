@@ -1171,7 +1171,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
 
     Returns counts of rows inserted per table.
     """
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["applications"] = len(
@@ -1266,7 +1266,7 @@ def _mem_capabilities(tenant_id: str) -> list[Capability]:
     list_capabilities, so we walk the tree to collect all nodes and
     reconstruct parent_id from the nesting structure.
     """
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     result: list[Capability] = []
 
@@ -1292,7 +1292,7 @@ def _mem_orgs(tenant_id: str) -> list[Org]:
     in_memory exposes list_org_tree (nested) but not a flat
     list_orgs, so we walk the tree to collect all nodes.
     """
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     result: list[Org] = []
 
@@ -1314,7 +1314,7 @@ def _mem_orgs(tenant_id: str) -> list[Org]:
 
 def _mem_impact_analysis(tenant_id: str) -> list[ImpactAnalysisResult]:
     """Compute impact-analysis results for all root capability nodes."""
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     results: list[ImpactAnalysisResult] = []
     for root in mem.list_capability_tree(tenant_id):

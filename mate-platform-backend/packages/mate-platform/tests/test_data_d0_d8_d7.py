@@ -11,8 +11,6 @@ Verifies:
 """
 from __future__ import annotations
 
-import pytest
-
 from mate_platform.security import (
     ALL_KINDS,
     PIIEngine,

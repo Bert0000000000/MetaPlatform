@@ -10,13 +10,15 @@ import urllib.request
 
 sys.path.insert(0, "packages/mate-tech-orchestrator/src")
 
-from temporalio.client import Client
-from temporalio.contrib.pydantic import pydantic_data_converter
-
 from mate_tech_orchestrator.temporal_translation import (
-    TASK_QUEUE, ReviewSignal, WorkflowStep, workflow_input_from_steps,
+    TASK_QUEUE,
+    ReviewSignal,
+    WorkflowStep,
+    workflow_input_from_steps,
 )
 from mate_tech_orchestrator.temporal_workflow import PlanWorkflow
+from temporalio.client import Client
+from temporalio.contrib.pydantic import pydantic_data_converter
 
 GW = "http://127.0.0.1:8100"
 

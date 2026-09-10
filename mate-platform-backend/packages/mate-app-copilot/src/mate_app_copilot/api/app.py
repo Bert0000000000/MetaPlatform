@@ -725,7 +725,7 @@ def _get_client(request: Request) -> AsyncCopilotClient:
         auth=BearerAuth(
             token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
             client_id="metaplatform-backend",
-            client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+            client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
                 # P4: "stub" survives only in legacy-compat dev; production must
                 # inject SERVICE_CLIENT_SECRET (hard rule 12).
             scope="platform.read platform.write",
@@ -1299,7 +1299,7 @@ async def toggle_favorite(request: Request, conv_id: str) -> dict[str, Any]:
             None,
         )
         if conv is None:
-            raise HTTPException(status_code=404, detail="Conversation not found")
+            raise HTTPException(status_code=404, detail="Conversation not found") from None
         conv.favorite = not getattr(conv, "favorite", False)
         conv.updated_at = _now_iso()
         put_conversation(tid, conv)
@@ -1434,7 +1434,7 @@ async def chat_completions_stream(
             auth=BearerAuth(
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
-                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
                     # P4: "stub" survives only in legacy-compat dev; production must
                     # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
@@ -1857,7 +1857,7 @@ async def query_graph(
     body: dict = Body(...),
 ) -> dict[str, Any]:
     tid = _tid(request)
-    cypher = body.get("cypher", "")  # noqa: F841 - retained for API compatibility
+    cypher = body.get("cypher", "")
     # P2-W4: full graph from arch Capability tree + DataEntity store
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
@@ -2161,7 +2161,7 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
             auth=BearerAuth(
                 token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
                 client_id="metaplatform-backend",
-                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+                client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
                     # P4: "stub" survives only in legacy-compat dev; production must
                     # inject SERVICE_CLIENT_SECRET (hard rule 12).
                 scope="platform.read platform.write",
@@ -2183,8 +2183,8 @@ async def get_agent_tools(request: Request) -> dict[str, Any]:
         tools.append(schema)
 
     try:
-        from ..ontology_http_repo import OntologyHttpRepo  # noqa: PLC0415
-        from ..ontology_tools import build_ontology_tools  # noqa: PLC0415
+        from ..ontology_http_repo import OntologyHttpRepo
+        from ..ontology_tools import build_ontology_tools
 
         onto_repo = OntologyHttpRepo(
             headers={
@@ -2294,7 +2294,7 @@ async def chat_agent_stream(
     bearer = BearerAuth(
         token_uri=f"{os.getenv('KEYCLOAK_URL', 'http://keycloak:8080')}/realms/metaplatform/protocol/openid-connect/token",
         client_id="metaplatform-backend",
-        client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),  # noqa: S106
+        client_secret=os.getenv("SERVICE_CLIENT_SECRET", "stub"),
             # P4: "stub" survives only in legacy-compat dev; production must
             # inject SERVICE_CLIENT_SECRET (hard rule 12).
         scope="platform.read platform.write",
@@ -2372,7 +2372,7 @@ async def chat_agent_stream(
         ontology_exec = None
         object_cards: list[dict[str, Any]] | None = None
         try:
-            from ..ontology_http_repo import OntologyHttpRepo  # noqa: PLC0415
+            from ..ontology_http_repo import OntologyHttpRepo
             from ..ontology_tools import build_ontology_tools, execute_ontology_tool
 
             auth_headers = {"Authorization": f"Bearer {user_token or ''}", "X-Tenant-Id": tid}
@@ -2380,7 +2380,7 @@ async def chat_agent_stream(
             ontology_tools = build_ontology_tools(onto_repo)
             _exec = execute_ontology_tool
             _repo = onto_repo
-            ontology_exec = lambda name, args: _exec(_repo, name, args)  # noqa: E731
+            ontology_exec = lambda name, args: _exec(_repo, name, args)
             last_user = next(
                 (str(m.get("content") or "") for m in reversed(messages)
                  if m.get("role") == "user"),

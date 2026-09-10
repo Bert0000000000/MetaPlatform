@@ -20,13 +20,13 @@ if _TESTS_DIR not in sys.path:
 def test_consumer_module_loads() -> None:
     """聚合 smoke test — 确保所有 sibling 模块都可 import。"""
     # 逐个 import 测试模块,确保 import 路径无错误
+    import test_marketplace_api  # noqa: F401
     import test_marketplace_clients  # noqa: F401
     import test_marketplace_db  # noqa: F401
-    import test_marketplace_installers  # noqa: F401
-    import test_marketplace_orchestrator  # noqa: F401
-    import test_marketplace_api  # noqa: F401
-    import test_marketplace_license  # noqa: F401
     import test_marketplace_events  # noqa: F401
+    import test_marketplace_installers  # noqa: F401
+    import test_marketplace_license  # noqa: F401
+    import test_marketplace_orchestrator  # noqa: F401
     import test_marketplace_startup_guard  # noqa: F401
     assert True
 

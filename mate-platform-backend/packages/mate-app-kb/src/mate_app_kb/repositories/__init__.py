@@ -46,10 +46,9 @@ if _STORE == "sql":
         put_retrieval_config,
         put_retrieval_config_snapshot,
         put_search_log,
-        seed_from_inmemory,
     )
 else:
-    from .in_memory import (  # noqa: F811
+    from .in_memory import (
         delete_collection,
         delete_document,
         delete_search_log,

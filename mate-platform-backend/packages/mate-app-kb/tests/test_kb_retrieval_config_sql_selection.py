@@ -47,7 +47,7 @@ def _run_py(script: str, db_url: str | None = None, kb_store: str | None = None)
         env["KB_STORE"] = kb_store
     if db_url is not None:
         env["MATE_DB_URL"] = db_url
-    return subprocess.run(  # noqa: S603 — argv is fully static (venv python + authored script)
+    return subprocess.run(
         [sys.executable, "-c", script],
         capture_output=True, text=True, env=env, timeout=180, check=False,
     )

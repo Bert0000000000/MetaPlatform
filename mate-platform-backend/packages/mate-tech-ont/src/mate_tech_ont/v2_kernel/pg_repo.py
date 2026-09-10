@@ -2319,7 +2319,7 @@ class PgOntologyRepository(OntologyRepository):
                         parameters: dict[str, Any]) -> dict[str, Any]:
         """调用已注册 Function（invoker/executor 优先，缺位报 422 语义错误）。"""
         action_rid = function_rid
-        invoker = self._action_service._invokers.get(function_rid)  # noqa: SLF001
+        invoker = self._action_service._invokers.get(function_rid)
         if invoker is not None:
             result = invoker(None, parameters)
             return {"function_rid": function_rid, "result": result}
@@ -2485,7 +2485,7 @@ class PgOntologyRepository(OntologyRepository):
         # where_sql comes from SQLCompiler (not user input); order_by is a
         # controlled sort spec. Safe to compose via f-string.
         sql = (
-            f"SELECT * FROM ont_individual "  # noqa: S608
+            f"SELECT * FROM ont_individual "
             f"WHERE {where_sql}"
             f"{order_by} "
             f"LIMIT %s OFFSET %s"
@@ -2590,7 +2590,7 @@ class PgOntologyRepository(OntologyRepository):
         if q.aggregation is not None:
             return self._object_query_aggregate(q, inner, params, slug_to_rid, final_class)
 
-        sql = f"SELECT * FROM ont_individual WHERE rid IN ({inner})"  # noqa: S608
+        sql = f"SELECT * FROM ont_individual WHERE rid IN ({inner})"
         order_parts: list[str] = []
         for key in q.sort:
             field_name = slug_to_rid.get(key.field, key.field)
@@ -2727,7 +2727,7 @@ class PgOntologyRepository(OntologyRepository):
                 slug = _prop_slug(p.rid.rid)
                 if spec.fn == "count":
                     cur_sql = (
-                        f"SELECT li.{col} AS rid, COUNT(*) AS v "  # noqa: S608
+                        f"SELECT li.{col} AS rid, COUNT(*) AS v "
                         f"FROM ont_link_instance li "
                         f"WHERE li.link_type_rid = %s AND li.{col} = ANY(%s) "
                         f"GROUP BY li.{col}"
@@ -2739,7 +2739,7 @@ class PgOntologyRepository(OntologyRepository):
                         continue
                     agg = "SUM" if spec.fn == "sum" else "AVG"
                     cur_sql = (
-                        f"SELECT li.{col} AS rid, {agg}((pi.props ->> '{field}')::numeric) AS v "  # noqa: S608
+                        f"SELECT li.{col} AS rid, {agg}((pi.props ->> '{field}')::numeric) AS v "
                         f"FROM ont_link_instance li "
                         f"JOIN ont_individual pi ON pi.rid = li.{peer_col} "
                         f"WHERE li.link_type_rid = %s AND li.{col} = ANY(%s) "
@@ -2794,7 +2794,7 @@ class PgOntologyRepository(OntologyRepository):
             select_parts.append(f"{fn_sql}((props ->> '{key}')::numeric) AS \"{name}\"")
 
         sql = (
-            f"SELECT {', '.join(select_parts)} FROM ont_individual "  # noqa: S608
+            f"SELECT {', '.join(select_parts)} FROM ont_individual "
             f"WHERE rid IN ({inner})"
         )
         if group_parts:
@@ -3306,7 +3306,7 @@ class PgOntologyRepository(OntologyRepository):
             BackingDatasource(
                 name=d["name"], kind=d["kind"], dsn_env=d["dsn_env"],
                 table=d["table_name"], pk_column=d["pk_column"],
-                field_mapping={k: v for k, v in (d.get("field_mapping") or {}).items()},
+                field_mapping=dict((d.get("field_mapping") or {}).items()),
                 priority=int(d.get("priority", 100)),
             )
             for d in decls
@@ -3353,7 +3353,7 @@ class PgOntologyRepository(OntologyRepository):
         return _apply(
             self, ot, changes,
             pk_column=top["pk_column"],
-            field_mapping={k: v for k, v in (top.get("field_mapping") or {}).items()},
+            field_mapping=dict((top.get("field_mapping") or {}).items()),
             overlay_props=overlay,
         )
 
@@ -3425,7 +3425,9 @@ class PgOntologyRepository(OntologyRepository):
     def _policy_set(self) -> Any:
         """行/列策略 → kernel SecurityPolicySet（本租户）。"""
         from mate_kernel.ontology.security_policies import (
-            ColumnPolicy, RowPolicy, SecurityPolicySet,
+            ColumnPolicy,
+            RowPolicy,
+            SecurityPolicySet,
         )
 
         rows_, cols_ = [], []
@@ -3496,7 +3498,8 @@ class PgOntologyRepository(OntologyRepository):
     ) -> list[Any]:
         """行策略 + G6 marking 门（读端点调用；分页前）。"""
         from mate_kernel.ontology.security_policies import (
-            filter_by_markings, filter_visible_individuals,
+            filter_by_markings,
+            filter_visible_individuals,
         )
 
         ps = self._policy_set()
@@ -3527,7 +3530,6 @@ class PgOntologyRepository(OntologyRepository):
         """G6：卡片按实例/类型 marking 过滤后可见的 rid 集。"""
         if not rids:
             return set()
-        from mate_kernel.ontology.identity.class_ref import ClassRef
         from mate_kernel.ontology.security_policies import filter_by_markings
 
         conn, _ = self._connect()
@@ -3684,7 +3686,7 @@ class PgOntologyRepository(OntologyRepository):
             conds.append("class_rid = %s")
             params.append(class_rid)
         like_clauses = " OR ".join(
-            f"value_text ILIKE %s" for _ in tokens
+            "value_text ILIKE %s" for _ in tokens
         )
         sql = (
             "SELECT * FROM ont_object_embedding WHERE ("
@@ -3705,7 +3707,7 @@ class PgOntologyRepository(OntologyRepository):
         # 关键词路按 (individual, 命中位置) 排名
         kw_rank: dict[str, int] = {}
         kw_meta: dict[str, dict[str, Any]] = {}
-        for i, r in enumerate(kw_rows):
+        for _i, r in enumerate(kw_rows):
             irid = r["individual_rid"]
             if irid not in kw_rank:
                 kw_rank[irid] = len(kw_rank) + 1
@@ -4511,7 +4513,6 @@ class PgOntologyRepository(OntologyRepository):
         impact_summary: str,
     ) -> Any:
         """AI/HITL 流程的 edit-set 提案（pending → 用户 confirm → execute）。"""
-        from mate_kernel.action.edit_set import resolve_edit_templates
 
         return self._propose_edit_set_pg(
             action_rid, target_iid, parameters, edit_templates, impact_summary,
@@ -4526,9 +4527,6 @@ class PgOntologyRepository(OntologyRepository):
         impact_summary: str,
     ) -> Any:
         """PG 落库版 propose（kind=edit_set；复用 ont_proposal 状态机）。"""
-        from datetime import UTC as _UTC
-        from datetime import datetime as _dt
-
         import uuid as _uuid
 
         from mate_kernel.action.edit_set import resolve_edit_templates
@@ -4606,7 +4604,10 @@ class PgOntologyRepository(OntologyRepository):
         from datetime import datetime as _dt
 
         from mate_kernel.action.edit_set import (
-            EDIT_BATCH_LIMIT, EditSetError, invert_edits, resolve_edit_templates,
+            EDIT_BATCH_LIMIT,
+            EditSetError,
+            invert_edits,
+            resolve_edit_templates,
         )
 
         templates = list((p.parameters or {}).get("edits") or [])

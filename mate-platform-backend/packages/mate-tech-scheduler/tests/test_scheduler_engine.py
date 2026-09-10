@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 import respx
-
 from mate_tech_scheduler.clients import AsyncSchedulerClient
 from mate_tech_scheduler.services.airflow_engine import AirflowEngine, AirflowEngineError
 from mate_tech_scheduler.services.dagster_engine import DagsterEngine, DagsterEngineError

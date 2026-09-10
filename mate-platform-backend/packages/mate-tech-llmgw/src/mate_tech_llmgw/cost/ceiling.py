@@ -13,9 +13,10 @@ Denial-of-wallet detector：单用户在 1h 窗口内 cost ≥ threshold_x
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Iterable
+from typing import Any
 
 import structlog
 

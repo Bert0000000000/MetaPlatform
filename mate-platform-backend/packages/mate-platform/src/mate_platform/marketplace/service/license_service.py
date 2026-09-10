@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from mate_platform import kms as _kms
 from mate_platform.marketplace.domain.subscription import Subscription
-
 
 # 模块级别默认 KMS;测试中可被 monkeypatch 覆盖
 kms_encrypt = _kms.encrypt
@@ -40,7 +39,7 @@ async def activate_license(
         license_key=kms_encrypt(license_key),
         status="active",
         license_payload=resp,
-        purchased_at=datetime.now(timezone.utc),
+        purchased_at=datetime.now(UTC),
         expires_at=(
             datetime.fromisoformat(
                 resp["expires_at"].replace("Z", "+00:00")
@@ -48,7 +47,7 @@ async def activate_license(
             if resp.get("expires_at")
             else None
         ),
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     session.add(sub)
     await session.flush()

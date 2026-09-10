@@ -24,6 +24,7 @@ def _bootstrap_sql() -> None:
     if not (os.environ.get("MATE_DB_URL") or os.environ.get("DATABASE_URL")):
         return
     from mate_tech_db.base import create_all
+
     from .repositories.sql_store import seed_from_inmemory
     create_all()
     for tenant in ("tenant-default",):

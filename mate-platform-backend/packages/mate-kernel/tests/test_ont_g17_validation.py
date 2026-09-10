@@ -8,10 +8,10 @@ _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
-from mate_kernel.ontology.validation_ops import validate_instance, validate_model  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
+from mate_kernel.ontology.validation_ops import validate_instance, validate_model
 
 ID = "ont.t.prop.g-id.v1"
 NAME = "ont.t.prop.g-name.v1"

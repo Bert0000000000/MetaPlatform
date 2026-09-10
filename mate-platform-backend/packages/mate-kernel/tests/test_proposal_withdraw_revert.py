@@ -13,7 +13,7 @@ _K = os.path.join(os.path.dirname(__file__), "..", "..", "mate-kernel", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-from mate_kernel.action.engine import (  # noqa: E402
+from mate_kernel.action.engine import (
     ActionService,
     ProposalNotConfirmed,
     ProposalStatus,

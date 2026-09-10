@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import pytest
-
-from mate_tech_db.base import create_all, init_engine, reset_engine
 from mate_tech_metrics.repositories import in_memory as mem
 from mate_tech_metrics.repositories import sql_models as models  # noqa: F401
 from mate_tech_metrics.repositories import sql_store as sql
+
+from mate_tech_db.base import create_all, init_engine, reset_engine
 
 
 @pytest.fixture(autouse=True)

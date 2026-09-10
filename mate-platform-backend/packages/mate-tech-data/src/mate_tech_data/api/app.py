@@ -52,8 +52,11 @@ from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
 from ..repositories import (
+    catalog_search,
     create_cdc_task,
     create_data_product,
+    create_lineage_edge,
+    create_quality_rule,
     create_source,
     data_product_to_dict,
     delete_cdc_task,
@@ -63,9 +66,13 @@ from ..repositories import (
     get_data_product,
     get_source,
     get_source_schema,
+    lineage_graph,
     list_cdc_tasks,
     list_data_products,
+    list_quality_results,
+    list_quality_rules,
     list_sources,
+    run_quality_rules,
     set_cdc_task_status,
     set_data_product_status,
     source_to_dict,
@@ -74,14 +81,6 @@ from ..repositories import (
     update_cdc_task,
     update_data_product,
     update_source,
-    catalog_search,
-    create_lineage_edge,
-    create_quality_rule,
-    lineage_graph,
-    list_lineage_edges,
-    list_quality_results,
-    list_quality_rules,
-    run_quality_rules,
 )
 
 router = APIRouter(prefix="/api/v1/data", tags=["data"])
@@ -731,7 +730,7 @@ async def data_product_versions_endpoint(
 # ---------------------------------------------------------------------------
 # DATA-D6/D7 — lineage / quality / catalog（治理面）
 # ---------------------------------------------------------------------------
-from dataclasses import asdict as _asdict  # noqa: E402
+from dataclasses import asdict as _asdict
 
 
 @router.post("/lineage/edges")

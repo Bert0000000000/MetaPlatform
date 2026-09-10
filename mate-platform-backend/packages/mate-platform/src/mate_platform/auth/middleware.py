@@ -138,7 +138,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     ctx = self._api_key_verifier(request, token)
                     if inspect.isawaitable(ctx):
                         ctx = await ctx
-                except Exception:  # noqa: BLE001 — verifier rejects; JWT reason stands
+                except Exception:
                     return _unauth(f"token rejected: {exc}", status=401)
                 request.state.ctx = ctx
                 return await call_next(request)

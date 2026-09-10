@@ -8,12 +8,12 @@
 """
 from __future__ import annotations
 
-import structlog
 from datetime import UTC, datetime
-from fastapi import APIRouter, HTTPException, Query, Request
+
+import structlog
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..domain.ai_model import AiModel
 from ..services.deps import AdminDep, SessionDep

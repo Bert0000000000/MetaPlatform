@@ -25,7 +25,7 @@ from __future__ import annotations
 import threading
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Deque
+from typing import Any
 
 
 def _percentile(values: list[float], p: float) -> float:
@@ -61,7 +61,7 @@ class LatencyBucket:
     _count: int = 0
     _sum_ms: float = 0.0
     _last_ms: float = 0.0
-    _window: Deque[float] = field(default_factory=lambda: deque(maxlen=32))
+    _window: deque[float] = field(default_factory=lambda: deque(maxlen=32))
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _unflushed_count: int = 0
     _unflushed_sum: float = 0.0
@@ -90,7 +90,7 @@ class LatencyBucket:
                     _percentile(list(self._window), 95.0),
                 )
             )
-        except Exception:  # noqa: BLE001 — metrics must never break a request
+        except Exception:
             return
         if ok:
             self._unflushed_count = 0

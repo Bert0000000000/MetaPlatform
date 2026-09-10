@@ -21,11 +21,11 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
-from mate_kernel.ontology.instances.individual import Individual  # noqa: E402
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_kernel.ontology.instances.individual import Individual
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
 T = "sec12"
 OBJ = f"ont.{T}.obj.hr.employee.v1"

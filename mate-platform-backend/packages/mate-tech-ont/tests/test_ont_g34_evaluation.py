@@ -16,8 +16,8 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_tech_ont.v2_kernel import evaluation as ev  # noqa: E402
-from mate_tech_ont.v2_kernel.evaluation import (  # noqa: E402
+from mate_tech_ont.v2_kernel import evaluation as ev
+from mate_tech_ont.v2_kernel.evaluation import (
     EvaluationQuestion,
     QuestionStages,
     RunRecord,

@@ -21,14 +21,15 @@ def create_app() -> FastAPI:
 
     # Initialize PostgreSQL tables
     try:
-        from mate_tech_db.base import init_engine, Base
+        import os
+
         from mate_app_copilot.repositories.outbox import SqlOutboxWriter
         from mate_app_copilot.repositories.sql_models import (  # noqa: F401
             ConversationORM,
             MessageORM,
             OutboxEventORM,
         )
-        import os
+        from mate_tech_db.base import Base, init_engine
         dsn = os.getenv("MATE_DB_URL") or os.getenv("DATABASE_URL") or "postgresql://meta:meta@postgres:5432/metaplatform"
         init_engine(dsn)
         Base.metadata.create_all(bind=init_engine(dsn))

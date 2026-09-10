@@ -16,9 +16,8 @@ v2_kernel routes pass through unchanged. See
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request, Response

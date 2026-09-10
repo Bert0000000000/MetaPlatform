@@ -28,11 +28,10 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-import jwt as _pyjwt  # noqa: E402
+import jwt as _pyjwt
 
-from mate_platform.messaging import InMemoryOutboxWriter  # noqa: E402
-
-from mate_tech_obs.alerts.management import (  # noqa: E402
+from mate_platform.messaging import InMemoryOutboxWriter
+from mate_tech_obs.alerts.management import (
     AlertRuleStore,
     ManagedAlertRule,
     emit_rule_event,

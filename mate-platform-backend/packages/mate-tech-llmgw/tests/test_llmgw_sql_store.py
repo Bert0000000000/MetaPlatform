@@ -6,8 +6,8 @@ store's CRUD + tenant isolation + JSON serialisation (config dict).
 from __future__ import annotations
 
 import pytest
+from mate_tech_db.base import create_all, init_engine, reset_engine
 
-from mate_tech_db.base import Base, create_all, init_engine, reset_engine
 from mate_tech_llmgw.repositories import in_memory as mem
 from mate_tech_llmgw.repositories import sql_models as models  # noqa: F401
 from mate_tech_llmgw.repositories import sql_store as sql

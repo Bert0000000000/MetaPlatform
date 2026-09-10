@@ -28,7 +28,7 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_llmgw.multimodal.engine import (  # noqa: E402
+from mate_tech_llmgw.multimodal.engine import (
     MultimodalEngine,
     MultimodalRequest,
     MultimodalResponse,

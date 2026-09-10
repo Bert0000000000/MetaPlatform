@@ -136,7 +136,7 @@ def auth_acme() -> dict[str, str]:
 def client_no_pg() -> Iterator[TestClient]:
     """TestClient with _pg_store=None (default state)."""
     _reset_rag_state()
-    import mate_tech_rag.api.retrieval as retrieval
+    from mate_tech_rag.api import retrieval
 
     old_store = retrieval._pg_store
     old_client = retrieval._pg_client
@@ -154,7 +154,7 @@ def client_no_pg() -> Iterator[TestClient]:
 def client_with_pg() -> Iterator[tuple[TestClient, FakePGStore]]:
     """TestClient with a FakePGStore wired into the retrieval module."""
     _reset_rag_state()
-    import mate_tech_rag.api.retrieval as retrieval
+    from mate_tech_rag.api import retrieval
 
     old_store = retrieval._pg_store
     old_client = retrieval._pg_client
@@ -175,7 +175,7 @@ def client_with_pg() -> Iterator[tuple[TestClient, FakePGStore]]:
 class TestCreateClientsPGInit:
     def test_pg_store_initialization_with_dsn(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """When PG_DSN is set, create_clients() creates PGClient + PGStore."""
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
 
         old_store = retrieval._pg_store
         old_client = retrieval._pg_client
@@ -196,7 +196,7 @@ class TestCreateClientsPGInit:
 
     def test_pg_store_none_without_dsn(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """When PG_DSN is not set, _pg_store stays None."""
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
 
         old_store = retrieval._pg_store
         old_client = retrieval._pg_client
@@ -216,7 +216,7 @@ class TestCreateClientsPGInit:
 
     def test_create_clients_initializes_pg(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """create_clients() with PG_DSN makes get_pg_store() non-None."""
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
 
         old_store = retrieval._pg_store
         old_client = retrieval._pg_client
@@ -240,7 +240,7 @@ class TestCreateClientsPGInit:
 class TestHybridV2Fallback:
     def test_hybrid_v2_fallback_to_hybrid(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """When PG is set but unavailable (no psycopg), hybrid stays functional."""
-        import mate_tech_rag.api.retrieval as retrieval
+        from mate_tech_rag.api import retrieval
         from mate_tech_rag.clients.hybrid_client import InMemoryHybridClient
         from mate_tech_rag.clients.hybrid_v2_client import HybridV2Client
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from mate_kernel.ontology.api import OntologyRepository
@@ -12,8 +12,8 @@ from mate_kernel.ontology.query import ObjectSet
 
 if TYPE_CHECKING:
     from mate_kernel.objectset.ir import ObjectSetQuery, QueryResult
-from mate_kernel.ontology.reasoning import Axiom, Function
 from mate_kernel.action.engine import ActionService, SubmissionContext
+from mate_kernel.ontology.reasoning import Axiom, Function
 from mate_kernel.ontology.types import (
     ActionType,
     Interface,
@@ -22,7 +22,6 @@ from mate_kernel.ontology.types import (
     Property,
     PropertyFormat,
 )
-
 
 # GOVERN-05: 默认 inline 源码 —— apply 没注册源码时 fallback，让 dev / 旧测试
 # 仍可走通。最简 main(target, params) → params 原样返回。
@@ -100,7 +99,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             rid=rid,
             class_ref=class_rid,
             parent_rid=parent or (existing[-1].rid if existing else None),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             author=author,
             change_set=change_set,
         )
@@ -202,6 +201,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         类型 + 各自后代）。IR 路径用它整体替换按源类精确过滤的条件。
         """
         from mate_kernel.ontology.reasoning.engine import descendant_closure
+
         from .types.interface import interface_source_rids
 
         is_interface = ClassRef(source_rid) in self._interfaces
@@ -318,7 +318,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         """MP-SAL-02: 对象语义检索 → 对象卡片（与 PG 侧同语义，dev/test 用）。"""
         if self._embedder is None:
             return []
-        import math  # noqa: PLC0415
+        import math
 
         qvec = self._embedder.embed(text)
         qnorm = math.sqrt(sum(x * x for x in qvec)) or 1.0
@@ -619,7 +619,7 @@ class InMemoryOntologyRepository(OntologyRepository):
 
     def search_around(self, rid: str, limit: int = 100) -> list[dict[str, Any]]:
         """EXP-03：一跳关系遍历（与 PgOntologyRepository.search_around 同语义）。"""
-        links = [l for l in self._link_instances.values() if l.src == rid or l.dst == rid][:limit]
+        links = [l for l in self._link_instances.values() if rid in (l.src, l.dst)][:limit]
         if not links:
             return []
         peers_needed = {(l.dst if l.src == rid else l.src) for l in links}
@@ -662,7 +662,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             return False
         self._individuals.pop(rid)
         for lrid in [l.rid for l in self._link_instances.values()
-                     if l.src == rid or l.dst == rid]:
+                     if rid in (l.src, l.dst)]:
             self._link_instances.pop(lrid)
         self._edit_overlay = {
             (r, p) for r, p in self._edit_overlay if r != rid}
@@ -718,7 +718,7 @@ class InMemoryOntologyRepository(OntologyRepository):
 
     def invoke_function(self, function_rid: str,
                         parameters: dict[str, Any]) -> dict[str, Any]:
-        invoker = self._action_service._invokers.get(function_rid)  # noqa: SLF001
+        invoker = self._action_service._invokers.get(function_rid)
         if invoker is None:
             raise KeyError(
                 f"function {function_rid!r} has no registered invoker")
@@ -735,7 +735,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         extra = self._expand_source_classes(os_.class_rid.rid)
         return InMemoryObjectSetExecutor(items).execute(os_, extra_classes=extra)
 
-    def execute_object_query(self, q: "ObjectSetQuery") -> "QueryResult":
+    def execute_object_query(self, q: ObjectSetQuery) -> QueryResult:
         """MP-SAL-01: 结构化 IR 查询（ADR-0043），与 PG 侧同语义。"""
         from mate_kernel.objectset.ir import InMemoryQueryExecutor
         source_classes = self._expand_source_classes(q.source)
@@ -853,7 +853,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                         "tenant_id": "", "created_at": "",
                     }
                 return eid
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return None
 
         return _emit
@@ -931,7 +931,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         )
 
     def execute_proposal(self, proposal_id: str) -> Any:
-        from datetime import UTC as _UTC, datetime as _dt
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
 
         from mate_kernel.action.engine import ProposalNotConfirmed, ProposalStatus
 
@@ -947,7 +948,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         if p.kind == "edit_set":
             # ACT-05：声明式编辑集执行（confirmed 才到这；AI 流程 propose→confirm 前置）
             from mate_kernel.action.edit_set import (
-                EDIT_BATCH_LIMIT, EditOp, resolve_edit_templates,
+                EDIT_BATCH_LIMIT,
+                resolve_edit_templates,
             )
 
             templates = p.parameters.get("edits") or []
@@ -1107,11 +1109,19 @@ class InMemoryOntologyRepository(OntologyRepository):
         回滚与 revert 共用 invert_edits 产出的逆序列（单一逆编辑代数）。
         """
         from dataclasses import replace as _replace
-        from datetime import UTC as _UTC, datetime as _dt
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
 
         from mate_kernel.action.edit_set import (
-            OP_ADD_LINK, OP_CREATE_OBJECT, OP_DELETE_OBJECT, OP_REMOVE_LINK,
-            OP_SET_PROPERTY, EditOp, EditSetError, EditSetResult, invert_edits,
+            OP_ADD_LINK,
+            OP_CREATE_OBJECT,
+            OP_DELETE_OBJECT,
+            OP_REMOVE_LINK,
+            OP_SET_PROPERTY,
+            EditOp,
+            EditSetError,
+            EditSetResult,
+            invert_edits,
         )
         from mate_kernel.ontology.instances.link_instance import LinkInstance as _LI
 
@@ -1136,7 +1146,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                     elif e.op == OP_DELETE_OBJECT:
                         self._individuals.pop(e.target, None)
                         for lrid in [l.rid for l in self._link_instances.values()
-                                     if l.src == e.target or l.dst == e.target]:
+                                     if e.target in (l.src, l.dst)]:
                             self._link_instances.pop(lrid)
                     elif e.op == OP_REMOVE_LINK:
                         self._link_instances.pop(e.link_instance_rid, None)
@@ -1193,7 +1203,7 @@ class InMemoryOntologyRepository(OntologyRepository):
                         raise EditSetError(f"delete_object target not found: {e.target}")
                     self._individuals.pop(e.target)
                     for lrid in [l.rid for l in self._link_instances.values()
-                                 if l.src == e.target or l.dst == e.target]:
+                                 if e.target in (l.src, l.dst)]:
                         self._link_instances.pop(lrid)
                 elif e.op == OP_ADD_LINK:
                     tenant = e.src.split(".")[1] if "." in e.src else "t"
@@ -1266,7 +1276,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             created_rids: tuple
             applied: tuple
 
-        self._action_service._audit.append(  # noqa: SLF001
+        self._action_service._audit.append(
             _EditOutcome(
                 action_rid=action_rid, proposal_id=proposal_id, actor=actor,
                 applied_count=len(result.applied),
@@ -1302,7 +1312,7 @@ class InMemoryOntologyRepository(OntologyRepository):
         return self._action_service.get_proposal(proposal_id)
 
     def list_proposals(self) -> list[Any]:
-        return list(self._action_service._proposals.values())  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        return list(self._action_service._proposals.values())  # pyright: ignore[reportPrivateUsage]
 
     def confirm_proposal(self, proposal_id: str, confirmed_by: str = "") -> Any:
         return self._action_service.confirm_proposal(proposal_id, confirmed_by=confirmed_by)
@@ -1322,7 +1332,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self, action_rid: ClassRef, flow_json: dict[str, Any],
         config: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        from datetime import UTC as _UTC, datetime as _dt
+        from datetime import UTC as _UTC
+        from datetime import datetime as _dt
 
         entry = {
             "action_rid": action_rid.rid,

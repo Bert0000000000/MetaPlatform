@@ -8,8 +8,8 @@ _K = os.path.join(os.path.dirname(__file__), "..", "src")
 if _K not in sys.path:
     sys.path.insert(0, _K)
 
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.reasoning.axiom import Axiom, AxiomKind  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.reasoning.axiom import Axiom, AxiomKind
 
 
 def _ax(kind: AxiomKind) -> Axiom:

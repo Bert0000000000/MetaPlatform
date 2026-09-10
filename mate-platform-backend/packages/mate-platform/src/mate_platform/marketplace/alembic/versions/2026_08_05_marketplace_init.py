@@ -7,8 +7,9 @@ Create Date: 2026-08-05
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+
+from alembic import op
 
 revision = "2026_08_05_marketplace_init"
 down_revision = None

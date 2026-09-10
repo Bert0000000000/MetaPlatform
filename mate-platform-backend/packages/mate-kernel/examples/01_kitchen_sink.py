@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from mate_kernel.action.engine import ActionService, SubmissionContext
 from mate_kernel.agent.app import build_crud_app
@@ -135,8 +135,8 @@ def main() -> None:
                 (prop_priority.rid, priority),
             ),
             primary_key=pk,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             tenant_id=tenant,
         )
     inds = [

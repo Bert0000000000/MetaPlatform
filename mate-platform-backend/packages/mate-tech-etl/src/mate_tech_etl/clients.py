@@ -16,12 +16,11 @@ the P2-W7 reserved interface; new engine methods are additive.
 """
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
-from .services.flink_engine import FlinkJobResult, FlinkSubmitEngine, FlinkSubmitError
-from .services.spark_engine import SparkSubmissionResult, SparkSubmitEngine, SparkSubmitError
+from .services.flink_engine import FlinkJobResult, FlinkSubmitEngine
+from .services.spark_engine import SparkSubmissionResult, SparkSubmitEngine
 
 
 @dataclass

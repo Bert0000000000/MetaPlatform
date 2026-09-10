@@ -50,7 +50,7 @@ def service() -> OrderReviewService:
     return OrderReviewService(ontology_catalog=_FakeOntologyCatalog())
 
 
-TEST_AUTH_TOKEN = "test-auth-token"  # noqa: S105 - test token only
+TEST_AUTH_TOKEN = "test-auth-token"
 
 
 def test_iso_normalizes_aware_datetimes_to_utc() -> None:

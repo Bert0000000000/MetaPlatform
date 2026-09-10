@@ -14,13 +14,13 @@ _MATE_PLATFORM = os.path.join(
 if _MATE_PLATFORM not in sys.path:
     sys.path.insert(0, _MATE_PLATFORM)
 
-from mate_platform.messaging.events import Event  # noqa: E402
-from mate_platform.messaging.outbox import InMemoryOutboxWriter  # noqa: E402
-
-from mate_tech_orchestrator.outbox_relay_loop import RelayLoop  # noqa: E402
-from mate_tech_orchestrator.outbox_temporal_bridge import (  # noqa: E402
+from mate_tech_orchestrator.outbox_relay_loop import RelayLoop
+from mate_tech_orchestrator.outbox_temporal_bridge import (
     OutboxTemporalBridge,
 )
+
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
 class FakeStarter:
@@ -112,6 +112,7 @@ class TestBridge:
 class TestRelayLoop:
     def test_loop_ticks_and_stops(self):
         import asyncio
+
         from mate_tech_orchestrator.outbox_relay_loop import RelayLoop
 
         class FakeBridge:

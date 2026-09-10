@@ -17,8 +17,8 @@ __all__ = [
     "FilterEvaluator",
     "InMemoryObjectSetExecutor",
     "ObjectSetExecutor",
+    "SQLCompiler",
     "SQLObjectSetExecutor",
     "individual_to_row",
-    "SQLCompiler",
     "is_safe_identifier",
 ]

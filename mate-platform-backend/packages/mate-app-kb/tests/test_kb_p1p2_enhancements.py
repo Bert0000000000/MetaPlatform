@@ -10,11 +10,8 @@ from __future__ import annotations
 
 import os
 import sys
-import time
-from collections.abc import Iterator
 from pathlib import Path
 
-import jwt as pyjwt
 import pytest
 
 REPO = Path(__file__).resolve().parents[3]
@@ -38,7 +35,7 @@ os.environ.setdefault("INSECURE_SKIP_SIGNATURE", "1")
 os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter  # noqa: E402
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 JWT_SECRET = "test-secret"
 
@@ -70,8 +67,9 @@ class TestKbRetrievalConfigHistory:
     """P1.8: retrieval-config snapshot history."""
 
     def test_put_3_times_yields_2_snapshots(self) -> None:
-        from fastapi.testclient import TestClient
         from unittest.mock import patch
+
+        from fastapi.testclient import TestClient
 
         from mate_app_kb.api.app import create_app
         from mate_app_kb.clients import AgentClient, RAGClient
@@ -134,8 +132,9 @@ class TestKbRetrievalConfigHistory:
         in_memory_repo.reset_store()
 
     def test_version_increments_per_save(self) -> None:
-        from fastapi.testclient import TestClient
         from unittest.mock import patch
+
+        from fastapi.testclient import TestClient
 
         from mate_app_kb.api.app import create_app
         from mate_app_kb.clients import AgentClient, RAGClient
@@ -187,8 +186,9 @@ class TestKBCascadeDelete:
     """
 
     def test_delete_calls_rag_then_clears_local(self) -> None:
-        from fastapi.testclient import TestClient
         from unittest.mock import patch
+
+        from fastapi.testclient import TestClient
 
         from mate_app_kb.api.app import create_app
         from mate_app_kb.clients import AgentClient, RAGClient
@@ -243,8 +243,9 @@ class TestKBCascadeDelete:
         in_memory_repo.reset_store()
 
     def test_delete_unknown_returns_404(self) -> None:
-        from fastapi.testclient import TestClient
         from unittest.mock import patch
+
+        from fastapi.testclient import TestClient
 
         from mate_app_kb.api.app import create_app
         from mate_app_kb.clients import AgentClient, RAGClient

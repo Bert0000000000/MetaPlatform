@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import json
 import socket
-import urllib.request
 import urllib.error
+import urllib.request
 
 # 绕过系统代理（Windows VM 劣化时代理间歇拦截 localhost 调用）
 _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))

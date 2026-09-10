@@ -224,7 +224,7 @@ class LlmgwEmbedder:
                     ),
                     client_secret=os.environ["SERVICE_CLIENT_SECRET"],
                 )
-            except Exception:  # noqa: BLE001 — auth helper unavailable in this env
+            except Exception:
                 self._bearer = None
 
     def _auth_headers(self) -> dict[str, str]:
@@ -235,7 +235,7 @@ class LlmgwEmbedder:
         elif self._bearer is not None:
             try:
                 token = self._bearer.token()
-            except Exception as exc:  # noqa: BLE001 — token fetch failure must
+            except Exception as exc:
                 # never break the embed call; proceed unauthenticated and let
                 # the gateway's 401/fallback path handle it.
                 _log.warning("LlmgwEmbedder auth token fetch failed: %s", exc)

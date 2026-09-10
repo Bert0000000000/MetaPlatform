@@ -14,9 +14,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
-
 from mate_app_a2a.clients import ExternalAgentClient
 from mate_app_a2a.delegate import A2ADelegator
+
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 

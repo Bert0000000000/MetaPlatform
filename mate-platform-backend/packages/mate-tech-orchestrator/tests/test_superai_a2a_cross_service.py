@@ -41,7 +41,7 @@ from mate_clients.a2a.messages import A2AMessagesClient
 
 TENANT = "tenant-acme"
 TARGET_AGENT = "agent-recon"  # a digital employee seeded in the A2A center
-JWT_SECRET = "test-secret"  # noqa: S105 - test-only signing key
+JWT_SECRET = "test-secret"
 A2A_BASE = "http://a2a-center"
 
 

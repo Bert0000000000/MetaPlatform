@@ -12,7 +12,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from mate_tech_db.base import Base, get_session as _get_db_session  # noqa: F401
+from mate_tech_db.base import Base  # noqa: F401
+from mate_tech_db.base import get_session as _get_db_session
 
 from . import sql_models as models
 from .in_memory import Agent, AgentMessage, AgentSession
@@ -306,7 +307,7 @@ def delete_message(tenant_id: str, mid: str) -> bool:
 # Bootstrap
 # ---------------------------------------------------------------------------
 def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["agents"] = len(

@@ -12,7 +12,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 import respx
-
 from mate_tech_etl.clients import AsyncEtlClient
 from mate_tech_etl.services.flink_engine import FlinkSubmitEngine, FlinkSubmitError
 from mate_tech_etl.services.spark_engine import SparkSubmitEngine, SparkSubmitError
@@ -103,9 +102,8 @@ async def test_spark_run_task_failure() -> None:
         "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
         new_callable=AsyncMock,
         return_value=proc,
-    ):
-        with pytest.raises(SparkSubmitError) as exc_info:
-            await engine.run_task("etl-002", script_path="/bad.py")
+    ), pytest.raises(SparkSubmitError) as exc_info:
+        await engine.run_task("etl-002", script_path="/bad.py")
 
     assert exc_info.value.returncode == 1
     assert "ClassNotFound" in exc_info.value.stderr
@@ -127,9 +125,8 @@ async def test_spark_run_task_timeout() -> None:
         "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
         new_callable=AsyncMock,
         return_value=proc,
-    ):
-        with pytest.raises(SparkSubmitError) as exc_info:
-            await engine.run_task("etl-003", script_path="/slow.py")
+    ), pytest.raises(SparkSubmitError) as exc_info:
+        await engine.run_task("etl-003", script_path="/slow.py")
 
     assert "timed out" in str(exc_info.value).lower()
     assert proc.killed is True
@@ -188,9 +185,8 @@ async def test_spark_get_status_failure() -> None:
         "mate_tech_etl.services.spark_engine.asyncio.create_subprocess_exec",
         new_callable=AsyncMock,
         return_value=proc,
-    ):
-        with pytest.raises(SparkSubmitError) as exc_info:
-            await engine.get_status("etl-001", "driver-bad")
+    ), pytest.raises(SparkSubmitError) as exc_info:
+        await engine.get_status("etl-001", "driver-bad")
 
     assert exc_info.value.returncode == 1
 

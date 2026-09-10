@@ -13,7 +13,7 @@ directly outside of tests.
 from __future__ import annotations
 
 import os
-from enum import Enum
+from enum import StrEnum
 
 from .anthropic_provider import AnthropicProvider
 from .base import LLMProvider
@@ -21,7 +21,7 @@ from .openai_provider import OpenAIProvider
 from .stub_provider import StubProvider
 
 
-class ProviderType(str, Enum):
+class ProviderType(StrEnum):
     """Stable identifiers for the supported providers."""
 
     STUB = "stub"

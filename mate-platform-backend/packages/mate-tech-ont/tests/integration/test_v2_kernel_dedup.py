@@ -29,7 +29,7 @@ PG_DSN = os.getenv(
 
 def _pg_available() -> bool:
     try:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -46,7 +46,7 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def repo() -> object:
     from mate_tech_ont.v2_kernel.object_search import HashEmbedder
-    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository  # noqa: PLC0415
+    from mate_tech_ont.v2_kernel.pg_repo import PgOntologyRepository
     r = PgOntologyRepository(dsn=PG_DSN)
     # 注入确定性 embedder —— precheck 走 embedding 路径
     r.set_embedder(HashEmbedder())
@@ -57,7 +57,7 @@ def repo() -> object:
 def _clean_pg(repo) -> None:
     """每个测试前清表：先确保 schema 存在再 DELETE。"""
     repo._ensure_schema()
-    import psycopg2  # type: ignore  # noqa: PLC0415
+    import psycopg2  # type: ignore
     conn = psycopg2.connect(PG_DSN)
     try:
         with conn.cursor() as cur:

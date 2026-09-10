@@ -13,13 +13,13 @@ EXP-02（2026-09-10，D4 拍板）扩展：
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from enum import Enum
+from dataclasses import dataclass
+from enum import StrEnum
 
 from ..identity.class_ref import ClassRef
 
 
-class PropertyFormat(str, Enum):
+class PropertyFormat(StrEnum):
     STRING = "string"
     INTEGER = "integer"
     DOUBLE = "double"
@@ -74,7 +74,7 @@ class Property:
     format: PropertyFormat
     # ── EXP-02 扩展（全部带默认值，向后兼容）──
     description: str = ""
-    struct_fields: tuple["Property", ...] = ()  # format=STRUCT 时的嵌套定义
+    struct_fields: tuple[Property, ...] = ()  # format=STRUCT 时的嵌套定义
     array: bool = False
     reducer: str | None = None  # 多值归约：first / latest（v1 元数据级）
     derived: DerivedSpec | None = None
@@ -93,7 +93,7 @@ class Property:
             )
 
 
-def ai_metadata_struct(rid: ClassRef) -> "Property":
+def ai_metadata_struct(rid: ClassRef) -> Property:
     """EXP-02 内置模板：AI 输出属性的标准元数据 struct。
 
     Palantir 调研材料 02 §Structs：LLM 输出是一等公民，值自带

@@ -17,13 +17,13 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
-from mate_kernel.ontology.types.object_type import (  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_kernel.ontology.types.object_type import (
     ObjectType,
     detect_destructive_changes,
 )
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
 T = "g33"
 OBJ = f"ont.{T}.obj.crm.account.v1"

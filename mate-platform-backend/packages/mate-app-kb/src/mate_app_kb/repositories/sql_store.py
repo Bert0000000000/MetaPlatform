@@ -526,7 +526,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
     tenant's saved config (or resurrect a "never customised" default over
     a user-saved row after a restart).
     """
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["collections"] = len(

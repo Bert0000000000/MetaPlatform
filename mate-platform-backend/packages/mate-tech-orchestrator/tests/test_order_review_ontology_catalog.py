@@ -10,7 +10,7 @@ from mate_tech_orchestrator.order_review.ontology_catalog import (
 )
 
 TENANT_ID = "tenant-acme"
-AUTH_TOKEN = "test-auth-token"  # noqa: S105 - test token only
+AUTH_TOKEN = "test-auth-token"
 OBJECT_RID = f"ont.{TENANT_ID}.obj.crm.order.v1"
 ACTION_RID = f"ont.{TENANT_ID}.act.order-review-confirm.v1"
 ONT_BASE = "http://mock-tech-ont:8007"

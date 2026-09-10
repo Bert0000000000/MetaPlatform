@@ -124,7 +124,7 @@ async def ensure_schema(conn: Any) -> None:
     """
     try:
         await conn.execute(LLMGW_SCHEMA_SQL)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("llmgw.schema.ensure_failed", error=str(exc))
     else:
         logger.info("llmgw.schema.ensured")

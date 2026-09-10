@@ -13,8 +13,8 @@ import re
 from typing import Any
 
 __all__ = [
-    "lint_anti_patterns",
     "LIFECYCLE_ACTIONS",
+    "lint_anti_patterns",
 ]
 
 # GOV-17：合法生命周期动作

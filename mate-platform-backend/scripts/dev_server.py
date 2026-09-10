@@ -44,9 +44,10 @@ for pkg in [
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import uvicorn  # noqa: E402
-from fastapi import FastAPI  # noqa: E402
-from typing import Any  # noqa: E402
+from typing import Any
+
+import uvicorn
+from fastapi import FastAPI
 
 
 def build_app() -> FastAPI:
@@ -113,8 +114,14 @@ def build_app() -> FastAPI:
     try:
         from mate_tech_iam.api import (
             auth as auth_api,
+        )
+        from mate_tech_iam.api import (
             configs as configs_api,
+        )
+        from mate_tech_iam.api import (
             dashboard as dashboard_api,
+        )
+        from mate_tech_iam.api import (
             models as models_api,
         )
         app.include_router(auth_api.router)
@@ -144,6 +151,7 @@ def build_app() -> FastAPI:
 
     # === SuperAI mock endpoints (ontology + agent run) ===
     import uuid as _uuid
+
     from fastapi import Body as _Body
 
     _envelopes: dict[str, dict] = {}
@@ -280,9 +288,9 @@ def build_app() -> FastAPI:
     # which dev has no Keycloak for). Production llmgw (separate service) uses
     # the HTTP + service-identity path in resolve_effective_embedding instead.
     async def _read_iam_configs(tenant_id: str) -> list[dict]:
-        from sqlalchemy import select
         from mate_tech_iam.db import AsyncSessionMaker
         from mate_tech_iam.domain.system_config import SystemConfig
+        from sqlalchemy import select
 
         async with AsyncSessionMaker() as session:
             rows = await session.execute(

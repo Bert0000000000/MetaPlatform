@@ -7,11 +7,11 @@ LLM provider 抽象 + token 计数 + 路由策略 + budget 控制。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Iterable, Protocol, runtime_checkable
+from enum import StrEnum
+from typing import Protocol, runtime_checkable
 
 
-class ProviderKind(str, Enum):
+class ProviderKind(StrEnum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     AZURE_OPENAI = "azure_openai"
@@ -69,7 +69,7 @@ class LLMProvider(Protocol):
 # ─────────────────── 路由策略 ───────────────────
 
 
-class RoutingStrategy(str, Enum):
+class RoutingStrategy(StrEnum):
     ROUND_ROBIN = "round_robin"
     LOWEST_LATENCY = "lowest_latency"
     CHEAPEST = "cheapest"
@@ -177,17 +177,17 @@ class BudgetGate:
 
 
 __all__ = [
-    "ProviderKind",
-    "ProviderConfig",
+    "BudgetExceeded",
+    "BudgetGate",
     "BudgetPolicy",
     "ChatMessage",
     "ChatRequest",
     "ChatResponse",
     "LLMProvider",
-    "RoutingStrategy",
-    "RouteDecision",
+    "ProviderConfig",
+    "ProviderKind",
     "ProviderRegistry",
+    "RouteDecision",
+    "RoutingStrategy",
     "TokenBucket",
-    "BudgetGate",
-    "BudgetExceeded",
 ]

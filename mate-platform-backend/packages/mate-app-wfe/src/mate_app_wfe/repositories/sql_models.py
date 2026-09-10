@@ -11,7 +11,7 @@ are re-hydrated by the ``_orm_to_*`` helpers in sql_store.py.
 """
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Integer, JSON, String, Text
+from sqlalchemy import JSON, Boolean, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base

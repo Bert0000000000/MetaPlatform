@@ -13,7 +13,7 @@ propagate to the request path.
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -99,7 +99,7 @@ class UsageStore:
                             rec.api_key_id,
                             rec.cost_usd,
                         )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning(
                 "llmgw.usage.store_write_failed", error=str(exc),
                 api_key_id=rec.api_key_id or "",

@@ -47,4 +47,4 @@ class InMemoryFunctionResolver:
         for (lang, ref), src in self._registry.items():
             if ref.endswith(function_ref.rid) or ref == function_ref.rid:
                 return lang, src
-        raise FunctionNotFound(f"function not registered: {function_ref.rid}")
+        raise FunctionNotFoundError(f"function not registered: {function_ref.rid}")

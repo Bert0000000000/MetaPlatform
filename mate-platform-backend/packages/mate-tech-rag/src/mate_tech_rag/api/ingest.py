@@ -13,7 +13,13 @@ v3.0 Plan D: ingest writes to:
 from __future__ import annotations
 
 from mate_tech_rag.api.document_registry import mark_failed, mark_indexed, register_document
-from mate_tech_rag.api.retrieval import get_embedder, get_graph, get_hybrid, get_lightrag, get_pg_store
+from mate_tech_rag.api.retrieval import (
+    get_embedder,
+    get_graph,
+    get_hybrid,
+    get_lightrag,
+    get_pg_store,
+)
 from mate_tech_rag.api.schemas import IngestRequest, IngestResponse
 
 

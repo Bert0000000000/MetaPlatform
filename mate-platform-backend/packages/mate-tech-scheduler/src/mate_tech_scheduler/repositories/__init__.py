@@ -29,10 +29,10 @@ __all__ = [
     "list_scheduler_tasks",
     "pause_scheduler_task",
     "reset_store",
+    "sql_store",
     "task_to_dict",
     "trigger_scheduler_task",
     "update_scheduler_task",
-    "sql_store",
 ]
 
 from . import sql_store

@@ -778,7 +778,7 @@ def lineage_graph(tenant_id: str, entity: str | None = None) -> dict[str, Any]:
     edges = list_lineage_edges(tenant_id)
     if entity:
         edges = [e for e in edges
-                 if e.source_entity == entity or e.target_entity == entity]
+                 if entity in (e.source_entity, e.target_entity)]
     nodes: dict[str, None] = {}
     for e in edges:
         nodes[e.source_entity] = None

@@ -15,8 +15,6 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any
-from unittest.mock import patch
 
 import pytest
 import respx
@@ -32,22 +30,20 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_llmgw.multimodal import (  # noqa: E402
+from mate_tech_llmgw.multimodal import (
     MultimodalContentPart,
     MultimodalMessage,
 )
-from mate_tech_llmgw.providers.multimodal_anthropic import (  # noqa: E402
+from mate_tech_llmgw.providers.multimodal_anthropic import (
     _build_anthropic_payload,
     _content_part_to_anthropic,
 )
-from mate_tech_llmgw.providers.multimodal_openai import (  # noqa: E402
+from mate_tech_llmgw.providers.multimodal_openai import (
     _audio_format,
     _build_openai_payload,
     _content_part_to_openai,
 )
-from mate_tech_llmgw.providers.anthropic import AnthropicChatProvider  # noqa: E402
-from mate_tech_llmgw.providers.openai import OpenAIChatProvider  # noqa: E402
-from mate_tech_llmgw.router import reset_providers  # noqa: E402
+from mate_tech_llmgw.router import reset_providers
 
 
 # ---------------------------------------------------------------------------

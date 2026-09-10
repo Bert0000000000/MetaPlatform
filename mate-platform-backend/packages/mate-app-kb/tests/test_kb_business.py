@@ -19,13 +19,9 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
-
-if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
 
 REPO = Path(__file__).resolve().parents[3]
 PKG = REPO / "mate-platform-backend" / "packages"
@@ -38,7 +34,6 @@ os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
-
 
 _VALID_BPMN = ""  # not used in kb tests; placeholder to avoid linter
 
@@ -419,6 +414,7 @@ def test_search_emits_outbox(client, outbox) -> None:
 def test_search_scoring_dedup_and_sort(client) -> None:
     """Search scoring deduplicates by document_id and sorts by score desc."""
     from fastapi.testclient import TestClient
+
     from mate_app_kb.api.app import create_app
     from mate_app_kb.clients import AgentClient, RAGClient
     from mate_app_kb.repositories import in_memory as in_memory_repo

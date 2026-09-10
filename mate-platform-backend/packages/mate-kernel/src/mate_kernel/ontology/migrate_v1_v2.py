@@ -23,17 +23,14 @@ import json
 import re
 import sys
 from collections import defaultdict
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from .identity import ClassRef, Version
-from .instances import Individual, LinkInstance
+from .identity import ClassRef
 from .reasoning import (
     Axiom,
     AxiomKind,
     Function,
-    FunctionLanguage,
 )
 from .serde import to_dict
 from .types import (
@@ -46,7 +43,6 @@ from .types import (
     Property,
     PropertyFormat,
 )
-
 
 _LEGACY_TENANT = "legacy"
 

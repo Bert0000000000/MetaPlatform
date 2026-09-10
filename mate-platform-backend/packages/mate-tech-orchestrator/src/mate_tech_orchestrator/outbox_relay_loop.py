@@ -20,7 +20,6 @@ import structlog
 
 from .temporal_translation import (
     TASK_QUEUE,
-    ReviewSignal,
     WorkflowStep,
     workflow_input_from_steps,
 )

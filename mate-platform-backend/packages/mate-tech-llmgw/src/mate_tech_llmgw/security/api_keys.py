@@ -22,7 +22,6 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
-
 from mate_platform.tenancy import AuthMethod, RequestContext, TenantId, UserId
 
 logger = structlog.get_logger(__name__)
@@ -286,14 +285,14 @@ class ApiKeyCache:
                     if data.get("_miss"):
                         return None
                     return _record_from_json(data)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("llmgw.apikey.cache_read_failed", error=str(exc))
         record = await loader(key_hash)
         if self._redis is not None:
             try:
                 payload = _record_to_json(record) if record else {"_miss": True}
                 await self._redis.setex(cache_key, _CACHE_TTL_SEC, json.dumps(payload))
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("llmgw.apikey.cache_write_failed", error=str(exc))
         return record
 
@@ -302,7 +301,7 @@ class ApiKeyCache:
             return
         try:
             await self._redis.delete(f"llmgw:key:{key_hash}")
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("llmgw.apikey.invalidate_failed", error=str(exc))
 
 
@@ -403,9 +402,8 @@ async def enforce_key_limits(
 async def _key_rate_limit(
     record: ApiKeyRecord, redis_client: Any, estimated_tokens: int
 ) -> None:
-    from fastapi import HTTPException
 
-    from ..quota.bucket import QuotaExceededError, _RATELIMIT_LUA
+    from ..quota.bucket import _RATELIMIT_LUA, QuotaExceededError
 
     minute = int(time.time()) // 60
     req_key = f"llmgw:ratelimit:key:{record.key_id}:{minute}"
@@ -416,7 +414,7 @@ async def _key_rate_limit(
             record.rpm_limit or 10**9, record.tpm_limit or 10**12,
             max(int(estimated_tokens), 0), 60, int(time.time()),
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("llmgw.apikey.ratelimit_degraded", error=str(exc))
         return
     if int(result[0]) == 0:
@@ -463,7 +461,7 @@ async def llmgw_api_key_verifier(request: Any, token: str) -> RequestContext:
         raise ApiKeyRejected("api key auth disabled")
 
     async def _load(key_hash: str) -> ApiKeyRecord | None:
-        return await _store._get_by_hash(key_hash)  # noqa: SLF001
+        return await _store._get_by_hash(key_hash)
 
     cache = _cache or ApiKeyCache(None)
     record = await cache.get_or_load(hash_key(token), _load)

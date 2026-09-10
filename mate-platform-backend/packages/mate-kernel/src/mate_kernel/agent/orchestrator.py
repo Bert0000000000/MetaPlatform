@@ -9,14 +9,14 @@ SuperAI（COPILOT 角色）作为 7+1 数字员工的编排平面：
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any
 import uuid
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 
-class AgentRole(str, Enum):
+class AgentRole(StrEnum):
     ONTOLOGY = "ontology"
     WORKFLOW = "workflow"
     APP = "app"
@@ -27,7 +27,7 @@ class AgentRole(str, Enum):
     SUPERAI = "superai"  # COPILOT
 
 
-class StepKind(str, Enum):
+class StepKind(StrEnum):
     CALL_AGENT = "call_agent"
     APPLY_ACTION = "apply_action"
     PROPOSE = "propose"  # 生成 proposal，等用户 HITL 确认
@@ -49,7 +49,7 @@ class PlanSpec:
     plan_id: str
     author_user_id: str
     steps: tuple[PlanStep, ...]
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         if not self.steps:
@@ -61,7 +61,7 @@ class PlanSpec:
             )
 
 
-class StepStatus(str, Enum):
+class StepStatus(StrEnum):
     PENDING = "pending"
     PROPOSED = "proposed"
     HITL_WAITING = "hitl_waiting"
@@ -166,12 +166,12 @@ class AgentSelector:
 
 __all__ = [
     "AgentRole",
-    "StepKind",
-    "PlanStep",
-    "PlanSpec",
-    "StepStatus",
-    "StepResult",
-    "PlanState",
-    "SuperAIOrchestrator",
     "AgentSelector",
+    "PlanSpec",
+    "PlanState",
+    "PlanStep",
+    "StepKind",
+    "StepResult",
+    "StepStatus",
+    "SuperAIOrchestrator",
 ]

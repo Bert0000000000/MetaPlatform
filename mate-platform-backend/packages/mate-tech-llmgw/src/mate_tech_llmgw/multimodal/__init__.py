@@ -134,7 +134,7 @@ class MultimodalChatProvider(Protocol):
 # Re-exported here so ``from mate_tech_llmgw.multimodal import
 # MultimodalEngine`` resolves alongside the legacy content-part types.
 # ---------------------------------------------------------------------------
-from .engine import (  # noqa: E402
+from .engine import (
     MultimodalEngine,
     MultimodalProviderProtocol,
     MultimodalRequest,

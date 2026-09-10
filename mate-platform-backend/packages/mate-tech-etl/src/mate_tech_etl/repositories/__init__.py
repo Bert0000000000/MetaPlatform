@@ -27,10 +27,10 @@ __all__ = [
     "reset_store",
     "run_etl_task",
     "set_etl_task_status",
+    "sql_store",
     "stop_etl_task",
     "task_to_dict",
     "update_etl_task",
-    "sql_store",
 ]
 
 from . import sql_store

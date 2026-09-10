@@ -22,7 +22,7 @@ class RateLimitConfig:
     window_sec: int = 60
 
 
-class RateLimitExceeded(Exception):  # noqa: N818
+class RateLimitExceeded(Exception):
     """触发限流."""
 
     def __init__(self, key: str, retry_after: int) -> None:

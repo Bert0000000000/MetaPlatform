@@ -22,7 +22,9 @@ from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.instances.individual import Individual
 from mate_kernel.ontology.instances.link_instance import LinkInstance
 from mate_kernel.ontology.types.link_type import (
-    Cardinality, Directionality, LinkType,
+    Cardinality,
+    Directionality,
+    LinkType,
 )
 from mate_kernel.ontology.types.object_type import ObjectType
 from mate_kernel.ontology.types.property_ import Property, PropertyFormat
@@ -150,7 +152,7 @@ def ingest_document_chunks(
         try:
             ot = repo.get_object_type(ClassRef(doc_class_rid))
         except KeyError:
-            raise ValueError(f"doc class not registered: {doc_class_rid}")
+            raise ValueError(f"doc class not registered: {doc_class_rid}") from None
         pk_prop = ot.primary_key[0]
         props = dict(doc_props or {})
         props[pk_prop.rid] = doc_pk

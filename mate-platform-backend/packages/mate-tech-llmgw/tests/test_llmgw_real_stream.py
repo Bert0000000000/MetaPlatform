@@ -29,8 +29,8 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_llmgw.chat import ChatMessage  # noqa: E402
-from mate_tech_llmgw.providers.real_openai_provider import RealOpenAIProvider  # noqa: E402
+from mate_tech_llmgw.chat import ChatMessage
+from mate_tech_llmgw.providers.real_openai_provider import RealOpenAIProvider
 
 
 def _sse_body(chunks: list[dict]) -> bytes:

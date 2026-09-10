@@ -7,7 +7,6 @@ unchanged — covered by the mate-platform auth regression suite).
 """
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -15,7 +14,6 @@ import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-import mate_tech_llmgw.security.api_keys as api_keys_mod
 from mate_tech_llmgw.security.api_keys import (
     ApiKeyCache,
     ApiKeyRecord,

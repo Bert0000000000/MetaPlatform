@@ -108,7 +108,7 @@ async def call_with_resilience(
                     provider_name, retry_after_hint=e.retry_after
                 )
             continue
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             import httpx
 
             # Only provider-shaped failures (upstream HTTP/network/RuntimeError)

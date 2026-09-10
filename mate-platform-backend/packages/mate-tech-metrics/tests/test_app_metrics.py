@@ -1,8 +1,9 @@
 """Happy-path tests for mate-tech-metrics (FR-DATA-METRICS-001..008)."""
 from __future__ import annotations
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from fastapi.testclient import TestClient
+
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
 def test_health_anonymous(client: TestClient) -> None:

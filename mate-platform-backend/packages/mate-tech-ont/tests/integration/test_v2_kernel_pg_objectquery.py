@@ -174,8 +174,8 @@ def capture_repo(monkeypatch: pytest.MonkeyPatch) -> tuple[PgOntologyRepository,
     repo._initialized = True
     repo._tenant_local = threading.local()
 
-    from mate_kernel.action.engine import ActionService  # noqa: PLC0415
-    from mate_kernel.ontology.function_resolver import (  # noqa: PLC0415
+    from mate_kernel.action.engine import ActionService
+    from mate_kernel.ontology.function_resolver import (
         InMemoryFunctionResolver,
     )
     repo._action_service = ActionService()
@@ -256,7 +256,7 @@ PG_DSN = os.getenv("PG_DSN", "postgresql://meta:meta@localhost:5432/metaplatform
 
 def _pg_available() -> bool:
     try:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(PG_DSN, connect_timeout=2)
         conn.close()
         return True
@@ -266,14 +266,14 @@ def _pg_available() -> bool:
 
 def _normalized(rows: list[dict[str, Any]]) -> list[str]:
     """行集 → 可比较的规范串（排序后 JSON）。"""
-    import json  # noqa: PLC0415
+    import json
     return sorted(json.dumps(r, sort_keys=True, default=str) for r in rows)
 
 
 @pytest.mark.skipif(not _pg_available(), reason=f"PG not reachable at {PG_DSN!r}")
 class TestRealPgParity:
     def test_inmemory_and_pg_agree(self) -> None:
-        import psycopg2  # type: ignore  # noqa: PLC0415
+        import psycopg2  # type: ignore
 
         repo = PgOntologyRepository(dsn=PG_DSN)
         repo._ensure_schema()
@@ -281,7 +281,7 @@ class TestRealPgParity:
         try:
             with conn.cursor() as cur:
                 for tbl in ("ont_link_instance", "ont_individual", "ont_object_type"):
-                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))  # noqa: S608
+                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))
             conn.commit()
         finally:
             conn.close()
@@ -344,7 +344,7 @@ class TestRealPgParity:
         try:
             with conn.cursor() as cur:
                 for tbl in ("ont_link_instance", "ont_individual", "ont_object_type"):
-                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))  # noqa: S608
+                    cur.execute(f"DELETE FROM {tbl} WHERE tenant_id = %s", (_T,))
             conn.commit()
         finally:
             conn.close()

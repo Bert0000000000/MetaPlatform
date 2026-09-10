@@ -60,7 +60,7 @@ def _hash_embedding(text: str, dim: int = _DEFAULT_DIM) -> list[float]:
     counter = 0
     while len(blocks) * 32 < dim * 4:
         blocks.append(
-            hashlib.sha256(f"{counter}:{text}".encode("utf-8")).digest()
+            hashlib.sha256(f"{counter}:{text}".encode()).digest()
         )
         counter += 1
     raw = b"".join(blocks)
@@ -376,7 +376,7 @@ async def _fetch_iam_configs(request, tenant_id: str) -> dict[str, str]:
         try:
             items = await reader(tenant_id or "default")
             return {str(it.get("key", "")): str(it.get("value") or "") for it in items}
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning("llmgw.embedding.resolve_config.inprocess_failed", error=str(e))
             return {}
 
@@ -402,7 +402,7 @@ async def _fetch_iam_configs(request, tenant_id: str) -> dict[str, str]:
         data = body.get("data", body)
         items = data.get("items", []) if isinstance(data, dict) else []
         return {str(it.get("key", "")): str(it.get("value") or "") for it in items}
-    except Exception as e:  # noqa: BLE001 — any failure → fallback path
+    except Exception as e:
         logger.warning("llmgw.embedding.resolve_config.failed", error=str(e))
         return {}
 

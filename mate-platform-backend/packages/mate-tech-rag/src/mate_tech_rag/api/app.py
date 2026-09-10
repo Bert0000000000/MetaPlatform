@@ -19,7 +19,7 @@ import os
 import threading
 import time
 import uuid
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
@@ -38,10 +38,9 @@ from mate_tech_rag.api.document_registry import (
     mark_indexed,
     register_document,
     tenant_document_ids,
-    unregister_document,
 )
 from mate_tech_rag.api.ingest import ingest
-from mate_tech_rag.api.metrics import LatencyBucket, make_default_buckets
+from mate_tech_rag.api.metrics import make_default_buckets
 from mate_tech_rag.api.parse import parse_document
 from mate_tech_rag.api.retrieval import (
     create_clients as init_real_clients,
@@ -163,7 +162,7 @@ def _kb_pg_store():
         store = get_kb_document_store()
         if store.is_available():
             return store
-    except Exception as exc:  # noqa: BLE001 — never break a request over this
+    except Exception as exc:
         _log.warning("kb pg store unavailable: %s", exc)
     return None
 
@@ -174,7 +173,7 @@ def register_kb_document(kb_id: str, document_id: str, tenant_id: str = "default
         try:
             store.register(kb_id, document_id, tenant_id)
             return
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _log.warning("register_kb_document PG failed: %s", exc)
             return
     with _kb_lock:
@@ -187,7 +186,7 @@ def unregister_kb_document(kb_id: str, document_id: str) -> None:
         try:
             store.unregister(kb_id, document_id)
             return
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _log.warning("unregister_kb_document PG failed: %s", exc)
             return
     with _kb_lock:
@@ -204,7 +203,7 @@ def list_kb_documents(kb_id: str) -> list[str]:
     if store is not None:
         try:
             return store.list_documents(kb_id)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _log.warning("list_kb_documents PG failed: %s", exc)
             return []
     with _kb_lock:
@@ -218,7 +217,7 @@ def reset_kb_documents() -> None:
     if store is not None:
         try:
             store.clear()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _log.warning("reset_kb_documents PG failed: %s", exc)
     with _kb_lock:
         _kb_documents.clear()
@@ -246,7 +245,7 @@ def create_app() -> FastAPI:
                 metrics_store = get_metrics_store()
                 if metrics_store.is_available():
                     pg_sink = metrics_store
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 _log.warning("PG metrics sink unavailable: %s", exc)
                 pg_sink = None
         app.state.metrics = make_default_buckets(pg_sink=pg_sink)
@@ -260,7 +259,7 @@ def create_app() -> FastAPI:
             bucket = app.state.metrics.get(metric_name)
             if bucket is not None:
                 bucket.observe(latency_ms)
-        except Exception:  # noqa: BLE001 — never let metrics break a request
+        except Exception:
             pass
 
     def _require_ctx(request: Request):
@@ -645,7 +644,7 @@ def create_app() -> FastAPI:
                 metrics_store = get_metrics_store()
                 if metrics_store.is_available():
                     pg_metrics = await asyncio.to_thread(metrics_store.load_all)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 _log.warning("PG metrics load failed: %s", exc)
                 pg_metrics = {}
 

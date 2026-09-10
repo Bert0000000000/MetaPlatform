@@ -15,15 +15,13 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Any, Protocol, runtime_checkable
 
 from mate_kernel.agent.orchestrator import AgentRole
 from mate_kernel.agent.prompts import SYSTEM_PROMPTS
-from mate_kernel.manager.protocol import Manager, ManagerContext
+from mate_kernel.manager.protocol import Manager
 from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.query.object_set import ObjectSet
-
 
 # ─────────────────── LLM Client Protocol（M3+ LLM 注入点）───────────────────
 
@@ -628,15 +626,15 @@ class OntologyAgent:
 
 
 __all__ = [
+    "ACTION_KINDS",
+    "LlmClientLike",
+    "LlmDispatchResult",
+    "LlmDispatcher",
     "OntologyAgent",
     "OntologyAgentRequest",
     "OntologyAgentResponse",
     "OntologyQueryPlanner",
     "SimpleQueryPlanner",
-    "LlmClientLike",
-    "LlmDispatcher",
-    "LlmDispatchResult",
-    "ACTION_KINDS",
     "_extract_first_json",
     "_normalize_action",
     "_propose_object_type_payload",

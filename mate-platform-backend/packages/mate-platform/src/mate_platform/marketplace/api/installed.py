@@ -6,7 +6,7 @@ scope 决定可见范围:
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import select
 
 from ..domain.install import Install

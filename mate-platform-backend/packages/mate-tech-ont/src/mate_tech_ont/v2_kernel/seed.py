@@ -11,7 +11,7 @@ copilot 面板执行 act-approve-leave / act-close-ticket → ActionType.apply
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from mate_kernel.ontology.api import OntologyRepository
 from mate_kernel.ontology.identity import ClassRef
@@ -40,7 +40,7 @@ def _prop(rid: str, type_id: str, title: str, pk: bool = False) -> Property:
 def _ind(
     rid: str, cls: str, props: list[tuple[str, object]], pk: str, tenant: str,
 ) -> Individual:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return Individual(
         rid=rid,
         class_rid=ClassRef(cls),
@@ -96,7 +96,7 @@ def seed_demo(repo: OntologyRepository, tenant_id: str = TENANT) -> int:
         return _seed_order_review_resources(repo, tenant_id)
 
     t = tenant_id
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # ── ObjectTypes ──
     repo.upsert_object_type(ObjectType(
@@ -405,7 +405,7 @@ def seed_hr_it_finance_orchestrator(repo: OntologyRepository, tenant_id: str = T
     if any(i.rid == interface_rid for i in repo.list_interfaces()):
         return 0
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # ── Interface（dw-employee 契约） ──
     repo.upsert_interface(Interface(
@@ -590,4 +590,4 @@ def backfill_action_display(repo: OntologyRepository, tenant_id: str = TENANT) -
     return updated
 
 
-__all__ = ["seed_demo", "seed_hr_it_finance_orchestrator", "backfill_action_display", "TENANT"]
+__all__ = ["TENANT", "backfill_action_display", "seed_demo", "seed_hr_it_finance_orchestrator"]

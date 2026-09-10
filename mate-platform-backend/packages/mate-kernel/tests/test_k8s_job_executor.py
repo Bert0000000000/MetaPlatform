@@ -128,7 +128,7 @@ class TestBackendSwitch:
         assert isinstance(runner.executor, K8sJobExecutor)
 
     def test_default_remains_subprocess_dev_dual_track(self) -> None:
-        from mate_kernel.sandbox.k8s import SubprocessExecutor  # noqa: PLC0415
+        from mate_kernel.sandbox.k8s import SubprocessExecutor
         runner = K8sSandboxRunner(backend=None)
         assert isinstance(runner.executor, SubprocessExecutor)
 

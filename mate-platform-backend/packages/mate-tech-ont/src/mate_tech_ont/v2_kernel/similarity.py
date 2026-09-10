@@ -21,7 +21,7 @@ from typing import Any
 
 from .object_search import Embedder, cosine
 
-__all__ = ["search_similar_object_types", "normalize_slug", "suggest_action"]
+__all__ = ["normalize_slug", "search_similar_object_types", "suggest_action"]
 
 
 def normalize_slug(slug: str) -> str:

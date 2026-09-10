@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
-
 _VALID_BPMN = (
     '<?xml version="1.0" encoding="UTF-8"?>'
     '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">'

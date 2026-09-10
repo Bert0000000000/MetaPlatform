@@ -25,13 +25,13 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_tech_llmgw.providers.embeddings import (  # noqa: E402
+from mate_tech_llmgw.api.routes import EmbeddingRequest, _run_embeddings
+from mate_tech_llmgw.providers.embeddings import (
     OpenAIEmbeddingProvider,
     build_configured_embedding_provider,
     reset_embedding_providers,
     resolve_effective_embedding,
 )
-from mate_tech_llmgw.api.routes import EmbeddingRequest, _run_embeddings  # noqa: E402
 
 IAM = "http://localhost:8100"
 ARK = "https://ark.example/api/v3"

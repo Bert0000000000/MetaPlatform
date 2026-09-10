@@ -14,8 +14,9 @@ import os
 import sys
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # Ensure all package src dirs are on sys.path so model imports work
 _PREPEND = [
@@ -33,7 +34,7 @@ for _p in _PREPEND:
         sys.path.insert(0, os.path.abspath(_abs))
 
 # Import Base + all ORM models so autogenerate sees the full metadata
-from mate_tech_db.base import Base  # noqa: E402
+from mate_tech_db.base import Base
 
 # Import ORM model modules — each module registers tables on Base.metadata
 try:

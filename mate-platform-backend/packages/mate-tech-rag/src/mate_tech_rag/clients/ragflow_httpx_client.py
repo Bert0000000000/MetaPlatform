@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 from typing import Protocol
 
 import httpx
@@ -120,7 +120,7 @@ class HttpxRAGFlowClient:
         *,
         base_url: str | None = None,
         api_key: str | None = None,
-    ) -> Iterator["HttpxRAGFlowClient"]:
+    ) -> Iterator[HttpxRAGFlowClient]:
         saved_url = self._base_url
         saved_key = self._api_key
         if base_url:

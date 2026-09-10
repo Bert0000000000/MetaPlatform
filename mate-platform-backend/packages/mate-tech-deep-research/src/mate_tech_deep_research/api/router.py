@@ -29,7 +29,7 @@ _client_singleton: DeerFlowClient | None = None
 
 def set_deerflow_client(client: DeerFlowClient | None) -> None:
     """Test hook: override the singleton DeerFlowClient (or clear it)."""
-    global _client_singleton  # noqa: PLW0603 (test override hook, not a long-lived mutable)
+    global _client_singleton
     _client_singleton = client
 
 

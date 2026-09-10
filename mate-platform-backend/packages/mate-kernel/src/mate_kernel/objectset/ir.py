@@ -240,7 +240,7 @@ class InMemoryQueryExecutor:
         self._types: dict[str, ObjectType] = {t.rid.rid: t for t in object_types}
 
     def execute(
-        self, q: ObjectSetQuery, source_classes: "frozenset[str] | None" = None,
+        self, q: ObjectSetQuery, source_classes: frozenset[str] | None = None,
     ) -> QueryResult:
         """执行 ObjectSetQuery。
 

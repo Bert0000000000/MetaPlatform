@@ -11,7 +11,6 @@ from typing import Any
 import pytest
 from fastapi import HTTPException
 
-import mate_tech_llmgw.resilience.cooldown as cooldown_mod
 from mate_tech_llmgw.resilience import set_cooldown
 from mate_tech_llmgw.resilience.call import call_with_resilience, load_fallback_chain
 from mate_tech_llmgw.resilience.cooldown import CooldownManager
@@ -33,7 +32,6 @@ class _FakeRedis:
 
     async def eval(self, script: str, numkeys: int, *args: Any) -> list[int]:
         # Replay _RECORD_FAILURE_LUA against the plain store.
-        import time
 
         fails_key, ts_key, until_key = args[:3]
         now, window, allowed, cooldown_sec = (

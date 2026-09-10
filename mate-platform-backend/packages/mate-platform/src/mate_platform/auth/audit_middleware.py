@@ -28,13 +28,12 @@ Per ADR-0016 §3.3 D5.
 """
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 
 from ..auth.audit import (
     CrossTenantAuditSink,
-    CrossTenantDataAccess,
     InMemoryAuditSink,
     emit_cross_tenant_data_access,
 )

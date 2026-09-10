@@ -17,7 +17,7 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_kernel.objectset.ir import (  # noqa: E402
+from mate_kernel.objectset.ir import (
     Aggregation,
     Condition,
     MetricSpec,
@@ -25,10 +25,10 @@ from mate_kernel.objectset.ir import (  # noqa: E402
     QueryOp,
     TraversalStep,
 )
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.instances.link_instance import LinkInstance  # noqa: E402
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.instances.link_instance import LinkInstance
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
 PG_DSN = os.environ.get(
     "PARITY_PG_DSN", "postgresql://meta:meta@127.0.0.1:5432/metaplatform_ont"

@@ -62,7 +62,7 @@ DEFAULT_TARGETS: list[tuple[str, str, str]] = [
 ]
 
 
-async def check_endpoint(name: str, url: str, timeout: float = 2.0) -> HealthStatus:  # noqa: ASYNC109
+async def check_endpoint(name: str, url: str, timeout: float = 2.0) -> HealthStatus:
     start = time.time()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -86,7 +86,7 @@ async def check_endpoint(name: str, url: str, timeout: float = 2.0) -> HealthSta
 
 async def aggregate_health(
     targets: list[tuple[str, str, str]] | None = None,
-    timeout: float = 2.0,  # noqa: ASYNC109
+    timeout: float = 2.0,
 ) -> HealthReport:
     targets = DEFAULT_TARGETS if targets is None else targets
     tasks = [

@@ -6,7 +6,6 @@ parsing, including dim self-correction.
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -18,7 +17,7 @@ PKG = REPO / "packages"
 for sub in ("mate-tech-rag",):
     sys.path.insert(0, str(PKG / sub / "src"))
 
-from mate_tech_rag.embedder import LlmgwEmbedder, create_embedder  # noqa: E402
+from mate_tech_rag.embedder import LlmgwEmbedder, create_embedder
 
 
 class _FakeResponse:

@@ -12,14 +12,14 @@ M3 范围：内存版索引 + 双向 link 校验；真实 CDC / catalog 在 DATA
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 
-from mate_kernel.manager.protocol import Manager, ManagerContext
+from mate_kernel.manager.protocol import Manager
 from mate_kernel.ontology.identity.class_ref import ClassRef
 
 
-class DataProductKind(str, Enum):
+class DataProductKind(StrEnum):
     TABLE = "table"
     VIEW = "view"
     MATERIALIZED_VIEW = "materialized_view"
@@ -27,7 +27,7 @@ class DataProductKind(str, Enum):
     STREAM = "stream"
 
 
-class QualityDimension(str, Enum):
+class QualityDimension(StrEnum):
     COMPLETENESS = "completeness"  # 0..1
     FRESHNESS_SECONDS = "freshness_seconds"
     ROW_COUNT = "row_count"
@@ -38,7 +38,7 @@ class QualityDimension(str, Enum):
 class QualitySummary:
     dimension: QualityDimension
     value: float
-    measured_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    measured_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +51,7 @@ class DataProduct:
     source_uri: str  # PG / Iceberg / Kafka 等
     quality: tuple[QualitySummary, ...] = ()
     schema_version: str = "v1"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def quality_of(self, dim: QualityDimension) -> QualitySummary | None:
         for q in self.quality:

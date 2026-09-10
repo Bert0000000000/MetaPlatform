@@ -11,11 +11,10 @@ new engine methods are additive.
 """
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from typing import Any
 
-from .services.debezium_engine import CdcTaskResult, DebeziumEngine, DebeziumEngineError
+from .services.debezium_engine import CdcTaskResult, DebeziumEngine
 
 
 @dataclass

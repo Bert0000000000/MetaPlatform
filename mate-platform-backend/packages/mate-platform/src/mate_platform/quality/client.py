@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Protocol
 
 
@@ -100,7 +100,7 @@ class ExpectationSuite:
     datasets: tuple[str, ...] = field(default_factory=tuple)
     checks: tuple[Check, ...] = field(default_factory=tuple)
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
 
@@ -124,7 +124,7 @@ class Checkpoint:
     status: str  # "passed" | "failed" | "skipped"
     results: tuple[CheckResult, ...] = field(default_factory=tuple)
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
 

@@ -346,9 +346,9 @@ def emit_rule_event(
 
 
 __all__ = [
+    "VALID_SEVERITIES",
     "AlertRuleStore",
     "ManagedAlertRule",
     "RuleStatus",
-    "VALID_SEVERITIES",
     "emit_rule_event",
 ]

@@ -13,12 +13,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from mate_kernel.manager.protocol import Manager, ManagerContext
+from mate_kernel.manager.protocol import Manager
 from mate_kernel.ontology.identity.class_ref import ClassRef
 from mate_kernel.ontology.query.object_set import ObjectSet
-from mate_kernel.rag.ontology import RagChunk, RagHit, RagIndex, RagQuery, RagRetriever
+from mate_kernel.rag.ontology import RagHit, RagIndex, RagQuery, RagRetriever
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +29,7 @@ class KbDocument:
     body_markdown: str
     linked_class_rids: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def tokens(self) -> set[str]:
         return set(re.findall(r"[\w一-鿿]+", (self.title + " " + self.body_markdown).lower()))

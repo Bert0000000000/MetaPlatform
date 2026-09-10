@@ -28,7 +28,7 @@ def _get_fernet() -> Fernet:
         key = base64.urlsafe_b64encode(b"0" * 32).decode("ascii")
     try:
         return Fernet(key.encode("ascii"))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise EncryptError(f"invalid MATE_KMS_KEY: {e}") from e
 
 
@@ -40,9 +40,9 @@ def encrypt(plaintext: str) -> str:
     try:
         f = _get_fernet()
         return f.encrypt(plaintext.encode("utf-8")).decode("ascii")
-    except InvalidToken as e:  # noqa: F841
+    except InvalidToken as e:
         raise EncryptError(str(e)) from e
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise EncryptError(str(e)) from e
 
 
@@ -53,5 +53,5 @@ def decrypt(ciphertext: str) -> str:
     try:
         f = _get_fernet()
         return f.decrypt(ciphertext.encode("ascii")).decode("utf-8")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise EncryptError(str(e)) from e

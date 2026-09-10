@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from .identity.class_ref import ClassRef
 from .types.object_type import ObjectType
 
 

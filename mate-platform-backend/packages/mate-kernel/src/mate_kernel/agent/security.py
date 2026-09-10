@@ -10,14 +10,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from enum import StrEnum
 
-from mate_kernel.manager.protocol import Manager, ManagerContext
+from mate_kernel.manager.protocol import ManagerContext
 
 
-class Decision(str, Enum):
+class Decision(StrEnum):
     ALLOW = "allow"
     DENY = "deny"
     ABSTAIN = "abstain"  # 无信息，留给上层决定
@@ -66,7 +66,7 @@ class SecurityAgent:
             d = SecurityDecision(
                 decision=Decision.DENY,
                 reason=f"cross-tenant: requester={req.requester.tenant_id} target={req.target_tenant}",
-                decided_at=datetime.now(timezone.utc),
+                decided_at=datetime.now(UTC),
                 rule_id="R-TENANT-001",
             )
             self._decisions.append(d)
@@ -81,7 +81,7 @@ class SecurityAgent:
                         f"missing marking; required one of {req.required.required_markings}, "
                         f"user has {req.requester.markings}"
                     ),
-                    decided_at=datetime.now(timezone.utc),
+                    decided_at=datetime.now(UTC),
                     rule_id="R-MARK-001",
                 )
                 self._decisions.append(d)
@@ -91,7 +91,7 @@ class SecurityAgent:
         d = SecurityDecision(
             decision=Decision.ALLOW,
             reason="all checks passed",
-            decided_at=datetime.now(timezone.utc),
+            decided_at=datetime.now(UTC),
             rule_id="R-ALLOW-000",
         )
         self._decisions.append(d)

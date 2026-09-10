@@ -35,7 +35,7 @@ PKG = REPO / "packages"
 for sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-rag"):
     sys.path.insert(0, str(PKG / sub / "src"))
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter  # noqa: E402
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 JWT_SECRET = "test-secret"
 

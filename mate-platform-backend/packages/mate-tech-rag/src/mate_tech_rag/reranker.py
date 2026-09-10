@@ -35,7 +35,6 @@ from __future__ import annotations
 
 import math
 import os
-import re
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -161,7 +160,7 @@ class HeuristicCrossEncoderReranker:
             for t, df_t in df.items()
         }
         query_len = max(len(query), 1)
-        for c, terms in zip(candidates, term_sets):
+        for c, terms in zip(candidates, term_sets, strict=False):
             overlap = query_terms & terms
             base_sim = len(overlap) / max(len(query_terms), 1)
             if base_sim == 0:
@@ -217,7 +216,7 @@ class HeuristicCrossEncoderReranker:
 # ---------------------------------------------------------------------------
 # Opt-in: real sentence-transformers CrossEncoder
 # ---------------------------------------------------------------------------
-def _try_sentence_transformers(model_name: str | None) -> "RealCrossEncoderReranker | None":
+def _try_sentence_transformers(model_name: str | None) -> RealCrossEncoderReranker | None:
     """Best-effort load a sentence-transformers Cross-Encoder.
 
     Returns ``None`` (silent fallback to HeuristicCrossEncoderReranker) when:
@@ -267,7 +266,7 @@ class RealCrossEncoderReranker:
         except Exception:
             # Last-resort safety net: keep the reranker non-fatal.
             return sorted(candidates, key=lambda c: c.score, reverse=True)[:top_k]
-        for c, s in zip(candidates, scores):
+        for c, s in zip(candidates, scores, strict=False):
             c.score = float(s)
         return sorted(candidates, key=lambda c: c.score, reverse=True)[:top_k]
 

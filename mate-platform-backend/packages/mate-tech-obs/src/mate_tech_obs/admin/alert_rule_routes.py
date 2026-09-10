@@ -46,9 +46,9 @@ from pydantic import BaseModel, Field
 from mate_platform.tenancy.guards import require_tenant
 
 from ..alerts.management import (
+    VALID_SEVERITIES,
     AlertRuleStore,
     ManagedAlertRule,
-    VALID_SEVERITIES,
     emit_rule_event,
 )
 
@@ -66,13 +66,13 @@ alert_rule_outbox: Any = None
 
 def _set_store(store: AlertRuleStore) -> None:
     """Called by main.py to share its store instance with the router."""
-    global alert_rule_store  # noqa: PLW0603
+    global alert_rule_store
     alert_rule_store = store
 
 
 def _set_outbox(outbox: Any) -> None:
     """Called by main.py to share its outbox instance with the router."""
-    global alert_rule_outbox  # noqa: PLW0603
+    global alert_rule_outbox
     alert_rule_outbox = outbox
 
 
@@ -227,4 +227,4 @@ async def delete_alert_rule_endpoint(
     return {"deleted": True, "rule_id": rule_id}
 
 
-__all__ = ["router", "alert_rule_store", "_set_store", "_set_outbox"]
+__all__ = ["_set_outbox", "_set_store", "alert_rule_store", "router"]

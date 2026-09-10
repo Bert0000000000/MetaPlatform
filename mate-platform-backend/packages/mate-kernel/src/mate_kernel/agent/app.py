@@ -12,21 +12,21 @@ M3 范围：内存版 manifest 编译，不接前端框架。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 
-from mate_kernel.manager.protocol import Manager, ManagerContext
+from mate_kernel.manager.protocol import Manager
 from mate_kernel.ontology.identity.class_ref import ClassRef
 
 
-class PageKind(str, Enum):
+class PageKind(StrEnum):
     LIST = "list"
     DETAIL = "detail"
     FORM = "form"
     DASHBOARD = "dashboard"
 
 
-class SlotKind(str, Enum):
+class SlotKind(StrEnum):
     FIELD = "field"            # 单字段显示
     TABLE = "table"            # 列表
     LINK = "link"              # 跳转到详情
@@ -51,7 +51,7 @@ class PageManifest:
     slots: tuple[Slot, ...]
     title: str
     description: str = ""
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,18 +137,7 @@ def build_crud_app(
                 kind=PageKind.DETAIL,
                 bound_class_rid=bound_class,
                 title=f"{list_title} · 详情",
-                slots=(
-                    Slot(slot_id="props", kind=SlotKind.FIELD, target_rid=bound_class.rid),
-                )
-                + tuple(
-                    Slot(
-                        slot_id=f"act-{i}",
-                        kind=SlotKind.ACTION_BUTTON,
-                        target_rid=rid,
-                        label=rid.split(".")[-1],
-                    )
-                    for i, rid in enumerate(action_rids)
-                ),
+                slots=(Slot(slot_id="props", kind=SlotKind.FIELD, target_rid=bound_class.rid), *tuple(Slot(slot_id=f"act-{i}", kind=SlotKind.ACTION_BUTTON, target_rid=rid, label=rid.split(".")[-1]) for i, rid in enumerate(action_rids))),
             ),
             PageManifest(
                 page_rid=f"{base}.page.{cls_slug}-form.v1",

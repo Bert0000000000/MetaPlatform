@@ -22,23 +22,23 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_kernel.objectset.ir import ObjectSetQuery  # noqa: E402
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
-from mate_kernel.ontology.instances.individual import Individual  # noqa: E402
-from mate_kernel.ontology.types.link_type import (  # noqa: E402
+from mate_kernel.objectset.ir import ObjectSetQuery
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_kernel.ontology.instances.individual import Individual
+from mate_kernel.ontology.types.link_type import (
     Cardinality,
     Directionality,
     LinkType,
 )
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import (  # noqa: E402
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import (
     DerivedSpec,
     Property,
     PropertyFormat,
     ai_metadata_struct,
 )
-from mate_kernel.ontology.types.value_types import (  # noqa: E402
+from mate_kernel.ontology.types.value_types import (
     list_value_types,
     validate_property,
 )

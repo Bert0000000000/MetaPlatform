@@ -66,7 +66,7 @@ class TenantBudgetGuard:
         since = datetime.now(UTC) - timedelta(days=30)
         try:
             spent = await self._store.window_spend(tenant_id=tenant_id, since=since)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("llmgw.budget.spend_read_failed", error=str(exc))
             return
         projected = spent + max(estimated_cost_usd, 0.0)
@@ -117,7 +117,7 @@ class TenantBudgetGuard:
                     """,
                     tenant_id,
                 )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("llmgw.budget.config_read_failed", error=str(exc))
             return _NO_BUDGET
         if row is None:
@@ -145,5 +145,5 @@ def _increment_soft_budget_counter(tenant_id: str) -> None:
             "llmgw_budget_soft_exceeded_total"
         )
         counter.add(1, {"tenant_id": tenant_id})
-    except Exception:  # noqa: BLE001 — observability must never raise
+    except Exception:
         pass

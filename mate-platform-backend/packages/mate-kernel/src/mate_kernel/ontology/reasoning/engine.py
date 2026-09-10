@@ -113,7 +113,9 @@ def run_inference(
         for src in list(adj):
             seen: dict[str, int] = {}
 
-            def dfs(node: str, depth: int) -> None:
+            # B023：dfs 同步立即调用、不逃逸出循环迭代 —— 显式绑定当前
+            # 迭代的 adj/seen（默认参快照）以消除误报并防未来误用
+            def dfs(node: str, depth: int, *, adj=adj, seen=seen) -> None:
                 for nxt in adj.get(node, ()):
                     if nxt not in seen:
                         seen[nxt] = depth

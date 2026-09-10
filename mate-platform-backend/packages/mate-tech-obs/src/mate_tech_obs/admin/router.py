@@ -52,7 +52,7 @@ async def operations_health():
 
 @router.get("/metrics/self")
 async def self_metrics():
-    from ..metrics.prom import render_metrics  # noqa: PLC0415
+    from ..metrics.prom import render_metrics
 
     body, _ = render_metrics()
     text = body.decode("utf-8") if isinstance(body, bytes | bytearray) else str(body)  # type: ignore[reportUnnecessaryIsInstance]

@@ -14,7 +14,7 @@ PKG = REPO / "packages"
 for sub in ("mate-tech-rag",):
     sys.path.insert(0, str(PKG / sub / "src"))
 
-from mate_tech_rag.tokenize import tokenize_for_match  # noqa: E402
+from mate_tech_rag.tokenize import tokenize_for_match
 
 
 class TestTokenizeForMatch:

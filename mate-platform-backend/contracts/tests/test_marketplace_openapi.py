@@ -3,6 +3,7 @@
 MP-CONS-001..008(8 个 requirement id)。
 """
 from pathlib import Path
+
 import yaml
 
 ROOT = Path(__file__).parents[1] / "openapi" / "services"

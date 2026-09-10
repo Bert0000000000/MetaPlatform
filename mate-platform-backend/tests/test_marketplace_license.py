@@ -19,7 +19,6 @@ async def test_activate_license_persists_kms_encrypted(monkeypatch):
 
     测试用对称 mock:plain -> ENC[plain];ENC[plain] -> plain。
     """
-    from mate_platform.marketplace import service
     from mate_platform.marketplace.service import license_service
 
     monkeypatch.setattr(

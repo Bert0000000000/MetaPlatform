@@ -76,7 +76,7 @@ def _stable_hash(text: str) -> int:
 class _DayRecord:
     """One day of per-service metrics + user/storage aggregates."""
 
-    __slots__ = ("date", "requests", "tokens", "latency", "errors", "dau", "new_users")
+    __slots__ = ("date", "dau", "errors", "latency", "new_users", "requests", "tokens")
 
     def __init__(
         self,
@@ -181,7 +181,7 @@ def get_usage(tenant_id: str, days: int) -> UsageResponse:
     points: list[UsagePoint] = []
     total_req = 0
     total_tok = 0
-    svc_totals: dict[str, int] = {svc: 0 for svc in SERVICES}
+    svc_totals: dict[str, int] = dict.fromkeys(SERVICES, 0)
     for r in win:
         for svc in SERVICES:
             req = r.requests[svc]

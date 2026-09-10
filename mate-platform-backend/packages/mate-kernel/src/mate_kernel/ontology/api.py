@@ -7,7 +7,7 @@ runtime（CLI / SDK / sandbox executor）共享同一抽象。
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Iterable, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from ..ontology.identity import ClassRef, Version
 from ..ontology.instances import Individual, LinkInstance
@@ -15,13 +15,10 @@ from ..ontology.query import ObjectSet
 from ..ontology.reasoning import Axiom, Function
 from ..ontology.types import (
     ActionType,
-    Cardinality,
-    Directionality,
     Interface,
     LinkType,
     ObjectType,
     Property,
-    PropertyFormat,
 )
 
 

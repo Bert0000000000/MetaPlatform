@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class MPErrorCode(str, Enum):
+class MPErrorCode(StrEnum):
     DIGEST_MISMATCH = "MP_DIGEST_MISMATCH"
     MANIFEST_INVALID = "MP_MANIFEST_INVALID"
     LICENSE_INVALID = "MP_LICENSE_INVALID"

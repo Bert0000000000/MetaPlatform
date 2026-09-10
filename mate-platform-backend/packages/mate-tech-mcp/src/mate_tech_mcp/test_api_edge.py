@@ -32,11 +32,11 @@ _TESTS_DIR = Path(__file__).resolve().parents[2] / "tests"
 if str(_TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(_TESTS_DIR))
 
-import pytest  # noqa: E402  (placed after env setup)
-from conftest import make_keycloak_token  # noqa: E402  (import after sys.path tweak)
+import pytest
+from conftest import make_keycloak_token
 
-from mate_tech_mcp import main as mcp_main  # noqa: E402
-from mate_tech_mcp.main import app  # noqa: E402
+from mate_tech_mcp import main as mcp_main
+from mate_tech_mcp.main import app
 
 # Patch the module-level rate limiter so call_tool never touches Redis.
 _NOOP_LIMITER = MagicMock()

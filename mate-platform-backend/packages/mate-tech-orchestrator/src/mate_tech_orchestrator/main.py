@@ -13,9 +13,8 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-
 import structlog
+from fastapi import FastAPI
 
 from mate_platform.auth import install_auth
 from mate_platform.messaging.outbox import InMemoryOutboxWriter

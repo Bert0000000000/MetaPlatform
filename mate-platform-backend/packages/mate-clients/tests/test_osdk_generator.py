@@ -1,7 +1,6 @@
 """G6 OSDK 生成器单测：契约 → 确定性 typed client。"""
 from __future__ import annotations
 
-import io
 import json
 import sys
 from pathlib import Path
@@ -11,7 +10,7 @@ import pytest
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "scripts"))
-from generate_typed_client import generate  # noqa: E402
+from generate_typed_client import generate
 
 CONTRACT = {
     "paths": {
@@ -32,7 +31,7 @@ CONTRACT = {
 @pytest.fixture()
 def generated(tmp_path, monkeypatch):
     src = tmp_path / "c.yaml"
-    io.open(src, "w", encoding="utf-8").write(yaml.safe_dump(CONTRACT))
+    open(src, "w", encoding="utf-8").write(yaml.safe_dump(CONTRACT))
     code = generate(str(src))
     mod: dict = {}
     exec(compile(code, "osdk_generated.py", "exec"), mod)

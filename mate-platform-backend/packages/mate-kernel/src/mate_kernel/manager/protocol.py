@@ -11,8 +11,8 @@ M2 范围：in-memory 实现，不接 PG。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from mate_kernel.ontology.identity.class_ref import ClassRef
@@ -27,7 +27,7 @@ class TenantMismatchError(ManagerError):
     pass
 
 
-class ChangeKind(str, Enum):
+class ChangeKind(StrEnum):
     SNAPSHOT_VERSION = "snapshot_version"
     REGISTER_CLASS = "register_class"
     APPLY_ACTION = "apply_action"
@@ -55,7 +55,7 @@ class ManagerContext:
     tenant_id: str
     session_id: str
     scopes: tuple[str, ...] = ()
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @runtime_checkable
@@ -127,7 +127,7 @@ class Manager:
             kind=kind,
             target_rid=target_rid,
             payload_hash=self._hash(payload),
-            occurred_at=datetime.now(timezone.utc),
+            occurred_at=datetime.now(UTC),
             actor=actor or self.ctx.user_id,
         )
         self._changes.append(change)

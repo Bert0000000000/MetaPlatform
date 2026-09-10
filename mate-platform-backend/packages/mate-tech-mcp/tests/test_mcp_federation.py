@@ -33,10 +33,10 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-import jwt as _pyjwt  # noqa: E402
-from mate_platform.messaging import InMemoryOutboxWriter  # noqa: E402
+import jwt as _pyjwt
+from mate_platform.messaging import InMemoryOutboxWriter
 
-from mate_tech_mcp.federation import (  # noqa: E402
+from mate_tech_mcp.federation import (
     ExternalMcpClient,
     FederatedServer,
     FederationRegistry,
@@ -44,7 +44,7 @@ from mate_tech_mcp.federation import (  # noqa: E402
     emit_federation_event,
 )
 
-_TEST_JWT_SECRET = "test-secret"  # noqa: S105
+_TEST_JWT_SECRET = "test-secret"
 
 
 def _make_token(tenant_id: str = "tenant-acme") -> str:
@@ -99,7 +99,7 @@ class TestFederationRegistryCRUD:
             tenant_id="t1",
             name="remote-search",
             transport_url="http://remote-mcp:8081",
-            auth_token_ref="vault://secret/remote-search",  # noqa: S106
+            auth_token_ref="vault://secret/remote-search",
             description="remote search server",
             tools=("remote.search", "remote.lookup"),
         )
@@ -118,7 +118,7 @@ class TestFederationRegistryCRUD:
                 tenant_id="t1",
                 name="bad",
                 transport_url="ftp://nope",
-                auth_token_ref="vault://x",  # noqa: S106
+                auth_token_ref="vault://x",
             )
 
     def test_register_rejects_duplicate_name(self, fresh_registry: FederationRegistry) -> None:
@@ -126,14 +126,14 @@ class TestFederationRegistryCRUD:
             tenant_id="t1",
             name="dupe",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
         )
         with pytest.raises(ValueError, match="already exists"):
             fresh_registry.register_server(
                 tenant_id="t1",
                 name="dupe",
                 transport_url="http://b:8081",
-                auth_token_ref="vault://b",  # noqa: S106
+                auth_token_ref="vault://b",
             )
 
     def test_register_rejects_tool_collision(self, fresh_registry: FederationRegistry) -> None:
@@ -141,7 +141,7 @@ class TestFederationRegistryCRUD:
             tenant_id="t1",
             name="srv-a",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
             tools=("shared.tool",),
         )
         with pytest.raises(ValueError, match="tool name collision"):
@@ -149,7 +149,7 @@ class TestFederationRegistryCRUD:
                 tenant_id="t1",
                 name="srv-b",
                 transport_url="http://b:8081",
-                auth_token_ref="vault://b",  # noqa: S106
+                auth_token_ref="vault://b",
                 tools=("shared.tool",),
             )
 
@@ -158,7 +158,7 @@ class TestFederationRegistryCRUD:
             tenant_id="t1",
             name="srv",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
             tools=("tool1",),
         )
         updated = fresh_registry.update_server(
@@ -175,7 +175,7 @@ class TestFederationRegistryCRUD:
             tenant_id="t1",
             name="srv",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
         )
         assert fresh_registry.deregister_server(tenant_id="t1", server_id=srv.id) is True
         deleted = fresh_registry.get_server(tenant_id="t1", server_id=srv.id)
@@ -187,7 +187,7 @@ class TestFederationRegistryCRUD:
             tenant_id="t1",
             name="srv",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
             tools=("remote.search",),
         )
         match = fresh_registry.find_tool(tenant_id="t1", tool_name="remote.search")
@@ -201,14 +201,14 @@ class TestFederationRegistryCRUD:
             tenant_id="t1",
             name="srv-a",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
             tools=("tool1", "tool2"),
         )
         fresh_registry.register_server(
             tenant_id="t1",
             name="srv-b",
             transport_url="http://b:8081",
-            auth_token_ref="vault://b",  # noqa: S106
+            auth_token_ref="vault://b",
             tools=("tool3",),
         )
         tools = fresh_registry.list_remote_tools(tenant_id="t1")
@@ -223,7 +223,7 @@ class TestFederationRegistryTenantIsolation:
             tenant_id="t1",
             name="private",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
         )
         assert fresh_registry.get_server(tenant_id="t2", server_id=srv.id) is None
 
@@ -234,13 +234,13 @@ class TestFederationRegistryTenantIsolation:
             tenant_id="t1",
             name="t1-srv",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
         )
         fresh_registry.register_server(
             tenant_id="t2",
             name="t2-srv",
             transport_url="http://b:8081",
-            auth_token_ref="vault://b",  # noqa: S106
+            auth_token_ref="vault://b",
         )
         assert len(fresh_registry.list_servers(tenant_id="t1")) == 1
         assert len(fresh_registry.list_servers(tenant_id="t2")) == 1
@@ -253,7 +253,7 @@ class TestFederationRegistryTenantIsolation:
             tenant_id="t1",
             name="private",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
         )
         assert fresh_registry.deregister_server(tenant_id="t2", server_id=srv.id) is False
         # t1's server is still there.
@@ -266,7 +266,7 @@ class TestFederationRegistryTenantIsolation:
             tenant_id="t1",
             name="srv",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
             tools=("private.tool",),
         )
         # t2 cannot find t1's tool.
@@ -288,7 +288,7 @@ class TestExternalMcpClient:
             tenant_id="t1",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
         )
         client = ExternalMcpClient()
         try:
@@ -309,7 +309,7 @@ class TestExternalMcpClient:
             tenant_id="t1",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
         )
         client = ExternalMcpClient()
         try:
@@ -329,7 +329,7 @@ class TestExternalMcpClient:
             tenant_id="t1",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
         )
         client = ExternalMcpClient()
         try:
@@ -353,7 +353,7 @@ class TestExternalMcpClient:
             tenant_id="t1",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
         )
 
         def _resolver(ref: str) -> str:
@@ -382,7 +382,7 @@ class TestFederationRouter:
             tenant_id="t1",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
             tools=("remote.search",),
         )
         router = FederationRouter(fresh_registry)
@@ -423,7 +423,7 @@ class TestOutboxEmission:
             tenant_id="t1",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
             tools=("remote.search",),
         )
         emit_federation_event(outbox, action="registered", server=srv)
@@ -441,7 +441,7 @@ class TestOutboxEmission:
             tenant_id="t1",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
         )
         # No exception when outbox is None (test profile).
         emit_federation_event(None, action="registered", server=srv)
@@ -453,7 +453,7 @@ class TestOutboxEmission:
             tenant_id="",
             name="remote",
             transport_url="http://remote:8081",
-            auth_token_ref="vault://x",  # noqa: S106
+            auth_token_ref="vault://x",
         )
         with pytest.raises(ValueError, match="tenant_id must not be empty"):
             emit_federation_event(outbox, action="registered", server=srv)
@@ -700,7 +700,7 @@ class TestCrossTenantNegatives:
             tenant_id="t1",
             name="private",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
         )
         # Tenant t2 cannot read t1's server.
         assert fresh_registry.get_server(tenant_id="t2", server_id=srv.id) is None
@@ -715,7 +715,7 @@ class TestCrossTenantNegatives:
             tenant_id="t1",
             name="private",
             transport_url="http://a:8081",
-            auth_token_ref="vault://a",  # noqa: S106
+            auth_token_ref="vault://a",
         )
         # Tenant t2 cannot deregister t1's server.
         assert fresh_registry.deregister_server(tenant_id="t2", server_id=srv.id) is False

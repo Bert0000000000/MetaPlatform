@@ -14,10 +14,9 @@ from typing import Any
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-
-from mate_tech_llmgw.api import routes as routes_mod
-from mate_tech_llmgw.api.routes import legacy_router, router
 from mate_platform.tenancy import AuthMethod
+
+from mate_tech_llmgw.api.routes import legacy_router, router
 
 
 @dataclass

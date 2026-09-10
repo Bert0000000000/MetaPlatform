@@ -22,24 +22,24 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_kernel.action.edit_set import (  # noqa: E402
+from mate_kernel.action.edit_set import (
     EDIT_BATCH_LIMIT,
     EditOp,
     EditSetError,
     invert_edits,
     resolve_edit_template,
 )
-from mate_kernel.ontology.identity.class_ref import ClassRef  # noqa: E402
-from mate_kernel.ontology.in_memory import InMemoryOntologyRepository  # noqa: E402
-from mate_kernel.ontology.instances.individual import Individual  # noqa: E402
-from mate_kernel.ontology.types.action_type import ActionType  # noqa: E402
-from mate_kernel.ontology.types.link_type import (  # noqa: E402
+from mate_kernel.ontology.identity.class_ref import ClassRef
+from mate_kernel.ontology.in_memory import InMemoryOntologyRepository
+from mate_kernel.ontology.instances.individual import Individual
+from mate_kernel.ontology.types.action_type import ActionType
+from mate_kernel.ontology.types.link_type import (
     Cardinality,
     Directionality,
     LinkType,
 )
-from mate_kernel.ontology.types.object_type import ObjectType  # noqa: E402
-from mate_kernel.ontology.types.property_ import Property, PropertyFormat  # noqa: E402
+from mate_kernel.ontology.types.object_type import ObjectType
+from mate_kernel.ontology.types.property_ import Property, PropertyFormat
 
 T = "act05"
 OBJ_EMP = f"ont.{T}.obj.org.employee.v1"

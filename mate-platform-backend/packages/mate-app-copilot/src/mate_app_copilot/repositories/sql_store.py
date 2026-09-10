@@ -484,7 +484,7 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
 
     Returns counts of rows inserted per table.
     """
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["conversations"] = len([put_conversation(tenant_id, c) for c in mem.list_conversations(tenant_id)])

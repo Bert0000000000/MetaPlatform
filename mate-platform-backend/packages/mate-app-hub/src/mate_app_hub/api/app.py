@@ -769,7 +769,7 @@ _RELEASE_TASKS: dict[str, list[dict[str, Any]]] = {}
 def _release_app(tenant_id: str, app_id: str) -> ApphubApp:
     """Resolve an AppHub app by public id or code."""
     for app in list_apps(tenant_id):
-        if app.id == app_id or app.code == app_id:
+        if app_id in (app.id, app.code):
             return app
     raise HTTPException(status_code=404, detail="app not found")
 
