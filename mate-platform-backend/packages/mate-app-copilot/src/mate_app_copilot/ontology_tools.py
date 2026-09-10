@@ -140,9 +140,10 @@ def build_ontology_tools(
     """发布即可见：每次调用从 repo 实时计算（虚拟注册表，零 push 同步）。"""
     types = repo.list_object_types(10000, 0)
     links = repo.list_link_instances()
+    # B2/AI-11：search_objects 已由 kernel agent_tool_schemas 内建（语义检索
+    # 工具进虚拟注册表）—— 不再追加副本（避免重名工具 + 顺序漂移）。
     return [
         *agent_tool_schemas(types, links, tuple(agent_markings)),
-        SEARCH_OBJECTS_TOOL,
         PROPOSE_ACTION_TOOL,
         PROPOSE_CREATE_INSTANCE_TOOL,
         PROPOSE_MODEL_TYPE_TOOL,

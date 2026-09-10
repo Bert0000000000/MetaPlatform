@@ -110,11 +110,13 @@ class TestBuildOntologyTools:
     def test_fixed_plus_unmarked_type_tools(self) -> None:
         tools = build_ontology_tools(_repo(), agent_markings=())
         names = [t["function"]["name"] for t in tools]
-        # 04b 起固定辅助面 7 件：list/inspect/search/propose×3 + 每类型 query_<slug>
+        # AI-11 起 search_objects 由 kernel 虚拟注册表内建（list/inspect 之后、
+        # query_* 之前），propose×3 由 copilot 追加；无重名工具。
         assert names == [
-            "list_classes", "inspect_class", "query_order", "search_objects",
+            "list_classes", "inspect_class", "search_objects", "query_order",
             "propose_action", "propose_create_instance", "propose_model_type",
         ]
+        assert len(names) == len(set(names))  # 无重名
         # HITL 边界：confirm/reject/execute 绝不作为 LLM 工具出现
         assert not any("confirm" in n or "reject" in n or "execute" in n for n in names)
 
