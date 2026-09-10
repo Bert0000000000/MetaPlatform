@@ -76,7 +76,11 @@ def templates_per_chart(charts_dir: Path) -> dict[str, list[Path]]:
 
 
 # DATA-D0-D8 D5: cross-tenant audit tests need auth module on path.
-import sys as _d5_sys
+import sys
+from pathlib import Path as _P
+_REPO_ROOT = _P(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))  # repo root —— scripts.ci.* 可导入 as _d5_sys
 from pathlib import Path as _d5_Path
 
 _D5_AUTH_SRC = (
@@ -86,5 +90,5 @@ _D5_AUTH_SRC = (
     / "mate-platform"
     / "src"
 )
-if str(_D5_AUTH_SRC) not in _d5_sys.path:
-    _d5_sys.path.insert(0, str(_D5_AUTH_SRC))
+if str(_D5_AUTH_SRC) not in sys.path:
+    sys.path.insert(0, str(_D5_AUTH_SRC))
