@@ -375,7 +375,7 @@ DDL: tuple[str, ...] = (
         tenant_id    TEXT NOT NULL DEFAULT ''
     )
     """,
-    # GOV-16：使用量指标（Reads/Writes per type per day）
+    # GOV-16：使用量指标（Reads/Writes per type per day；P1-7：actor/source 维度）
     """
     CREATE TABLE IF NOT EXISTS ont_usage_metric (
         id         BIGSERIAL PRIMARY KEY,
@@ -384,9 +384,18 @@ DDL: tuple[str, ...] = (
         op         TEXT NOT NULL,
         day        DATE NOT NULL DEFAULT CURRENT_DATE,
         count      BIGINT NOT NULL DEFAULT 0,
-        UNIQUE (tenant_id, class_rid, op, day)
+        actor      TEXT NOT NULL DEFAULT '',
+        source     TEXT NOT NULL DEFAULT ''
     )
     """,
+    # P1-7 幂等迁移：旧表补列 + 唯一键从 4 列扩到 6 列
+    # （旧数据 actor/source 均为 ''，天然满足新唯一约束，无需回填）
+    "ALTER TABLE ont_usage_metric ADD COLUMN IF NOT EXISTS actor TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_usage_metric ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE ont_usage_metric DROP CONSTRAINT IF EXISTS "
+    "ont_usage_metric_tenant_id_class_rid_op_day_key",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_ont_usage_dims ON ont_usage_metric "
+    "(tenant_id, class_rid, op, day, actor, source)",
     "CREATE INDEX IF NOT EXISTS ix_ont_usage_tenant ON ont_usage_metric (tenant_id)",
     # GOV-19：时序存储（TIMESERIES 属性背后的 series store）
     """
@@ -3171,8 +3180,14 @@ class PgOntologyRepository(OntologyRepository):
         finally:
             conn.close()
 
-    def record_usage(self, class_rid: str, op: str, count: int = 1) -> None:
-        """GOV-16：使用量打点（read/write；UPSERT 日聚合）。best-effort。"""
+    def record_usage(
+        self, class_rid: str, op: str, count: int = 1, actor: str = "", source: str = ""
+    ) -> None:
+        """GOV-16：使用量打点（read/write；UPSERT 日聚合）。
+
+        P1-7：actor（谁在读/写）/source（哪个应用）两个可选维度；
+        缺省 '' 与旧数据同一聚合桶，向后兼容。best-effort。
+        """
         tenant = self._current_tenant() or "tenant-default"
         try:
             conn, _ = self._connect()
@@ -3180,11 +3195,11 @@ class PgOntologyRepository(OntologyRepository):
                 with self._cursor(conn) as cur:
                     cur.execute(
                         """INSERT INTO ont_usage_metric
-                           (tenant_id, class_rid, op, day, count)
-                           VALUES (%s,%s,%s,CURRENT_DATE,%s)
-                           ON CONFLICT (tenant_id, class_rid, op, day)
+                           (tenant_id, class_rid, op, day, count, actor, source)
+                           VALUES (%s,%s,%s,CURRENT_DATE,%s,%s,%s)
+                           ON CONFLICT (tenant_id, class_rid, op, day, actor, source)
                            DO UPDATE SET count = ont_usage_metric.count + EXCLUDED.count""",
-                        (tenant, class_rid, op, count),
+                        (tenant, class_rid, op, count, actor or "", source or ""),
                     )
                 conn.commit()
             finally:
@@ -3193,7 +3208,10 @@ class PgOntologyRepository(OntologyRepository):
             pass
 
     def usage_summary(self, days: int = 30) -> list[dict[str, Any]]:
-        """GOV-16：近 N 天 per-type 使用量（reads/writes/total + active_days）。"""
+        """GOV-16：近 N 天 per-type 使用量（reads/writes/total + active_days）。
+
+        P1-7：聚合行新增 ``actors``（distinct 非空 actor 数）；结构只增不改。
+        """
         self._ensure_schema()
         conn, _ = self._connect()
         try:
@@ -3202,7 +3220,8 @@ class PgOntologyRepository(OntologyRepository):
                     """SELECT class_rid,
                               SUM(count) FILTER (WHERE op='read') AS reads,
                               SUM(count) FILTER (WHERE op='write') AS writes,
-                              COUNT(DISTINCT day) AS active_days
+                              COUNT(DISTINCT day) AS active_days,
+                              COUNT(DISTINCT NULLIF(actor, '')) AS actors
                        FROM ont_usage_metric
                        WHERE day > CURRENT_DATE - %s::int
                        GROUP BY class_rid ORDER BY SUM(count) DESC""",
@@ -4828,7 +4847,13 @@ class PgOntologyRepository(OntologyRepository):
         idempotency_key: str | None,
         request_fingerprint: str | None,
     ) -> dict[str, Any]:
-        """kind=edit_set 的事务执行：编辑集 + 审计 + outbox 单事务。"""
+        """kind=edit_set 的事务执行：编辑集 + 审计 + outbox 单事务。
+
+        P1-6：批次上限引用 kernel ``EDIT_BATCH_LIMIT``（10000，对齐 Palantir）。
+        万行仍走**单事务**（原子性优先）；kernel ``EDIT_CHUNK_SIZE``（1000）是
+        执行器内部的分片粒度，后续如做批量 FETCH/EXECUTE 优化按此分片，
+        不改变单事务结构与「任一片失败 → 整体回滚」语义。
+        """
         import uuid as _uuid
         from dataclasses import replace as _replace
         from datetime import UTC as _UTC
@@ -4843,6 +4868,7 @@ class PgOntologyRepository(OntologyRepository):
 
         templates = list((p.parameters or {}).get("edits") or [])
         params = dict((p.parameters or {}).get("parameters") or {})
+        # P1-6：声明上限 10000（超限在解析层 fail-fast）
         if len(templates) > EDIT_BATCH_LIMIT:
             raise EditSetError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}")
         ops = resolve_edit_templates(

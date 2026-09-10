@@ -269,10 +269,24 @@ def create_app() -> FastAPI:
         # GOVERN-05: 注入 FunctionExecutor（dev=memory / test=subprocess / prod=k8s 占位）
         _inject_function_executor(app.state.kernel_repo)
 
+        # P1-4：数据源同步调度器（ONT_SYNC_INTERVAL_SECONDS=0 禁用）——
+        # 周期增量同步全租户 backing datasource 声明（调度化数据绑定）
+        try:
+            from .v2_kernel.sync_scheduler import SyncScheduler
+
+            app.state.sync_scheduler = SyncScheduler(app.state.kernel_repo)
+            app.state.sync_scheduler.start()
+        except Exception as e:  # noqa: BLE001 — 调度器启动失败不阻断服务
+            logger.warning("sync_scheduler.start_failed", error=str(e))
+
         logger.info("mate-tech-ont.startup", version=app.version)
 
     @app.on_event("shutdown")  # pyright: ignore[reportDeprecated]
     async def on_shutdown() -> None:
+        # P1-4：数据源同步调度器优雅停止
+        sched = getattr(app.state, "sync_scheduler", None)
+        if sched is not None:
+            await sched.stop()
         await neo4j.close()
 
     return app

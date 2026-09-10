@@ -55,8 +55,8 @@ class InMemoryOntologyRepository(OntologyRepository):
         self._flow_definitions: dict[str, dict[str, Any]] = {}
         # SEC-12：行列级安全策略
         self._security_policies: dict[str, dict[str, Any]] = {}
-        # GOV-16：使用量计数器
-        self._usage_counters: dict[tuple[str, str], int] = {}
+        # GOV-16：使用量计数器（P1-7：key 含 actor/source 维度）
+        self._usage_counters: dict[tuple[str, str, str, str], int] = {}
         # G33：schema WIP 暂存
         self._schema_wip: dict[str, dict[str, Any]] = {}
         # G23：Function 别名 + 版本快照
@@ -426,15 +426,26 @@ class InMemoryOntologyRepository(OntologyRepository):
 
     # ───── GOV-16：使用量（InMemory 计数器，与 PG 日聚合同语义）─────
 
-    def record_usage(self, class_rid: str, op: str, count: int = 1) -> None:
-        key = (class_rid, op)
+    def record_usage(
+        self, class_rid: str, op: str, count: int = 1, actor: str = "", source: str = ""
+    ) -> None:
+        """P1-7：actor（谁）/source（哪个应用）维度；缺省与旧数据兼容（''）。"""
+        key = (class_rid, op, actor or "", source or "")
         self._usage_counters[key] = self._usage_counters.get(key, 0) + count
 
     def usage_summary(self, days: int = 30) -> list[dict[str, Any]]:
+        """聚合行结构只增不改：新增 ``actors``（distinct 非空 actor 数）。"""
         out: dict[str, dict[str, Any]] = {}
-        for (cls, op), n in self._usage_counters.items():
-            e = out.setdefault(cls, {"class_rid": cls, "reads": 0, "writes": 0, "active_days": 1})
+        actors: dict[str, set[str]] = {}
+        for (cls, op, actor, _source), n in self._usage_counters.items():
+            e = out.setdefault(
+                cls, {"class_rid": cls, "reads": 0, "writes": 0, "active_days": 1, "actors": 0}
+            )
             e["reads" if op == "read" else "writes"] += n
+            if actor:
+                actors.setdefault(cls, set()).add(actor)
+        for cls, s in actors.items():
+            out[cls]["actors"] = len(s)
         return sorted(out.values(), key=lambda x: -(x["reads"] + x["writes"]))
 
     def upsert_security_policy(self, policy: dict[str, Any]) -> dict[str, Any]:
@@ -1030,6 +1041,7 @@ class InMemoryOntologyRepository(OntologyRepository):
             )
 
             templates = p.parameters.get("edits") or []
+            # P1-6：上限引用 kernel 常量（10000）；分片由 _apply_edits 内部处理
             if len(templates) > EDIT_BATCH_LIMIT:
                 raise ValueError(f"edit-set exceeds batch limit {EDIT_BATCH_LIMIT}")
             ops = resolve_edit_templates(
@@ -1191,6 +1203,9 @@ class InMemoryOntologyRepository(OntologyRepository):
         actor: str,
     ) -> Any:
         """顺序执行编辑集；任一步失败 → 整体回滚（补偿式，InMemory 语义）。
+
+        P1-6：批次上限由 kernel ``EDIT_BATCH_LIMIT``（10000）在解析/入口层守门；
+        本方法同步顺序执行全量 ops（补偿回滚以整批为单位，分片不改变语义）。
 
         回滚与 revert 共用 invert_edits 产出的逆序列（单一逆编辑代数）。
         """

@@ -1,7 +1,8 @@
 """ACT-05：声明式 edit-set —— Action 的结构化编辑集（D3/D7 拍板）。
 
 Palantir 语义：Action = 参数 + 声明式 edits（对对象/属性/链接的一组修改，
-**单事务**原子提交；单次上限 10,000 对象）。Mate v1 上限 1000 条编辑。
+**单事务**原子提交；单次上限 10,000 对象）。Mate v2 上限对齐 10,000 条编辑，
+执行器内部按 ``EDIT_CHUNK_SIZE`` 分片（语义不变：全批成功才成功）。
 
 与 legacy function_result 回写并存：ActionType 声明 declarative_edits 时走
 本模块（模板解析 → EditSet → repo.apply_edit_set 单事务），否则走 legacy。
@@ -27,6 +28,7 @@ from typing import Any
 
 __all__ = [
     "EDIT_BATCH_LIMIT",
+    "EDIT_CHUNK_SIZE",
     "OP_ADD_LINK",
     "OP_CREATE_OBJECT",
     "OP_DELETE_OBJECT",
@@ -39,7 +41,11 @@ __all__ = [
     "resolve_edit_template",
 ]
 
-EDIT_BATCH_LIMIT = 1000
+# P1-6：声明上限对齐 Palantir（单 Action 可编辑 10,000 对象）。
+# 执行器内部按 EDIT_CHUNK_SIZE 分片执行（1000/批）；分片不改变原子性语义
+# （任一片失败 → 整体失败/回滚）。
+EDIT_BATCH_LIMIT = 10000
+EDIT_CHUNK_SIZE = 1000
 
 OP_SET_PROPERTY = "set_property"
 OP_CREATE_OBJECT = "create_object"

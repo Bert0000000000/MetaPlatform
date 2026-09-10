@@ -727,6 +727,20 @@ async def delete_security_policy(rid: str, request: Request) -> dict:
     return {"rid": rid, "deleted": bool(ok)}
 
 
+@router.get(
+    "/datasources/sync-status",
+    response_model=list[dict],
+    operation_id="ontGetV2SyncStatus",
+)
+async def get_sync_status(request: Request) -> list[dict]:
+    """P1-4：数据源同步健康面（per-class last_ok/last_error/duration/failures）。"""
+    _ctx(request)
+    sched = getattr(request.app.state, "sync_scheduler", None)
+    if sched is None:
+        return []
+    return sched.status()
+
+
 @router.post(
     "/object-types/{rid:path}/datasources/sync",
     response_model=dict,
@@ -2265,8 +2279,9 @@ async def list_individuals(
     if cls_ref and not cls_ref.rid.startswith(f"ont.{ctx.tenant_id}."):  # type: ignore[attr-defined]
         raise HTTPException(status_code=403, detail="cross-tenant access denied")
     items = await _call_scoped(request, "list_individuals", cls_ref)
-    if class_rid:  # GOV-16：读打点（best-effort）
-        await _call_scoped(request, "record_usage", class_rid, "read", 1)
+    if class_rid:  # GOV-16：读打点（best-effort；P1-7 actor/source 维度）
+        reader = str(getattr(ctx, "user_id", "") or "")
+        await _call_scoped(request, "record_usage", class_rid, "read", 1, reader, "api")
     if markings:
         viewer = _effective_markings(request, markings)
         items = await _call_scoped(request, "enforce_read_policies", items, viewer)
@@ -2479,11 +2494,11 @@ async def apply_edit_set(
     except ValueError as e:
         # ACT-06 校验 / 模板解析失败 / 编辑执行失败 → 422（可操作错误）
         raise HTTPException(status_code=422, detail=str(e)) from e
-    # GOV-16：写打点（on 里第一个类；best-effort）
+    # GOV-16：写打点（on 里第一个类；best-effort；P1-7 actor/source 维度）
     try:
         at0 = at.on[0].rid if at.on else ""
         if at0:
-            await _call_scoped(request, "record_usage", at0, "write", 1)
+            await _call_scoped(request, "record_usage", at0, "write", 1, actor, "edit-set")
     except Exception:
         pass
     return result

@@ -851,6 +851,8 @@ services:
       ONT_SEED_DEMO: "1"
       # B1（D5）：语义检索走 llmgw 平台通道（Keycloak client_credentials 服务认证）
       ONT_EMBEDDER: llmgw
+      # P1-4：数据源周期增量同步（0=禁用；调度器在 ont 进程内 asyncio 跑）
+      ONT_SYNC_INTERVAL_SECONDS: ${ONT_SYNC_INTERVAL_SECONDS:-300}
       LLMGW_EMBED_URL: http://mate-tech-llmgw:8008/api/v1/llmgw/embeddings
       LLMGW_EMBED_MODEL: ${LLMGW_EMBED_MODEL:-doubao-embedding-vision}
       ONT_VECTOR_DIM: ${ONT_VECTOR_DIM:-2048}
