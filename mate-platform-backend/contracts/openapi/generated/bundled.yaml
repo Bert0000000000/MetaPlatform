@@ -8165,6 +8165,7 @@ paths:
           oidcScopes:
             - platform.marketplace.read
             - platform.marketplace.read.tenant
+            - platform.read
       parameters:
         - in: query
           name: kind
