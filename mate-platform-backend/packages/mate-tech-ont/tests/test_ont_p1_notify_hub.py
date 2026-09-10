@@ -25,8 +25,9 @@ for _p in (_K, _O):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mate_tech_ont.v2_kernel.notify_hub import (  # noqa: E402
-    NotifyHub, parse_event_id,
+from mate_tech_ont.v2_kernel.notify_hub import (
+    NotifyHub,
+    parse_event_id,
 )
 
 

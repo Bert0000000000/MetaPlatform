@@ -276,7 +276,7 @@ def create_app() -> FastAPI:
 
             app.state.sync_scheduler = SyncScheduler(app.state.kernel_repo)
             app.state.sync_scheduler.start()
-        except Exception as e:  # noqa: BLE001 — 调度器启动失败不阻断服务
+        except Exception as e:
             logger.warning("sync_scheduler.start_failed", error=str(e))
 
         logger.info("mate-tech-ont.startup", version=app.version)
