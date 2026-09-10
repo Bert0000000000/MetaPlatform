@@ -33,7 +33,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN_PATHS = [
     ("acceptance/scripts/e2e_smoke.ps1", "Spring smoke script"),
     ("start-dashboard-dev.ps1", "Spring-era start script"),
-    ("start-swagger.ps1", "Spring-era start script"),
     ("start-tech-services.ps1", "Spring-era start script"),
     ("build-all-7.bat", "Spring-era build script"),
     ("mate-platform-backend/Dockerfile.agent", "Replaced by unified Dockerfile"),

@@ -159,7 +159,7 @@ class TestPgIntegration:
                         "field_mapping": {P_ID: "aid"},
                         "priority": 10, "tenant_id": T})
                 except Exception:
-                    pytest.skip("source table not provisioned")
+                    pytest.skip(f"PG unavailable: source table {OBJ} not provisioned")
             # 无源表可达 → run_once 应记录失败但不抛
             sched = SyncScheduler(r, interval=0)
             stats = asyncio.run(sched.run_once())
