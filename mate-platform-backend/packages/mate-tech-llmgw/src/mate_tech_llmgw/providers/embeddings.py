@@ -329,9 +329,13 @@ def get_embedding_provider(name: str) -> EmbeddingProvider:
     if key in ("", "openai"):
         provider: EmbeddingProvider = OpenAIEmbeddingProvider()
     elif key == "doubao":
-        # 火山方舟 ARK embedding 接口为 OpenAI 兼容协议
+        # 火山方舟 ARK embedding 接口为 OpenAI 兼容协议。
+        # API key 必须显式取 ARK_API_KEY —— 不传则 _resolve_api_key 回落到
+        # OPENAI_API_KEY（MiniMax 等 OpenAI 兼容通道的 key），对 ARK 端点
+        # 必 401 → hash 兜底（与 chat doubao provider 同口径）。
         provider = OpenAIEmbeddingProvider(
             base_url=os.getenv("ARK_BASE_URL", _DOUBAO_BASE_URL),
+            api_key=os.getenv("ARK_API_KEY") or None,
         )
     elif key == "local":
         provider = LocalEmbeddingProvider()

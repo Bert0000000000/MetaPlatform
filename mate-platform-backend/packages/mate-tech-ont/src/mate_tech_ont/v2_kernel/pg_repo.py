@@ -2861,6 +2861,14 @@ class PgOntologyRepository(OntologyRepository):
             with self._cursor(conn) as cur:
                 for chunk_id, individual_rid, class_rid, property_rid, value_text, vec in chunks:
                     vec_written = False
+                    if not getattr(self, "_pgvector_ready", False):
+                        # 硬化：启动时升级可能因瞬时锁/连接问题静默失败
+                        # （_initialized 防重跑）—— 首次写入时重试一次
+                        try:
+                            self._pgvector_ready = False
+                            self._try_pgvector_upgrade()
+                        except Exception:
+                            pass
                     if getattr(self, "_pgvector_ready", False):
                         vec_literal = "[" + ",".join(f"{x:.6g}" for x in vec) + "]"
                         try:
